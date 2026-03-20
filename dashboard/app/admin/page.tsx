@@ -282,7 +282,7 @@ export default function AdminPage() {
                 </a>
                 <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace", lineHeight: 1.7 }}>
                   <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Docker Registry:</div>
-                  <div>ghcr.io/p2nshooter/guardian-engine:latest</div>
+                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/guardian-engine:latest</div>
                 </div>
               </div>
             </div>
@@ -307,9 +307,9 @@ export default function AdminPage() {
                 </a>
                 <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace", lineHeight: 1.7 }}>
                   <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Docker Registry:</div>
-                  <div>ghcr.io/p2nshooter/orchestra-core:latest</div>
-                  <div>ghcr.io/p2nshooter/orchestra-worker-cpu:latest</div>
-                  <div>ghcr.io/p2nshooter/orchestra-worker-gpu:latest</div>
+                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-core:latest</div>
+                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-worker-cpu:latest</div>
+                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-worker-gpu:latest</div>
                 </div>
               </div>
             </div>
@@ -326,7 +326,7 @@ export default function AdminPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace", lineHeight: 1.9 }}>
                   <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Deploy on each server:</div>
-                  <div style={{ color: "#0284c7" }}>docker pull ghcr.io/p2nshooter/guardian-engine:latest</div>
+                  <div style={{ color: "#0284c7" }}>docker pull ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/guardian-engine:latest</div>
                   <div style={{ color: "#94a3b8", fontSize: 10, marginTop: 4 }}>Set GUARDIAN_CORE_URL + license key in env</div>
                 </div>
                 <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", fontSize: 11, color: "#16a34a" }}>

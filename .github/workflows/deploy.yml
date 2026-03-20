@@ -1,36 +1,20 @@
-name: AXTO Platform — Full Auto Deploy
+# ═══════════════════════════════════════════════════════════════════════════════
+# AXTO Platform — CI/CD Pipeline
+#
+# Two INDEPENDENT pipelines run in parallel on every push to main:
+#   A) Docker Images → GHCR  (guardian-engine, orchestra-core, worker-cpu, worker-gpu)
+#   B) Cloudflare Deploy     (D1 migrations, 48 PDFs → R2, Pages build & deploy, Workers)
+#
+# Products:
+#   1. Guardian AI    = guardian-core (API) + guardian-node (agent) + ClamAV antivirus
+#   2. Orchestra AI   = orchestra-core (API) + worker-cpu + worker-gpu
+#   3. Bundle         = Guardian + Orchestra
+# ═══════════════════════════════════════════════════════════════════════════════
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Products built:
-#   1. 🛡️  Guardian AI    → guardian-engine image (core API + node agent + ClamAV antivirus)
-#   2. ⚡  Orchestra AI   → orchestra-core + orchestra-worker-cpu + orchestra-worker-gpu
-#   3. 📦  Bundle         → Guardian + Orchestra (all 4 images)
-#
-# Pipeline:
-#   1. guardian-engine          → GHCR  (amd64 + arm64)
-#   2. orchestra-core           → GHCR  (amd64 + arm64)
-#   3. orchestra-worker-cpu     → GHCR  (amd64 + arm64)
-#   4. orchestra-worker-gpu     → GHCR  (amd64 + arm64)
-#   5. D1 migrations (0001–0014)→ Cloudflare D1
-#   6. Playbook PDFs (48 files) → Cloudflare R2
-#   7. Sync R2 keys → D1        → Cloudflare D1
-#   8. Secrets sync             → Cloudflare Pages
-#   9. Build dashboard          → next-on-pages
-#  10. Deploy dashboard         → Cloudflare Pages
-#  11. Deploy Workers           → Cloudflare Workers
-#
-# Required GitHub Secrets:
-#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-#   JWT_SECRET, ENCRYPTION_KEY, ADMIN_PASSWORD, RESEND_API_KEY, CRON_SECRET
-#
-# Required GitHub Variable:
-#   NEXT_PUBLIC_APP_URL = https://axto.io
-# ─────────────────────────────────────────────────────────────────────────────
+name: Deploy AXTO Platform
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
@@ -43,22 +27,17 @@ on:
         type: boolean
         default: false
       skip_deploy:
-        description: "Build only — no Cloudflare deploy"
+        description: "Skip Cloudflare deploy"
         type: boolean
         default: false
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 # ═══════════════════════════════════════════════════════════════════════════════
-# JOB 1 — Build & Push Docker Images → GHCR
-# 4 images: guardian-engine, orchestra-core, orchestra-worker-cpu, orchestra-worker-gpu
-# Build tools (gcc, python3-dev) are installed then purged to keep images lean.
+# JOB A — Build & Push all 4 Docker images → GHCR
+# Runs independently from Cloudflare deploy
 # ═══════════════════════════════════════════════════════════════════════════════
 jobs:
   build-docker:
-    name: "🐳 Build ${{ matrix.image }}"
+    name: "🐳 ${{ matrix.image }} → GHCR"
     runs-on: ubuntu-latest
     if: ${{ !inputs.skip_docker }}
     permissions:
@@ -66,32 +45,21 @@ jobs:
       packages: write
 
     strategy:
-      fail-fast: false          # build all 4 even if one fails
+      fail-fast: false   # All 4 images build independently — one failure won't cancel others
       matrix:
         include:
-          # ── Guardian AI: core API + node agent + ClamAV antivirus ──────────
           - image: guardian-engine
             context: ./engine
             file: ./engine/Dockerfile
-            product: "Guardian AI (core + node + ClamAV)"
-
-          # ── Orchestra AI: orchestration core ──────────────────────────────
           - image: orchestra-core
             context: ./orchestra
             file: ./orchestra/Dockerfile
-            product: "Orchestra AI (core)"
-
-          # ── Orchestra AI: CPU worker (cloud AI providers) ─────────────────
           - image: orchestra-worker-cpu
             context: ./orchestra
             file: ./orchestra/Dockerfile.worker-cpu
-            product: "Orchestra AI (CPU worker)"
-
-          # ── Orchestra AI: GPU worker (local inference via Ollama) ──────────
           - image: orchestra-worker-gpu
             context: ./orchestra
             file: ./orchestra/Dockerfile.worker-gpu
-            product: "Orchestra AI (GPU worker)"
 
     steps:
       - name: Checkout
@@ -109,11 +77,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            network=host
 
-      - name: Build & Push — ${{ matrix.image }}
+      - name: Build & Push ${{ matrix.image }}
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
@@ -128,37 +93,27 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
             org.opencontainers.image.title=AXTO ${{ matrix.image }}
-            org.opencontainers.image.description=${{ matrix.product }}
-          # Layer cache — speeds up subsequent builds dramatically
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
-          # Increase build timeout for large images
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
 
       - name: Image summary
         if: github.event_name != 'pull_request'
         run: |
-          echo "### 🐳 ${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Product:** ${{ matrix.product }}" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# JOB 2 — Deploy to Cloudflare (D1 + R2 + Pages + Workers)
-# Runs after docker builds, even if some docker builds fail (always() + conditions)
+# JOB B — Deploy to Cloudflare (D1 + R2 + Pages + Workers)
+# Runs INDEPENDENTLY from Docker builds — not blocked by Docker failures
 # ═══════════════════════════════════════════════════════════════════════════════
   deploy-cloudflare:
     name: "☁️ Cloudflare Deploy"
     runs-on: ubuntu-latest
-    needs: [build-docker]
-    # Run if: not a PR, not skip_deploy, AND docker succeeded or was skipped
+    # INDEPENDENT from Docker — runs on any push to main, regardless of Docker result
     if: |
-      always() &&
-      github.event_name != 'pull_request' &&
       !inputs.skip_deploy &&
-      (needs.build-docker.result == 'success' || needs.build-docker.result == 'skipped')
+      github.event_name != 'pull_request'
     permissions:
       contents: read
       deployments: write
@@ -184,7 +139,7 @@ jobs:
         working-directory: dashboard
         run: npm ci --no-audit --no-fund
 
-      # ── D1 Migrations 0001–0014 ─────────────────────────────────────────
+      # ── D1 Migrations ──────────────────────────────────────────────────
       - name: "🗄️ D1 Migrations"
         working-directory: dashboard
         run: |
@@ -207,14 +162,17 @@ jobs:
             exit 0
           fi
 
+          TOTAL=$(ls "$PDF_DIR"/*.pdf | wc -l)
+          echo "📦 Uploading $TOTAL PDFs to R2 bucket: $BUCKET"
+
           for pdf in "$PDF_DIR"/*.pdf; do
             [ -f "$pdf" ] || continue
             slug="$(basename "${pdf%.pdf}")"
             key="playbooks/${slug}.pdf"
-            echo "  ⬆ $slug → $key"
-            if npx wrangler r2 object put "$BUCKET/$key" \
+            echo "  ⬆ $slug"
+            if npx wrangler r2 object put "${BUCKET}/${key}" \
               --file="$pdf" \
-              --content-type="application/pdf" 2>/dev/null; then
+              --content-type="application/pdf"; then
               UPLOADED=$((UPLOADED+1))
             else
               echo "  ⚠️  Failed: $slug"
@@ -222,11 +180,14 @@ jobs:
             fi
           done
 
-          echo "✅ R2: $UPLOADED uploaded, $FAILED failed"
+          echo ""
+          echo "✅ R2: $UPLOADED/$TOTAL uploaded, $FAILED failed"
           echo "### 📦 R2: $UPLOADED PDFs uploaded" >> $GITHUB_STEP_SUMMARY
+          [ $FAILED -eq 0 ] || echo "### ⚠️ $FAILED PDFs failed to upload" >> $GITHUB_STEP_SUMMARY
 
-      # ── Sync R2 metadata → D1 ──────────────────────────────────────────
-      - name: "🔗 Sync R2 metadata → D1"
+      # ── Sync R2 keys + file sizes → D1 ─────────────────────────────────
+      - name: "🔗 Sync PDF metadata → D1"
+        if: ${{ !inputs.skip_pdfs }}
         working-directory: dashboard
         run: |
           PDF_DIR="../playbooks-pdf"
@@ -238,6 +199,7 @@ jobs:
             slug="$(basename "${pdf%.pdf}")"
             key="playbooks/${slug}.pdf"
             size=$(stat -c%s "$pdf" 2>/dev/null || stat -f%z "$pdf" 2>/dev/null || echo "0")
+
             npx wrangler d1 execute axto-db --remote \
               --command="UPDATE playbooks SET r2_key='${key}', file_size_bytes=${size}, file_format='pdf', updated_at=datetime('now') WHERE slug='${slug}';" \
               2>/dev/null || true
@@ -245,7 +207,7 @@ jobs:
           done
           echo "✅ D1 metadata synced for $COUNT playbooks"
 
-      # ── Cloudflare Pages Secrets ────────────────────────────────────────
+      # ── Sync Secrets → CF Pages ─────────────────────────────────────────
       - name: "🔐 Sync Secrets → CF Pages"
         working-directory: dashboard
         run: |
@@ -267,7 +229,7 @@ jobs:
           sync_secret CRON_SECRET        "${{ secrets.CRON_SECRET }}"
           sync_secret GHCR_OWNER        "${{ github.repository_owner }}"
 
-      # ── Build Next.js Dashboard ─────────────────────────────────────────
+      # ── Build Next.js → Cloudflare Pages ────────────────────────────────
       - name: "🔨 Build Dashboard"
         working-directory: dashboard
         env:
@@ -288,7 +250,7 @@ jobs:
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: main
 
-      # ── Deploy Cloudflare Workers ───────────────────────────────────────
+      # ── Deploy Cloudflare Workers ────────────────────────────────────────
       - name: "⚡ Deploy CF Workers"
         working-directory: cloudflare-workers
         run: |
@@ -307,7 +269,7 @@ jobs:
               || echo "  ⚠️  threat-intel-sync failed (non-fatal)"
           fi
 
-      # ── Final Summary ───────────────────────────────────────────────────
+      # ── Final Summary ────────────────────────────────────────────────────
       - name: "📋 Deploy Summary"
         if: always()
         run: |
@@ -319,41 +281,27 @@ jobs:
           echo "╔══════════════════════════════════════════════════════════════╗"
           echo "║              ✅  AXTO Platform Deploy Complete              ║"
           echo "╠══════════════════════════════════════════════════════════════╣"
-          echo "║  DOCKER IMAGES → GHCR                                      ║"
-          echo "║  🛡️  guardian-engine       (Guardian: core + node + ClamAV) ║"
-          echo "║  ⚡  orchestra-core        (Orchestra: API server)          ║"
-          echo "║  ⚡  orchestra-worker-cpu  (Orchestra: cloud AI worker)     ║"
-          echo "║  ⚡  orchestra-worker-gpu  (Orchestra: local GPU worker)    ║"
-          echo "╠══════════════════════════════════════════════════════════════╣"
           echo "║  CLOUDFLARE                                                 ║"
           echo "║  🗄️  D1 migrations 0001–0014 applied                        ║"
-          echo "║  📦  Playbook PDFs: ${PDF_COUNT} files → R2                    ║"
+          echo "║  📦  Playbook PDFs: ${PDF_COUNT} files → R2 (axto-storage)    ║"
           echo "║  🔐  Secrets synced to CF Pages                             ║"
-          echo "║  ⚡  Cloudflare Workers deployed                             ║"
           echo "║  🌐  Dashboard: ${APP_URL}                    ║"
           echo "╠══════════════════════════════════════════════════════════════╣"
-          echo "║  REGISTRIES                                                 ║"
-          echo "║  ghcr.io/${OWNER}/guardian-engine:latest         ║"
-          echo "║  ghcr.io/${OWNER}/orchestra-core:latest          ║"
-          echo "║  ghcr.io/${OWNER}/orchestra-worker-cpu:latest    ║"
-          echo "║  ghcr.io/${OWNER}/orchestra-worker-gpu:latest    ║"
+          echo "║  DOCKER IMAGES (built separately in parallel)               ║"
+          echo "║  🛡️  guardian-engine  (core + node + ClamAV antivirus)      ║"
+          echo "║  ⚡  orchestra-core   (Orchestra API server)                ║"
+          echo "║  ⚡  orchestra-worker-cpu  (cloud AI worker)                ║"
+          echo "║  ⚡  orchestra-worker-gpu  (local GPU worker)               ║"
+          echo "║  → ghcr.io/${OWNER}/                        ║"
           echo "╚══════════════════════════════════════════════════════════════╝"
 
-          echo "### 🚀 AXTO Platform — Deploy Complete" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ AXTO Platform — Cloudflare Deploy Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### 🐳 Docker Images (GHCR)" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | Product | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|---------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| \`guardian-engine\` | Guardian AI (core + node + ClamAV) | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`orchestra-core\` | Orchestra AI (API server) | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`orchestra-worker-cpu\` | Orchestra AI (cloud worker) | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`orchestra-worker-gpu\` | Orchestra AI (GPU worker) | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### ☁️ Cloudflare" >> $GITHUB_STEP_SUMMARY
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| D1 Migrations (0014) | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| D1 Migrations (0001–0014) | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| R2 Playbook PDFs (${PDF_COUNT} files) | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets → CF Pages | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| Cloudflare Pages Dashboard | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "| Cloudflare Workers | ✅ |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

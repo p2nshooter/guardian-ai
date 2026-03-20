@@ -29,7 +29,7 @@ CREATE TABLE users (
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- ── Magic Links ────────────────────────────────────────────────────────
 CREATE TABLE magic_links (
@@ -40,7 +40,7 @@ CREATE TABLE magic_links (
   used       INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX idx_magic_token ON magic_links(token);
+CREATE INDEX IF NOT EXISTS idx_magic_token ON magic_links(token);
 
 -- ── Clients ────────────────────────────────────────────────────────────
 CREATE TABLE clients (
@@ -53,7 +53,7 @@ CREATE TABLE clients (
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX idx_clients_email ON clients(email);
+CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email);
 
 -- ── License Packages ───────────────────────────────────────────────────
 CREATE TABLE license_packages (
@@ -106,9 +106,9 @@ CREATE TABLE licenses (
   updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
-CREATE INDEX idx_lic_key    ON licenses(license_key);
-CREATE INDEX idx_lic_client ON licenses(client_id);
-CREATE INDEX idx_lic_status ON licenses(status);
+CREATE INDEX IF NOT EXISTS idx_lic_key    ON licenses(license_key);
+CREATE INDEX IF NOT EXISTS idx_lic_client ON licenses(client_id);
+CREATE INDEX IF NOT EXISTS idx_lic_status ON licenses(status);
 
 -- ── License Nodes ──────────────────────────────────────────────────────
 CREATE TABLE license_nodes (
@@ -122,7 +122,7 @@ CREATE TABLE license_nodes (
   last_seen  TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (license_id) REFERENCES licenses(id)
 );
-CREATE INDEX idx_nodes_lic ON license_nodes(license_id);
+CREATE INDEX IF NOT EXISTS idx_nodes_lic ON license_nodes(license_id);
 
 -- ── License Heartbeats ─────────────────────────────────────────────────
 CREATE TABLE license_heartbeats (
@@ -135,7 +135,7 @@ CREATE TABLE license_heartbeats (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (license_id) REFERENCES licenses(id)
 );
-CREATE INDEX idx_hb_lic ON license_heartbeats(license_id);
+CREATE INDEX IF NOT EXISTS idx_hb_lic ON license_heartbeats(license_id);
 
 -- ── Invoices ───────────────────────────────────────────────────────────
 CREATE TABLE invoices (
@@ -152,9 +152,9 @@ CREATE TABLE invoices (
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (client_id) REFERENCES clients(id)
 );
-CREATE INDEX idx_inv_client ON invoices(client_id);
-CREATE INDEX idx_inv_ref    ON invoices(payment_ref);
-CREATE INDEX idx_inv_email  ON invoices(client_email);
+CREATE INDEX IF NOT EXISTS idx_inv_client ON invoices(client_id);
+CREATE INDEX IF NOT EXISTS idx_inv_ref    ON invoices(payment_ref);
+CREATE INDEX IF NOT EXISTS idx_inv_email  ON invoices(client_email);
 
 -- ── Payment Gateways ───────────────────────────────────────────────────
 CREATE TABLE payment_gateways (
@@ -196,7 +196,7 @@ CREATE TABLE site_content (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX idx_content_section ON site_content(section, is_active, sort_order);
+CREATE INDEX IF NOT EXISTS idx_content_section ON site_content(section, is_active, sort_order);
 
 -- ── AutoPost Platform Configs ──────────────────────────────────────────
 CREATE TABLE autopost_platform_configs (
@@ -230,7 +230,7 @@ CREATE TABLE autopost_posts (
   created_at         TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
 );
-CREATE INDEX idx_posts_status ON autopost_posts(status);
+CREATE INDEX IF NOT EXISTS idx_posts_status ON autopost_posts(status);
 
 -- ── AutoPost Schedules ─────────────────────────────────────────────────
 CREATE TABLE autopost_schedules (

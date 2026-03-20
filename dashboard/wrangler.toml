@@ -16,3 +16,7 @@ id      = "9d8210f3e9234464b60553644c631511"
 [[r2_buckets]]
 binding     = "R2"
 bucket_name = "axto-storage"
+
+[vars]
+NEXT_PUBLIC_GHCR_OWNER = "p2nshooter"
+NEXT_PUBLIC_APP_URL    = "https://axto.io"

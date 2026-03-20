@@ -46,9 +46,9 @@ export async function sendWelcomeEmail(params: {
         </div>
         <div style="color:#475569;font-size:12px;margin-top:12px;line-height:1.8">
           <strong style="color:#94a3b8">Docker Registry:</strong><br>
-          Core: <code style="color:#22d3ee">ghcr.io/p2nshooter/orchestra-core:latest</code><br>
-          Worker CPU: <code style="color:#22d3ee">ghcr.io/p2nshooter/orchestra-worker-cpu:latest</code><br>
-          Worker GPU: <code style="color:#22d3ee">ghcr.io/p2nshooter/orchestra-worker-gpu:latest</code><br>
+          Core: <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/orchestra-core:latest</code><br>
+          Worker CPU: <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/orchestra-worker-cpu:latest</code><br>
+          Worker GPU: <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/orchestra-worker-gpu:latest</code><br>
           Console: http://YOUR_SERVER:8080/console · Full docs at ${appUrl}/portal
         </div>
       </div>`
@@ -60,7 +60,7 @@ export async function sendWelcomeEmail(params: {
           <div>3. Run: <code style="color:#22d3ee;background:rgba(34,211,238,0.08);padding:2px 6px;border-radius:4px">docker compose up -d</code></div>
         </div>
         <div style="color:#475569;font-size:12px;margin-top:12px;line-height:1.8">
-          <strong style="color:#94a3b8">Docker Registry:</strong> <code style="color:#22d3ee">ghcr.io/p2nshooter/guardian-engine:latest</code><br>
+          <strong style="color:#94a3b8">Docker Registry:</strong> <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/guardian-engine:latest</code><br>
           Dashboard: http://YOUR_SERVER:8080 · Full docs at ${appUrl}/portal
         </div>
       </div>`;

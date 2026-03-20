@@ -573,7 +573,7 @@ KONFIGURASI PER WORKER:
 DEPLOY WORKER BARU:
 Di docker-compose.yml, duplikat service worker-cpu:
   worker-cpu-2:
-    image: ghcr.io/p2nshooter/orchestra-worker-cpu:latest
+    image: ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-worker-cpu:latest
     environment:
       - WORKER_PROVIDER=groq  # provider berbeda
       - WORKER_CONCURRENCY=10
