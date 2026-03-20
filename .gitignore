@@ -1,0 +1,70 @@
+# ── Build outputs ────────────────────────────────────────────────────
+.next/
+.vercel/
+*.vercel/output/
+dist/
+build/
+out/
+
+# ── Dependencies ─────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Environment & Secrets ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.dev.vars
+*.key
+*.pem
+*.p12
+*.pfx
+
+# ── OS ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Python ──────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# ── Logs ─────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+
+# ── Cloudflare wrangler ──────────────────────────────────────────────
+.wrangler/
+worker-configuration.d.ts
+
+# ── Certs (auto-generated, gitkeep holds dir) ────────────────────────
+certs/*.pem
+certs/*.crt
+certs/*.key
+!certs/.gitkeep
+
+# ── PDFs (large binary, stored in R2) ───────────────────────────────
+# Uncomment to exclude from git (PDFs go to R2 via CI/CD):
+# playbooks-pdf/*.pdf
+# Keep PDFs in git so CI/CD can upload them to R2 automatically
+!playbooks-pdf/.gitkeep
+!playbooks-pdf/BACA-INI.txt
+
+# ── Temp / generated ─────────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+guardian-ai-final-*.zip

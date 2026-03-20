@@ -1,0 +1,34 @@
+# ── Core Framework ───────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+httpx==0.27.0
+structlog==24.1.0
+pydantic==2.7.4
+pydantic-settings==2.3.1
+python-dotenv==1.0.1
+aiofiles==23.2.1
+PyYAML==6.0.1
+tenacity==8.3.0
+websockets==12.0
+psutil==5.9.8
+
+# ── AI Provider SDKs (BYOK — client's own API keys) ─────────────────────────
+openai==1.35.3
+anthropic==0.29.0
+google-generativeai==0.7.2
+
+# ── Database ─────────────────────────────────────────────────────────────────
+aiosqlite==0.20.0
+
+# ── Tier 2: Distributed DB (PostgreSQL + Redis) ─────────────────────────────
+asyncpg==0.29.0
+redis[hiredis]==5.0.8
+
+# ── Tier 2: PDF Compliance Reports ──────────────────────────────────────────
+reportlab==4.2.2
+
+# ── Tier 2: mTLS Node Encryption ────────────────────────────────────────────
+cryptography==42.0.8
+
+# ── ML Anomaly Detection (lightweight, no torch needed) ─────────────────────
+numpy==1.26.4

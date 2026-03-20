@@ -1,0 +1,36 @@
+# AXTO Orchestra — AI eXecution & Tools Orchestration | Config Template
+# 1. Isi license_key dari Client Portal (https://axto.io/portal)
+# 2. Tambahkan minimal 1 AI vendor key (BYOK — key Anda, di server Anda)
+# 3. Jalankan: docker compose -f orchestra-compose.yml up -d
+orchestra:
+  license_key: "ORCH-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  console_password: "CHANGE_ME_STRONG_PASSWORD"
+  worker_token: "CHANGE_ME_WORKER_SECRET_TOKEN"
+
+  # ── BYOK: AI Provider Keys (tinggal di server Anda, tidak keluar) ─────
+  ai_pool:
+    default_routing: cost   # cost | latency | quality | load | failover | custom
+    fallback: true
+    vendors:
+      - provider: groq
+        api_key: "gsk_REPLACE_ME"
+        model: "llama-3.1-8b-instant"
+      - provider: deepseek
+        api_key: "sk-REPLACE_ME"
+        model: "deepseek-chat"
+      # - provider: openai
+      #   api_key: "sk-REPLACE_ME"
+      # - provider: anthropic
+      #   api_key: "sk-ant-REPLACE_ME"
+      # - provider: ollama
+      #   base_url: "http://localhost:11434"
+      #   model: "llama3"
+      #   cost_per_1k_tokens: 0
+
+  autoscaler:
+    enabled: false
+    threshold: 20
+    max_cpu_workers: 10
+    max_gpu_workers: 4
+    scale_down_delay: 300

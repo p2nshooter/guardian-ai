@@ -1,0 +1,33 @@
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.source="https://github.com/p2nshooter/guardian-ai"
+LABEL org.opencontainers.image.title="AXTO Orchestra Worker CPU"
+LABEL org.opencontainers.image.description="AXTO Orchestra — CPU Worker (Cloud AI Provider)"
+LABEL org.opencontainers.image.licenses="Commercial"
+
+# Build tools needed for: psutil, uvloop
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc g++ python3-dev libssl-dev libffi-dev \
+    curl procps \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY orchestra_worker/requirements.txt ./requirements.txt
+
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt \
+ && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev \
+ && apt-get autoremove -y \
+ && rm -rf /var/lib/apt/lists/* /root/.cache/pip
+
+COPY orchestra_worker/ ./orchestra_worker/
+COPY orchestra_core/ ./orchestra_core/
+
+RUN mkdir -p /app/data /app/logs
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://${ORCHESTRA_CORE_URL:-http://orchestra-core:8080}/health || exit 1
+
+ENV WORKER_TYPE=cpu
+CMD ["python", "-m", "orchestra_worker.worker_cpu"]

@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orchestra Core — Local Console</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050508;--surface:#09090f;--card:#0e0e18;--card2:#13131f;
+  --border:rgba(99,102,241,.13);--border2:rgba(99,102,241,.28);
+  --text:#e2e2f0;--text2:rgba(226,226,240,.55);--text3:rgba(226,226,240,.2);
+  --primary:#6366f1;--primary2:#818cf8;--primary3:#c7d2fe;
+  --green:#22d3a8;--green2:rgba(34,211,168,.12);
+  --amber:#fbbf24;--amber2:rgba(251,191,36,.12);
+  --red:#f87171;--red2:rgba(248,113,113,.12);
+  --cyan:#38bdf8;--cyan2:rgba(56,189,248,.12);
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+  --sidebar:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+/* ── Login ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;background-image:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(99,102,241,.18) 0%,transparent 70%)}
+.login-box{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:40px;width:360px;text-align:center}
+.login-logo{font-size:2.4rem;margin-bottom:8px}
+.login-title{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.login-sub{font-size:.78rem;color:var(--text2);margin-bottom:28px;font-family:var(--mono)}
+.login-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--mono);font-size:.85rem;outline:none;margin-bottom:12px;transition:border .2s}
+.login-input:focus{border-color:var(--primary)}
+.login-btn{width:100%;background:var(--primary);border:none;border-radius:8px;padding:12px;color:#fff;font-family:var(--sans);font-weight:700;font-size:.9rem;cursor:pointer;transition:opacity .2s}
+.login-btn:hover{opacity:.88}
+.login-err{color:var(--red);font-size:.78rem;margin-top:8px;min-height:18px}
+
+/* ── Layout ── */
+#app{display:none;height:100vh;overflow:hidden}
+.layout{display:flex;height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;flex-shrink:0}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.sb-brand{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.sb-logo{display:flex;align-items:center;gap:10px}
+.sb-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--primary),#38bdf8);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-title{font-size:.88rem;font-weight:800;line-height:1.1}
+.sb-sub{font-size:.62rem;color:var(--primary2);font-family:var(--mono);letter-spacing:.06em}
+.sb-section{padding:14px 10px 4px}
+.sb-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);padding:0 6px 6px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:.8rem;color:var(--text2);transition:all .15s;margin-bottom:2px;position:relative}
+.nav-item:hover{background:rgba(99,102,241,.08);color:var(--text)}
+.nav-item.active{background:rgba(99,102,241,.14);color:var(--primary2);border:1px solid var(--border)}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:20px;font-size:.58rem;padding:1px 5px;font-weight:700}
+.nav-badge.green{background:var(--green);color:#000}
+.nav-badge.amber{background:var(--amber);color:#000}
+.sb-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.sb-status{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--text2)}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse-g 2s ease-in-out infinite}
+@keyframes pulse-g{0%,100%{box-shadow:0 0 0 0 rgba(34,211,168,.4)}50%{box-shadow:0 0 0 5px rgba(34,211,168,0)}}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.main::-webkit-scrollbar{width:6px}
+.main::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.topbar{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);position:sticky;top:0;z-index:10}
+.topbar-title{font-size:1rem;font-weight:700}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.page{display:none;padding:24px;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.card2{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.card-title{font-size:.82rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── Stat cards ── */
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.stat-label{font-size:.68rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;font-weight:600}
+.stat-value{font-size:1.9rem;font-weight:800;font-family:var(--mono);color:var(--primary2)}
+.stat-value.green{color:var(--green)}
+.stat-value.amber{color:var(--amber)}
+.stat-value.red{color:var(--red)}
+.stat-value.cyan{color:var(--cyan)}
+.stat-sub{font-size:.68rem;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#5254d4}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-outline:hover{background:rgba(99,102,241,.08);color:var(--text)}
+.btn-danger{background:var(--red2);border:1px solid var(--red);color:var(--red)}
+.btn-danger:hover{background:rgba(248,113,113,.2)}
+.btn-success{background:var(--green2);border:1px solid var(--green);color:var(--green)}
+.btn-sm{padding:5px 10px;font-size:.72rem}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--card2);padding:9px 12px;text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;font-size:.78rem;border-bottom:1px solid rgba(99,102,241,.06);font-family:var(--mono)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(99,102,241,.04)}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;font-family:var(--mono)}
+.badge-green{background:var(--green2);color:var(--green);border:1px solid rgba(34,211,168,.25)}
+.badge-red{background:var(--red2);color:var(--red);border:1px solid rgba(248,113,113,.25)}
+.badge-amber{background:var(--amber2);color:var(--amber);border:1px solid rgba(251,191,36,.25)}
+.badge-blue{background:var(--cyan2);color:var(--cyan);border:1px solid rgba(56,189,248,.25)}
+.badge-purple{background:rgba(99,102,241,.12);color:var(--primary2);border:1px solid var(--border2)}
+
+/* ── Forms ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:.7rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.form-input,.form-select{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:.82rem;outline:none;transition:border .2s;width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--primary)}
+.form-select option{background:var(--surface)}
+.form-full{grid-column:1/-1}
+
+/* ── Log terminal ── */
+.terminal{background:#020205;border:1px solid var(--border);border-radius:10px;padding:14px;font-family:var(--mono);font-size:.72rem;max-height:280px;overflow-y:auto;line-height:1.9;color:var(--text2)}
+.terminal::-webkit-scrollbar{width:4px}
+.terminal::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.log-time{color:var(--text3)}
+.log-ok{color:var(--green)}
+.log-warn{color:var(--amber)}
+.log-err{color:var(--red)}
+.log-info{color:var(--cyan)}
+
+/* ── Meter ── */
+.meter-wrap{margin-bottom:10px}
+.meter-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text2);margin-bottom:5px}
+.meter-bar{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.meter-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--primary),var(--cyan));transition:width .6s ease}
+.meter-fill.amber{background:linear-gradient(90deg,var(--amber),#f97316)}
+.meter-fill.red{background:linear-gradient(90deg,var(--red),#dc2626)}
+
+/* ── Section header ── */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:1rem;font-weight:700}
+.section-sub{font-size:.75rem;color:var(--text2)}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:10px 16px;font-size:.8rem;opacity:0;transform:translateY(10px);transition:all .3s;z-index:9999;max-width:320px}
+#toast.show{opacity:1;transform:none}
+
+/* ── Routing mode selector ── */
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mode-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:all .2s;text-align:center}
+.mode-card:hover{border-color:var(--border2)}
+.mode-card.selected{border-color:var(--primary);background:rgba(99,102,241,.1)}
+.mode-icon{font-size:1.4rem;margin-bottom:6px}
+.mode-name{font-size:.78rem;font-weight:700;margin-bottom:2px}
+.mode-desc{font-size:.65rem;color:var(--text2)}
+
+/* ── License section ── */
+.license-block{background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:20px}
+.lic-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.lic-row:last-child{border-bottom:none}
+.lic-key{font-size:.72rem;color:var(--text2);font-family:var(--mono)}
+.lic-val{font-size:.78rem;font-weight:700;font-family:var(--mono)}
+
+/* ── Responsive ── */
+@media(max-width:900px){.grid-4{grid-template-columns:1fr 1fr}.grid-3{grid-template-columns:1fr 1fr}.mode-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.sidebar{display:none}.grid-2{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+
+/* ── Toggle Switch ── */
+.toggle-switch{position:relative;display:inline-block;width:42px;height:22px}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:22px;cursor:pointer;transition:.3s;border:1px solid var(--border2)}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--text3);border-radius:50%;transition:.3s}
+input:checked + .toggle-slider{background:var(--primary)}
+input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff}
+/* ── GPU Cards ── */
+.gpu-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;overflow:hidden;transition:border-color .3s}
+.gpu-hot{border-color:rgba(248,113,113,.55)!important;box-shadow:0 0 16px rgba(248,113,113,.08)}
+.gpu-warn{border-color:rgba(251,191,36,.45)!important}
+.gpu-ok{border-color:rgba(34,211,168,.22)!important}
+.thermal-indicator{position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 12px 12px 0;transition:background .3s}
+.ti-ok{background:var(--green)}.ti-warn{background:var(--amber)}.ti-hot{background:var(--orange,#fb923c)}.ti-crit{background:var(--red);animation:pulse-g 1.2s infinite}
+.gpu-temp{font-size:1.4rem;font-weight:800;font-family:var(--mono)}
+.tc-ok{color:var(--green)}.tc-warn{color:var(--amber)}.tc-hot{color:#fb923c}.tc-crit{color:var(--red)}
+.vb-nvidia{background:rgba(118,185,0,.12);color:#76b900;border:1px solid rgba(118,185,0,.3)}
+.vb-amd{background:rgba(237,28,36,.12);color:#ed1c24;border:1px solid rgba(237,28,36,.3)}
+.vb-intel{background:rgba(0,120,212,.12);color:#0078d4;border:1px solid rgba(0,120,212,.3)}
+.vb-apple{background:rgba(255,255,255,.08);color:#d1d5db;border:1px solid rgba(255,255,255,.15)}
+.vb-cpu,.vb-auto{background:rgba(99,102,241,.12);color:var(--primary2);border:1px solid var(--border2)}
+.vbadge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:.62rem;font-weight:700;font-family:var(--mono)}
+/* ── Chat ── */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 230px);max-height:600px}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.chat-bubble{max-width:84%;padding:10px 14px;border-radius:12px;font-size:.8rem;line-height:1.7;word-break:break-word;white-space:pre-wrap}
+.chat-user{background:rgba(99,102,241,.15);border:1px solid var(--border2);align-self:flex-end}
+.chat-ai{background:var(--card2);border:1px solid var(--border);align-self:flex-start}
+.chat-sys-msg{background:rgba(34,211,168,.06);border:1px solid rgba(34,211,168,.15);align-self:center;color:var(--green);font-size:.72rem;max-width:95%;text-align:center;padding:7px 14px;border-radius:8px}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--sans);font-size:.82rem;outline:none;resize:none;max-height:120px;transition:border .2s;line-height:1.6}
+.chat-input:focus{border-color:var(--primary)}
+/* ── Form textarea ── */
+.form-textarea{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:.8rem;outline:none;transition:border .2s;width:100%;resize:vertical;line-height:1.6}
+.form-textarea:focus{border-color:var(--primary)}
+@keyframes pulse-r{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}50%{box-shadow:0 0 0 5px rgba(248,113,113,0)}}
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🎼</div>
+    <div class="login-title">Orchestra Core</div>
+    <div class="login-sub">LOCAL CONSOLE v2.0.0 · port 7890</div>
+    <div id="login-company" style="font-size:.75rem;color:var(--text2);margin-bottom:6px">Loading...</div>
+    <input id="pw-input" class="login-input" type="password" placeholder="Console password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Access Console</button>
+    <div class="login-err" id="login-err"></div>
+    <div style="margin-top:16px;font-size:.65rem;color:var(--text3);font-family:var(--mono)">Unit ID: <span id="unit-id-login">loading...</span></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo">
+      <div class="sb-icon">🎼</div>
+      <div><div class="sb-title" id="sb-brand-name">Orchestra</div><div class="sb-sub">CORE ENGINE</div></div>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Overview</div>
+    <div class="nav-item active" onclick="go('dashboard',this)"><span class="nav-icon">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="go('logs',this)"><span class="nav-icon">📟</span>Live Logs</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Infrastructure</div>
+    <div class="nav-item" onclick="go('nodes',this)"><span class="nav-icon">🔵</span>Nodes</div>
+    <div class="nav-item" onclick="go('workers',this)"><span class="nav-icon">⚙️</span>Workers</div>
+    <div class="nav-item" onclick="go('routing',this)"><span class="nav-icon">🔀</span>Routing Rules</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">GPU Management</div>
+    <div class="nav-item" onclick="go('gpu',this)"><span class="nav-icon">🖥️</span>GPU Pool <span class="nav-badge amber" id="sb-gpu-hot" style="background:var(--amber);color:#000;border-radius:20px;font-size:.58rem;padding:1px 6px;font-weight:700;margin-left:auto">0🔥</span></div>
+    <div class="nav-item" onclick="go('autoscale',this)"><span class="nav-icon">⚡</span>Auto-Scale</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">AI Operations</div>
+    <div class="nav-item" onclick="go('chat',this)"><span class="nav-icon">💬</span>Local Chat</div>
+    <div class="nav-item" onclick="go('multiai',this)"><span class="nav-icon">🔌</span>Multi-AI Tester</div>
+    <div class="nav-item" onclick="go('monitor',this)"><span class="nav-icon">💻</span>Server Monitor</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Operations</div>
+    <div class="nav-item" onclick="go('queue',this)"><span class="nav-icon">📋</span>Task Queue <span class="nav-badge amber" id="sb-queue-count">0</span></div>
+    <div class="nav-item" onclick="go('history',this)"><span class="nav-icon">🕒</span>Job History</div>
+    <div class="nav-item" onclick="go('cost',this)"><span class="nav-icon">💰</span>Cost Tracker</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Security</div>
+    <div class="nav-item" onclick="go('vault',this)"><span class="nav-icon">🔐</span>Credential Vault</div>
+    <div class="nav-item" onclick="go('hardening',this)"><span class="nav-icon">🛡️</span>Hardening</div>
+    <div class="nav-item" onclick="go('license',this)"><span class="nav-icon">🔑</span>License</div>
+  </div>
+
+  <div class="sb-footer">
+    <div class="sb-status">
+      <div class="sb-dot" id="sb-dot"></div>
+      <div>
+        <div id="sb-status-text" style="font-weight:700;color:var(--text)">Checking...</div>
+        <div style="font-family:var(--mono);font-size:.6rem" id="sb-version">v2.0.0</div>
+        <div id="sb-company" style="font-family:var(--mono);font-size:.56rem;color:var(--text3);margin-top:2px">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+<div class="topbar">
+  <div class="topbar-title" id="topbar-title">Dashboard</div>
+  <div class="topbar-actions">
+    <span style="font-size:.68rem;color:var(--text2);font-family:var(--mono);background:var(--card2);border:1px solid var(--border2);border-radius:20px;padding:3px 10px" id="topbar-tier">TRIAL</span>
+    <span id="topbar-expires" style="font-size:.68rem;font-family:var(--mono);background:var(--card2);border:1px solid var(--border2);border-radius:20px;padding:3px 10px;color:var(--amber)">—</span>
+    <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ Refresh</button>
+    <button class="btn btn-danger btn-sm" onclick="doLogout()">⏻ Logout</button>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="page active" id="page-dashboard">
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">Nodes Online</div><div class="stat-value green" id="stat-nodes">—</div><div class="stat-sub" id="stat-nodes-sub">—</div></div>
+    <div class="stat-card"><div class="stat-label">Workers Active</div><div class="stat-value cyan" id="stat-workers">—</div><div class="stat-sub" id="stat-workers-sub">CPU + GPU</div></div>
+    <div class="stat-card"><div class="stat-label">Jobs Today</div><div class="stat-value" id="stat-jobs">—</div><div class="stat-sub" id="stat-jobs-sub">—</div></div>
+    <div class="stat-card"><div class="stat-label">Cost Today</div><div class="stat-value amber" id="stat-cost">—</div><div class="stat-sub">USD</div></div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-title">⚙️ Worker Load</div>
+      <div id="worker-load-meters"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📡 System Health</div>
+      <div id="system-health-list"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Recent Jobs</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Job ID</th><th>Type</th><th>Provider</th><th>Worker</th><th>Status</th><th>Tokens</th><th>Latency</th><th>Cost</th></tr></thead>
+      <tbody id="recent-jobs-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══ LIVE LOGS ═══ -->
+<div class="page" id="page-logs">
+  <div class="section-hdr">
+    <div><div class="section-title">📟 Live Logs</div><div class="section-sub">Real-time Orchestra Core output</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="clearLogs()">🗑 Clear</button>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer"><input type="checkbox" id="autoscroll-chk" checked style="margin-right:4px">Autoscroll</label>
+    </div>
+  </div>
+  <div class="terminal" id="log-terminal" style="max-height:calc(100vh - 200px)">
+    <div><span class="log-time">[startup] </span><span class="log-ok">Orchestra Core v2.0.0 initialized</span></div>
+    <div><span class="log-time">[startup] </span><span class="log-info">Waiting for connection...</span></div>
+  </div>
+</div>
+
+<!-- ═══ NODES ═══ -->
+<div class="page" id="page-nodes">
+  <div class="section-hdr">
+    <div><div class="section-title">🔵 Nodes</div><div class="section-sub">Register and manage infrastructure nodes</div></div>
+    <button class="btn btn-primary btn-sm" onclick="togglePanel('add-node-panel')">+ Register Node</button>
+  </div>
+
+  <div class="card2" id="add-node-panel" style="display:none;margin-bottom:16px">
+    <div class="card-title">➕ Register New Node</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Node Name</label><input class="form-input" id="n-name" placeholder="Node Alpha"></div>
+      <div class="form-group"><label class="form-label">Endpoint (IP:Port)</label><input class="form-input" id="n-endpoint" placeholder="192.168.1.10:7890"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-select" id="n-type"><option value="cpu">CPU</option><option value="gpu">GPU</option><option value="hybrid">Hybrid</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Max Workers</label><input class="form-input" id="n-maxw" type="number" value="10"></div>
+      <div class="form-group"><label class="form-label">Region (optional)</label><input class="form-input" id="n-region" placeholder="us-east-1"></div>
+    </div>
+    <button class="btn btn-primary" onclick="registerNode()">Register Node</button>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Node ID</th><th>Name</th><th>Endpoint</th><th>Type</th><th>CPU%</th><th>Mem%</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead>
+    <tbody id="nodes-tbody"><tr><td colspan="9" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+  </table></div>
+</div>
+
+<!-- ═══ WORKERS ═══ -->
+<div class="page" id="page-workers">
+  <div class="section-hdr">
+    <div><div class="section-title">⚙️ Workers</div><div class="section-sub">Deploy and manage CPU/GPU worker pool</div></div>
+    <button class="btn btn-primary btn-sm" onclick="togglePanel('add-worker-panel')">+ Deploy Worker</button>
+  </div>
+
+  <div class="card2" id="add-worker-panel" style="display:none;margin-bottom:16px">
+    <div class="card-title">🚀 Deploy New Worker</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Worker Type</label>
+        <select class="form-select" id="w-type" onchange="toggleGPUFields()">
+          <option value="cpu">CPU Worker</option>
+          <option value="gpu">GPU Worker</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Node</label>
+        <select class="form-select" id="w-node"><option value="">Select node...</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">AI Provider</label>
+        <select class="form-select" id="w-provider" onchange="updateModelOptions()">
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="gemini">Google Gemini</option>
+          <option value="groq">Groq</option>
+          <option value="together">Together AI</option>
+          <option value="ollama">Ollama (Local)</option>
+          <option value="custom">Custom OpenAI-compatible</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Model</label>
+        <select class="form-select" id="w-model"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Concurrency</label><input class="form-input" id="w-concurrency" type="number" value="5" min="1" max="50"></div>
+      <div class="form-group"><label class="form-label">Timeout (sec)</label><input class="form-input" id="w-timeout" type="number" value="60"></div>
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-select" id="w-priority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select>
+      </div>
+    </div>
+    <div class="form-row" id="gpu-fields" style="display:none">
+      <div class="form-group"><label class="form-label">GPU VRAM (GB)</label><input class="form-input" id="w-vram" type="number" placeholder="24"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group form-full"><label class="form-label">Label (optional)</label><input class="form-input" id="w-label" placeholder="e.g. Claude Haiku on Node Alpha"></div>
+    </div>
+    <button class="btn btn-primary" onclick="deployWorker()">Deploy Worker</button>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">CPU Workers</div><div class="stat-value cyan" id="cpu-worker-count">—</div><div class="stat-sub" id="cpu-worker-limit">— / — licensed</div></div>
+    <div class="stat-card"><div class="stat-label">GPU Workers</div><div class="stat-value green" id="gpu-worker-count">—</div><div class="stat-sub" id="gpu-worker-limit">— / — licensed</div></div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Worker ID</th><th>Type</th><th>Provider</th><th>Model</th><th>Node</th><th>Conc.</th><th>Load</th><th>Tasks</th><th>Avg Lat</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="workers-tbody"><tr><td colspan="11" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+  </table></div>
+</div>
+
+<!-- ═══ ROUTING ═══ -->
+<div class="page" id="page-routing">
+  <div class="section-hdr">
+    <div><div class="section-title">🔀 Routing Rules</div><div class="section-sub">Configure how tasks are dispatched to workers</div></div>
+    <button class="btn btn-primary btn-sm" onclick="saveRoutingRules()">💾 Save Rules</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-title">⚡ Routing Mode</div>
+    <div class="mode-grid" id="mode-grid">
+      <div class="mode-card selected" data-mode="smart_balance" onclick="selectMode('smart_balance',this)">
+        <div class="mode-icon">⚡</div><div class="mode-name">Smart Balance</div><div class="mode-desc">Auto-select best worker by load, latency & cost</div>
+      </div>
+      <div class="mode-card" data-mode="cost_first" onclick="selectMode('cost_first',this)">
+        <div class="mode-icon">💰</div><div class="mode-name">Cost First</div><div class="mode-desc">Always route to cheapest available provider</div>
+      </div>
+      <div class="mode-card" data-mode="quality_first" onclick="selectMode('quality_first',this)">
+        <div class="mode-icon">🏆</div><div class="mode-name">Quality First</div><div class="mode-desc">Always use highest-tier model available</div>
+      </div>
+      <div class="mode-card" data-mode="local_first" onclick="selectMode('local_first',this)">
+        <div class="mode-icon">🏠</div><div class="mode-name">Local First</div><div class="mode-desc">Prioritize Ollama local models, fallback to cloud</div>
+      </div>
+      <div class="mode-card" data-mode="failover" onclick="selectMode('failover',this)">
+        <div class="mode-icon">🔄</div><div class="mode-name">Failover Chain</div><div class="mode-desc">Use providers in configured fallback order</div>
+      </div>
+      <div class="mode-card" data-mode="round_robin" onclick="selectMode('round_robin',this)">
+        <div class="mode-icon">🔁</div><div class="mode-name">Round Robin</div><div class="mode-desc">Distribute evenly across all active workers</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🚫 Provider Blacklist</div>
+      <div style="font-size:.75rem;color:var(--text2);margin-bottom:10px">Providers in this list will never receive jobs</div>
+      <div id="blacklist-items" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" id="blacklist-add" style="flex:1">
+          <option value="">Add provider...</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="gemini">Gemini</option>
+          <option value="groq">Groq</option>
+          <option value="together">Together AI</option>
+          <option value="ollama">Ollama</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="addToBlacklist()">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">💸 Budget Alerts</div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Daily Budget (USD)</label>
+        <input class="form-input" id="budget-daily" type="number" placeholder="50">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monthly Budget (USD)</label>
+        <input class="form-input" id="budget-monthly" type="number" placeholder="1000">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TASK QUEUE ═══ -->
+<div class="page" id="page-queue">
+  <div class="section-hdr">
+    <div><div class="section-title">📋 Task Queue</div><div class="section-sub">Live job queue — dispatched to workers in real-time</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" id="pause-btn" onclick="toggleQueuePause()">⏸ Pause Queue</button>
+      <button class="btn btn-primary btn-sm" onclick="openNewJobPanel()">+ New Test Job</button>
+    </div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">Queued</div><div class="stat-value amber" id="q-queued">0</div></div>
+    <div class="stat-card"><div class="stat-label">Running</div><div class="stat-value cyan" id="q-active">0</div></div>
+    <div class="stat-card"><div class="stat-label">Done Today</div><div class="stat-value green" id="q-done">0</div></div>
+    <div class="stat-card"><div class="stat-label">Errors</div><div class="stat-value red" id="q-errors">0</div></div>
+  </div>
+
+  <div class="card2" id="new-job-panel" style="display:none;margin-bottom:16px">
+    <div class="card-title">🧪 Submit Test Job</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Task Type</label>
+        <select class="form-select" id="j-type"><option value="chat">Chat</option><option value="completion">Completion</option><option value="embed">Embed</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-select" id="j-priority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px"><label class="form-label">Message</label>
+      <input class="form-input" id="j-message" placeholder="Hello, what can you do?" value="Hello, respond in exactly 5 words.">
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="submitTestJob()">Submit Job</button>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Job ID</th><th>Type</th><th>Provider</th><th>Worker</th><th>Priority</th><th>Status</th><th>Tokens</th><th>Latency</th><th>Cost</th><th>Actions</th></tr></thead>
+    <tbody id="queue-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3)">Queue is empty</td></tr></tbody>
+  </table></div>
+</div>
+
+
+<!-- ═══ SERVER MONITOR ═══ -->
+<div class="page" id="page-monitor">
+  <div class="section-hdr">
+    <div><div class="section-title">💻 Server Monitor</div><div class="section-sub">Real-time resources across all nodes</div></div>
+    <button class="btn btn-outline btn-sm" onclick="loadMonitor()">↻ Refresh</button>
+  </div>
+  <div id="monitor-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    <div style="color:var(--text3);font-size:.82rem;padding:20px">Loading...</div>
+  </div>
+</div>
+
+<!-- ═══ GPU POOL ═══ -->
+<div class="page" id="page-gpu">
+  <div class="section-hdr">
+    <div><div class="section-title">🖥️ GPU Pool Manager</div><div class="section-sub">Monitor, route, scale GPU workers — license-enforced</div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="gpu-lic-badge" style="font-size:.7rem;font-family:var(--mono);color:var(--text2)">0/0 GPU</span>
+      <button class="btn btn-outline btn-sm" onclick="loadGPUPool()">↻</button>
+      <button class="btn btn-primary btn-sm" onclick="togglePanel('add-gpu-panel')">+ Add GPU Worker</button>
+    </div>
+  </div>
+  <div class="card2" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text2);margin-bottom:5px">
+          <span>GPU Workers Used</span><span id="gpu-bar-lbl" style="font-weight:700;color:var(--primary2)">0/0</span>
+        </div>
+        <div class="meter-bar" style="height:10px"><div class="meter-fill" id="gpu-lic-bar" style="width:0%"></div></div>
+        <div style="font-size:.64rem;color:var(--text3);margin-top:5px">💡 Swap GPUs freely — only total count vs license limit matters. GPU A hot → swap to GPU D = fine.</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:.62rem;color:var(--text3)">License GPU Max</div>
+        <div id="gpu-lim-val" style="font-size:2rem;font-weight:800;color:var(--cyan);font-family:var(--mono)">—</div>
+      </div>
+    </div>
+  </div>
+  <div class="card2" id="add-gpu-panel" style="display:none;margin-bottom:14px;border-color:rgba(56,189,248,.25)">
+    <div class="card-title">🖥️ Add GPU Worker</div>
+    <div id="gpu-lim-warn" style="display:none;background:var(--red2);border:1px solid var(--red);border-radius:8px;padding:10px;font-size:.78rem;color:var(--red);margin-bottom:10px">⚠️ GPU license limit reached. Upgrade your package to add more.</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Node</label><select class="form-select" id="gpu-add-node"><option value="">Select node...</option></select></div>
+      <div class="form-group"><label class="form-label">GPU Vendor</label>
+        <select class="form-select" id="gpu-add-vendor">
+          <option value="auto">🔍 Auto-Detect</option>
+          <option value="nvidia">🟢 NVIDIA (CUDA)</option>
+          <option value="amd">🔴 AMD (ROCm)</option>
+          <option value="intel">🔵 Intel Arc / Xe</option>
+          <option value="apple">⬜ Apple Metal (M-series)</option>
+          <option value="cpu_fallback">⚙️ CPU Fallback (no GPU)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Provider</label>
+        <select class="form-select" id="gpu-add-prov" onchange="updateGPUModels()">
+          <option value="ollama">Ollama (Local)</option><option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option><option value="together">Together AI</option>
+          <option value="groq">Groq</option><option value="custom">Custom OpenAI-compatible</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Model</label><select class="form-select" id="gpu-add-model"></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">VRAM (GB)</label><input class="form-input" id="gpu-add-vram" type="number" placeholder="24" min="1"></div>
+      <div class="form-group"><label class="form-label">Concurrency</label><input class="form-input" id="gpu-add-conc" type="number" value="2" min="1" max="32"></div>
+      <div class="form-group"><label class="form-label">Thermal Alert (°C)</label><input class="form-input" id="gpu-add-therm" type="number" value="80" min="50" max="95"></div>
+    </div>
+    <div class="form-row"><div class="form-group form-full"><label class="form-label">Label / GPU Name</label><input class="form-input" id="gpu-add-lbl" placeholder="e.g. RTX 4090 — Node Alpha"></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="addGPUWorker()">🚀 Add GPU Worker</button>
+      <button class="btn btn-outline" onclick="runGPUDetect()">🔍 Auto-Detect GPUs on Node</button>
+    </div>
+    <div id="gpu-detect-result" style="margin-top:10px;font-size:.75rem;font-family:var(--mono);color:var(--cyan)"></div>
+  </div>
+  <div id="gpu-cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:12px;margin-bottom:14px">
+    <div style="color:var(--text3);font-size:.82rem;padding:20px">No GPU workers deployed.</div>
+  </div>
+  <div class="card"><div class="card-title">📊 GPU Pool Summary</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>GPU ID</th><th>Vendor</th><th>Label</th><th>Node</th><th>Temp</th><th>VRAM Used</th><th>Load</th><th>Tasks</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="gpu-tbl"><tr><td colspan="10" style="text-align:center;color:var(--text3)">No GPU workers</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══ AUTO-SCALE ═══ -->
+<div class="page" id="page-autoscale">
+  <div class="section-hdr">
+    <div><div class="section-title">⚡ Auto-Scale & Thermal Management</div><div class="section-sub">Automatic GPU scaling + thermal rerouting — always license-enforced</div></div>
+    <button class="btn btn-primary btn-sm" onclick="saveASConfig()">💾 Save Config</button>
+  </div>
+  <div class="grid-4" style="margin-bottom:14px">
+    <div class="stat-card"><div class="stat-label">Auto-Scale</div><div class="stat-value" id="as-status" style="font-size:1.2rem;color:var(--green)">OFF</div><div class="stat-sub" id="as-sub">disabled</div></div>
+    <div class="stat-card"><div class="stat-label">Scale Events (24h)</div><div class="stat-value" style="color:var(--cyan)" id="as-events">0</div></div>
+    <div class="stat-card"><div class="stat-label">Thermal Reroutes (24h)</div><div class="stat-value" style="color:var(--amber)" id="as-reroutes">0</div></div>
+    <div class="stat-card"><div class="stat-label">GPU Slots Remaining</div><div class="stat-value" style="color:var(--green)" id="as-remain">—</div><div class="stat-sub">before cap</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">🎚️ Manual Scale Control</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:.78rem;color:var(--text2)">GPU Workers:</span>
+      <button class="btn btn-danger btn-sm" onclick="manualScale(-1)">− Remove 1 GPU</button>
+      <span id="manual-gpu-n" style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--cyan);padding:0 12px">0</span>
+      <button class="btn btn-success btn-sm" onclick="manualScale(1)">+ Add 1 GPU</button>
+      <span id="manual-lim-note" style="font-size:.68rem;color:var(--text3);font-family:var(--mono)">license: 0 GPU max</span>
+    </div>
+    <div style="font-size:.72rem;color:var(--text2);margin-top:10px;padding:8px 12px;background:var(--card2);border-radius:6px;font-family:var(--mono)">
+      ✅ Swap GPU A → GPU D is always OK — total active count is what is checked against your license.
+    </div>
+  </div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">⚡ Auto Scale-Up / Scale-Down Rules</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 13px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">
+        <div><div style="font-weight:700;font-size:.82rem">Auto-Scale Enabled</div><div style="font-size:.68rem;color:var(--text2)">Add/remove GPU workers automatically by load</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="as-enabled" onchange="toggleAS(this)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Scale-Up Trigger — Avg Load (%)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="range" id="as-up" min="30" max="95" value="75" oninput="document.getElementById('as-up-v').textContent=this.value+'%'" style="flex:1;accent-color:var(--primary)">
+          <span id="as-up-v" style="font-family:var(--mono);font-size:.8rem;color:var(--primary2);width:36px">75%</span>
+        </div>
+        <div style="font-size:.63rem;color:var(--text3);margin-top:3px">Add 1 GPU worker when avg load &gt; this — only if license slots remain</div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">Scale-Down Trigger — Avg Load (%)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="range" id="as-down" min="5" max="50" value="20" oninput="document.getElementById('as-down-v').textContent=this.value+'%'" style="flex:1;accent-color:var(--cyan)">
+          <span id="as-down-v" style="font-family:var(--mono);font-size:.8rem;color:var(--cyan);width:36px">20%</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Min GPU Workers</label><input class="form-input" id="as-min" type="number" value="1" min="0"></div>
+        <div class="form-group"><label class="form-label">Cooldown (sec)</label><input class="form-input" id="as-cool" type="number" value="120" min="30"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Clone Template — New workers from:</label>
+        <select class="form-select" id="as-tmpl"><option value="">No GPU workers yet</option></select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌡️ Thermal Rerouting (GPU A hot → GPU D)</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 13px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">
+        <div><div style="font-weight:700;font-size:.82rem">Thermal Rerouting</div><div style="font-size:.68rem;color:var(--text2)">Auto redirect jobs from hot GPU to coolest available</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="therm-enabled" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
+        <label class="form-label">⚠️ Warning Temp — Reduce new jobs (°C)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="range" id="therm-warn" min="50" max="85" value="72" oninput="document.getElementById('tw-v').textContent=this.value+'°C'" style="flex:1;accent-color:var(--amber)">
+          <span id="tw-v" style="font-family:var(--mono);font-size:.8rem;color:var(--amber);width:44px">72°C</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
+        <label class="form-label">🔴 Critical Temp — Full reroute to other GPU (°C)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="range" id="therm-crit" min="60" max="92" value="82" oninput="document.getElementById('tc-v').textContent=this.value+'°C'" style="flex:1;accent-color:#fb923c">
+          <span id="tc-v" style="font-family:var(--mono);font-size:.8rem;color:#fb923c;width:44px">82°C</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:11px">
+        <label class="form-label">🚫 Emergency Shutdown (°C)</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="range" id="therm-kill" min="85" max="100" value="90" oninput="document.getElementById('tk-v').textContent=this.value+'°C'" style="flex:1;accent-color:var(--red)">
+          <span id="tk-v" style="font-family:var(--mono);font-size:.8rem;color:var(--red);width:44px">90°C</span>
+        </div>
+        <div style="font-size:.63rem;color:var(--red);margin-top:3px">Worker auto-paused + alert raised if exceeded</div>
+      </div>
+      <div class="form-group"><label class="form-label">Reroute Strategy</label>
+        <select class="form-select" id="therm-strat">
+          <option value="coolest_first">Route to coolest available GPU</option>
+          <option value="load_balanced">Route to lowest-load GPU</option>
+          <option value="vram_available">Route to most VRAM available</option>
+          <option value="round_robin">Round-robin healthy GPUs</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">🌡️ Live GPU Thermal Map</div>
+    <div id="therm-map" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;min-height:80px">
+      <div style="color:var(--text3);font-size:.78rem;padding:10px">No GPU workers</div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">📋 Auto-Scale Event Log</div>
+    <div class="terminal" id="scale-log" style="max-height:200px">
+      <div><span class="log-time">[system] </span><span class="log-info">Auto-Scale engine ready</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LOCAL CHAT ═══ -->
+<div class="page" id="page-chat">
+  <div class="section-hdr">
+    <div><div class="section-title">💬 Local Chat</div><div class="section-sub">Chat with AI via Credential Vault — keys never leave this machine</div></div>
+    <button class="btn btn-outline btn-sm" onclick="clearChat()">🗑 Clear</button>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-end">
+    <div class="form-group" style="flex:1;min-width:160px"><label class="form-label">Provider</label>
+      <select class="form-select" id="chat-prov" onchange="updateChatModels()">
+        <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
+        <option value="gemini">Gemini</option><option value="groq">Groq</option>
+        <option value="together">Together AI</option><option value="ollama">Ollama (Local)</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex:1;min-width:160px"><label class="form-label">Model</label><select class="form-select" id="chat-model"></select></div>
+    <div class="form-group" style="width:80px"><label class="form-label">Temp</label><input class="form-input" id="chat-temp" type="number" value="0.7" step="0.1" min="0" max="2"></div>
+    <div class="form-group" style="flex:2;min-width:200px"><label class="form-label">System Prompt</label><input class="form-input" id="chat-sys" placeholder="You are a helpful assistant."></div>
+  </div>
+  <div class="chat-container">
+    <div class="chat-messages" id="chat-msgs">
+      <div class="chat-sys-msg">Orchestra Local Chat · API keys stay on this machine · Powered by Credential Vault</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chat-input" rows="2" placeholder="Type message... (Enter = send, Shift+Enter = newline)" onkeydown="chatKey(event)"></textarea>
+      <button class="btn btn-primary" onclick="sendChat()" id="chat-send" style="flex-shrink:0;height:50px;min-width:70px">Send ↵</button>
+    </div>
+    <div id="chat-stats" style="font-size:.63rem;color:var(--text3);margin-top:5px;font-family:var(--mono)">tokens: 0 in / 0 out · cost: $0.00000</div>
+  </div>
+</div>
+
+<!-- ═══ MULTI-AI TESTER ═══ -->
+<div class="page" id="page-multiai">
+  <div class="section-hdr">
+    <div><div class="section-title">🔌 Multi-AI Tester</div><div class="section-sub">Test prompts across all providers simultaneously — REST API &amp; WebSocket</div></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">📤 Prompt Input</div>
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">Prompt</label>
+        <textarea class="form-textarea" id="ma-prompt" rows="5" placeholder="Enter test prompt...">Explain what you are in exactly 2 sentences.</textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">System Prompt</label>
+        <input class="form-input" id="ma-sys" placeholder="You are a helpful assistant.">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Input Mode</label>
+          <select class="form-select" id="ma-mode">
+            <option value="direct">Direct (REST API)</option>
+            <option value="websocket">WebSocket (streaming)</option>
+            <option value="job">Via Job Queue</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Max Tokens</label><input class="form-input" id="ma-maxtok" type="number" value="500"></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--text2);margin-bottom:8px">Select providers:</div>
+      <div id="ma-provider-checks" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
+      <button class="btn btn-primary" onclick="runMultiAI()" id="ma-run">▶ Run on All Selected</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📡 API Endpoints</div>
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px;font-family:var(--mono);font-size:.7rem;line-height:2;margin-bottom:12px">
+        <div style="color:var(--text3)">REST POST:</div>
+        <div style="color:var(--cyan)">http://localhost:7890/api/jobs/submit</div>
+        <div style="color:var(--text3);margin-top:6px">WebSocket:</div>
+        <div style="color:var(--cyan)">ws://localhost:7890/ws/jobs</div>
+        <div style="color:var(--text3);margin-top:6px">Auth:</div>
+        <div style="color:var(--green)">X-Console-Token: your-password</div>
+        <div style="color:var(--text3);margin-top:6px">Cloud endpoint (if enabled):</div>
+        <div style="color:var(--amber)" id="cloud-endpoint-display">https://your-domain/api/jobs/submit</div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">Custom Endpoint Test</label>
+        <input class="form-input" id="ma-url" placeholder="http://localhost:7890/api/jobs/submit">
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">JSON Body</label>
+        <textarea class="form-textarea" id="ma-body" rows="4" placeholder='{"task_type":"chat","messages":[{"role":"user","content":"Hello"}]}'></textarea>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="testCustomEndpoint()">🔌 Test Endpoint</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">📊 Test Results</div>
+    <div id="ma-results" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:12px;min-height:80px">
+      <div style="color:var(--text3);font-size:.78rem;padding:10px">Run test above to see results</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ JOB HISTORY ═══ -->
+<div class="page" id="page-history">
+  <div class="section-hdr">
+    <div><div class="section-title">🕒 Job History</div><div class="section-sub">Last 500 completed jobs</div></div>
+    <button class="btn btn-outline btn-sm" onclick="loadHistory()">↻ Refresh</button>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Job ID</th><th>Type</th><th>Provider</th><th>Model</th><th>Status</th><th>In Tokens</th><th>Out Tokens</th><th>Latency</th><th>Cost USD</th><th>Completed</th></tr></thead>
+    <tbody id="history-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text3)">Loading...</td></tr></tbody>
+  </table></div>
+</div>
+
+<!-- ═══ COST TRACKER ═══ -->
+<div class="page" id="page-cost">
+  <div class="section-hdr">
+    <div><div class="section-title">💰 Cost Tracker</div><div class="section-sub">AI provider spend tracking — API costs only (infra is yours)</div></div>
+  </div>
+  <div class="grid-3" style="margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">Today (USD)</div><div class="stat-value amber" id="cost-today">$—</div></div>
+    <div class="stat-card"><div class="stat-label">This Month (USD)</div><div class="stat-value" id="cost-month">$—</div></div>
+    <div class="stat-card"><div class="stat-label">All Time (USD)</div><div class="stat-value cyan" id="cost-total">$—</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📊 Daily Spend (last 30 days)</div>
+    <div id="daily-cost-chart" style="min-height:120px"></div>
+  </div>
+</div>
+
+<!-- ═══ CREDENTIAL VAULT ═══ -->
+<div class="page" id="page-vault">
+  <div class="section-hdr">
+    <div><div class="section-title">🔐 Credential Vault</div><div class="section-sub">AES-256-GCM encrypted API key storage — keys never leave this machine in plaintext</div></div>
+    <button class="btn btn-primary btn-sm" onclick="togglePanel('add-key-panel')">+ Add API Key</button>
+  </div>
+
+  <div class="card2" style="margin-bottom:16px;background:rgba(34,211,168,.05);border-color:rgba(34,211,168,.2)">
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div style="font-size:1.4rem">🔒</div>
+      <div>
+        <div style="font-weight:700;font-size:.82rem;margin-bottom:4px;color:var(--green)">Zero-Knowledge Storage</div>
+        <div style="font-size:.75rem;color:var(--text2);line-height:1.7">Keys are encrypted with AES-256-GCM using a master key derived from your hardware fingerprint + console password (PBKDF2, 600K iterations). <strong style="color:var(--text)">Keys are never sent to AXTO servers.</strong> They only leave this vault when Orchestra dispatches a job to an AI provider — and only over HTTPS.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card2" id="add-key-panel" style="display:none;margin-bottom:16px">
+    <div class="card-title">➕ Add Provider API Key</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Provider</label>
+        <select class="form-select" id="vk-provider">
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+          <option value="gemini">Google Gemini</option>
+          <option value="groq">Groq</option>
+          <option value="together">Together AI</option>
+          <option value="ollama">Ollama (enter base URL)</option>
+          <option value="custom">Custom (enter base URL)</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Label (optional)</label><input class="form-input" id="vk-label" placeholder="e.g. OpenAI Production"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">API Key / URL</label>
+      <input class="form-input" id="vk-key" type="password" placeholder="sk-... / http://localhost:11434">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="storeVaultKey()">🔒 Encrypt & Store</button>
+      <button class="btn btn-outline" onclick="testVaultKey()">🔌 Test Connection First</button>
+    </div>
+    <div id="vault-test-result" style="margin-top:10px;font-size:.75rem;font-family:var(--mono)"></div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Provider</th><th>Label</th><th>Key Hint</th><th>Stored At</th><th>Actions</th></tr></thead>
+    <tbody id="vault-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3)">No keys stored</td></tr></tbody>
+  </table></div>
+</div>
+
+<!-- ═══ HARDENING ═══ -->
+<div class="page" id="page-hardening">
+  <div class="section-hdr">
+    <div><div class="section-title">🛡️ Security Hardening</div><div class="section-sub">Anti-tamper & integrity verification status</div></div>
+    <button class="btn btn-outline btn-sm" onclick="loadHardening()">↻ Re-check</button>
+  </div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="stat-card"><div class="stat-label">Checks Passed</div><div class="stat-value green" id="hd-passed">—/—</div></div>
+    <div class="stat-card"><div class="stat-label">Critical Status</div><div class="stat-value" id="hd-critical">—</div></div>
+  </div>
+  <div id="hardening-checks"></div>
+</div>
+
+<!-- ═══ LICENSE ═══ -->
+<div class="page" id="page-license">
+  <div class="section-hdr">
+    <div><div class="section-title">🔑 License</div><div class="section-sub">Company info, license timeline, entitlements & hardware binding</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px;border-color:rgba(99,102,241,.28);background:linear-gradient(135deg,rgba(99,102,241,.06),var(--card))">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="font-size:2.4rem">🏢</div>
+      <div style="flex:1">
+        <div id="lic-company-name" style="font-size:1.3rem;font-weight:800">—</div>
+        <div id="lic-wl-name" style="font-size:.8rem;color:var(--text2);margin-top:2px">—</div>
+        <div id="lic-contact" style="font-size:.7rem;color:var(--text3);font-family:var(--mono);margin-top:2px">—</div>
+      </div>
+      <div style="text-align:right">
+        <div id="lic-tier-big" style="font-size:1.6rem;font-weight:900;color:var(--primary2)">TRIAL</div>
+        <span id="lic-status-pill" style="display:inline-block;margin-top:4px;padding:3px 12px;border-radius:20px;font-size:.68rem;font-weight:700;font-family:var(--mono);background:var(--green2);color:var(--green);border:1px solid rgba(34,211,168,.3)">ACTIVE</span>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">📅 License Timeline</div>
+      <div class="lic-row"><span class="lic-key">License ID</span><span class="lic-val" id="lic-id2">—</span></div>
+      <div class="lic-row"><span class="lic-key">Issued At</span><span class="lic-val" id="lic-issued">—</span></div>
+      <div class="lic-row"><span class="lic-key">Activated At</span><span class="lic-val" id="lic-activated">—</span></div>
+      <div class="lic-row"><span class="lic-key">Expires At</span><span class="lic-val" id="lic-expires2" style="color:var(--amber)">—</span></div>
+      <div class="lic-row"><span class="lic-key">Days Remaining</span><span class="lic-val" id="lic-days-left" style="color:var(--green)">—</span></div>
+      <div class="lic-row"><span class="lic-key">License Mode</span><span class="lic-val" id="lic-mode2">—</span></div>
+      <div style="margin-top:12px">
+        <div style="font-size:.63rem;color:var(--text3);margin-bottom:4px">Time elapsed</div>
+        <div class="meter-bar" style="height:8px"><div class="meter-fill" id="lic-time-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">⚙️ Entitlements</div>
+      <div class="lic-row"><span class="lic-key">CPU Workers</span><span class="lic-val" style="color:var(--cyan)" id="lic-cpu2">—</span></div>
+      <div class="lic-row"><span class="lic-key">GPU Workers</span><span class="lic-val" style="color:#fb923c" id="lic-gpu2">—</span></div>
+      <div class="lic-row"><span class="lic-key">Max Nodes</span><span class="lic-val" id="lic-nodes2">—</span></div>
+      <div class="lic-row"><span class="lic-key">Max End Users</span><span class="lic-val" id="lic-users2">—</span></div>
+      <div class="lic-row"><span class="lic-key">Max Domains</span><span class="lic-val" id="lic-domains">—</span></div>
+      <div class="lic-row"><span class="lic-key">GPU On-Demand</span><span class="lic-val" id="lic-gpuod2">—</span></div>
+      <div class="lic-row"><span class="lic-key">WL Rebrand</span><span class="lic-val" id="lic-wlr2">—</span></div>
+      <div class="lic-row"><span class="lic-key">Air-Gap Mode</span><span class="lic-val" id="lic-airgap">—</span></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="license-block">
+      <div class="lic-row"><span class="lic-key">Status</span><span class="lic-val" id="lic-status">—</span></div>
+      <div class="lic-row"><span class="lic-key">License ID</span><span class="lic-val" id="lic-id">—</span></div>
+      <div class="lic-row"><span class="lic-key">Tier</span><span class="lic-val" id="lic-tier">—</span></div>
+      <div class="lic-row"><span class="lic-key">Mode</span><span class="lic-val" id="lic-mode">—</span></div>
+      <div class="lic-row"><span class="lic-key">Client</span><span class="lic-val" id="lic-client">—</span></div>
+      <div class="lic-row"><span class="lic-key">WL Brand</span><span class="lic-val" id="lic-wl">—</span></div>
+      <div class="lic-row"><span class="lic-key">Expires</span><span class="lic-val" id="lic-expires">—</span></div>
+    </div>
+    <div class="license-block">
+      <div class="lic-row"><span class="lic-key">CPU Workers</span><span class="lic-val" id="lic-cpu">—</span></div>
+      <div class="lic-row"><span class="lic-key">GPU Workers</span><span class="lic-val" id="lic-gpu">—</span></div>
+      <div class="lic-row"><span class="lic-key">Max Nodes</span><span class="lic-val" id="lic-nodes">—</span></div>
+      <div class="lic-row"><span class="lic-key">Max Users</span><span class="lic-val" id="lic-users">—</span></div>
+      <div class="lic-row"><span class="lic-key">GPU On-Demand</span><span class="lic-val" id="lic-gpuod">—</span></div>
+      <div class="lic-row"><span class="lic-key">WL Rebrand</span><span class="lic-val" id="lic-wlr">—</span></div>
+      <div class="lic-row"><span class="lic-key">Unit ID (Hardware)</span><span class="lic-val" id="lic-unitid" style="font-size:.68rem">—</span></div>
+    </div>
+  </div>
+
+  <div class="card2">
+    <div class="card-title">📥 Install / Update License</div>
+    <div style="font-size:.75rem;color:var(--text2);margin-bottom:10px">Paste your .orch1 license artifact below. Obtained from AXTO dashboard after purchase.</div>
+    <textarea class="form-input" id="lic-artifact" rows="8" style="font-size:.72rem;resize:vertical" placeholder="PAYLOAD:eyJsaWNlbnNlX2lkIjoiT1JDSC1...&#10;SIG:a3b4c5d6..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-primary" onclick="installLicense()">⬆️ Install License</button>
+      <button class="btn btn-outline" onclick="loadLicenseStatus()">↻ Refresh Status</button>
+    </div>
+    <div id="lic-result" style="margin-top:10px;font-size:.75rem;font-family:var(--mono)"></div>
+  </div>
+</div>
+
+</main>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = '';  // Same origin
+let TOKEN = '';
+let _routingMode = 'smart_balance';
+let _blacklist   = [];
+let _budgetDaily = 50, _budgetMonthly = 1000;
+let _queuePaused = false;
+let _refreshTimer = null;
+
+const MODEL_OPTIONS = {
+  openai:    ['gpt-4o','gpt-4o-mini','gpt-4-turbo','o1','gpt-3.5-turbo'],
+  anthropic: ['claude-sonnet-4-6','claude-opus-4-6','claude-haiku-4-5-20251001'],
+  gemini:    ['gemini-1.5-pro','gemini-1.5-flash','gemini-2.0-flash'],
+  groq:      ['llama-3.3-70b-versatile','mixtral-8x7b-32768','gemma2-9b-it'],
+  together:  ['meta-llama/Llama-3.3-70B-Instruct-Turbo','mistralai/Mixtral-8x7B-Instruct-v0.1'],
+  ollama:    ['llama3.2','mistral','codellama','phi3'],
+  custom:    [],
+};
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const pw = document.getElementById('pw-input').value;
+  if(!pw){document.getElementById('login-err').textContent='Enter password';return}
+  try{
+    const r = await fetch('/api/license/status',{headers:{'X-Console-Token':pw}});
+    if(r.ok){
+      TOKEN = pw;
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app').style.display='block';
+      startApp();
+    } else {
+      document.getElementById('login-err').textContent='Incorrect password';
+    }
+  }catch(e){document.getElementById('login-err').textContent='Cannot connect to Orchestra Core'}
+}
+
+function doLogout(){TOKEN='';document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';clearInterval(_refreshTimer)}
+
+async function fetchUnit(){
+  try{const r=await fetch('/api/license/unit_id');if(r.ok){const d=await r.json();document.getElementById('unit-id-login').textContent=d.unit_id.substring(0,16)+'...'}}catch{}
+}
+fetchUnit();
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function go(page, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Dashboard',logs:'Live Logs',monitor:'Server Monitor',gpu:'GPU Pool',autoscale:'Auto-Scale',nodes:'Nodes',workers:'Workers',routing:'Routing Rules',chat:'Local Chat',multiai:'Multi-AI Tester',queue:'Task Queue',history:'Job History',cost:'Cost Tracker',vault:'Credential Vault',hardening:'Security Hardening',license:'License'};
+  document.getElementById('topbar-title').textContent = titles[page]||page;
+  if(page==='nodes') loadNodes();
+  if(page==='workers') loadWorkers();
+  if(page==='queue') loadQueue();
+  if(page==='history') loadHistory();
+  if(page==='cost') loadCost();
+  if(page==='vault') loadVault();
+  if(page==='hardening') loadHardening();
+  if(page==='license') loadLicenseStatus();
+  if(page==='gpu') loadGPUPool();
+  if(page==='autoscale') loadASConfig();
+  if(page==='monitor') loadMonitor();
+  if(page==='chat') initChat();
+  if(page==='multiai') initMultiAI();
+}
+
+function togglePanel(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none'}
+
+// ── API helpers ──────────────────────────────────────────────────────────────
+async function api(method,path,body){
+  const opts={method,headers:{'X-Console-Token':TOKEN,'Content-Type':'application/json'}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(API+path,opts);
+  if(!r.ok){const e=await r.json().catch(()=>({detail:'Error'}));throw new Error(e.detail||r.status)}
+  return r.json();
+}
+
+// ── App startup ──────────────────────────────────────────────────────────────
+async function startApp(){
+  initModelSelectors();
+  await refreshAll();
+  _refreshTimer = setInterval(refreshAll, 8000);
+  // Fetch branding/company from license on startup
+  try{
+    const d = await api('GET','/api/license/status');
+    const brand = d.branding||{};
+    const company = brand.company_name || d.client_name || 'Orchestra Core';
+    document.getElementById('login-company') && (document.getElementById('login-company').textContent = company);
+    document.getElementById('sb-company') && (document.getElementById('sb-company').textContent = company);
+    document.getElementById('topbar-tier') && (document.getElementById('topbar-tier').textContent = (d.tier||'trial').toUpperCase());
+    if(d.expires_at){
+      const days=Math.ceil((new Date(d.expires_at)-Date.now())/86400000);
+      const el=document.getElementById('topbar-expires');
+      if(el){el.textContent=days>0?days+'d left':'EXPIRED';el.style.color=days<14?'var(--red)':days<60?'var(--amber)':'var(--green)';}
+    } else {
+      const el=document.getElementById('topbar-expires');
+      if(el){el.textContent='Lifetime';el.style.color='var(--green)';}
+    }
+    _licData=d;
+  }catch(e){console.warn('brand fetch',e);}
+}
+
+async function refreshAll(){
+  try{
+    const [status,queue] = await Promise.all([
+      api('GET','/status'),
+      api('GET','/api/jobs/queue'),
+    ]);
+    // Sidebar
+    const lic = status.license;
+    const wl  = lic.branding?.name || 'Orchestra';
+    document.getElementById('sb-brand-name').textContent = wl;
+    document.getElementById('topbar-tier').textContent   = (lic.tier||'trial').toUpperCase();
+    document.getElementById('sb-queue-count').textContent = queue.stats?.queued||0;
+
+    // Stats
+    const workers = status.workers;
+    const nodes   = status.nodes;
+    const qstats  = queue.stats;
+    const cost    = status.cost;
+
+    setEl('stat-nodes', nodes.online+'/'+nodes.total);
+    setEl('stat-nodes-sub', nodes.total+' registered');
+    const cpuW = workers.list.filter(w=>w.type==='cpu'&&w.status==='active').length;
+    const gpuW = workers.list.filter(w=>w.type==='gpu'&&w.status==='active').length;
+    setEl('stat-workers', cpuW+'+'+gpuW);
+    setEl('stat-workers-sub','CPU + GPU active');
+    setEl('stat-jobs', qstats.done_today||0);
+    setEl('stat-jobs-sub', (qstats.errors_today||0)+' errors');
+    setEl('stat-cost','$'+(cost.today_usd||0).toFixed(4));
+
+    // Sidebar status
+    const online = lic.status==='ACTIVE';
+    document.getElementById('sb-dot').style.background = online?'var(--green)':'var(--red)';
+    document.getElementById('sb-dot').style.animation  = online?'pulse-g 2s infinite':'none';
+    setEl('sb-status-text', online?'Active':'Degraded');
+
+    // Dashboard
+    renderWorkerMeters(workers.list);
+    renderSystemHealth(status.hardening, lic);
+    await renderRecentJobs();
+
+    // Queue page if active
+    if(document.getElementById('page-queue').classList.contains('active')) loadQueue();
+
+  }catch(e){console.warn('Refresh error:',e)}
+}
+
+function setEl(id, val){const el=document.getElementById(id);if(el)el.textContent=val}
+
+function renderWorkerMeters(workers){
+  const el = document.getElementById('worker-load-meters');
+  if(!workers||!workers.length){el.innerHTML='<div style="color:var(--text3);font-size:.78rem">No workers deployed</div>';return}
+  el.innerHTML = workers.slice(0,6).map(w=>{
+    const load = w.load_pct||0;
+    const cls  = load>80?'red':load>50?'amber':'';
+    return `<div class="meter-wrap">
+      <div class="meter-label"><span>${w.id} <span style="color:var(--text3)">${w.type.toUpperCase()} · ${w.model||w.provider_id}</span></span><span style="color:var(--${load>80?'red':load>50?'amber':'green'})">${load}%</span></div>
+      <div class="meter-bar"><div class="meter-fill ${cls}" style="width:${load}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSystemHealth(hw, lic){
+  const items = [
+    {label:'License',ok:lic.status==='ACTIVE',val:lic.status},
+    {label:'Module Integrity',ok:hw.checks_passed===hw.checks_total,val:`${hw.checks_passed}/${hw.checks_total} checks`},
+    {label:'Critical Failure',ok:!hw.critical_failure,val:hw.critical_failure?'⚠️ CRITICAL':'OK'},
+    {label:'Tier',ok:true,val:lic.tier||'trial'},
+    {label:'Expires',ok:true,val:lic.expires_at?new Date(lic.expires_at).toLocaleDateString():'—'},
+  ];
+  document.getElementById('system-health-list').innerHTML = items.map(i=>`
+    <div class="lic-row">
+      <span class="lic-key">${i.label}</span>
+      <span class="lic-val" style="color:var(--${i.ok?'green':'red'})">${i.val}</span>
+    </div>`).join('');
+}
+
+async function renderRecentJobs(){
+  try{
+    const d = await api('GET','/api/jobs/history?limit=8');
+    const tbody = document.getElementById('recent-jobs-tbody');
+    if(!d.jobs||!d.jobs.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3)">No jobs yet</td></tr>';return}
+    tbody.innerHTML = d.jobs.map(j=>jobRow(j,'8')).join('');
+  }catch{}
+}
+
+// ── Nodes ─────────────────────────────────────────────────────────────────────
+async function loadNodes(){
+  try{
+    const d = await api('GET','/api/nodes');
+    const tbody = document.getElementById('nodes-tbody');
+    if(!d.nodes||!d.nodes.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text3)">No nodes registered</td></tr>';return}
+    tbody.innerHTML = d.nodes.map(n=>`<tr>
+      <td style="color:var(--text3)">${n.id}</td>
+      <td style="font-weight:700">${n.name}</td>
+      <td>${n.endpoint}</td>
+      <td><span class="badge badge-purple">${n.type.toUpperCase()}</span></td>
+      <td>${n.cpu_pct||0}%</td>
+      <td>${n.mem_pct||0}%</td>
+      <td>${statusBadge(n.status)}</td>
+      <td style="color:var(--text3)">${fmtDate(n.registered_at)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeNode('${n.id}')">Remove</button></td>
+    </tr>`).join('');
+    // Populate node dropdown in worker form
+    const sel = document.getElementById('w-node');
+    sel.innerHTML='<option value="">Select node...</option>'+d.nodes.map(n=>`<option value="${n.id}">${n.name} (${n.type})</option>`).join('');
+  }catch(e){toast('Error loading nodes: '+e.message,'error')}
+}
+
+async function registerNode(){
+  try{
+    const body={name:val('n-name'),endpoint:val('n-endpoint'),type:val('n-type'),max_workers:parseInt(val('n-maxw')||10),region:val('n-region')};
+    if(!body.name||!body.endpoint){toast('Name and endpoint required','error');return}
+    await api('POST','/api/nodes/register',body);
+    toast('✅ Node registered','ok');
+    loadNodes();
+    togglePanel('add-node-panel');
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+
+async function removeNode(id){if(!confirm('Remove node '+id+'?'))return;await api('DELETE','/api/nodes/'+id);toast('Node removed','ok');loadNodes()}
+
+// ── Workers ───────────────────────────────────────────────────────────────────
+async function loadWorkers(){
+  try{
+    const [wd, ld] = await Promise.all([api('GET','/api/workers'), api('GET','/api/license/status')]);
+    const tbody = document.getElementById('workers-tbody');
+    const workers = wd.workers||[];
+    const cpuW = workers.filter(w=>w.type==='cpu'&&w.status==='active').length;
+    const gpuW = workers.filter(w=>w.type==='gpu'&&w.status==='active').length;
+    setEl('cpu-worker-count',cpuW);
+    setEl('gpu-worker-count',gpuW);
+    setEl('cpu-worker-limit',cpuW+' / '+(ld.cpu_workers||2)+' licensed');
+    setEl('gpu-worker-limit',gpuW+' / '+(ld.gpu_workers||0)+' licensed');
+    if(!workers.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text3)">No workers deployed</td></tr>';return}
+    tbody.innerHTML = workers.map(w=>`<tr>
+      <td style="font-weight:700;color:var(--primary2)">${w.id}</td>
+      <td><span class="badge badge-${w.type==='gpu'?'blue':'purple'}">${w.type.toUpperCase()}</span></td>
+      <td>${w.provider_id}</td>
+      <td style="font-size:.72rem">${w.model}</td>
+      <td style="color:var(--text3)">${w.node_id}</td>
+      <td>${w.concurrency}</td>
+      <td><div class="meter-bar" style="width:60px;display:inline-block"><div class="meter-fill ${(w.load_pct||0)>80?'red':(w.load_pct||0)>50?'amber':''}" style="width:${w.load_pct||0}%"></div></div> ${w.load_pct||0}%</td>
+      <td>${w.tasks_total||0}</td>
+      <td>${w.avg_latency_ms||0}ms</td>
+      <td>${statusBadge(w.status)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeWorker('${w.id}')">Remove</button></td>
+    </tr>`).join('');
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+
+function toggleGPUFields(){
+  document.getElementById('gpu-fields').style.display = val('w-type')==='gpu'?'grid':'none';
+}
+
+function updateModelOptions(){
+  const provider = val('w-provider');
+  const models   = MODEL_OPTIONS[provider]||[];
+  const sel      = document.getElementById('w-model');
+  sel.innerHTML  = models.map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+updateModelOptions();
+
+async function deployWorker(){
+  try{
+    const body={
+      node_id:val('w-node'), type:val('w-type'),
+      provider_id:val('w-provider'), model:val('w-model'),
+      concurrency:parseInt(val('w-concurrency')||5),
+      timeout_sec:parseInt(val('w-timeout')||60),
+      priority:val('w-priority'), label:val('w-label'),
+      gpu_vram_gb: val('w-type')==='gpu'?parseInt(val('w-vram')||0)||null:null,
+    };
+    if(!body.node_id){toast('Select a node first','error');return}
+    if(!body.model){toast('Select a model','error');return}
+    await api('POST','/api/workers/register',body);
+    toast('✅ Worker deployed','ok');
+    loadWorkers();
+    togglePanel('add-worker-panel');
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+
+async function removeWorker(id){if(!confirm('Remove worker '+id+'?'))return;await api('DELETE','/api/workers/'+id);toast('Worker removed','ok');loadWorkers()}
+
+// ── Routing ───────────────────────────────────────────────────────────────────
+function selectMode(mode, el){
+  _routingMode = mode;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function addToBlacklist(){
+  const v = val('blacklist-add');
+  if(!v||_blacklist.includes(v)) return;
+  _blacklist.push(v);
+  renderBlacklist();
+}
+
+function removeFromBlacklist(p){
+  _blacklist = _blacklist.filter(x=>x!==p);
+  renderBlacklist();
+}
+
+function renderBlacklist(){
+  document.getElementById('blacklist-items').innerHTML = _blacklist.length
+    ? _blacklist.map(p=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--red2);border:1px solid var(--red);border-radius:6px;padding:3px 8px;font-size:.72rem;margin:2px;color:var(--red)">${p} <span onclick="removeFromBlacklist('${p}')" style="cursor:pointer">✕</span></span>`).join('')
+    : '<span style="font-size:.75rem;color:var(--text3)">No providers blacklisted</span>';
+}
+
+async function saveRoutingRules(){
+  const rules = {
+    mode: _routingMode,
+    blacklist: _blacklist,
+    budget_alert_daily_usd: parseFloat(val('budget-daily'))||50,
+    budget_alert_monthly_usd: parseFloat(val('budget-monthly'))||1000,
+  };
+  await api('PUT','/api/routing/rules',rules);
+  toast('✅ Routing rules saved','ok');
+}
+
+// ── Queue ─────────────────────────────────────────────────────────────────────
+async function loadQueue(){
+  try{
+    const d = await api('GET','/api/jobs/queue');
+    const s = d.stats||{};
+    setEl('q-queued', s.queued||0);
+    setEl('q-active', s.active||0);
+    setEl('q-done',   s.done_today||0);
+    setEl('q-errors', s.errors_today||0);
+    _queuePaused = s.paused||false;
+    document.getElementById('pause-btn').textContent = _queuePaused?'▶ Resume Queue':'⏸ Pause Queue';
+    const jobs = d.jobs||[];
+    const tbody = document.getElementById('queue-tbody');
+    if(!jobs.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3)">Queue is empty</td></tr>';return}
+    tbody.innerHTML = jobs.map(j=>jobRow(j,'10',true)).join('');
+  }catch(e){toast('Queue error: '+e.message,'error')}
+}
+
+function jobRow(j, cols, showCancel=false){
+  const status  = j.status;
+  const sClass  = {done:'green',error:'red',running:'blue',queued:'amber'}[status]||'purple';
+  return `<tr>
+    <td style="font-family:var(--mono);color:var(--primary2)">${j.id}</td>
+    <td>${j.task_type||'—'}</td>
+    <td>${j.provider_used||j.provider_id||'—'}</td>
+    <td style="color:var(--text3)">${j.worker_id||'—'}</td>
+    ${cols==='10'?`<td><span class="badge badge-${j.priority==='high'?'red':j.priority==='low'?'purple':'amber'}">${j.priority||'normal'}</span></td>`:''}
+    <td>${statusBadge(status)}</td>
+    <td>${(j.input_tokens||0)+(j.output_tokens||0)}</td>
+    <td>${j.latency_ms?j.latency_ms+'ms':'—'}</td>
+    <td>$${(j.cost_usd||0).toFixed(5)}</td>
+    ${showCancel?`<td>${status==='queued'?`<button class="btn btn-danger btn-sm" onclick="cancelJob('${j.id}')">Cancel</button>`:'—'}</td>`:''}
+  </tr>`;
+}
+
+async function cancelJob(id){await api('DELETE','/api/jobs/'+id);loadQueue();toast('Job cancelled','ok')}
+
+async function toggleQueuePause(){
+  if(_queuePaused){await api('POST','/api/jobs/queue/resume');toast('Queue resumed','ok')}
+  else{await api('POST','/api/jobs/queue/pause');toast('Queue paused','ok')}
+  loadQueue();
+}
+
+function openNewJobPanel(){togglePanel('new-job-panel')}
+
+async function submitTestJob(){
+  const body={task_type:val('j-type'),messages:[{role:'user',content:val('j-message')||'Hello'}],priority:val('j-priority')};
+  const r = await api('POST','/api/jobs/submit',body);
+  toast('✅ Job submitted: '+r.job_id,'ok');
+  loadQueue();
+  togglePanel('new-job-panel');
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+async function loadHistory(){
+  try{
+    const d = await api('GET','/api/jobs/history?limit=100');
+    const tbody = document.getElementById('history-tbody');
+    if(!d.jobs||!d.jobs.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3)">No history yet</td></tr>';return}
+    tbody.innerHTML = d.jobs.map(j=>`<tr>
+      <td style="color:var(--primary2)">${j.id}</td>
+      <td>${j.task_type}</td>
+      <td>${j.provider_used||j.provider_id||'—'}</td>
+      <td style="font-size:.72rem">${j.model_used||'—'}</td>
+      <td>${statusBadge(j.status)}</td>
+      <td>${j.input_tokens||0}</td>
+      <td>${j.output_tokens||0}</td>
+      <td>${j.latency_ms||0}ms</td>
+      <td>$${(j.cost_usd||0).toFixed(5)}</td>
+      <td style="color:var(--text3)">${fmtDate(j.done_at)}</td>
+    </tr>`).join('');
+  }catch(e){}
+}
+
+// ── Cost ──────────────────────────────────────────────────────────────────────
+async function loadCost(){
+  try{
+    const d = await api('GET','/api/cost/summary');
+    setEl('cost-today', '$'+(d.today_usd||0).toFixed(4));
+    setEl('cost-month', '$'+(d.month_usd||0).toFixed(4));
+    setEl('cost-total', '$'+(d.total_usd||0).toFixed(4));
+    // Simple bar chart
+    const daily  = d.daily_trend||{};
+    const entries = Object.entries(daily).sort(([a],[b])=>a.localeCompare(b)).slice(-14);
+    const max    = Math.max(...entries.map(([,v])=>v), 0.001);
+    document.getElementById('daily-cost-chart').innerHTML = entries.length
+      ? `<div style="display:flex;align-items:flex-end;gap:4px;height:100px">
+          ${entries.map(([d,v])=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
+            <div style="width:100%;background:var(--primary);border-radius:3px 3px 0 0;height:${Math.max(4,v/max*90)}px;opacity:.8"></div>
+            <div style="font-size:.55rem;color:var(--text3);writing-mode:vertical-lr;transform:rotate(180deg)">${d.slice(5)}</div>
+          </div>`).join('')}
+        </div>`
+      : '<div style="color:var(--text3);font-size:.78rem">No spend data yet</div>';
+  }catch(e){}
+}
+
+// ── Vault ─────────────────────────────────────────────────────────────────────
+async function loadVault(){
+  try{
+    const d = await api('GET','/api/vault/providers');
+    const tbody = document.getElementById('vault-tbody');
+    if(!d.providers||!d.providers.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3)">No API keys stored</td></tr>';return}
+    tbody.innerHTML = d.providers.map(p=>`<tr>
+      <td><span class="badge badge-purple">${p.provider}</span></td>
+      <td>${p.label}</td>
+      <td style="color:var(--green)">${p.hint}</td>
+      <td style="color:var(--text3)">${fmtDate(p.stored_at)}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="testProviderKey('${p.id}')">🔌 Test</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteVaultKey('${p.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+  }catch(e){}
+}
+
+async function storeVaultKey(){
+  const body={provider_id:val('vk-provider'),api_key:val('vk-key'),label:val('vk-label')};
+  if(!body.api_key){toast('Enter API key','error');return}
+  const r = await api('POST','/api/vault/store',body);
+  if(r.ok){toast('✅ Key encrypted & stored','ok');loadVault();togglePanel('add-key-panel')}
+  else toast('Error: '+r.error,'error');
+}
+
+async function testVaultKey(){
+  const pid = val('vk-provider');
+  document.getElementById('vault-test-result').innerHTML='<span style="color:var(--text2)">Testing...</span>';
+  const tempKey = val('vk-key');
+  // Store temporarily, test, show result
+  const storeR = await api('POST','/api/vault/store',{provider_id:pid+'_test_tmp',api_key:tempKey});
+  if(storeR.ok){
+    const testR = await api('POST','/api/vault/test/'+pid+'_test_tmp');
+    await api('DELETE','/api/vault/'+pid+'_test_tmp');
+    document.getElementById('vault-test-result').innerHTML = testR.ok
+      ? '<span style="color:var(--green)">✅ Connection successful</span>'
+      : `<span style="color:var(--red)">❌ ${testR.error}</span>`;
+  }
+}
+
+async function testProviderKey(pid){
+  toast('Testing '+pid+'...','info');
+  const r = await api('POST','/api/vault/test/'+pid);
+  toast(r.ok?'✅ '+pid+' connected':'❌ '+pid+': '+r.error, r.ok?'ok':'error');
+}
+
+async function deleteVaultKey(pid){if(!confirm('Delete key for '+pid+'?'))return;await api('DELETE','/api/vault/'+pid);loadVault();toast('Key deleted','ok')}
+
+// ── Hardening ─────────────────────────────────────────────────────────────────
+async function loadHardening(){
+  try{
+    const d = await api('GET','/status');
+    const hw = d.hardening;
+    setEl('hd-passed', hw.checks_passed+'/'+hw.checks_total);
+    setEl('hd-critical', hw.critical_failure?'⚠️ CRITICAL FAILURE':'✅ OK');
+    document.getElementById('hd-critical').style.color = hw.critical_failure?'var(--red)':'var(--green)';
+    document.getElementById('hardening-checks').innerHTML = hw.details.map(c=>`
+      <div class="card2" style="margin-bottom:10px;border-color:${c.passed?'var(--border)':'rgba(248,113,113,.3)'}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:1.2rem">${c.passed?'✅':'❌'}</div>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:.82rem;color:${c.passed?'var(--text)':'var(--red)'}">${c.check.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</div>
+            ${c.error?`<div style="font-size:.72rem;color:var(--red);font-family:var(--mono);margin-top:3px">${c.error}</div>`:''}
+            ${c.modules_checked?`<div style="font-size:.68rem;color:var(--text3);margin-top:3px">Checked: ${c.modules_checked.join(', ')}</div>`:''}
+          </div>
+          <span class="badge badge-${c.passed?'green':'red'}">${c.passed?'PASS':'FAIL'}</span>
+        </div>
+      </div>`).join('');
+  }catch(e){}
+}
+
+// ── License ───────────────────────────────────────────────────────────────────
+async function loadLicenseStatus(){
+  try{
+    const d = await api('GET','/api/license/status');
+    const ok = d.status==='ACTIVE';
+    setEl('lic-status', d.status); document.getElementById('lic-status').style.color=ok?'var(--green)':'var(--red)';
+    setEl('lic-id',      d.license_id||'—');
+    setEl('lic-tier',    d.tier||'—');
+    setEl('lic-mode',    d.license_mode||'—');
+    setEl('lic-client',  d.client_name||'—');
+    setEl('lic-wl',      d.wl_name||'—');
+    setEl('lic-expires', d.expires_at?new Date(d.expires_at).toLocaleDateString():'Lifetime / None');
+    setEl('lic-cpu',     d.cpu_workers||'—');
+    setEl('lic-gpu',     d.gpu_workers||'—');
+    setEl('lic-nodes',   d.max_nodes||'—');
+    setEl('lic-users',   d.max_end_users||'—');
+    setEl('lic-gpuod',   d.gpu_on_demand?'✅ Enabled':'—');
+    setEl('lic-wlr',     d.can_wl_rebrand?'✅ Enabled':'—');
+    setEl('lic-unitid',  d.unit_id||'—');
+  }catch(e){}
+}
+
+async function installLicense(){
+  const artifact = document.getElementById('lic-artifact').value.trim();
+  if(!artifact){toast('Paste license artifact','error');return}
+  const el = document.getElementById('lic-result');
+  el.textContent='Installing...';
+  try{
+    const r = await api('POST','/api/license/install',{artifact});
+    el.innerHTML='<span style="color:var(--green)">✅ License installed — Status: '+r.status+'</span>';
+    setTimeout(loadLicenseStatus, 500);
+    toast('✅ License installed','ok');
+  }catch(e){el.innerHTML='<span style="color:var(--red)">❌ '+e.message+'</span>'}
+}
+
+// ── Logs (simulate from status polling) ──────────────────────────────────────
+const logLines=[];
+function addLog(type, msg){
+  const t = new Date().toISOString().slice(11,19);
+  const term = document.getElementById('log-terminal');
+  const cls  = {ok:'log-ok',warn:'log-warn',err:'log-err',info:'log-info'}[type]||'';
+  const line = document.createElement('div');
+  line.innerHTML=`<span class="log-time">[${t}] </span><span class="${cls}">${msg}</span>`;
+  term.appendChild(line);
+  if(document.getElementById('autoscroll-chk').checked) term.scrollTop=term.scrollHeight;
+  if(term.children.length>500) term.removeChild(term.firstChild);
+}
+function clearLogs(){document.getElementById('log-terminal').innerHTML=''}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function val(id){return document.getElementById(id)?.value||''}
+function fmtDate(s){if(!s)return'—';try{return new Date(s).toLocaleString()}catch{return s}}
+
+function statusBadge(s){
+  const map={active:'green',online:'green',done:'green',running:'blue',queued:'amber',offline:'red',error:'red',degraded:'amber'};
+  return `<span class="badge badge-${map[s]||'purple'}">${s||'unknown'}</span>`;
+}
+
+function toast(msg, type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.borderColor=type==='error'?'var(--red)':type==='ok'?'var(--green)':'var(--border2)';
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  NEW FEATURES: GPU Pool, Auto-Scale, Local Chat, Multi-AI, Monitor
+// ══════════════════════════════════════════════════════════════════════════
+let _licData = {};
+let _gpuWorkers = [];
+let _chatHistory = [];
+let _chatStats = {in:0, out:0, cost:0};
+let _asConfig = {enabled:false,up:75,down:20,min:1,cool:120,thermal:true,warn:72,crit:82,kill:90,strat:'coolest_first'};
+let _blacklist = [];
+
+const MODELS = {
+  openai:    ['gpt-4o','gpt-4o-mini','gpt-4-turbo','o1-preview','gpt-3.5-turbo'],
+  anthropic: ['claude-opus-4-6','claude-sonnet-4-6','claude-haiku-4-5-20251001'],
+  gemini:    ['gemini-2.0-flash','gemini-1.5-pro','gemini-1.5-flash'],
+  groq:      ['llama-3.3-70b-versatile','mixtral-8x7b-32768','gemma2-9b-it'],
+  together:  ['meta-llama/Llama-3.3-70B-Instruct-Turbo','mistralai/Mixtral-8x7B-Instruct-v0.1'],
+  ollama:    ['llama3.2','mistral','codellama','phi3','deepseek-r1:7b','qwen2.5'],
+  custom:    ['custom-model'],
+};
+const VCLASS = {nvidia:'vb-nvidia',amd:'vb-amd',intel:'vb-intel',apple:'vb-apple',cpu_fallback:'vb-cpu',auto:'vb-auto'};
+const VICON  = {nvidia:'🟢',amd:'🔴',intel:'🔵',apple:'⬜',cpu_fallback:'⚙️',auto:'🔍'};
+
+function initModelSelectors(){
+  updateGPUModels();
+  updateChatModels();
+  initMultiAI();
+  // populate worker model selector if exists
+  const wm = document.getElementById('worker-model');
+  if(wm) fillModels(wm, 'openai');
+}
+
+function fillModels(sel, provider){
+  const models = MODELS[provider]||[];
+  sel.innerHTML = models.map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+
+function updateGPUModels(){
+  const p = document.getElementById('gpu-add-prov')?.value||'ollama';
+  const s = document.getElementById('gpu-add-model');
+  if(s) fillModels(s, p);
+}
+
+function updateChatModels(){
+  const p = document.getElementById('chat-prov')?.value||'openai';
+  const s = document.getElementById('chat-model');
+  if(s) fillModels(s, p);
+}
+
+// ── GPU Pool ──────────────────────────────────────────────────────────────
+async function loadGPUPool(){
+  try{
+    const [wd,ld,nd] = await Promise.all([
+      api('GET','/api/workers'),
+      api('GET','/api/license/status'),
+      api('GET','/api/nodes')
+    ]);
+    _licData = ld;
+    const gpus = (wd.workers||[]).filter(w=>w.type==='gpu');
+    _gpuWorkers = gpus;
+    const licensed = ld.gpu_workers||0;
+    const used = gpus.filter(w=>w.status!=='removed').length;
+    const pct = licensed>0 ? Math.min(100,(used/licensed)*100) : 0;
+
+    setEl('gpu-lic-badge',`${used}/${licensed} GPU licensed`);
+    setEl('gpu-bar-lbl',`${used} / ${licensed}`);
+    setEl('gpu-lim-val', licensed);
+    const bar=document.getElementById('gpu-lic-bar');
+    if(bar){bar.style.width=pct+'%';bar.className='meter-fill '+(pct>=100?'meter-fill-red':pct>=80?'meter-fill-amber':'');}
+    document.getElementById('gpu-lim-warn') && (document.getElementById('gpu-lim-warn').style.display=used>=licensed?'block':'none');
+    setEl('sb-gpu-hot', gpus.filter(g=>(g.temp_c||0)>=(_asConfig.warn||72)).length+'🔥');
+
+    // Populate node dropdown
+    const nodeSel=document.getElementById('gpu-add-node');
+    if(nodeSel){
+      nodeSel.innerHTML='<option value="">Select node...</option>'+(nd.nodes||[]).map(n=>`<option value="${n.id}">${n.name} (${n.type})</option>`).join('');
+    }
+
+    // GPU Cards
+    const grid=document.getElementById('gpu-cards-grid');
+    if(grid){
+      if(!gpus.length){grid.innerHTML='<div style="color:var(--text3);font-size:.82rem;padding:20px">No GPU workers deployed. Add one above.</div>';}
+      else{grid.innerHTML=gpus.map(renderGPUCard).join('');}
+    }
+
+    // GPU Table
+    const tbody=document.getElementById('gpu-tbl');
+    if(tbody){
+      if(!gpus.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3)">No GPU workers</td></tr>';}
+      else{tbody.innerHTML=gpus.map(w=>{
+        const temp=w.temp_c||0;
+        const tcls=temp>=82?'tc-crit':temp>=72?'tc-hot':temp>=60?'tc-warn':'tc-ok';
+        const vram_u=w.vram_used_gb||0, vram_t=w.vram_gb||0;
+        const load=w.load_pct||0;
+        return `<tr>
+          <td style="color:var(--primary2)">${w.id}</td>
+          <td><span class="vbadge ${VCLASS[w.vendor||'nvidia']}">${VICON[w.vendor||'nvidia']} ${(w.vendor||'GPU').toUpperCase()}</span></td>
+          <td>${w.label||'—'}</td>
+          <td style="color:var(--text3)">${w.node_id}</td>
+          <td class="${tcls}" style="font-weight:700;font-family:var(--mono)">${temp}°C</td>
+          <td style="font-family:var(--mono)">${vram_u}/${vram_t}GB</td>
+          <td><div class="meter-bar" style="width:60px;display:inline-block"><div class="meter-fill${load>80?' meter-fill-red':load>50?' meter-fill-amber':''}" style="width:${load}%"></div></div> ${load}%</td>
+          <td>${w.tasks_total||0}</td>
+          <td>${statusBadge(w.status)}</td>
+          <td style="display:flex;gap:5px">
+            <button class="btn btn-amber btn-sm" onclick="swapGPU('${w.id}')">🔄 Swap</button>
+            <button class="btn btn-danger btn-sm" onclick="removeGPUWorker('${w.id}')">✕</button>
+          </td></tr>`;
+      }).join('');}
+    }
+    updateThermalMap(gpus);
+  }catch(e){toast('GPU load error: '+e.message,'error');}
+}
+
+function renderGPUCard(w){
+  const temp=w.temp_c||0, load=w.load_pct||0;
+  const vramU=w.vram_used_gb||0, vramT=w.vram_gb||0;
+  const vramPct=vramT>0?Math.min(100,(vramU/vramT)*100):0;
+  const tempCls=temp>=82?'tc-crit':temp>=72?'tc-hot':temp>=60?'tc-warn':'tc-ok';
+  const cardExtra=temp>=82?'gpu-hot':temp>=72?'gpu-warn':'gpu-ok';
+  const tiCls=temp>=82?'ti-crit':temp>=72?'ti-hot':temp>=60?'ti-warn':'ti-ok';
+  const vendor=w.vendor||'nvidia';
+  const hot=temp>=(_asConfig.warn||72);
+  const crit=temp>=(_asConfig.crit||82);
+  return `<div class="gpu-card ${cardExtra}">
+    <div class="thermal-indicator ${tiCls}"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <span class="vbadge ${VCLASS[vendor]}">${VICON[vendor]} ${vendor.toUpperCase()}</span>
+      <span class="${tempCls} gpu-temp">${temp}°C</span>
+    </div>
+    <div style="font-weight:700;font-size:.82rem;margin-bottom:3px">${w.label||w.id}</div>
+    <div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin-bottom:8px">${w.model||'—'} · Node: ${w.node_id||'?'}</div>
+    <div class="meter-wrap" style="margin-bottom:5px">
+      <div class="meter-label"><span>Load</span><span>${load}%</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width:${load}%;background:${load>80?'var(--red)':load>50?'var(--amber)':'var(--primary)'}"></div></div>
+    </div>
+    <div class="meter-wrap" style="margin-bottom:10px">
+      <div class="meter-label"><span>VRAM</span><span>${vramU}/${vramT}GB</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width:${vramPct}%;background:${vramPct>80?'var(--amber)':'var(--cyan)'}"></div></div>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      ${statusBadge(w.status)}
+      <span style="font-size:.63rem;color:var(--text3);font-family:var(--mono)">Tasks: ${w.tasks_total||0}</span>
+      ${hot?`<span class="badge badge-amber">🔥 HOT</span>`:''}
+      ${crit?`<span class="badge badge-red">🚨 REROUTING</span>`:''}
+    </div>
+    <div style="display:flex;gap:5px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="swapGPU('${w.id}')">🔄 Swap</button>
+      <button class="btn btn-danger btn-sm" onclick="removeGPUWorker('${w.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+async function runGPUDetect(){
+  const nodeId=document.getElementById('gpu-add-node')?.value;
+  if(!nodeId){toast('Select a node first','error');return;}
+  const el=document.getElementById('gpu-detect-result');
+  if(el) el.textContent='🔍 Scanning for GPUs...';
+  try{
+    const r=await api('POST','/api/nodes/'+nodeId+'/detect_gpu');
+    if(r.gpus&&r.gpus.length){
+      if(el) el.innerHTML=r.gpus.map(g=>`<div>✅ <span style="color:var(--green)">${g.name}</span> · ${g.vendor} · ${g.vram_gb}GB VRAM · Driver: ${g.driver||'—'}</div>`).join('');
+      const fg=r.gpus[0];
+      document.getElementById('gpu-add-vendor') && (document.getElementById('gpu-add-vendor').value=fg.vendor||'nvidia');
+      document.getElementById('gpu-add-vram') && (document.getElementById('gpu-add-vram').value=fg.vram_gb||'');
+      document.getElementById('gpu-add-lbl') && (document.getElementById('gpu-add-lbl').value=fg.name||'');
+    } else {
+      if(el) el.innerHTML='<span style="color:var(--amber)">⚠️ No GPUs detected (CPU fallback available)</span>';
+    }
+  }catch(e){if(el) el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;}
+}
+
+async function addGPUWorker(){
+  const licensed=_licData.gpu_workers||0;
+  const used=_gpuWorkers.filter(w=>w.status!=='removed').length;
+  if(used>=licensed&&licensed>0){toast('GPU license limit reached ('+licensed+'). Upgrade to add more.','error');return;}
+  try{
+    const body={
+      node_id: document.getElementById('gpu-add-node')?.value,
+      type:'gpu',
+      vendor: document.getElementById('gpu-add-vendor')?.value||'auto',
+      provider_id: document.getElementById('gpu-add-prov')?.value,
+      model: document.getElementById('gpu-add-model')?.value,
+      vram_gb: parseInt(document.getElementById('gpu-add-vram')?.value)||null,
+      concurrency: parseInt(document.getElementById('gpu-add-conc')?.value)||2,
+      thermal_limit: parseInt(document.getElementById('gpu-add-therm')?.value)||80,
+      label: document.getElementById('gpu-add-lbl')?.value||'',
+    };
+    if(!body.node_id){toast('Select a node','error');return;}
+    await api('POST','/api/workers/register',body);
+    toast('✅ GPU Worker added','ok');
+    addScaleLog('ok','GPU worker added: '+(body.label||body.node_id)+' ('+body.vendor+')');
+    loadGPUPool();
+    togglePanel('add-gpu-panel');
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+async function removeGPUWorker(id){
+  if(!confirm('Remove GPU worker '+id+'?')) return;
+  try{
+    await api('DELETE','/api/workers/'+id);
+    toast('GPU worker removed','ok');
+    addScaleLog('warn','GPU worker removed: '+id);
+    loadGPUPool();
+  }catch(e){toast('Error: '+e.message,'error');}
+}
+
+function swapGPU(id){
+  addScaleLog('info','Swap initiated for GPU: '+id+' — remove it and add replacement. Count stays the same.');
+  toast('🔄 To swap: remove this GPU worker, then add the replacement. Total count = same = license OK.','ok');
+}
+
+function updateThermalMap(gpus){
+  const el=document.getElementById('therm-map');
+  if(!el) return;
+  if(!gpus||!gpus.length){el.innerHTML='<div style="color:var(--text3);font-size:.78rem;padding:10px">No GPU workers</div>';return;}
+  el.innerHTML=gpus.map(w=>{
+    const temp=w.temp_c||0;
+    const bg=temp>=82?'var(--red2)':temp>=72?'rgba(251,146,60,.12)':temp>=60?'var(--amber2)':'var(--green2)';
+    const fc=temp>=82?'var(--red)':temp>=72?'#fb923c':temp>=60?'var(--amber)':'var(--green)';
+    const bc=temp>=82?'rgba(248,113,113,.4)':temp>=72?'rgba(251,146,60,.35)':temp>=60?'rgba(251,191,36,.3)':'rgba(34,211,168,.2)';
+    const label=temp>=82?'🚨 CRITICAL':temp>=72?'🔥 HOT':temp>=60?'⚠️ WARM':'✅ OK';
+    return `<div style="background:${bg};border:1px solid ${bc};border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-bottom:3px">${w.id}</div>
+      <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:${fc}">${temp}°C</div>
+      <div style="font-size:.6rem;color:var(--text3);margin-top:3px">${w.label||(w.vendor||'GPU').toUpperCase()}</div>
+      <div style="font-size:.58rem;color:${fc};margin-top:3px">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Auto-Scale ────────────────────────────────────────────────────────────
+function loadASConfig(){
+  const lic=_licData;
+  const licensed=lic.gpu_workers||0;
+  const used=_gpuWorkers.filter(w=>w.status==='active').length;
+  setEl('as-remain',licensed-used);
+  setEl('manual-gpu-n',used);
+  setEl('manual-lim-note','license: '+licensed+' GPU max');
+  setEl('as-status',_asConfig.enabled?'ON':'OFF');
+  setEl('as-sub',_asConfig.enabled?'auto-scaling active':'manual only');
+  document.getElementById('as-enabled') && (document.getElementById('as-enabled').checked=_asConfig.enabled);
+  document.getElementById('therm-enabled') && (document.getElementById('therm-enabled').checked=_asConfig.thermal);
+  document.getElementById('as-up') && (document.getElementById('as-up').value=_asConfig.up);
+  document.getElementById('as-up-v') && (document.getElementById('as-up-v').textContent=_asConfig.up+'%');
+  document.getElementById('as-down') && (document.getElementById('as-down').value=_asConfig.down);
+  document.getElementById('as-down-v') && (document.getElementById('as-down-v').textContent=_asConfig.down+'%');
+  document.getElementById('as-min') && (document.getElementById('as-min').value=_asConfig.min);
+  document.getElementById('as-cool') && (document.getElementById('as-cool').value=_asConfig.cool);
+  document.getElementById('therm-warn') && (document.getElementById('therm-warn').value=_asConfig.warn);
+  document.getElementById('tw-v') && (document.getElementById('tw-v').textContent=_asConfig.warn+'°C');
+  document.getElementById('therm-crit') && (document.getElementById('therm-crit').value=_asConfig.crit);
+  document.getElementById('tc-v') && (document.getElementById('tc-v').textContent=_asConfig.crit+'°C');
+  document.getElementById('therm-kill') && (document.getElementById('therm-kill').value=_asConfig.kill);
+  document.getElementById('tk-v') && (document.getElementById('tk-v').textContent=_asConfig.kill+'°C');
+  // Template dropdown
+  const sel=document.getElementById('as-tmpl');
+  if(sel) sel.innerHTML=_gpuWorkers.length?_gpuWorkers.map(w=>`<option value="${w.id}">${w.label||w.id} (${w.vendor||'?'} · ${w.model||'?'})</option>`).join(''):'<option value="">No GPU workers deployed</option>';
+  updateThermalMap(_gpuWorkers);
+}
+
+function toggleAS(cb){
+  _asConfig.enabled=cb.checked;
+  setEl('as-status',cb.checked?'ON':'OFF');
+  setEl('as-sub',cb.checked?'auto-scaling active':'manual only');
+  addScaleLog('info','Auto-Scale '+(cb.checked?'ENABLED':'DISABLED'));
+}
+
+async function manualScale(delta){
+  const licensed=_licData.gpu_workers||0;
+  const used=_gpuWorkers.filter(w=>w.status==='active').length;
+  if(delta>0&&used>=licensed){toast('GPU license limit ('+licensed+'). Cannot add more.','error');return;}
+  if(delta<0&&used<=0){toast('No GPU workers to remove','error');return;}
+  try{
+    if(delta>0){
+      const tmpl=document.getElementById('as-tmpl')?.value;
+      if(!tmpl){toast('Set a template worker in the Scale rules first','error');return;}
+      await api('POST','/api/workers/scale',{action:'add',template_worker_id:tmpl});
+      addScaleLog('ok','Manual scale-UP +1 GPU (clone of '+tmpl+')');
+      toast('✅ GPU worker added','ok');
+    } else {
+      await api('POST','/api/workers/scale',{action:'remove'});
+      addScaleLog('warn','Manual scale-DOWN -1 GPU worker removed');
+      toast('GPU worker removed','ok');
+    }
+    await loadGPUPool();
+    const newUsed=_gpuWorkers.filter(w=>w.status==='active').length;
+    setEl('manual-gpu-n',newUsed);
+  }catch(e){toast('Scale error: '+e.message,'error');}
+}
+
+async function saveASConfig(){
+  _asConfig={
+    enabled: document.getElementById('as-enabled')?.checked||false,
+    up: parseInt(document.getElementById('as-up')?.value)||75,
+    down: parseInt(document.getElementById('as-down')?.value)||20,
+    min: parseInt(document.getElementById('as-min')?.value)||1,
+    cool: parseInt(document.getElementById('as-cool')?.value)||120,
+    thermal: document.getElementById('therm-enabled')?.checked||false,
+    warn: parseInt(document.getElementById('therm-warn')?.value)||72,
+    crit: parseInt(document.getElementById('therm-crit')?.value)||82,
+    kill: parseInt(document.getElementById('therm-kill')?.value)||90,
+    strat: document.getElementById('therm-strat')?.value||'coolest_first',
+  };
+  try{
+    await api('PUT','/api/autoscale/config',_asConfig);
+    toast('✅ Auto-Scale config saved','ok');
+  }catch(e){toast('Config saved locally (API offline)','ok');}
+  addScaleLog('ok','Config saved — AutoScale:'+(_asConfig.enabled?'ON':'OFF')+' Thermal:'+(_asConfig.thermal?'ON':'OFF'));
+}
+
+function addScaleLog(type, msg){
+  const el=document.getElementById('scale-log');
+  if(!el) return;
+  const t=new Date().toISOString().slice(11,19);
+  const cls={ok:'log-ok',warn:'log-warn',err:'log-err',info:'log-info'}[type]||'';
+  const d=document.createElement('div');
+  d.innerHTML=`<span class="log-time">[${t}] </span><span class="${cls}">${msg}</span>`;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+
+// ── Server Monitor ────────────────────────────────────────────────────────
+async function loadMonitor(){
+  try{
+    const d=await api('GET','/api/nodes');
+    const nodes=d.nodes||[];
+    const el=document.getElementById('monitor-cards');
+    if(!el) return;
+    if(!nodes.length){el.innerHTML='<div style="color:var(--text3)">No nodes registered</div>';return;}
+    el.innerHTML=nodes.map(n=>{
+      const cpu=n.cpu_pct||0, mem=n.mem_pct||0, disk=n.disk_pct||0;
+      const cpuCls=cpu>80?'mf-red':cpu>60?'mf-amber':'';
+      const memCls=mem>80?'mf-red':mem>60?'mf-amber':'';
+      return `<div class="card">
+        <div class="card-title">💻 ${n.name||n.id}
+          <span style="margin-left:auto" class="badge badge-${n.status==='online'?'green':'red'}">${n.status||'?'}</span>
+        </div>
+        <div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin-bottom:12px">${n.endpoint||'—'} · ${n.type||'?'} · ${n.region||'—'}</div>
+        <div class="meter-wrap"><div class="meter-label"><span>CPU</span><span>${cpu}%</span></div><div class="meter-bar"><div class="meter-fill ${cpuCls}" style="width:${cpu}%"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label"><span>Memory</span><span>${mem}%</span></div><div class="meter-bar"><div class="meter-fill ${memCls}" style="width:${mem}%"></div></div></div>
+        <div class="meter-wrap"><div class="meter-label"><span>Disk</span><span>${disk}%</span></div><div class="meter-bar"><div class="meter-fill ${disk>80?'mf-red':disk>60?'mf-amber':''}" style="width:${disk}%"></div></div></div>
+        <div style="display:flex;gap:14px;margin-top:8px;font-size:.7rem;font-family:var(--mono);color:var(--text2)">
+          <span>🌐 ${n.net_mbps||0} Mbps</span><span>Workers: ${n.worker_count||0}</span><span>GPUs: ${n.gpu_count||0}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){toast('Monitor error: '+e.message,'error');}
+}
+
+// ── Local Chat ────────────────────────────────────────────────────────────
+function initChat(){
+  updateChatModels();
+}
+
+function chatKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=(inp?.value||'').trim();
+  if(!msg) return;
+  const prov=document.getElementById('chat-prov')?.value||'openai';
+  const model=document.getElementById('chat-model')?.value||'';
+  const temp=parseFloat(document.getElementById('chat-temp')?.value)||0.7;
+  const sys=document.getElementById('chat-sys')?.value||'';
+
+  appendBubble('user',msg);
+  if(inp) inp.value='';
+  _chatHistory.push({role:'user',content:msg});
+
+  const btn=document.getElementById('chat-send');
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  const bubble=appendBubble('ai','⏳ Thinking...');
+
+  try{
+    const msgs=sys?[{role:'system',content:sys},..._chatHistory]:[..._chatHistory];
+    const r=await api('POST','/api/chat/direct',{provider:prov,model,messages:msgs,temperature:temp});
+    const reply=r.content||r.message||r.text||'(empty response)';
+    bubble.textContent=reply;
+    _chatHistory.push({role:'assistant',content:reply});
+    _chatStats.in+=r.input_tokens||0;
+    _chatStats.out+=r.output_tokens||0;
+    _chatStats.cost+=r.cost_usd||0;
+    setEl('chat-stats',`tokens: ${_chatStats.in} in / ${_chatStats.out} out · cost: $${_chatStats.cost.toFixed(5)} · ${prov}/${model}`);
+  }catch(e){
+    bubble.textContent='❌ '+e.message+'. Check Credential Vault — API key must be stored for this provider.';
+    bubble.style.color='var(--red)';
+    _chatHistory.pop();
+  }
+  if(btn){btn.disabled=false;btn.textContent='Send ↵';}
+}
+
+function appendBubble(role,text){
+  const el=document.getElementById('chat-msgs');
+  if(!el) return {textContent:''};
+  const d=document.createElement('div');
+  d.className='chat-bubble chat-'+(role==='user'?'user':'ai');
+  d.textContent=text;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+  return d;
+}
+
+function clearChat(){
+  _chatHistory=[];
+  _chatStats={in:0,out:0,cost:0};
+  const el=document.getElementById('chat-msgs');
+  if(el) el.innerHTML='<div class="chat-sys-msg">Chat cleared · Orchestra Local Chat · Keys stay on this machine</div>';
+  setEl('chat-stats','tokens: 0 in / 0 out · cost: $0.00000');
+}
+
+// ── Multi-AI Tester ───────────────────────────────────────────────────────
+function initMultiAI(){
+  const el=document.getElementById('ma-provider-checks');
+  if(!el||el.children.length) return;
+  const provs=['openai','anthropic','gemini','groq','together','ollama'];
+  el.innerHTML=provs.map(p=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 10px;background:var(--card2);border:1px solid var(--border);border-radius:20px;font-size:.72rem;font-family:var(--mono)"><input type="checkbox" value="${p}" checked> ${p}</label>`).join('');
+}
+
+async function runMultiAI(){
+  const prompt=document.getElementById('ma-prompt')?.value||'';
+  const sys=document.getElementById('ma-sys')?.value||'';
+  const maxTok=parseInt(document.getElementById('ma-maxtok')?.value)||500;
+  const selected=[...document.querySelectorAll('#ma-provider-checks input:checked')].map(i=>i.value);
+  if(!selected.length){toast('Select at least one provider','error');return;}
+  const btn=document.getElementById('ma-run');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Running...';}
+  const res=document.getElementById('ma-results');
+  if(res) res.innerHTML=selected.map(p=>`<div id="ma-r-${p}" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px"><div style="font-weight:700;font-size:.78rem;font-family:var(--mono);color:var(--primary2);margin-bottom:8px">${p}</div><div style="font-size:.74rem;color:var(--text3)">⏳ Running...</div></div>`).join('');
+
+  await Promise.all(selected.map(async prov=>{
+    const t0=Date.now();
+    try{
+      const msgs=sys?[{role:'system',content:sys},{role:'user',content:prompt}]:[{role:'user',content:prompt}];
+      const r=await api('POST','/api/chat/direct',{provider:prov,model:MODELS[prov]?.[0]||'',messages:msgs,max_tokens:maxTok});
+      const lat=Date.now()-t0;
+      const reply=r.content||r.text||'(empty)';
+      const el=document.getElementById('ma-r-'+prov);
+      if(el) el.innerHTML=`<div style="font-weight:700;font-size:.78rem;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:var(--primary2);font-family:var(--mono)">${prov}</span><span class="badge badge-green">✅ ${lat}ms</span></div><div style="font-size:.74rem;color:var(--text2);margin-bottom:8px;line-height:1.6">${reply.substring(0,400)}${reply.length>400?'...':''}</div><div style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">In: ${r.input_tokens||0} · Out: ${r.output_tokens||0} · $${(r.cost_usd||0).toFixed(5)}</div>`;
+    }catch(e){
+      const el=document.getElementById('ma-r-'+prov);
+      if(el) el.innerHTML=`<div style="font-weight:700;font-size:.78rem;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:var(--primary2);font-family:var(--mono)">${prov}</span><span class="badge badge-red">❌ Error</span></div><div style="font-size:.74rem;color:var(--red)">${e.message}</div>`;
+    }
+  }));
+  if(btn){btn.disabled=false;btn.textContent='▶ Run on All Selected';}
+}
+
+async function testCustomEndpoint(){
+  const url=document.getElementById('ma-url')?.value;
+  const body=document.getElementById('ma-body')?.value;
+  if(!url){toast('Enter endpoint URL','error');return;}
+  try{
+    const parsed=body?JSON.parse(body):{};
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-Console-Token':TOKEN},body:JSON.stringify(parsed)});
+    const data=await r.json();
+    const el=document.getElementById('ma-results');
+    if(el) el.innerHTML=`<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;grid-column:1/-1"><div style="font-weight:700;margin-bottom:8px;color:var(--green)">✅ Response (${r.status})</div><pre style="font-size:.7rem;color:var(--text2);overflow-x:auto;font-family:var(--mono)">${JSON.stringify(data,null,2).substring(0,2000)}</pre></div>`;
+    toast('✅ Response '+r.status,'ok');
+  }catch(e){toast('Endpoint error: '+e.message,'error');}
+}
+
+// ── Cloud+OnPrem check ────────────────────────────────────────────────────
+// Cloud endpoint auto-displayed from license metadata
+async function loadCloudEndpoint(){
+  try{
+    const r=await api('GET','/api/license/status');
+    const ep=r.cloud_endpoint||r.branding?.cloud_endpoint||'https://your-domain/api/jobs/submit';
+    const el=document.getElementById('cloud-endpoint-display');
+    if(el) el.textContent=ep;
+  }catch{}
+}
+
+// ── Enhanced License Page ─────────────────────────────────────────────────
+// loadLicenseStatus already exists above — we patch it here to fill new fields
+const _origLoadLicense = typeof loadLicenseStatus === 'function' ? loadLicenseStatus : null;
+
+async function loadLicenseStatus(){
+  try{
+    const d=await api('GET','/api/license/status');
+    _licData=d;
+    const ok=d.status==='ACTIVE';
+    const brand=d.branding||{};
+
+    // Company header
+    setEl('lic-company-name', brand.company_name||d.client_name||'Unknown Company');
+    setEl('lic-wl-name', brand.wl_name?'White-Label: '+brand.wl_name:'Direct License');
+    setEl('lic-contact', d.contact_email||'');
+    setEl('lic-tier-big', (d.tier||'trial').toUpperCase());
+    const pill=document.getElementById('lic-status-pill');
+    if(pill){pill.textContent=d.status||'—';pill.style.background=ok?'var(--green2)':'var(--red2)';pill.style.color=ok?'var(--green)':'var(--red)';}
+
+    // Timeline
+    setEl('lic-id2', d.license_id||'—');
+    setEl('lic-issued', d.issued_at?new Date(d.issued_at).toLocaleDateString():'—');
+    setEl('lic-activated', d.activated_at?new Date(d.activated_at).toLocaleDateString():'—');
+    setEl('lic-mode2', d.license_mode||'—');
+    if(d.expires_at){
+      const expDate=new Date(d.expires_at);
+      setEl('lic-expires2', expDate.toLocaleDateString());
+      const days=Math.ceil((expDate-Date.now())/86400000);
+      const dl=document.getElementById('lic-days-left');
+      if(dl){dl.textContent=days>0?days+' days':'EXPIRED';dl.style.color=days<14?'var(--red)':days<60?'var(--amber)':'var(--green)';}
+      if(d.activated_at){
+        const total=expDate-new Date(d.activated_at);
+        const elapsed=Date.now()-new Date(d.activated_at);
+        const pct=Math.min(100,(elapsed/total)*100);
+        const bar=document.getElementById('lic-time-bar');
+        if(bar){bar.style.width=pct+'%';bar.style.background=pct>80?'var(--red)':pct>60?'var(--amber)':'var(--primary)';}
+      }
+    } else {
+      setEl('lic-expires2','Lifetime / Never');
+      const dl=document.getElementById('lic-days-left');
+      if(dl){dl.textContent='∞ Unlimited';dl.style.color='var(--green)';}
+    }
+
+    // Entitlements
+    setEl('lic-cpu2', d.cpu_workers||'—');
+    setEl('lic-gpu2', d.gpu_workers||'—');
+    setEl('lic-nodes2', d.max_nodes||'—');
+    setEl('lic-users2', d.max_end_users||'—');
+    setEl('lic-domains', d.max_domains||'—');
+    setEl('lic-gpuod2', d.gpu_on_demand?'✅ Enabled':'—');
+    setEl('lic-wlr2', d.can_wl_rebrand?'✅ Enabled':'—');
+    setEl('lic-airgap', d.air_gap_enabled?'✅ Enabled':'—');
+
+    // Original fields still used
+    setEl('lic-id', d.license_id||'—');
+    setEl('lic-tier', (d.tier||'trial').toUpperCase());
+    setEl('lic-status', d.status||'—');
+    setEl('lic-cpu', d.cpu_workers||'—');
+    setEl('lic-gpu', d.gpu_workers||'—');
+    setEl('lic-nodes', d.max_nodes||'—');
+    setEl('lic-users', d.max_end_users||'—');
+    setEl('lic-gpuod', d.gpu_on_demand?'✅':'—');
+    setEl('lic-wlr', d.can_wl_rebrand?'✅':'—');
+    setEl('lic-mode', d.license_mode||'—');
+    setEl('lic-expires', d.expires_at?new Date(d.expires_at).toLocaleDateString():'Lifetime');
+    setEl('lic-unitid', d.unit_id||'—');
+
+  }catch(e){toast('License load error: '+e.message,'error');}
+}
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+version: "3.9"
+
+# ============================================================
+# AXTO Orchestra — AI eXecution & Tools Orchestration | Docker Compose
+# Usage:
+#   1. cp orchestra.example.yml orchestra.yml
+#   2. Edit orchestra.yml (license_key + AI vendor keys)
+#   3. docker compose -f orchestra-compose.yml up -d
+#
+# Orchestra Core API: http://localhost:8080
+# Orchestra Console:  http://localhost:8080/console
+# ============================================================
+
+services:
+
+  orchestra-core:
+    image: ghcr.io/p2nshooter/orchestra-engine:latest
+    container_name: orchestra-core
+    restart: unless-stopped
+    ports:
+      - "8080:8080"       # Orchestra Core API + Console UI
+    volumes:
+      - ./orchestra.yml:/app/orchestra_core/config/orchestra.yml:ro
+      - orchestra-data:/app/data
+      - orchestra-logs:/app/logs
+    environment:
+      - ORCHESTRA_HOST=0.0.0.0
+      - ORCHESTRA_PORT=8080
+      - ORCHESTRA_LOG_LEVEL=INFO
+      - AXTO_LICENSE_KEY=${AXTO_LICENSE_KEY:-}
+      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-orchestra-console}
+      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-orchestra-worker-secret}
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    networks:
+      - orchestra-net
+    logging:
+      driver: "json-file"
+      options: { max-size: "20m", max-file: "5" }
+
+  orchestra-worker-cpu:
+    image: ghcr.io/p2nshooter/orchestra-engine:latest
+    container_name: orchestra-worker-cpu-1
+    restart: unless-stopped
+    command: python orchestra_worker/worker_cpu.py
+    depends_on:
+      orchestra-core:
+        condition: service_healthy
+    environment:
+      - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-orchestra-worker-secret}
+      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-orchestra-console}
+      - WORKER_PROVIDER=${WORKER_PROVIDER:-groq}
+      - WORKER_MODEL=${WORKER_MODEL:-llama-3.1-8b-instant}
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
+      - WORKER_PORT=7891
+      - NODE_ID=cpu-node-1
+    networks:
+      - orchestra-net
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  # ── GPU Worker (uncomment if you have NVIDIA GPU) ──────────────
+  # orchestra-worker-gpu:
+  #   image: ghcr.io/p2nshooter/orchestra-engine:latest
+  #   container_name: orchestra-worker-gpu-1
+  #   restart: unless-stopped
+  #   command: python orchestra_worker/worker_gpu.py
+  #   runtime: nvidia
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   depends_on:
+  #     orchestra-core:
+  #       condition: service_healthy
+  #   environment:
+  #     - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+  #     - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-orchestra-worker-secret}
+  #     - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-orchestra-console}
+  #     - WORKER_MODEL=llama3.2
+  #     - OLLAMA_BASE_URL=http://localhost:11434
+  #     - WORKER_PORT=7892
+  #     - NODE_ID=gpu-node-1
+  #   networks:
+  #     - orchestra-net
+
+volumes:
+  orchestra-data:
+  orchestra-logs:
+
+networks:
+  orchestra-net:
+    driver: bridge
