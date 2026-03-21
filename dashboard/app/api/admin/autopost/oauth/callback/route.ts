@@ -1,8 +1,8 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, now } from "@/lib/db";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 // ── Token exchange endpoints ──────────────────────────────────────────────────
 const TOKEN_URLS: Record<string, string> = {

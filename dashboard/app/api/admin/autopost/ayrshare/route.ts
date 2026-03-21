@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { validateAyrshareKey, getAyrshareProfiles } from "@/lib/autopost/ayrshare";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 /**
  * GET  /api/admin/autopost/ayrshare  — get current connection status

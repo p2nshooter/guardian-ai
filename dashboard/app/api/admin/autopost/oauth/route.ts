@@ -1,9 +1,9 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 // ── PKCE helpers (for Twitter OAuth 2.0) ─────────────────────────────────────
 async function generateCodeVerifier(): Promise<string> {

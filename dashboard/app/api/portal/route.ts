@@ -1,9 +1,9 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const user = await requireUser(req);

@@ -1,3 +1,5 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, dbQuery, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
@@ -6,8 +8,6 @@ import { postToClassifiedSite, buildClassifiedPost } from "@/lib/autopost/classi
 import { postViaAyrshare } from "@/lib/autopost/ayrshare";
 import { publishToplatform } from "@/lib/autopost/publisher";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 /**
  * POST /api/admin/autopost/quickpost

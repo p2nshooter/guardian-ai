@@ -1,9 +1,9 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 // GET — return all saved app credentials (app_secret redacted)
 export async function GET(req: NextRequest) {

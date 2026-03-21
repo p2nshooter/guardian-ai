@@ -1,8 +1,8 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst } from "@/lib/db";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const checks: Record<string, any> = { timestamp: new Date().toISOString(), version: "2.2.0" };

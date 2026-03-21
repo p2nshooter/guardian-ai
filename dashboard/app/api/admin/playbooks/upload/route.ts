@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, now } from "@/lib/db";
 import { getR2 } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 // Upload playbook file to R2
 export async function POST(req: NextRequest) {

@@ -1,9 +1,9 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getPayPalCredentials } from "@/lib/gateways";
 import { processPayment } from "@/lib/webhooks/shared";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 async function verifyPayPalWebhook(
   req: NextRequest, rawBody: string,

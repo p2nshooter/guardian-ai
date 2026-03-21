@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
 export const runtime = "edge";
+export const dynamic = "force-dynamic";
+import { NextRequest, NextResponse } from "next/server";
 
 const ghcrOwner = process.env.GHCR_OWNER || "p2nshooter";
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";

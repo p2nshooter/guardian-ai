@@ -1,8 +1,8 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMagicToken, signJWT, setSessionCookie } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 function isSafeRedirect(redirect: string): boolean {
   if (!redirect.startsWith("/")) return false;

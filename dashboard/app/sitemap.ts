@@ -1,6 +1,4 @@
 import { MetadataRoute } from "next";
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";

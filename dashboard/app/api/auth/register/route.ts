@@ -1,9 +1,9 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { signJWT, setSessionCookie } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 /**
  * Client self-registration with email + password.

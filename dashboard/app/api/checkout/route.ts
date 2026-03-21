@@ -1,3 +1,5 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PACKAGE_INFO } from "@/lib/stripe";
@@ -6,8 +8,6 @@ import { createPayPalOrderWithCreds } from "@/lib/paypal";
 import { createXenditInvoiceWithKey } from "@/lib/xendit";
 import { usdToLocal } from "@/lib/fx";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   let body: any = {};

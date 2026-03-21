@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { encryptObj, decryptObj } from "@/lib/gateway-crypto";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const user = await requireAdmin(req);

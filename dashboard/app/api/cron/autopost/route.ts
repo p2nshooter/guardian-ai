@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun, now } from "@/lib/db";
 import { publishToplatform } from "@/lib/autopost/publisher";
 import { pickUnusedTemplate, autoFillTemplate } from "@/lib/autopost/generator";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 /**
  * AutoPost Cron — triggered by Cloudflare Cron or external scheduler.

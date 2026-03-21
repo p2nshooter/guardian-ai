@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { generateLicenseKey } from "@/lib/license";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 async function triggerGitHubBuild(p: {
   product:string;buildType:string;buildId:string;licenseKey:string;

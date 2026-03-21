@@ -1,3 +1,5 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 /**
  * GET /api/fx-rates
  * Live exchange rates (USD base) — fetched from open.er-api.com,
@@ -8,8 +10,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllRates, FALLBACK_RATES } from "@/lib/fx";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {

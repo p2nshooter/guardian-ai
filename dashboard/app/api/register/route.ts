@@ -1,9 +1,9 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { signJWT, setSessionCookie } from "@/lib/auth";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 // ── PBKDF2 password hashing (Edge Runtime compatible) ──────────────────────
 async function hashPassword(password: string): Promise<string> {

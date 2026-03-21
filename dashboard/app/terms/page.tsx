@@ -1,6 +1,6 @@
+export const runtime = "edge";
 import Link from "next/link";
 import type { Metadata } from "next";
-export const runtime = "edge";
 export const metadata: Metadata = { title: "Terms of Service" };
 
 export default function TermsPage() {

@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { generateVariation, generateBatchVariations, pickUnusedTemplate, autoFillTemplate } from "@/lib/autopost/generator";
 import { getRandomTemplate, ALL_TEMPLATES } from "@/lib/autopost/templates";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const user = await requireAdmin(req);

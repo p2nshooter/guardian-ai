@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { publishToplatform } from "@/lib/autopost/publisher";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const user = await requireAdmin(req);

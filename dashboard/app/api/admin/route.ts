@@ -1,3 +1,5 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbQuery, dbRun, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
@@ -5,8 +7,6 @@ import { sendWelcomeEmail, sendBundleEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
 import { createLicense, createBundleLicenses } from "@/lib/license";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const user = await requireAdmin(req);

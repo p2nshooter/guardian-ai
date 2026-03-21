@@ -1,8 +1,8 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbFirst, dbRun, newId, now } from "@/lib/db";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 // GET — public catalog (no auth required for browsing)
 export async function GET(req: NextRequest) {

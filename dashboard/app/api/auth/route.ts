@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { signJWT, setSessionCookie, createMagicToken } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);

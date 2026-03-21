@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripeCredentials } from "@/lib/gateways";
 import { processPayment } from "@/lib/webhooks/shared";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   let creds;

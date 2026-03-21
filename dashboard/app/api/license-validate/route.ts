@@ -1,8 +1,8 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",

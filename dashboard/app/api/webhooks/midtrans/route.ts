@@ -1,10 +1,10 @@
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getMidtransCredentials } from "@/lib/gateways";
 import { processPayment } from "@/lib/webhooks/shared";
 import { localToUsd } from "@/lib/fx";
 
-export const runtime = "edge";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   let body: any = {};
