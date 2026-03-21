@@ -56,10 +56,7 @@ certs/*.key
 
 # ── PDFs (large binary, stored in R2) ───────────────────────────────
 # Uncomment to exclude from git (PDFs go to R2 via CI/CD):
-# playbooks-pdf/*.pdf
 # Keep PDFs in git so CI/CD can upload them to R2 automatically
-!playbooks-pdf/.gitkeep
-!playbooks-pdf/BACA-INI.txt
 
 # ── Temp / generated ─────────────────────────────────────────────────
 *.tmp
