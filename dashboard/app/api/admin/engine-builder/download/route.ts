@@ -1,8 +1,3 @@
-/**
- * GET /api/admin/engine-builder/download?id=BUILD_ID
- * Streams build artifact directly from CF R2 binding — no presign needed.
- * Admin only.
- */
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
@@ -23,33 +18,45 @@ export async function GET(req: NextRequest) {
   }
 
   const build = await dbFirst<any>(db,
-    `SELECT id, label, product, build_type, arch, r2_key, file_size FROM engine_builds
-     WHERE id=? AND status='ready' AND deleted_at=''`,
+    `SELECT id, label, product, build_type, arch, r2_key, file_size, status
+     FROM engine_builds WHERE id=? AND deleted_at=''`,
     [id]
   );
-  if (!build)    return NextResponse.json({ error: "Build not found" }, { status: 404 });
-  if (!build.r2_key) return NextResponse.json({ error: "No artifact file. Build may be config-only." }, { status: 404 });
-
-  let r2: any;
-  try { r2 = getR2Builds(req); } catch {
-    return NextResponse.json({ error: "R2 binding not available" }, { status: 503 });
-  }
-
-  const obj = await r2.get(build.r2_key);
-  if (!obj) return NextResponse.json({ error: "File not found in R2" }, { status: 404 });
+  if (!build) return NextResponse.json({ error: "Build not found" }, { status: 404 });
+  if (build.status !== "ready") return NextResponse.json({ error: "Build not ready" }, { status: 400 });
 
   const archSlug = build.arch === "windows/amd64" ? "windows"
                  : build.arch === "linux/arm64"   ? "linux-arm64"
                  : "linux";
   const filename = `axto-${build.product}-${build.build_type}-${archSlug}.zip`;
 
-  // Stream directly from R2 to browser
-  return new NextResponse(obj.body, {
-    headers: {
-      "Content-Type":        "application/zip",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Content-Length":      String(build.file_size || obj.size || ""),
-      "Cache-Control":       "no-store",
-    },
-  });
+  // ── Jika ada file di R2, stream langsung ─────────────────────────────────
+  if (build.r2_key) {
+    let r2: any;
+    try { r2 = getR2Builds(req); } catch {
+      return NextResponse.json({ error: "R2 binding not available" }, { status: 503 });
+    }
+    const obj = await r2.get(build.r2_key);
+    if (obj) {
+      return new NextResponse(obj.body, {
+        headers: {
+          "Content-Type":        "application/zip",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Content-Length":      String(build.file_size || obj.size || ""),
+          "Cache-Control":       "no-store",
+        },
+      });
+    }
+  }
+
+  // ── Fallback: tidak ada file di R2 (build config-only / GH Actions belum jalan)
+  // Kembalikan info yang jelas ke admin
+  return NextResponse.json({
+    error: "Build binary belum tersedia di R2.",
+    reason: build.r2_key
+      ? "File ada di DB tapi tidak ditemukan di R2 — mungkin sudah dihapus."
+      : "Build ini adalah config-only (GitHub Actions belum trigger). Set GITHUB_REPO & GITHUB_TOKEN di CF Pages, lalu buat build baru.",
+    build_id: build.id,
+    has_r2_key: !!build.r2_key,
+  }, { status: 404 });
 }

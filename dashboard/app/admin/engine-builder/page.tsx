@@ -228,14 +228,12 @@ export default function EngineBuilderPage() {
       const d = await r.json();
       if (!d.ok) { setErr(d.error||"Failed"); return; }
 
-      // has_binary = real compiled artifact in CF R2 (200MB-2GB)
-      // Stream directly via /api/admin/engine-builder/download?id=...
       if (d.has_binary) {
-        const sz = d.file_size_mb > 0 ? ` (${d.file_size_mb}MB)` : "";
+        // Binary ada di CF R2 — download langsung
         window.location.href = `/api/admin/engine-builder/download?id=${id}`;
         return;
       }
-      // Config-only build — show config files modal
+      // Config-only: GitHub Actions belum trigger binary build
       setDlFiles(d);
     } catch { setErr("Network error"); }
   }

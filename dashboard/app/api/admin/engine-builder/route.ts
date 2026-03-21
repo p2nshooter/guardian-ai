@@ -4,7 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, getR2Builds, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { generateLicenseKey } from "@/lib/license";
-import { r2KeyForBuild } from "@/lib/r2-presign";
+
+// ── R2 key helper ───────────────────────────────────────────────────────────
+function r2KeyForBuild(buildId: string, product: string, buildType: string, arch: string): string {
+  const a = arch === "windows/amd64" ? "windows" : arch === "linux/arm64" ? "linux-arm64" : "linux";
+  return `builds/${buildId}/axto-${product}-${buildType}-${a}.zip`;
+}
 
 // ── Trigger GitHub Actions build ──────────────────────────────────────────────
 async function triggerGitHubBuild(p: {
@@ -15,7 +20,7 @@ async function triggerGitHubBuild(p: {
 }) {
   const token   = process.env.GITHUB_TOKEN;
   const owner   = process.env.GITHUB_OWNER || process.env.GHCR_OWNER || "p2nshooter";
-  const repo    = process.env.GITHUB_REPO  || "guardian-engine";
+  const repo    = process.env.GITHUB_REPO  || "guardian-ai";
   const appUrl  = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
   const secret  = process.env.BUILD_WEBHOOK_SECRET || "";
   if (!token) return { triggered: false, status: 0 };
@@ -55,7 +60,7 @@ async function triggerGitHubBuild(p: {
 async function deleteGitHubRelease(releaseTag: string) {
   const token = process.env.GITHUB_TOKEN;
   const owner = process.env.GITHUB_OWNER || process.env.GHCR_OWNER || "p2nshooter";
-  const repo  = process.env.GITHUB_REPO  || "guardian-engine";
+  const repo  = process.env.GITHUB_REPO  || "guardian-ai";
   if (!token || !releaseTag) return;
   try {
     const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/${releaseTag}`,

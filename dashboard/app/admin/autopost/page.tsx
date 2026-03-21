@@ -239,7 +239,9 @@ export default function AdminAutopostPage() {
 
       if (!res.ok || !d.auth_url) {
         if (d.needs_setup) {
-          setError(`⚙️ App credentials belum dikonfigurasi untuk ${platformId}. Buka AutoPost → Platform Credentials → tambah App ID & Secret terlebih dahulu.`);
+          setAppCredEdit(platformId);
+          setAppCredForm({ platform: platformId, app_id: "", app_secret: "" });
+          setError(`⚙️ Isi App ID & App Secret untuk ${platformId} dulu, lalu klik Connect lagi.`);
         } else {
           setError(d.error || "Gagal memulai OAuth");
         }
@@ -247,10 +249,30 @@ export default function AdminAutopostPage() {
         return;
       }
 
-      // Direct redirect — langsung ke halaman login social media
-      // Callback akan redirect ke /admin/autopost?oauth_success=...
-      window.location.href = d.auth_url;
-      // oauthLoading akan reset saat halaman reload setelah callback
+      // Buka popup kecil ke halaman login social media (seperti Ayrshare)
+      const w = 600, h = 700;
+      const left = Math.round(window.screenX + (window.outerWidth  - w) / 2);
+      const top  = Math.round(window.screenY + (window.outerHeight - h) / 2);
+      const popup = window.open(
+        d.auth_url,
+        `oauth_${platformId}`,
+        `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      );
+
+      if (!popup || popup.closed) {
+        // Kalau popup diblokir browser → fallback redirect biasa
+        window.location.href = d.auth_url;
+        return;
+      }
+
+      // Poll sampai popup ditutup (setelah user authorize → callback redirect → popup tutup)
+      const poll = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(poll);
+          setOauthLoading(null);
+          load(); // refresh data → tampilkan status Connected
+        }
+      }, 600);
 
     } catch (e: any) {
       setError(e.message || "OAuth error");
@@ -1004,6 +1026,11 @@ export default function AdminAutopostPage() {
 
                   {/* ════ OAUTH 1-CLICK CONNECT ════ */}
                   <h3 style={{ fontSize: 13, fontWeight: 800, color: "#0a1628", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>📱 Social Media — OAuth 1-Click Connect</h3>
+                  {Object.values(appCreds).filter((c:any)=>c?.app_id).length === 0 && (
+                    <div style={{background:"rgba(234,179,8,.1)",border:"1px solid rgba(234,179,8,.3)",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#92400e"}}>
+                      ⚠️ <strong>Sebelum klik Connect:</strong> Klik <strong>Manage</strong> di tiap platform → isi <strong>App ID</strong> &amp; <strong>App Secret</strong> dari developer portal (Facebook Developers, Twitter Developer Portal, dll).
+                    </div>
+                  )}
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
                     {SOCIAL_PLATFORMS.map(pl => {
                       const cfg = platforms.find((p: any) => p.platform === pl.id);
