@@ -62,6 +62,13 @@ export function getR2(req?: NextRequest): any {
   throw new Error("R2 binding not found.");
 }
 
+export function getR2Builds(req?: NextRequest): any {
+  const env = getEnv(req);
+  if (env?.R2_BUILDS) return env.R2_BUILDS;
+  if (env?.R2) return env.R2; // fallback
+  throw new Error("R2_BUILDS binding not found.");
+}
+
 // ── Query helpers ─────────────────────────────────────────────────────────
 
 export async function dbQuery<T = Record<string, unknown>>(

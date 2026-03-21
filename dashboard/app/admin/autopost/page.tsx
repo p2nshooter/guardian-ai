@@ -226,7 +226,8 @@ export default function AdminAutopostPage() {
     } catch {}
   }
 
-  // ── OAuth Connect: open popup window ────────────────────────────────────
+  // ── OAuth Connect: direct redirect to platform login ─────────────────────
+  // Klik Connect → langsung buka halaman login FB/Twitter/dll, tidak perlu input token manual
   async function connectOAuth(platformId: string) {
     setOauthLoading(platformId);
     setError(null);
@@ -237,40 +238,19 @@ export default function AdminAutopostPage() {
       const d = await res.json();
 
       if (!res.ok || !d.auth_url) {
-        // Check if it's a missing env var
-        if (d.missing_var) {
-          setError(`⚙️ Setup needed: set ${d.missing_var} in Cloudflare Pages → Settings → Environment Variables, then retry.`);
+        if (d.needs_setup) {
+          setError(`⚙️ App credentials belum dikonfigurasi untuk ${platformId}. Buka AutoPost → Platform Credentials → tambah App ID & Secret terlebih dahulu.`);
         } else {
-          setError(d.error || "Failed to start OAuth");
+          setError(d.error || "Gagal memulai OAuth");
         }
         setOauthLoading(null);
         return;
       }
 
-      // Open popup
-      const w = 600, h = 700;
-      const left = window.screenX + (window.outerWidth - w) / 2;
-      const top  = window.screenY + (window.outerHeight - h) / 2;
-      const popup = window.open(
-        d.auth_url,
-        `oauth_${platformId}`,
-        `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`
-      );
-
-      if (!popup) {
-        // Fallback: redirect in same tab
-        window.location.href = d.auth_url;
-        return;
-      }
-
-      // Poll for popup close (callback will redirect to /admin/autopost?oauth_success=...)
-      const poll = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(poll);
-          setOauthLoading(null);
-          load(); // refresh data
-        }
-      }, 500);
+      // Direct redirect — langsung ke halaman login social media
+      // Callback akan redirect ke /admin/autopost?oauth_success=...
+      window.location.href = d.auth_url;
+      // oauthLoading akan reset saat halaman reload setelah callback
 
     } catch (e: any) {
       setError(e.message || "OAuth error");

@@ -47,7 +47,7 @@ const GUIDE_STEPS = [
   { icon:"🔑", title:"Set License Type", body:"Trial (1-7 days), Monthly, Yearly, Lifetime, or Per Instance. Trial works for both Guardian and Orchestra. The license key is embedded into every config file." },
   { icon:"🖥️", title:"Set Resource Limits", body:"Control CPU nodes, GPU count, and worker concurrency. Or select Unlimited for enterprise deployments with no cap." },
   { icon:"📧", title:"Enter Client Info", body:"Name, email, and org for enterprise clients. This appears in the config file header and lets you track who each build belongs to." },
-  { icon:"⬇️", title:"Download", body:"Click 'Create Build'. GitHub Actions builds the Docker image or EXE binary. Download when done. Delete the release after use." },
+  { icon:"⬇️", title:"Download dari CF R2", body:"Klik 'Create Build'. GitHub Actions compile → upload ke Cloudflare R2 axto-storage. Admin klik ⬇ untuk download (presigned URL 1 jam). Klik ✕DB untuk hard delete dari R2 + DB." },
 ];
 
 function fmtDate(d:string) {
@@ -142,8 +142,11 @@ export default function EngineBuilderPage() {
   useEffect(()=>{ load(); },[load]);
 
   // Poll build progress
-  const startPoll = useCallback((id:string)=>{
+  // BUG FIX: use 10s interval — GitHub Actions builds take 10-20 min, 800ms was wasteful
+  // BUG FIX: read run_url from response and set ghRunUrl state
+  const startPoll = useCallback((id:string, ghBuild=false)=>{
     if (pollRef.current) clearInterval(pollRef.current);
+    const interval = ghBuild ? 10000 : 2000; // 10s for real GH builds, 2s for config-only
     pollRef.current = setInterval(async()=>{
       try {
         const r = await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",
@@ -152,6 +155,8 @@ export default function EngineBuilderPage() {
         const d = await r.json();
         setBuildPct(d.progress||0);
         setBuildLogs(d.logs||[]);
+        // Set run_url as soon as it's available (comes from webhook callback)
+        if (d.run_url || d.build?.run_url) setGhRunUrl(d.run_url || d.build?.run_url || "");
         if (d.build?.status==="ready" || d.build?.status==="failed") {
           setBuildPct(d.build.status==="ready"?100:0); setBuildDone(true);
           if (d.build?.download_url) setDlUrl(d.build.download_url);
@@ -159,7 +164,7 @@ export default function EngineBuilderPage() {
           await load();
         }
       } catch {}
-    },800);
+    }, interval);
   },[load]);
 
   useEffect(()=>()=>{if(pollRef.current)clearInterval(pollRef.current);},[]);
@@ -179,7 +184,7 @@ export default function EngineBuilderPage() {
       if (d.ok) {
         setBuildId(d.id);
         setGhTriggered(!!d.githubTriggered);
-        startPoll(d.id);
+        startPoll(d.id, !!d.githubTriggered);
       } else {
         setErr(d.error||"Failed to create build");
         setBuilding(false);
@@ -187,17 +192,32 @@ export default function EngineBuilderPage() {
     } catch { setErr("Network error"); setBuilding(false); }
   }
 
-  async function deleteBuild(id:string,label:string) {
-    if (!confirm(`Delete build "${label}"?\n\nThis removes the build record. Config files already sent to clients remain valid until the license expires.`)) return;
+  async function deleteBuild(id:string, label:string, hard=false) {
+    const msg = hard
+      ? `HAPUS PERMANEN "${label}"?\n\nIni akan menghapus record dari database Cloudflare D1 sepenuhnya untuk menghemat space.\n\nLicense yang sudah dikirim ke client tetap valid sampai expired.`
+      : `Hapus build "${label}"?\n\nRecord akan disembunyikan (soft delete). Gunakan Hard Delete untuk benar-benar hapus dari DB.`;
+    if (!confirm(msg)) return;
     setDelId(id);
     try {
       const r = await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({action:"delete_build",id})});
+        body:JSON.stringify({action:"delete_build",id,hard})});
       const d = await r.json();
-      if (d.ok) { setOk("Build deleted"); await load(); }
+      if (d.ok) { setOk(hard ? "✅ Hard deleted dari DB" : "Build dihapus"); await load(); }
       else setErr(d.error||"Failed");
     } catch { setErr("Network error"); } finally { setDelId(null); }
+  }
+
+  async function purgeAllDeleted() {
+    if (!confirm("Purge semua soft-deleted builds dari DB?\n\nIni akan hapus permanen semua build yang sudah di-soft-delete untuk mengosongkan space Cloudflare D1.")) return;
+    try {
+      const r = await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"purge_all_deleted"})});
+      const d = await r.json();
+      if (d.ok) { setOk(`✅ Purged ${d.purged} build dari DB`); await load(); }
+      else setErr(d.error||"Failed");
+    } catch { setErr("Network error"); }
   }
 
   async function openDownload(id:string) {
@@ -206,8 +226,17 @@ export default function EngineBuilderPage() {
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({action:"get_download_files",id})});
       const d = await r.json();
-      if (d.ok) setDlFiles(d);
-      else setErr(d.error||"Failed");
+      if (!d.ok) { setErr(d.error||"Failed"); return; }
+
+      // has_binary = real compiled artifact in CF R2 (200MB-2GB)
+      // Stream directly via /api/admin/engine-builder/download?id=...
+      if (d.has_binary) {
+        const sz = d.file_size_mb > 0 ? ` (${d.file_size_mb}MB)` : "";
+        window.location.href = `/api/admin/engine-builder/download?id=${id}`;
+        return;
+      }
+      // Config-only build — show config files modal
+      setDlFiles(d);
     } catch { setErr("Network error"); }
   }
 
@@ -331,18 +360,33 @@ export default function EngineBuilderPage() {
                         <td style={{padding:"12px 14px",fontSize:12,color:"#64748b"}}>{fmtDate(b.expires_at)}</td>
                         <td style={{padding:"12px 14px"}}>{statusPill(b.status)}</td>
                         <td style={{padding:"12px 14px"}}>
-                          <div style={{display:"flex",gap:6}}>
+                          <div style={{display:"flex",gap:5,flexWrap:"wrap" as const}}>
                             {b.status==="ready"&&(
-                              <button onClick={()=>openDownload(b.id)} title="Download config files"
-                                style={{padding:"5px 11px",borderRadius:7,background:"rgba(2,132,199,.07)",border:"1px solid rgba(2,132,199,.2)",color:"#0284c7",fontSize:12,cursor:"pointer",fontWeight:600}}>
-                                ⬇ Files
+                              <button onClick={()=>openDownload(b.id)}
+                                title={b.r2_key?"Download dari CF R2":b.download_url?"Download dari GitHub":"Download config files"}
+                                style={{padding:"5px 10px",borderRadius:7,background:"rgba(2,132,199,.07)",border:"1px solid rgba(2,132,199,.2)",color:"#0284c7",fontSize:12,cursor:"pointer",fontWeight:600}}>
+                                ⬇ {b.r2_key ? `${b.build_type==="exe"?"Binary":"Package"} ${b.file_size>0?Math.round(b.file_size/1024/1024)+"MB":""}` : b.download_url ? "Package" : "Config"}
                               </button>
                             )}
+                            {b.status==="building"&&b.run_url&&(
+                              <a href={b.run_url} target="_blank" rel="noopener noreferrer"
+                                style={{padding:"5px 10px",borderRadius:7,background:"rgba(251,191,36,.1)",border:"1px solid rgba(251,191,36,.3)",color:"#d97706",fontSize:12,fontWeight:600,textDecoration:"none"}}>
+                                ⚙ GH Run
+                              </a>
+                            )}
                             {b.status!=="deleted"&&(
-                              <button onClick={()=>deleteBuild(b.id,b.label)} disabled={delId===b.id} title="Delete build"
-                                style={{padding:"5px 11px",borderRadius:7,background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.15)",color:"#dc2626",fontSize:12,cursor:"pointer",fontWeight:600,opacity:delId===b.id?.5:1}}>
-                                🗑
-                              </button>
+                              <>
+                                <button onClick={()=>deleteBuild(b.id,b.label,false)} disabled={delId===b.id}
+                                  title="Soft delete (hide from list)"
+                                  style={{padding:"5px 8px",borderRadius:7,background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.15)",color:"#dc2626",fontSize:12,cursor:"pointer",opacity:delId===b.id?.5:1}}>
+                                  🗑
+                                </button>
+                                <button onClick={()=>deleteBuild(b.id,b.label,true)} disabled={delId===b.id}
+                                  title="Hard delete: removes DB record + GitHub Release binary"
+                                  style={{padding:"5px 8px",borderRadius:7,background:"rgba(127,29,29,.08)",border:"1px solid rgba(127,29,29,.25)",color:"#991b1b",fontSize:11,cursor:"pointer",fontWeight:800,opacity:delId===b.id?.5:1}}>
+                                  ✕DB
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -364,8 +408,14 @@ export default function EngineBuilderPage() {
               {building ? (
                 /* ── Progress View ── */
                 <div>
-                  <h2 style={{margin:"0 0 6px",fontSize:18,fontWeight:800,color:"#0a1628"}}>Building Engine Package…</h2>
-                  <p style={{color:"#64748b",fontSize:13,margin:"0 0 20px"}}>Generating config files and embedding license key.</p>
+                  <h2 style={{margin:"0 0 6px",fontSize:18,fontWeight:800,color:"#0a1628"}}>
+                    {ghTriggered ? (buildDone ? "Build Complete!" : "🔨 Compiling on GitHub Actions…") : "Building Config Package…"}
+                  </h2>
+                  <p style={{color:"#64748b",fontSize:13,margin:"0 0 20px"}}>
+                    {ghTriggered && !buildDone
+                      ? `Compiling Docker images / binaries (200MB–2GB). This takes 10–20 min. Page auto-refreshes every 10s.`
+                      : "Generating config files and embedding license key."}
+                  </p>
                   <ProgressBar pct={buildPct} logs={buildLogs}/>
                   {buildDone&&(
                     <div style={{marginTop:20,display:"flex",flexDirection:"column" as const,gap:12}}>
