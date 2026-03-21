@@ -16,7 +16,7 @@ interface JWTPayload {
 function b64urlEncode(buf: ArrayBuffer | Uint8Array): string {
   const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let s = "";
-  for (const b of bytes) s += String.fromCharCode(b);
+  Array.from(bytes).forEach(b => s += String.fromCharCode(b));
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 

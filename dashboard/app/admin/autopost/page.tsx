@@ -1,5 +1,4 @@
 "use client";
-export const runtime = "edge";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -96,6 +95,12 @@ export default function AdminAutopostPage() {
   // OAuth state
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
 
+  // App Credentials state
+  const [appCreds, setAppCreds]           = useState<Record<string, any>>({});
+  const [appCredForm, setAppCredForm]     = useState<{platform:string;app_id:string;app_secret:string}>({platform:"",app_id:"",app_secret:""});
+  const [appCredSaving, setAppCredSaving] = useState(false);
+  const [appCredEdit, setAppCredEdit]     = useState<string|null>(null);
+
   // Ayrshare state
   const [ayrshareKey, setAyrshareKey] = useState("");
   const [ayrshareStatus, setAyrshareStatus] = useState<any>(null);
@@ -114,6 +119,18 @@ export default function AdminAutopostPage() {
   // Scheduler state
   const [schedules, setSchedules] = useState<Record<string, { enabled: boolean; interval: string; language: string }>>({});
   const [schedSaving, setSchedSaving] = useState<string | null>(null);
+
+  const loadAppCreds = useCallback(async () => {
+    try {
+      const r = await fetch("/api/admin/autopost/app-credentials", { credentials: "include" });
+      const d = await r.json();
+      if (d.ok) {
+        const map: Record<string, any> = {};
+        (d.credentials || []).forEach((c: any) => { map[c.platform] = c; });
+        setAppCreds(map);
+      }
+    } catch {}
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -149,6 +166,7 @@ export default function AdminAutopostPage() {
     getSessionUser().then(u => {
       if (!u || u.role !== "admin") { router.push("/auth/login"); return; }
       load();
+      loadAppCreds();
     });
   }, []);
 
@@ -180,6 +198,32 @@ export default function AdminAutopostPage() {
       window.history.replaceState({}, "", "/admin/autopost?tab=platforms");
     }
   }, []);
+
+  // ── App Credentials: save per-platform App ID/Secret ───────────────────
+  async function saveAppCred() {
+    if (!appCredForm.platform || !appCredForm.app_id) return;
+    setAppCredSaving(true);
+    try {
+      const r = await fetch("/api/admin/autopost/app-credentials", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appCredForm),
+      });
+      const d = await r.json();
+      if (d.ok) { setMsg("✅ App credentials saved!"); setAppCredEdit(null); await loadAppCreds(); }
+      else setError(d.error || "Failed to save");
+    } catch { setError("Network error"); }
+    finally { setAppCredSaving(false); setTimeout(() => setMsg(null), 3000); }
+  }
+
+  async function deleteAppCred(platform: string) {
+    try {
+      await fetch(`/api/admin/autopost/app-credentials?platform=${platform}`, {
+        method: "DELETE", credentials: "include",
+      });
+      await loadAppCreds();
+    } catch {}
+  }
 
   // ── OAuth Connect: open popup window ────────────────────────────────────
   async function connectOAuth(platformId: string) {
@@ -906,20 +950,78 @@ export default function AdminAutopostPage() {
                     )}
                   </div>
 
-                  {/* Manual per-platform fallback — collapsed by default */}
-                  <details style={{ marginBottom: 20 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#64748b", padding: "8px 12px", background: "#f8fafc", borderRadius: 8, userSelect: "none" }}>
-                      ⚙️ Setup manual per-platform (lanjutan — jika tidak pakai Ayrshare)
-                    </summary>
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 12 }}>
-                        <p style={{ fontSize: 12, color: "#92400e", margin: 0 }}>
-                          ⚠️ Setup manual memerlukan App Client ID &amp; Secret dari developer portal masing-masing platform.
-                          <strong> Gunakan Ayrshare di atas untuk cara yang jauh lebih mudah.</strong>
-                        </p>
+                  {/* ════ APP CREDENTIALS SETUP ════ */}
+                  <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "18px 20px", marginBottom: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: "#0a1628" }}>🔑 Platform App Credentials</div>
+                        <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Input App ID &amp; Secret sekali — OAuth 1-click Connect langsung aktif</div>
                       </div>
+                    </div>
 
-                  {/* Social section */}
+                    {/* Platform credential rows */}
+                    {[
+                      { id: "facebook",  label: "Facebook / Instagram / Threads", hint: "Facebook Developer → My Apps → App ID & Secret", link: "https://developers.facebook.com/apps" },
+                      { id: "twitter",   label: "X / Twitter",                    hint: "developer.twitter.com → Project → Client ID",      link: "https://developer.twitter.com/en/portal/dashboard" },
+                      { id: "linkedin",  label: "LinkedIn",                       hint: "linkedin.com/developers/apps → Client ID & Secret", link: "https://www.linkedin.com/developers/apps" },
+                      { id: "pinterest", label: "Pinterest",                       hint: "developers.pinterest.com → Apps → App ID",          link: "https://developers.pinterest.com/apps/" },
+                      { id: "youtube_community", label: "YouTube / Google",        hint: "console.cloud.google.com → OAuth 2.0 Client ID",    link: "https://console.cloud.google.com/apis/credentials" },
+                      { id: "tiktok",   label: "TikTok",                          hint: "developers.tiktok.com → App → Client Key",          link: "https://developers.tiktok.com/apps/" },
+                    ].map(pl => {
+                      const saved = appCreds[pl.id];
+                      const isEditing = appCredEdit === pl.id;
+                      return (
+                        <div key={pl.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" }}>
+                          <div style={{ flex: 1, minWidth: 160 }}>
+                            <div style={{ fontWeight: 600, fontSize: 12, color: "#0a1628" }}>{pl.label}</div>
+                            <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>
+                              <a href={pl.link} target="_blank" rel="noopener noreferrer" style={{ color: "#0284c7", textDecoration: "none" }}>{pl.hint}</a>
+                            </div>
+                          </div>
+                          {saved?.app_id ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700 }}>✓ Configured</span>
+                              <span style={{ fontSize: 10, color: "#94a3b8", fontFamily: "monospace" }}>{saved.app_id.slice(0,12)}...</span>
+                              <button onClick={() => { setAppCredEdit(pl.id); setAppCredForm({ platform: pl.id, app_id: "", app_secret: "" }); }}
+                                style={{ padding: "3px 10px", borderRadius: 6, border: "1px solid #e2e8f0", background: "transparent", fontSize: 10, cursor: "pointer", color: "#64748b" }}>Edit</button>
+                              <button onClick={() => deleteAppCred(pl.id)}
+                                style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: "rgba(220,38,38,0.08)", fontSize: 10, cursor: "pointer", color: "#dc2626" }}>✕</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => { setAppCredEdit(pl.id); setAppCredForm({ platform: pl.id, app_id: "", app_secret: "" }); }}
+                              style={{ padding: "5px 14px", borderRadius: 7, border: "1.5px solid #0284c7", background: "transparent", fontSize: 11, cursor: "pointer", color: "#0284c7", fontWeight: 700 }}>
+                              + Add Credentials
+                            </button>
+                          )}
+                          {isEditing && (
+                            <div style={{ width: "100%", marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <input placeholder="App ID / Client ID" value={appCredForm.app_id}
+                                onChange={e => setAppCredForm(f => ({ ...f, app_id: e.target.value }))}
+                                style={{ flex: 1, minWidth: 160, padding: "7px 10px", borderRadius: 7, border: "1.5px solid #e2e8f0", fontSize: 12, outline: "none" }} />
+                              <input placeholder="App Secret / Client Secret" type="password" value={appCredForm.app_secret}
+                                onChange={e => setAppCredForm(f => ({ ...f, app_secret: e.target.value }))}
+                                style={{ flex: 1, minWidth: 160, padding: "7px 10px", borderRadius: 7, border: "1.5px solid #e2e8f0", fontSize: 12, outline: "none" }} />
+                              <button onClick={saveAppCred} disabled={appCredSaving || !appCredForm.app_id}
+                                style={{ padding: "7px 16px", borderRadius: 7, border: "none", background: "linear-gradient(135deg,#0e7490,#22d3ee)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: appCredSaving ? 0.7 : 1 }}>
+                                {appCredSaving ? "Saving..." : "Save"}
+                              </button>
+                              <button onClick={() => setAppCredEdit(null)}
+                                style={{ padding: "7px 12px", borderRadius: 7, border: "1px solid #e2e8f0", background: "transparent", fontSize: 12, cursor: "pointer", color: "#64748b" }}>Cancel</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div style={{ marginTop: 12, padding: "10px 14px", background: "#f0f9ff", borderRadius: 8, fontSize: 11, color: "#0284c7" }}>
+                      <strong>Redirect URI</strong> — paste ini di setiap OAuth App setting:<br/>
+                      <code style={{ fontFamily: "monospace", fontSize: 11 }}>
+                        {typeof window !== "undefined" ? window.location.origin : "https://axto.io"}/api/admin/autopost/oauth/callback
+                      </code>
+                    </div>
+                  </div>
+
+                  {/* ════ OAUTH 1-CLICK CONNECT ════ */}
                   <h3 style={{ fontSize: 13, fontWeight: 800, color: "#0a1628", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.5px" }}>📱 Social Media — OAuth 1-Click Connect</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
                     {SOCIAL_PLATFORMS.map(pl => {
@@ -1010,9 +1112,6 @@ export default function AdminAutopostPage() {
                       {typeof window !== "undefined" ? window.location.origin : "https://axto.io"}/api/admin/autopost/oauth/callback
                     </code>
                   </div>
-
-                    </div>
-                  </details>
 
                   {/* Free Classified — 1-Click Quick Post */}
                   <h3 style={{ fontSize: 13, fontWeight: 800, color: "#0a1628", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>🌍 Free Classified — 1-Click Quick Post</h3>

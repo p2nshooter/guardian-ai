@@ -1,5 +1,4 @@
 "use client";
-export const runtime = "edge";
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 
@@ -10,9 +9,18 @@ const card = { background:"#fff", borderRadius:14, border:"1.5px solid #e2e8f0" 
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const PRODUCTS = [
-  { v:"guardian",  icon:"🛡️", name:"Guardian AI",    desc:"Core API + Node Agent + ClamAV Antivirus" },
-  { v:"orchestra", icon:"⚡", name:"Orchestra AI",  desc:"Core API + CPU Worker + GPU Worker" },
-  { v:"bundle",    icon:"📦", name:"Bundle",         desc:"Guardian + Orchestra — complete stack" },
+  // ── Guardian components ───────────────────────────────────────────────────
+  { v:"guardian-core",    icon:"🛡️", name:"Guardian Core",       desc:"REST API + Dashboard backend (port 8080)", group:"Guardian" },
+  { v:"guardian-node",    icon:"🤖", name:"Guardian Node Agent",  desc:"Threat detection agent — runs on each protected server", group:"Guardian" },
+  { v:"guardian-clamav",  icon:"🦠", name:"ClamAV Antivirus",     desc:"Real-time file scanning + signature updates (sidecar)", group:"Guardian" },
+  { v:"guardian-bundle",  icon:"🛡️", name:"Guardian Full Stack",  desc:"Core + Node Agent + ClamAV — complete Guardian deploy", group:"Guardian" },
+  // ── Orchestra components ──────────────────────────────────────────────────
+  { v:"orchestra-core",       icon:"⚡", name:"Orchestra Core",       desc:"AI orchestration API + Console UI (port 8080)", group:"Orchestra" },
+  { v:"orchestra-worker-cpu", icon:"💻", name:"Orchestra Worker CPU",  desc:"Cloud AI worker (OpenAI, Groq, Anthropic, etc.)", group:"Orchestra" },
+  { v:"orchestra-worker-gpu", icon:"🎮", name:"Orchestra Worker GPU",  desc:"Local GPU inference worker (Ollama, llama.cpp)", group:"Orchestra" },
+  { v:"orchestra-bundle",     icon:"⚡", name:"Orchestra Full Stack",  desc:"Core + CPU Worker + GPU Worker — complete Orchestra deploy", group:"Orchestra" },
+  // ── Full bundle ───────────────────────────────────────────────────────────
+  { v:"full-bundle",      icon:"📦", name:"AXTO Full Platform",   desc:"Everything: Guardian + Orchestra complete stack", group:"Bundle" },
 ];
 const BUILD_TYPES = [
   { v:"docker", icon:"🐳", name:"Docker Image",   desc:"docker-compose.yml + config files" },
@@ -38,7 +46,7 @@ const GUIDE_STEPS = [
   { icon:"🔑", title:"Set License Type", body:"Trial (1-7 days), Monthly, Yearly, Lifetime, or Per Instance. Trial works for both Guardian and Orchestra. The license key is embedded into every config file." },
   { icon:"🖥️", title:"Set Resource Limits", body:"Control CPU nodes, GPU count, and worker concurrency. Or select Unlimited for enterprise deployments with no cap." },
   { icon:"📧", title:"Enter Client Info", body:"Name, email, and org for enterprise clients. This appears in the config file header and lets you track who each build belongs to." },
-  { icon:"⬇️", title:"Download & Send", body:"Click 'Create Build'. All config files are instantly ready. Download them and send to your client with the README instructions." },
+  { icon:"⬇️", title:"Download", body:"Click 'Create Build'. GitHub Actions builds the Docker image or EXE binary. Download when done. Delete the release after use." },
 ];
 
 function fmtDate(d:string) {
@@ -96,6 +104,9 @@ export default function EngineBuilderPage() {
 
   // Build progress state
   const [building,  setBuilding]  = useState(false);
+  const [ghTriggered, setGhTriggered] = useState(false);
+  const [ghRunUrl,    setGhRunUrl]    = useState("");
+  const [dlUrl,       setDlUrl]       = useState("");
   const [buildId,   setBuildId]   = useState<string|null>(null);
   const [buildPct,  setBuildPct]  = useState(0);
   const [buildLogs, setBuildLogs] = useState<any[]>([]);
@@ -140,8 +151,9 @@ export default function EngineBuilderPage() {
         const d = await r.json();
         setBuildPct(d.progress||0);
         setBuildLogs(d.logs||[]);
-        if (d.build?.status==="ready") {
-          setBuildPct(100); setBuildDone(true);
+        if (d.build?.status==="ready" || d.build?.status==="failed") {
+          setBuildPct(d.build.status==="ready"?100:0); setBuildDone(true);
+          if (d.build?.download_url) setDlUrl(d.build.download_url);
           clearInterval(pollRef.current);
           await load();
         }
@@ -165,6 +177,7 @@ export default function EngineBuilderPage() {
       const d = await r.json();
       if (d.ok) {
         setBuildId(d.id);
+        setGhTriggered(!!d.githubTriggered);
         startPoll(d.id);
       } else {
         setErr(d.error||"Failed to create build");
@@ -220,7 +233,7 @@ export default function EngineBuilderPage() {
           <div>
             <Link href="/admin" style={{color:"#94a3b8",fontSize:12,textDecoration:"none"}}>← Admin</Link>
             <h1 style={{fontSize:26,fontWeight:900,color:"#0a1628",margin:"6px 0 3px",letterSpacing:"-0.5px"}}>🔧 Engine Builder</h1>
-            <p style={{color:"#64748b",fontSize:13,margin:0}}>Generate production Docker and EXE deployment packages with embedded licenses</p>
+            <p style={{color:"#64748b",fontSize:13,margin:0}}>Internal admin tool — build Docker images and EXE binaries. Not for client self-service.</p>
           </div>
         </div>
 
@@ -232,6 +245,7 @@ export default function EngineBuilderPage() {
             {l:"Guardian",v:stats.guardian_count||0,c:"#0284c7"},
             {l:"Orchestra",v:stats.orchestra_count||0,c:"#7c3aed"},
             {l:"Bundle",v:stats.bundle_count||0,c:"#0d9488"},
+            {l:"Other",v:stats.other_count||0,c:"#64748b"},
           ].map(s=>(
             <div key={s.l} style={{...card,padding:"12px 16px"}}>
               <div style={{fontSize:22,fontWeight:900,color:s.c}}>{s.v}</div>
@@ -354,10 +368,37 @@ export default function EngineBuilderPage() {
                   <ProgressBar pct={buildPct} logs={buildLogs}/>
                   {buildDone&&(
                     <div style={{marginTop:20,display:"flex",flexDirection:"column" as const,gap:12}}>
-                      <div style={{padding:"14px 18px",background:"rgba(34,197,94,.07)",border:"1px solid rgba(34,197,94,.2)",borderRadius:12}}>
-                        <div style={{fontWeight:800,color:"#16a34a",marginBottom:4}}>✅ Build Complete</div>
-                        <div style={{fontSize:12,color:"#475569"}}>Config files are ready. Go to "All Builds" → click ⬇ Files to download.</div>
-                      </div>
+                      {buildLogs.some((l:any)=>l.level==="error") ? (
+                        <div style={{padding:"14px 18px",background:"rgba(220,38,38,.07)",border:"1px solid rgba(220,38,38,.2)",borderRadius:12}}>
+                          <div style={{fontWeight:800,color:"#dc2626",marginBottom:4}}>❌ Build Failed</div>
+                          <div style={{fontSize:12,color:"#475569"}}>Check the error log below. {ghRunUrl&&<a href={ghRunUrl} target="_blank" rel="noopener noreferrer" style={{color:"#0284c7"}}>View GitHub Actions run →</a>}</div>
+                        </div>
+                      ) : (
+                        <div style={{padding:"14px 18px",background:"rgba(34,197,94,.07)",border:"1px solid rgba(34,197,94,.2)",borderRadius:12}}>
+                          <div style={{fontWeight:800,color:"#16a34a",marginBottom:4}}>✅ Build Complete</div>
+                          {ghTriggered ? (
+                            <div style={{fontSize:12,color:"#475569"}}>
+                              GitHub Actions built your package.{" "}
+                              {dlUrl ? <><strong>Download ready!</strong></> : <>Config files available below.</>}
+                              {" "}{ghRunUrl&&<a href={ghRunUrl} target="_blank" rel="noopener noreferrer" style={{color:"#0284c7"}}>View build run →</a>}
+                            </div>
+                          ) : (
+                            <div style={{fontSize:12,color:"#475569"}}>Config files ready. Click ⬇ Download.</div>
+                          )}
+                        </div>
+                      )}
+                      {ghRunUrl&&(
+                        <a href={ghRunUrl} target="_blank" rel="noopener noreferrer"
+                          style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,textDecoration:"none",color:"#0a1628",fontSize:12,fontWeight:600}}>
+                          🔧 View GitHub Actions Build Log →
+                        </a>
+                      )}
+                      {dlUrl&&(
+                        <a href={dlUrl} target="_blank" rel="noopener noreferrer"
+                          style={{display:"flex",alignItems:"center",gap:8,padding:"11px 14px",background:"linear-gradient(135deg,#16a34a,#22c55e)",borderRadius:10,textDecoration:"none",color:"#fff",fontSize:13,fontWeight:700}}>
+                          ⬇ Download Build Package (GitHub Release)
+                        </a>
+                      )}
                       <div style={{display:"flex",gap:10}}>
                         <button onClick={()=>{setBuilding(false);setBuildDone(false);setTab("builds");load();}}
                           style={{flex:1,padding:"11px",borderRadius:10,background:"linear-gradient(135deg,#0284c7,#0d9488)",border:"none",color:"#fff",fontWeight:700,cursor:"pointer"}}>
@@ -366,11 +407,11 @@ export default function EngineBuilderPage() {
                         {buildId&&(
                           <button onClick={()=>openDownload(buildId)}
                             style={{flex:1,padding:"11px",borderRadius:10,background:"linear-gradient(135deg,#7c3aed,#a855f7)",border:"none",color:"#fff",fontWeight:700,cursor:"pointer"}}>
-                            ⬇ Download Files Now
+                            ⬇ Config Files
                           </button>
                         )}
                       </div>
-                      <button onClick={()=>{setBuilding(false);setBuildDone(false);setForm(f=>({...f,label:"",client_name:"",client_email:"",client_org:"",existing_license_key:"",notes:""}));}}
+                      <button onClick={()=>{setBuilding(false);setBuildDone(false);setGhTriggered(false);setGhRunUrl("");setDlUrl("");setForm(f=>({...f,label:"",client_name:"",client_email:"",client_org:"",existing_license_key:"",notes:""}));}}
                         style={{padding:"10px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:600,cursor:"pointer"}}>
                         + Create Another Build
                       </button>
@@ -382,23 +423,28 @@ export default function EngineBuilderPage() {
                 <form onSubmit={handleCreate} style={{display:"flex",flexDirection:"column" as const,gap:20}}>
                   <div>
                     <h2 style={{margin:"0 0 4px",fontSize:18,fontWeight:800,color:"#0a1628"}}>New Engine Build</h2>
-                    <p style={{color:"#64748b",fontSize:13,margin:0}}>Generate production-ready deployment package with embedded license key.</p>
+                    <p style={{color:"#64748b",fontSize:13,margin:0}}>Build Docker images and standalone EXE binaries for internal use or custom client orders.</p>
                   </div>
 
                   {/* Product */}
                   <div>
                     <label style={lbl}>Product *</label>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                      {PRODUCTS.map(p=>(
-                        <button key={p.v} type="button" onClick={()=>set("product",p.v)}
-                          style={{padding:"12px 8px",borderRadius:10,border:"1.5px solid",
-                            borderColor:form.product===p.v?"#0284c7":"#e2e8f0",
-                            background:form.product===p.v?"rgba(2,132,199,.07)":"#f8fafc",
-                            cursor:"pointer",textAlign:"center" as const}}>
-                          <div style={{fontSize:20}}>{p.icon}</div>
-                          <div style={{fontSize:11,fontWeight:700,color:form.product===p.v?"#0284c7":"#0a1628",marginTop:2}}>{p.name}</div>
-                          <div style={{fontSize:10,color:"#94a3b8"}}>{p.desc}</div>
-                        </button>
+                      {["Guardian","Orchestra","Bundle"].map(grp=>(
+                        <div key={grp}>
+                          <div style={{fontSize:10,fontWeight:700,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:6,marginTop:10}}>{grp}</div>
+                          {PRODUCTS.filter(p=>p.group===grp).map(p=>(
+                            <button key={p.v} type="button" onClick={()=>set("product",p.v)}
+                              style={{padding:"10px 8px",borderRadius:10,border:"1.5px solid",
+                                borderColor:form.product===p.v?"#0284c7":"#e2e8f0",
+                                background:form.product===p.v?"rgba(2,132,199,.07)":"#f8fafc",
+                                cursor:"pointer",textAlign:"center" as const,width:"100%"}}>
+                              <div style={{fontSize:18}}>{p.icon}</div>
+                              <div style={{fontSize:11,fontWeight:700,color:form.product===p.v?"#0284c7":"#0a1628",marginTop:2}}>{p.name}</div>
+                              <div style={{fontSize:10,color:"#94a3b8",lineHeight:1.3}}>{p.desc}</div>
+                            </button>
+                          ))}
+                        </div>
                       ))}
                     </div>
                   </div>

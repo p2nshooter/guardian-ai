@@ -1,0 +1,1158 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# AXTO Engine Builder — Per-Client Full Build Pipeline
+#
+# Supports ALL product variants:
+#   guardian-core      → Guardian REST API
+#   guardian-node      → Guardian threat detection agent
+#   guardian-clamav    → ClamAV antivirus sidecar
+#   guardian-bundle    → Core + Node + ClamAV (full Guardian stack)
+#   orchestra-core     → Orchestra AI orchestration API
+#   orchestra-worker-cpu → Cloud AI worker
+#   orchestra-worker-gpu → Local GPU inference worker
+#   orchestra-bundle   → Core + CPU Worker + GPU Worker
+#   full-bundle        → Everything (Guardian + Orchestra)
+#
+# Build modes:
+#   docker → builds real Docker images → pushes to GHCR
+#   exe    → compiles via PyInstaller → standalone binary zip → GitHub Release
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Build Client Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:      { description: "Engine build ID", required: true }
+      product:       { description: "Product variant (see above)", required: true, default: "guardian-bundle" }
+      build_type:    { description: "docker | exe", required: true, default: "docker" }
+      license_key:   { description: "License key to embed", required: true }
+      license_type:  { description: "trial | monthly | yearly | lifetime", required: true, default: "yearly" }
+      trial_days:    { description: "Trial days 1-7", required: false, default: "0" }
+      max_nodes:     { description: "Max CPU nodes", required: false, default: "1" }
+      max_gpu:       { description: "Max GPU count", required: false, default: "0" }
+      max_workers:   { description: "Max workers", required: false, default: "10" }
+      unlimited:     { description: "Unlimited: 1|0", required: false, default: "0" }
+      arch:          { description: "linux/amd64 | linux/arm64 | windows/amd64", required: false, default: "linux/amd64" }
+      client_name:   { description: "Client name", required: false, default: "" }
+      client_email:  { description: "Client email", required: false, default: "" }
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared helper: notify dashboard on success or failure
+# Called via curl in both docker and exe jobs
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 1 — DOCKER BUILD
+  # Builds only the images relevant to the chosen product variant
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-docker:
+    name: "🐳 Docker [${{ inputs.product }}]"
+    runs-on: ubuntu-latest
+    if: inputs.build_type == 'docker'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          TAG="client-$(echo '${{ inputs.build_id }}' | cut -c1-8)"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          PROD="${{ inputs.product }}"
+          # Determine which images to build
+          BUILD_GUARDIAN_CORE=false
+          BUILD_GUARDIAN_NODE=false
+          BUILD_CLAMAV=false
+          BUILD_ORCHESTRA_CORE=false
+          BUILD_WORKER_CPU=false
+          BUILD_WORKER_GPU=false
+          case "$PROD" in
+            guardian-core)    BUILD_GUARDIAN_CORE=true ;;
+            guardian-node)    BUILD_GUARDIAN_NODE=true ;;
+            guardian-clamav)  BUILD_CLAMAV=true ;;
+            guardian-bundle)  BUILD_GUARDIAN_CORE=true; BUILD_GUARDIAN_NODE=true; BUILD_CLAMAV=true ;;
+            orchestra-core)   BUILD_ORCHESTRA_CORE=true ;;
+            orchestra-worker-cpu) BUILD_WORKER_CPU=true ;;
+            orchestra-worker-gpu) BUILD_WORKER_GPU=true ;;
+            orchestra-bundle) BUILD_ORCHESTRA_CORE=true; BUILD_WORKER_CPU=true; BUILD_WORKER_GPU=true ;;
+            full-bundle)      BUILD_GUARDIAN_CORE=true; BUILD_GUARDIAN_NODE=true; BUILD_CLAMAV=true
+                              BUILD_ORCHESTRA_CORE=true; BUILD_WORKER_CPU=true; BUILD_WORKER_GPU=true ;;
+          esac
+          echo "build_guardian_core=${BUILD_GUARDIAN_CORE}"   >> $GITHUB_OUTPUT
+          echo "build_guardian_node=${BUILD_GUARDIAN_NODE}"   >> $GITHUB_OUTPUT
+          echo "build_clamav=${BUILD_CLAMAV}"                 >> $GITHUB_OUTPUT
+          echo "build_orchestra_core=${BUILD_ORCHESTRA_CORE}" >> $GITHUB_OUTPUT
+          echo "build_worker_cpu=${BUILD_WORKER_CPU}"         >> $GITHUB_OUTPUT
+          echo "build_worker_gpu=${BUILD_WORKER_GPU}"         >> $GITHUB_OUTPUT
+          PLATFORMS="${{ inputs.arch }}"
+          [[ "$PLATFORMS" == "windows/amd64" ]] && PLATFORMS="linux/amd64"
+          echo "platforms=${PLATFORMS}" >> $GITHUB_OUTPUT
+
+      - name: Inject license into Dockerfiles (build-arg passthrough)
+        run: |
+          # Guardian: add ARGs to Dockerfile if not present
+          if ! grep -q "ARG LICENSE_KEY" engine/Dockerfile; then
+            sed -i 's/^WORKDIR \/guardian$/ARG LICENSE_KEY=""\nARG LICENSE_TYPE="yearly"\nARG MAX_NODES="1"\nARG UNLIMITED="0"\nENV GUARDIAN_LICENSE_KEY=${LICENSE_KEY}\nENV GUARDIAN_LICENSE_TYPE=${LICENSE_TYPE}\nENV GUARDIAN_MAX_NODES=${MAX_NODES}\nENV GUARDIAN_UNLIMITED=${UNLIMITED}\nWORKDIR \/guardian/' engine/Dockerfile
+          fi
+          # Orchestra: add ARGs to Dockerfile if not present
+          if ! grep -q "ARG LICENSE_KEY" orchestra/Dockerfile; then
+            sed -i 's/^WORKDIR \/app$/ARG LICENSE_KEY=""\nARG LICENSE_TYPE="yearly"\nARG MAX_WORKERS="10"\nARG MAX_GPU="0"\nARG UNLIMITED="0"\nENV ORCHESTRA_LICENSE_KEY=${LICENSE_KEY}\nENV ORCHESTRA_MAX_WORKERS=${MAX_WORKERS}\nENV ORCHESTRA_MAX_GPU=${MAX_GPU}\nENV ORCHESTRA_UNLIMITED=${UNLIMITED}\nWORKDIR \/app/' orchestra/Dockerfile
+          fi
+
+      # ── Guardian Core ──────────────────────────────────────────────────────
+      - name: 🛡️ Build guardian-core
+        if: steps.meta.outputs.build_guardian_core == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./engine
+          file: ./engine/Dockerfile
+          push: true
+          platforms: ${{ steps.meta.outputs.platforms }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-core:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-core:${{ inputs.build_id }}
+          labels: |
+            axto.build.id=${{ inputs.build_id }}
+            axto.component=guardian-core
+            axto.license.key=${{ inputs.license_key }}
+            axto.client=${{ inputs.client_name }}
+          build-args: |
+            LICENSE_KEY=${{ inputs.license_key }}
+            LICENSE_TYPE=${{ inputs.license_type }}
+            MAX_NODES=${{ inputs.max_nodes }}
+            UNLIMITED=${{ inputs.unlimited }}
+          cache-from: type=gha,scope=guardian-core
+          cache-to: type=gha,mode=max,scope=guardian-core
+
+      # ── Guardian Node Agent ────────────────────────────────────────────────
+      - name: 🤖 Build guardian-node
+        if: steps.meta.outputs.build_guardian_node == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./engine
+          file: ./engine/Dockerfile
+          push: true
+          platforms: ${{ steps.meta.outputs.platforms }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-node:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-node:${{ inputs.build_id }}
+          labels: |
+            axto.build.id=${{ inputs.build_id }}
+            axto.component=guardian-node
+            axto.license.key=${{ inputs.license_key }}
+          build-args: |
+            LICENSE_KEY=${{ inputs.license_key }}
+            LICENSE_TYPE=${{ inputs.license_type }}
+            MAX_NODES=${{ inputs.max_nodes }}
+            UNLIMITED=${{ inputs.unlimited }}
+          cache-from: type=gha,scope=guardian-node
+          cache-to: type=gha,mode=max,scope=guardian-node
+
+      # ── ClamAV (uses official image — re-tag with build ID) ───────────────
+      - name: 🦠 Tag & Push ClamAV
+        if: steps.meta.outputs.build_clamav == 'true'
+        run: |
+          docker pull clamav/clamav:stable_base
+          docker tag clamav/clamav:stable_base ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-clamav:${{ steps.meta.outputs.tag }}
+          docker tag clamav/clamav:stable_base ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-clamav:${{ inputs.build_id }}
+          docker push ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-clamav:${{ steps.meta.outputs.tag }}
+          docker push ${{ env.REGISTRY }}/${{ env.OWNER }}/guardian-clamav:${{ inputs.build_id }}
+          echo "✅ ClamAV tagged and pushed"
+
+      # ── Orchestra Core ─────────────────────────────────────────────────────
+      - name: ⚡ Build orchestra-core
+        if: steps.meta.outputs.build_orchestra_core == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./orchestra
+          file: ./orchestra/Dockerfile
+          push: true
+          platforms: ${{ steps.meta.outputs.platforms }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/orchestra-core:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/orchestra-core:${{ inputs.build_id }}
+          labels: |
+            axto.build.id=${{ inputs.build_id }}
+            axto.component=orchestra-core
+            axto.license.key=${{ inputs.license_key }}
+          build-args: |
+            LICENSE_KEY=${{ inputs.license_key }}
+            LICENSE_TYPE=${{ inputs.license_type }}
+            MAX_WORKERS=${{ inputs.max_workers }}
+            MAX_GPU=${{ inputs.max_gpu }}
+            UNLIMITED=${{ inputs.unlimited }}
+          cache-from: type=gha,scope=orchestra-core
+          cache-to: type=gha,mode=max,scope=orchestra-core
+
+      # ── Orchestra Worker CPU ───────────────────────────────────────────────
+      - name: 💻 Build orchestra-worker-cpu
+        if: steps.meta.outputs.build_worker_cpu == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./orchestra
+          file: ./orchestra/Dockerfile.worker-cpu
+          push: true
+          platforms: ${{ steps.meta.outputs.platforms }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/orchestra-worker-cpu:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/orchestra-worker-cpu:${{ inputs.build_id }}
+          labels: |
+            axto.build.id=${{ inputs.build_id }}
+            axto.component=orchestra-worker-cpu
+          build-args: |
+            LICENSE_KEY=${{ inputs.license_key }}
+            MAX_WORKERS=${{ inputs.max_workers }}
+            UNLIMITED=${{ inputs.unlimited }}
+          cache-from: type=gha,scope=orchestra-worker-cpu
+          cache-to: type=gha,mode=max,scope=orchestra-worker-cpu
+
+      # ── Orchestra Worker GPU ───────────────────────────────────────────────
+      - name: 🎮 Build orchestra-worker-gpu
+        if: steps.meta.outputs.build_worker_gpu == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./orchestra
+          file: ./orchestra/Dockerfile.worker-gpu
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/orchestra-worker-gpu:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/orchestra-worker-gpu:${{ inputs.build_id }}
+          labels: |
+            axto.build.id=${{ inputs.build_id }}
+            axto.component=orchestra-worker-gpu
+          build-args: |
+            LICENSE_KEY=${{ inputs.license_key }}
+            MAX_GPU=${{ inputs.max_gpu }}
+            UNLIMITED=${{ inputs.unlimited }}
+          cache-from: type=gha,scope=orchestra-worker-gpu
+          cache-to: type=gha,mode=max,scope=orchestra-worker-gpu
+
+      - name: Generate config + compose files
+        run: |
+          DIST="dist/${{ inputs.build_id }}"
+          mkdir -p "${DIST}"
+          TAG="${{ steps.meta.outputs.tag }}"
+          PROD="${{ inputs.product }}"
+          LIC="${{ inputs.license_key }}" LT="${{ inputs.license_type }}"
+          MN="${{ inputs.max_nodes }}" MG="${{ inputs.max_gpu }}" MW="${{ inputs.max_workers }}"
+          CLIENT="${{ inputs.client_name }}" BID="${{ inputs.build_id }}"
+          OWNER="${{ env.OWNER }}"
+
+          # guardian.yml
+          if [[ "$PROD" == *guardian* || "$PROD" == "full-bundle" ]]; then
+            cat > "${DIST}/guardian.yml" << YAML
+guardian:
+  license_key: "${LIC}"
+  license_validate_url: "https://axto.io/api/license-validate"
+  max_nodes: ${MN}
+  scan_mode: "auto"
+  scan_interval: 300
+  scan_paths: [/host, /tmp, /var/www]
+  ai_pool:
+    routing: cost
+    fallback: true
+    providers:
+      - provider: openai
+        api_key: "sk-REPLACE_WITH_YOUR_KEY"
+        model: "gpt-4o-mini"
+  alerts: { email: "", slack_webhook: "", discord_webhook: "" }
+  log_retention_days: 90
+YAML
+          fi
+
+          # orchestra.yml
+          if [[ "$PROD" == *orchestra* || "$PROD" == "full-bundle" ]]; then
+            cat > "${DIST}/orchestra.yml" << YAML
+orchestra:
+  license_key: "${LIC}"
+  license_validate_url: "https://axto.io/api/license-validate"
+  console_password: "CHANGE_THIS_PASSWORD"
+  worker_token: "CHANGE_THIS_TOKEN"
+  max_workers: ${MW}
+  ai_pool:
+    default_routing: cost
+    fallback: true
+    providers:
+      - provider: groq
+        api_key: "gsk_REPLACE_YOUR_GROQ_KEY"
+        model: "llama-3.1-8b-instant"
+  autoscaler: { enabled: false, threshold: 20, max_cpu_workers: ${MW}, max_gpu_workers: ${MG} }
+YAML
+          fi
+
+          # docker-compose.yml based on product
+          case "$PROD" in
+            guardian-core|guardian-node|guardian-clamav|guardian-bundle)
+              cat > "${DIST}/docker-compose.yml" << YAML
+version: "3.9"
+# AXTO Guardian AI | Client: ${CLIENT} | Build: ${BID}
+services:
+  guardian-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: guardian
+      POSTGRES_PASSWORD: \${GUARDIAN_DB_PASSWORD:?set GUARDIAN_DB_PASSWORD}
+      POSTGRES_DB: guardian
+    volumes: [guardian-db-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U guardian"], interval: 10s, timeout: 5s, retries: 5 }
+    networks: [guardian-net]
+$(if [[ "$PROD" == "guardian-core" || "$PROD" == "guardian-bundle" ]]; then
+  cat << CORE
+  guardian-core:
+    image: ghcr.io/${OWNER}/guardian-core:${TAG}
+    restart: unless-stopped
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8080
+    ports: ["8080:8080"]
+    depends_on: { guardian-db: { condition: service_healthy } }
+    volumes: [./guardian.yml:/guardian/config/guardian.yml:ro, guardian-data:/guardian/data, guardian-logs:/guardian/logs]
+    environment:
+      - GUARDIAN_CONFIG=/guardian/config/guardian.yml
+      - "GUARDIAN_DB_URL=postgresql://guardian:\${GUARDIAN_DB_PASSWORD}@guardian-db:5432/guardian"
+    healthcheck: { test: ["CMD","curl","-sf","http://localhost:8080/health"], interval: 30s, timeout: 10s, retries: 3 }
+    networks: [guardian-net]
+CORE
+fi)
+$(if [[ "$PROD" == "guardian-node" || "$PROD" == "guardian-bundle" ]]; then
+  cat << NODE
+  guardian-node:
+    image: ghcr.io/${OWNER}/guardian-node:${TAG}
+    restart: unless-stopped
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_PTRACE, KILL]
+    depends_on: [guardian-core]
+    environment:
+      - GUARDIAN_CORE_URL=http://guardian-core:8080
+      - "GUARDIAN_DB_URL=postgresql://guardian:\${GUARDIAN_DB_PASSWORD}@guardian-db:5432/guardian"
+      - GUARDIAN_CONFIG=/guardian/config/guardian.yml
+    volumes: [/:/host:ro, ./guardian.yml:/guardian/config/guardian.yml:ro, guardian-quarantine:/guardian/quarantine]
+    networks: [guardian-net]
+NODE
+fi)
+$(if [[ "$PROD" == "guardian-clamav" || "$PROD" == "guardian-bundle" ]]; then
+  cat << AV
+  clamav:
+    image: ghcr.io/${OWNER}/guardian-clamav:${TAG}
+    restart: unless-stopped
+    environment:
+      - CLAMAV_NO_FRESHCLAMD=false
+      - CLAMAV_NO_CLAMD=false
+    volumes: [clamav-db:/var/lib/clamav, /:/scan-host:ro, guardian-quarantine:/guardian/quarantine]
+    ports: ["3310:3310"]
+    networks: [guardian-net]
+AV
+fi)
+volumes: { guardian-db-data: {}, guardian-data: {}, guardian-logs: {}, guardian-quarantine: {}, clamav-db: {} }
+networks: { guardian-net: { driver: bridge } }
+YAML
+            ;;
+
+            orchestra-core|orchestra-worker-cpu|orchestra-worker-gpu|orchestra-bundle)
+              cat > "${DIST}/docker-compose.yml" << YAML
+version: "3.9"
+# AXTO Orchestra AI | Client: ${CLIENT} | Build: ${BID}
+services:
+  orchestra-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: orchestra
+      POSTGRES_PASSWORD: \${ORCHESTRA_DB_PASSWORD:?set ORCHESTRA_DB_PASSWORD}
+      POSTGRES_DB: orchestra
+    volumes: [orchestra-db-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U orchestra"], interval: 10s, timeout: 5s, retries: 5 }
+    networks: [orchestra-net]
+$(if [[ "$PROD" == "orchestra-core" || "$PROD" == "orchestra-bundle" ]]; then
+  cat << CORE
+  orchestra-core:
+    image: ghcr.io/${OWNER}/orchestra-core:${TAG}
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    depends_on: { orchestra-db: { condition: service_healthy } }
+    volumes: [./orchestra.yml:/app/config/orchestra.yml:ro, orchestra-data:/app/data]
+    environment:
+      - ORCHESTRA_CONFIG=/app/config/orchestra.yml
+      - "DATABASE_URL=postgresql://orchestra:\${ORCHESTRA_DB_PASSWORD}@orchestra-db:5432/orchestra"
+      - "WORKER_TOKEN=\${WORKER_TOKEN:?set WORKER_TOKEN}"
+    healthcheck: { test: ["CMD","curl","-sf","http://localhost:8080/health"], interval: 30s, timeout: 10s, retries: 3 }
+    networks: [orchestra-net]
+CORE
+fi)
+$(if [[ "$PROD" == "orchestra-worker-cpu" || "$PROD" == "orchestra-bundle" ]]; then
+  cat << CPU
+  worker-cpu:
+    image: ghcr.io/${OWNER}/orchestra-worker-cpu:${TAG}
+    restart: unless-stopped
+    environment:
+      - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+      - "ORCHESTRA_WORKER_TOKEN=\${WORKER_TOKEN}"
+    depends_on: [orchestra-core]
+    networks: [orchestra-net]
+CPU
+fi)
+$(if [[ "$PROD" == "orchestra-worker-gpu" || "$PROD" == "orchestra-bundle" ]]; then
+  cat << GPU
+  worker-gpu:
+    image: ghcr.io/${OWNER}/orchestra-worker-gpu:${TAG}
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+      - "ORCHESTRA_WORKER_TOKEN=\${WORKER_TOKEN}"
+      - WORKER_MODEL=llama3.2
+    deploy: { resources: { reservations: { devices: [{ capabilities: [gpu] }] } } }
+    depends_on: [orchestra-core]
+    networks: [orchestra-net]
+GPU
+fi)
+volumes: { orchestra-db-data: {}, orchestra-data: {} }
+networks: { orchestra-net: { driver: bridge } }
+YAML
+            ;;
+
+            full-bundle)
+              # Full bundle: guardian-compose.yml + orchestra-compose.yml
+              cp "${DIST}/docker-compose.yml" "${DIST}/guardian-compose.yml" 2>/dev/null || true
+              # Create both compose files
+              echo "# Full bundle — see guardian-compose.yml + orchestra-compose.yml" > "${DIST}/docker-compose.yml"
+            ;;
+          esac
+
+          # README
+          cat > "${DIST}/README.txt" << README
+AXTO AI Platform — ${PROD}
+═══════════════════════════════════════════
+Client  : ${CLIENT}
+License : ${LT} | Nodes: ${MN} | GPU: ${MG} | Workers: ${MW}
+Build   : ${BID}
+Tag     : ${TAG}
+
+DOCKER IMAGES (pre-built, pull from GHCR)
+─────────────────────────────────────────
+  docker compose pull
+  docker compose up -d
+
+IMAGES IN THIS BUILD
+────────────────────
+$(case "$PROD" in
+  guardian-core)         echo "  ghcr.io/${OWNER}/guardian-core:${TAG}" ;;
+  guardian-node)         echo "  ghcr.io/${OWNER}/guardian-node:${TAG}" ;;
+  guardian-clamav)       echo "  ghcr.io/${OWNER}/guardian-clamav:${TAG}" ;;
+  guardian-bundle)       printf "  ghcr.io/${OWNER}/guardian-core:${TAG}\n  ghcr.io/${OWNER}/guardian-node:${TAG}\n  ghcr.io/${OWNER}/guardian-clamav:${TAG}" ;;
+  orchestra-core)        echo "  ghcr.io/${OWNER}/orchestra-core:${TAG}" ;;
+  orchestra-worker-cpu)  echo "  ghcr.io/${OWNER}/orchestra-worker-cpu:${TAG}" ;;
+  orchestra-worker-gpu)  echo "  ghcr.io/${OWNER}/orchestra-worker-gpu:${TAG}" ;;
+  orchestra-bundle)      printf "  ghcr.io/${OWNER}/orchestra-core:${TAG}\n  ghcr.io/${OWNER}/orchestra-worker-cpu:${TAG}\n  ghcr.io/${OWNER}/orchestra-worker-gpu:${TAG}" ;;
+  full-bundle)           printf "  ghcr.io/${OWNER}/guardian-core:${TAG}\n  ghcr.io/${OWNER}/guardian-node:${TAG}\n  ghcr.io/${OWNER}/guardian-clamav:${TAG}\n  ghcr.io/${OWNER}/orchestra-core:${TAG}\n  ghcr.io/${OWNER}/orchestra-worker-cpu:${TAG}\n  ghcr.io/${OWNER}/orchestra-worker-gpu:${TAG}" ;;
+esac)
+
+Support: hallo@axto.io | Portal: https://axto.io/portal
+README
+
+          ls -lh "${DIST}/"
+
+      - name: Package zip
+        id: zip
+        run: |
+          DIST="dist/${{ inputs.build_id }}"
+          TAG="${{ steps.meta.outputs.tag }}"
+          ZIP="axto-${TAG}-docker-${{ inputs.product }}.zip"
+          cd "${DIST}" && zip -r "../../${ZIP}" .
+          cd ../..
+          echo "zip=${ZIP}" >> $GITHUB_OUTPUT
+          echo "📦 $(ls -lh ${ZIP} | awk '{print $5}')"
+
+      - name: Upload to GitHub Release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "build-${{ inputs.build_id }}"
+          name: "[${{ inputs.product }}] ${{ inputs.client_name }} — ${{ inputs.license_type }}"
+          draft: false
+          prerelease: true
+          files: ${{ steps.zip.outputs.zip }}
+          body: |
+            **Docker Build — ${{ inputs.product }}**
+            Client: ${{ inputs.client_name }} / ${{ inputs.client_email }}
+            License: `${{ inputs.license_type }}` | Build: `${{ inputs.build_id }}`
+            Tag: `${{ steps.meta.outputs.tag }}`
+            > ⚠️ Prerelease — delete after client downloads
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify dashboard
+        if: always()
+        run: |
+          STATUS=${{ job.status == 'success' && '"ready"' || '"failed"' }}
+          TAG="${{ steps.meta.outputs.tag }}"
+          DL="https://github.com/${{ github.repository }}/releases/tag/build-${{ inputs.build_id }}"
+          RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sf -X POST "${{ secrets.AXTO_APP_URL }}/api/admin/engine-builder" \
+            -H "Content-Type: application/json" \
+            -H "X-Build-Webhook-Secret: ${{ secrets.BUILD_WEBHOOK_SECRET }}" \
+            -d "{\"action\":\"webhook_build_complete\",\"build_id\":\"${{ inputs.build_id }}\",\"status\":${STATUS},\"tag\":\"${TAG}\",\"download_url\":\"${DL}\",\"run_id\":\"${{ github.run_id }}\",\"run_url\":\"${RUN}\"}" || true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### 🐳 Docker Build — ${{ inputs.product }}" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Product | ${{ inputs.product }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | \`${{ steps.meta.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Client | ${{ inputs.client_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| [Download Release](https://github.com/${{ github.repository }}/releases/tag/build-${{ inputs.build_id }}) | |" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 2 — EXE LINUX (PyInstaller standalone binary)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-exe-linux:
+    name: "🐧 EXE Linux [${{ inputs.product }}]"
+    runs-on: ubuntu-latest
+    if: inputs.build_type == 'exe' && inputs.arch != 'windows/amd64'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends \
+            gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
+            upx-ucl binutils patchelf curl
+
+      - name: Set vars
+        id: v
+        run: |
+          TAG="client-$(echo '${{ inputs.build_id }}' | cut -c1-8)"
+          DIST="dist/${{ inputs.build_id }}"
+          mkdir -p "${DIST}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+          PROD="${{ inputs.product }}"
+          # Determine which binaries to compile
+          NEED_GUARDIAN_CORE=false
+          NEED_GUARDIAN_NODE=false
+          NEED_ORCHESTRA_CORE=false
+          NEED_WORKER_CPU=false
+          NEED_WORKER_GPU=false
+          case "$PROD" in
+            guardian-core)        NEED_GUARDIAN_CORE=true ;;
+            guardian-node)        NEED_GUARDIAN_NODE=true ;;
+            guardian-clamav)      ;; # ClamAV = separate install, handled below
+            guardian-bundle)      NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true ;;
+            orchestra-core)       NEED_ORCHESTRA_CORE=true ;;
+            orchestra-worker-cpu) NEED_WORKER_CPU=true ;;
+            orchestra-worker-gpu) NEED_WORKER_GPU=true ;;
+            orchestra-bundle)     NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true; NEED_WORKER_GPU=true ;;
+            full-bundle)          NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true
+                                  NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true ;;
+          esac
+          echo "need_guardian_core=${NEED_GUARDIAN_CORE}"   >> $GITHUB_OUTPUT
+          echo "need_guardian_node=${NEED_GUARDIAN_NODE}"   >> $GITHUB_OUTPUT
+          echo "need_orchestra_core=${NEED_ORCHESTRA_CORE}" >> $GITHUB_OUTPUT
+          echo "need_worker_cpu=${NEED_WORKER_CPU}"         >> $GITHUB_OUTPUT
+          echo "need_worker_gpu=${NEED_WORKER_GPU}"         >> $GITHUB_OUTPUT
+          # ClamAV EXE flag
+          NEED_CLAMAV=false
+          [[ "$PROD" == "guardian-clamav" || "$PROD" == "guardian-bundle" || "$PROD" == "full-bundle" ]] && NEED_CLAMAV=true
+          echo "need_clamav=${NEED_CLAMAV}" >> $GITHUB_OUTPUT
+
+      - name: Inject embedded license
+        run: |
+          python3 - << 'PYEOF'
+          import pathlib
+          lic = """# Auto-generated by AXTO Engine Builder — DO NOT EDIT
+LICENSE_KEY  = "${{ inputs.license_key }}"
+LICENSE_TYPE = "${{ inputs.license_type }}"
+MAX_NODES    = ${{ inputs.max_nodes }}
+MAX_GPU      = ${{ inputs.max_gpu }}
+MAX_WORKERS  = ${{ inputs.max_workers }}
+UNLIMITED    = ${{ inputs.unlimited == '1' && 'True' || 'False' }}
+BUILD_ID     = "${{ inputs.build_id }}"
+CLIENT       = "${{ inputs.client_name }}"
+"""
+          for path in [
+              "engine/src/embedded_license.py",
+              "orchestra/orchestra_core/embedded_license.py",
+              "orchestra/orchestra_worker/embedded_license.py",
+          ]:
+              p = pathlib.Path(path)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(lic)
+          print("✅ License injected into all packages")
+          PYEOF
+
+      - name: Install Python deps
+        run: |
+          pip install --quiet pyinstaller==6.9.0
+          PROD="${{ inputs.product }}"
+          if [[ "${{ steps.v.outputs.need_guardian_core }}" == "true" || "${{ steps.v.outputs.need_guardian_node }}" == "true" ]]; then
+            pip install --quiet -r engine/requirements.txt
+          fi
+          if [[ "${{ steps.v.outputs.need_orchestra_core }}" == "true" || "${{ steps.v.outputs.need_worker_cpu }}" == "true" ]]; then
+            pip install --quiet -r orchestra/orchestra_core/requirements.txt
+            pip install --quiet -r orchestra/orchestra_worker/requirements.txt
+          fi
+          if [[ "${{ steps.v.outputs.need_worker_gpu }}" == "true" ]]; then
+            pip install --quiet -r orchestra/orchestra_worker/requirements-gpu.txt
+          fi
+
+      - name: 🛡️ Compile guardian-core binary
+        if: steps.v.outputs.need_guardian_core == 'true'
+        run: |
+          cd engine
+          pyinstaller --onefile --name guardian-core \
+            --distpath "../${{ steps.v.outputs.dist }}" \
+            --workpath /tmp/pyi-gcore --specpath /tmp \
+            --add-data "src/support_ui.html:src" \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import asyncpg --hidden-import aiosqlite \
+            --collect-all structlog --collect-all pydantic \
+            --strip src/api.py
+          echo "✅ guardian-core: $(ls -lh ../${{ steps.v.outputs.dist }}/guardian-core | awk '{print $5}')"
+
+      - name: 🤖 Compile guardian-node binary
+        if: steps.v.outputs.need_guardian_node == 'true'
+        run: |
+          cd engine
+          pyinstaller --onefile --name guardian-node \
+            --distpath "../${{ steps.v.outputs.dist }}" \
+            --workpath /tmp/pyi-gnode --specpath /tmp \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import asyncpg --hidden-import aiosqlite \
+            --collect-all structlog --collect-all pydantic \
+            --strip src/__main__.py
+          echo "✅ guardian-node: $(ls -lh ../${{ steps.v.outputs.dist }}/guardian-node | awk '{print $5}')"
+
+      - name: 🦠 Bundle ClamAV installer script
+        if: steps.v.outputs.need_clamav == 'true'
+        run: |
+          DIST="${{ steps.v.outputs.dist }}"
+          cat > "${DIST}/install-clamav.sh" << 'CLAMAV'
+#!/bin/bash
+# ClamAV Antivirus installer for AXTO Guardian
+set -euo pipefail
+echo "Installing ClamAV..."
+if command -v apt-get &>/dev/null; then
+  sudo apt-get update -q && sudo apt-get install -y clamav clamav-daemon
+elif command -v yum &>/dev/null; then
+  sudo yum install -y clamav clamd
+elif command -v brew &>/dev/null; then
+  brew install clamav
+fi
+sudo freshclam
+sudo systemctl enable clamav-daemon
+sudo systemctl start clamav-daemon
+echo "✅ ClamAV installed and running"
+echo "Socket: /var/run/clamav/clamd.ctl"
+CLAMAV
+          chmod +x "${DIST}/install-clamav.sh"
+          echo "✅ ClamAV installer script bundled"
+
+      - name: ⚡ Compile orchestra-core binary
+        if: steps.v.outputs.need_orchestra_core == 'true'
+        run: |
+          cd orchestra
+          pyinstaller --onefile --name orchestra-core \
+            --distpath "../${{ steps.v.outputs.dist }}" \
+            --workpath /tmp/pyi-ocore --specpath /tmp \
+            --hidden-import uvicorn.logging \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.lifespan.on \
+            --collect-all structlog --collect-all pydantic \
+            --strip orchestra_core/main.py
+          echo "✅ orchestra-core: $(ls -lh ../${{ steps.v.outputs.dist }}/orchestra-core | awk '{print $5}')"
+
+      - name: 💻 Compile orchestra-worker-cpu binary
+        if: steps.v.outputs.need_worker_cpu == 'true'
+        run: |
+          cd orchestra
+          pyinstaller --onefile --name orchestra-worker-cpu \
+            --distpath "../${{ steps.v.outputs.dist }}" \
+            --workpath /tmp/pyi-wcpu --specpath /tmp \
+            --hidden-import uvicorn.logging \
+            --collect-all structlog \
+            --strip orchestra_worker/worker_cpu.py
+          echo "✅ orchestra-worker-cpu: $(ls -lh ../${{ steps.v.outputs.dist }}/orchestra-worker-cpu | awk '{print $5}')"
+
+      - name: 🎮 Compile orchestra-worker-gpu binary
+        if: steps.v.outputs.need_worker_gpu == 'true'
+        run: |
+          cd orchestra
+          pyinstaller --onefile --name orchestra-worker-gpu \
+            --distpath "../${{ steps.v.outputs.dist }}" \
+            --workpath /tmp/pyi-wgpu --specpath /tmp \
+            --hidden-import uvicorn.logging \
+            --collect-all structlog \
+            --strip orchestra_worker/worker_gpu.py
+          echo "✅ orchestra-worker-gpu: $(ls -lh ../${{ steps.v.outputs.dist }}/orchestra-worker-gpu | awk '{print $5}')"
+
+      - name: Generate config + install.sh
+        run: |
+          D="${{ steps.v.outputs.dist }}"
+          LIC="${{ inputs.license_key }}" LT="${{ inputs.license_type }}"
+          MN="${{ inputs.max_nodes }}" MG="${{ inputs.max_gpu }}" MW="${{ inputs.max_workers }}"
+          CLIENT="${{ inputs.client_name }}" BID="${{ inputs.build_id }}"
+          PROD="${{ inputs.product }}"
+
+          if [[ "$PROD" == *guardian* || "$PROD" == "full-bundle" ]]; then
+            cat > "${D}/guardian.yml" << YAML
+guardian:
+  license_key: "${LIC}"
+  license_validate_url: "https://axto.io/api/license-validate"
+  max_nodes: ${MN}
+  scan_mode: "auto"
+  scan_interval: 300
+  scan_paths: [/host, /tmp, /var/www]
+  ai_pool:
+    routing: cost
+    fallback: true
+    providers:
+      - provider: openai
+        api_key: "sk-REPLACE_WITH_YOUR_KEY"
+        model: "gpt-4o-mini"
+  alerts: { email: "", slack_webhook: "", discord_webhook: "" }
+YAML
+          fi
+
+          if [[ "$PROD" == *orchestra* || "$PROD" == "full-bundle" ]]; then
+            cat > "${D}/orchestra.yml" << YAML
+orchestra:
+  license_key: "${LIC}"
+  license_validate_url: "https://axto.io/api/license-validate"
+  console_password: "CHANGE_THIS_PASSWORD"
+  worker_token: "CHANGE_THIS_TOKEN"
+  max_workers: ${MW}
+  ai_pool:
+    default_routing: cost
+    fallback: true
+    providers:
+      - provider: groq
+        api_key: "gsk_REPLACE_YOUR_GROQ_KEY"
+        model: "llama-3.1-8b-instant"
+YAML
+          fi
+
+          cat > "${D}/install.sh" << 'BASH'
+#!/bin/bash
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "======================================"
+echo " AXTO AI Platform — Linux Setup"
+echo "======================================"
+chmod +x "${DIR}"/guardian-core "${DIR}"/guardian-node "${DIR}"/orchestra-core "${DIR}"/orchestra-worker-cpu "${DIR}"/orchestra-worker-gpu 2>/dev/null || true
+
+svc() {
+  local name=$1 bin=$2 cfg=$3
+  [ -f "${DIR}/${bin}" ] || return 0
+  cat > /etc/systemd/system/${name}.service << SVC
+[Unit]
+Description=AXTO ${name}
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=${DIR}
+ExecStart=${DIR}/${bin} --config ${DIR}/${cfg}
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+SVC
+  systemctl daemon-reload
+  systemctl enable ${name} && systemctl start ${name}
+  echo "  ✅ ${name} started"
+}
+
+svc axto-guardian-core    guardian-core          guardian.yml
+svc axto-guardian-node    guardian-node          guardian.yml
+svc axto-orchestra-core   orchestra-core         orchestra.yml
+svc axto-worker-cpu       orchestra-worker-cpu   orchestra.yml
+svc axto-worker-gpu       orchestra-worker-gpu   orchestra.yml
+
+# ClamAV (if installer present)
+[ -f "${DIR}/install-clamav.sh" ] && bash "${DIR}/install-clamav.sh"
+
+echo ""
+echo "Done! Dashboard: http://$(hostname -I | awk '{print $1}'):8080"
+BASH
+          chmod +x "${D}/install.sh"
+
+          cat > "${D}/README.txt" << README
+AXTO AI Platform — ${PROD} (Linux EXE)
+═══════════════════════════════════════════
+Client  : ${CLIENT}
+License : ${LT} | Nodes: ${MN} | GPU: ${MG} | Workers: ${MW}
+Build   : ${BID}
+
+QUICK START
+───────────
+1. Edit guardian.yml / orchestra.yml — add AI API keys
+2. sudo bash install.sh    (installs as systemd services)
+3. Dashboard: http://YOUR_SERVER:8080
+
+MANUAL RUN
+──────────
+  ./guardian-core   --config guardian.yml   # Guardian API (port 8080)
+  ./guardian-node   --config guardian.yml   # Threat detection agent
+  ./orchestra-core  --config orchestra.yml  # Orchestra API (port 8080)
+  ./orchestra-worker-cpu  --config orchestra.yml
+  ./orchestra-worker-gpu  --config orchestra.yml
+  ./install-clamav.sh    # Install ClamAV antivirus (requires apt/yum)
+
+No Python or Docker required. Fully standalone.
+Support: hallo@axto.io | Portal: https://axto.io/portal
+README
+
+      - name: Package zip
+        id: zip
+        run: |
+          D="${{ steps.v.outputs.dist }}"
+          TAG="${{ steps.v.outputs.tag }}"
+          ZIP="axto-${TAG}-linux-${{ inputs.product }}.zip"
+          cd "${D}" && zip -r "../../${ZIP}" .
+          cd ../..
+          echo "zip=${ZIP}" >> $GITHUB_OUTPUT
+          echo "--- Binary sizes ---"
+          ls -lh "${D}/" 2>/dev/null || true
+          echo "📦 Total: $(ls -lh ${ZIP} | awk '{print $5}')"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "build-${{ inputs.build_id }}"
+          name: "[${{ inputs.product }}] ${{ inputs.client_name }} — ${{ inputs.license_type }}"
+          draft: false
+          prerelease: true
+          files: ${{ steps.zip.outputs.zip }}
+          body: |
+            **Linux EXE Build — ${{ inputs.product }}**
+            Client: ${{ inputs.client_name }} / ${{ inputs.client_email }}
+            License: `${{ inputs.license_type }}` | Build: `${{ inputs.build_id }}`
+            > Standalone Linux binaries. No Python or Docker needed.
+            > ⚠️ Prerelease — delete after client downloads.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify dashboard
+        if: always()
+        run: |
+          STATUS=${{ job.status == 'success' && '"ready"' || '"failed"' }}
+          TAG="${{ steps.v.outputs.tag }}"
+          DL="https://github.com/${{ github.repository }}/releases/tag/build-${{ inputs.build_id }}"
+          RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sf -X POST "${{ secrets.AXTO_APP_URL }}/api/admin/engine-builder" \
+            -H "Content-Type: application/json" \
+            -H "X-Build-Webhook-Secret: ${{ secrets.BUILD_WEBHOOK_SECRET }}" \
+            -d "{\"action\":\"webhook_build_complete\",\"build_id\":\"${{ inputs.build_id }}\",\"status\":${STATUS},\"tag\":\"${TAG}\",\"download_url\":\"${DL}\",\"run_id\":\"${{ github.run_id }}\",\"run_url\":\"${RUN}\"}" || true
+
+      - name: Summary
+        if: always()
+        run: |
+          D="${{ steps.v.outputs.dist }}"
+          echo "### 🐧 EXE Linux — ${{ inputs.product }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Binary | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          for f in "${D}"/*; do
+            [ -f "$f" ] && echo "| $(basename $f) | $(ls -lh $f | awk '{print $5}') |" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**[Download](https://github.com/${{ github.repository }}/releases/tag/build-${{ inputs.build_id }})**" >> $GITHUB_STEP_SUMMARY
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # JOB 3 — EXE WINDOWS (PyInstaller .exe, windows-latest runner)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-exe-windows:
+    name: "🪟 EXE Windows [${{ inputs.product }}]"
+    runs-on: windows-latest
+    if: inputs.build_type == 'exe' && inputs.arch == 'windows/amd64'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set vars
+        id: v
+        shell: bash
+        run: |
+          TAG="client-$(echo '${{ inputs.build_id }}' | cut -c1-8)"
+          DIST="dist/${{ inputs.build_id }}"
+          mkdir -p "${DIST}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+          PROD="${{ inputs.product }}"
+          NEED_GUARDIAN_CORE=false; NEED_GUARDIAN_NODE=false
+          NEED_ORCHESTRA_CORE=false; NEED_WORKER_CPU=false; NEED_WORKER_GPU=false
+          case "$PROD" in
+            guardian-core)        NEED_GUARDIAN_CORE=true ;;
+            guardian-node|guardian-clamav) NEED_GUARDIAN_NODE=true ;;
+            guardian-bundle)      NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true ;;
+            orchestra-core)       NEED_ORCHESTRA_CORE=true ;;
+            orchestra-worker-cpu) NEED_WORKER_CPU=true ;;
+            orchestra-worker-gpu) NEED_WORKER_GPU=true ;;
+            orchestra-bundle)     NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true; NEED_WORKER_GPU=true ;;
+            full-bundle)          NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true
+                                  NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true ;;
+          esac
+          echo "need_guardian_core=${NEED_GUARDIAN_CORE}" >> $GITHUB_OUTPUT
+          echo "need_guardian_node=${NEED_GUARDIAN_NODE}" >> $GITHUB_OUTPUT
+          echo "need_orchestra_core=${NEED_ORCHESTRA_CORE}" >> $GITHUB_OUTPUT
+          echo "need_worker_cpu=${NEED_WORKER_CPU}" >> $GITHUB_OUTPUT
+          echo "need_worker_gpu=${NEED_WORKER_GPU}" >> $GITHUB_OUTPUT
+
+      - name: Inject embedded license
+        shell: bash
+        run: |
+          LIC_PY="# Auto-generated\nLICENSE_KEY='${{ inputs.license_key }}'\nLICENSE_TYPE='${{ inputs.license_type }}'\nMAX_NODES=${{ inputs.max_nodes }}\nMAX_GPU=${{ inputs.max_gpu }}\nMAX_WORKERS=${{ inputs.max_workers }}\nUNLIMITED=${{ inputs.unlimited == '1' && 'True' || 'False' }}\nBUILD_ID='${{ inputs.build_id }}'\nCLIENT='${{ inputs.client_name }}'\n"
+          printf "${LIC_PY}" > engine/src/embedded_license.py
+          mkdir -p orchestra/orchestra_core orchestra/orchestra_worker
+          printf "${LIC_PY}" > orchestra/orchestra_core/embedded_license.py
+          printf "${LIC_PY}" > orchestra/orchestra_worker/embedded_license.py
+
+      - name: Install deps
+        shell: bash
+        run: |
+          pip install --quiet pyinstaller==6.9.0
+          PROD="${{ inputs.product }}"
+          [[ "${{ steps.v.outputs.need_guardian_core }}" == "true" || "${{ steps.v.outputs.need_guardian_node }}" == "true" ]] && pip install --quiet -r engine/requirements.txt
+          [[ "${{ steps.v.outputs.need_orchestra_core }}" == "true" || "${{ steps.v.outputs.need_worker_cpu }}" == "true" ]] && pip install --quiet -r orchestra/orchestra_core/requirements.txt && pip install --quiet -r orchestra/orchestra_worker/requirements.txt
+          [[ "${{ steps.v.outputs.need_worker_gpu }}" == "true" ]] && pip install --quiet -r orchestra/orchestra_worker/requirements-gpu.txt || true
+
+      - name: Build guardian-core.exe
+        if: steps.v.outputs.need_guardian_core == 'true'
+        shell: cmd
+        run: |
+          cd engine
+          pyinstaller --onefile --name guardian-core ^
+            --distpath "..\${{ steps.v.outputs.dist }}" ^
+            --workpath C:\Temp\pyi-gcore --specpath C:\Temp ^
+            --add-data "src\support_ui.html;src" ^
+            --hidden-import uvicorn.logging ^
+            --hidden-import uvicorn.loops.auto ^
+            --hidden-import uvicorn.protocols.http.auto ^
+            --hidden-import uvicorn.lifespan.on ^
+            --hidden-import asyncpg --hidden-import aiosqlite ^
+            --collect-all structlog --collect-all pydantic ^
+            src\api.py
+
+      - name: Build guardian-node.exe
+        if: steps.v.outputs.need_guardian_node == 'true'
+        shell: cmd
+        run: |
+          cd engine
+          pyinstaller --onefile --name guardian-node ^
+            --distpath "..\${{ steps.v.outputs.dist }}" ^
+            --workpath C:\Temp\pyi-gnode --specpath C:\Temp ^
+            --hidden-import uvicorn.logging ^
+            --hidden-import uvicorn.loops.auto ^
+            --hidden-import uvicorn.protocols.http.auto ^
+            --hidden-import uvicorn.lifespan.on ^
+            --hidden-import asyncpg --hidden-import aiosqlite ^
+            --collect-all structlog --collect-all pydantic ^
+            src\__main__.py
+
+      - name: Build orchestra-core.exe
+        if: steps.v.outputs.need_orchestra_core == 'true'
+        shell: cmd
+        run: |
+          cd orchestra
+          pyinstaller --onefile --name orchestra-core ^
+            --distpath "..\${{ steps.v.outputs.dist }}" ^
+            --workpath C:\Temp\pyi-ocore --specpath C:\Temp ^
+            --hidden-import uvicorn.logging ^
+            --hidden-import uvicorn.loops.auto ^
+            --hidden-import uvicorn.protocols.http.auto ^
+            --hidden-import uvicorn.lifespan.on ^
+            --collect-all structlog --collect-all pydantic ^
+            orchestra_core\main.py
+
+      - name: Build orchestra-worker-cpu.exe
+        if: steps.v.outputs.need_worker_cpu == 'true'
+        shell: cmd
+        run: |
+          cd orchestra
+          pyinstaller --onefile --name orchestra-worker-cpu ^
+            --distpath "..\${{ steps.v.outputs.dist }}" ^
+            --workpath C:\Temp\pyi-wcpu --specpath C:\Temp ^
+            --hidden-import uvicorn.logging ^
+            --collect-all structlog ^
+            orchestra_worker\worker_cpu.py
+
+      - name: Build orchestra-worker-gpu.exe
+        if: steps.v.outputs.need_worker_gpu == 'true'
+        shell: cmd
+        run: |
+          cd orchestra
+          pyinstaller --onefile --name orchestra-worker-gpu ^
+            --distpath "..\${{ steps.v.outputs.dist }}" ^
+            --workpath C:\Temp\pyi-wgpu --specpath C:\Temp ^
+            --hidden-import uvicorn.logging ^
+            --collect-all structlog ^
+            orchestra_worker\worker_gpu.py
+
+      - name: Generate config + install.bat
+        shell: bash
+        run: |
+          D="${{ steps.v.outputs.dist }}"
+          LIC="${{ inputs.license_key }}" LT="${{ inputs.license_type }}"
+          MN="${{ inputs.max_nodes }}" MG="${{ inputs.max_gpu }}" MW="${{ inputs.max_workers }}"
+          CLIENT="${{ inputs.client_name }}" BID="${{ inputs.build_id }}"
+          PROD="${{ inputs.product }}"
+
+          if [[ "$PROD" == *guardian* || "$PROD" == "full-bundle" ]]; then
+            cat > "${D}/guardian.yml" << YAML
+guardian:
+  license_key: "${LIC}"
+  license_validate_url: "https://axto.io/api/license-validate"
+  max_nodes: ${MN}
+  scan_mode: "auto"
+  ai_pool:
+    providers:
+      - provider: openai
+        api_key: "sk-REPLACE_WITH_YOUR_KEY"
+        model: "gpt-4o-mini"
+YAML
+          fi
+
+          if [[ "$PROD" == *orchestra* || "$PROD" == "full-bundle" ]]; then
+            cat > "${D}/orchestra.yml" << YAML
+orchestra:
+  license_key: "${LIC}"
+  license_validate_url: "https://axto.io/api/license-validate"
+  console_password: "CHANGE_THIS_PASSWORD"
+  worker_token: "CHANGE_THIS_TOKEN"
+  max_workers: ${MW}
+  ai_pool:
+    providers:
+      - provider: groq
+        api_key: "gsk_REPLACE_YOUR_GROQ_KEY"
+        model: "llama-3.1-8b-instant"
+YAML
+          fi
+
+          cat > "${D}/install.bat" << 'BAT'
+@echo off
+setlocal
+set DIR=%~dp0
+echo ============================================
+echo  AXTO AI Platform Setup (Windows)
+echo ============================================
+net session >nul 2>&1 || (echo Run as Administrator & pause & exit /b 1)
+call :svc "AXTO-Guardian-Core"    "%DIR%guardian-core.exe"         "%DIR%guardian.yml"
+call :svc "AXTO-Guardian-Node"    "%DIR%guardian-node.exe"         "%DIR%guardian.yml"
+call :svc "AXTO-Orchestra-Core"   "%DIR%orchestra-core.exe"        "%DIR%orchestra.yml"
+call :svc "AXTO-Worker-CPU"       "%DIR%orchestra-worker-cpu.exe"  "%DIR%orchestra.yml"
+call :svc "AXTO-Worker-GPU"       "%DIR%orchestra-worker-gpu.exe"  "%DIR%orchestra.yml"
+echo.
+echo Done! Dashboard: http://localhost:8080
+pause
+goto :eof
+:svc
+if not exist %2 goto :eof
+sc create %~1 binPath= "%~2 --config %~3" start= auto 2>nul
+sc start %~1 >nul 2>&1
+echo   %~1 registered
+goto :eof
+BAT
+
+          cat > "${D}/README.txt" << README
+AXTO AI Platform — ${PROD} (Windows)
+═══════════════════════════════════════════
+Client  : ${CLIENT}
+License : ${LT} | Build: ${BID}
+
+QUICK START
+───────────
+1. Edit guardian.yml / orchestra.yml — add AI API keys
+2. Run install.bat as Administrator
+3. Dashboard: http://localhost:8080
+
+No Python or Docker required.
+Support: hallo@axto.io
+README
+
+      - name: Package zip
+        id: zip
+        shell: bash
+        run: |
+          D="${{ steps.v.outputs.dist }}"
+          TAG="${{ steps.v.outputs.tag }}"
+          ZIP="axto-${TAG}-windows-${{ inputs.product }}.zip"
+          cd "${D}" && 7z a "../../${ZIP}" . > /dev/null
+          cd ../..
+          echo "zip=${ZIP}" >> $GITHUB_OUTPUT
+          ls -lh "${ZIP}"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "build-${{ inputs.build_id }}"
+          name: "[${{ inputs.product }}] ${{ inputs.client_name }} — ${{ inputs.license_type }}"
+          draft: false
+          prerelease: true
+          files: ${{ steps.zip.outputs.zip }}
+          body: |
+            **Windows EXE Build — ${{ inputs.product }}**
+            Client: ${{ inputs.client_name }} / ${{ inputs.client_email }}
+            License: `${{ inputs.license_type }}` | Build: `${{ inputs.build_id }}`
+            > Standalone .exe files. No Python or Docker needed.
+            > ⚠️ Prerelease — delete after client downloads.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify dashboard
+        if: always()
+        shell: bash
+        run: |
+          STATUS=${{ job.status == 'success' && '"ready"' || '"failed"' }}
+          TAG="${{ steps.v.outputs.tag }}"
+          DL="https://github.com/${{ github.repository }}/releases/tag/build-${{ inputs.build_id }}"
+          RUN="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sf -X POST "${{ secrets.AXTO_APP_URL }}/api/admin/engine-builder" \
+            -H "Content-Type: application/json" \
+            -H "X-Build-Webhook-Secret: ${{ secrets.BUILD_WEBHOOK_SECRET }}" \
+            -d "{\"action\":\"webhook_build_complete\",\"build_id\":\"${{ inputs.build_id }}\",\"status\":${STATUS},\"tag\":\"${TAG}\",\"download_url\":\"${DL}\",\"run_id\":\"${{ github.run_id }}\",\"run_url\":\"${RUN}\"}" || true
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### 🪟 EXE Windows — ${{ inputs.product }}" >> $GITHUB_STEP_SUMMARY
+          echo "**[Download](https://github.com/${{ github.repository }}/releases/tag/build-${{ inputs.build_id }})**" >> $GITHUB_STEP_SUMMARY

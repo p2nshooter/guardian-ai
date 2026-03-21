@@ -10,6 +10,7 @@ import {
   getRandomTemplate,
   type AutoPostTemplate,
 } from "./templates";
+export { getRandomTemplate };
 
 export interface VariationRequest {
   original_text: string;

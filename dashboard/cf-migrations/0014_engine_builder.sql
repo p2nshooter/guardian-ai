@@ -43,11 +43,11 @@ CREATE TABLE IF NOT EXISTS engine_build_logs (
 );
 
 -- Add trial_days and lifetime support to licenses
-ALTER TABLE licenses ADD COLUMN IF NOT EXISTS license_type TEXT DEFAULT 'yearly';
-ALTER TABLE licenses ADD COLUMN IF NOT EXISTS trial_days   INTEGER DEFAULT 0;
-ALTER TABLE licenses ADD COLUMN IF NOT EXISTS is_lifetime  INTEGER DEFAULT 0;
-ALTER TABLE licenses ADD COLUMN IF NOT EXISTS max_cpu      INTEGER DEFAULT 0;
-ALTER TABLE licenses ADD COLUMN IF NOT EXISTS max_gpu      INTEGER DEFAULT 0;
+ALTER TABLE licenses ADD COLUMN license_type TEXT DEFAULT 'yearly';
+ALTER TABLE licenses ADD COLUMN trial_days   INTEGER DEFAULT 0;
+ALTER TABLE licenses ADD COLUMN is_lifetime  INTEGER DEFAULT 0;
+ALTER TABLE licenses ADD COLUMN max_cpu      INTEGER DEFAULT 0;
+ALTER TABLE licenses ADD COLUMN max_gpu      INTEGER DEFAULT 0;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_engine_builds_status  ON engine_builds(status);

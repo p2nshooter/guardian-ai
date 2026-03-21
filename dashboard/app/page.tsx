@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-export const runtime = "edge";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 

@@ -1,5 +1,4 @@
 "use client";
-export const runtime = "edge";
 import { useEffect, useState } from "react";
 import { getSessionUser, signOut } from "@/lib/client-auth";
 import { useRouter, useParams } from "next/navigation";

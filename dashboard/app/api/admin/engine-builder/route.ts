@@ -197,7 +197,7 @@ networks: { orchestra-net: { driver: bridge } }
     ? `@echo off\nREM AXTO ${b.product==="orchestra"?"Orchestra":"Guardian"} Installer | Build: ${b.label} | ${ts}\necho ============================================\necho  AXTO ${b.product==="orchestra"?"Orchestra AI":"Guardian AI"} Setup\necho ============================================\nwhere docker >nul 2>&1 || (echo ERROR: Install Docker Desktop first: https://docker.com & pause & exit /b 1)\ndocker info >nul 2>&1 || (echo ERROR: Start Docker Desktop first & pause & exit /b 1)\necho Pulling image...\ndocker pull ghcr.io/${owner}/${b.product==="orchestra"?"orchestra-core":"guardian-engine"}:${tag} || (echo Pull failed & pause & exit /b 1)\necho Starting services...\ndocker compose -f docker-compose.yml up -d || (echo Compose failed & pause & exit /b 1)\necho.\necho Ready! Dashboard: http://localhost:8080\necho License is embedded in the config file\npause`
     : `#!/bin/bash\n# AXTO ${b.product==="orchestra"?"Orchestra AI":"Guardian AI"} Installer | Build: ${b.label} | ${ts}\nset -euo pipefail\necho "==========================================="\necho " AXTO ${b.product==="orchestra"?"Orchestra AI":"Guardian AI"} Setup"\necho "==========================================="\ncommand -v docker &>/dev/null || { echo "ERROR: Install Docker first: https://docs.docker.com/get-docker/"; exit 1; }\ndocker info &>/dev/null || { echo "ERROR: Start Docker first"; exit 1; }\n[ ! -f .env ] && { printf '${b.product==="orchestra"?"ORCHESTRA_DB_PASSWORD":"GUARDIAN_DB_PASSWORD"}=%s\\nWORKER_TOKEN=%s\\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 24)" > .env && echo "Generated .env"; }\necho "Pulling image..."\ndocker pull ghcr.io/${owner}/${b.product==="orchestra"?"orchestra-core":"guardian-engine"}:${tag}\necho "Starting services..."\ndocker compose -f docker-compose.yml up -d\necho ""\necho "Ready! Dashboard: http://localhost:8080"\necho "License is embedded in the config file"`;
 
-  const readme = `AXTO ${b.product==="bundle"?"Bundle":"b.product==="orchestra"?"Orchestra AI":"Guardian AI"}\nBuild: ${b.label}\nClient: ${b.client_name||"—"} <${b.client_email||""}>\nLicense: ${b.license_type}${b.trial_days>0?` (${b.trial_days}d)`:""} | Nodes: ${b.unlimited?"Unlimited":b.max_nodes} | GPU: ${b.unlimited?"Unlimited":b.max_gpu} | Workers: ${b.unlimited?"Unlimited":b.max_workers}\n\nQUICK START\n${b.product!=="orchestra"?`1. Edit guardian.yml — add your AI API keys\n2. Set env: GUARDIAN_DB_PASSWORD=$(openssl rand -hex 16)\n3. Run: docker compose${b.product==="bundle"?" -f guardian-compose.yml":""} up -d\n4. Dashboard: http://YOUR_SERVER:8080\n`:""}\n${b.product!=="guardian"?`${b.product==="bundle"?"5":"1"}. Edit orchestra.yml — set console_password, worker_token, add AI keys\n${b.product==="bundle"?"6":"2"}. Set env: ORCHESTRA_DB_PASSWORD=$(openssl rand -hex 16) WORKER_TOKEN=$(openssl rand -hex 24)\n${b.product==="bundle"?"7":"3"}. Run: docker compose${b.product==="bundle"?" -f orchestra-compose.yml":""} up -d\n${b.product==="bundle"?"8":"4"}. Console: http://YOUR_SERVER:${b.product==="bundle"?"8081":"8080"}/console\n`:""}\nDocker Registry:\n  ghcr.io/${owner}/guardian-engine:${tag}\n  ghcr.io/${owner}/orchestra-core:${tag}\n  ghcr.io/${owner}/orchestra-worker-cpu:${tag}\n  ghcr.io/${owner}/orchestra-worker-gpu:${tag}\n\nSupport: hallo@axto.io | Portal: ${appUrl}/portal\n`;
+  const readme = `AXTO ${b.product==="bundle"?"Bundle":b.product==="orchestra"?"Orchestra AI":"Guardian AI"}\nBuild: ${b.label}\nClient: ${b.client_name||"—"} <${b.client_email||""}>\nLicense: ${b.license_type}${b.trial_days>0?" ("+b.trial_days+"d)":""} | Nodes: ${b.unlimited?"Unlimited":b.max_nodes} | GPU: ${b.unlimited?"Unlimited":b.max_gpu} | Workers: ${b.unlimited?"Unlimited":b.max_workers}\n\nQUICK START\n${b.product!=="orchestra"?"1. Edit guardian.yml — add your AI API keys\n2. Set env: GUARDIAN_DB_PASSWORD=$(openssl rand -hex 16)\n3. Run: docker compose"+(b.product==="bundle"?" -f guardian-compose.yml":"")+" up -d\n4. Dashboard: http://YOUR_SERVER:8080\n":""}\n${b.product!=="guardian"?(b.product==="bundle"?"5":"1")+". Edit orchestra.yml — set console_password, worker_token, add AI keys\n"+(b.product==="bundle"?"6":"2")+". Set env: ORCHESTRA_DB_PASSWORD=$(openssl rand -hex 16) WORKER_TOKEN=$(openssl rand -hex 24)\n"+(b.product==="bundle"?"7":"3")+". Run: docker compose"+(b.product==="bundle"?" -f orchestra-compose.yml":"")+" up -d\n"+(b.product==="bundle"?"8":"4")+". Console: http://YOUR_SERVER:"+(b.product==="bundle"?"8081":"8080")+"/console\n":""}\nDocker Registry:\n  ghcr.io/${owner}/guardian-engine:${tag}\n  ghcr.io/${owner}/orchestra-core:${tag}\n  ghcr.io/${owner}/orchestra-worker-cpu:${tag}\n  ghcr.io/${owner}/orchestra-worker-gpu:${tag}\n\nSupport: hallo@axto.io | Portal: ${appUrl}/portal\n`;
 
   if (b.product === "guardian") return {
     "guardian.yml":       {content:gYml,     type:"text/yaml"},
@@ -270,6 +270,7 @@ export async function POST(req: NextRequest) {
       [newId(),id,"info",msg,now()]
     );
 
+    const isFreeConfig = !process.env.GITHUB_TOKEN;
     await log(`[1/5] Build initiated — ${build_type.toUpperCase()} | ${product} | ${license_type} | ${arch}`);
     await log(`[2/5] License key generated — ${licKey.slice(0,12)}...`);
     await log(`[3/5] Configuration files generated for ${product}`);
@@ -280,7 +281,13 @@ export async function POST(req: NextRequest) {
       ghTriggered = gh.triggered;
     } catch { /* no token configured */ }
 
-    await log(`[4/5] ${ghTriggered?"GitHub Actions workflow dispatched — CI/CD building Docker image":"Config package ready — images pulled from GHCR on first deploy"}`);
+    await log(`[4/5] ${
+      ghTriggered
+        ? "🔨 GitHub Actions triggered — building custom Docker image / EXE binary"
+        : build_type === "exe"
+          ? "📦 Config package ready — client installs binaries from GHCR on their machine"
+          : "📦 Config package ready — client runs: docker compose pull && docker compose up -d"
+    }`);
     await dbRun(db, `UPDATE engine_builds SET status='ready',updated_at=? WHERE id=?`, [now(),id]);
     await log(`[5/5] Build complete — ready to download`);
 
@@ -313,6 +320,31 @@ export async function POST(req: NextRequest) {
     await dbRun(db, `UPDATE engine_builds SET status='deleted',deleted_at=?,updated_at=? WHERE id=?`, [now(),now(),id]);
     await dbRun(db, `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`, [newId(),id,"warn","Build manually deleted by admin",now()]);
     return NextResponse.json({ ok:true });
+  }
+
+
+  if (action === "webhook_build_complete") {
+    // Called by GitHub Actions after build finishes — verify webhook secret
+    const webhookSecret = process.env.BUILD_WEBHOOK_SECRET || "";
+    const reqSecret = req.headers.get("X-Build-Webhook-Secret") || "";
+    if (!webhookSecret || reqSecret !== webhookSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const { build_id, status, tag, download_url="", images="", run_url="" } = body;
+    if (!build_id) return NextResponse.json({ error: "build_id required" }, { status: 400 });
+    await dbRun(db,
+      `UPDATE engine_builds SET status=?,r2_key=?,download_url=?,version=?,updated_at=? WHERE id=?`,
+      [status === "ready" ? "ready" : "failed", images, download_url || images, tag || "", now(), build_id]
+    );
+    await dbRun(db,
+      `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,
+      [newId(), build_id, status === "ready" ? "info" : "error",
+       status === "ready"
+         ? `[✅] GitHub Actions build complete. Tag: ${tag}. ${download_url ? "Download: "+download_url : "Images: "+images}`
+         : `[❌] GitHub Actions build failed. Run: ${run_url}`,
+       now()]
+    );
+    return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error:"Unknown action" }, { status:400 });

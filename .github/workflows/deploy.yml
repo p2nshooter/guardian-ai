@@ -1,14 +1,22 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # AXTO Platform — CI/CD Pipeline
 #
-# Two INDEPENDENT pipelines run in parallel on every push to main:
-#   A) Docker Images → GHCR  (guardian-engine, orchestra-core, worker-cpu, worker-gpu)
-#   B) Cloudflare Deploy     (D1 migrations, 48 PDFs → R2, Pages build & deploy, Workers)
+# Trigger: every push to main  (or manual via workflow_dispatch)
+# Command: ./push.sh "message"
 #
-# Products:
-#   1. Guardian AI    = guardian-core (API) + guardian-node (agent) + ClamAV antivirus
-#   2. Orchestra AI   = orchestra-core (API) + worker-cpu + worker-gpu
-#   3. Bundle         = Guardian + Orchestra
+# Two INDEPENDENT pipelines run in parallel:
+#
+#   A) Docker Images → GHCR  (public registry for self-deploy clients)
+#      guardian-engine, orchestra-core, worker-cpu, worker-gpu
+#      → Clients pull these images themselves + run with their own docker-compose
+#      → Admin can also trigger custom per-client builds via Engine Builder
+#
+#   B) Cloudflare Deploy
+#      D1 migrations (0001–0015) + 48 PDFs → R2 + Next.js build + Pages deploy + Workers
+#
+# CLIENT MODEL:
+#   Client beli paket → dapat file registry produk → build sendiri di infra mereka sendiri
+#   Engine Builder = tool INTERNAL admin, bukan untuk client
 # ═══════════════════════════════════════════════════════════════════════════════
 
 name: Deploy AXTO Platform

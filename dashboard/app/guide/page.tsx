@@ -1,5 +1,4 @@
 "use client";
-export const runtime = "edge";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
@@ -1438,7 +1437,7 @@ export default function GuidePage() {
                   <button key={i} onClick={()=>setActiveMenu(i)}
                     style={{
                       width:"100%",textAlign:"left",padding:"9px 10px",borderRadius:9,border:"none",
-                      background: activeMenu===i ? m.bg||"rgba(2,132,199,.08)" : "transparent",
+                      background: activeMenu===i ? (m as any).bg||"rgba(2,132,199,.08)" : "transparent",
                       cursor:"pointer",display:"flex",alignItems:"center",gap:8,marginBottom:2,
                     }}>
                     <span style={{fontSize:16}}>{m.icon}</span>

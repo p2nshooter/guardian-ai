@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     const location = body.location || (language === "id" ? "Jakarta, Indonesia" : "Remote");
 
     // Get a template
-    const tmpl = getRandomTemplate({ language: language as "id" | "en", product: "both" });
-    const filledText = tmpl ? autoFillTemplate(tmpl, { appUrl, language }) : "AXTO AI Platform — Enterprise AI for your servers. axto.io";
+    const tmpl = getRandomTemplate({ language: language as "id" | "en" });
+    const filledText = tmpl ? autoFillTemplate(tmpl?.body_text || "", { appUrl, language }) : "AXTO AI Platform — Enterprise AI for your servers. axto.io";
 
     const classifiedPlatforms = [
       "olx","craigslist","locanto","gumtree","adpost",
@@ -98,8 +98,8 @@ export async function POST(req: NextRequest) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
-    const tmpl = getRandomTemplate({ language: language as "id"|"en", product: "both" });
-    const filledText = tmpl ? autoFillTemplate(tmpl, { appUrl, language }) : "AXTO AI Platform. axto.io";
+    const tmpl = getRandomTemplate({ language: language as "id"|"en" });
+    const filledText = tmpl ? autoFillTemplate(tmpl?.body_text || "", { appUrl, language }) : "AXTO AI Platform. axto.io";
 
     const classifiedList = [
       "olx","craigslist","locanto","gumtree","adpost",
@@ -188,8 +188,8 @@ ${appUrl}`,
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
-    const tmpl = getRandomTemplate({ language: language as "id"|"en", product: "both" });
-    const filledText = tmpl ? autoFillTemplate(tmpl, { appUrl, language }) : "AXTO AI Platform. axto.io";
+    const tmpl = getRandomTemplate({ language: language as "id"|"en" });
+    const filledText = tmpl ? autoFillTemplate(tmpl?.body_text || "", { appUrl, language }) : "AXTO AI Platform. axto.io";
 
     const classifiedList = [
       "olx","craigslist","locanto","gumtree","adpost",

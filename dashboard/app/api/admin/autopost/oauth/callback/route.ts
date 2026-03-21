@@ -226,14 +226,29 @@ export async function GET(req: NextRequest) {
   // Clean up state
   await dbRun(db, `DELETE FROM autopost_oauth_states WHERE state = ?`, [state]).catch(() => {});
 
-  // Get credentials from env
-  const env = process.env as Record<string, string | undefined>;
-  const clientId     = env[CLIENT_ID_ENVS[platform] || ""] || "";
-  const clientSecret = env[CLIENT_SECRET_ENVS[platform] || ""] || "";
+  // Get credentials: D1 first, then fall back to env vars
+  let clientId = "";
+  let clientSecret = "";
+
+  // Facebook creds also cover instagram & threads
+  const credPlatform = ["instagram","threads"].includes(platform) ? "facebook" : platform;
+  const dbCred = await dbFirst<any>(db,
+    `SELECT app_id, app_secret FROM platform_app_credentials WHERE platform=? AND app_id!=''`,
+    [credPlatform]
+  ).catch(() => null);
+
+  if (dbCred?.app_id) {
+    clientId     = dbCred.app_id;
+    clientSecret = dbCred.app_secret || "";
+  } else {
+    const env = process.env as Record<string, string | undefined>;
+    clientId     = env[CLIENT_ID_ENVS[platform]     || ""] || "";
+    clientSecret = env[CLIENT_SECRET_ENVS[platform] || ""] || "";
+  }
 
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(
-      new URL(`/admin/autopost?oauth_error=app_credentials_missing&platform=${platform}`, req.url)
+      new URL(`/admin/autopost?oauth_error=${encodeURIComponent("App credentials not configured. Go to AutoPost → Platform Credentials to add your App ID & Secret.")}&platform=${platform}`, req.url)
     );
   }
 
