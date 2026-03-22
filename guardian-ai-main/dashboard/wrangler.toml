@@ -1,0 +1,26 @@
+name = "axto-dashboard"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+[[d1_databases]]
+binding    = "DB"
+database_name = "axto-db"
+database_id    = "125ec216-76f4-4bdb-ba8d-f29092759183"
+migrations_dir = "cf-migrations"
+
+[[kv_namespaces]]
+binding = "KV"
+id      = "9d8210f3e9234464b60553644c631511"
+
+[[r2_buckets]]
+binding     = "R2"
+bucket_name = "axto-storage"
+
+[[r2_buckets]]
+binding     = "R2_BUILDS"
+bucket_name = "axto-artifacts"
+
+[vars]
+NEXT_PUBLIC_GHCR_OWNER = "p2nshooter"
+NEXT_PUBLIC_APP_URL    = "https://axto.io"

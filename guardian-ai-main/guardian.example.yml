@@ -1,0 +1,77 @@
+# ============================================================
+# GUARDIAN AI — Configuration Template
+# Copy: cp guardian.example.yml guardian.yml
+# Fill in your license_key and at least one AI vendor key
+# NEVER commit guardian.yml — it contains your secrets
+# ============================================================
+
+guardian:
+
+  # Your license key (from Client Portal)
+  license_key: "GUARDIAN-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+  # License validation endpoint (get from your welcome email or Client Portal)
+  # Format: https://axto.io/api/license-validate
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  # ─── Antivirus Scan Mode ─────────────────────────────────
+  # Controls how and when the node scans for threats.
+  #
+  #   auto   → Scan automatically every scan_interval seconds (DEFAULT)
+  #            Best for production servers that need continuous protection.
+  #
+  #   manual → Only scan when explicitly triggered via API:
+  #              POST http://guardian-core:8080/scan/trigger
+  #            Best for controlled environments or scheduled maintenance windows.
+  #
+  #   off    → Disable antivirus scanning entirely on this node.
+  #            API-based scans (scan/file, scan/ip, scan/domain) still work.
+  #            Best if you only want threat feed lookups, not file scanning.
+  #
+  # Can also be changed at runtime (no restart needed):
+  #   curl -X POST http://guardian-core:8080/scan/mode \
+  #        -H "Content-Type: application/json" \
+  #        -d '{"mode": "manual"}'
+
+  scan_mode: "auto"      # auto | manual | off
+
+  # How often to scan in auto mode (seconds). Default: 300 (5 minutes)
+  scan_interval: 300
+
+  # Paths to monitor (Docker: map your host paths via volumes)
+  scan_paths:
+    - /host          # your host filesystem (mapped via volume)
+    - /tmp           # temporary files
+
+  # ─── AI Pool (BYOK — Bring Your Own Keys) ───────────────
+  # Add at least one. More vendors = better coverage + fallback.
+  ai_pool:
+    vendors:
+
+      # OpenAI — Recommended for general-purpose analysis
+      - provider: openai
+        api_key: "sk-..."
+        model: "gpt-4o-mini"       # or gpt-4o for higher accuracy
+
+      # Anthropic Claude — Recommended for complex reasoning
+      # - provider: anthropic
+      #   api_key: "sk-ant-..."
+      #   model: "claude-3-haiku-20240307"
+
+      # Google Gemini — Fast and cost-effective
+      # - provider: gemini
+      #   api_key: "AIza..."
+      #   model: "gemini-1.5-flash"
+
+      # Groq — Ultra-fast inference (free tier available)
+      # - provider: groq
+      #   api_key: "gsk_..."
+      #   model: "llama3-8b-8192"
+
+      # Ollama — Fully local, zero external API calls
+      # - provider: ollama
+      #   base_url: "http://ollama:11434"
+      #   model: "llama3"
+
+  # ─── Optional overrides ─────────────────────────────────
+  # heartbeat_interval: 3600     # seconds (default: 1 hour)

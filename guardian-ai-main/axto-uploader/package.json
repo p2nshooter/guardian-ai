@@ -1,0 +1,27 @@
+{
+  "name": "axto-uploader",
+  "version": "2.0.0",
+  "description": "AXTO Playbooks — One-Click Deploy: SQL to D1 + PDF to R2",
+  "main": "src/uploader.js",
+  "scripts": {
+    "start":       "node src/uploader.js",
+    "build:win":   "pkg . --target node18-win-x64   --output dist/axto-deploy-windows.exe --compress GZip",
+    "build:mac":   "pkg . --target node18-macos-x64 --output dist/axto-deploy-macos",
+    "build:linux": "pkg . --target node18-linux-x64 --output dist/axto-deploy-linux",
+    "build:all":   "npm run build:win && npm run build:mac && npm run build:linux"
+  },
+  "pkg": {
+    "entrypoint": "src/uploader.js",
+    "assets": ["node_modules/@aws-sdk/**/*"],
+    "targets":  ["node18-win-x64"]
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3":   "^3.600.0",
+    "@aws-sdk/lib-storage": "^3.600.0",
+    "dotenv":               "^16.4.5"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "engines": { "node": ">=16.0.0" }
+}

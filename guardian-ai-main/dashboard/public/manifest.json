@@ -1,0 +1,16 @@
+{
+  "name": "AXTO \u2014 AI eXecution & Tools Orchestration",
+  "short_name": "AXTO",
+  "description": "AI eXecution & Tools Orchestration. Self-hosted, BYOK, Zero Data Exposure.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07090d",
+  "theme_color": "#07090d",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

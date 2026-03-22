@@ -1,0 +1,13 @@
+name = "axto-autopost-cron"
+main = "autopost-cron.ts"
+compatibility_date = "2024-12-01"
+
+[triggers]
+crons = ["0 */6 * * *"]
+
+[vars]
+APP_URL = "https://axto.io"
+
+# CRON_SECRET must be set as a Worker secret (not a plain var):
+#   wrangler secret put CRON_SECRET --config wrangler-autopost.toml
+# Or set via GitHub Actions (see deploy.yml — "Deploy Cloudflare Workers" step)

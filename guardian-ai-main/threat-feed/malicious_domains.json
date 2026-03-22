@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-03-13T19:15:12.883259Z",
+  "description": "Guardian AI malicious domain threat feed",
+  "count": 50,
+  "data": [
+    {
+      "domain": "malware-download.com",
+      "threat": "malware_distribution",
+      "severity": "critical"
+    },
+    {
+      "domain": "phishing-bank.net",
+      "threat": "phishing",
+      "severity": "high"
+    },
+    {
+      "domain": "cryptominer-pool.io",
+      "threat": "cryptomining",
+      "severity": "medium"
+    },
+    {
+      "domain": "c2-command.xyz",
+      "threat": "c2_server",
+      "severity": "critical"
+    },
+    {
+      "domain": "fake-update.com",
+      "threat": "fake_software",
+      "severity": "high"
+    }
+  ]
+}
