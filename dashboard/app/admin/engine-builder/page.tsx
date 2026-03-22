@@ -147,19 +147,24 @@ export default function EngineBuilderPage() {
   }
   function qbPoll(key:string, id:string, ghBuild=false) {
     if (qbPolls.current[key]) clearInterval(qbPolls.current[key]);
-    const iv = ghBuild ? 10000 : 2000;
+    const iv = ghBuild ? 10000 : 1500;
     qbPolls.current[key] = setInterval(async()=>{
       try {
         const r = await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",
           headers:{"Content-Type":"application/json"},
           body:JSON.stringify({action:"get_progress",id})});
         const d = await r.json();
-        qbSet(key,{pct:d.progress||0, logs:(d.logs||[]).map((l:any)=>l.message||""), runUrl:d.run_url||d.build?.run_url||null});
-        if (d.build?.status==="ready"||d.build?.status==="failed") {
+        const pct   = d.progress || 0;
+        const logs  = (d.logs||[]).map((l:any)=>l.message||"");
+        const runUrl= d.run_url || d.build?.run_url || null;
+        qbSet(key,{pct, logs, runUrl});
+        if (d.build?.status==="ready" || d.build?.status==="failed") {
           const done = d.build.status==="ready";
-          qbSet(key,{status:done?"done":"failed", pct:done?100:0, dlUrl:d.build?.download_url||null});
+          qbSet(key,{status:done?"done":"failed", pct:done?100:0,
+            dlUrl:d.build?.download_url||null, logs});
           clearInterval(qbPolls.current[key]);
-          await load();
+          delete qbPolls.current[key];
+          await load(); // refresh DB builds → Quick Build colors update
         }
       } catch {}
     }, iv);
@@ -167,6 +172,7 @@ export default function EngineBuilderPage() {
   useEffect(()=>()=>{Object.values(qbPolls.current).forEach(clearInterval);},[]);
   const [builds, setBuilds] = useState<any[]>([]);
   const [stats,  setStats]  = useState<any>({});
+  const [r2Files,setR2Files]= useState<any[]>([]);
   const [loading,setLoading]= useState(true);
   const [err,    setErr]    = useState<string|null>(null);
   const [ok,     setOk]     = useState<string|null>(null);
@@ -206,12 +212,43 @@ export default function EngineBuilderPage() {
   const load = useCallback(async()=>{
     setLoading(true);
     try {
-      const r = await fetch("/api/admin/engine-builder",{credentials:"include"});
-      if (r.ok) { const d=await r.json(); setBuilds(d.builds||[]); setStats(d.stats||{}); setHasGH(!!d.hasGithubToken); setHasR2(!!d.hasR2); }
+      const [ebRes, relRes] = await Promise.all([
+        fetch("/api/admin/engine-builder",{credentials:"include"}),
+        fetch("/api/admin/releases",{credentials:"include"}),
+      ]);
+      if (ebRes.ok) {
+        const d = await ebRes.json();
+        setBuilds(d.builds||[]);
+        setStats(d.stats||{});
+        setHasGH(!!d.hasGithubToken);
+        setHasR2(!!d.hasR2);
+      }
+      if (relRes.ok) {
+        const d = await relRes.json();
+        setR2Files(d.files||[]);
+      }
     } catch {} finally { setLoading(false); }
   },[]);
 
   useEffect(()=>{ load(); },[load]);
+
+  // Resume polling for any "building" builds from DB on page load
+  useEffect(()=>{
+    if (!builds.length) return;
+    const building = builds.filter((b:any)=>b.status==="building");
+    building.forEach((b:any)=>{
+      // Find which QB variant this matches
+      const archRevMap:Record<string,string> = {"linux/amd64":"linux","windows/amd64":"windows","linux/arm64":"arm64"};
+      const arch = archRevMap[b.arch] || "linux";
+      const qkey = `${b.product}-${b.build_type}-${arch}`;
+      // Only resume if not already polling
+      if (!qbPolls.current[qkey]) {
+        qbSet(qkey,{status:"building",pct:20,buildId:b.id,logs:["Resuming poll..."],dlUrl:null,runUrl:b.run_url||null});
+        qbPoll(qkey, b.id, true);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[builds]);
 
   // Poll build progress
   // BUG FIX: use 10s interval — GitHub Actions builds take 10-20 min, 800ms was wasteful
@@ -465,17 +502,20 @@ export default function EngineBuilderPage() {
                   display:"flex",alignItems:"center",gap:10}}>
                   <span style={{fontSize:15,fontWeight:900,color:grp.color}}>{grp.group}</span>
                   {(()=>{
+                    const AMAP:Record<string,string>={linux:"linux/amd64",windows:"windows/amd64",arm64:"linux/arm64"};
                     let total=0,built=0;
                     grp.items.forEach((item:QBItem)=>{
                       const vars = item.variants||QB_VARIANTS.map(v=>v.type+"-"+v.arch);
                       vars.forEach(vk=>{
-                        total++;
                         const [type,...rest]=vk.split("-"); const arch=rest.join("-");
+                        total++;
                         const qkey=`${item.product}-${type}-${arch}`;
                         const qs=qbGet(qkey);
-                        if(qs.status==="done"||builds.some(b=>b.product===item.product&&b.build_type===type&&
-                          (arch==="linux"&&b.arch==="linux/amd64"||arch==="windows"&&b.arch==="windows/amd64")
-                          &&b.status==="ready")) built++;
+                        if(qs.status==="done"){built++;return;}
+                        const dbArch=AMAP[arch]||arch;
+                        const inDb=builds.some((b:any)=>b.product===item.product&&b.build_type===type&&b.arch===dbArch&&b.status==="ready"&&!b.deleted_at);
+                        const inR2=r2Files.some((f:any)=>f.product===item.product&&f.type===type&&f.arch===arch&&f.size_mb>0);
+                        if(inDb||inR2) built++;
                       });
                     });
                     const c=built===total?"#22c55e":built>0?"#f59e0b":"#ef4444";
@@ -489,15 +529,38 @@ export default function EngineBuilderPage() {
                     ? QB_VARIANTS.filter(v=>item.variants!.includes(v.type+"-"+v.arch))
                     : QB_VARIANTS;
 
-                  function getExistingBuild(type:string,arch:string) {
-                    const archMap:any={linux:"linux/amd64",windows:"windows/amd64",arm64:"linux/arm64"};
-                    return builds.filter(b=>b.product===item.product&&b.build_type===type&&b.arch===archMap[arch]&&b.status==="ready")
-                      .sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime())[0];
+                  // Check BOTH DB (manual builds) AND R2 (CI builds)
+                  const ARCH_MAP:Record<string,string> = {linux:"linux/amd64", windows:"windows/amd64", arm64:"linux/arm64"};
+
+                  function getDbBuild(type:string, arch:string) {
+                    const dbArch = ARCH_MAP[arch] || arch;
+                    return builds
+                      .filter((b:any) =>
+                        b.product === item.product &&
+                        b.build_type === type &&
+                        b.arch === dbArch &&
+                        b.status === "ready" &&
+                        !b.deleted_at
+                      )
+                      .sort((a:any,b:any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
+                  }
+
+                  function isInR2(type:string, arch:string) {
+                    return r2Files.some((f:any) =>
+                      f.product === item.product &&
+                      f.type === type &&
+                      f.arch === arch &&
+                      f.size_mb > 0
+                    );
+                  }
+
+                  function getExistingBuild(type:string, arch:string) {
+                    return getDbBuild(type, arch);
                   }
 
                   const builtCount = vars.filter(v=>{
                     const qkey=`${item.product}-${v.type}-${v.arch}`;
-                    return qbGet(qkey).status==="done"||!!getExistingBuild(v.type,v.arch);
+                    return qbGet(qkey).status==="done" || !!getDbBuild(v.type,v.arch) || isInR2(v.type,v.arch);
                   }).length;
                   const dotC = builtCount===vars.length?"#22c55e":builtCount>0?"#f59e0b":"#ef4444";
 
@@ -519,11 +582,18 @@ export default function EngineBuilderPage() {
                         {vars.map(v=>{
                           const qkey=`${item.product}-${v.type}-${v.arch}`;
                           const qs=qbGet(qkey);
-                          const existing=getExistingBuild(v.type,v.arch);
-                          const isReady  = qs.status==="done"||(qs.status==="idle"&&!!existing);
-                          const isBuilding=qs.status==="building";
-                          const isFailed  =qs.status==="failed";
-                          const isManual  =!!item.manualOnly;
+                          const existing  = getDbBuild(v.type, v.arch);
+                          const inR2      = isInR2(v.type, v.arch);
+                          const isReady   = qs.status==="done" || (qs.status==="idle" && (!!existing || inR2));
+                          const isBuilding= qs.status==="building" ||
+                            builds.some((b:any)=>b.product===item.product&&b.build_type===v.type&&
+                              b.arch===(ARCH_MAP[v.arch]||v.arch)&&b.status==="building");
+                          const isFailed  = qs.status==="failed" ||
+                            (!existing && !inR2 && builds.some((b:any)=>b.product===item.product&&b.build_type===v.type&&
+                              b.arch===(ARCH_MAP[v.arch]||v.arch)&&b.status==="failed"));
+                          const isManual  = !!item.manualOnly;
+                          // Source label for info
+                          const source    = inR2&&!existing?"CI":existing?"DB":"—";
 
                           const bc=isReady?"rgba(34,197,94,.25)":isBuilding?"rgba(2,132,199,.25)":isFailed?"rgba(239,68,68,.25)":isManual?"rgba(148,163,184,.2)":"rgba(239,68,68,.2)";
                           const bg=isReady?"rgba(34,197,94,.06)":isBuilding?"rgba(2,132,199,.06)":isFailed?"rgba(239,68,68,.06)":isManual?"rgba(148,163,184,.06)":"rgba(239,68,68,.03)";
@@ -534,9 +604,9 @@ export default function EngineBuilderPage() {
                           const buildDate = existing?.created_at?new Date(existing.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
 
                           async function doQuickBuild() {
-                            if (isManual||isBuilding) return;
+                            if (isManual||isBuilding||isReady) return;
                             qbSet(qkey,{status:"building",pct:5,logs:["Starting build..."],buildId:null,dlUrl:null,runUrl:null});
-                            const archParam=v.arch==="linux"?"linux/amd64":v.arch==="windows"?"windows/amd64":"linux/arm64";
+                            const archParam = ARCH_MAP[v.arch] || "linux/amd64";
                             try {
                               const r=await fetch("/api/admin/engine-builder",{
                                 method:"POST",credentials:"include",
@@ -595,10 +665,14 @@ export default function EngineBuilderPage() {
                                 </div>
                               )}
 
-                              {/* Info when idle+ready */}
                               {isReady&&qs.status==="idle"&&(
                                 <div style={{fontSize:9,color:"#94a3b8",marginBottom:5}}>
-                                  {fileSize&&<span>{fileSize} · </span>}{buildDate}
+                                  <span style={{background:source==="CI"?"rgba(2,132,199,.1)":"rgba(124,58,237,.1)",
+                                    color:source==="CI"?"#0284c7":"#7c3aed",borderRadius:3,padding:"1px 4px",fontWeight:700}}>
+                                    {source}
+                                  </span>
+                                  {fileSize&&<span style={{marginLeft:4}}>{fileSize}</span>}
+                                  {buildDate&&<span style={{marginLeft:4}}>{buildDate}</span>}
                                 </div>
                               )}
 
