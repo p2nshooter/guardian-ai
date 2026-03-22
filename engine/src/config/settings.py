@@ -86,6 +86,26 @@ def load_config() -> GuardianConfig:
     if "scan_paths" not in cfg_data:
         cfg_data["scan_paths"] = ["/host", "/tmp"]
 
+    # ── BUG FIX #1: Load persisted license key from license.key file ──────────
+    # Activation wizard saves key to {data_dir}/license.key after first-run.
+    # This persists the key across container restarts (survives guardian.yml reset).
+    # Priority: env var > license.key file > guardian.yml value
+    data_dir_path = Path(os.environ.get("DATA_DIR", str(cfg_data.get("data_dir", "/guardian/data"))))
+    license_key_file = data_dir_path / "license.key"
+    if license_key_file.exists():
+        try:
+            saved_key = license_key_file.read_text().strip()
+            if saved_key and saved_key.startswith("GUARD"):
+                cfg_data["license_key"] = saved_key
+        except Exception:
+            pass
+    # Env var takes highest priority
+    for env_name in ("GUARDIAN_LICENSE_KEY", "AXTO_LICENSE_KEY"):
+        env_val = os.environ.get(env_name, "")
+        if env_val:
+            cfg_data["license_key"] = env_val
+            break
+
     # ── Tier 2: parse tier2: block from YAML ─────────────────────────────────
     tier2 = cfg_data.pop("tier2", {})
     if isinstance(tier2, dict):

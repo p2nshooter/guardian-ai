@@ -40,27 +40,28 @@ export async function sendWelcomeEmail(params: {
     ? `<div style="background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:20px;margin:20px 0">
         <div style="color:#7c3aed;font-size:13px;font-weight:700;margin-bottom:12px">🚀 Quick Deploy (3 steps)</div>
         <div style="color:#94a3b8;font-size:13px;line-height:1.8;font-family:monospace">
-          <div>1. Edit <code style="color:#22d3ee">orchestra.yml</code> → paste your AI API keys</div>
-          <div>2. Edit <code style="color:#22d3ee">orchestra.yml</code> → set license_key: <code style="color:#22d3ee">${licenseKey.substring(0, 12)}...</code></div>
-          <div>3. Run: <code style="color:#22d3ee;background:rgba(34,211,238,0.08);padding:2px 6px;border-radius:4px">docker compose -f orchestra-compose.yml up -d</code></div>
+          <div>1. Download ZIP from portal → extract to your server</div>
+          <div>2. Run: <code style="color:#22d3ee;background:rgba(34,211,238,0.08);padding:2px 6px;border-radius:4px">sudo bash install.sh</code></div>
+          <div>3. Run: <code style="color:#22d3ee;background:rgba(34,211,238,0.08);padding:2px 6px;border-radius:4px">docker compose up -d</code></div>
+          <div>4. Open <code style="color:#22d3ee">http://YOUR_SERVER:8080</code> → enter license key</div>
         </div>
         <div style="color:#475569;font-size:12px;margin-top:12px;line-height:1.8">
-          <strong style="color:#94a3b8">Docker Registry:</strong><br>
-          Core: <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/orchestra-core:latest</code><br>
-          Worker CPU: <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/orchestra-worker-cpu:latest</code><br>
-          Worker GPU: <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/orchestra-worker-gpu:latest</code><br>
+          <strong style="color:#94a3b8">Your License Key:</strong> <code style="color:#22d3ee">${licenseKey}</code><br>
+          <strong style="color:#94a3b8">Enter it at:</strong> http://YOUR_SERVER:8080 (activation wizard appears automatically)<br>
           Console: http://YOUR_SERVER:8080/console · Full docs at ${appUrl}/portal
         </div>
       </div>`
     : `<div style="background:rgba(2,132,199,0.06);border:1px solid rgba(2,132,199,0.15);border-radius:12px;padding:20px;margin:20px 0">
         <div style="color:#0284c7;font-size:13px;font-weight:700;margin-bottom:12px">🚀 Quick Deploy (3 steps)</div>
         <div style="color:#94a3b8;font-size:13px;line-height:1.8;font-family:monospace">
-          <div>1. Edit <code style="color:#22d3ee">guardian.yml</code> → set license_key: <code style="color:#22d3ee">${licenseKey.substring(0, 12)}...</code></div>
-          <div>2. Edit <code style="color:#22d3ee">guardian.yml</code> → configure your AI engine</div>
+          <div>1. Download ZIP from portal → extract to your server</div>
+          <div>2. Run: <code style="color:#22d3ee;background:rgba(34,211,238,0.08);padding:2px 6px;border-radius:4px">sudo bash install.sh</code></div>
           <div>3. Run: <code style="color:#22d3ee;background:rgba(34,211,238,0.08);padding:2px 6px;border-radius:4px">docker compose up -d</code></div>
+          <div>4. Open <code style="color:#22d3ee">http://YOUR_SERVER:8080</code> → enter license key</div>
         </div>
         <div style="color:#475569;font-size:12px;margin-top:12px;line-height:1.8">
-          <strong style="color:#94a3b8">Docker Registry:</strong> <code style="color:#22d3ee">${process.env.GHCR_OWNER||"p2nshooter"}/guardian-engine:latest</code><br>
+          <strong style="color:#94a3b8">Your License Key:</strong> <code style="color:#22d3ee">${licenseKey}</code><br>
+          <strong style="color:#94a3b8">Enter it at:</strong> http://YOUR_SERVER:8080 (activation wizard appears on first run)<br>
           Dashboard: http://YOUR_SERVER:8080 · Full docs at ${appUrl}/portal
         </div>
       </div>`;

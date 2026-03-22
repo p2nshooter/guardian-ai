@@ -189,6 +189,90 @@ async def node_alert(req: NodeAlertRequest):
 async def list_nodes():
     return {"nodes": list(_nodes.values()), "count": len(_nodes)}
 
+# ── License Wizard — redirect to activation page if no valid license ──────────
+ACTIVATION_BYPASS_PATHS = {"/health", "/api/license/activate", "/api/license/status",
+                            "/license/info", "/favicon.ico", "/static"}
+
+@app.middleware("http")
+async def license_wizard_middleware(request: Request, call_next):
+    """If no valid license key is set, redirect all web requests to /activate."""
+    path = request.url.path
+    # Always allow API health + activation endpoints + static assets
+    if any(path.startswith(p) for p in ACTIVATION_BYPASS_PATHS):
+        return await call_next(request)
+    # Check if license is configured
+    c = GuardianCore.get()
+    if c.license_info is None or not c.license_info.valid:
+        # Only redirect browser requests (not API calls from agents)
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept or path in ("/", "/activate"):
+            import os
+            html_path = os.path.join(os.path.dirname(__file__), "activation.html")
+            if os.path.exists(html_path):
+                html = open(html_path).read()
+                # Inject product meta tag
+                html = html.replace('</head>', '<meta name="axto-product" content="guardian"></head>', 1)
+                from fastapi.responses import HTMLResponse
+                return HTMLResponse(html)
+    return await call_next(request)
+
+# ── License activate endpoint (called by wizard) ─────────────────────────────
+@app.post("/api/license/activate")
+async def license_activate(request: Request):
+    """Receives license key from first-run wizard, validates and saves it."""
+    import json, os, httpx
+    body = await request.json()
+    key = (body.get("license_key") or "").strip().upper()
+    if not key:
+        return {"valid": False, "error": "No license key provided"}
+
+    cfg = GuardianCore.get()._cfg
+    validate_url = cfg.license_validate_url or "https://axto.io/api/license-validate"
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            import socket as _sock, uuid as _uuid
+            try:
+                mid_path = "/etc/machine-id"
+                machine_id = open(mid_path).read().strip() if os.path.exists(mid_path) else str(_uuid.uuid4())
+            except Exception:
+                machine_id = str(_uuid.uuid4())
+
+            resp = await client.post(validate_url, json={
+                "license_key": key,
+                "machine_id":  machine_id,
+                "product":     "guardian",
+                "hostname":    _sock.gethostname(),
+            })
+            data = resp.json()
+
+        if data.get("valid"):
+            # Save license key to persistent file so it survives restarts
+            data_dir = os.environ.get("DATA_DIR", "/guardian/data")
+            os.makedirs(data_dir, exist_ok=True)
+            with open(os.path.join(data_dir, "license.key"), "w") as f:
+                f.write(key)
+            # Also update in-memory config
+            cfg.license_key = key
+            # Force re-validate on next request
+            core = GuardianCore.get()
+            core.license_info = None
+            await core._validator.validate(force=True)
+            return {**data, "machine_id": machine_id[:16]}
+        else:
+            return {"valid": False, **data}
+
+    except Exception as e:
+        return {"valid": False, "error": str(e), "reason": "network_error"}
+
+@app.get("/api/license/status")
+async def license_status():
+    c = GuardianCore.get()
+    if not c.license_info:
+        return {"valid": False, "reason": "not_validated"}
+    return {"valid": c.license_info.valid, "reason": c.license_info.reason,
+            "product": c.license_info.product, "package": c.license_info.package}
+
 # ── License ───────────────────────────────────────────────────────────────────
 @app.get("/license/info")
 async def license_info():

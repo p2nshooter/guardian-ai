@@ -2,12 +2,14 @@
 export const runtime = "edge";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale } from "@/lib/locale-provider";
 import { sendMagicLink, signInWithPassword, clientPasswordLogin, clientRegister } from "@/lib/client-auth";
 
 type Mode = "magic" | "password" | "register" | "admin";
 
 function LoginInner() {
   const router = useRouter();
+  const { t } = useLocale();
   const params = useSearchParams();
   const redirect = params.get("redirect") || "/portal";
   const errorParam = params.get("error");
@@ -185,7 +187,7 @@ function LoginInner() {
           <div style={{ display: "flex", gap: 4, background: "#f1f5f9", borderRadius: 12, padding: 4, marginBottom: 24 }}>
             <button type="button" onClick={() => { setMode("magic"); setError(""); }} style={TAB_STYLE(mode === "magic")}>Magic Link</button>
             <button type="button" onClick={() => { setMode("password"); setError(""); }} style={TAB_STYLE(mode === "password")}>Password</button>
-            <button type="button" onClick={() => { setMode("register"); setError(""); }} style={TAB_STYLE(mode === "register")}>Register</button>
+            <button type="button" onClick={() => { setMode("register"); setError(""); }} style={TAB_STYLE(mode === "register")}>{t("nav.register") || "Register"}</button>
           </div>
         )}
 

@@ -273,6 +273,17 @@ def run_enforcement() -> dict:
     if _enforcement_state.get("status") == LicenseState.ACTIVE and (now - _last_check) < _CHECK_INTERVAL:
         return _enforcement_state
 
+    # BUG FIX #2: Check license.key file (written by activation wizard)
+    # Priority: env var > license.key file > .orch1 file
+    key_file = DATA_DIR / "license.key"
+    if key_file.exists():
+        try:
+            saved_key = key_file.read_text().strip()
+            if saved_key and saved_key.startswith("ORCH"):
+                return run_enforcement_online(saved_key)
+        except Exception:
+            pass
+
     # Online key mode: if AXTO_LICENSE_KEY env var is set, use online validation
     env_key = os.environ.get("AXTO_LICENSE_KEY", "")
     if env_key:

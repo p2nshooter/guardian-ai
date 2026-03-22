@@ -1,6 +1,7 @@
 export const runtime = "edge";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { LocaleProvider } from "@/lib/locale-provider";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -56,7 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body>{children}</body>
+      <body>
+        <LocaleProvider>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }

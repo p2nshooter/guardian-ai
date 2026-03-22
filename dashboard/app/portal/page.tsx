@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-provider";
 
 const GUARDIAN_DOCS = {
   name: "Guardian AI", icon: "🛡️",
@@ -60,12 +61,40 @@ const ORCHESTRA_DOCS = {
 
 export default function PortalPage() {
   const router = useRouter();
+  const { t, fmtPrice, locale } = useLocale();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"overview"|"licenses"|"playbooks"|"shop"|"docs"|"invoices">("overview");
-  const [copied, setCopied] = useState<string|null>(null);
-  const [docProduct, setDocProduct] = useState<"guardian"|"orchestra">("guardian");
+  const [copied,      setCopied]      = useState<string|null>(null);
+  const [docProduct,  setDocProduct]  = useState<"guardian"|"orchestra">("guardian");
   const [expandedDoc, setExpandedDoc] = useState<string|null>(null);
+  const [downloading, setDownloading] = useState<string|null>(null);
+  const [dlError,     setDlError]     = useState<string|null>(null);
+
+  const getDownloadProduct = (lic: any) =>
+    lic.product === "orchestra" ? "orchestra-bundle" : "guardian-bundle";
+
+  async function startDownload(licenseId: string, product: string, type = "docker", arch = "linux") {
+    const key = `${licenseId}-${product}-${type}-${arch}`;
+    setDownloading(key); setDlError(null);
+    const url = `/api/portal/download?license_id=${licenseId}&product=${product}&type=${type}&arch=${arch}`;
+    try {
+      const r = await fetch(url, { credentials:"include" });
+      if (r.ok) {
+        const blob = await r.blob();
+        const fn = r.headers.get("content-disposition")?.match(/filename="?([^"]+)"?/)?.[1]
+          || `axto-${product}-${type}-${arch}.zip`;
+        const a = Object.assign(document.createElement("a"), {
+          href: URL.createObjectURL(blob), download: fn
+        });
+        a.click(); URL.revokeObjectURL(a.href);
+      } else {
+        const d = await r.json().catch(() => ({}));
+        setDlError(d.hint || d.error || "Build not available yet. Contact hallo@axto.io.");
+      }
+    } catch { setDlError("Network error. Try again."); }
+    finally { setDownloading(null); }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,11 +136,18 @@ export default function PortalPage() {
 
       <div style={{ maxWidth:1100, margin:"0 auto", padding:"24px 24px 80px" }}>
         <h1 style={{ fontSize:22, fontWeight:800, color:"#0a1628", margin:"0 0 4px" }}>Welcome, {client.name || client.email || "there"}!</h1>
-        <p style={{ color:"#64748b", fontSize:13, margin:"0 0 20px" }}>Manage licenses, download products, browse documentation.</p>
+        <p style={{ color:"#64748b", fontSize:13, margin:"0 0 20px" }}>{t("portal.welcome") === "Welcome" || !t("portal.welcome") ? "Manage licenses, download products, browse documentation." : t("portal.welcome")}</p>
 
         <div style={{ display:"flex", gap:4, background:"#e2e8f0", borderRadius:12, padding:4, marginBottom:24, flexWrap:"wrap" }}>
-          {([ {id:"overview",l:"🏠 Overview"},{id:"licenses",l:`🔑 Licenses (${licenses.length})`},{id:"playbooks",l:`📦 Playbooks (${playbooks.filter((p:any)=>p.playbook_id).length})`},{id:"shop",l:"🛒 Buy Products"},{id:"docs",l:"📖 Docs & Guide"},{id:"invoices",l:`🧾 Invoices (${invoices.length})`} ] as const).map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:"8px 14px", borderRadius:10, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, background:tab===t.id?"linear-gradient(135deg,#0284c7,#0d9488)":"transparent", color:tab===t.id?"#fff":"#64748b", whiteSpace:"nowrap" }}>{t.l}</button>
+          {([ 
+            {id:"overview" as const, l:"🏠 " + (t("nav.overview")||"Overview")},
+            {id:"licenses" as const, l:`🔑 ${t("portal.licenses")||"Licenses"} (${licenses.length})`},
+            {id:"playbooks" as const, l:`📦 ${t("portal.playbooks")||"Playbooks"} (${playbooks.filter((p:any)=>p.playbook_id).length})`},
+            {id:"shop" as const, l:t("portal.shop")||"🛒 Buy Products"},
+            {id:"docs" as const, l:t("portal.docs")||"📖 Docs & Guide"},
+            {id:"invoices" as const, l:`🧾 ${t("portal.invoices")||"Invoices"} (${invoices.length})`},
+          ]).map((tab_item)=>(
+            <button key={tab_item.id} onClick={()=>setTab(tab_item.id as any)} style={{ padding:"8px 14px", borderRadius:10, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, background:tab===tab_item.id?"linear-gradient(135deg,#0284c7,#0d9488)":"transparent", color:tab===tab_item.id?"#fff":"#64748b", whiteSpace:"nowrap" }}>{tab_item.l}</button>
           ))}
         </div>
 
@@ -127,7 +163,7 @@ export default function PortalPage() {
             <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
               <button onClick={()=>setTab("shop")} style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#0284c7,#0d9488)",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>🛒 Buy Guardian / Orchestra</button>
               <Link href="/playbooks" style={{padding:"10px 20px",borderRadius:10,border:"1.5px solid #7c3aed",color:"#7c3aed",fontWeight:700,fontSize:13,textDecoration:"none"}}>📦 Browse Playbooks</Link>
-              <button onClick={()=>setTab("docs")} style={{padding:"10px 20px",borderRadius:10,border:"1.5px solid #475569",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",background:"transparent"}}>📖 Setup Guide</button>
+              <button onClick={()=>setTab("docs")} style={{padding:"10px 20px",borderRadius:10,border:"1.5px solid #475569",color:"#475569",fontWeight:700,fontSize:13,cursor:"pointer",background:"transparent"}}>{t("portal.setup_guide") || "📖 Setup Guide"}</button>
             </div>
           </div>
           {licenses.length===0&&playbooks.length===0&&<div style={{...C.card,textAlign:"center",padding:48}}><div style={{fontSize:48,marginBottom:12}}>🚀</div><h3 style={{color:"#0a1628",marginBottom:8}}>Get Started</h3><p style={{color:"#64748b",maxWidth:400,margin:"0 auto",lineHeight:1.6}}>Purchase Guardian AI or Orchestra AI to protect your servers, or browse Playbooks for AI prompt templates.</p></div>}
@@ -135,34 +171,163 @@ export default function PortalPage() {
 
         {/* ── LICENSES ── */}
         {tab==="licenses"&&<div>
-          {licenses.length===0?<div style={{...C.card,textAlign:"center",padding:48}}><div style={{fontSize:48,marginBottom:12}}>🔑</div><p style={{color:"#64748b",marginBottom:16}}>No licenses yet.</p><button onClick={()=>setTab("shop")} style={{padding:"10px 24px",borderRadius:10,background:"linear-gradient(135deg,#0284c7,#0d9488)",color:"#fff",fontWeight:700,fontSize:13,border:"none",cursor:"pointer"}}>🛒 Buy Products</button></div>
-          :licenses.map((lic:any)=>{
-            const isG=lic.product==="guardian";
-            const isActive=lic.status==="active";
-            const days=Math.max(0,Math.ceil((new Date(lic.expires_at).getTime()-Date.now())/86400000));
-            return <div key={lic.id} style={{...C.card,borderLeft:`4px solid ${isG?"#0284c7":"#7c3aed"}`}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
-                <div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                    <span style={{fontSize:20}}>{isG?"🛡️":"⚡"}</span>
-                    <span style={{fontSize:16,fontWeight:800,color:"#0a1628"}}>{isG?"Guardian AI":"Orchestra AI"} — {lic.package_name||lic.package_code}</span>
-                    <span style={{fontSize:10,padding:"2px 8px",borderRadius:6,background:isActive?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)",color:isActive?"#22c55e":"#ef4444",fontWeight:700}}>{lic.status.toUpperCase()}</span>
+
+          {/* Download error */}
+          {dlError&&<div style={{background:"rgba(239,68,68,.07)",border:"1px solid rgba(239,68,68,.2)",
+            borderRadius:10,padding:"10px 14px",marginBottom:14,color:"#dc2626",fontSize:13}}>
+            ⚠ {dlError} <button onClick={()=>setDlError(null)} style={{float:"right",background:"none",border:"none",cursor:"pointer",color:"#dc2626"}}>✕</button>
+          </div>}
+
+          {licenses.length===0
+            ? <div style={{...C.card,textAlign:"center",padding:48}}>
+                <div style={{fontSize:48,marginBottom:12}}>🔑</div>
+                <p style={{color:"#64748b",marginBottom:16}}>No licenses yet.</p>
+                <button onClick={()=>setTab("shop")} style={{padding:"10px 24px",borderRadius:10,
+                  background:"linear-gradient(135deg,#0284c7,#0d9488)",color:"#fff",fontWeight:700,fontSize:13,border:"none",cursor:"pointer"}}>
+                  🛒 Buy Products
+                </button>
+              </div>
+            : licenses.map((lic:any)=>{
+                const isG    = lic.product==="guardian";
+                const isAct  = lic.status==="active";
+                const days   = Math.max(0,Math.ceil((new Date(lic.expires_at).getTime()-Date.now())/86400000));
+                const accent = isG?"#0284c7":"#7c3aed";
+                const defProd= getDownloadProduct(lic);
+
+                // What components are available per product
+                const guardianComponents = [
+                  {product:"guardian-bundle",   label:"Guardian Full Bundle",   desc:"Core + Node + Antivirus",  icon:"🛡️"},
+                  {product:"guardian-core-node", label:"Core + Node Agent",      desc:"Without Antivirus",        icon:"🛡️"},
+                  {product:"guardian-core",      label:"Guardian Core only",      desc:"API + Dashboard",          icon:"🖥️"},
+                  {product:"guardian-node",      label:"Guardian Node only",      desc:"Threat detection agent",   icon:"🤖"},
+                  {product:"guardian-clamav",    label:"ClamAV Antivirus only",   desc:"Add to existing install",  icon:"🦠"},
+                ];
+                const orchestraComponents = [
+                  {product:"orchestra-bundle",    label:"Orchestra Full Bundle",  desc:"Core + CPU + GPU Workers", icon:"⚡"},
+                  {product:"orchestra-core-cpu",  label:"Core + CPU Worker",      desc:"No GPU required",          icon:"⚡"},
+                  {product:"orchestra-core",      label:"Orchestra Core only",     desc:"API + Console",            icon:"🖥️"},
+                  {product:"orchestra-worker-cpu",label:"Worker CPU only",         desc:"Add to existing Core",     icon:"💻"},
+                  {product:"orchestra-worker-gpu",label:"Worker GPU only",         desc:"Needs NVIDIA GPU",         icon:"🎮"},
+                ];
+                const components = isG ? guardianComponents : orchestraComponents;
+
+                return <div key={lic.id} style={{...C.card,borderLeft:`4px solid ${accent}`,marginBottom:20}}>
+
+                  {/* Header */}
+                  <div style={{padding:"16px 20px",borderBottom:"1px solid #f1f5f9",
+                    display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <span style={{fontSize:20}}>{isG?"🛡️":"⚡"}</span>
+                        <span style={{fontSize:16,fontWeight:800,color:"#0a1628"}}>
+                          {isG?"Guardian AI":"Orchestra AI"} — {lic.package_name||lic.package_code}
+                        </span>
+                        <span style={{fontSize:10,padding:"2px 8px",borderRadius:6,fontWeight:700,
+                          background:isAct?"rgba(34,197,94,.1)":"rgba(239,68,68,.1)",
+                          color:isAct?"#22c55e":"#ef4444"}}>
+                          {lic.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <div style={{fontSize:12,color:"#64748b"}}>
+                        Max {lic.max_nodes} nodes · Expires {new Date(lic.expires_at).toLocaleDateString()} ({days}d left)
+                      </div>
+                    </div>
+                    <div style={{fontSize:11,color:"#94a3b8",textAlign:"right" as const}}>
+                      {lic.node_count>0&&<div>Nodes active: {lic.node_count}/{lic.max_nodes}</div>}
+                      {lic.last_heartbeat&&<div>Last seen: {new Date(lic.last_heartbeat).toLocaleString()}</div>}
+                    </div>
                   </div>
-                  <div style={{fontSize:12,color:"#64748b"}}>Max {lic.max_nodes} nodes · Expires {new Date(lic.expires_at).toLocaleDateString()} ({days}d left)</div>
-                </div>
-              </div>
-              <div style={{background:"#0f172a",borderRadius:10,padding:"14px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <code style={{color:"#22d3ee",fontSize:13,fontFamily:"monospace",wordBreak:"break-all"}}>{lic.license_key}</code>
-                <button onClick={()=>copyKey(lic.license_key)} style={{padding:"4px 12px",borderRadius:6,border:"1px solid #334155",background:"transparent",color:copied===lic.license_key?"#22c55e":"#94a3b8",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",marginLeft:12}}>{copied===lic.license_key?"Copied!":"Copy"}</button>
-              </div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <a href={`/api/downloads?file=${isG?"guardian":"orchestra"}-compose.yml`} style={{padding:"8px 16px",borderRadius:8,background:"linear-gradient(135deg,#0284c7,#0d9488)",color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none"}}>⬇ docker-compose.yml</a>
-                <a href={`/api/downloads?file=${isG?"guardian":"orchestra"}.example.yml`} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #0284c7",color:"#0284c7",fontSize:12,fontWeight:700,textDecoration:"none",background:"transparent"}}>⬇ Config Template</a>
-                <button onClick={()=>{setDocProduct(isG?"guardian":"orchestra");setTab("docs");}} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #475569",color:"#475569",fontSize:12,fontWeight:700,cursor:"pointer",background:"transparent"}}>📖 Setup Guide</button>
-              </div>
-              {lic.node_count>0&&<div style={{fontSize:11,color:"#64748b",marginTop:10}}>Nodes: {lic.node_count}/{lic.max_nodes} · Heartbeat: {lic.last_heartbeat?new Date(lic.last_heartbeat).toLocaleString():"—"}</div>}
-            </div>;
-          })}
+
+                  {/* License Key */}
+                  <div style={{padding:"12px 20px",background:"#0f172a",
+                    display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <div style={{fontSize:9,color:"#475569",fontWeight:700,textTransform:"uppercase" as const,letterSpacing:"0.8px",marginBottom:3}}>
+                        LICENSE KEY — enter this in the activation wizard
+                      </div>
+                      <code style={{color:"#22d3ee",fontSize:13,fontFamily:"monospace",letterSpacing:"1px"}}>
+                        {lic.license_key}
+                      </code>
+                    </div>
+                    <button onClick={()=>copyKey(lic.license_key)}
+                      style={{padding:"5px 14px",borderRadius:6,border:"1px solid #334155",background:"transparent",
+                        color:copied===lic.license_key?"#22c55e":"#94a3b8",fontSize:11,fontWeight:700,
+                        cursor:"pointer",marginLeft:16,whiteSpace:"nowrap" as const,flexShrink:0}}>
+                      {copied===lic.license_key ? t("portal.copied") : t("portal.copy_key")}
+                    </button>
+                  </div>
+
+                  {/* Download section */}
+                  <div style={{padding:"16px 20px"}}>
+                    <div style={{fontWeight:700,fontSize:12,color:"#475569",marginBottom:12,
+                      textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>
+                      ⬇ Download — Choose Product & Format
+                    </div>
+
+                    {/* How it works info */}
+                    <div style={{background:"rgba(2,132,199,.04)",border:"1px solid rgba(2,132,199,.15)",
+                      borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#475569",lineHeight:1.8}}>
+                      {t("portal.how_works") || "How it works: Download ZIP → run install.sh → open http://YOUR_SERVER:8080 → enter license key → all features unlock."}
+                    </div>
+
+                    {/* Component grid */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+                      {components.map((comp:any)=>{
+                        const dlKey = `${lic.id}-${comp.product}-docker-linux`;
+                        const isLoading = downloading === dlKey;
+                        return (
+                          <div key={comp.product} style={{border:"1.5px solid #e2e8f0",borderRadius:10,padding:"12px 14px"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                              <div>
+                                <div style={{fontSize:13,fontWeight:700,color:"#0a1628"}}>
+                                  {comp.icon} {comp.label}
+                                </div>
+                                <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>{comp.desc}</div>
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
+                              {/* Docker Linux (primary) */}
+                              <button
+                                onClick={()=>startDownload(lic.id, comp.product, "docker", "linux")}
+                                disabled={!!downloading}
+                                style={{padding:"6px 12px",borderRadius:7,border:"none",fontSize:11,fontWeight:700,
+                                  background:isLoading?"#e2e8f0":`linear-gradient(135deg,${accent},${isG?"#0d9488":"#0284c7"})`,
+                                  color:isLoading?"#94a3b8":"#fff",cursor:downloading?"wait":"pointer"}}>
+                                {isLoading?"⏳ Downloading...":"🐳 Docker Linux"}
+                              </button>
+                              {/* EXE Linux */}
+                              <button
+                                onClick={()=>startDownload(lic.id, comp.product, "exe", "linux")}
+                                disabled={!!downloading}
+                                style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #e2e8f0",fontSize:11,fontWeight:700,
+                                  background:"#f8fafc",color:"#475569",cursor:downloading?"wait":"pointer"}}>
+                                🐧 EXE Linux
+                              </button>
+                              {/* EXE Windows */}
+                              <button
+                                onClick={()=>startDownload(lic.id, comp.product, "exe", "windows")}
+                                disabled={!!downloading}
+                                style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #e2e8f0",fontSize:11,fontWeight:700,
+                                  background:"#f8fafc",color:"#475569",cursor:downloading?"wait":"pointer"}}>
+                                🪟 EXE Windows
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Setup steps */}
+                    <div style={{background:"#0f172a",borderRadius:8,padding:"12px 16px",fontSize:11,
+                      color:"#94a3b8",fontFamily:"monospace",lineHeight:2}}>
+                      {t("portal.quick_start_docker").split("\n").map((line:string, i:number) => (
+                        <span key={i}>{line}{i < t("portal.quick_start_docker").split("\n").length-1 && <br/>}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>;
+              })
+          }
         </div>}
 
         {/* ── PLAYBOOKS ── */}

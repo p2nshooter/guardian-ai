@@ -63,10 +63,12 @@ jobs:
             guardian-core)        BUILD_GUARDIAN_CORE=true ;;
             guardian-node)        BUILD_GUARDIAN_NODE=true ;;
             guardian-clamav)      BUILD_CLAMAV=true ;;
+            guardian-core-node)   BUILD_GUARDIAN_CORE=true; BUILD_GUARDIAN_NODE=true ;;
             guardian-bundle)      BUILD_GUARDIAN_CORE=true; BUILD_GUARDIAN_NODE=true; BUILD_CLAMAV=true ;;
             orchestra-core)       BUILD_ORCHESTRA_CORE=true ;;
             orchestra-worker-cpu) BUILD_WORKER_CPU=true ;;
             orchestra-worker-gpu) BUILD_WORKER_GPU=true ;;
+            orchestra-core-cpu)   BUILD_ORCHESTRA_CORE=true; BUILD_WORKER_CPU=true ;;
             orchestra-bundle)     BUILD_ORCHESTRA_CORE=true; BUILD_WORKER_CPU=true; BUILD_WORKER_GPU=true ;;
             full-bundle)          BUILD_GUARDIAN_CORE=true; BUILD_GUARDIAN_NODE=true; BUILD_CLAMAV=true
                                   BUILD_ORCHESTRA_CORE=true; BUILD_WORKER_CPU=true; BUILD_WORKER_GPU=true ;;
@@ -100,7 +102,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./engine
-          file: ./engine/Dockerfile
+          file: ./engine/Dockerfile.node
           push: false
           load: true
           platforms: linux/amd64
@@ -172,6 +174,9 @@ jobs:
             guardian-core)    save axto/guardian-core:${TAG} guardian-core ;;
             guardian-node)    save axto/guardian-node:${TAG} guardian-node ;;
             guardian-clamav)  save axto/guardian-clamav:${TAG} guardian-clamav ;;
+            guardian-core-node)
+              save axto/guardian-core:${TAG}   guardian-core
+              save axto/guardian-node:${TAG}   guardian-node ;;
             guardian-bundle)
               save axto/guardian-core:${TAG}   guardian-core
               save axto/guardian-node:${TAG}   guardian-node
@@ -179,6 +184,9 @@ jobs:
             orchestra-core)       save axto/orchestra-core:${TAG} orchestra-core ;;
             orchestra-worker-cpu) save axto/orchestra-worker-cpu:${TAG} orchestra-worker-cpu ;;
             orchestra-worker-gpu) save axto/orchestra-worker-gpu:${TAG} orchestra-worker-gpu ;;
+            orchestra-core-cpu)
+              save axto/orchestra-core:${TAG}       orchestra-core
+              save axto/orchestra-worker-cpu:${TAG} orchestra-worker-cpu ;;
             orchestra-bundle)
               save axto/orchestra-core:${TAG}       orchestra-core
               save axto/orchestra-worker-cpu:${TAG} orchestra-worker-cpu
@@ -342,6 +350,50 @@ networks: { guardian-net: { driver: bridge } }
 YAML
             ;;
 
+            guardian-core-node)
+              cat > "${DIST}/docker-compose.yml" << YAML
+version: "3.9"
+# AXTO Guardian Core + Node Agent | Build: ${BID} | ${TAG}
+# Includes: guardian-core (REST API + Dashboard) + guardian-node (threat detection agent)
+# Add ClamAV separately or upgrade to guardian-bundle for full antivirus integration
+services:
+  guardian-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: guardian
+      POSTGRES_PASSWORD: \${GUARDIAN_DB_PASSWORD:?set in .env}
+      POSTGRES_DB: guardian
+    volumes: [guardian-db-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U guardian"], interval: 10s, timeout: 5s, retries: 5 }
+    networks: [guardian-net]
+  guardian-core:
+    image: axto/guardian-core:${TAG}
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    depends_on: { guardian-db: { condition: service_healthy } }
+    volumes: [./guardian.yml:/guardian/config/guardian.yml:ro, guardian-data:/guardian/data, guardian-logs:/guardian/logs]
+    environment:
+      - GUARDIAN_CONFIG=/guardian/config/guardian.yml
+      - "GUARDIAN_DB_URL=postgresql://guardian:\${GUARDIAN_DB_PASSWORD}@guardian-db:5432/guardian"
+    healthcheck: { test: ["CMD","curl","-sf","http://localhost:8080/health"], interval: 30s, timeout: 10s, retries: 3 }
+    networks: [guardian-net]
+  guardian-node:
+    image: axto/guardian-node:${TAG}
+    restart: unless-stopped
+    privileged: true
+    cap_add: [NET_ADMIN, SYS_PTRACE, KILL]
+    depends_on: [guardian-core]
+    volumes: [/:/host:ro, ./guardian.yml:/guardian/config/guardian.yml:ro, guardian-quarantine:/guardian/quarantine]
+    environment:
+      - GUARDIAN_CORE_URL=http://guardian-core:8080
+      - GUARDIAN_CONFIG=/guardian/config/guardian.yml
+    networks: [guardian-net]
+volumes: { guardian-db-data: {}, guardian-data: {}, guardian-logs: {}, guardian-quarantine: {} }
+networks: { guardian-net: { driver: bridge } }
+YAML
+            ;;
+
             guardian-bundle)
               cat > "${DIST}/docker-compose.yml" << YAML
 version: "3.9"
@@ -464,6 +516,49 @@ services:
           devices:
             - capabilities: [gpu]
     networks: [orchestra-net]
+networks: { orchestra-net: { driver: bridge } }
+YAML
+            ;;
+
+            orchestra-core-cpu)
+              cat > "${DIST}/docker-compose.yml" << YAML
+version: "3.9"
+# AXTO Orchestra Core + Worker CPU | Build: ${BID} | ${TAG}
+# Includes: orchestra-core (API + Console) + worker-cpu (Cloud AI provider worker)
+# No GPU required. Add worker-gpu separately or upgrade to orchestra-bundle for full stack.
+services:
+  orchestra-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: orchestra
+      POSTGRES_PASSWORD: \${ORCHESTRA_DB_PASSWORD:?set in .env}
+      POSTGRES_DB: orchestra
+    volumes: [orchestra-db-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL","pg_isready -U orchestra"], interval: 10s, timeout: 5s, retries: 5 }
+    networks: [orchestra-net]
+  orchestra-core:
+    image: axto/orchestra-core:${TAG}
+    restart: unless-stopped
+    ports: ["8080:8080"]
+    depends_on: { orchestra-db: { condition: service_healthy } }
+    volumes: [./orchestra.yml:/app/config/orchestra.yml:ro, orchestra-data:/app/data]
+    environment:
+      - ORCHESTRA_CONFIG=/app/config/orchestra.yml
+      - "DATABASE_URL=postgresql://orchestra:\${ORCHESTRA_DB_PASSWORD}@orchestra-db:5432/orchestra"
+      - "WORKER_TOKEN=\${WORKER_TOKEN:?set in .env}"
+    healthcheck: { test: ["CMD","curl","-sf","http://localhost:8080/health"], interval: 30s, timeout: 10s, retries: 3 }
+    networks: [orchestra-net]
+  worker-cpu:
+    image: axto/orchestra-worker-cpu:${TAG}
+    restart: unless-stopped
+    environment:
+      - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+      - "ORCHESTRA_WORKER_TOKEN=\${WORKER_TOKEN}"
+      - WORKER_CONCURRENCY=${MW}
+    depends_on: [orchestra-core]
+    networks: [orchestra-net]
+volumes: { orchestra-db-data: {}, orchestra-data: {} }
 networks: { orchestra-net: { driver: bridge } }
 YAML
             ;;
@@ -801,13 +896,15 @@ README
             guardian-core)        NEED_GUARDIAN_CORE=true ;;
             guardian-node)        NEED_GUARDIAN_NODE=true ;;
             guardian-clamav)      NEED_CLAMAV=true ;;
+            guardian-core-node)   NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true ;;
             guardian-bundle)      NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true; NEED_CLAMAV=true ;;
             orchestra-core)       NEED_ORCHESTRA_CORE=true ;;
             orchestra-worker-cpu) NEED_WORKER_CPU=true ;;
             orchestra-worker-gpu) NEED_WORKER_GPU=true ;;
+            orchestra-core-cpu)   NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true ;;
             orchestra-bundle)     NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true; NEED_WORKER_GPU=true ;;
             full-bundle)          NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true; NEED_CLAMAV=true
-                                  NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true ;;
+                                  NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true; NEED_WORKER_GPU=true ;;
           esac
           echo "need_guardian_core=${NEED_GUARDIAN_CORE}"   >> $GITHUB_OUTPUT
           echo "need_guardian_node=${NEED_GUARDIAN_NODE}"   >> $GITHUB_OUTPUT
@@ -1121,7 +1218,9 @@ README
           case "$PROD" in
             guardian-core)        NEED_GUARDIAN_CORE=true ;;
             guardian-node)        NEED_GUARDIAN_NODE=true ;;
+            guardian-core-node)   NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true ;;
             guardian-bundle)      NEED_GUARDIAN_CORE=true; NEED_GUARDIAN_NODE=true ;;
+            orchestra-core-cpu)   NEED_ORCHESTRA_CORE=true; NEED_WORKER_CPU=true ;;
             orchestra-core)       NEED_ORCHESTRA_CORE=true ;;
             orchestra-worker-cpu) NEED_WORKER_CPU=true ;;
             orchestra-worker-gpu) NEED_WORKER_GPU=true ;;

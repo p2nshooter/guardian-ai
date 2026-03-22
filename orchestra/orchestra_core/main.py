@@ -127,6 +127,67 @@ async def serve_console():
     return HTMLResponse("<h1>Orchestra Console</h1><p>Console UI not found.</p>")
 
 
+# ── License Wizard middleware — redirect to activation if no license ──────────
+ORCH_BYPASS = {"/health", "/api/license/activate", "/api/license/status", "/favicon.ico"}
+
+@app.middleware("http")
+async def orch_license_wizard(request: Request, call_next):
+    path = request.url.path
+    if any(path.startswith(p) for p in ORCH_BYPASS):
+        return await call_next(request)
+    state = enforcement.get_enforcement_state()
+    if state.get("status") != "ACTIVE":
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept or path in ("/", "/console", "/activate"):
+            import os
+            # Try console dir first, then package dir
+            for loc in [CONSOLE_DIR / "activation.html",
+                        Path(__file__).parent / "activation.html"]:
+                if loc.exists():
+                    html = loc.read_text()
+                    html = html.replace('</head>', '<meta name="axto-product" content="orchestra"></head>', 1)
+                    return HTMLResponse(html)
+    return await call_next(request)
+
+
+# ── License activate endpoint ─────────────────────────────────────────────────
+@app.post("/api/license/activate")
+async def orch_license_activate(request: Request):
+    import os, httpx, socket as _sock, uuid as _uuid
+    body = await request.json()
+    key = (body.get("license_key") or "").strip().upper()
+    if not key:
+        return JSONResponse({"valid": False, "error": "No license key"}, status_code=400)
+
+    validate_url = os.environ.get("AXTO_LICENSE_SERVER", "https://axto.io/api/license-validate")
+    try:
+        mid_path = "/etc/machine-id"
+        machine_id = open(mid_path).read().strip() if os.path.exists(mid_path) else str(_uuid.uuid4())
+    except Exception:
+        machine_id = str(_uuid.uuid4())
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(validate_url, json={
+                "license_key": key,
+                "machine_id":  machine_id,
+                "product":     "orchestra",
+                "hostname":    _sock.gethostname(),
+            })
+            data = resp.json()
+
+        if data.get("valid"):
+            data_dir = os.environ.get("DATA_DIR", "./data")
+            os.makedirs(data_dir, exist_ok=True)
+            with open(os.path.join(data_dir, "license.key"), "w") as f:
+                f.write(key)
+            # Update enforcement state
+            enforcement._enforcement_state = {"status": "ACTIVE", "license_id": key[:12]}
+            return {**data, "machine_id": machine_id[:16]}
+        return {"valid": False, **data}
+    except Exception as e:
+        return JSONResponse({"valid": False, "error": str(e), "reason": "network_error"}, status_code=503)
+
 @app.get("/")
 async def root():
     return {"service": "AXTO Orchestra — AI eXecution & Tools Orchestration", "version": "2.0.0", "console": "http://localhost:8080/console"}

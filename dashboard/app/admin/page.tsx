@@ -3,19 +3,21 @@ export const runtime = "edge";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-provider";
 import { getSessionUser, signOut } from "@/lib/client-auth";
 
-const NAV = [
-  { href: "/admin",                icon: "📊", label: "Dashboard"  },
-  { href: "/admin/playbooks",     icon: "📦", label: "Playbooks"  },
-  { href: "/admin/engine-builder", icon: "🔧", label: "Engine Builder" },
-  { href: "/guide", icon: "📖", label: "Client Guide" },
-  { href: "/admin/licenses",       icon: "🔑", label: "Licenses"   },
-  { href: "/admin/clients",        icon: "👥", label: "Clients"    },
-  { href: "/admin/gateways",       icon: "💳", label: "Gateways"   },
-  { href: "/admin/revenue",        icon: "💰", label: "Revenue"    },
-  { href: "/admin/content",        icon: "📝", label: "Content"    },
-  { href: "/admin/autopost",       icon: "📢", label: "AutoPost"   },
+const NAV_STATIC: {href:string;icon:string;tKey:string;fallback:string}[] = [
+  { href: "/admin",                icon: "📊", tKey: "admin.title",    fallback: "Dashboard" },
+  { href: "/admin/releases",       icon: "☁️", tKey: "admin.releases", fallback: "Releases" },
+  { href: "/admin/playbooks",     icon: "📦", tKey: "",             fallback: "📦 Playbooks" },
+  { href: "/admin/engine-builder", icon: "🔧", tKey: "",             fallback: "🔧 Engine Builder" },
+  { href: "/guide",                icon: "📖", tKey: "nav.guide",    fallback: "📖 Guide" },
+  { href: "/admin/licenses",       icon: "🔑", tKey: "admin.licenses", fallback: "Licenses" },
+  { href: "/admin/clients",        icon: "👥", tKey: "admin.clients",  fallback: "Clients" },
+  { href: "/admin/gateways",       icon: "💳", tKey: "admin.gateways", fallback: "Gateways" },
+  { href: "/admin/revenue",        icon: "💰", tKey: "admin.revenue",  fallback: "Revenue" },
+  { href: "/admin/content",        icon: "📝", tKey: "",             fallback: "Content" },
+  { href: "/admin/autopost",       icon: "📢", tKey: "",             fallback: "AutoPost" },
 ];
 
 const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
@@ -27,6 +29,8 @@ const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { t } = useLocale();
+  const navItems = NAV_STATIC.map(n => ({ ...n, label: n.tKey ? (t(n.tKey) || n.fallback) : n.fallback }));
   const [stats,    setStats]    = useState<any>(null);
   const [licenses, setLicenses] = useState<any[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -100,7 +104,7 @@ export default function AdminPage() {
         <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#0284c7,#0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🛡</div>
         <span style={{ fontSize: 18, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>AXTO</span>
       </div>
-      {NAV.map(n => (
+      {navItems.map(n => (
         <Link key={n.href} href={n.href} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 9, textDecoration: "none", fontSize: 13, fontWeight: 600, color: "#475569", transition: "all 0.15s" }}>
           <span style={{ fontSize: 16 }}>{n.icon}</span>{n.label}
         </Link>

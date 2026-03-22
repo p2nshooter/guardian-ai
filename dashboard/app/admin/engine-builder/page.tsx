@@ -11,17 +11,19 @@ const card = { background:"#fff", borderRadius:14, border:"1.5px solid #e2e8f0" 
 // ── Constants ────────────────────────────────────────────────────────────────
 const PRODUCTS = [
   // ── Guardian components ───────────────────────────────────────────────────
-  { v:"guardian-core",    icon:"🛡️", name:"Guardian Core",       desc:"REST API + Dashboard backend (port 8080)", group:"Guardian" },
-  { v:"guardian-node",    icon:"🤖", name:"Guardian Node Agent",  desc:"Threat detection agent — runs on each protected server", group:"Guardian" },
-  { v:"guardian-clamav",  icon:"🦠", name:"ClamAV Antivirus",     desc:"Real-time file scanning + signature updates (sidecar)", group:"Guardian" },
-  { v:"guardian-bundle",  icon:"🛡️", name:"Guardian Full Stack",  desc:"Core + Node Agent + ClamAV — complete Guardian deploy", group:"Guardian" },
+  { v:"guardian-core",      icon:"🛡️", name:"Guardian Core",        desc:"REST API + Dashboard backend (port 8080)", group:"Guardian" },
+  { v:"guardian-node",      icon:"🤖", name:"Guardian Node Agent",   desc:"Threat detection agent — runs on each protected server", group:"Guardian" },
+  { v:"guardian-clamav",    icon:"🦠", name:"ClamAV Antivirus",      desc:"Real-time file scanning + signature updates (sidecar)", group:"Guardian" },
+  { v:"guardian-core-node", icon:"🛡️", name:"Guardian Core + Node",  desc:"Core API + Node Agent — no antivirus (lighter)", group:"Guardian" },
+  { v:"guardian-bundle",    icon:"🛡️", name:"Guardian Full Stack",   desc:"Core + Node Agent + ClamAV — complete Guardian deploy", group:"Guardian" },
   // ── Orchestra components ──────────────────────────────────────────────────
-  { v:"orchestra-core",       icon:"⚡", name:"Orchestra Core",       desc:"AI orchestration API + Console UI (port 8080)", group:"Orchestra" },
-  { v:"orchestra-worker-cpu", icon:"💻", name:"Orchestra Worker CPU",  desc:"Cloud AI worker (OpenAI, Groq, Anthropic, etc.)", group:"Orchestra" },
-  { v:"orchestra-worker-gpu", icon:"🎮", name:"Orchestra Worker GPU",  desc:"Local GPU inference worker (Ollama, llama.cpp)", group:"Orchestra" },
-  { v:"orchestra-bundle",     icon:"⚡", name:"Orchestra Full Stack",  desc:"Core + CPU Worker + GPU Worker — complete Orchestra deploy", group:"Orchestra" },
+  { v:"orchestra-core",       icon:"⚡", name:"Orchestra Core",         desc:"AI orchestration API + Console UI (port 8080)", group:"Orchestra" },
+  { v:"orchestra-worker-cpu", icon:"💻", name:"Orchestra Worker CPU",   desc:"Cloud AI worker (OpenAI, Groq, Anthropic, etc.)", group:"Orchestra" },
+  { v:"orchestra-worker-gpu", icon:"🎮", name:"Orchestra Worker GPU",   desc:"Local GPU inference worker (Ollama, llama.cpp)", group:"Orchestra" },
+  { v:"orchestra-core-cpu",   icon:"⚡", name:"Orchestra Core + CPU",   desc:"Core + CPU Worker — no GPU required (most common)", group:"Orchestra" },
+  { v:"orchestra-bundle",     icon:"⚡", name:"Orchestra Full Stack",   desc:"Core + CPU Worker + GPU Worker — complete Orchestra deploy", group:"Orchestra" },
   // ── Full bundle ───────────────────────────────────────────────────────────
-  { v:"full-bundle",      icon:"📦", name:"AXTO Full Platform",   desc:"Everything: Guardian + Orchestra complete stack", group:"Bundle" },
+  { v:"full-bundle",      icon:"📦", name:"AXTO Full Platform",    desc:"Everything: Guardian + Orchestra complete stack", group:"Bundle" },
 ];
 const BUILD_TYPES = [
   { v:"docker", icon:"🐳", name:"Docker Image",   desc:"docker-compose.yml + config files" },
@@ -42,12 +44,12 @@ const ARCHS = [
 
 // ── Animated guide steps ─────────────────────────────────────────────────────
 const GUIDE_STEPS = [
-  { icon:"🛡️", title:"Select Product", body:"Choose Guardian AI, Orchestra AI, or Bundle. Each generates its own production-ready config files." },
-  { icon:"🐳", title:"Choose Build Type", body:"Docker: generates docker-compose.yml and config files. EXE/Script: adds an install.sh (Linux) or install.bat (Windows) on top." },
-  { icon:"🔑", title:"Set License Type", body:"Trial (1-7 days), Monthly, Yearly, Lifetime, or Per Instance. Trial works for both Guardian and Orchestra. The license key is embedded into every config file." },
-  { icon:"🖥️", title:"Set Resource Limits", body:"Control CPU nodes, GPU count, and worker concurrency. Or select Unlimited for enterprise deployments with no cap." },
-  { icon:"📧", title:"Enter Client Info", body:"Name, email, and org for enterprise clients. This appears in the config file header and lets you track who each build belongs to." },
-  { icon:"⬇️", title:"Download dari CF R2", body:"Klik 'Create Build'. GitHub Actions compile → upload ke Cloudflare R2 axto-storage. Admin klik ⬇ untuk download (presigned URL 1 jam). Klik ✕DB untuk hard delete dari R2 + DB." },
+  { icon:"☁️", title:"Auto-Build on Push", body:"Push ke branch main → GitHub Actions otomatis build SEMUA produk (11 produk × 3 format = ~30 file). Tidak perlu trigger manual." },
+  { icon:"🐳", title:"Semua Format Tersedia", body:"Setiap produk dibangun dalam 3 format: Docker Linux, EXE Linux, EXE Windows. Client tinggal pilih yang sesuai OS mereka." },
+  { icon:"🔑", title:"License Input di Runtime", body:"Binary TIDAK embed license key. Client download ZIP → install → buka browser → masukkan license key → semua fitur unlock." },
+  { icon:"⬇️", title:"Client Download dari Portal", body:"Client login portal → tab Licenses → pilih produk → klik Download. File di-stream langsung dari CF R2." },
+  { icon:"🛡️", title:"License Wizard di Browser", body:"Pertama kali buka http://SERVER:8080, muncul halaman aktivasi. Client paste license key → validasi ke axto.io → redirect ke dashboard." },
+  { icon:"🗑️", title:"Admin Hapus dari Releases", body:"Buka Admin → ☁️ Releases → hapus per file atau per produk dari CF R2. Build baru otomatis setiap push ke main." },
 ];
 
 function fmtDate(d:string) {
@@ -102,6 +104,8 @@ export default function EngineBuilderPage() {
   const [ok,     setOk]     = useState<string|null>(null);
   const [dlFiles,setDlFiles]= useState<any>(null);
   const [delId,  setDelId]  = useState<string|null>(null);
+  const [hasGH,  setHasGH]  = useState<boolean|null>(null);
+  const [hasR2,  setHasR2]  = useState<boolean|null>(null);
 
   // Build progress state
   const [building,  setBuilding]  = useState(false);
@@ -123,7 +127,7 @@ export default function EngineBuilderPage() {
 
   // Form
   const [form, setForm] = useState({
-    product:"guardian", build_type:"docker", license_type:"yearly",
+    product:"guardian-core", build_type:"docker", license_type:"yearly",
     trial_days:"3", max_nodes:"1", max_gpu:"0", max_workers:"10",
     unlimited:false, client_name:"", client_email:"", client_org:"",
     label:"", arch:"linux/amd64", version:"latest",
@@ -135,7 +139,7 @@ export default function EngineBuilderPage() {
     setLoading(true);
     try {
       const r = await fetch("/api/admin/engine-builder",{credentials:"include"});
-      if (r.ok) { const d=await r.json(); setBuilds(d.builds||[]); setStats(d.stats||{}); }
+      if (r.ok) { const d=await r.json(); setBuilds(d.builds||[]); setStats(d.stats||{}); setHasGH(!!d.hasGithubToken); setHasR2(!!d.hasR2); }
     } catch {} finally { setLoading(false); }
   },[]);
 
@@ -263,17 +267,59 @@ export default function EngineBuilderPage() {
             <h1 style={{fontSize:26,fontWeight:900,color:"#0a1628",margin:"6px 0 3px",letterSpacing:"-0.5px"}}>🔧 Engine Builder</h1>
             <p style={{color:"#64748b",fontSize:13,margin:0}}>Internal admin tool — build Docker images and EXE binaries. Not for client self-service.</p>
           </div>
+          <Link href="/admin/releases" style={{padding:"8px 18px",borderRadius:9,
+            background:"linear-gradient(135deg,#0284c7,#0d9488)",border:"none",color:"#fff",
+            fontWeight:700,fontSize:13,textDecoration:"none"}}>
+            ☁️ View Auto-Releases →
+          </Link>
         </div>
+
+        {/* ── GitHub Actions + R2 Status Banner ── */}
+        {hasGH !== null && (
+          <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap" as const}}>
+            <div style={{flex:1,minWidth:240,padding:"12px 16px",borderRadius:10,border:"1.5px solid",
+              borderColor:hasGH?"rgba(34,197,94,.3)":"rgba(251,191,36,.4)",
+              background:hasGH?"rgba(34,197,94,.06)":"rgba(251,191,36,.07)",
+              display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18}}>{hasGH?"✅":"⚠️"}</span>
+              <div>
+                <div style={{fontWeight:800,fontSize:12,color:hasGH?"#16a34a":"#b45309"}}>
+                  GitHub Actions {hasGH?"Connected":"Not Configured"}
+                </div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                  {hasGH
+                    ? "Builds will compile real Docker images & EXE binaries (200MB–2GB) via CI/CD"
+                    : "GITHUB_TOKEN not set → Config-only mode. Builds generate YAML files only, NO actual Docker image or EXE binary."}
+                </div>
+              </div>
+            </div>
+            <div style={{flex:1,minWidth:240,padding:"12px 16px",borderRadius:10,border:"1.5px solid",
+              borderColor:hasR2?"rgba(2,132,199,.3)":"rgba(251,191,36,.4)",
+              background:hasR2?"rgba(2,132,199,.06)":"rgba(251,191,36,.07)",
+              display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18}}>{hasR2?"☁️":"⚠️"}</span>
+              <div>
+                <div style={{fontWeight:800,fontSize:12,color:hasR2?"#0284c7":"#b45309"}}>
+                  Cloudflare R2 {hasR2?"Storage Ready":"Not Configured"}
+                </div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                  {hasR2
+                    ? "Build artifacts saved to CF R2 axto-storage. Admin can download & delete anytime."
+                    : "R2_ACCOUNT_ID not set → artifacts won't be stored. Set R2 binding in CF Pages settings."}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:22}}>
           {[
             {l:"Total Builds",v:stats.total||0,c:"#0284c7"},
             {l:"Ready",v:stats.ready||0,c:"#16a34a"},
-            {l:"Guardian",v:stats.guardian_count||0,c:"#0284c7"},
-            {l:"Orchestra",v:stats.orchestra_count||0,c:"#7c3aed"},
-            {l:"Bundle",v:stats.bundle_count||0,c:"#0d9488"},
-            {l:"Other",v:stats.other_count||0,c:"#64748b"},
+            {l:"Building",v:stats.building_count||0,c:"#d97706"},
+            {l:"Failed",v:stats.failed||0,c:"#dc2626"},
+            {l:"Storage",v:stats.total_bytes>0?`${Math.round((stats.total_bytes||0)/1024/1024)}MB`:"0MB",c:"#7c3aed"},
           ].map(s=>(
             <div key={s.l} style={{...card,padding:"12px 16px"}}>
               <div style={{fontSize:22,fontWeight:900,color:s.c}}>{s.v}</div>
@@ -308,8 +354,21 @@ export default function EngineBuilderPage() {
         {tab==="builds"&&(
           <div style={card}>
             <div style={{padding:"18px 24px",borderBottom:"1px solid #f1f5f9",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div style={{fontWeight:800,fontSize:15,color:"#0a1628"}}>Engine Builds ({builds.length})</div>
-              <button onClick={()=>setTab("create")} style={{padding:"8px 18px",borderRadius:9,background:"linear-gradient(135deg,#0284c7,#0d9488)",border:"none",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ New Build</button>
+              <div>
+                <div style={{fontWeight:800,fontSize:15,color:"#0a1628"}}>Engine Builds ({builds.length})</div>
+                <div style={{fontSize:11,color:"#94a3b8",marginTop:3}}>
+                  {hasR2
+                    ? "☁️ Files saved to Cloudflare R2 axto-storage. Use ✕DB for hard delete (removes DB + R2 + GitHub Release)."
+                    : "Config-only mode — no binary files stored."}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={purgeAllDeleted}
+                  style={{padding:"7px 14px",borderRadius:9,background:"rgba(127,29,29,.07)",border:"1px solid rgba(127,29,29,.2)",color:"#991b1b",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                  🧹 Purge Deleted
+                </button>
+                <button onClick={()=>setTab("create")} style={{padding:"8px 18px",borderRadius:9,background:"linear-gradient(135deg,#0284c7,#0d9488)",border:"none",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ New Build</button>
+              </div>
             </div>
             {loading ? (
               <div style={{padding:48,textAlign:"center",color:"#94a3b8"}}>Loading builds…</div>
@@ -472,7 +531,24 @@ export default function EngineBuilderPage() {
                 <form onSubmit={handleCreate} style={{display:"flex",flexDirection:"column" as const,gap:20}}>
                   <div>
                     <h2 style={{margin:"0 0 4px",fontSize:18,fontWeight:800,color:"#0a1628"}}>New Engine Build</h2>
-                    <p style={{color:"#64748b",fontSize:13,margin:0}}>Build Docker images and standalone EXE binaries for internal use or custom client orders.</p>
+                    <p style={{color:"#64748b",fontSize:13,margin:"0 0 10px"}}>Build Docker images and standalone EXE binaries for internal use or custom client orders.</p>
+                    {hasGH === false && (
+                      <div style={{padding:"10px 14px",background:"rgba(251,191,36,.08)",border:"1.5px solid rgba(251,191,36,.35)",borderRadius:10,fontSize:12,color:"#92400e",lineHeight:1.7}}>
+                        ⚠️ <strong>Config-Only Mode</strong> — GITHUB_TOKEN belum di-set.<br/>
+                        Build ini akan menghasilkan <strong>config YAML files saja</strong> (guardian.yml, docker-compose.yml, install.sh/bat) — <strong>BUKAN</strong> Docker image atau EXE binary yang sebenarnya.<br/>
+                        Untuk build image/EXE nyata (200MB–2GB): set <code style={{background:"rgba(0,0,0,.05)",padding:"1px 5px",borderRadius:4}}>GITHUB_TOKEN</code> + <code style={{background:"rgba(0,0,0,.05)",padding:"1px 5px",borderRadius:4}}>GITHUB_REPO</code> di Cloudflare Pages env vars.
+                      </div>
+                    )}
+                    {hasGH === true && hasR2 === false && (
+                      <div style={{padding:"10px 14px",background:"rgba(251,191,36,.08)",border:"1.5px solid rgba(251,191,36,.35)",borderRadius:10,fontSize:12,color:"#92400e"}}>
+                        ⚠️ <strong>R2 Storage tidak tersambung.</strong> GitHub Actions bisa compile tapi artifact tidak bisa di-store. Set R2 binding di CF Pages.
+                      </div>
+                    )}
+                    {hasGH === true && hasR2 === true && (
+                      <div style={{padding:"10px 14px",background:"rgba(34,197,94,.07)",border:"1.5px solid rgba(34,197,94,.25)",borderRadius:10,fontSize:12,color:"#166534"}}>
+                        ✅ <strong>Full Build Mode</strong> — GitHub Actions + CF R2 siap. Build akan compile Docker image / EXE binary nyata dan di-upload ke Cloudflare R2 axto-storage.
+                      </div>
+                    )}
                   </div>
 
                   {/* Product */}
@@ -589,8 +665,13 @@ export default function EngineBuilderPage() {
                         {ARCHS.map(a=><option key={a.v} value={a.v}>{a.l}</option>)}
                       </select>
                     </div>
-                    <div style={{marginTop:12}}><label style={lbl}>Existing License Key (leave blank to auto-generate)</label>
-                      <input value={form.existing_license_key} onChange={e=>set("existing_license_key",e.target.value)} placeholder="GUARD-XXXX-XXXX-XXXX-XXXX" style={inp}/>
+                    <div style={{marginTop:12}}><label style={lbl}>Existing License Key <span style={{fontWeight:400,color:"#94a3b8",textTransform:"none" as const,letterSpacing:0}}>(optional — leave blank to auto-generate)</span></label>
+                      <div style={{background:"rgba(124,58,237,.04)",border:"1px solid rgba(124,58,237,.15)",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#64748b",lineHeight:1.7}}>
+                        💡 <strong style={{color:"#7c3aed"}}>License is always auto-generated</strong> — tidak perlu diisi manual.
+                        Kosongkan = buat license key baru (GUARD-XXXX atau ORCH-XXXX) yang otomatis ter-embed ke config files.
+                        Isi field ini HANYA jika client sudah punya license key aktif dan mau dipakai ulang untuk build baru.
+                      </div>
+                      <input value={form.existing_license_key} onChange={e=>set("existing_license_key",e.target.value)} placeholder="GUARD-XXXX-XXXX-XXXX-XXXX (opsional)" style={inp}/>
                     </div>
                     <div style={{marginTop:12}}><label style={lbl}>Notes</label>
                       <textarea value={form.notes} onChange={e=>set("notes",e.target.value)} rows={2} placeholder="Internal notes, payment reference, special conditions…" style={{...inp,resize:"vertical"} as any}/>
@@ -634,6 +715,18 @@ export default function EngineBuilderPage() {
                   {["guardian-engine","orchestra-core","orchestra-worker-cpu","orchestra-worker-gpu"].map(img=>(
                     <div key={img} style={{color:"#0284c7"}}>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/{img}:latest</div>
                   ))}
+                </div>
+              </div>
+
+              <div style={{...card,padding:20,background:"rgba(2,132,199,.03)",border:"1.5px solid rgba(2,132,199,.15)"}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#0284c7",marginBottom:10}}>☁️ Cloudflare R2 Storage</div>
+                <div style={{fontSize:12,color:"#475569",lineHeight:1.8}}>
+                  Build artifacts (Docker .tar / .exe) disimpan <strong>sementara</strong> di CF R2 bucket <code style={{fontSize:11}}>axto-storage</code>.<br/><br/>
+                  <strong>Cara hapus:</strong><br/>
+                  🗑 = Soft delete (hide dari list, file tetap di R2)<br/>
+                  ✕DB = <span style={{color:"#dc2626",fontWeight:700}}>Hard delete</span> — hapus record dari DB + file dari R2 + GitHub Release<br/>
+                  🧹 Purge = Hapus semua yang sudah soft-deleted<br/><br/>
+                  <span style={{color:"#94a3b8",fontSize:11}}>License key yang sudah terkirim ke client tetap valid sampai expired meski build dihapus.</span>
                 </div>
               </div>
             </div>

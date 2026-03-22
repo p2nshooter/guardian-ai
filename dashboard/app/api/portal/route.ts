@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
   const licenses = await dbQuery<any>(db, `
     SELECT l.id, l.license_key, l.product, l.package_code, l.status,
       l.expires_at, l.max_nodes, l.bound_machine_id, l.created_at, l.notes,
+      l.engine_build_id,
       lp.name AS package_name,
       (SELECT COUNT(*) FROM license_nodes ln WHERE ln.license_id = l.id AND ln.status = 'active') AS node_count,
       (SELECT MAX(lh.created_at) FROM license_heartbeats lh WHERE lh.license_id = l.id) AS last_heartbeat

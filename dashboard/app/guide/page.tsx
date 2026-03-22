@@ -2,103 +2,115 @@
 export const runtime = "edge";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-provider";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type Section = "start"|"guardian"|"orchestra"|"antivirus"|"api";
 
 // ─── Setup flow steps ──────────────────────────────────────────────────────
-const SETUP_STEPS = [
+// Steps are defined as functions to support locale
+const getSetupSteps = (t: (k:string)=>string, locale: string) => [
   {
-    id:"payment", icon:"💳", title:"1. Beli Lisensi",
+    id:"payment", icon:"💳", title: t("setup.step1.title") || "1. Purchase License",
     color:"#0284c7", bg:"rgba(2,132,199,0.08)",
-    desc:"Pilih paket di axto.io/playbooks atau hubungi admin. Bayar via Stripe, PayPal, Xendit, atau Midtrans. Invoice otomatis dikirim ke email.",
+    desc: t("setup.step1.desc") || "Choose your plan at axto.io. Pay via Stripe, PayPal, Xendit, or Midtrans. License key sent to your email instantly.",
     detail:[
-      "Pilih Guardian AI, Orchestra AI, atau Bundle",
-      "Checkout: masukkan email + metode pembayaran",
-      "Invoice PDF dikirim ke email dalam 60 detik",
-      "License key muncul di dashboard portal klien",
+      locale==="id" ? "Pilih Guardian AI, Orchestra AI, atau Bundle" : "Choose Guardian AI, Orchestra AI, or Bundle",
+      locale==="id" ? "Checkout: masukkan email + metode pembayaran" : "Checkout: enter email + payment method",
+      locale==="id" ? "Invoice PDF dikirim ke email dalam 60 detik" : "Invoice PDF sent to email within 60 seconds",
+      locale==="id" ? "License key muncul di dashboard portal klien" : "License key appears in your client portal",
     ],
     code:"",
     anim:"payment",
   },
   {
-    id:"download", icon:"⬇️", title:"2. Download Engine",
+    id:"download", icon:"⬇️", title: t("setup.step2.title") || "2. Download Package",
     color:"#0d9488", bg:"rgba(13,148,136,0.08)",
-    desc:"Login ke portal → tab Licenses → klik tombol ⬇ docker-compose.yml dan ⬇ Config Template. Atau admin bisa buat custom build via Engine Builder.",
+    desc: t("setup.step2.desc") || "Login to portal → Licenses tab → click ⬇ Download. One ZIP contains all Docker images + installer. Works offline.",
     detail:[
-      "Login: axto.io/auth/login (email + password atau magic link)",
-      "Klik tab Licenses → temukan lisensi aktif",
-      "Download docker-compose.yml",
-      "Download guardian.yml / orchestra.yml (config template)",
-      "Lihat README.txt untuk instruksi setup",
+      locale==="id" ? "Login: axto.io/portal (email + password atau magic link)" : "Login: axto.io/portal (email + password or magic link)",
+      locale==="id" ? "Tab Licenses → pilih paket Anda" : "Licenses tab → find your active license",
+      locale==="id" ? "Pilih format: Docker Linux / EXE Linux / EXE Windows" : "Choose format: Docker Linux / EXE Linux / EXE Windows",
+      locale==="id" ? "Klik Download → dapat file .zip (300MB–2GB tergantung paket)" : "Click Download → get .zip file (300MB–2GB depending on package)",
+      locale==="id" ? "ZIP berisi: Docker images (.tar.gz) + install.sh + README.txt" : "ZIP contains: Docker images (.tar.gz) + install.sh + README.txt",
     ],
     code:"",
     anim:"download",
   },
   {
-    id:"license", icon:"🔑", title:"3. Input License Key",
+    id:"license", icon:"🔑", title:"3. Aktivasi License",
     color:"#7c3aed", bg:"rgba(124,58,237,0.08)",
-    desc:"Buka file guardian.yml / orchestra.yml — isi license_key dengan kode dari email/portal. Isi juga AI API key milik Anda sendiri (BYOK).",
+    desc:"Jalankan install.sh → buka browser ke http://SERVER:8080 → form aktivasi muncul otomatis → paste license key dari portal → klik Activate. Selesai!",
     detail:[
-      "Buka guardian.yml (text editor biasa)",
-      "Isi: license_key: \"GUARD-XXXX-XXXX-XXXX-XXXX\"",
-      "Isi AI key Anda: api_key: \"sk-...\" (OpenAI, Groq, dll)",
-      "PENTING: Key AI Anda tidak pernah dikirim ke server AXTO",
-      "Simpan file — siap untuk docker compose",
+      locale==="id" ? "Jalankan: sudo bash install.sh" : "Run: sudo bash install.sh (loads Docker images offline)",
+      locale==="id" ? "Jalankan: docker compose up -d" : "Run: docker compose up -d",
+      locale==="id" ? "Buka browser: http://YOUR_SERVER_IP:8080" : "Open browser: http://YOUR_SERVER_IP:8080",
+      locale==="id" ? "Halaman aktivasi muncul otomatis" : "Activation page appears automatically (no file editing)",
+      locale==="id" ? "Paste license key dari portal → klik Activate & Start" : "Paste license key from portal → click Activate & Start",
+      locale==="id" ? "Redirect ke dashboard → semua fitur aktif" : "Redirect to dashboard → all features immediately active",
     ],
-    code:`guardian:
-  license_key: "GUARD-A1B2-C3D4-E5F6-G7H8"
-  ai_pool:
-    providers:
-      - provider: openai
-        api_key: "sk-YOUR_OWN_KEY"   # ← key Anda sendiri
-        model: "gpt-4o-mini"`,
+    code:`# Tidak perlu edit file apapun!
+# License key diinput langsung di browser:
+#   http://YOUR_SERVER:8080
+#   → Activation Wizard muncul otomatis
+#   → Paste: GUARD-A1B2-C3D4-E5F6-G7H8
+#   → Klik Activate → Dashboard ready ✓`,
     anim:"license",
   },
   {
-    id:"docker", icon:"🐳", title:"4. Build & Deploy Docker",
+    id:"docker", icon:"🐳", title: t("setup.step4.title") || "4. Deploy & Start",
     color:"#2563eb", bg:"rgba(37,99,235,0.08)",
-    desc:"Jalankan docker compose up -d. Docker otomatis pull image dari GHCR, start database PostgreSQL, dan launch engine. Dashboard tersedia di port 8080.",
+    desc: t("setup.step4.desc") || "Extract ZIP → run install.sh → Docker images loaded offline. PostgreSQL and engine start automatically. Dashboard at port 8080.",
     detail:[
-      "Pastikan Docker Desktop / Docker Engine terinstall",
-      "cd ke folder berisi docker-compose.yml",
-      "Set password DB: export GUARDIAN_DB_PASSWORD=$(openssl rand -hex 16)",
+      "Pastikan Docker Engine terinstall di server",
+      "Extract ZIP: unzip axto-guardian-bundle-docker-linux.zip",
+      "Jalankan: sudo bash install.sh (load images offline, ~2-3 menit)",
       "Jalankan: docker compose up -d",
       "Tunggu ~60 detik sampai semua container healthy",
-      "Buka browser: http://YOUR_SERVER:8080",
+      "Buka browser: http://YOUR_SERVER:8080 → wizard aktivasi muncul",
     ],
-    code:`# Deploy Guardian AI
-export GUARDIAN_DB_PASSWORD=$(openssl rand -hex 16)
+    code:`# Extract dan install
+unzip axto-guardian-bundle-docker-linux.zip
+cd guardian-bundle-docker-linux
+sudo bash install.sh   # load images offline
+
+# Start semua services
 docker compose up -d
 
 # Cek status
 docker compose ps
 
-# Lihat logs
-docker compose logs -f guardian-core`,
+# Buka browser
+open http://YOUR_SERVER:8080`,
     anim:"docker",
   },
   {
-    id:"exe", icon:"💾", title:"5. Atau Pakai EXE / Script",
+    id:"exe", icon:"💾", title: (locale === "id" ? "5. Atau Pakai EXE Binary" : "5. Or Use EXE Binary"),
     color:"#dc2626", bg:"rgba(220,38,38,0.08)",
-    desc:"Jika admin membuatkan EXE build, Anda mendapat install.sh (Linux/macOS) atau install.bat (Windows). Jalankan sekali — otomatis pull image dan start semua service.",
+    desc:"Download EXE Linux atau Windows dari portal. Jalankan install.sh / install.bat — binary langsung start sebagai systemd service. Tidak butuh Docker sama sekali.",
     detail:[
-      "Terima file dari admin: install.sh atau install.bat",
-      "Linux/macOS: chmod +x install.sh && ./install.sh",
-      "Windows: klik kanan install.bat → Run as Administrator",
-      "Script otomatis: check Docker, pull image, generate .env, compose up",
-      "Selesai dalam 2-3 menit tergantung kecepatan internet",
+      "Download EXE ZIP dari portal (misal: axto-guardian-bundle-exe-linux.zip)",
+      "Extract dan jalankan: sudo bash install.sh",
+      "Windows: install.bat (Run as Administrator)",
+      "Binary otomatis register sebagai systemd service (Linux) atau Windows Service",
+      "Buka browser: http://YOUR_SERVER:8080 → wizard aktivasi",
+      "Tidak butuh Docker — binary standalone dengan semua deps terpacked",
     ],
-    code:`# Linux / macOS
-chmod +x install.sh
-./install.sh
+    code:`# Linux — install sebagai systemd service
+unzip axto-guardian-bundle-exe-linux.zip
+cd guardian-bundle-exe-linux
+sudo bash install.sh
 
-# Windows PowerShell
-.\\install.bat`,
+# Cek status service
+systemctl status axto-guardian-core
+systemctl status axto-guardian-node
+
+# Windows — Run as Administrator
+install.bat`,
     anim:"exe",
   },
   {
-    id:"api", icon:"🤖", title:"6. Gunakan API AI Anda",
+    id:"api", icon:"🤖", title: (locale === "id" ? "6. Gunakan API AI Anda" : "6. Use Your AI API"),
     color:"#16a34a", bg:"rgba(22,163,74,0.08)",
     desc:"Orchestra AI adalah drop-in replacement untuk OpenAI API. Ganti base_url di aplikasi Anda ke Orchestra endpoint. Semua request dioptimasi otomatis.",
     detail:[
@@ -112,7 +124,7 @@ chmod +x install.sh
 from openai import OpenAI
 client = OpenAI(
     base_url="http://YOUR_SERVER:8080/v1",
-    api_key="YOUR_WORKER_TOKEN"   # dari orchestra.yml
+    api_key="YOUR_WORKER_TOKEN"   # dari Console → Settings → Worker Token
 )
 response = client.chat.completions.create(
     model="auto",   # Orchestra pilih provider terbaik
@@ -460,7 +472,7 @@ const ORCHESTRA_MENUS = [
     short:"Active workers, queue depth, requests/min, cost today, provider health, P50/P95 latency",
     detail:`Console Dashboard adalah command center untuk AI workload orchestration Anda.
 
-AKSES: http://YOUR_SERVER:8080/console (login dengan console_password dari orchestra.yml)
+AKSES: http://YOUR_SERVER:8080/console (login dengan Console Password dari Settings UI)
 
 METRICS REAL-TIME:
 • Active Workers: berapa CPU+GPU worker yang sedang berjalan
@@ -573,7 +585,7 @@ KONFIGURASI PER WORKER:
 DEPLOY WORKER BARU:
 Di docker-compose.yml, duplikat service worker-cpu:
   worker-cpu-2:
-    image: ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-worker-cpu:latest
+    image: axto/orchestra-worker-cpu:TAG  # included in downloaded ZIP
     environment:
       - WORKER_PROVIDER=groq  # provider berbeda
       - WORKER_CONCURRENCY=10
@@ -684,7 +696,7 @@ GRAFIK:
 • Saving opportunities: berapa yang bisa dihemat dengan routing lebih baik
 
 DAILY BUDGET CAP:
-Di orchestra.yml:
+Di Console → Settings atau orchestra.yml:
   budget:
     daily_limit_usd: 50    # hard stop di $50/hari
     alert_at_percent: 80   # alert di $40 (80%)
@@ -704,7 +716,7 @@ CARA KERJA:
 • Jika queue > threshold: tambah worker baru
 • Jika queue kosong > delay: hapus worker idle (hemat resource/cost)
 
-KONFIGURASI (orchestra.yml):
+KONFIGURASI (via Settings UI atau orchestra.yml):
   autoscaler:
     enabled: true
     threshold: 20        # tambah worker jika queue > 20 job
@@ -795,7 +807,7 @@ FORMAT PAYLOAD (JSON):
   }
 
 KONFIGURASI:
-Di orchestra.yml atau via Settings UI:
+Via Console → Settings → AI Providers:
   webhooks:
     - url: "https://your-server.com/webhook"
       events: ["job_failed", "worker_offline", "budget_exceeded"]
@@ -863,7 +875,7 @@ CARA KERJA:
 • Signature database (virus definitions) diupdate otomatis setiap 6 jam via freshclam
 • Bekerja bersama 7-layer scanner Guardian untuk deteksi komprehensif
 
-ENABLE DI guardian.yml:
+ENABLE VIA Settings atau guardian.yml:
   scanner:
     antivirus:
       enabled: true
@@ -1206,6 +1218,7 @@ function RoutingAnim() {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 export default function GuidePage() {
+  const { t, locale } = useLocale();
   const [section, setSection] = useState<Section>("start");
   const [activeMenu, setActiveMenu] = useState(0);
   const [setupStep, setSetupStep] = useState(0);
@@ -1283,7 +1296,7 @@ export default function GuidePage() {
 
             {/* Step selector */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:24}}>
-              {SETUP_STEPS.map((s,i)=>(
+              {getSetupSteps(t, locale).map((s,i)=>(
                 <button key={s.id} onClick={()=>setSetupStep(i)}
                   style={{padding:"8px 14px",borderRadius:9,border:"1.5px solid",
                     borderColor:setupStep===i ? s.color : "#e2e8f0",
@@ -1297,7 +1310,7 @@ export default function GuidePage() {
 
             {/* Active step detail */}
             {(() => {
-              const s = SETUP_STEPS[setupStep];
+              const s = getSetupSteps(t, locale)[setupStep];
               return (
                 <div style={{background:"#fff",borderRadius:16,border:"1.5px solid #e2e8f0",overflow:"hidden"}}>
                   {/* Header */}
@@ -1337,12 +1350,11 @@ export default function GuidePage() {
                         )}
                         {setupStep===2&&(
                           <div style={{background:"#0a1628",borderRadius:8,padding:"10px 14px",fontFamily:"monospace",fontSize:11}}>
-                            <div style={{color:"#64748b",marginBottom:6}}># guardian.yml</div>
-                            <div style={{color:"#94a3b8"}}>guardian:</div>
-                            <div style={{color:"#22d3ee"}}>{"  license_key: \"GUARD-A1B2-C3D4\""}</div>
-                            <div style={{color:"#94a3b8"}}>{"  ai_pool:"}</div>
-                            <div style={{color:"#94a3b8"}}>{"    providers:"}</div>
-                            <div style={{color:"#22c55e"}}>{"      - api_key: \"sk-YOUR_KEY\" ← BYOK"}</div>
+                            <div style={{color:"#64748b",marginBottom:6}}># Tidak perlu edit file!</div>
+                            <div style={{color:"#22d3ee"}}>{"  Buka: http://SERVER:8080"}</div>
+                            <div style={{color:"#22d3ee"}}>{"  → Wizard aktivasi otomatis muncul"}</div>
+                            <div style={{color:"#22d3ee"}}>{"  → Paste license key dari portal"}</div>
+                            <div style={{color:"#22c55e"}}>{"  → Klik Activate & Start ✓"}</div>
                           </div>
                         )}
                         {setupStep===3&&<DockerAnim/>}
@@ -1379,8 +1391,8 @@ export default function GuidePage() {
                       style={{padding:"8px 18px",borderRadius:9,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",fontWeight:600,cursor:"pointer",opacity:setupStep===0?.4:1}}>
                       ← Kembali
                     </button>
-                    <span style={{fontSize:12,color:"#94a3b8"}}>Langkah {setupStep+1} dari {SETUP_STEPS.length}</span>
-                    {setupStep < SETUP_STEPS.length-1 ? (
+                    <span style={{fontSize:12,color:"#94a3b8"}}>Langkah {setupStep+1} dari {getSetupSteps(t, locale).length}</span>
+                    {setupStep < getSetupSteps(t, locale).length-1 ? (
                       <button onClick={()=>setSetupStep(setupStep+1)}
                         style={{padding:"8px 18px",borderRadius:9,background:s.color,border:"none",color:"#fff",fontWeight:700,cursor:"pointer"}}>
                         Lanjut →
@@ -1698,7 +1710,7 @@ export default function GuidePage() {
 # Ganti base_url ke Orchestra endpoint
 client = OpenAI(
     base_url="http://YOUR_SERVER:8080/v1",
-    api_key="YOUR_WORKER_TOKEN"  # dari orchestra.yml: worker_token
+    api_key="YOUR_WORKER_TOKEN"  # dari Console → Settings → Worker Token
 )
 
 # Request sama persis seperti OpenAI biasa

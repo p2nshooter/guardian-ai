@@ -221,8 +221,8 @@ export async function POST(req: NextRequest) {
       existing_license_key="",
     } = body;
 
-    const validProducts = ["guardian-core","guardian-node","guardian-clamav","guardian-bundle",
-                           "orchestra-core","orchestra-worker-cpu","orchestra-worker-gpu","orchestra-bundle","full-bundle"];
+    const validProducts = ["guardian-core","guardian-node","guardian-clamav","guardian-core-node","guardian-bundle",
+                           "orchestra-core","orchestra-worker-cpu","orchestra-worker-gpu","orchestra-core-cpu","orchestra-bundle","full-bundle"];
     if (!validProducts.includes(product))
       return NextResponse.json({ error:"Invalid product" }, { status:400 });
 
@@ -254,6 +254,26 @@ export async function POST(req: NextRequest) {
        r2Key,        // pre-set R2 key so client/admin can find it
        version,arch,notes,expires_at,"",now(),now()]
     );
+
+    // ── Link build → license (so portal can find the R2 binary) ──────────
+    // If existing_license_key was provided, update that license record.
+    // If auto-generated key, also try to link by email + product match.
+    const keyToLink = licKey;
+    await dbRun(db,
+      `UPDATE licenses SET engine_build_id=?, updated_at=? WHERE license_key=? AND engine_build_id=''`,
+      [id, now(), keyToLink]
+    );
+    // Fallback: link by client_email + product if license exists but key was auto-generated
+    if (!existing_license_key && client_email) {
+      const prod = product.startsWith("orchestra") ? "orchestra" : "guardian";
+      await dbRun(db,
+        `UPDATE licenses SET engine_build_id=?, updated_at=?
+         WHERE client_id=(SELECT id FROM clients WHERE email=? LIMIT 1)
+           AND product=? AND engine_build_id='' AND status='active'
+         ORDER BY created_at DESC LIMIT 1`,
+        [id, now(), client_email.toLowerCase(), prod]
+      );
+    }
 
     const log = (level:string, msg:string) => dbRun(db,
       `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,

@@ -1,6 +1,8 @@
 "use client";
 export const runtime = "edge";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-provider";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -377,8 +379,11 @@ function OrchestraAnimation() {
 }
 
 export default function HomePage() {
-  const fmtUSD = (n: number) =>
-    "$" + n.toLocaleString("en-US");
+  const { t, fmtPrice, locale, setLocale, currency, fxRate, fxSymbol } = useLocale();
+
+  // Legacy compat - same function name, uses context
+  const fmtUSD = fmtPrice;
+
 
   return (
     <>
@@ -410,6 +415,7 @@ export default function HomePage() {
             <Link href="/auth/login" className="btn-primary" style={{ padding: "9px 22px", fontSize: 14, marginLeft: 4 }}>
               Client Portal →
             </Link>
+
           </div>
         </div>
       </nav>
@@ -424,7 +430,7 @@ export default function HomePage() {
           {/* Trust badge */}
           <div className="animate-fade-up" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "7px 20px", fontSize: 13, color: "#0284c7", fontWeight: 700, marginBottom: 28 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-            AI eXecution & Tools Orchestration · Self-Hosted · BYOK
+            {t("hero.badge")}
           </div>
 
           <h1 className="font-display animate-fade-up delay-100" style={{ fontSize: "clamp(36px, 5.5vw, 64px)", fontWeight: 800, lineHeight: 1.08, marginBottom: 24, color: "#0a1628", letterSpacing: "-1.5px" }}>
@@ -635,7 +641,7 @@ export default function HomePage() {
             }}>
               {p.popular && (
                 <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>
-                  MOST POPULAR
+                  {t("pricing.popular")}
                 </div>
               )}
               <div style={{ marginBottom: 6 }}>
@@ -683,7 +689,7 @@ export default function HomePage() {
             }}>
               {p.popular && (
                 <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#0d9488,#0284c7)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 16px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>
-                  MOST POPULAR
+                  {t("pricing.popular")}
                 </div>
               )}
               <div style={{ marginBottom: 6 }}>
@@ -850,35 +856,44 @@ export default function HomePage() {
       <section id="faq" style={{ background: "linear-gradient(160deg, #f0f9ff, #ecfdf5)", padding: "100px 24px", borderTop: "1px solid rgba(2,132,199,0.08)" }}>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 className="font-display" style={{ fontSize: 38, fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 12 }}>Frequently Asked Questions</h2>
+            <h2 className="font-display" style={{ fontSize: 38, fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 12 }}>{t("faq.title")}</h2>
             <p style={{ color: "#64748b", fontSize: 16 }}>Everything you need to know before you deploy</p>
           </div>
-          {[
-            {
-              q: "Does AXTO have access to my server data or AI responses?",
-              a: "Absolutely not. Guardian and Orchestra are fully self-hosted on your infrastructure. The only communication with AXTO's servers is a periodic license heartbeat — a machine fingerprint hash, nothing more. Your server telemetry, AI queries, API keys, and responses never leave your environment.",
-            },
-            {
-              q: "What does BYOK (Bring Your Own Keys) mean in practice?",
-              a: "Your AI provider credentials (OpenAI, Anthropic, Gemini, etc.) are stored in a config file on your own server. Orchestra reads these keys locally and makes API calls directly from your infrastructure. AXTO has no copy of your keys and no route to access them.",
-            },
-            {
-              q: "How long does the initial setup take?",
-              a: "Most clients complete Guardian or Orchestra setup in under 30 minutes using Docker Compose. Our setup guide walks through every step, including certificate generation, environment configuration, and database initialization. Admin portal is accessible immediately after deployment.",
-            },
-            {
-              q: "Can I run Guardian and Orchestra on the same server?",
-              a: "Yes. Both products are containerized and can run on the same host using separate Docker Compose stacks. For large-scale deployments, we recommend separate hosts for better isolation and resource control.",
-            },
-            {
-              q: "Is there a free trial?",
-              a: "We offer a 14-day evaluation license on request. Contact us at hallo@axto.io with your use case and we will issue a trial key promptly.",
-            },
-            {
-              q: "What happens if my license expires?",
-              a: "Both products will continue operating in read-only mode for a 7-day grace period after expiry. You will receive automated renewal reminders at 30 days, 14 days, and 3 days before the license expiry date.",
-            },
-          ].map((item, i) => (
+          {(({
+            en:[
+              { q:"Does AXTO have access to my server data or AI responses?", a:"Absolutely not. Guardian and Orchestra are fully self-hosted on your infrastructure. AXTO only validates your license — we never see or store your data, API keys, or AI responses." },
+              { q:"What does BYOK (Bring Your Own Keys) mean?", a:"Your AI provider credentials (OpenAI, Anthropic, etc.) are stored on your server. Orchestra reads them locally. AXTO has no copy of your keys." },
+              { q:"How long does initial setup take?", a:"Under 30 minutes. Download ZIP from portal → run install.sh → open browser → enter license key. Admin dashboard is live immediately." },
+              { q:"Can I run Guardian and Orchestra on the same server?", a:"Yes. Both products run as separate Docker Compose stacks on the same host. For large deployments, separate hosts are recommended." },
+              { q:"Is there a free trial?", a:"Yes! Trial licenses (1–7 days) are available directly from admin panel. Contact hallo@axto.io for a demo. 30-day satisfaction guarantee on all paid plans." },
+              { q:"What happens if my license expires?", a:"Products continue in read-only mode for a 7-day grace period. Automated renewal reminders sent at 30, 14, and 3 days before expiry." },
+            ],
+            id:[
+              { q:"Apakah AXTO bisa mengakses data server saya?", a:"Tidak sama sekali. Guardian dan Orchestra berjalan 100% di server Anda. AXTO hanya memvalidasi lisensi — kami tidak pernah melihat atau menyimpan data, API key, atau respons AI Anda." },
+              { q:"Apa itu BYOK?", a:"Bring Your Own Keys — API key AI Anda (OpenAI, Anthropic, dll) disimpan di server Anda sendiri. Orchestra membacanya secara lokal. AXTO tidak punya salinan key Anda." },
+              { q:"Berapa lama setup awal?", a:"Di bawah 30 menit. Download ZIP dari portal → jalankan install.sh → buka browser → masukkan license key. Dashboard admin langsung aktif." },
+              { q:"Bisakah Guardian dan Orchestra di server yang sama?", a:"Ya. Keduanya berjalan sebagai Docker Compose stack terpisah di host yang sama. Untuk deployment skala besar, server terpisah lebih disarankan." },
+              { q:"Apakah ada trial gratis?", a:"Ya! Trial 1–7 hari tersedia langsung dari admin panel. Hubungi hallo@axto.io untuk demo. Garansi kepuasan 30 hari untuk semua paket berbayar." },
+              { q:"Apa yang terjadi jika lisensi kedaluwarsa?", a:"Produk terus beroperasi dalam mode read-only selama 7 hari. Pengingat pembaruan dikirim 30, 14, dan 3 hari sebelum kedaluwarsa." },
+            ],
+            zh:[
+              { q:"AXTO能访问我的服务器数据吗？", a:"绝对不会。Guardian和Orchestra完全在您的服务器上运行。AXTO只验证您的许可证——我们从不查看或存储您的数据。" },
+              { q:"BYOK是什么意思？", a:"自带密钥——您的AI提供商凭证存储在您的服务器上。AXTO无法访问您的密钥。" },
+              { q:"初始设置需要多长时间？", a:"30分钟以内。从门户下载ZIP → 运行install.sh → 打开浏览器 → 输入许可证密钥。" },
+              { q:"有免费试用吗？", a:"有！可直接从管理面板申请1-7天试用许可证。所有付费计划享有30天满意保证。" },
+              { q:"许可证到期后会怎样？", a:"产品在7天宽限期内以只读模式运行。到期前30、14和3天发送续期提醒。" },
+            ],
+            ar:[
+              { q:"هل تصل AXTO إلى بيانات خادمي؟", a:"لا على الإطلاق. يعمل Guardian وOrchestra بنسبة 100٪ على خوادمك. AXTO تتحقق فقط من الترخيص — نحن لا نرى بياناتك أبدًا." },
+              { q:"ما معنى BYOK؟", a:"أحضر مفاتيحك الخاصة — يتم تخزين بيانات اعتماد AI الخاصة بك على خادمك. لا تملك AXTO نسخة من مفاتيحك." },
+              { q:"كم يستغرق الإعداد الأولي؟", a:"أقل من 30 دقيقة. قم بتنزيل ZIP من البوابة ← شغّل install.sh ← افتح المتصفح ← أدخل مفتاح الترخيص." },
+              { q:"هل هناك تجربة مجانية؟", a:"نعم! تتوفر تراخيص تجريبية لمدة 1-7 أيام مباشرةً من لوحة المشرف. ضمان الرضا 30 يومًا." },
+            ],
+          } as Record<string,{q:string;a:string}[]>)[locale as string] || [
+              { q:"Does AXTO have access to my server data or AI responses?", a:"Absolutely not. AXTO only validates your license." },
+              { q:"What does BYOK mean?", a:"Your AI keys stay on your server. AXTO never has access to them." },
+              { q:"How long does setup take?", a:"Under 30 minutes. Download ZIP → install.sh → enter license key in browser." },
+            ]).map((item: {q:string;a:string}, i: number) => (
             <div key={i} style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", marginBottom: 14, border: "1px solid rgba(2,132,199,0.1)", boxShadow: "0 2px 8px rgba(2,132,199,0.06)" }}>
               <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0a1628", marginBottom: 10 }}>{item.q}</h4>
               <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.75 }}>{item.a}</p>
@@ -898,7 +913,7 @@ export default function HomePage() {
             Deploy in under 30 minutes. No vendor lock-in. No data sharing. Just powerful, enterprise-grade AI infrastructure — fully under your control.
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>Get Your License →</a>
+            <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("hero.cta")}</a>
             <a href="mailto:hallo@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>Talk to Sales</a>
           </div>
         </div>

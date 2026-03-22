@@ -3,6 +3,7 @@ export const runtime = "edge";
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useLocale } from "@/lib/locale-provider";
 
 const PACKAGES = [
   { code: "lite",              label: "Guardian Sentinel",    sub: "1 server",         price: 249,   product: "guardian"  },
@@ -31,6 +32,7 @@ const inputStyle = {
 } as const;
 
 function RegisterInner() {
+  const { t, fmtPrice } = useLocale();
   const params = useSearchParams();
   const urlPkg = params.get("pkg");
   const defaultPkg = PACKAGES.find(p => p.code === urlPkg) ? urlPkg! : "pro";
@@ -131,7 +133,7 @@ function RegisterInner() {
           <form onSubmit={handleCheckout} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {/* Contact info */}
             <div>
-              <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Email Address *</label>
+              <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("auth.email") || "Email Address"} *</label>
               <input
                 type="email" required
                 value={form.email} onChange={e => set("email", e.target.value)}
@@ -141,11 +143,11 @@ function RegisterInner() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Full Name *</label>
+                <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("reg.full_name") || "Full Name"} *</label>
                 <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Jane Smith" autoComplete="name" style={inputStyle} />
               </div>
               <div>
-                <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>Organization</label>
+                <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t("reg.organization") || "Organization"}</label>
                 <input value={form.organization} onChange={e => set("organization", e.target.value)} placeholder="Acme Corp" autoComplete="organization" style={inputStyle} />
               </div>
             </div>
