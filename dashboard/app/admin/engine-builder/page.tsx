@@ -100,7 +100,9 @@ const QB_VARIANTS = [
   {type:"exe",    arch:"linux",   icon:"💾🐧", label:"EXE Linux"},
   {type:"exe",    arch:"windows", icon:"💾🪟", label:"EXE Windows"},
 ];
-const QB_CATALOG = [
+type QBItem = {product:string;icon:string;name:string;desc:string;manualOnly?:boolean;variants?:string[]}
+type QBGroup = {group:string;color:string;items:QBItem[]}
+const QB_CATALOG: QBGroup[] = [
   {
     group:"🛡️ Guardian AI", color:"#0284c7",
     items:[
