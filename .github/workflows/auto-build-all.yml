@@ -219,7 +219,6 @@ jobs:
             local name=$1 ctx=$2 entry=$3
             echo "Building ${name}..."
             pyinstaller --onefile --name "${name}" --distpath "dist" --workpath "tmp-pyi/${name}" --specpath "tmp-spec" \
-              --workpath "/tmp/pyi-${name}" --specpath /tmp \
               --hidden-import uvicorn.logging \
               --hidden-import uvicorn.loops.auto \
               --hidden-import uvicorn.protocols.http.auto \
@@ -289,7 +288,6 @@ jobs:
           build_win() {
             local name=$1 ctx=$2 entry=$3
             pyinstaller --onefile --name "${name}" --distpath "dist" --workpath "tmp-pyi/${name}" --specpath "tmp-spec" \
-              --workpath "/tmp/pyi-${name}" --specpath /tmp \
               --hidden-import uvicorn.logging \
               --hidden-import uvicorn.loops.auto \
               --collect-all structlog --collect-all pydantic \
