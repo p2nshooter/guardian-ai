@@ -127,28 +127,8 @@ jobs:
           tags: axto/orchestra-core:${{ needs.setup.outputs.tag }}
           cache-from: type=gha,scope=orchestra-core
           cache-to: type=gha,mode=max,scope=orchestra-core
+      # orchestra-worker-cpu SKIPPED: PyTorch too large for GH Actions
 
-      - name: Build orchestra-worker-cpu
-        uses: docker/build-push-action@v5
-        with:
-          context: ./orchestra
-          file: ./orchestra/Dockerfile.worker-cpu
-          push: false
-          load: true
-          tags: axto/orchestra-worker-cpu:${{ needs.setup.outputs.tag }}
-          cache-from: type=gha,scope=orchestra-worker-cpu
-          cache-to: type=gha,mode=max,scope=orchestra-worker-cpu
-
-      - name: Build orchestra-worker-gpu
-        uses: docker/build-push-action@v5
-        with:
-          context: ./orchestra
-          file: ./orchestra/Dockerfile.worker-gpu
-          push: false
-          load: true
-          tags: axto/orchestra-worker-gpu:${{ needs.setup.outputs.tag }}
-          cache-from: type=gha,scope=orchestra-worker-gpu
-          cache-to: type=gha,mode=max,scope=orchestra-worker-gpu
 
       - name: Package Orchestra variants
         run: |
@@ -238,16 +218,14 @@ jobs:
           build() {
             local name=$1 ctx=$2 entry=$3
             echo "Building ${name}..."
-            cd "${ctx}"
-            pyinstaller --onefile --name "${name}" --distpath "../dist" \
+            pyinstaller --onefile --name "${name}" --distpath "dist" --workpath "tmp-pyi/${name}" --specpath "tmp-spec" \
               --workpath "/tmp/pyi-${name}" --specpath /tmp \
               --hidden-import uvicorn.logging \
               --hidden-import uvicorn.loops.auto \
               --hidden-import uvicorn.protocols.http.auto \
               --hidden-import uvicorn.lifespan.on \
               --collect-all structlog --collect-all pydantic \
-              --strip "${entry}" 2>&1 | tail -3
-            cd ..
+              --strip "${ctx}/${entry}" 2>&1 | tail -3
           }
 
           build guardian-core  engine    src/api.py
@@ -310,14 +288,12 @@ jobs:
 
           build_win() {
             local name=$1 ctx=$2 entry=$3
-            cd "${ctx}"
-            pyinstaller --onefile --name "${name}" --distpath "../dist" \
+            pyinstaller --onefile --name "${name}" --distpath "dist" --workpath "tmp-pyi/${name}" --specpath "tmp-spec" \
               --workpath "/tmp/pyi-${name}" --specpath /tmp \
               --hidden-import uvicorn.logging \
               --hidden-import uvicorn.loops.auto \
               --collect-all structlog --collect-all pydantic \
-              "${entry}" 2>&1 | tail -3
-            cd ..
+              "${ctx}/${entry}" 2>&1 | tail -3
           }
 
           build_win guardian-core  engine    src/api.py
