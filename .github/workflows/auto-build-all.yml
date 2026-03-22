@@ -306,7 +306,7 @@ jobs:
               [ -f "dist/${bin}.exe" ] && cp "dist/${bin}.exe" "pkg/${name}-exe-windows/"
             done
             cp scripts/install-windows.bat "pkg/${name}-exe-windows/install.bat"
-            cd pkg && zip -r "../releases/${name}-exe-windows.zip" "${name}-exe-windows/" && cd ..
+            powershell -Command "Compress-Archive -Path pkg/${name}-exe-windows -DestinationPath releases/${name}-exe-windows.zip"
           }
 
           pkg_win guardian-core       guardian-core
