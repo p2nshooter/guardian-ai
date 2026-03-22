@@ -139,16 +139,8 @@ jobs:
           cache-from: type=gha,scope=orchestra-worker-cpu
           cache-to: type=gha,mode=max,scope=orchestra-worker-cpu
 
-      - name: Build orchestra-worker-gpu
-        uses: docker/build-push-action@v5
-        with:
-          context: ./orchestra
-          file: ./orchestra/Dockerfile.worker-gpu
-          push: false
-          load: true
-          tags: axto/orchestra-worker-gpu:${{ needs.setup.outputs.tag }}
-          cache-from: type=gha,scope=orchestra-worker-gpu
-          cache-to: type=gha,mode=max,scope=orchestra-worker-gpu
+      # orchestra-worker-gpu SKIPPED: PyTorch/CUDA ~4GB exceeds GH Actions free runner disk
+      # GPU builds: use Admin → Engine Builder → New Build
 
       - name: Package Orchestra variants
         run: |
@@ -161,7 +153,6 @@ jobs:
           }
           save axto/orchestra-core:${TAG}       orchestra-core
           save axto/orchestra-worker-cpu:${TAG} orchestra-worker-cpu
-          save axto/orchestra-worker-gpu:${TAG} orchestra-worker-gpu
 
           pkg() {
             local name=$1; shift
@@ -175,9 +166,8 @@ jobs:
 
           pkg orchestra-core       orchestra-core
           pkg orchestra-worker-cpu orchestra-worker-cpu
-          pkg orchestra-worker-gpu orchestra-worker-gpu
           pkg orchestra-core-cpu   orchestra-core orchestra-worker-cpu
-          pkg orchestra-bundle     orchestra-core orchestra-worker-cpu orchestra-worker-gpu
+          pkg orchestra-bundle     orchestra-core orchestra-worker-cpu
 
       - uses: actions/upload-artifact@v4
         with:
@@ -254,8 +244,7 @@ jobs:
           build guardian-node  engine    src/__main__.py
           build orchestra-core orchestra orchestra_core/main.py
           build orchestra-worker-cpu orchestra orchestra_worker/worker_cpu.py 2>/dev/null || true
-          build orchestra-worker-gpu orchestra orchestra_worker/worker_gpu.py 2>/dev/null || true
-
+          
           pkg() {
             local name=$1; shift
             mkdir -p "pkg/${name}-exe-linux"
@@ -276,7 +265,7 @@ jobs:
           pkg orchestra-worker-gpu orchestra-worker-gpu
           pkg orchestra-core-cpu  orchestra-core orchestra-worker-cpu
           pkg orchestra-bundle    orchestra-core orchestra-worker-cpu orchestra-worker-gpu
-          pkg full-bundle         guardian-core guardian-node orchestra-core orchestra-worker-cpu orchestra-worker-gpu
+          pkg full-bundle         guardian-core guardian-node orchestra-core orchestra-worker-cpu
           ls -lh releases/
 
       - uses: actions/upload-artifact@v4
@@ -311,8 +300,8 @@ jobs:
           build_win() {
             local name=$1 ctx=$2 entry=$3
             cd "${ctx}"
+            # Use same-drive relative paths to avoid cross-drive error on Windows runners
             pyinstaller --onefile --name "${name}" --distpath "../dist" \
-              --workpath "/tmp/pyi-${name}" --specpath /tmp \
               --hidden-import uvicorn.logging \
               --hidden-import uvicorn.loops.auto \
               --collect-all structlog --collect-all pydantic \
