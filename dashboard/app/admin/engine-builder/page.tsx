@@ -321,7 +321,7 @@ export default function EngineBuilderPage() {
 
   async function buildAll() {
     if (!confirm("Build ulang SEMUA produk?")) return;
-    const all=QB_CATALOG.flatMap((g:QBGroup)=>g.items.flatMap((item:QBItem)=>(item.variants||QB_VARIANTS.map(v=>v.type+"-"+v.arch)).map((vk:string)=>{const[t,...r]=vk.split("-");return{product:item.product,type:t,arch:r.join("-")};}})));
+    const all=QB_CATALOG.flatMap((g:QBGroup)=>g.items.flatMap((item:QBItem)=>(item.variants||QB_VARIANTS.map(v=>v.type+"-"+v.arch)).map((vk:string)=>{const[t,...r]=vk.split("-");return{product:item.product,type:t,arch:r.join("-")};})));
     let ok=0,fail=0;
     for(const b of all){try{const res=await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create_build",product:b.product,build_type:b.type,arch:b.arch==="linux"?"linux/amd64":b.arch==="windows"?"windows/amd64":"linux/arm64",license_type:"yearly",unlimited:true,label:`${b.product}-${b.type}-${b.arch}`,version:"latest"})});const d=await res.json();if(d.ok)ok++;else fail++;}catch{fail++;}}
     setOk(`Build All: ${ok} queued, ${fail} failed`);await load();
