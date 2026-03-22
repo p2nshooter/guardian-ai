@@ -606,7 +606,7 @@ export default function EngineBuilderPage() {
                           const buildDate = existing?.created_at?new Date(existing.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
 
                           async function doQuickBuild() {
-                            if (isManual||isBuilding||isReady) return;
+                            if (isManual||isBuilding) return;
                             qbSet(qkey,{status:"building",pct:5,logs:["Starting build..."],buildId:null,dlUrl:null,runUrl:null});
                             const archParam = ARCH_MAP[v.arch] || "linux/amd64";
                             try {
