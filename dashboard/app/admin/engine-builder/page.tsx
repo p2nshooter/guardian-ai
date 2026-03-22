@@ -319,6 +319,20 @@ export default function EngineBuilderPage() {
     } catch { setErr("Network error"); } finally { setDelId(null); }
   }
 
+  async function buildAll() {
+    if (!confirm("Build ulang SEMUA produk?")) return;
+    const all=QB_CATALOG.flatMap((g:QBGroup)=>g.items.flatMap((item:QBItem)=>(item.variants||QB_VARIANTS.map(v=>v.type+"-"+v.arch)).map((vk:string)=>{const[t,...r]=vk.split("-");return{product:item.product,type:t,arch:r.join("-")};}})));
+    let ok=0,fail=0;
+    for(const b of all){try{const res=await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create_build",product:b.product,build_type:b.type,arch:b.arch==="linux"?"linux/amd64":b.arch==="windows"?"windows/amd64":"linux/arm64",license_type:"yearly",unlimited:true,label:`${b.product}-${b.type}-${b.arch}`,version:"latest"})});const d=await res.json();if(d.ok)ok++;else fail++;}catch{fail++;}}
+    setOk(`Build All: ${ok} queued, ${fail} failed`);await load();
+  }
+
+  async function hardDeleteAll() {
+    if(!confirm("HARD DELETE SEMUA?\nHapus DB+R2 permanen!"))return;
+    if(!confirm("Yakin 100%?"))return;
+    try{const r=await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"hard_delete_all"})});const d=await r.json();if(d.ok){setOk(`Deleted ${d.deleted}`);await load();}else setErr(d.error||"Failed");}catch{setErr("Network error");}
+  }
+
   async function purgeAllDeleted() {
     if (!confirm("Purge semua soft-deleted builds dari DB?\n\nIni akan hapus permanen semua build yang sudah di-soft-delete untuk mengosongkan space Cloudflare D1.")) return;
     try {
