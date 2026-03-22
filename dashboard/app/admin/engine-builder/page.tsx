@@ -702,7 +702,7 @@ export default function EngineBuilderPage() {
                                 )}
                                 {isManual&&(
                                   <span style={{fontSize:10,color:"#94a3b8",padding:"5px 0",display:"block",textAlign:"center" as const,width:"100%"}}>
-                                    Build via Engine Builder
+                                  <button onClick={doQuickBuild} disabled={isBuilding} style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",background:isReady?"rgba(34,197,94,.15)":"rgba(124,58,237,.15)",color:isReady?"#16a34a":"#7c3aed",fontSize:11,fontWeight:700,cursor:isBuilding?"not-allowed":"pointer"}}>{isBuilding?"Building2026":isReady?"D83dDd04 Rebuild":"D83dDd28 Build"}</button>
                                   </span>
                                 )}
                               </div>
