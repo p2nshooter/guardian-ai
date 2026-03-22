@@ -392,6 +392,19 @@ export async function POST(req: NextRequest) {
   }
 
   // ── purge_all_deleted ─────────────────────────────────────────────────────
+  if (action === "hard_delete_all") {
+    const rows = await dbQuery(db, `SELECT id,r2_key,gh_release_tag FROM engine_builds`).catch(()=>[]);
+    let deleted = 0;
+    for (const r of (rows||[])) {
+      if (r.r2_key) { try { const r2 = getR2Builds(req); await r2.delete(r.r2_key); } catch {} }
+      if (r.gh_release_tag) deleteGitHubRelease(r.gh_release_tag);
+      await dbRun(db, `DELETE FROM engine_build_logs WHERE build_id=?`, [r.id]);
+      await dbRun(db, `DELETE FROM engine_builds WHERE id=?`, [r.id]);
+      deleted++;
+    }
+    return NextResponse.json({ ok:true, deleted });
+  }
+
   if (action === "purge_all_deleted") {
     const rows = await dbQuery<any>(db,
       `SELECT id,r2_key,gh_release_tag FROM engine_builds WHERE deleted_at!=''`
