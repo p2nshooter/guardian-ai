@@ -94,6 +94,8 @@ function ProgressBar({pct,logs}:{pct:number;logs:any[]}) {
   );
 }
 
+type QBItem = { product:string; icon:string; name:string; desc:string; manualOnly?:boolean; variants?:string[] };
+type QBGroup = { group:string; color:string; items:QBItem[] };
 // ── Quick Build catalog — mirrors landing page ────────────────────────────────
 const QB_VARIANTS = [
   {type:"docker", arch:"linux",   icon:"🐳🐧", label:"Docker Linux"},
