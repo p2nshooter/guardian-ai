@@ -9,5 +9,4 @@ ALTER TABLE licenses ADD COLUMN engine_build_id TEXT DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_engine_builds_license_key ON engine_builds(license_key);
 CREATE INDEX IF NOT EXISTS idx_licenses_engine_build     ON licenses(engine_build_id);
 
--- run_url was already added in 0017, keep idempotent
-ALTER TABLE engine_builds ADD COLUMN run_url TEXT DEFAULT '';
+-- NOTE: run_url already added in migration 0017 — removed to prevent duplicate column error
