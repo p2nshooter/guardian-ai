@@ -443,7 +443,7 @@ export default function EngineBuilderPage() {
           ] as const).map(([t,l])=>{
             // dot indicator for quick tab
             const allQB = QB_CATALOG.flatMap(g=>g.items.flatMap(item=>
-              item.variants.map(v=>`${item.product}-${v.type}-${v.arch}`)
+              (item.variants||QB_VARIANTS.map(v=>v.type+"-"+v.arch)).map((vk:string)=>{const[t,...r]=vk.split("-");return `${item.product}-${t}-${r.join("-")}`;})
             ));
             const builtQB = allQB.filter(k=>{
               const [,,type,arch] = k.split("-",4);
