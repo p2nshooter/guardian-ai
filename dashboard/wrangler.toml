@@ -24,3 +24,6 @@ bucket_name = "axto-artifacts"
 [vars]
 NEXT_PUBLIC_GHCR_OWNER = "p2nshooter"
 NEXT_PUBLIC_APP_URL    = "https://axto.io"
+
+# Engine Builder — set via: wrangler pages secret put GITHUB_TOKEN
+# GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO are secrets, not vars
