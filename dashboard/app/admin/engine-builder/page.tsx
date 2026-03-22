@@ -100,9 +100,7 @@ const QB_VARIANTS = [
   {type:"exe",    arch:"linux",   icon:"💾🐧", label:"EXE Linux"},
   {type:"exe",    arch:"windows", icon:"💾🪟", label:"EXE Windows"},
 ];
-type QBItem = {product:string;icon:string;name:string;desc:string;manualOnly?:boolean;variants?:string[]}
-type QBGroup = {group:string;color:string;items:QBItem[]}
-const QB_CATALOG: QBGroup[] = [
+const QB_CATALOG = [
   {
     group:"🛡️ Guardian AI", color:"#0284c7",
     items:[
@@ -129,12 +127,44 @@ const QB_CATALOG: QBGroup[] = [
       {product:"full-bundle", icon:"📦", name:"AXTO Full Platform", desc:"Guardian + Orchestra complete", manualOnly:true},
     ],
   },
-];
+] as const;
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function EngineBuilderPage() {
   const [tab,    setTab]    = useState<"quick"|"builds"|"create"|"guide">("quick");
-  const [qbLoading, setQbLoading] = useState<string|null>(null);
+  // Per-variant progress: key = "product-type-arch"
+  const [qbState, setQbState] = useState<Record<string,{
+    status:"idle"|"building"|"done"|"failed";
+    pct:number; logs:string[]; buildId:string|null; dlUrl:string|null; runUrl:string|null;
+  }>>({});
+  const qbPolls = useRef<Record<string,any>>({});
+
+  function qbGet(key:string) {
+    return qbState[key] || {status:"idle",pct:0,logs:[],buildId:null,dlUrl:null,runUrl:null};
+  }
+  function qbSet(key:string, patch:any) {
+    setQbState(s=>({...s,[key]:{...(s[key]||{status:"idle",pct:0,logs:[],buildId:null,dlUrl:null,runUrl:null}),...patch}}));
+  }
+  function qbPoll(key:string, id:string, ghBuild=false) {
+    if (qbPolls.current[key]) clearInterval(qbPolls.current[key]);
+    const iv = ghBuild ? 10000 : 2000;
+    qbPolls.current[key] = setInterval(async()=>{
+      try {
+        const r = await fetch("/api/admin/engine-builder",{method:"POST",credentials:"include",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({action:"get_progress",id})});
+        const d = await r.json();
+        qbSet(key,{pct:d.progress||0, logs:(d.logs||[]).map((l:any)=>l.message||""), runUrl:d.run_url||d.build?.run_url||null});
+        if (d.build?.status==="ready"||d.build?.status==="failed") {
+          const done = d.build.status==="ready";
+          qbSet(key,{status:done?"done":"failed", pct:done?100:0, dlUrl:d.build?.download_url||null});
+          clearInterval(qbPolls.current[key]);
+          await load();
+        }
+      } catch {}
+    }, iv);
+  }
+  useEffect(()=>()=>{Object.values(qbPolls.current).forEach(clearInterval);},[]);
   const [builds, setBuilds] = useState<any[]>([]);
   const [stats,  setStats]  = useState<any>({});
   const [loading,setLoading]= useState(true);
@@ -376,7 +406,7 @@ export default function EngineBuilderPage() {
           ] as const).map(([t,l])=>{
             // dot indicator for quick tab
             const allQB = QB_CATALOG.flatMap(g=>g.items.flatMap(item=>
-              (item.variants||QB_VARIANTS.map((v:any)=>v.type+"-"+v.arch)).map((vk:string)=>`${item.product}-${vk}`)
+              item.variants.map(v=>`${item.product}-${v.type}-${v.arch}`)
             ));
             const builtQB = allQB.filter(k=>{
               const [,,type,arch] = k.split("-",4);
@@ -415,39 +445,36 @@ export default function EngineBuilderPage() {
         {tab==="quick"&&(
           <div>
             <div style={{...card,padding:"14px 20px",marginBottom:16,background:"rgba(2,132,199,.03)",border:"1.5px solid rgba(2,132,199,.12)"}}>
-              <div style={{fontSize:13,fontWeight:700,color:"#0284c7",marginBottom:4}}>⚡ Quick Build — satu klik langsung build</div>
-              <div style={{fontSize:12,color:"#64748b"}}>
-                Tidak perlu isi form apapun. Binary tanpa license — client input license key sendiri saat first-run wizard.
-                Klik tombol variant yang belum ada (merah/abu) untuk mulai build.
+              <div style={{fontSize:13,fontWeight:700,color:"#0284c7",marginBottom:4}}>⚡ Quick Build — satu klik build per variant</div>
+              <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>
+                Binary tanpa license — client input license key sendiri saat first-run wizard. Progress bar tampil langsung setelah klik.
               </div>
-              <div style={{display:"flex",gap:16,marginTop:10,fontSize:12}}>
-                <span><span style={{color:"#22c55e",fontWeight:800}}>●</span> Sudah ada di DB (ready)</span>
-                <span><span style={{color:"#f59e0b",fontWeight:800}}>●</span> Sedang build</span>
-                <span><span style={{color:"#ef4444",fontWeight:800}}>●</span> Gagal / belum ada</span>
-                <span><span style={{color:"#94a3b8",fontWeight:800}}>●</span> Manual (terlalu besar untuk CI)</span>
+              <div style={{display:"flex",gap:16,fontSize:12,flexWrap:"wrap" as const}}>
+                <span><span style={{color:"#22c55e",fontWeight:800}}>●</span> Ready + Download</span>
+                <span><span style={{color:"#0284c7",fontWeight:800}}>●</span> Sedang build</span>
+                <span><span style={{color:"#ef4444",fontWeight:800}}>●</span> Belum ada / gagal</span>
+                <span><span style={{color:"#94a3b8",fontWeight:800}}>●</span> Manual only</span>
               </div>
             </div>
 
-            {QB_CATALOG.map((grp:any)=>(
+            {QB_CATALOG.map((grp:QBGroup)=>(
               <div key={grp.group} style={{...card,marginBottom:14,overflow:"hidden"}}>
                 {/* Group header */}
-                <div style={{padding:"12px 18px",borderBottom:"1px solid #f1f5f9",
-                  background:`linear-gradient(90deg, ${grp.color}08, transparent)`,
+                <div style={{padding:"11px 18px",borderBottom:"1px solid #f1f5f9",
+                  background:`linear-gradient(90deg,${grp.color}0a,transparent)`,
                   display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{fontSize:16,fontWeight:900,color:grp.color}}>{grp.group}</span>
-                  {/* group status dot */}
+                  <span style={{fontSize:15,fontWeight:900,color:grp.color}}>{grp.group}</span>
                   {(()=>{
-                    const items:any[] = grp.items;
                     let total=0,built=0;
-                    items.forEach((item:any)=>{
-                      const vars = (item.variants||QB_VARIANTS.map((v:any)=>`${v.type}-${v.arch}`)).map
-                        ? (item.variants||QB_VARIANTS.map((v:any)=>`${v.type}-${v.arch}`))
-                        : [];
-                      vars.forEach((vk:string)=>{
-                        const [type,...rest]=vk.split("-"); const arch=rest.join("-");
+                    grp.items.forEach((item:QBItem)=>{
+                      const vars = item.variants||QB_VARIANTS.map(v=>v.type+"-"+v.arch);
+                      vars.forEach(vk=>{
                         total++;
-                        if(builds.some(b=>b.product===item.product&&b.build_type===type&&
-                          (arch==="linux"&&b.arch==="linux/amd64"||arch==="windows"&&b.arch==="windows/amd64"||arch==="arm64"&&b.arch==="linux/arm64")
+                        const [type,...rest]=vk.split("-"); const arch=rest.join("-");
+                        const qkey=`${item.product}-${type}-${arch}`;
+                        const qs=qbGet(qkey);
+                        if(qs.status==="done"||builds.some(b=>b.product===item.product&&b.build_type===type&&
+                          (arch==="linux"&&b.arch==="linux/amd64"||arch==="windows"&&b.arch==="windows/amd64")
                           &&b.status==="ready")) built++;
                       });
                     });
@@ -457,122 +484,152 @@ export default function EngineBuilderPage() {
                 </div>
 
                 {/* Items */}
-                {grp.items.map((item:any)=>{
-                  const variants = item.variants
-                    ? QB_VARIANTS.filter((v:any)=>item.variants.includes(`${v.type}-${v.arch}`))
+                {grp.items.map((item:QBItem)=>{
+                  const vars = item.variants
+                    ? QB_VARIANTS.filter(v=>item.variants!.includes(v.type+"-"+v.arch))
                     : QB_VARIANTS;
 
-                  // Get latest build per variant
-                  function getBuild(type:string, arch:string) {
+                  function getExistingBuild(type:string,arch:string) {
                     const archMap:any={linux:"linux/amd64",windows:"windows/amd64",arm64:"linux/arm64"};
-                    return builds.filter(b=>b.product===item.product&&b.build_type===type&&b.arch===archMap[arch])
+                    return builds.filter(b=>b.product===item.product&&b.build_type===type&&b.arch===archMap[arch]&&b.status==="ready")
                       .sort((a:any,b:any)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime())[0];
                   }
 
-                  // Count built variants for this item
-                  const builtCount = variants.filter((v:any)=>{
-                    const b=getBuild(v.type,v.arch);
-                    return b&&b.status==="ready";
+                  const builtCount = vars.filter(v=>{
+                    const qkey=`${item.product}-${v.type}-${v.arch}`;
+                    return qbGet(qkey).status==="done"||!!getExistingBuild(v.type,v.arch);
                   }).length;
-                  const itemDot = builtCount===variants.length?"#22c55e":builtCount>0?"#f59e0b":"#ef4444";
+                  const dotC = builtCount===vars.length?"#22c55e":builtCount>0?"#f59e0b":"#ef4444";
 
                   return (
-                    <div key={item.product} style={{padding:"12px 18px",borderBottom:"1px solid #f8fafc",
-                      display:"flex",alignItems:"center",gap:0,flexWrap:"wrap" as const}}>
-
-                      {/* Product info */}
-                      <div style={{minWidth:220,display:"flex",alignItems:"center",gap:8,marginRight:16}}>
-                        <span style={{width:8,height:8,borderRadius:"50%",background:itemDot,flexShrink:0}}/>
+                    <div key={item.product} style={{padding:"12px 18px",borderBottom:"1px solid #f8fafc"}}>
+                      {/* Product name row */}
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                        <span style={{width:8,height:8,borderRadius:"50%",background:dotC,flexShrink:0}}/>
                         <span style={{fontSize:18}}>{item.icon}</span>
-                        <div>
-                          <div style={{fontWeight:700,fontSize:13,color:"#0a1628"}}>{item.name}</div>
-                          <div style={{fontSize:11,color:"#94a3b8"}}>{item.desc}</div>
+                        <div style={{flex:1}}>
+                          <span style={{fontWeight:700,fontSize:13,color:"#0a1628"}}>{item.name}</span>
+                          <span style={{fontSize:11,color:"#94a3b8",marginLeft:8}}>{item.desc}</span>
                         </div>
-                        {item.manualOnly && <span style={{fontSize:10,background:"rgba(245,158,11,.1)",color:"#b45309",borderRadius:4,padding:"1px 6px",fontWeight:700,whiteSpace:"nowrap" as const}}>MANUAL</span>}
+                        {item.manualOnly&&<span style={{fontSize:10,background:"rgba(245,158,11,.1)",color:"#b45309",borderRadius:4,padding:"2px 7px",fontWeight:700}}>MANUAL</span>}
                       </div>
 
-                      {/* Variant buttons */}
+                      {/* Variant cards */}
                       <div style={{display:"flex",gap:8,flexWrap:"wrap" as const}}>
-                        {variants.map((v:any)=>{
-                          const b = getBuild(v.type, v.arch);
-                          const qkey = `${item.product}-${v.type}-${v.arch}`;
-                          const isBuilding = qbLoading===qkey || (b&&b.status==="building");
-                          const isReady    = b&&b.status==="ready";
-                          const isFailed   = b&&b.status==="failed";
-                          const isManual   = item.manualOnly;
+                        {vars.map(v=>{
+                          const qkey=`${item.product}-${v.type}-${v.arch}`;
+                          const qs=qbGet(qkey);
+                          const existing=getExistingBuild(v.type,v.arch);
+                          const isReady  = qs.status==="done"||(qs.status==="idle"&&!!existing);
+                          const isBuilding=qs.status==="building";
+                          const isFailed  =qs.status==="failed";
+                          const isManual  =!!item.manualOnly;
 
-                          const bg = isReady   ? "rgba(34,197,94,.1)"
-                                   : isBuilding ? "rgba(2,132,199,.1)"
-                                   : isFailed   ? "rgba(239,68,68,.1)"
-                                   : isManual   ? "rgba(148,163,184,.1)"
-                                   :              "rgba(239,68,68,.07)";
-                          const bc = isReady   ? "rgba(34,197,94,.3)"
-                                   : isBuilding ? "rgba(2,132,199,.3)"
-                                   : isFailed   ? "rgba(239,68,68,.3)"
-                                   : isManual   ? "rgba(148,163,184,.3)"
-                                   :              "rgba(239,68,68,.2)";
-                          const tc = isReady   ? "#16a34a"
-                                   : isBuilding ? "#0284c7"
-                                   : isFailed   ? "#dc2626"
-                                   : isManual   ? "#94a3b8"
-                                   :              "#dc2626";
-                          const dot = isReady?"●":isBuilding?"⟳":isFailed?"✕":"○";
+                          const bc=isReady?"rgba(34,197,94,.25)":isBuilding?"rgba(2,132,199,.25)":isFailed?"rgba(239,68,68,.25)":isManual?"rgba(148,163,184,.2)":"rgba(239,68,68,.2)";
+                          const bg=isReady?"rgba(34,197,94,.06)":isBuilding?"rgba(2,132,199,.06)":isFailed?"rgba(239,68,68,.06)":isManual?"rgba(148,163,184,.06)":"rgba(239,68,68,.03)";
+                          const tc=isReady?"#16a34a":isBuilding?"#0284c7":isFailed?"#dc2626":isManual?"#94a3b8":"#dc2626";
 
-                          async function quickBuild() {
-                            if (isManual || isBuilding) return;
-                            setQbLoading(qkey);
-                            setErr(null);
-                            const archParam = v.arch==="linux"?"linux/amd64":v.arch==="windows"?"windows/amd64":"linux/arm64";
+                          const dlBuildId = qs.buildId || existing?.id;
+                          const fileSize  = existing?.file_size>0?Math.round(existing.file_size/1024/1024)+"MB":"";
+                          const buildDate = existing?.created_at?new Date(existing.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+
+                          async function doQuickBuild() {
+                            if (isManual||isBuilding) return;
+                            qbSet(qkey,{status:"building",pct:5,logs:["Starting build..."],buildId:null,dlUrl:null,runUrl:null});
+                            const archParam=v.arch==="linux"?"linux/amd64":v.arch==="windows"?"windows/amd64":"linux/arm64";
                             try {
-                              const r = await fetch("/api/admin/engine-builder",{
-                                method:"POST", credentials:"include",
+                              const r=await fetch("/api/admin/engine-builder",{
+                                method:"POST",credentials:"include",
                                 headers:{"Content-Type":"application/json"},
                                 body:JSON.stringify({
                                   action:"create_build",
-                                  product:item.product,
-                                  build_type:v.type,
-                                  arch:archParam,
-                                  license_type:"yearly",
-                                  unlimited:true,
+                                  product:item.product, build_type:v.type, arch:archParam,
+                                  license_type:"yearly", unlimited:true,
                                   label:`${item.product}-${v.type}-${v.arch}-${new Date().toISOString().slice(0,10)}`,
                                   version:"latest",
                                 }),
                               });
                               const d=await r.json();
                               if(d.ok){
-                                setOk(`Build started: ${item.name} ${v.label}`);
-                                await load();
-                                if(d.id) startPoll(d.id, !!d.githubTriggered);
-                              } else setErr(d.error||"Build failed");
-                            } catch { setErr("Network error"); }
-                            finally { setQbLoading(null); }
+                                qbSet(qkey,{status:"building",pct:10,buildId:d.id,logs:["Build queued..."]});
+                                qbPoll(qkey,d.id,!!d.githubTriggered);
+                              } else {
+                                qbSet(qkey,{status:"failed",logs:[d.error||"Failed"]});
+                                setErr(d.error||"Build failed");
+                              }
+                            } catch(e:any) {
+                              qbSet(qkey,{status:"failed",logs:[e.message]});
+                            }
                           }
 
                           return (
-                            <div key={v.label} style={{display:"flex",flexDirection:"column" as const,alignItems:"center",gap:3}}>
-                              <button
-                                onClick={quickBuild}
-                                disabled={isBuilding||!!qbLoading||isManual}
-                                title={isManual?"Manual build only — gunakan tab + New Build":
-                                       isReady?`Ready ✅ — klik untuk re-build`:
-                                       isFailed?"Build gagal — klik untuk retry":
-                                       "Klik untuk build"}
-                                style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${bc}`,
-                                  background:bg,color:tc,fontSize:11,fontWeight:700,
-                                  cursor:isManual||isBuilding||!!qbLoading?"not-allowed":"pointer",
-                                  opacity:qbLoading&&qbLoading!==qkey?.5:1,
-                                  transition:"all .15s",whiteSpace:"nowrap" as const,
-                                  minWidth:110,textAlign:"center" as const}}>
-                                <span style={{marginRight:4}}>{dot}</span>
-                                {v.icon} {v.label.split(" ")[1]}
-                                {isBuilding&&" ⟳"}
-                              </button>
-                              {b && (
-                                <span style={{fontSize:9,color:"#94a3b8"}}>
-                                  {isReady&&b.file_size>0?`${Math.round(b.file_size/1024/1024)}MB · `:""}
-                                  {new Date(b.created_at).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+                            <div key={v.label} style={{border:`1.5px solid ${bc}`,borderRadius:10,
+                              background:bg,padding:"10px 12px",minWidth:150,flex:"0 0 auto"}}>
+
+                              {/* Header */}
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                                <span style={{fontSize:12,fontWeight:700,color:tc}}>{v.icon} {v.label}</span>
+                                <span style={{fontSize:10,fontWeight:800,color:tc}}>
+                                  {isReady?"✅":isBuilding?"⟳":isFailed?"✕":"○"}
                                 </span>
+                              </div>
+
+                              {/* Progress bar — show when building or done */}
+                              {(isBuilding||qs.status==="done"||qs.status==="failed")&&(
+                                <div style={{marginBottom:6}}>
+                                  <div style={{height:5,background:"#e2e8f0",borderRadius:99,overflow:"hidden",marginBottom:4}}>
+                                    <div style={{height:"100%",
+                                      width:`${isBuilding?qs.pct:qs.status==="done"?100:qs.pct}%`,
+                                      background:qs.status==="done"?"#22c55e":qs.status==="failed"?"#ef4444":"linear-gradient(90deg,#0284c7,#0d9488)",
+                                      borderRadius:99,transition:"width 1s ease"}}/>
+                                  </div>
+                                  <div style={{fontSize:9,color:"#94a3b8",maxHeight:32,overflow:"hidden"}}>
+                                    {qs.logs.slice(-2).map((l,i)=><div key={i}>{l.slice(0,50)}</div>)}
+                                  </div>
+                                  {qs.runUrl&&(
+                                    <a href={qs.runUrl} target="_blank" rel="noopener noreferrer"
+                                      style={{fontSize:9,color:"#0284c7",textDecoration:"none"}}>
+                                      → View GH Actions
+                                    </a>
+                                  )}
+                                </div>
                               )}
+
+                              {/* Info when idle+ready */}
+                              {isReady&&qs.status==="idle"&&(
+                                <div style={{fontSize:9,color:"#94a3b8",marginBottom:5}}>
+                                  {fileSize&&<span>{fileSize} · </span>}{buildDate}
+                                </div>
+                              )}
+
+                              {/* Action buttons */}
+                              <div style={{display:"flex",gap:5}}>
+                                {!isManual&&(
+                                  <button onClick={doQuickBuild} disabled={isBuilding}
+                                    style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",
+                                      background:isReady?"rgba(34,197,94,.15)":isBuilding?"rgba(2,132,199,.15)":"rgba(239,68,68,.15)",
+                                      color:tc,fontSize:11,fontWeight:700,cursor:isBuilding?"not-allowed":"pointer"}}>
+                                    {isBuilding?"Building…":isReady?"🔄 Rebuild":"🔨 Build"}
+                                  </button>
+                                )}
+                                {isReady&&(
+                                  <button onClick={()=>{
+                                    const url=`/api/admin/releases/download?product=${item.product}&type=${v.type}&arch=${v.arch}`;
+                                    const a=document.createElement("a");
+                                    a.href=url; a.download=`${item.product}-${v.type}-${v.arch}.zip`; a.click();
+                                  }}
+                                    style={{flex:1,padding:"5px 0",borderRadius:6,border:"none",
+                                      background:"rgba(34,197,94,.2)",color:"#16a34a",
+                                      fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                    ⬇ Download
+                                  </button>
+                                )}
+                                {isManual&&(
+                                  <span style={{fontSize:10,color:"#94a3b8",padding:"5px 0",display:"block",textAlign:"center" as const,width:"100%"}}>
+                                    Build via Engine Builder
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -585,9 +642,9 @@ export default function EngineBuilderPage() {
 
             <div style={{...card,padding:"12px 18px",marginTop:8,background:"rgba(34,197,94,.03)",border:"1.5px solid rgba(34,197,94,.15)"}}>
               <div style={{fontSize:12,color:"#16a34a",fontWeight:700,marginBottom:4}}>💡 Binary tanpa license</div>
-              <div style={{fontSize:11,color:"#64748b",lineHeight:1.8}}>
-                Semua build di sini <strong>tidak embed license key</strong>. Client download → install → buka browser → input license key → aktivasi ke axto.io.<br/>
-                Untuk build dengan license key spesifik per client, gunakan tab <strong>+ New Build (Detail)</strong>.
+              <div style={{fontSize:11,color:"#64748b"}}>
+                Semua build tidak embed license key. Client download → install → buka browser → input license key → aktivasi.<br/>
+                Untuk build dengan license spesifik per client → tab <strong>+ New Build (Detail)</strong>.
               </div>
             </div>
           </div>
