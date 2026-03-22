@@ -397,7 +397,7 @@ export async function POST(req: NextRequest) {
     let deleted = 0;
     for (const r of (rows||[])) {
       if (r.r2_key) { try { const r2 = getR2Builds(req); await r2.delete(r.r2_key); } catch {} }
-      if (r.gh_release_tag) deleteGitHubRelease(r.gh_release_tag);
+      if (r.gh_release_tag && typeof r.gh_release_tag === "string") deleteGitHubRelease(r.gh_release_tag);
       await dbRun(db, `DELETE FROM engine_build_logs WHERE build_id=?`, [r.id]);
       await dbRun(db, `DELETE FROM engine_builds WHERE id=?`, [r.id]);
       deleted++;
