@@ -127,7 +127,7 @@ const QB_CATALOG = [
       {product:"full-bundle", icon:"📦", name:"AXTO Full Platform", desc:"Guardian + Orchestra complete", manualOnly:true},
     ],
   },
-] as const;
+];
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function EngineBuilderPage() {
