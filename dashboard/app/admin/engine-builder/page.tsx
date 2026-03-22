@@ -741,7 +741,9 @@ export default function EngineBuilderPage() {
               <div style={{display:"flex",gap:8}}>
                 <button onClick={purgeAllDeleted}
                   style={{padding:"7px 14px",borderRadius:9,background:"rgba(127,29,29,.07)",border:"1px solid rgba(127,29,29,.2)",color:"#991b1b",fontWeight:700,fontSize:12,cursor:"pointer"}}>
-                  🧹 Purge Deleted
+                  🔨 Build All</button>
+                <button onClick={hardDeleteAll} style={{padding:"7px 14px",borderRadius:9,background:"rgba(127,29,29,.15)",border:"1px solid rgba(127,29,29,.4)",color:"#7f1d1d",fontWeight:700,fontSize:12,cursor:"pointer"}}>💀 Hard Delete All</button>
+                <button onClick={purgeAllDeleted} style={{padding:"7px 14px",borderRadius:9,background:"rgba(127,29,29,.07)",border:"1px solid rgba(127,29,29,.2)",color:"#991b1b",fontWeight:700,fontSize:12,cursor:"pointer"}}>🧹 Purge Deleted
                 </button>
                 <button onClick={()=>setTab("create")} style={{padding:"8px 18px",borderRadius:9,background:"linear-gradient(135deg,#0284c7,#0d9488)",border:"none",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>+ New Build</button>
               </div>
