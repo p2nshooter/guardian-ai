@@ -1,8 +1,5 @@
 # AXTO Auto-Build Pipeline — builds ALL products on push to main or version tag
-# Triggers: push to main → latest channel | push tag v*.*.* → versioned release
-# Storage: CF R2  axto-artifacts/releases/latest/ and releases/vX.Y.Z/
-# License: NOT embedded — client enters key at first-run wizard (http://SERVER:8080)
-
+# License NOT embedded — client enters key at first-run wizard
 name: Auto Build All Products
 
 on:
@@ -31,9 +28,8 @@ jobs:
       - id: ch
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG="${{ github.ref_name }}"
-            echo "channel=${TAG}" >> $GITHUB_OUTPUT
-            echo "tag=${TAG}" >> $GITHUB_OUTPUT
+            echo "channel=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
             SHA="${{ github.sha }}"
             echo "channel=latest" >> $GITHUB_OUTPUT
@@ -81,37 +77,29 @@ jobs:
           TAG="${{ needs.setup.outputs.tag }}"
           mkdir -p dist releases
 
-          save() { docker save "$1" | gzip > "dist/${2}.tar.gz"; echo "  $2: $(ls -lh dist/${2}.tar.gz|awk '{print $5}')"; }
+          save() {
+            docker save "$1" | gzip > "dist/${2}.tar.gz"
+            echo "  $2: $(ls -lh dist/${2}.tar.gz | awk '{print $5}')"
+          }
           save axto/guardian-core:${TAG}   guardian-core
           save axto/guardian-node:${TAG}   guardian-node
           save axto/guardian-clamav:${TAG} guardian-clamav
 
-          INSTALL='#!/bin/bash
-set -euo pipefail
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "Loading Docker images..."
-for f in "${DIR}"/*.tar.gz; do [ -f "$f" ] && docker load < "$f"; done
-[ ! -f "${DIR}/.env" ] && printf "DB_PASSWORD=%s\nWORKER_TOKEN=%s\n" "$(openssl rand -hex 16)" "$(openssl rand -hex 24)" > "${DIR}/.env"
-echo "Done. Run: docker compose up -d"
-echo "Then: http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 — enter license key"'
-
-          for name in guardian-core guardian-node guardian-clamav; do
+          pkg() {
+            local name=$1; shift
             mkdir -p "pkg/${name}"
-            cp "dist/${name}.tar.gz" "pkg/${name}/"
-            echo "$INSTALL" > "pkg/${name}/install.sh" && chmod +x "pkg/${name}/install.sh"
+            for img in "$@"; do cp "dist/${img}.tar.gz" "pkg/${name}/"; done
+            cp scripts/install-docker.sh "pkg/${name}/install.sh"
+            chmod +x "pkg/${name}/install.sh"
             cd pkg && zip -r "../releases/${name}-docker-linux.zip" "${name}/" && cd ..
-          done
+            echo "  ${name}: $(ls -lh releases/${name}-docker-linux.zip | awk '{print $5}')"
+          }
 
-          mkdir -p pkg/guardian-core-node
-          cp dist/guardian-core.tar.gz dist/guardian-node.tar.gz pkg/guardian-core-node/
-          echo "$INSTALL" > pkg/guardian-core-node/install.sh && chmod +x pkg/guardian-core-node/install.sh
-          cd pkg && zip -r "../releases/guardian-core-node-docker-linux.zip" guardian-core-node/ && cd ..
-
-          mkdir -p pkg/guardian-bundle
-          cp dist/guardian-core.tar.gz dist/guardian-node.tar.gz dist/guardian-clamav.tar.gz pkg/guardian-bundle/
-          echo "$INSTALL" > pkg/guardian-bundle/install.sh && chmod +x pkg/guardian-bundle/install.sh
-          cd pkg && zip -r "../releases/guardian-bundle-docker-linux.zip" guardian-bundle/ && cd ..
-
+          pkg guardian-core       guardian-core
+          pkg guardian-node       guardian-node
+          pkg guardian-clamav     guardian-clamav
+          pkg guardian-core-node  guardian-core guardian-node
+          pkg guardian-bundle     guardian-core guardian-node guardian-clamav
           ls -lh releases/
 
       - uses: actions/upload-artifact@v4
@@ -128,9 +116,6 @@ echo "Then: http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 — enter licens
       - uses: actions/checkout@v4
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
-
-      - name: Build orchestra images
-        run: echo "Building orchestra images..."
 
       - name: Build orchestra-core
         uses: docker/build-push-action@v5
@@ -169,25 +154,23 @@ echo "Then: http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 — enter licens
         run: |
           TAG="${{ needs.setup.outputs.tag }}"
           mkdir -p dist releases
-          save() { docker save "$1" | gzip > "dist/${2}.tar.gz"; echo "  $2: $(ls -lh dist/${2}.tar.gz|awk '{print $5}')"; }
+
+          save() {
+            docker save "$1" | gzip > "dist/${2}.tar.gz"
+            echo "  $2: $(ls -lh dist/${2}.tar.gz | awk '{print $5}')"
+          }
           save axto/orchestra-core:${TAG}       orchestra-core
           save axto/orchestra-worker-cpu:${TAG} orchestra-worker-cpu
           save axto/orchestra-worker-gpu:${TAG} orchestra-worker-gpu
-
-          INSTALL='#!/bin/bash
-set -euo pipefail
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-for f in "${DIR}"/*.tar.gz; do [ -f "$f" ] && docker load < "$f"; done
-[ ! -f "${DIR}/.env" ] && printf "DB_PASSWORD=%s\nWORKER_TOKEN=%s\n" "$(openssl rand -hex 16)" "$(openssl rand -hex 24)" > "${DIR}/.env"
-echo "Done. Run: docker compose up -d then open http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080"'
 
           pkg() {
             local name=$1; shift
             mkdir -p "pkg/${name}"
             for img in "$@"; do cp "dist/${img}.tar.gz" "pkg/${name}/"; done
-            echo "$INSTALL" > "pkg/${name}/install.sh" && chmod +x "pkg/${name}/install.sh"
+            cp scripts/install-docker.sh "pkg/${name}/install.sh"
+            chmod +x "pkg/${name}/install.sh"
             cd pkg && zip -r "../releases/${name}-docker-linux.zip" "${name}/" && cd ..
-            echo "  ${name}: $(ls -lh releases/${name}-docker-linux.zip|awk '{print $5}')"
+            echo "  ${name}: $(ls -lh releases/${name}-docker-linux.zip | awk '{print $5}')"
           }
 
           pkg orchestra-core       orchestra-core
@@ -207,30 +190,22 @@ echo "Done. Run: docker compose up -d then open http://$(hostname -I|awk '"'"'{p
     runs-on: ubuntu-latest
     needs: [setup, docker-guardian, docker-orchestra]
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: zips/
       - name: Package full-bundle
         run: |
-          mkdir -p bundle releases
+          mkdir -p bundle/full-bundle releases
           for z in zips/guardian-docker/guardian-bundle-docker-linux.zip zips/orchestra-docker/orchestra-bundle-docker-linux.zip; do
-            [ -f "$z" ] && unzip -o "$z" -d bundle/ 2>/dev/null || true
+            [ -f "$z" ] && unzip -o "$z" -d tmp-unzip/ 2>/dev/null || true
           done
-          mkdir -p bundle/full-bundle
-          find bundle -name "*.tar.gz" -exec cp {} bundle/full-bundle/ \;
-          cat > bundle/full-bundle/install.sh << 'BASH'
-#!/bin/bash
-set -euo pipefail
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "=== AXTO Full Platform Install ==="
-for f in "${DIR}"/*.tar.gz; do echo "  Loading $(basename $f)..."; docker load < "$f"; done
-[ ! -f "${DIR}/.env" ] && printf 'GUARDIAN_DB_PASSWORD=%s\nORCHESTRA_DB_PASSWORD=%s\nWORKER_TOKEN=%s\n' \
-  "$(openssl rand -hex 16)" "$(openssl rand -hex 16)" "$(openssl rand -hex 24)" > "${DIR}/.env"
-echo "All images loaded! Start with: docker compose up -d"
-echo "Open http://$(hostname -I|awk '{print $1}'):8080 and enter license key."
-BASH
+          find tmp-unzip -name "*.tar.gz" -exec cp {} bundle/full-bundle/ \; 2>/dev/null || true
+          cp scripts/install-docker.sh bundle/full-bundle/install.sh
           chmod +x bundle/full-bundle/install.sh
           cd bundle && zip -r "../releases/full-bundle-docker-linux.zip" full-bundle/ && cd ..
+          echo "full-bundle: $(ls -lh releases/full-bundle-docker-linux.zip | awk '{print $5}')"
+
       - uses: actions/upload-artifact@v4
         with:
           name: full-bundle-docker
@@ -246,68 +221,52 @@ BASH
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install deps
+
+      - name: Install system deps
         run: |
-          sudo apt-get update -q && sudo apt-get install -y --no-install-recommends gcc g++ python3-dev libssl-dev libffi-dev libpq-dev upx-ucl
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends gcc g++ python3-dev libssl-dev libffi-dev libpq-dev upx-ucl
           pip install --quiet pyinstaller==6.9.0
           pip install --quiet -r engine/requirements.txt || true
           pip install --quiet -r orchestra/orchestra_core/requirements.txt || true
           pip install --quiet -r orchestra/orchestra_worker/requirements.txt || true
-      - name: Build binaries
+
+      - name: Build Linux binaries
         run: |
           mkdir -p dist releases
+
           build() {
             local name=$1 ctx=$2 entry=$3
             echo "Building ${name}..."
             cd "${ctx}"
             pyinstaller --onefile --name "${name}" --distpath "../dist" \
               --workpath "/tmp/pyi-${name}" --specpath /tmp \
-              --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto \
-              --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on \
-              --collect-all structlog --collect-all pydantic --strip "${entry}" 2>&1|tail -3
+              --hidden-import uvicorn.logging \
+              --hidden-import uvicorn.loops.auto \
+              --hidden-import uvicorn.protocols.http.auto \
+              --hidden-import uvicorn.lifespan.on \
+              --collect-all structlog --collect-all pydantic \
+              --strip "${entry}" 2>&1 | tail -3
             cd ..
           }
-          build guardian-core  engine     src/api.py
-          build guardian-node  engine     src/__main__.py
-          build orchestra-core orchestra  orchestra_core/main.py
-          build orchestra-worker-cpu orchestra orchestra_worker/worker_cpu.py 2>/dev/null || \
-            build orchestra-worker-cpu orchestra orchestra_worker/main.py 2>/dev/null || true
-          build orchestra-worker-gpu orchestra orchestra_worker/worker_gpu.py 2>/dev/null || true
 
-          INSTALL='#!/bin/bash
-set -euo pipefail
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-chmod +x "${DIR}"/*/
-for bin in "${DIR}"/*; do
-  [[ -x "$bin" && ! "$bin" == *.sh ]] || continue
-  name=$(basename "$bin")
-  if command -v systemctl &>/dev/null; then
-    cat > "/etc/systemd/system/axto-${name}.service" << SVC
-[Unit]
-Description=AXTO ${name}
-After=network.target
-[Service]
-ExecStart=${bin}
-WorkingDirectory=${DIR}
-Restart=always
-[Install]
-WantedBy=multi-user.target
-SVC
-    systemctl daemon-reload && systemctl enable "axto-${name}" && systemctl start "axto-${name}"
-  else
-    nohup "$bin" > "${DIR}/${name}.log" 2>&1 &
-  fi
-  echo "  Started: ${name}"
-done
-echo "Open http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 and enter license key."'
+          build guardian-core  engine    src/api.py
+          build guardian-node  engine    src/__main__.py
+          build orchestra-core orchestra orchestra_core/main.py
+          build orchestra-worker-cpu orchestra orchestra_worker/worker_cpu.py 2>/dev/null || true
+          build orchestra-worker-gpu orchestra orchestra_worker/worker_gpu.py 2>/dev/null || true
 
           pkg() {
             local name=$1; shift
             mkdir -p "pkg/${name}-exe-linux"
-            for bin in "$@"; do [ -f "dist/${bin}" ] && cp "dist/${bin}" "pkg/${name}-exe-linux/"; done
-            echo "$INSTALL" > "pkg/${name}-exe-linux/install.sh" && chmod +x "pkg/${name}-exe-linux/install.sh"
+            for bin in "$@"; do
+              [ -f "dist/${bin}" ] && cp "dist/${bin}" "pkg/${name}-exe-linux/"
+            done
+            cp scripts/install-linux.sh "pkg/${name}-exe-linux/install.sh"
+            chmod +x "pkg/${name}-exe-linux/install.sh"
             cd pkg && zip -r "../releases/${name}-exe-linux.zip" "${name}-exe-linux/" && cd ..
           }
+
           pkg guardian-core       guardian-core
           pkg guardian-node       guardian-node
           pkg guardian-core-node  guardian-core guardian-node
@@ -319,6 +278,7 @@ echo "Open http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 and enter license
           pkg orchestra-bundle    orchestra-core orchestra-worker-cpu orchestra-worker-gpu
           pkg full-bundle         guardian-core guardian-node orchestra-core orchestra-worker-cpu orchestra-worker-gpu
           ls -lh releases/
+
       - uses: actions/upload-artifact@v4
         with:
           name: exe-linux
@@ -334,6 +294,7 @@ echo "Open http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 and enter license
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install deps
         shell: bash
         run: |
@@ -341,51 +302,49 @@ echo "Open http://$(hostname -I|awk '"'"'{print $1}'"'"'):8080 and enter license
           pip install --quiet -r engine/requirements.txt || true
           pip install --quiet -r orchestra/orchestra_core/requirements.txt || true
           pip install --quiet -r orchestra/orchestra_worker/requirements.txt || true
+
       - name: Build Windows EXE
         shell: bash
         run: |
           mkdir -p dist releases
+
           build_win() {
             local name=$1 ctx=$2 entry=$3
             cd "${ctx}"
             pyinstaller --onefile --name "${name}" --distpath "../dist" \
               --workpath "/tmp/pyi-${name}" --specpath /tmp \
-              --hidden-import uvicorn.logging --hidden-import uvicorn.loops.auto \
-              --collect-all structlog --collect-all pydantic "${entry}" 2>&1|tail -3
+              --hidden-import uvicorn.logging \
+              --hidden-import uvicorn.loops.auto \
+              --collect-all structlog --collect-all pydantic \
+              "${entry}" 2>&1 | tail -3
             cd ..
           }
+
           build_win guardian-core  engine    src/api.py
           build_win guardian-node  engine    src/__main__.py
           build_win orchestra-core orchestra orchestra_core/main.py
           build_win orchestra-worker-cpu orchestra orchestra_worker/worker_cpu.py 2>/dev/null || true
 
-          BAT='@echo off
-echo AXTO Platform Setup
-net session >nul 2>&1 || (echo Run as Administrator! & pause & exit /b 1)
-SET DIR=%~dp0
-for %%f in ("%DIR%*.exe") do (
-  sc create "axto-%%~nf" binPath= "%%f" start= auto
-  sc start "axto-%%~nf"
-)
-echo Open http://localhost:8080 and enter your license key.
-pause'
-
           pkg_win() {
             local name=$1; shift
             mkdir -p "pkg/${name}-exe-windows"
-            for bin in "$@"; do [ -f "dist/${bin}.exe" ] && cp "dist/${bin}.exe" "pkg/${name}-exe-windows/"; done
-            echo "$BAT" > "pkg/${name}-exe-windows/install.bat"
+            for bin in "$@"; do
+              [ -f "dist/${bin}.exe" ] && cp "dist/${bin}.exe" "pkg/${name}-exe-windows/"
+            done
+            cp scripts/install-windows.bat "pkg/${name}-exe-windows/install.bat"
             cd pkg && zip -r "../releases/${name}-exe-windows.zip" "${name}-exe-windows/" && cd ..
           }
-          pkg_win guardian-core      guardian-core
-          pkg_win guardian-node      guardian-node
-          pkg_win guardian-core-node guardian-core guardian-node
-          pkg_win guardian-bundle    guardian-core guardian-node
-          pkg_win orchestra-core     orchestra-core
+
+          pkg_win guardian-core       guardian-core
+          pkg_win guardian-node       guardian-node
+          pkg_win guardian-core-node  guardian-core guardian-node
+          pkg_win guardian-bundle     guardian-core guardian-node
+          pkg_win orchestra-core      orchestra-core
           pkg_win orchestra-worker-cpu orchestra-worker-cpu
-          pkg_win orchestra-core-cpu orchestra-core orchestra-worker-cpu
-          pkg_win orchestra-bundle   orchestra-core orchestra-worker-cpu
-          pkg_win full-bundle        guardian-core guardian-node orchestra-core orchestra-worker-cpu
+          pkg_win orchestra-core-cpu  orchestra-core orchestra-worker-cpu
+          pkg_win orchestra-bundle    orchestra-core orchestra-worker-cpu
+          pkg_win full-bundle         guardian-core guardian-node orchestra-core orchestra-worker-cpu
+
       - uses: actions/upload-artifact@v4
         with:
           name: exe-windows
@@ -401,7 +360,8 @@ pause'
       - uses: actions/download-artifact@v4
         with:
           path: all-releases/
-      - name: Upload to R2
+
+      - name: Upload all to R2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
@@ -419,17 +379,25 @@ pause'
             [ -f "$f" ] || continue
             fn=$(basename "$f")
             key="releases/${CHANNEL}/${fn}"
-            echo "  Uploading ${fn} ($(ls -lh $f|awk '{print $5}'))..."
-            aws s3 cp "$f" "s3://${BUCKET}/${key}" --endpoint-url "${ENDPOINT}" --no-progress && UPLOADED=$((UPLOADED+1))
-            # Also push to latest if this is a versioned tag
-            [[ "$CHANNEL" != "latest" ]] && aws s3 cp "$f" "s3://${BUCKET}/releases/latest/${fn}" --endpoint-url "${ENDPOINT}" --no-progress || true
+            echo "  Uploading ${fn} ($(ls -lh $f | awk '{print $5}'))..."
+            aws s3 cp "$f" "s3://${BUCKET}/${key}" \
+              --endpoint-url "${ENDPOINT}" --no-progress && UPLOADED=$((UPLOADED+1))
+            if [[ "${CHANNEL}" != "latest" ]]; then
+              aws s3 cp "$f" "s3://${BUCKET}/releases/latest/${fn}" \
+                --endpoint-url "${ENDPOINT}" --no-progress || true
+            fi
           done
 
-          # Manifest
           printf '{"channel":"%s","tag":"%s","built_at":"%s","commit":"%s","files":%d}\n' \
-            "$CHANNEL" "$TAG" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${{ github.sha }}" "$UPLOADED" > manifest.json
-          aws s3 cp manifest.json "s3://${BUCKET}/releases/${CHANNEL}/manifest.json" --endpoint-url "${ENDPOINT}" --no-progress
-          [[ "$CHANNEL" != "latest" ]] && aws s3 cp manifest.json "s3://${BUCKET}/releases/latest/manifest.json" --endpoint-url "${ENDPOINT}" --no-progress || true
+            "${CHANNEL}" "${TAG}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "${{ github.sha }}" "${UPLOADED}" > manifest.json
+
+          aws s3 cp manifest.json "s3://${BUCKET}/releases/${CHANNEL}/manifest.json" \
+            --endpoint-url "${ENDPOINT}" --no-progress
+          if [[ "${CHANNEL}" != "latest" ]]; then
+            aws s3 cp manifest.json "s3://${BUCKET}/releases/latest/manifest.json" \
+              --endpoint-url "${ENDPOINT}" --no-progress || true
+          fi
 
           echo "Uploaded ${UPLOADED} files to CF R2 releases/${CHANNEL}/"
 
@@ -439,7 +407,8 @@ pause'
           APP_URL: ${{ secrets.AXTO_APP_URL }}
           BUILD_SECRET: ${{ secrets.BUILD_WEBHOOK_SECRET }}
         run: |
-          [ -z "$APP_URL" ] && exit 0
+          [ -z "${APP_URL:-}" ] && exit 0
           curl -sf -X POST "${APP_URL}/api/admin/releases" \
-            -H "Content-Type: application/json" -H "X-Build-Secret: ${BUILD_SECRET}" \
+            -H "Content-Type: application/json" \
+            -H "X-Build-Secret: ${BUILD_SECRET}" \
             -d "{\"action\":\"auto_build_complete\",\"channel\":\"${{ needs.setup.outputs.channel }}\",\"tag\":\"${{ needs.setup.outputs.tag }}\",\"commit\":\"${{ github.sha }}\",\"run_url\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"status\":\"${{ job.result }}\"}" || true
