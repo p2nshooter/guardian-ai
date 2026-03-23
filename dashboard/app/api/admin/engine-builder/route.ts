@@ -149,7 +149,8 @@ export async function GET(req: NextRequest) {
     builds: builds || [],
     stats: stats || {},
     hasGithubToken: !!process.env.GITHUB_TOKEN,
-    hasR2: !!process.env.R2_ACCOUNT_ID,
+    hasR2: (() => { try { getR2Builds(req); return true; } catch { return false; } })(),
+    r2BindingMissing: (() => { try { getR2Builds(req); return false; } catch { return true; } })(),
   });
 }
 
@@ -286,6 +287,7 @@ export async function POST(req: NextRequest) {
 
     const hasGH = !!process.env.GITHUB_TOKEN;
     let ghTriggered = false;
+    let ghStatus = 0;
 
     if (hasGH) {
       try {
@@ -297,8 +299,9 @@ export async function POST(req: NextRequest) {
           label:lbl, r2Key,
         });
         ghTriggered = gh.triggered;
+        ghStatus    = gh.status;
         if (!ghTriggered)
-          await log("warn", `[4/5] ⚠️ GitHub Actions dispatch failed (HTTP ${gh.status})`);
+          await log("warn", `[4/5] ⚠️ GitHub Actions dispatch failed (HTTP ${gh.status}) — check GITHUB_TOKEN scope & GITHUB_REPO env var`);
       } catch (e:any) {
         await log("warn", `[4/5] ⚠️ GitHub error: ${e.message}`);
       }
@@ -308,14 +311,19 @@ export async function POST(req: NextRequest) {
       const sizeHint = build_type==="exe" ? "200MB–1GB per binary" : "200MB–2GB per image tarball";
       await log("info", `[4/5] 🔨 GitHub Actions compiling (${sizeHint}) → upload to CF R2 axto-storage/${r2Key}`);
       await log("info", `[5/5] ⏳ Waiting for compile… dashboard polls every 10s`);
-    } else {
-      // Config-only fallback
-      await log("info", `[4/5] 📦 Config-only — no GITHUB_TOKEN. Client uses: docker compose pull && up -d`);
+    } else if (!hasGH) {
+      // No GitHub token — config-only mode (YAML files only, no real binary)
+      await log("warn", `[4/5] ⚠️ GITHUB_TOKEN not set — config-only mode. Set GITHUB_TOKEN + GITHUB_REPO in CF Pages env vars to build real binaries.`);
       await dbRun(db, `UPDATE engine_builds SET status='ready', updated_at=? WHERE id=?`, [now(),id]);
-      await log("info", `[5/5] ✅ Config files ready`);
+      await log("info", `[5/5] ✅ Config files ready (no binary — GITHUB_TOKEN required for real Docker image/EXE build)`);
+    } else {
+      // GH token set but dispatch failed
+      await dbRun(db, `UPDATE engine_builds SET status='failed', updated_at=? WHERE id=?`, [now(),id]);
+      await log("error", `[4/5] ❌ GitHub Actions dispatch failed (HTTP ${ghStatus}). Check: GITHUB_TOKEN has 'actions:write' scope, GITHUB_REPO is correct, workflow file exists at .github/workflows/build-release.yml`);
+      await log("error", `[5/5] ❌ Build failed — fix GitHub config and use Retry Build`);
     }
 
-    return NextResponse.json({ ok:true, id, licenseKey:licKey, githubTriggered:ghTriggered, configOnly:!ghTriggered, r2Key });
+    return NextResponse.json({ ok:true, id, licenseKey:licKey, githubTriggered:ghTriggered, configOnly:!hasGH, r2Key });
   }
 
   // ── get_progress ──────────────────────────────────────────────────────────
@@ -419,6 +427,130 @@ export async function POST(req: NextRequest) {
       await dbRun(db, `DELETE FROM engine_builds WHERE id=?`, [r.id]);
     }
     return NextResponse.json({ ok:true, purged:(rows||[]).length, r2FilesDeleted:r2Count });
+  }
+
+
+  // ── retry_build ───────────────────────────────────────────────────────────
+  if (action === "retry_build") {
+    const { id } = body;
+    if (!id) return NextResponse.json({ error:"id required" }, { status:400 });
+
+    const build = await dbFirst<any>(db,
+      `SELECT * FROM engine_builds WHERE id=? AND deleted_at=''`, [id]);
+    if (!build) return NextResponse.json({ error:"Build not found" }, { status:404 });
+
+    const hasGH = !!process.env.GITHUB_TOKEN;
+    if (!hasGH) return NextResponse.json({
+      error:"GITHUB_TOKEN not configured. Go to Cloudflare Pages → Settings → Variables & Secrets → add GITHUB_TOKEN."
+    }, { status:400 });
+
+    const retryR2Key = build.r2_key || r2KeyForBuild(id, build.product, build.build_type, build.arch || "linux/amd64");
+    await dbRun(db,
+      `UPDATE engine_builds SET status='building', run_url='', updated_at=? WHERE id=?`,
+      [now(), id]
+    );
+
+    const log = (level:string, msg:string) => dbRun(db,
+      `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,
+      [newId(),id,level,msg,now()]
+    );
+    await log("info", `[RETRY] 🔄 Retrying — ${build.build_type} | ${build.product} | ${build.arch || "linux/amd64"}`);
+
+    let ghTriggered = false, ghStatus = 0;
+    try {
+      const gh = await triggerGitHubBuild({
+        product:    build.product,
+        buildType:  build.build_type,
+        buildId:    id,
+        licenseKey: build.license_key,
+        licenseType:build.license_type,
+        trialDays:  Number(build.trial_days)||0,
+        maxNodes:   Number(build.max_nodes)||1,
+        maxGpu:     Number(build.max_gpu)||0,
+        maxWorkers: Number(build.max_workers)||10,
+        unlimited:  !!build.unlimited,
+        arch:       build.arch || "linux/amd64",
+        version:    build.version || "latest",
+        clientName: build.client_name  || "",
+        clientEmail:build.client_email || "",
+        label:      build.label,
+        r2Key:      retryR2Key,
+      });
+      ghTriggered = gh.triggered;
+      ghStatus    = gh.status;
+    } catch (e:any) {
+      await log("error", `[RETRY] GitHub error: ${e.message}`);
+    }
+
+    if (ghTriggered) {
+      await log("info", `[RETRY] ✅ GitHub Actions re-triggered successfully. Compiling…`);
+      await log("info", `[RETRY] ⏳ Dashboard will poll every 10s. Binary upload to R2: ${retryR2Key}`);
+    } else {
+      await dbRun(db, `UPDATE engine_builds SET status='failed', updated_at=? WHERE id=?`, [now(), id]);
+      await log("error", `[RETRY] ❌ GitHub Actions dispatch failed (HTTP ${ghStatus}).`);
+      await log("error", `[RETRY] Fix: 1) Verify GITHUB_TOKEN has 'repo' + 'workflow' scope. 2) Verify GITHUB_REPO env var is correct. 3) Ensure .github/workflows/build-release.yml exists in your repo.`);
+    }
+
+    return NextResponse.json({ ok:ghTriggered, githubTriggered:ghTriggered, status:ghStatus });
+  }
+
+  // ── test_github_connection ────────────────────────────────────────────────
+  // Test apakah GitHub token valid dan bisa trigger workflow
+  if (action === "test_github_connection") {
+    const token = process.env.GITHUB_TOKEN;
+    const owner = process.env.GITHUB_OWNER || process.env.GHCR_OWNER || "p2nshooter";
+    const repo  = process.env.GITHUB_REPO  || "guardian-ai";
+
+    if (!token) return NextResponse.json({
+      ok: false,
+      error: "GITHUB_TOKEN tidak ada di CF Pages env vars",
+      fix: "Buka CF Pages → Settings → Variables & Secrets → + Add → Name: GITHUB_TOKEN → Value: ghp_xxx"
+    });
+
+    // Test 1: token valid?
+    const meRes = await fetch("https://api.github.com/user",
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
+    );
+    if (!meRes.ok) return NextResponse.json({
+      ok: false, error: `Token invalid (HTTP ${meRes.status})`,
+      fix: "GITHUB_TOKEN expired atau salah. Generate baru di GitHub → Settings → Developer settings → Personal access tokens"
+    });
+    const me: any = await meRes.json();
+
+    // Test 2: repo exists?
+    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
+    );
+    if (!repoRes.ok) return NextResponse.json({
+      ok: false, error: `Repo ${owner}/${repo} tidak bisa diakses (HTTP ${repoRes.status})`,
+      fix: `Cek GITHUB_OWNER="${owner}" dan GITHUB_REPO="${repo}" sudah benar di CF Pages env vars`
+    });
+
+    // Test 3: workflow file exists?
+    const wfRes = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/build-release.yml`,
+      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
+    );
+    if (!wfRes.ok) return NextResponse.json({
+      ok: false, error: `Workflow build-release.yml tidak ditemukan di repo (HTTP ${wfRes.status})`,
+      fix: "Pastikan file .github/workflows/build-release.yml ada di repo"
+    });
+    const wf: any = await wfRes.json();
+
+    // Test 4: token punya scope actions?
+    const scopeHeader = meRes.headers.get("x-oauth-scopes") || "";
+    const hasActions = scopeHeader.includes("workflow") || scopeHeader.includes("repo");
+
+    return NextResponse.json({
+      ok: true,
+      user: me.login,
+      repo: `${owner}/${repo}`,
+      workflow: wf.name,
+      workflow_state: wf.state,
+      token_scopes: scopeHeader || "(classic token — scopes tidak terlihat di API)",
+      has_workflow_scope: hasActions,
+      warning: !hasActions ? "Token mungkin tidak punya scope 'workflow'. Pastikan centang 'workflow' saat generate token." : null
+    });
   }
 
   return NextResponse.json({ error:"Unknown action" }, { status:400 });

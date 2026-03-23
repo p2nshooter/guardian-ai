@@ -5,11 +5,23 @@ LABEL org.opencontainers.image.title="AXTO Guardian Node Agent"
 LABEL org.opencontainers.image.description="AXTO Guardian — Node Agent (threat detection, runs on each protected server)"
 LABEL org.opencontainers.image.licenses="Commercial"
 
-# System deps: network tools needed by node agent (iptables, iproute2, etc.)
+# System deps for node agent — needs deep system visibility:
+#   python3-bcc         : eBPF kernel hooks (CAP_BPF at runtime)
+#   libpcap0.8+tcpdump  : packet capture + network forensics
+#   nftables+iptables+iproute2 : network enforcement (block IPs)
+#   libmagic1           : file-type detection
+#   libcap2-bin         : capability management
+#   net-tools+nmap+strace : network recon + process inspection
+#   procps              : process listing (/proc)
+#   curl                : healthcheck + webhook alerts
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
+    python3-bcc \
+    libpcap0.8 libpcap-dev tcpdump \
+    nftables \
+    libmagic1 libmagic-dev \
     curl procps iproute2 iptables libcap2-bin \
-    net-tools tcpdump \
+    net-tools strace \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /guardian
@@ -18,16 +30,16 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
- && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
+ && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev libpq-dev libpcap-dev libmagic-dev \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/* /root/.cache/pip
 
 COPY src/ ./src/
 
-RUN mkdir -p /guardian/data /guardian/logs /guardian/config /guardian/quarantine
+RUN mkdir -p /guardian/data /guardian/logs /guardian/config /guardian/quarantine /guardian/data/ml_models
 
 # Node agent entrypoint — runs src/__main__.py → node.py (NOT the API server)
-# Requires: GUARDIAN_CORE_URL env var pointing to guardian-core container
+# Required env: GUARDIAN_CORE_URL → guardian-core container
 ENV GUARDIAN_CONFIG=/guardian/config/guardian.yml
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \

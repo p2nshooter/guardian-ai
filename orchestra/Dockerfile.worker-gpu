@@ -1,35 +1,73 @@
+# ── AXTO Orchestra Worker GPU — Full Capability (~4-5GB) ─────────────────────
+#
+# Capabilities by VRAM:
+#   < 8 GB  → chat (small models via Ollama) + transcription (Whisper)
+#   8–16 GB → chat + embedding + transcription + DALL-E via API
+#   > 16 GB → ALL: chat + image gen (SDXL local) + embedding + transcription
+#
+# Multi-vendor GPU support:
+#   NVIDIA  → nvidia-container-toolkit  (docker run --gpus all ...)
+#   AMD     → ROCm sysfs detection      (docker run --device /dev/kfd --device /dev/dri ...)
+#   Apple   → MPS via torch             (not supported in Docker Linux)
+#   CPU     → fallback always works
+#
+# PyTorch CUDA build is installed AFTER requirements to avoid pip wheel conflict.
+# ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim
 
 LABEL org.opencontainers.image.source="https://github.com/p2nshooter/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Orchestra Worker GPU"
-LABEL org.opencontainers.image.description="AXTO Orchestra — GPU Worker (Local Inference via Ollama)"
 LABEL org.opencontainers.image.licenses="Commercial"
 
-# Build tools needed for: psutil, uvloop, and GPU dep compilation
+# System deps:
+#   pciutils (lspci)                    : GPU detection without nvidia-smi/rocm-smi
+#   ffmpeg + libav*                     : audio transcription (faster-whisper)
+#   libgomp1                            : OpenMP for ML libs
+#   libglib2.0-0 libsm6 libxext6       : diffusers/PIL dependencies
+#   curl                                : health check
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ python3-dev libssl-dev libffi-dev \
-    curl procps \
+    curl gcc g++ python3-dev libssl-dev libffi-dev \
+    pciutils \
+    ffmpeg libavformat-dev libavcodec-dev libavutil-dev \
+    libgomp1 \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY orchestra_worker/requirements.txt ./requirements.txt
-COPY orchestra_worker/requirements-gpu.txt ./requirements-gpu.txt
+COPY orchestra_worker/requirements.txt      ./requirements.txt
+COPY orchestra_worker/requirements-gpu.txt  ./requirements-gpu.txt
 
+# Step 1: Install base + GPU deps (diffusers, transformers, whisper, etc.)
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
- && pip install --no-cache-dir -r requirements-gpu.txt \
- && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev \
+ && pip install --no-cache-dir -r requirements-gpu.txt
+
+# Step 2: Install PyTorch with CUDA 12.1 support
+# This is separate to avoid pip's CPU-only wheel being pulled by requirements.txt
+# ~2.5GB added here — this is what makes the image ~4-5GB total
+RUN pip install --no-cache-dir \
+    torch==2.5.1 \
+    torchvision==0.20.1 \
+    torchaudio==2.5.1 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+# Step 3: Clean up build tools (keep runtime libs)
+RUN apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev 2>/dev/null || true \
  && apt-get autoremove -y \
- && rm -rf /var/lib/apt/lists/* /root/.cache/pip
+ && rm -rf /root/.cache/pip /tmp/pip-* \
+ && find /usr/local/lib/python3.11 -name "*.pyc" -delete 2>/dev/null || true
 
 COPY orchestra_worker/ ./orchestra_worker/
-COPY orchestra_core/ ./orchestra_core/
+COPY orchestra_core/   ./orchestra_core/
 
-RUN mkdir -p /app/data /app/logs
+RUN mkdir -p /app/data /app/logs /app/models \
+ && touch /app/orchestra_worker/__init__.py \
+ && touch /app/orchestra_core/__init__.py
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://${ORCHESTRA_CORE_URL:-http://orchestra-core:8080}/health || exit 1
+HEALTHCHECK --interval=30s --timeout=15s --retries=3 \
+    CMD curl -f http://localhost:8081/health || exit 1
 
 ENV WORKER_TYPE=gpu
+
 CMD ["python", "-m", "orchestra_worker.worker_gpu"]

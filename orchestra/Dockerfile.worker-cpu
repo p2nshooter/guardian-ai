@@ -2,13 +2,12 @@ FROM python:3.11-slim
 
 LABEL org.opencontainers.image.source="https://github.com/p2nshooter/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Orchestra Worker CPU"
-LABEL org.opencontainers.image.description="AXTO Orchestra — CPU Worker (Cloud AI Provider)"
 LABEL org.opencontainers.image.licenses="Commercial"
 
-# Build tools needed for: psutil, uvloop
+# Worker CPU routes jobs to cloud APIs — no local inference needed.
+# Keep image lean. Only curl + procps for health + monitoring.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ python3-dev libssl-dev libffi-dev \
-    curl procps \
+    curl procps gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -17,17 +16,19 @@ COPY orchestra_worker/requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
- && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev \
+ && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev libpq-dev 2>/dev/null || true \
  && apt-get autoremove -y \
- && rm -rf /var/lib/apt/lists/* /root/.cache/pip
+ && rm -rf /root/.cache/pip
 
 COPY orchestra_worker/ ./orchestra_worker/
 COPY orchestra_core/ ./orchestra_core/
 
-RUN mkdir -p /app/data /app/logs
+RUN mkdir -p /app/data /app/logs \
+ && touch /app/orchestra_worker/__init__.py \
+ && touch /app/orchestra_core/__init__.py
 
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://${ORCHESTRA_CORE_URL:-http://orchestra-core:8080}/health || exit 1
+    CMD curl -f http://localhost:8081/health || exit 1
 
 ENV WORKER_TYPE=cpu
 CMD ["python", "-m", "orchestra_worker.worker_cpu"]

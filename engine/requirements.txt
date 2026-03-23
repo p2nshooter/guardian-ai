@@ -1,34 +1,46 @@
-# ── Core Framework ───────────────────────────────────────────────────────────
-fastapi==0.111.0
-uvicorn[standard]==0.30.1
-httpx==0.27.0
-structlog==24.1.0
-pydantic==2.7.4
-pydantic-settings==2.3.1
-python-dotenv==1.0.1
-aiofiles==23.2.1
-PyYAML==6.0.1
-tenacity==8.3.0
-websockets==12.0
-psutil==5.9.8
+# ── Core Framework ────────────────────────────────────────────────────────────
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+httpx==0.28.1
+structlog==25.1.0
+pydantic==2.11.3
+pydantic-settings==2.8.1
+python-dotenv==1.1.0
+aiofiles==24.1.0
+PyYAML==6.0.2
+tenacity==9.1.2
+websockets==14.2
+psutil==7.0.0
 
-# ── AI Provider SDKs (BYOK — client's own API keys) ─────────────────────────
-openai==1.35.3
-anthropic==0.29.0
-google-generativeai==0.7.2
+# ── AI Provider SDKs (BYOK — client keys only) ────────────────────────────────
+openai==1.75.0
+anthropic==0.51.0
+google-generativeai==0.8.5
 
-# ── Database ─────────────────────────────────────────────────────────────────
-aiosqlite==0.20.0
+# ── Database ──────────────────────────────────────────────────────────────────
+aiosqlite==0.21.0
 
-# ── Tier 2: Distributed DB (PostgreSQL + Redis) ─────────────────────────────
-asyncpg==0.29.0
-redis[hiredis]==5.0.8
+# ── Distributed (PostgreSQL + Redis) ─────────────────────────────────────────
+asyncpg==0.30.0
+redis[hiredis]==5.2.1
 
-# ── Tier 2: PDF Compliance Reports ──────────────────────────────────────────
-reportlab==4.2.2
+# ── PDF Compliance Reports ────────────────────────────────────────────────────
+reportlab==4.4.1
 
-# ── Tier 2: mTLS Node Encryption ────────────────────────────────────────────
-cryptography==42.0.8
+# ── mTLS Node Encryption ──────────────────────────────────────────────────────
+cryptography==44.0.2
 
-# ── ML Anomaly Detection (lightweight, no torch needed) ─────────────────────
-numpy==1.26.4
+# ── ML Anomaly Detection — scikit-learn Isolation Forest (lebih akurat dari pure-python) ──
+numpy==2.2.4
+scikit-learn==1.6.1
+joblib==1.4.2
+
+# ── Data Analysis (UEBA, Correlation Engine) ─────────────────────────────────
+pandas==2.2.3
+
+# ── Network / Security ────────────────────────────────────────────────────────
+dnspython==2.7.0
+python-multipart==0.0.20
+
+# ── Email Alerting ────────────────────────────────────────────────────────────
+aiosmtplib==3.0.2

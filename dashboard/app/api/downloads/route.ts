@@ -164,7 +164,12 @@ services:
     image: ghcr.io/${ghcrOwner}/orchestra-worker-gpu:latest
     container_name: orchestra-worker-gpu-1
     restart: unless-stopped
-    runtime: nvidia
+    # ── NVIDIA GPU (uncomment runtime below) ──
+    # runtime: nvidia
+    # ── AMD GPU (comment out runtime, uncomment devices below) ──
+    # devices:
+    #   - /dev/kfd
+    #   - /dev/dri
     environment:
       - ORCHESTRA_CORE_URL=http://orchestra-core:8080
       - ORCHESTRA_WORKER_TOKEN=\${WORKER_TOKEN:-orchestra-worker-secret}
@@ -175,6 +180,8 @@ services:
       resources:
         reservations:
           devices:
+            # NVIDIA: capabilities [gpu]
+            # AMD: remove this block, use devices above
             - capabilities: [gpu]
     depends_on:
       orchestra-core: {condition: service_healthy}

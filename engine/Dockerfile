@@ -5,27 +5,41 @@ LABEL org.opencontainers.image.title="AXTO Guardian Engine"
 LABEL org.opencontainers.image.description="AXTO Guardian — AI-Powered Cybersecurity Engine"
 LABEL org.opencontainers.image.licenses="Commercial"
 
-# Install system deps + build tools (needed for psutil, asyncpg, cryptography, uvloop)
-# Build tools are removed after pip install to keep image lean
+# System deps:
+#   gcc/g++/dev libs    : build psutil, asyncpg, cryptography, uvloop
+#   python3-bcc         : eBPF kernel monitoring (CAP_BPF required at runtime)
+#   libpcap0.8+libpcap-dev : packet capture
+#   nftables            : advanced firewall enforcement
+#   libmagic1+libmagic-dev : file-type detection (magic bytes)
+#   iproute2+iptables   : network response (block IPs, rate-limit)
+#   libcap2-bin         : capability management
+#   procps strace       : process inspection
+#   net-tools           : netstat / ifconfig for node agent
+#   curl                : healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
+    python3-bcc \
+    libpcap0.8 libpcap-dev \
+    nftables \
+    libmagic1 libmagic-dev \
     curl procps iproute2 iptables libcap2-bin \
+    strace \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /guardian
 
 COPY requirements.txt .
 
-# Compile and install all Python deps, then strip build tools
+# Compile + install all Python deps, then strip build tools to keep image lean
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
- && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
+ && apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev libpq-dev libpcap-dev libmagic-dev \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/* /root/.cache/pip
 
 COPY src/ ./src/
 
-RUN mkdir -p /guardian/data /guardian/logs /guardian/config /guardian/quarantine
+RUN mkdir -p /guardian/data /guardian/logs /guardian/config /guardian/quarantine /guardian/data/ml_models
 
 EXPOSE 8080
 

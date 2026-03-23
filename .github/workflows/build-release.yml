@@ -217,7 +217,7 @@ jobs:
           # ── guardian.yml (semua produk Guardian) ──────────────────────────
           case "$PROD" in
             guardian-core|guardian-node|guardian-clamav|guardian-bundle|full-bundle)
-              cat > "${DIST}/guardian.yml" << YAML
+              cat > "${DIST}/guardian.yml" << CONFIGYML
 # AXTO Guardian AI — Configuration
 # Build: ${TAG} | Client: ${CLIENT}
 # ⚠️  Isi license_key dengan license yang diterima dari AXTO (WAJIB sebelum start)
@@ -242,14 +242,14 @@ guardian:
       #   model: "llama3"
   alerts: { email: "", slack_webhook: "", discord_webhook: "" }
   log_retention_days: 90
-YAML
+CONFIGYML
             ;;
           esac
 
           # ── orchestra.yml (semua produk Orchestra) ────────────────────────
           case "$PROD" in
             orchestra-core|orchestra-worker-cpu|orchestra-worker-gpu|orchestra-bundle|full-bundle)
-              cat > "${DIST}/orchestra.yml" << YAML
+              cat > "${DIST}/orchestra.yml" << CONFIGYML
 # AXTO Orchestra AI — Configuration
 # Build: ${TAG} | Client: ${CLIENT}
 # ⚠️  Isi license_key dengan license yang diterima dari AXTO (WAJIB sebelum start)
@@ -276,7 +276,7 @@ orchestra:
       #   model: "llama3"
   autoscaler: { enabled: false, threshold: 20, max_cpu_workers: ${MW}, max_gpu_workers: ${MG} }
   log_retention_days: 90
-YAML
+CONFIGYML
             ;;
           esac
 
@@ -284,7 +284,7 @@ YAML
           case "$PROD" in
 
             guardian-core)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Guardian Core | Build: ${BID} | ${TAG}
 services:
@@ -309,11 +309,11 @@ services:
     networks: [guardian-net]
 volumes: { guardian-db-data: {}, guardian-data: {} }
 networks: { guardian-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             guardian-node)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Guardian Node Agent | Build: ${BID} | ${TAG}
 # Jalankan di setiap server yang ingin dilindungi
@@ -330,11 +330,11 @@ services:
     networks: [guardian-net]
 volumes: { guardian-quarantine: {} }
 networks: { guardian-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             guardian-clamav)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO ClamAV Antivirus Sidecar | Build: ${BID} | ${TAG}
 services:
@@ -347,11 +347,11 @@ services:
     networks: [guardian-net]
 volumes: { clamav-db: {}, guardian-quarantine: {} }
 networks: { guardian-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             guardian-core-node)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Guardian Core + Node Agent | Build: ${BID} | ${TAG}
 # Includes: guardian-core (REST API + Dashboard) + guardian-node (threat detection agent)
@@ -391,11 +391,11 @@ services:
     networks: [guardian-net]
 volumes: { guardian-db-data: {}, guardian-data: {}, guardian-logs: {}, guardian-quarantine: {} }
 networks: { guardian-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             guardian-bundle)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Guardian Full Stack | Build: ${BID} | ${TAG}
 # Includes: guardian-core + guardian-node + clamav antivirus
@@ -442,11 +442,11 @@ services:
     networks: [guardian-net]
 volumes: { guardian-db-data: {}, guardian-data: {}, guardian-logs: {}, guardian-quarantine: {}, clamav-db: {} }
 networks: { guardian-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             orchestra-core)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Orchestra Core | Build: ${BID} | ${TAG}
 services:
@@ -474,11 +474,11 @@ services:
     networks: [orchestra-net]
 volumes: { orchestra-db-data: {}, orchestra-data: {} }
 networks: { orchestra-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             orchestra-worker-cpu)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Orchestra Worker CPU | Build: ${BID} | ${TAG}
 # Connects to Orchestra Core — set ORCHESTRA_CORE_URL
@@ -492,11 +492,11 @@ services:
       - WORKER_CONCURRENCY=${MW}
     networks: [orchestra-net]
 networks: { orchestra-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             orchestra-worker-gpu)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Orchestra Worker GPU | Build: ${BID} | ${TAG}
 # Requires: NVIDIA GPU + nvidia-container-toolkit
@@ -517,11 +517,11 @@ services:
             - capabilities: [gpu]
     networks: [orchestra-net]
 networks: { orchestra-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             orchestra-core-cpu)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Orchestra Core + Worker CPU | Build: ${BID} | ${TAG}
 # Includes: orchestra-core (API + Console) + worker-cpu (Cloud AI provider worker)
@@ -560,11 +560,11 @@ services:
     networks: [orchestra-net]
 volumes: { orchestra-db-data: {}, orchestra-data: {} }
 networks: { orchestra-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             orchestra-bundle)
-              cat > "${DIST}/docker-compose.yml" << YAML
+              cat > "${DIST}/docker-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Orchestra Full Stack | Build: ${BID} | ${TAG}
 # Includes: orchestra-core + worker-cpu + worker-gpu (jika ada GPU)
@@ -618,11 +618,11 @@ services:
     networks: [orchestra-net]
 volumes: { orchestra-db-data: {}, orchestra-data: {} }
 networks: { orchestra-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
             full-bundle)
-              cat > "${DIST}/guardian-compose.yml" << YAML
+              cat > "${DIST}/guardian-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Guardian AI — Full Stack | Build: ${BID} | ${TAG}
 services:
@@ -665,9 +665,9 @@ services:
     networks: [axto-net]
 volumes: { guardian-db-data: {}, guardian-data: {}, guardian-logs: {}, guardian-quarantine: {}, clamav-db: {} }
 networks: { axto-net: { driver: bridge } }
-YAML
+CONFIGYML
 
-              cat > "${DIST}/orchestra-compose.yml" << YAML
+              cat > "${DIST}/orchestra-compose.yml" << CONFIGYML
 version: "3.9"
 # AXTO Orchestra AI — Full Stack | Build: ${BID} | ${TAG}
 services:
@@ -719,7 +719,7 @@ services:
     networks: [axto-net]
 volumes: { orchestra-db-data: {}, orchestra-data: {} }
 networks: { axto-net: { driver: bridge } }
-YAML
+CONFIGYML
             ;;
 
           esac
@@ -928,7 +928,7 @@ README
         if: steps.v.outputs.need_guardian_core == 'true'
         run: |
           cd engine
-          pyinstaller --onefile --name guardian-core \
+          pyinstaller --onefile --name guardian-core --upx-dir /usr/bin --upx-exclude "*.so" \
             --distpath "../${{ steps.v.outputs.dist }}" \
             --workpath /tmp/pyi-gcore --specpath /tmp \
             --add-data "src/support_ui.html:src" \
@@ -937,7 +937,12 @@ README
             --hidden-import uvicorn.protocols.http.auto \
             --hidden-import uvicorn.lifespan.on \
             --hidden-import asyncpg --hidden-import aiosqlite \
+            --hidden-import sklearn --hidden-import sklearn.ensemble \
+            --hidden-import sklearn.preprocessing --hidden-import joblib \
+            --hidden-import pandas --hidden-import numpy \
+            --hidden-import aiosmtplib \
             --collect-all structlog --collect-all pydantic \
+            --collect-all sklearn \
             --strip src/api.py
           echo "✅ guardian-core: $(ls -lh ../${{ steps.v.outputs.dist }}/guardian-core | awk '{print $5}')"
 
@@ -945,7 +950,7 @@ README
         if: steps.v.outputs.need_guardian_node == 'true'
         run: |
           cd engine
-          pyinstaller --onefile --name guardian-node \
+          pyinstaller --onefile --name guardian-node --upx-dir /usr/bin --upx-exclude "*.so" \
             --distpath "../${{ steps.v.outputs.dist }}" \
             --workpath /tmp/pyi-gnode --specpath /tmp \
             --hidden-import uvicorn.logging \
@@ -953,7 +958,11 @@ README
             --hidden-import uvicorn.protocols.http.auto \
             --hidden-import uvicorn.lifespan.on \
             --hidden-import asyncpg --hidden-import aiosqlite \
+            --hidden-import sklearn --hidden-import sklearn.ensemble \
+            --hidden-import sklearn.preprocessing --hidden-import joblib \
+            --hidden-import pandas --hidden-import numpy \
             --collect-all structlog --collect-all pydantic \
+            --collect-all sklearn \
             --strip src/__main__.py
           echo "✅ guardian-node: $(ls -lh ../${{ steps.v.outputs.dist }}/guardian-node | awk '{print $5}')"
 
@@ -980,14 +989,19 @@ CLAMAV
         if: steps.v.outputs.need_orchestra_core == 'true'
         run: |
           cd orchestra
-          pyinstaller --onefile --name orchestra-core \
+          pyinstaller --onefile --name orchestra-core --upx-dir /usr/bin --upx-exclude "*.so" \
             --distpath "../${{ steps.v.outputs.dist }}" \
             --workpath /tmp/pyi-ocore --specpath /tmp \
             --hidden-import uvicorn.logging \
             --hidden-import uvicorn.loops.auto \
             --hidden-import uvicorn.protocols.http.auto \
             --hidden-import uvicorn.lifespan.on \
+            --hidden-import asyncpg --hidden-import aiosqlite \
+            --hidden-import sklearn --hidden-import sklearn.ensemble \
+            --hidden-import pandas --hidden-import numpy \
+            --hidden-import redis \
             --collect-all structlog --collect-all pydantic \
+            --collect-all sklearn \
             --strip orchestra_core/main.py
           echo "✅ orchestra-core: $(ls -lh ../${{ steps.v.outputs.dist }}/orchestra-core | awk '{print $5}')"
 
@@ -995,11 +1009,15 @@ CLAMAV
         if: steps.v.outputs.need_worker_cpu == 'true'
         run: |
           cd orchestra
-          pyinstaller --onefile --name orchestra-worker-cpu \
+          pyinstaller --onefile --name orchestra-worker-cpu --upx-dir /usr/bin --upx-exclude "*.so" \
             --distpath "../${{ steps.v.outputs.dist }}" \
             --workpath /tmp/pyi-wcpu --specpath /tmp \
             --hidden-import uvicorn.logging \
-            --collect-all structlog \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import numpy \
+            --collect-all structlog --collect-all pydantic \
             --strip orchestra_worker/worker_cpu.py
           echo "✅ orchestra-worker-cpu: $(ls -lh ../${{ steps.v.outputs.dist }}/orchestra-worker-cpu | awk '{print $5}')"
 
@@ -1007,11 +1025,15 @@ CLAMAV
         if: steps.v.outputs.need_worker_gpu == 'true'
         run: |
           cd orchestra
-          pyinstaller --onefile --name orchestra-worker-gpu \
+          pyinstaller --onefile --name orchestra-worker-gpu --upx-dir /usr/bin --upx-exclude "*.so" \
             --distpath "../${{ steps.v.outputs.dist }}" \
             --workpath /tmp/pyi-wgpu --specpath /tmp \
             --hidden-import uvicorn.logging \
-            --collect-all structlog \
+            --hidden-import uvicorn.loops.auto \
+            --hidden-import uvicorn.protocols.http.auto \
+            --hidden-import uvicorn.lifespan.on \
+            --hidden-import numpy \
+            --collect-all structlog --collect-all pydantic \
             --strip orchestra_worker/worker_gpu.py
           echo "✅ orchestra-worker-gpu: $(ls -lh ../${{ steps.v.outputs.dist }}/orchestra-worker-gpu | awk '{print $5}')"
 
@@ -1027,7 +1049,7 @@ CLAMAV
           PROD="${{ inputs.product }}"
 
           # guardian.yml — NO license key
-          cat > "${D}/guardian.yml" << YAML
+          cat > "${D}/guardian.yml" << CONFIGYML
 # AXTO Guardian AI — Configuration
 # ⚠️  Isi license_key dengan license yang kamu terima dari AXTO
 guardian:
@@ -1044,10 +1066,10 @@ guardian:
       - provider: openai
         api_key: "sk-REPLACE_YOUR_KEY"
         model: "gpt-4o-mini"
-YAML
+CONFIGYML
 
           # orchestra.yml — NO license key
-          cat > "${D}/orchestra.yml" << YAML
+          cat > "${D}/orchestra.yml" << CONFIGYML
 # AXTO Orchestra AI — Configuration
 # ⚠️  Isi license_key dengan license yang kamu terima dari AXTO
 orchestra:
@@ -1061,7 +1083,7 @@ orchestra:
       - provider: groq
         api_key: "gsk_REPLACE_YOUR_KEY"
         model: "llama-3.1-8b-instant"
-YAML
+CONFIGYML
 
           cat > "${D}/install.sh" << 'BASH'
 #!/bin/bash
@@ -1326,7 +1348,7 @@ README
           LT="${{ inputs.license_type }}"
           PROD="${{ inputs.product }}"
 
-          cat > "${D}/guardian.yml" << YAML
+          cat > "${D}/guardian.yml" << CONFIGYML
 # AXTO Guardian AI — Configuration
 # ⚠️  Isi license_key dengan license yang kamu terima dari AXTO
 guardian:
@@ -1339,9 +1361,9 @@ guardian:
       - provider: openai
         api_key: "sk-REPLACE_YOUR_KEY"
         model: "gpt-4o-mini"
-YAML
+CONFIGYML
 
-          cat > "${D}/orchestra.yml" << YAML
+          cat > "${D}/orchestra.yml" << CONFIGYML
 # AXTO Orchestra AI — Configuration
 # ⚠️  Isi license_key dengan license yang kamu terima dari AXTO
 orchestra:
@@ -1355,7 +1377,7 @@ orchestra:
       - provider: groq
         api_key: "gsk_REPLACE_YOUR_KEY"
         model: "llama-3.1-8b-instant"
-YAML
+CONFIGYML
 
           cat > "${D}/install.bat" << 'BAT'
 @echo off

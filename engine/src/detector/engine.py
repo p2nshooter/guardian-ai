@@ -85,6 +85,78 @@ SUSPICIOUS_PATTERNS: list = [
     # ── JavaScript/Node malware ──────────────────────────────────────────────
     (re.compile(r"(?i)(require\s*\(\s*['\"]child_process['\"].{0,100}exec)",  re.M),     "js_exec",          0.8),
     (re.compile(r"(?i)(Buffer\.from\s*\(.{0,50}base64.{0,50}exec)",           re.M),     "js_obfuscated",    0.8),
+
+    # ── Container / Docker escape ─────────────────────────────────────────────
+    (re.compile(r"(?i)(docker\.sock|/var/run/docker\.sock)",                re.M),     "docker_socket_access",  0.85),
+    (re.compile(r"(?i)(nsenter\s+--target|nsenter\s+-t\s+1)",              re.M),     "namespace_escape",      0.9),
+    (re.compile(r"(?i)(runc\s+--root|--privileged.{0,50}docker)",            re.M),     "container_escape",      0.9),
+    (re.compile(r"(?i)(cap_sys_admin|cap_net_admin|cap_sys_ptrace)",           re.M),     "dangerous_capability",  0.75),
+    (re.compile(r"(?i)(/proc/1/environ|/proc/1/cmdline|/proc/1/net)",         re.M),     "host_proc_access",      0.85),
+    (re.compile(r"(?i)(securityContext.*privileged.*true|hostPID.*true)",      re.M),     "k8s_privileged_pod",    0.9),
+
+    # ── Kubernetes / Cloud-native attacks ─────────────────────────────────────
+    (re.compile(r"(?i)(kubectl\s+exec|kubectl\s+cp.*\.sh)",                re.M),     "k8s_exec",              0.7),
+    (re.compile(r"(?i)(serviceaccount/token|/var/run/secrets/kubernetes)",     re.M),     "k8s_token_access",      0.9),
+    (re.compile(r"(?i)(ClusterRoleBinding.*cluster-admin|verbs.*\*.*\*)",   re.M),     "k8s_rbac_escalation",   0.9),
+    (re.compile(r"(?i)(etcd.*\d+\.\d+\.\d+\.\d+:2379)",               re.M),     "etcd_direct_access",    0.95),
+
+    # ── Cloud metadata theft ──────────────────────────────────────────────────
+    (re.compile(r"(?i)(169\.254\.169\.254|metadata\.google\.internal)",  re.M),     "cloud_metadata_access", 0.9),
+    (re.compile(r"(?i)(imds.*latest.*meta-data.*iam|ec2metadata.*iam)",        re.M),     "aws_imds_iam_theft",    0.95),
+    (re.compile(r"(?i)(curl.*metadata.*token|wget.*computeMetadata)",          re.M),     "cloud_metadata_curl",   0.85),
+    (re.compile(r"(?i)(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY).{0,50}export",re.M),     "aws_cred_export",       0.9),
+
+    # ── Supply chain / dependency confusion ───────────────────────────────────
+    (re.compile(r"(?i)(postinstall.*curl|postinstall.*wget|preinstall.*eval)", re.M),     "npm_postinstall_exec",  0.9),
+    (re.compile(r"(?i)(setup\.py.*os\.system|setup\.py.*subprocess)",      re.M),     "pypi_setup_exec",       0.85),
+    (re.compile(r"(?i)(__import__.*urllib.*install|pip.*install.*subprocess)", re.M),     "pip_install_exec",      0.85),
+    (re.compile(r"(?i)(typosquat|npm.*install.{0,30}(requests|flask|boto)3?)", re.M),    "typosquatting",         0.7),
+
+    # ── LLM / AI-specific attacks ─────────────────────────────────────────────
+    (re.compile(r"(?i)(ignore previous instructions|disregard all prior)",     re.M),     "prompt_injection",      0.8),
+    (re.compile(r"(?i)(jailbreak|dan mode|developer mode|no restrictions)",    re.M),     "llm_jailbreak",         0.75),
+    (re.compile(r"(?i)(system prompt.*leak|repeat.*system.*message)",          re.M),     "prompt_extraction",     0.8),
+    (re.compile(r"(?i)(act as.*no.*filter|pretend.*unethical|roleplay.*hack)", re.M),     "llm_bypass_attempt",    0.75),
+
+    # ── Credential theft / password attacks ───────────────────────────────────
+    (re.compile(r"(?i)(mimikatz|lsadump|sekurlsa|wce\.exe|fgdump)",          re.M),     "credential_dump",       1.0),
+    (re.compile(r"(?i)(procdump.*lsass|task.*list.*lsass|rundll32.*comsvcs)",  re.M),     "lsass_dump",            0.95),
+    (re.compile(r"(?i)(/etc/shadow.{0,30}(cat|less|more|cp|tar))",            re.M),     "shadow_file_access",    0.9),
+    (re.compile(r"(?i)(john\s+--wordlist|hashcat.*-a.*-m|crack.*ntlm)",       re.M),     "password_cracking",     0.85),
+    (re.compile(r"(?i)(\.aws/credentials|~/.ssh/id_rsa|id_ed25519)",         re.M),     "cred_file_access",      0.85),
+
+    # ── Lateral movement ──────────────────────────────────────────────────────
+    (re.compile(r"(?i)(psexec|wmiexec|dcomexec|atexec|smbexec)",              re.M),     "lateral_movement",      0.9),
+    (re.compile(r"(?i)(net\s+use\s+\\\\|net\s+view\s+\\\\)",      re.M),     "smb_lateral",           0.8),
+    (re.compile(r"(?i)(ssh\s+-o.*StrictHostKeyChecking=no.{0,100}bash)",      re.M),     "ssh_lateral",           0.8),
+    (re.compile(r"(?i)(rpcclient|enum4linux|ldapsearch.*-x.*objectClass)",     re.M),     "ad_recon",              0.75),
+
+    # ── Log tampering / anti-forensics ────────────────────────────────────────
+    (re.compile(r"(?i)(shred\s+(-f|-u)|wipe\s+-rf|secure-delete)",          re.M),     "secure_delete",         0.8),
+    (re.compile(r"(?i)(echo\s+>\s+/var/log|truncate.*--size.*0.*\.log)",   re.M),     "log_tampering",         0.85),
+    (re.compile(r"(?i)(auditctl\s+-D|service.*auditd.*stop|systemctl.*auditd)", re.M),  "audit_disable",         0.9),
+    (re.compile(r"(?i)(history\s+-c|unset\s+HISTFILE|HISTSIZE=0)",          re.M),     "history_erase",         0.7),
+    (re.compile(r"(?i)(HISTFILE=/dev/null|export.*HISTFILE.*null)",            re.M),     "history_disable",       0.75),
+
+    # ── Web application attacks ───────────────────────────────────────────────
+    (re.compile(r"(?i)(<script.*>.*alert\s*\(|onerror\s*=\s*alert)",      re.M),     "xss",                   0.8),
+    (re.compile(r"(?i)(\bUNION\b.{0,20}\bSELECT\b|\bOR\b.{0,10}1=1)", re.M),     "sql_injection",         0.85),
+    (re.compile(r"(?i)(\.\./.{0,10}etc/passwd|\.\.\\windows\\win\.ini)", re.M), "path_traversal",        0.85),
+    (re.compile(r"(?i)(server-side.{0,20}template.{0,20}injection|\{\{.*exec)", re.M), "ssti",                  0.85),
+    (re.compile(r"(?i)(php://filter|php://input|expect://)",                   re.M),     "php_wrapper",           0.9),
+    (re.compile(r"(?i)(file:///etc|dict://|gopher://|sftp://)",               re.M),     "ssrf",                  0.8),
+
+    # ── Persistence mechanisms ────────────────────────────────────────────────
+    (re.compile(r"(?i)(HKLM.*Run|HKCU.*Run).{0,100}(reg\s+add|Set-ItemProperty)", re.M), "registry_persist",    0.85),
+    (re.compile(r"(?i)(schtasks.*\/create|at\s+\d+:\d+.*cmd)",            re.M),     "scheduled_task",        0.8),
+    (re.compile(r"(?i)(systemctl.*enable.{0,30}\.service|init\.d.*update-rc)", re.M),  "service_persist",       0.8),
+    (re.compile(r"(?i)(\.bashrc|\.profile|\.bash_profile).{0,50}wget|curl", re.M),    "shell_profile_hijack",  0.85),
+
+    # ── Process injection / memory manipulation ───────────────────────────────
+    (re.compile(r"(?i)(ptrace\s*\(\s*PTRACE_ATTACH|process_vm_writev)",    re.M),     "ptrace_inject",         0.9),
+    (re.compile(r"(?i)(mmap.*PROT_EXEC.*PROT_WRITE|mprotect.*PROT_EXEC)",     re.M),     "mmap_exec",             0.8),
+    (re.compile(r"(?i)(dlopen.*RTLD_NOW.{0,100}dlsym|LD_PRELOAD)",            re.M),     "so_injection",          0.85),
+]
 ]
 
 # ── Layer 2: Magic bytes — known file signatures ──────────────────────────────

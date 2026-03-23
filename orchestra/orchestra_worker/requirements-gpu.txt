@@ -1,10 +1,42 @@
-# ── GPU Worker (includes torch + local inference) ───────────────────────────
-fastapi==0.111.0
-uvicorn[standard]==0.30.1
-pydantic==2.7.4
+# ── Orchestra Worker GPU — Full Capability ────────────────────────────────────
+# Local inference: LLM (Ollama/vLLM), Image Gen (SDXL), Audio (Whisper), Embeddings
+# Target image size: ~4-5GB (torch+CUDA = ~2.5GB alone)
+#
+# Runtime flags (choose one):
+#   NVIDIA: docker run --gpus all ...
+#   AMD:    docker run --device /dev/kfd --device /dev/dri ...
+#   CPU:    works as fallback automatically
+
+# ── Base worker deps ──────────────────────────────────────────────────────────
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+pydantic==2.11.3
 requests==2.32.3
-psutil==5.9.8
-torch>=2.0.0
-diffusers==0.29.0
-faster-whisper==1.0.3
-transformers==4.42.0
+httpx==0.28.1
+psutil==7.0.0
+tenacity==9.1.2
+structlog==25.1.0
+aiofiles==24.1.0
+PyYAML==6.0.2
+python-dotenv==1.1.0
+numpy==2.2.4
+
+# ── Local LLM (Ollama client) ─────────────────────────────────────────────────
+ollama>=0.5.0
+
+# ── Audio Transcription — Faster Whisper (CPU + GPU) ─────────────────────────
+faster-whisper==1.1.1
+ctranslate2>=4.0.0
+
+# ── Local Image Generation — Stable Diffusion XL ─────────────────────────────
+# Requires ≥8GB VRAM for SDXL, 16GB+ for full quality
+diffusers>=0.33.0
+transformers>=4.51.0
+accelerate>=1.6.0
+
+# ── Embeddings Generation (local, no API cost) ────────────────────────────────
+sentence-transformers>=3.4.1
+
+# ── NOTE: PyTorch with CUDA is installed separately in Dockerfile ─────────────
+# torch==2.5.1+cu121 — NOT listed here to avoid pip conflict with CPU wheels
+# See Dockerfile.worker-gpu for the --index-url trick

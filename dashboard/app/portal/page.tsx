@@ -70,6 +70,7 @@ export default function PortalPage() {
   const [expandedDoc, setExpandedDoc] = useState<string|null>(null);
   const [downloading, setDownloading] = useState<string|null>(null);
   const [dlError,     setDlError]     = useState<string|null>(null);
+  const [binaryStatus, setBinaryStatus] = useState<Record<string,boolean|null>>({});
 
   const getDownloadProduct = (lic: any) =>
     lic.product === "orchestra" ? "orchestra-bundle" : "guardian-bundle";
@@ -94,6 +95,22 @@ export default function PortalPage() {
       }
     } catch { setDlError("Network error. Try again."); }
     finally { setDownloading(null); }
+  }
+
+
+  async function checkBinary(licenseId: string, product: string, type: string, arch: string) {
+    const key = `${licenseId}-${product}-${type}-${arch}`;
+    if (binaryStatus[key] !== undefined) return; // already checked
+    setBinaryStatus(s => ({...s, [key]: null})); // null = loading
+    try {
+      const r = await fetch(
+        `/api/portal/download?license_id=${licenseId}&product=${product}&type=${type}&arch=${arch}`,
+        { method: "HEAD", credentials: "include" }
+      );
+      setBinaryStatus(s => ({...s, [key]: r.ok}));
+    } catch {
+      setBinaryStatus(s => ({...s, [key]: false}));
+    }
   }
 
   const load = useCallback(async () => {
@@ -259,71 +276,149 @@ export default function PortalPage() {
 
                   {/* Download section */}
                   <div style={{padding:"16px 20px"}}>
-                    <div style={{fontWeight:700,fontSize:12,color:"#475569",marginBottom:12,
+                    <div style={{fontWeight:700,fontSize:12,color:"#475569",marginBottom:14,
                       textTransform:"uppercase" as const,letterSpacing:"0.5px"}}>
-                      ⬇ Download — Choose Product & Format
+                      ⬇ Install & Download
                     </div>
 
-                    {/* How it works info */}
-                    <div style={{background:"rgba(2,132,199,.04)",border:"1px solid rgba(2,132,199,.15)",
-                      borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#475569",lineHeight:1.8}}>
-                      {t("portal.how_works") || "How it works: Download ZIP → run install.sh → open http://YOUR_SERVER:8080 → enter license key → all features unlock."}
-                    </div>
+                    {/* ── Binary downloads (if available in R2) ── */}
+                    {(()=>{
+                      const bins = [
+                        {type:"docker",arch:"linux",  icon:"🐳",label:"Docker Linux",   desc:"x86-64"},
+                        {type:"docker",arch:"linux-arm64",icon:"🐳",label:"Docker ARM64", desc:"arm64"},
+                        {type:"exe",  arch:"linux",  icon:"🐧",label:"EXE Linux",      desc:"standalone"},
+                        {type:"exe",  arch:"windows",icon:"🪟",label:"EXE Windows",    desc:"standalone"},
+                      ];
+                      const defProd2 = isG ? "guardian-bundle" : "orchestra-bundle";
+                      const anyKey = `${lic.id}-${defProd2}-docker-linux`;
+                      // Trigger check on first render
+                      if (binaryStatus[anyKey] === undefined) checkBinary(lic.id, defProd2, "docker", "linux");
+                      const hasAny = Object.entries(binaryStatus).some(([k,v])=>k.startsWith(lic.id)&&v===true);
+                      const checking = binaryStatus[anyKey] === null;
 
-                    {/* Component grid */}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-                      {components.map((comp:any)=>{
-                        const dlKey = `${lic.id}-${comp.product}-docker-linux`;
-                        const isLoading = downloading === dlKey;
-                        return (
-                          <div key={comp.product} style={{border:"1.5px solid #e2e8f0",borderRadius:10,padding:"12px 14px"}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                              <div>
-                                <div style={{fontSize:13,fontWeight:700,color:"#0a1628"}}>
-                                  {comp.icon} {comp.label}
-                                </div>
-                                <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>{comp.desc}</div>
-                              </div>
-                            </div>
-                            <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
-                              {/* Docker Linux (primary) */}
-                              <button
-                                onClick={()=>startDownload(lic.id, comp.product, "docker", "linux")}
-                                disabled={!!downloading}
-                                style={{padding:"6px 12px",borderRadius:7,border:"none",fontSize:11,fontWeight:700,
-                                  background:isLoading?"#e2e8f0":`linear-gradient(135deg,${accent},${isG?"#0d9488":"#0284c7"})`,
-                                  color:isLoading?"#94a3b8":"#fff",cursor:downloading?"wait":"pointer"}}>
-                                {isLoading?"⏳ Downloading...":"🐳 Docker Linux"}
-                              </button>
-                              {/* EXE Linux */}
-                              <button
-                                onClick={()=>startDownload(lic.id, comp.product, "exe", "linux")}
-                                disabled={!!downloading}
-                                style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #e2e8f0",fontSize:11,fontWeight:700,
-                                  background:"#f8fafc",color:"#475569",cursor:downloading?"wait":"pointer"}}>
-                                🐧 EXE Linux
-                              </button>
-                              {/* EXE Windows */}
-                              <button
-                                onClick={()=>startDownload(lic.id, comp.product, "exe", "windows")}
-                                disabled={!!downloading}
-                                style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #e2e8f0",fontSize:11,fontWeight:700,
-                                  background:"#f8fafc",color:"#475569",cursor:downloading?"wait":"pointer"}}>
-                                🪟 EXE Windows
-                              </button>
-                            </div>
+                      return hasAny ? (
+                        <div style={{marginBottom:16}}>
+                          <div style={{fontSize:11,color:"#16a34a",fontWeight:700,marginBottom:8,
+                            display:"flex",alignItems:"center",gap:5}}>
+                            ✅ Binary tersedia — download langsung
                           </div>
-                        );
-                      })}
+                          <div style={{display:"flex",gap:8,flexWrap:"wrap" as const}}>
+                            {bins.map(b=>{
+                              const bk=`${lic.id}-${defProd2}-${b.type}-${b.arch}`;
+                              const isLoading=downloading===bk;
+                              if (binaryStatus[bk]===undefined) checkBinary(lic.id,defProd2,b.type,b.arch);
+                              if (binaryStatus[bk]===false) return null;
+                              return (
+                                <button key={bk}
+                                  onClick={()=>startDownload(lic.id,defProd2,b.type,b.arch)}
+                                  disabled={!!downloading}
+                                  style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,fontWeight:700,
+                                    background:isLoading?"#e2e8f0":`linear-gradient(135deg,${accent},${isG?"#0d9488":"#0284c7"})`,
+                                    color:isLoading?"#94a3b8":"#fff",cursor:downloading?"wait":"pointer",
+                                    display:"inline-flex",alignItems:"center",gap:5}}>
+                                  {isLoading?`⏳ Downloading...`:`${b.icon} ${b.label}`}
+                                  <span style={{fontSize:10,opacity:.7}}>{b.desc}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* ── Config files — always available ── */}
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontSize:11,color:"#64748b",fontWeight:700,marginBottom:8,
+                        textTransform:"uppercase" as const,letterSpacing:"0.4px"}}>
+                        📦 Config Files (wajib diisi sebelum run)
+                      </div>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap" as const,marginBottom:10}}>
+                        <a href={`/api/downloads?file=${isG?"guardian":"orchestra"}-compose.yml`}
+                          style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,fontWeight:700,
+                            textDecoration:"none",background:`linear-gradient(135deg,${accent},${isG?"#0d9488":"#0284c7"})`,
+                            color:"#fff",display:"inline-flex",alignItems:"center",gap:5}}>
+                          🐳 docker-compose.yml
+                        </a>
+                        <a href={`/api/downloads?file=${isG?"guardian":"orchestra"}.example.yml`}
+                          style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #e2e8f0",fontSize:12,fontWeight:700,
+                            textDecoration:"none",background:"#f8fafc",color:"#475569",
+                            display:"inline-flex",alignItems:"center",gap:5}}>
+                          ⚙️ {isG?"guardian":"orchestra"}.yml
+                        </a>
+                      </div>
                     </div>
 
-                    {/* Setup steps */}
-                    <div style={{background:"#0f172a",borderRadius:8,padding:"12px 16px",fontSize:11,
-                      color:"#94a3b8",fontFamily:"monospace",lineHeight:2}}>
-                      {t("portal.quick_start_docker").split("\n").map((line:string, i:number) => (
-                        <span key={i}>{line}{i < t("portal.quick_start_docker").split("\n").length-1 && <br/>}</span>
-                      ))}
+                    {/* ── Setup guide lengkap ── */}
+                    <div style={{border:"1.5px solid #e2e8f0",borderRadius:10,overflow:"hidden"}}>
+                      <div style={{background:`linear-gradient(135deg,${accent}18,${isG?"#0d948818":"#0284c718"})`,
+                        padding:"10px 16px",borderBottom:"1px solid #e2e8f0",
+                        display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:16}}>{isG?"🛡️":"⚡"}</span>
+                        <span style={{fontWeight:800,fontSize:13,color:"#0a1628"}}>
+                          Panduan Setup Lengkap — {isG?"Guardian AI":"Orchestra AI"}
+                        </span>
+                      </div>
+                      <div style={{background:"#0f172a",padding:"16px 18px",fontSize:11,
+                        color:"#94a3b8",fontFamily:"monospace",lineHeight:2.2}}>
+
+                        <div style={{color:"#475569",fontSize:10,marginBottom:6,letterSpacing:"1px"}}>STEP 1 — INSTALL DOCKER</div>
+                        <div><span style={{color:"#a3e635"}}>curl -fsSL https://get.docker.com | sh</span></div>
+                        <div style={{color:"#334155",marginBottom:10}}>{"# Atau: https://docs.docker.com/get-docker/"}</div>
+
+                        <div style={{color:"#475569",fontSize:10,marginBottom:6,letterSpacing:"1px"}}>STEP 2 — DOWNLOAD CONFIG</div>
+                        <div><span style={{color:"#22d3ee"}}>wget</span> <span style={{color:"#fbbf24"}}>https://axto.io/api/downloads?file={isG?"guardian":"orchestra"}-compose.yml</span> <span style={{color:"#a3e635"}}>-O docker-compose.yml</span></div>
+                        <div><span style={{color:"#22d3ee"}}>wget</span> <span style={{color:"#fbbf24"}}>https://axto.io/api/downloads?file={isG?"guardian":"orchestra"}.example.yml</span> <span style={{color:"#a3e635"}}>-O {isG?"guardian":"orchestra"}.yml</span></div>
+                        <div style={{color:"#334155",marginBottom:10}}>{"# Atau klik tombol download di atas ↑"}</div>
+
+                        <div style={{color:"#475569",fontSize:10,marginBottom:6,letterSpacing:"1px"}}>STEP 3 — EDIT CONFIG</div>
+                        <div><span style={{color:"#22d3ee"}}>nano</span> {isG?"guardian":"orchestra"}.yml</div>
+                        {isG ? <>
+                          <div style={{color:"#fbbf24"}}>{"  license_key: ""+lic.license_key+"""}</div>
+                          <div style={{color:"#94a3b8"}}>{"  ai_pool:"}</div>
+                          <div style={{color:"#94a3b8"}}>{"    vendors:"}</div>
+                          <div style={{color:"#94a3b8"}}>{"      - provider: openai"}</div>
+                          <div style={{color:"#fbbf24"}}>{"        api_key: "sk-YOUR_OPENAI_KEY""}</div>
+                        </> : <>
+                          <div style={{color:"#fbbf24"}}>{"  license_key: ""+lic.license_key+"""}</div>
+                          <div style={{color:"#fbbf24"}}>{"  console_password: "GANTI_PASSWORD_KUAT""}</div>
+                          <div style={{color:"#fbbf24"}}>{"  worker_token: "GANTI_TOKEN_SECRET""}</div>
+                          <div style={{color:"#94a3b8"}}>{"  ai_pool:"}</div>
+                          <div style={{color:"#94a3b8"}}>{"    vendors:"}</div>
+                          <div style={{color:"#94a3b8"}}>{"      - provider: groq"}</div>
+                          <div style={{color:"#fbbf24"}}>{"        api_key: "gsk-YOUR_GROQ_KEY""}</div>
+                        </>}
+                        <div style={{color:"#334155",marginBottom:10}}>{"# Simpan: Ctrl+O → Enter → Ctrl+X"}</div>
+
+                        <div style={{color:"#475569",fontSize:10,marginBottom:6,letterSpacing:"1px"}}>STEP 4 — PULL IMAGE & RUN</div>
+                        <div><span style={{color:"#a3e635"}}>docker compose pull</span></div>
+                        <div><span style={{color:"#a3e635"}}>docker compose up -d</span></div>
+                        <div style={{color:"#334155",marginBottom:10}}>{"# Image otomatis pull dari GHCR (200MB–2GB, tunggu sesuai koneksi)"}</div>
+
+                        <div style={{color:"#475569",fontSize:10,marginBottom:6,letterSpacing:"1px"}}>STEP 5 — AKTIVASI</div>
+                        <div>Buka browser: <span style={{color:"#fbbf24"}}>http://YOUR_SERVER_IP:8080</span></div>
+                        {isG ? <>
+                          <div style={{color:"#94a3b8"}}>{"→ Wizard aktivasi otomatis muncul"}</div>
+                          <div style={{color:"#94a3b8"}}>{"→ Paste license key → Submit → Dashboard terbuka"}</div>
+                        </> : <>
+                          <div style={{color:"#94a3b8"}}>{"→ Login dengan console_password yang kamu set"}</div>
+                          <div style={{color:"#94a3b8"}}>{"→ Masuk ke Settings → License → paste license key"}</div>
+                        </>}
+
+                        <div style={{marginTop:10,padding:"8px 10px",borderRadius:6,
+                          background:"rgba(251,191,36,.08)",border:"1px solid rgba(251,191,36,.2)"}}>
+                          <span style={{color:"#fbbf24"}}>⚠️ Butuh bantuan?</span>
+                          <span style={{color:"#64748b"}}> Email: hallo@axto.io · Sertakan server OS + error message</span>
+                        </div>
+                      </div>
                     </div>
+
+                    {dlError&&(
+                      <div style={{marginTop:10,padding:"10px 14px",borderRadius:8,
+                        background:"rgba(239,68,68,.07)",border:"1px solid rgba(239,68,68,.2)",
+                        fontSize:12,color:"#dc2626"}}>
+                        ⚠️ {dlError}
+                      </div>
+                    )}
                   </div>
                 </div>;
               })

@@ -5,7 +5,7 @@ LABEL org.opencontainers.image.title="AXTO Orchestra Core"
 LABEL org.opencontainers.image.description="AXTO Orchestra — AI Workload Orchestration Engine"
 LABEL org.opencontainers.image.licenses="Commercial"
 
-# Build tools needed for: psutil, cryptography, uvloop, asyncpg
+# Build tools needed for: psutil, cryptography, uvloop, asyncpg, numpy, scikit-learn
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
     curl procps \
@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install Python deps and strip build tools afterward
 COPY orchestra_core/requirements.txt ./requirements-core.txt
 COPY orchestra_worker/requirements.txt ./requirements-worker.txt
 
@@ -27,7 +26,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY orchestra_core/ ./orchestra_core/
 COPY orchestra_worker/ ./orchestra_worker/
 
-RUN mkdir -p /app/data /app/logs /app/console
+RUN mkdir -p /app/data /app/logs /app/console \
+ && touch /app/orchestra_core/__init__.py \
+ && touch /app/orchestra_worker/__init__.py
 
 WORKDIR /app/orchestra_core
 
