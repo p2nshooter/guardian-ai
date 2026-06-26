@@ -248,6 +248,3 @@ export async function formatLocal(
   if (["JPY","KRW","IDR"].includes(currency)) return `${sym}${val.toLocaleString()}`;
   return `${sym}${(val / 100 * 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
-
-// Re-export fallback rates for static usage (landing page SSR)
-export { FALLBACK_RATES };
