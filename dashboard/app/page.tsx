@@ -518,9 +518,9 @@ export default function HomePage() {
             <span className="gradient-text">You Own & Control</span>
           </h1>
 
-          <p className="animate-fade-up delay-200" style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#475569", lineHeight: 1.7, maxWidth: 680, margin: "0 auto 40px" }}>
-            Defend your servers with AI-powered cybersecurity. Orchestrate AI workloads across GPU clusters.
-            Your API keys, your data, your infrastructure — <strong style={{ color: "#0284c7" }}>AXTO never touches any of it.</strong>
+          <p className="animate-fade-up delay-200" style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#334155", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 40px" }}>
+            Secure your servers and run every AI model in one place — fully self-hosted, so your
+            keys and data <strong style={{ color: "#0284c7" }}>never leave your own infrastructure.</strong>
           </p>
 
           <div className="animate-fade-up delay-300" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 64 }}>
