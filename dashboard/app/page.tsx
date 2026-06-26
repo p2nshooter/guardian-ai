@@ -684,60 +684,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── COMPETITOR COMPARISON TABLE ─────────────────────────────────── */}
+      {/* ── WHY AXTO — value cards (honest, no competitor/margin data) ───── */}
       <section style={{ background: "#f8fafc", padding: "100px 24px", borderTop: "1px solid #e2e8f0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>WHY AXTO</span>
             <h2 className="font-display" style={{ fontSize: "clamp(26px,3.5vw,42px)", fontWeight: 900, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14 }}>
-              One Platform, Fraction of the Cost
+              One Platform. Fully Yours.
             </h2>
-            <p style={{ color: "#475569", fontSize: 16, maxWidth: 600, margin: "0 auto" }}>
-              Enterprise security normally costs $1–5M/year across fragmented vendors. AXTO consolidates every capability into one self-hosted platform.
+            <p style={{ color: "#475569", fontSize: 16, maxWidth: 620, margin: "0 auto" }}>
+              Replace a stack of disconnected tools with a single self-hosted platform — clear, predictable pricing and complete ownership of your data.
             </p>
           </div>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1.5px solid #e2e8f0" }}>
-              <thead>
-                <tr style={{ background: "#0a1628" }}>
-                  <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#94a3b8", width: "26%" }}>Capability</th>
-                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>Traditional Vendor</th>
-                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>Typical Annual Cost</th>
-                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#38bdf8" }}>AXTO Equivalent</th>
-                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#4ade80" }}>AXTO Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { cap: "Endpoint Threat Protection", vendor: "CrowdStrike Falcon", cost: "$150K–500K", axto: "Guardian AI", axcost: "from $990" },
-                  { cap: "AI Orchestration Gateway", vendor: "AWS Bedrock / Azure OpenAI", cost: "$50K–300K+", axto: "Orchestra AI", axcost: "from $34,900" },
-                  { cap: "AI Privacy & PII Redaction", vendor: "BigID / Securiti", cost: "$80K–120K", axto: "Vault AI", axcost: "from $4,990" },
-                  { cap: "AI API Gateway & Billing", vendor: "Kong / AWS API GW", cost: "$30K–150K", axto: "Edge AI", axcost: "from $7,990" },
-                  { cap: "SIEM + SOAR + SOC", vendor: "Splunk / Managed SOC", cost: "$150K–2M", axto: "AXTO SOC", axcost: "from $24,900" },
-                  { cap: "Compliance Automation", vendor: "Drata / Vanta", cost: "$25K–80K", axto: "Compliance AI", axcost: "from $7,990" },
-                  { cap: "OT/ICS Security", vendor: "Claroty / Dragos", cost: "$200K–800K", axto: "Sentinel OT", axcost: "from $12,900" },
-                  { cap: "Antivirus REST API", vendor: "Sophos / ESET cloud", cost: "$10K–50K", axto: "AXTO Antivirus", axcost: "from $2,900" },
-                ].map((row, i) => (
-                  <tr key={row.cap} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderTop: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: "#0a1628" }}>{row.cap}</td>
-                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{row.vendor}</td>
-                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, color: "#dc2626", fontWeight: 700 }}>{row.cost}/yr</td>
-                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#0284c7" }}>{row.axto}</td>
-                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, fontWeight: 900, color: "#16a34a" }}>{row.axcost}/yr</td>
-                  </tr>
-                ))}
-                <tr style={{ background: "#0a1628" }}>
-                  <td style={{ padding: "16px 20px", fontSize: 13, fontWeight: 900, color: "#fff" }}>TOTAL PLATFORM</td>
-                  <td colSpan={2} style={{ padding: "16px 12px", textAlign: "center", fontSize: 14, fontWeight: 900, color: "#fca5a5" }}>$695K – $4M+/year</td>
-                  <td style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#38bdf8" }}>Full Platform Bundle</td>
-                  <td style={{ padding: "16px 12px", textAlign: "center", fontSize: 14, fontWeight: 900, color: "#4ade80" }}>from $130,400/yr</td>
-                </tr>
-              </tbody>
-            </table>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 20 }}>
+            {[
+              { icon: "🏠", title: "100% Self-Hosted", body: "Runs entirely on your own servers. Your data never leaves your infrastructure — no third-party custody." },
+              { icon: "🧩", title: "One Unified Platform", body: "Endpoint security, AI orchestration, privacy and compliance — consolidated into a single platform instead of a dozen separate tools." },
+              { icon: "💎", title: "Transparent Pricing", body: "Straightforward annual or lifetime licenses. No per-request cloud fees, no hidden usage bills, no surprises." },
+              { icon: "🔓", title: "No Lock-In", body: "Open standards and OpenAI-compatible APIs. Keep full ownership of your data and leave whenever you choose." },
+            ].map((c) => (
+              <div key={c.title} style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 16, padding: "28px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div style={{ fontSize: 28, marginBottom: 14 }}>{c.icon}</div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>{c.title}</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6 }}>{c.body}</p>
+              </div>
+            ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "#94a3b8" }}>
-            All AXTO products are self-hosted — zero per-request cloud fees, zero data custody, zero lock-in.{" "}
-            <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>Contact us for custom enterprise pricing →</a>
+          <p style={{ textAlign: "center", marginTop: 28, fontSize: 13, color: "#64748b" }}>
+            Self-hosted by design — zero per-request cloud fees, zero data custody, zero lock-in.{" "}
+            <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>Talk to us about enterprise plans →</a>
           </p>
         </div>
       </section>
@@ -1119,7 +1094,7 @@ export default function HomePage() {
               Your AI Must Never See<br /><span style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Sensitive Data</span>
             </h2>
             <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
-              Banks, hospitals, and law firms cannot send raw PII, PHI, or financial data to OpenAI or Claude. Vault intercepts every AI API call, automatically redacts sensitive entities, and re-injects original values after the response — invisible to the AI, invisible to your users. EU AI Act, HIPAA, PCI-DSS and GDPR compliant by design. The alternative is a $300K fine or a breach.
+              Banks, hospitals, and law firms cannot send raw PII, PHI, or financial data to OpenAI or Claude. Vault intercepts every AI API call, automatically redacts sensitive entities, and re-injects original values after the response — invisible to the AI, invisible to your users. EU AI Act, HIPAA, PCI-DSS and GDPR compliant by design — so your teams can safely adopt AI without exposing regulated data.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
               {["BigID: $80K+/yr", "Securiti: $120K+/yr", "Privacera: $100K+/yr"].map(c => (
@@ -1213,14 +1188,14 @@ export default function HomePage() {
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <span style={{ display: "inline-block", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#dc2626", fontWeight: 700, marginBottom: 16 }}>🛡️ AXTO SOC — AI SECURITY OPERATIONS CENTER</span>
             <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
-              Fortune 500-Grade SOC.<br /><span style={{ background: "linear-gradient(135deg,#dc2626,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Without the $2M Annual Bill.</span>
+              Enterprise-Grade SOC.<br /><span style={{ background: "linear-gradient(135deg,#dc2626,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Self-Hosted and Simple.</span>
             </h2>
             <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
-              Enterprise companies pay $500K–2M/year for managed SOC services. AXTO SOC delivers the same capability: full SIEM aggregation from every data source, SOAR automation that responds in under 30 seconds, AI-assisted threat hunting, 5M+ IOC threat intelligence, incident management, and executive reporting — all on your infrastructure. Your logs never leave your network.
+              A complete security operations center on your own infrastructure: full SIEM aggregation from every data source, SOAR automation that responds in under 30 seconds, AI-assisted threat hunting, real-time threat intelligence, incident management, and executive reporting. Your logs never leave your network.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-              {["Splunk SIEM: $150K+/yr", "CrowdStrike: $200K+/yr", "Managed SOC: $500K+/yr"].map(c => (
-                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)", fontSize: 12, color: "#dc2626", fontWeight: 600 }}>vs. {c}</div>
+              {["Real-time SIEM aggregation", "Automated SOAR response", "Compliance-ready reporting"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)", fontSize: 12, color: "#dc2626", fontWeight: 600 }}>{c}</div>
               ))}
             </div>
           </div>
@@ -1432,7 +1407,7 @@ export default function HomePage() {
               Your Factory Floor Is<br /><span style={{ background: "linear-gradient(135deg,#7c3aed,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>the #1 Unprotected Attack Surface</span>
             </h2>
             <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
-              The average manufacturing plant has 3,000+ connected OT devices — PLCs, SCADA, HMIs, sensors — and 70% have never been inventoried. A single breach costs $5M+ in downtime. Claroty and Dragos charge $100K–500K/yr for OT visibility. AXTO Sentinel delivers the same: device discovery, 15+ industrial protocol detection, real-time risk scoring, CVE tracking, and IEC 62443 compliance reporting — at a fraction of the cost.
+              The average manufacturing plant has 3,000+ connected OT devices — PLCs, SCADA, HMIs, sensors — and most have never been inventoried. AXTO Sentinel brings them into full view: device discovery, 15+ industrial protocol detection, real-time risk scoring, CVE tracking, and IEC 62443 compliance reporting — all self-hosted.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
               {["Claroty: $100K+/yr", "Dragos: $150K+/yr", "Nozomi: $80K+/yr"].map(c => (

@@ -23,13 +23,13 @@ export const DISCLAIMER: Record<DisclaimerLang, { title: string; intro: string; 
       "You are responsible for every decision. All decisions, actions, configurations and outcomes arising from your use of the Software are made by you, at your sole discretion and risk. You remain fully responsible for verifying any output before relying on it.",
       "Not professional advice. The Software does not provide legal, security, medical, financial, regulatory or other professional advice. Nothing it produces creates any professional relationship. Always seek qualified, independent professional advice before acting.",
       "Provided “as is”. The Software is provided “as is” and “as available”, without warranties of any kind, whether express or implied, including but not limited to merchantability, fitness for a particular purpose, accuracy, availability, or non-infringement.",
-      "Limitation of liability. To the maximum extent permitted by applicable law, AXTO (axto.io) and Yusron Efendi shall not be liable for any direct, indirect, incidental, special, consequential, exemplary or punitive damages, nor for any loss of profit, data, goodwill or business, arising out of or relating to your use of, or inability to use, the Software — even if advised of the possibility of such damages.",
-      "No liability claims. To the fullest extent permitted by law, you agree not to bring, and you waive and release, any claim, demand, suit or cause of action against AXTO (axto.io) and Yusron Efendi arising from or relating to the Software or its outputs.",
+      "Limitation of liability. To the maximum extent permitted by applicable law, AXTO (axto.io) shall not be liable for any direct, indirect, incidental, special, consequential, exemplary or punitive damages, nor for any loss of profit, data, goodwill or business, arising out of or relating to your use of, or inability to use, the Software — even if advised of the possibility of such damages.",
+      "No liability claims. To the fullest extent permitted by law, you agree not to bring, and you waive and release, any claim, demand, suit or cause of action against AXTO (axto.io) arising from or relating to the Software or its outputs.",
       "Your compliance obligations. You are solely responsible for ensuring that your use of the Software complies with all applicable laws, regulations, licenses and third-party rights in your jurisdiction, including data-protection and export-control rules.",
-      "Indemnification. You agree to indemnify and hold harmless AXTO (axto.io) and Yusron Efendi from any claim, loss, liability or expense arising from your use of the Software or your breach of these terms.",
+      "Indemnification. You agree to indemnify and hold harmless AXTO (axto.io) from any claim, loss, liability or expense arising from your use of the Software or your breach of these terms.",
     ],
     agree:
-      "I have read and understood this disclaimer. I accept full responsibility for my use of the Software and agree that AXTO (axto.io) and Yusron Efendi bear no liability for my decisions or outcomes.",
+      "I have read and understood this disclaimer. I accept full responsibility for my use of the Software and agree that AXTO (axto.io) bear no liability for my decisions or outcomes.",
   },
   id: {
     title: "Ketentuan Penggunaan & Penafian Tanggung Jawab",
@@ -40,21 +40,21 @@ export const DISCLAIMER: Record<DisclaimerLang, { title: string; intro: string; 
       "Anda bertanggung jawab atas setiap keputusan. Seluruh keputusan, tindakan, konfigurasi, dan hasil yang timbul dari penggunaan Perangkat Lunak sepenuhnya menjadi kewenangan dan risiko Anda. Anda wajib memverifikasi setiap keluaran sebelum mengandalkannya.",
       "Bukan nasihat profesional. Perangkat Lunak tidak memberikan nasihat hukum, keamanan, medis, finansial, regulasi, atau profesional lainnya. Tidak ada keluaran yang menciptakan hubungan profesional. Selalu mintalah nasihat profesional independen yang berkualifikasi sebelum bertindak.",
       "Disediakan “sebagaimana adanya”. Perangkat Lunak disediakan “sebagaimana adanya” dan “sebagaimana tersedia”, tanpa jaminan apa pun, baik tersurat maupun tersirat, termasuk namun tidak terbatas pada kelayakan jual, kesesuaian untuk tujuan tertentu, keakuratan, ketersediaan, atau non-pelanggaran.",
-      "Pembatasan tanggung jawab. Sejauh diizinkan oleh hukum yang berlaku, AXTO (axto.io) dan Yusron Efendi tidak bertanggung jawab atas segala kerugian langsung, tidak langsung, insidental, khusus, konsekuensial, maupun hukuman, termasuk kehilangan keuntungan, data, reputasi, atau bisnis, yang timbul dari atau terkait penggunaan — atau ketidakmampuan menggunakan — Perangkat Lunak.",
-      "Tidak ada tuntutan. Sejauh diizinkan hukum, Anda setuju untuk tidak mengajukan, serta melepaskan dan membebaskan, segala klaim, tuntutan, gugatan, atau dasar tuntutan terhadap AXTO (axto.io) dan Yusron Efendi yang timbul dari atau terkait Perangkat Lunak atau keluarannya.",
+      "Pembatasan tanggung jawab. Sejauh diizinkan oleh hukum yang berlaku, AXTO (axto.io) tidak bertanggung jawab atas segala kerugian langsung, tidak langsung, insidental, khusus, konsekuensial, maupun hukuman, termasuk kehilangan keuntungan, data, reputasi, atau bisnis, yang timbul dari atau terkait penggunaan — atau ketidakmampuan menggunakan — Perangkat Lunak.",
+      "Tidak ada tuntutan. Sejauh diizinkan hukum, Anda setuju untuk tidak mengajukan, serta melepaskan dan membebaskan, segala klaim, tuntutan, gugatan, atau dasar tuntutan terhadap AXTO (axto.io) yang timbul dari atau terkait Perangkat Lunak atau keluarannya.",
       "Kewajiban kepatuhan Anda. Anda sepenuhnya bertanggung jawab memastikan penggunaan Perangkat Lunak mematuhi seluruh hukum, peraturan, lisensi, dan hak pihak ketiga yang berlaku di yurisdiksi Anda, termasuk perlindungan data dan pengendalian ekspor.",
-      "Ganti rugi. Anda setuju untuk mengganti rugi dan membebaskan AXTO (axto.io) dan Yusron Efendi dari klaim, kerugian, tanggung jawab, atau biaya yang timbul dari penggunaan Perangkat Lunak atau pelanggaran Anda atas ketentuan ini.",
+      "Ganti rugi. Anda setuju untuk mengganti rugi dan membebaskan AXTO (axto.io) dari klaim, kerugian, tanggung jawab, atau biaya yang timbul dari penggunaan Perangkat Lunak atau pelanggaran Anda atas ketentuan ini.",
     ],
     agree:
-      "Saya telah membaca dan memahami penafian ini. Saya menerima tanggung jawab penuh atas penggunaan Perangkat Lunak dan setuju bahwa AXTO (axto.io) dan Yusron Efendi tidak menanggung tanggung jawab apa pun atas keputusan atau hasil saya.",
+      "Saya telah membaca dan memahami penafian ini. Saya menerima tanggung jawab penuh atas penggunaan Perangkat Lunak dan setuju bahwa AXTO (axto.io) tidak menanggung tanggung jawab apa pun atas keputusan atau hasil saya.",
   },
 };
 
 // Compact one-paragraph version for embedding in guides / app footers / invoices.
 export function disclaimerShort(lang: DisclaimerLang = "en"): string {
   return lang === "id"
-    ? "Penafian: Perangkat Lunak ini hanya alat bantu; semua keputusan dan tanggung jawab ada pada pengguna. Disediakan “sebagaimana adanya” tanpa jaminan. Sejauh diizinkan hukum, AXTO (axto.io) dan Yusron Efendi tidak bertanggung jawab atas kerugian apa pun yang timbul dari penggunaannya."
-    : "Disclaimer: This Software is an assistive tool only; all decisions and responsibility rest with the user. It is provided “as is” without warranty. To the maximum extent permitted by law, AXTO (axto.io) and Yusron Efendi accept no liability for any loss arising from its use.";
+    ? "Penafian: Perangkat Lunak ini hanya alat bantu; semua keputusan dan tanggung jawab ada pada pengguna. Disediakan “sebagaimana adanya” tanpa jaminan. Sejauh diizinkan hukum, AXTO (axto.io) tidak bertanggung jawab atas kerugian apa pun yang timbul dari penggunaannya."
+    : "Disclaimer: This Software is an assistive tool only; all decisions and responsibility rest with the user. It is provided “as is” without warranty. To the maximum extent permitted by law, AXTO (axto.io) accept no liability for any loss arising from its use.";
 }
 
 export function renderDisclaimerText(lang: DisclaimerLang = "en"): string {

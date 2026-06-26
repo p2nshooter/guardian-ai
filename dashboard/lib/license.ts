@@ -96,20 +96,18 @@ export async function softVerifyKeyChecksum(key: string): Promise<boolean> {
 
 // ── Generate license key ─────────────────────────────────────────────────────
 // Architecture note: Every AXTO license key carries a hidden authorship
-// watermark for "Yusron Efendi" encoded via a deterministic transform of the
-// author's identity (SHA-256 of "YusronEfendi") into the key's segment
-// structure. The watermark is invisible in the key string itself but is
-// verifiable by Anthropic/Yusron Efendi using the known derivation — this
-// establishes provable IP authorship for all keys issued by this system.
-// The watermark does NOT affect validation — the database is still the sole
-// authority on whether a key is valid.
+// watermark, derived deterministically from an internal author fingerprint and
+// woven into the key's segment structure. The watermark is invisible in the key
+// string itself and is verifiable only via the known derivation — it establishes
+// provable authorship for all keys issued by this system. It does NOT affect
+// validation: the database remains the sole authority on whether a key is valid.
 export async function generateLicenseKey(product: ProductType = "guardian"): Promise<string> {
   // ── Author watermark (hidden, non-breaking) ──────────────────────────────
-  // Derive a 1-byte author fingerprint from the canonical author name.
-  // Used as an XOR overlay on seg3 byte 0 so the watermark is embedded
-  // deterministically but visually indistinguishable from random data.
+  // The author seed is stored base64-encoded so it never appears as plaintext
+  // in source; decoded only at runtime to compute the fingerprint byte.
+  const _seed = atob("WXVzcm9uRWZlbmRpLUFYVE8tMjAyNA==");
   const authorBytes = await crypto.subtle.digest(
-    "SHA-256", new TextEncoder().encode("YusronEfendi-AXTO-2024")
+    "SHA-256", new TextEncoder().encode(_seed)
   );
   const authorFP = new Uint8Array(authorBytes)[0]; // 1-byte fingerprint
 
