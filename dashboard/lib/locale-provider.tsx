@@ -295,16 +295,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     // 2. Auto-detect from browser language + CF country
     const detectAuto = async () => {
       try {
-        // Get browser language first (fast, no network)
-        const browserLang = navigator.language?.split("-")[0]?.toLowerCase() as Locale;
-        const validLangs = SUPPORTED_LOCALES.map(x => x.code);
-        if (browserLang && (validLangs as string[]).includes(browserLang)) {
-          setLocaleState(browserLang);
-          if (typeof document !== "undefined") {
-            document.documentElement.lang = browserLang;
-            document.documentElement.dir = RTL_LOCALES.has(browserLang) ? "rtl" : "ltr";
-          }
-        }
+        // NOTE: language is intentionally NOT auto-switched. The site defaults
+        // to English for a fully consistent experience; users choose their own
+        // language via the selector. Only currency/country are auto-detected
+        // below (for localized pricing).
 
         // Get CF country + FX rates (one request)
         const r = await fetch("/api/fx-rates");
@@ -315,15 +309,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
         if (cfCountry) {
           setCountry(cfCountry);
-          const detectedLocale = COUNTRY_TO_LOCALE[cfCountry];
-          if (detectedLocale) {
-            setLocaleState(detectedLocale);
-            if (typeof document !== "undefined") {
-              document.documentElement.lang = detectedLocale;
-              document.documentElement.dir = RTL_LOCALES.has(detectedLocale) ? "rtl" : "ltr";
-            }
-          }
-          // Set currency from country
+          // Language stays user-controlled (default English). Set currency from country.
           const detectedCurrency = COUNTRY_CURRENCY[cfCountry] || "USD";
           if (detectedCurrency !== "USD") {
             // Try to get rate from live data, fallback to 1
