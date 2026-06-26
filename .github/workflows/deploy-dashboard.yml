@@ -58,11 +58,13 @@ jobs:
           NODE_ENV: production
 
       - name: Deploy
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ec77c7422c83e094aa03df0b3f94e488
-          projectName: axto-dashboard
-          directory: dashboard/.vercel/output/static
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          wranglerVersion: "3"
+        working-directory: dashboard
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
+        # wrangler pages deploy creates the project automatically if it does not
+        # exist yet, and uses the same token (Pages:Edit required).
+        run: |
+          npx --yes wrangler@3 pages project create axto-dashboard --production-branch main 2>/dev/null || true
+          npx --yes wrangler@3 pages deploy .vercel/output/static \
+            --project-name axto-dashboard --branch main --commit-dirty=true
