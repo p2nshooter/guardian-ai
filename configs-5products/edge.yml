@@ -1,0 +1,25 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+edge:
+  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  db_path: "/edge/data/edge.db"
+  firewall:
+    block_injections: true
+    block_jailbreaks: true
+  cache:
+    enabled: true
+    ttl_seconds: 3600
+  circuit_breaker_threshold: 5
+  circuit_breaker_recovery_sec: 60
+ai_pool:
+  routing_mode: "cost_first"
+  vendors:
+    - provider: openai
+      api_key: "sk-GANTI-INI"
+      model: "gpt-4o-mini"
+customers: []

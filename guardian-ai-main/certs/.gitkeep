@@ -1,9 +1,0 @@
-# mTLS certificates go here (Tier 2)
-# Generate: python -m src.mtls gen-ca
-#           python -m src.mtls gen-node node-1
-# Files expected:
-#   ca.crt         — CA certificate (shared)
-#   node-1/node.crt — node certificate
-#   node-1/node.key — node private key
-#   node-1/ca.crt   — CA cert copy for node
-# NEVER commit .key files to git

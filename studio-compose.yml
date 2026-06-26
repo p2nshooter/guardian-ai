@@ -1,0 +1,51 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# ============================================================
+# AXTO Studio — Self-Hosted AI & GPU Pool Platform
+#
+# CARA PAKAI / HOW TO USE:
+#   1. Edit studio.yml → set license_key + AI provider keys
+#   2. docker compose -f studio-compose.yml up -d
+#   3. Open: http://YOUR_SERVER:8090
+#
+# Your data stays on YOUR server. AXTO never sees your prompts.
+# Artifacts auto-delete after 14 days.
+#
+# Portal:  https://axto.io/portal
+# Docs:    https://axto.io/guide
+# Support: hallo@axto.io
+# ============================================================
+
+services:
+
+  studio-core:
+    image: registry.gitlab.com/axto-platform/studio/studio-engine:latest
+    container_name: axto-studio
+    restart: unless-stopped
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8080
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./studio.yml:/studio/config/studio.yml:ro
+      - studio-data:/studio/data
+      - studio-logs:/studio/logs
+      - studio-artifacts:/studio/artifacts
+    environment:
+      - STUDIO_CONFIG=/studio/config/studio.yml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  studio-data:
+  studio-logs:
+  studio-artifacts:

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration | Production SQLite Database (WAL Mode)
 Replaces all JSON file-based storage with a single thread-safe SQLite DB.
@@ -24,7 +30,7 @@ log = logging.getLogger("orchestra.db")
 
 DATA_DIR       = Path(os.environ.get("DATA_DIR", "./data"))
 DB_PATH        = DATA_DIR / "orchestra.db"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;
@@ -103,6 +109,7 @@ CREATE TABLE IF NOT EXISTS workers (
     priority       TEXT    DEFAULT 'normal',
     gpu_vram_gb    REAL    DEFAULT 0,
     base_url       TEXT    DEFAULT '',
+    worker_url     TEXT    DEFAULT '',
     label          TEXT    DEFAULT '',
     status         TEXT    DEFAULT 'active',
     load_pct       INTEGER DEFAULT 0,
@@ -310,6 +317,13 @@ def init_db() -> None:
     current = (row or {}).get("v") or 0
     if current < SCHEMA_VERSION:
         with _write_tx() as c:
+            # v4: add worker_url column for GPU worker self-endpoint registration
+            if current < 4:
+                try:
+                    c.execute("ALTER TABLE workers ADD COLUMN worker_url TEXT DEFAULT ''")
+                    log.info("DB migration v4: added workers.worker_url")
+                except Exception:
+                    pass  # column may already exist on fresh install from new SCHEMA
             c.execute("INSERT INTO _schema_version(version) VALUES(?)", (SCHEMA_VERSION,))
         log.info(f"Orchestra DB schema v{SCHEMA_VERSION} applied")
     with _write_tx() as c:
@@ -467,11 +481,12 @@ def cache_evict_expired() -> int:
 
 def upsert_worker(w: Dict) -> None:
     ex("""INSERT INTO workers(id,node_id,worker_type,provider_id,model,concurrency,timeout_sec,
-       retry_count,priority,gpu_vram_gb,base_url,label,status)
+       retry_count,priority,gpu_vram_gb,base_url,worker_url,label,status)
        VALUES(:id,:node_id,:worker_type,:provider_id,:model,:concurrency,:timeout_sec,
-       :retry_count,:priority,:gpu_vram_gb,:base_url,:label,:status)
+       :retry_count,:priority,:gpu_vram_gb,:base_url,:worker_url,:label,:status)
        ON CONFLICT(id) DO UPDATE SET status=excluded.status,provider_id=excluded.provider_id,
-       model=excluded.model,base_url=excluded.base_url,last_heartbeat=unixepoch('now','subsec')""",
+       model=excluded.model,base_url=excluded.base_url,worker_url=excluded.worker_url,
+       last_heartbeat=unixepoch('now','subsec')""",
        w)
 
 

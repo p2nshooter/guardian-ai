@@ -1,388 +1,171 @@
-# AXTO Auto-Build Pipeline — builds ALL products on push to main or version tag
-# License NOT embedded — client enters key at first-run wizard
-name: Auto Build All Products
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# AXTO Platform — Auto Build ALL Docker Images → CF R2
+#
+# Smart rebuild: Only builds products whose source directory changed.
+# Use workflow_dispatch with force_all=true to rebuild everything.
+#
+# Products (10 images, GPU worker separate):
+#   Guardian: core, node, antivirus | Orchestra: core, worker-cpu
+#   Vault | Edge | SOC | Compliance | Sentinel | Studio
+#
+# Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY, CF_R2_ACCOUNT_ID, CF_R2_BUCKET
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: Auto Build All Images
 
 on:
   push:
     branches: [main]
-    tags: ["v*.*.*"]
+    paths: ['engine/**','antivirus/**','orchestra/**','vault/**','edge/**','soc/**','compliance/**','sentinel/**','studio/**','.github/workflows/auto-build-all.yml']
   workflow_dispatch:
     inputs:
-      channel:
-        description: "Release channel"
-        default: "latest"
-        required: false
+      force_all: { description: 'Force rebuild ALL', required: false, default: 'false' }
 
 concurrency:
   group: auto-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  setup:
-    name: Setup
+  detect-changes:
+    name: "🔍 Detect Changes"
     runs-on: ubuntu-latest
     outputs:
-      channel: ${{ steps.ch.outputs.channel }}
-      tag: ${{ steps.ch.outputs.tag }}
-    steps:
-      - id: ch
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            echo "channel=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          else
-            SHA="${{ github.sha }}"
-            echo "channel=latest" >> $GITHUB_OUTPUT
-            echo "tag=latest-${SHA:0:7}" >> $GITHUB_OUTPUT
-          fi
-
-  docker-guardian:
-    name: Docker Guardian
-    runs-on: ubuntu-latest
-    needs: setup
+      guardian: ${{ steps.f.outputs.guardian }}
+      antivirus: ${{ steps.f.outputs.antivirus }}
+      orchestra: ${{ steps.f.outputs.orchestra }}
+      vault: ${{ steps.f.outputs.vault }}
+      edge: ${{ steps.f.outputs.edge }}
+      soc: ${{ steps.f.outputs.soc }}
+      compliance: ${{ steps.f.outputs.compliance }}
+      sentinel: ${{ steps.f.outputs.sentinel }}
+      studio: ${{ steps.f.outputs.studio }}
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build guardian-core
-        uses: docker/build-push-action@v5
+      - uses: dorny/paths-filter@v3
+        id: f
         with:
-          context: ./engine
-          file: ./engine/Dockerfile
-          push: false
-          load: true
-          tags: axto/guardian-core:${{ needs.setup.outputs.tag }}
-          cache-from: type=gha,scope=guardian-core
-          cache-to: type=gha,mode=max,scope=guardian-core
+          filters: |
+            guardian: ['engine/**']
+            antivirus: ['antivirus/**']
+            orchestra: ['orchestra/**']
+            vault: ['vault/**']
+            edge: ['edge/**']
+            soc: ['soc/**']
+            compliance: ['compliance/**']
+            sentinel: ['sentinel/**']
+            studio: ['studio/**']
 
-      - name: Build guardian-node
-        uses: docker/build-push-action@v5
-        with:
-          context: ./engine
-          file: ./engine/Dockerfile.node
-          push: false
-          load: true
-          tags: axto/guardian-node:${{ needs.setup.outputs.tag }}
-          cache-from: type=gha,scope=guardian-node
-          cache-to: type=gha,mode=max,scope=guardian-node
+  build-guardian-core:
+    name: "🛡️ Guardian Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.guardian == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./engine, dockerfile: ./engine/Dockerfile, image_name: guardian-core }
+    secrets: inherit
 
-      - name: Pull ClamAV
-        run: |
-          docker pull clamav/clamav:stable_base
-          docker tag clamav/clamav:stable_base axto/guardian-clamav:${{ needs.setup.outputs.tag }}
+  build-guardian-node:
+    name: "🤖 Guardian Node"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.guardian == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./engine, dockerfile: ./engine/Dockerfile.node, image_name: guardian-node }
+    secrets: inherit
 
-      - name: Package Guardian variants
-        run: |
-          TAG="${{ needs.setup.outputs.tag }}"
-          mkdir -p dist releases
+  build-guardian-antivirus:
+    name: "🦠 Antivirus"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.antivirus == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./antivirus, dockerfile: ./antivirus/Dockerfile, image_name: guardian-antivirus }
+    secrets: inherit
 
-          save() {
-            docker save "$1" | gzip > "dist/${2}.tar.gz"
-            echo "  $2: $(ls -lh dist/${2}.tar.gz | awk '{print $5}')"
-          }
-          save axto/guardian-core:${TAG}   guardian-core
-          save axto/guardian-node:${TAG}   guardian-node
-          save axto/guardian-clamav:${TAG} guardian-clamav
+  build-orchestra-core:
+    name: "⚡ Orchestra Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.orchestra == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./orchestra, dockerfile: ./orchestra/Dockerfile, image_name: orchestra-core }
+    secrets: inherit
 
-          pkg() {
-            local name=$1; shift
-            mkdir -p "pkg/${name}"
-            for img in "$@"; do cp "dist/${img}.tar.gz" "pkg/${name}/"; done
-            cp scripts/install-docker.sh "pkg/${name}/install.sh"
-            chmod +x "pkg/${name}/install.sh"
-            cd pkg && zip -r "../releases/${name}-docker-linux.zip" "${name}/" && cd ..
-            echo "  ${name}: $(ls -lh releases/${name}-docker-linux.zip | awk '{print $5}')"
-          }
+  build-orchestra-worker-cpu:
+    name: "💻 Orchestra CPU Worker"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.orchestra == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./orchestra, dockerfile: ./orchestra/Dockerfile.worker-cpu, image_name: orchestra-worker-cpu }
+    secrets: inherit
 
-          pkg guardian-core       guardian-core
-          pkg guardian-node       guardian-node
-          pkg guardian-clamav     guardian-clamav
-          pkg guardian-core-node  guardian-core guardian-node
-          pkg guardian-bundle     guardian-core guardian-node guardian-clamav
-          ls -lh releases/
+  build-vault-core:
+    name: "🔐 Vault Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.vault == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./vault, dockerfile: ./vault/Dockerfile, image_name: vault-core }
+    secrets: inherit
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: guardian-docker
-          path: releases/guardian-*.zip
-          retention-days: 3
+  build-edge-core:
+    name: "🌐 Edge Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.edge == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./edge, dockerfile: ./edge/Dockerfile, image_name: edge-core }
+    secrets: inherit
 
-  docker-orchestra:
-    name: Docker Orchestra
+  build-soc-core:
+    name: "🎯 SOC Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.soc == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./soc, dockerfile: ./soc/Dockerfile, image_name: soc-core }
+    secrets: inherit
+
+  build-compliance-core:
+    name: "📋 Compliance Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.compliance == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./compliance, dockerfile: ./compliance/Dockerfile, image_name: compliance-core }
+    secrets: inherit
+
+  build-sentinel-core:
+    name: "🏭 Sentinel Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.sentinel == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./sentinel, dockerfile: ./sentinel/Dockerfile, image_name: sentinel-core }
+    secrets: inherit
+
+  build-studio-core:
+    name: "🧠 Studio Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.studio == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./studio, dockerfile: ./studio/Dockerfile, image_name: studio-core }
+    secrets: inherit
+
+  summary:
+    name: "📊 Summary"
+    needs: [build-guardian-core,build-guardian-node,build-guardian-antivirus,build-orchestra-core,build-orchestra-worker-cpu,build-vault-core,build-edge-core,build-soc-core,build-compliance-core,build-sentinel-core,build-studio-core]
     runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build orchestra-core
-        uses: docker/build-push-action@v5
-        with:
-          context: ./orchestra
-          file: ./orchestra/Dockerfile
-          push: false
-          load: true
-          tags: axto/orchestra-core:${{ needs.setup.outputs.tag }}
-          cache-from: type=gha,scope=orchestra-core
-          cache-to: type=gha,mode=max,scope=orchestra-core
-      # orchestra-worker-cpu SKIPPED: PyTorch too large for GH Actions
-
-
-      - name: Package Orchestra variants
-        run: |
-          TAG="${{ needs.setup.outputs.tag }}"
-          mkdir -p dist releases
-
-          save() {
-            docker save "$1" | gzip > "dist/${2}.tar.gz"
-            echo "  $2: $(ls -lh dist/${2}.tar.gz | awk '{print $5}')"
-          }
-          save axto/orchestra-core:${TAG}       orchestra-core
-          save axto/orchestra-worker-cpu:${TAG} orchestra-worker-cpu
-          save axto/orchestra-worker-gpu:${TAG} orchestra-worker-gpu
-
-          pkg() {
-            local name=$1; shift
-            mkdir -p "pkg/${name}"
-            for img in "$@"; do cp "dist/${img}.tar.gz" "pkg/${name}/"; done
-            cp scripts/install-docker.sh "pkg/${name}/install.sh"
-            chmod +x "pkg/${name}/install.sh"
-            cd pkg && zip -r "../releases/${name}-docker-linux.zip" "${name}/" && cd ..
-            echo "  ${name}: $(ls -lh releases/${name}-docker-linux.zip | awk '{print $5}')"
-          }
-
-          pkg orchestra-core       orchestra-core
-          pkg orchestra-worker-cpu orchestra-worker-cpu
-          pkg orchestra-worker-gpu orchestra-worker-gpu
-          pkg orchestra-core-cpu   orchestra-core orchestra-worker-cpu
-          pkg orchestra-bundle     orchestra-core orchestra-worker-cpu orchestra-worker-gpu
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: orchestra-docker
-          path: releases/orchestra-*.zip
-          retention-days: 3
-
-  full-bundle:
-    name: Full Bundle
-    runs-on: ubuntu-latest
-    needs: [setup, docker-guardian, docker-orchestra]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          path: zips/
-      - name: Package full-bundle
-        run: |
-          mkdir -p bundle/full-bundle releases
-          for z in zips/guardian-docker/guardian-bundle-docker-linux.zip zips/orchestra-docker/orchestra-bundle-docker-linux.zip; do
-            [ -f "$z" ] && unzip -o "$z" -d tmp-unzip/ 2>/dev/null || true
-          done
-          find tmp-unzip -name "*.tar.gz" -exec cp {} bundle/full-bundle/ \; 2>/dev/null || true
-          cp scripts/install-docker.sh bundle/full-bundle/install.sh
-          chmod +x bundle/full-bundle/install.sh
-          cd bundle && zip -r "../releases/full-bundle-docker-linux.zip" full-bundle/ && cd ..
-          echo "full-bundle: $(ls -lh releases/full-bundle-docker-linux.zip | awk '{print $5}')"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: full-bundle-docker
-          path: releases/full-bundle-docker-linux.zip
-          retention-days: 3
-
-  exe-linux:
-    name: EXE Linux
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install system deps
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends gcc g++ python3-dev libssl-dev libffi-dev libpq-dev upx-ucl
-          pip install --quiet pyinstaller==6.9.0
-          pip install --quiet -r engine/requirements.txt || true
-          pip install --quiet -r orchestra/orchestra_core/requirements.txt || true
-          pip install --quiet -r orchestra/orchestra_worker/requirements.txt || true
-
-      - name: Build Linux binaries
-        run: |
-          mkdir -p dist releases
-
-          build() {
-            local name=$1 ctx=$2 entry=$3
-            echo "Building ${name}..."
-            pyinstaller --onefile --name "${name}" --distpath "dist" --workpath "tmp-pyi/${name}" --specpath "tmp-spec" \
-              --hidden-import uvicorn.logging \
-              --hidden-import uvicorn.loops.auto \
-              --hidden-import uvicorn.protocols.http.auto \
-              --hidden-import uvicorn.lifespan.on \
-              --collect-all structlog --collect-all pydantic \
-              --strip "${ctx}/${entry}" 2>&1 | tail -3
-          }
-
-          build guardian-core  engine    src/api.py
-          build guardian-node  engine    src/__main__.py
-          build orchestra-core orchestra orchestra_core/main.py
-          build orchestra-worker-cpu orchestra orchestra_worker/worker_cpu.py 2>/dev/null || true
-          build orchestra-worker-gpu orchestra orchestra_worker/worker_gpu.py 2>/dev/null || true
-
-          pkg() {
-            local name=$1; shift
-            mkdir -p "pkg/${name}-exe-linux"
-            for bin in "$@"; do
-              [ -f "dist/${bin}" ] && cp "dist/${bin}" "pkg/${name}-exe-linux/"
-            done
-            cp scripts/install-linux.sh "pkg/${name}-exe-linux/install.sh"
-            chmod +x "pkg/${name}-exe-linux/install.sh"
-            cd pkg && zip -r "../releases/${name}-exe-linux.zip" "${name}-exe-linux/" && cd ..
-          }
-
-          pkg guardian-core       guardian-core
-          pkg guardian-node       guardian-node
-          pkg guardian-core-node  guardian-core guardian-node
-          pkg guardian-bundle     guardian-core guardian-node
-          pkg orchestra-core      orchestra-core
-          pkg orchestra-worker-cpu orchestra-worker-cpu
-          pkg orchestra-worker-gpu orchestra-worker-gpu
-          pkg orchestra-core-cpu  orchestra-core orchestra-worker-cpu
-          pkg orchestra-bundle    orchestra-core orchestra-worker-cpu orchestra-worker-gpu
-          pkg full-bundle         guardian-core guardian-node orchestra-core orchestra-worker-cpu orchestra-worker-gpu
-          ls -lh releases/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: exe-linux
-          path: releases/*-exe-linux.zip
-          retention-days: 3
-
-  exe-windows:
-    name: EXE Windows
-    runs-on: windows-latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install deps
-        shell: bash
-        run: |
-          pip install --quiet pyinstaller==6.9.0
-          pip install --quiet -r engine/requirements.txt || true
-          pip install --quiet -r orchestra/orchestra_core/requirements.txt || true
-          pip install --quiet -r orchestra/orchestra_worker/requirements.txt || true
-
-      - name: Build Windows EXE
-        shell: bash
-        run: |
-          mkdir -p dist releases
-
-          build_win() {
-            local name=$1 ctx=$2 entry=$3
-            pyinstaller --onefile --name "${name}" --distpath "dist" --workpath "tmp-pyi/${name}" --specpath "tmp-spec" \
-              --hidden-import uvicorn.logging \
-              --hidden-import uvicorn.loops.auto \
-              --collect-all structlog --collect-all pydantic \
-              "${ctx}/${entry}" 2>&1 | tail -3
-          }
-
-          build_win guardian-core  engine    src/api.py
-          build_win guardian-node  engine    src/__main__.py
-          build_win orchestra-core orchestra orchestra_core/main.py
-          build_win orchestra-worker-cpu orchestra orchestra_worker/worker_cpu.py 2>/dev/null || true
-
-          pkg_win() {
-            local name=$1; shift
-            mkdir -p "pkg/${name}-exe-windows"
-            for bin in "$@"; do
-              [ -f "dist/${bin}.exe" ] && cp "dist/${bin}.exe" "pkg/${name}-exe-windows/"
-            done
-            cp scripts/install-windows.bat "pkg/${name}-exe-windows/install.bat"
-            powershell -Command "Compress-Archive -Path pkg/${name}-exe-windows -DestinationPath releases/${name}-exe-windows.zip"
-          }
-
-          pkg_win guardian-core       guardian-core
-          pkg_win guardian-node       guardian-node
-          pkg_win guardian-core-node  guardian-core guardian-node
-          pkg_win guardian-bundle     guardian-core guardian-node
-          pkg_win orchestra-core      orchestra-core
-          pkg_win orchestra-worker-cpu orchestra-worker-cpu
-          pkg_win orchestra-core-cpu  orchestra-core orchestra-worker-cpu
-          pkg_win orchestra-bundle    orchestra-core orchestra-worker-cpu
-          pkg_win full-bundle         guardian-core guardian-node orchestra-core orchestra-worker-cpu
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: exe-windows
-          path: releases/*-exe-windows.zip
-          retention-days: 3
-
-  publish-r2:
-    name: Publish to CF R2
-    runs-on: ubuntu-latest
-    needs: [setup, docker-guardian, docker-orchestra, full-bundle, exe-linux, exe-windows]
     if: always()
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: all-releases/
-
-      - name: Upload all to R2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
-        run: |
-          pip install --quiet "awscli>=1.32"
-          CHANNEL="${{ needs.setup.outputs.channel }}"
-          TAG="${{ needs.setup.outputs.tag }}"
-          BUCKET="${R2_BUCKET:-axto-artifacts}"
-          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
-          UPLOADED=0
-
-          for f in all-releases/**/*.zip; do
-            [ -f "$f" ] || continue
-            fn=$(basename "$f")
-            key="releases/${CHANNEL}/${fn}"
-            echo "  Uploading ${fn} ($(ls -lh $f | awk '{print $5}'))..."
-            aws s3 cp "$f" "s3://${BUCKET}/${key}" \
-              --endpoint-url "${ENDPOINT}" --no-progress && UPLOADED=$((UPLOADED+1))
-            if [[ "${CHANNEL}" != "latest" ]]; then
-              aws s3 cp "$f" "s3://${BUCKET}/releases/latest/${fn}" \
-                --endpoint-url "${ENDPOINT}" --no-progress || true
-            fi
-          done
-
-          printf '{"channel":"%s","tag":"%s","built_at":"%s","commit":"%s","files":%d}\n' \
-            "${CHANNEL}" "${TAG}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            "${{ github.sha }}" "${UPLOADED}" > manifest.json
-
-          aws s3 cp manifest.json "s3://${BUCKET}/releases/${CHANNEL}/manifest.json" \
-            --endpoint-url "${ENDPOINT}" --no-progress
-          if [[ "${CHANNEL}" != "latest" ]]; then
-            aws s3 cp manifest.json "s3://${BUCKET}/releases/latest/manifest.json" \
-              --endpoint-url "${ENDPOINT}" --no-progress || true
-          fi
-
-          echo "Uploaded ${UPLOADED} files to CF R2 releases/${CHANNEL}/"
-
-      - name: Notify dashboard
-        if: always()
-        env:
-          APP_URL: ${{ secrets.AXTO_APP_URL }}
-          BUILD_SECRET: ${{ secrets.BUILD_WEBHOOK_SECRET }}
-        run: |
-          [ -z "${APP_URL:-}" ] && exit 0
-          curl -sf -X POST "${APP_URL}/api/admin/releases" \
-            -H "Content-Type: application/json" \
-            -H "X-Build-Secret: ${BUILD_SECRET}" \
-            -d "{\"action\":\"auto_build_complete\",\"channel\":\"${{ needs.setup.outputs.channel }}\",\"tag\":\"${{ needs.setup.outputs.tag }}\",\"commit\":\"${{ github.sha }}\",\"run_url\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"status\":\"${{ job.result }}\"}" || true
+      - run: |
+          echo "═══ AXTO Build Results ═══"
+          echo "Guardian Core: ${{ needs.build-guardian-core.result }}"
+          echo "Guardian Node: ${{ needs.build-guardian-node.result }}"
+          echo "Antivirus:     ${{ needs.build-guardian-antivirus.result }}"
+          echo "Orchestra:     ${{ needs.build-orchestra-core.result }}"
+          echo "Orchestra CPU: ${{ needs.build-orchestra-worker-cpu.result }}"
+          echo "Vault:         ${{ needs.build-vault-core.result }}"
+          echo "Edge:          ${{ needs.build-edge-core.result }}"
+          echo "SOC:           ${{ needs.build-soc-core.result }}"
+          echo "Compliance:    ${{ needs.build-compliance-core.result }}"
+          echo "Sentinel:      ${{ needs.build-sentinel-core.result }}"
+          echo "Studio:        ${{ needs.build-studio-core.result }}"
+          echo "══════════════════════════"

@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 Guardian AI — Detection Engine
 Multi-layer threat detection:
@@ -156,7 +162,6 @@ SUSPICIOUS_PATTERNS: list = [
     (re.compile(r"(?i)(ptrace\s*\(\s*PTRACE_ATTACH|process_vm_writev)",    re.M),     "ptrace_inject",         0.9),
     (re.compile(r"(?i)(mmap.*PROT_EXEC.*PROT_WRITE|mprotect.*PROT_EXEC)",     re.M),     "mmap_exec",             0.8),
     (re.compile(r"(?i)(dlopen.*RTLD_NOW.{0,100}dlsym|LD_PRELOAD)",            re.M),     "so_injection",          0.85),
-]
 ]
 
 # ── Layer 2: Magic bytes — known file signatures ──────────────────────────────

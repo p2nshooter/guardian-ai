@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 // ============================================================
 // AXTO AutoPost — Platform Publisher
 // Handles posting to Social Media & Free Classified sites
@@ -443,14 +450,16 @@ export async function publishToplatform(req: PublishRequest): Promise<PublishRes
   if (ayrshareKey && !classified.includes(req.platform)) {
     try {
       const { postViaAyrshare } = await import("@/lib/autopost/ayrshare");
+      const defaultImage = "https://axto.io/og-image.png";
+      const mediaUrls = req.post.image_url ? [req.post.image_url] : [defaultImage];
       const result = await postViaAyrshare(ayrshareKey, {
         post: req.post.body_text + (req.post.cta_text ? `
 
 ${req.post.cta_text}` : ""),
         platforms: [req.platform],
-        mediaUrls: req.post.image_url ? [req.post.image_url] : undefined,
+        mediaUrls,
         hashtags:  req.post.hashtags,
-        title:     req.post.title,
+        title:     req.post.title || "AXTO Platform",
       });
       if (result.success) {
         return {

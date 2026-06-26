@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 /**
  * AXTO Playbooks — Master Catalog
  * Seed data for initial deployment. Each playbook is a real, production-ready product.

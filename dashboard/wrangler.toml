@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 name = "axto-dashboard"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
@@ -19,11 +25,13 @@ bucket_name = "axto-storage"
 
 [[r2_buckets]]
 binding     = "R2_BUILDS"
-bucket_name = "axto-artifacts"
+bucket_name = "axto-builds"
 
 [vars]
-NEXT_PUBLIC_GHCR_OWNER = "p2nshooter"
 NEXT_PUBLIC_APP_URL    = "https://axto.io"
+NEXT_PUBLIC_GITLAB_PROJECT = "axto-platform/guardian-ai"
 
-# Engine Builder — set via: wrangler pages secret put GITHUB_TOKEN
-# GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO are secrets, not vars
+# Secrets (set via: wrangler pages secret put <KEY>):
+# GITLAB_TOKEN    → GitLab personal access token (CI trigger)
+# GITLAB_PROJECT  → axto-platform/guardian-ai
+# BUILD_WEBHOOK_SECRET → webhook secret untuk CI callback

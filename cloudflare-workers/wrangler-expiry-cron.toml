@@ -1,0 +1,19 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+name             = "axto-license-expiry-cron"
+main             = "license-expiry-cron.ts"
+compatibility_date = "2024-12-01"
+
+[triggers]
+# Run daily at 08:00 UTC
+crons = ["0 8 * * *"]
+
+[vars]
+APP_URL = "https://axto.io"
+
+# Secret (set via wrangler secret put):
+#   wrangler secret put CRON_SECRET --config wrangler-expiry-cron.toml

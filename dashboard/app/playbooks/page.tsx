@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 "use client";
 export const runtime = "edge";
 import { useEffect, useState } from "react";
@@ -12,6 +19,25 @@ export default function PlaybooksPage() {
   const [checkoutError, setCheckoutError] = useState("");
   const [email, setEmail] = useState("");
   const [gateway, setGateway] = useState("stripe");
+  const [availableGateways, setAvailableGateways] = useState<string[]>(["stripe"]);
+
+  const ALL_GW = [
+    { v: "stripe", l: "Credit/Debit Card", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#635BFF"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">stripe</text></svg>` },
+    { v: "paypal", l: "PayPal", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#003087"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">PayPal</text></svg>` },
+    { v: "xendit", l: "Xendit", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#0D47A1"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">xendit</text></svg>` },
+    { v: "midtrans", l: "Midtrans", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#00AA13"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">midtrans</text></svg>` },
+  ];
+
+  useEffect(() => {
+    fetch("/api/health").then(r => r.json()).then(d => {
+      if (d.gateways?.length) {
+        setAvailableGateways(d.gateways);
+        if (!d.gateways.includes(gateway)) setGateway(d.gateways[0]);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const GATEWAYS = ALL_GW.filter(g => availableGateways.includes(g.v));
 
   useEffect(() => {
     fetch("/api/playbooks").then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
@@ -165,10 +191,11 @@ export default function PlaybooksPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none" }} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {[{ v: "stripe", l: "💳 Card" }, { v: "paypal", l: "🅿 PayPal" }, { v: "xendit", l: "🏦 Xendit" }, { v: "midtrans", l: "🇮🇩 Midtrans" }].map(g => (
+                {GATEWAYS.map(g => (
                   <label key={g.v} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${gateway === g.v ? "#7c3aed" : "#e2e8f0"}`, cursor: "pointer", background: gateway === g.v ? "rgba(124,58,237,0.04)" : "#fff" }}>
                     <input type="radio" name="gw" value={g.v} checked={gateway === g.v} onChange={() => setGateway(g.v)} style={{ accentColor: "#7c3aed" }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "#0a1628" }}>{g.l}</span>
+                    <span dangerouslySetInnerHTML={{ __html: g.logo }} style={{ width: 44, height: 18, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#0a1628" }}>{g.l}</span>
                   </label>
                 ))}
               </div>

@@ -1,0 +1,16 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+soc:
+  license_key: "SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  ueba_z_threshold: 3.0
+  correlation_window_sec: 900
+  threat_feed_path: "/soc/threat-feed"
+  soar: {}
+  ai_pool:
+    vendors: []
+  db_path: "/soc/data/soc.db"

@@ -1,4 +1,0 @@
-Taruh semua file PDF playbook di folder ini.
-Nama file harus sama dengan slug playbook (contoh: ultimate-sales-copy-pack.pdf).
-Folder ini TIDAK masuk GitHub — sudah di .gitignore.
-Gunakan axto-uploader untuk deploy ke Cloudflare R2.

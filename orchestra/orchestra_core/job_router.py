@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration | Job Router (Production v2)
 SQLite-backed, circuit breaker, semantic cache, quality retry, SLA, webhooks.
@@ -77,6 +83,71 @@ def _process_job(job_id: str) -> None:
         logger.exception(f"Job {job_id} fatal: {e}")
         db.finish_job(job_id, error=str(e))
 
+def _dispatch_to_gpu_worker(worker: dict, job: dict) -> dict:
+    """
+    POST a GPU-capable task directly to the GPU worker's FastAPI /run endpoint.
+    Used for: image generation, transcription, embedding — tasks that require
+    local GPU hardware and cannot be routed through cloud provider APIs.
+    """
+    worker_url = (worker.get("worker_url") or "").rstrip("/")
+    if not worker_url:
+        return {"ok": False, "error": "GPU worker has no worker_url registered. "
+                "Set WORKER_SELF_URL env var on the GPU worker container."}
+
+    task_type = job.get("task_type", "chat")
+    meta      = job.get("metadata") or {}
+    model     = job.get("model") or worker.get("model", "llama3.2")
+
+    payload: dict = {
+        "task_type":   task_type,
+        "model":       model,
+        "max_tokens":  job.get("max_tokens", 2048),
+        "temperature": job.get("temperature", 0.7),
+    }
+
+    if task_type in ("chat", "local_inference"):
+        payload["messages"] = job.get("messages") or []
+
+    elif task_type == "embedding":
+        texts = meta.get("texts")
+        if not texts:
+            texts = [m.get("content", "") for m in (job.get("messages") or [])
+                     if isinstance(m.get("content"), str)]
+        payload["texts"] = texts
+
+    elif task_type == "transcribe":
+        payload["audio_base64"] = meta.get("audio_base64", "")
+        payload["language"]     = meta.get("language", "auto")
+
+    elif task_type == "image":
+        msgs   = job.get("messages") or []
+        prompt = meta.get("prompt") or (msgs[-1].get("content", "") if msgs else "")
+        payload["prompt"]  = prompt
+        payload["size"]    = meta.get("size", "1024x1024")
+        payload["quality"] = meta.get("quality", "standard")
+        payload["n"]       = int(meta.get("n", 1))
+
+    t0 = time.time()
+    try:
+        data = json.dumps(payload).encode()
+        req  = urllib.request.Request(
+            f"{worker_url}/run", data=data,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=300) as r:
+            result = json.loads(r.read())
+        result.setdefault("latency_ms", int((time.time() - t0) * 1000))
+        result.setdefault("provider", "gpu_worker")
+        result.setdefault("model_used", model)
+        return result
+    except Exception as e:
+        return {"ok": False, "error": f"GPU worker dispatch to {worker_url}/run failed: {e}"}
+
+
+# GPU-specific task types that must go to a GPU worker's /run endpoint
+_GPU_NATIVE_TASKS = frozenset({"image", "transcribe", "embedding"})
+
+
 def _dispatch(job: dict) -> None:
     job_id = job["id"]; cat = job.get("semantic_category","default"); t0 = time.time()
     workers = db.get_active_workers()
@@ -89,6 +160,38 @@ def _dispatch(job: dict) -> None:
         time.sleep(5); db.retry_job(job_id)
         if not _paused: _executor.submit(_process_job, job_id)
         return
+
+    # ── GPU worker: dispatch native GPU tasks (image/transcribe/embedding/chat)
+    # directly to the worker's own FastAPI /run endpoint so it can use local
+    # hardware (SDXL, Whisper, Ollama). cloud_provider API dispatch is bypassed.
+    if worker.get("worker_type") == "gpu" and (
+            job["task_type"] in _GPU_NATIVE_TASKS
+            or (job["task_type"] in ("chat", "local_inference") and worker.get("worker_url"))
+    ):
+        result  = _dispatch_to_gpu_worker(worker, job)
+        latency = int((time.time() - t0) * 1000)
+        db.update_worker_stats(worker["id"], latency, result.get("ok", False))
+        if result.get("ok"):
+            content  = result.get("content") or json.dumps({
+                k: v for k, v in result.items()
+                if k not in ("ok", "latency_ms", "provider", "model_used")
+            })
+            in_tok   = result.get("input_tokens", 0)
+            out_tok  = result.get("output_tokens", 0)
+            db.finish_job(job_id, result=content, input_tokens=in_tok, output_tokens=out_tok,
+                          cost_usd=0.0, latency_ms=latency,
+                          model_used=result.get("model_used", worker.get("model", "")),
+                          provider_used="gpu_worker")
+        else:
+            err = result.get("error", "GPU worker error")
+            if db.retry_job(job_id):
+                if not _paused: _executor.submit(_process_job, job_id)
+            else:
+                db.finish_job(job_id, error=err, latency_ms=latency,
+                              model_used="", provider_used="gpu_worker")
+        return
+
+    # ── Cloud/CPU workers: dispatch via ai_providers ─────────────────────────
     pid  = worker.get("provider_id") or job.get("provider_id","openai")
     mdl  = worker.get("model")       or job.get("model","gpt-4o-mini")
     burl = worker.get("base_url","")

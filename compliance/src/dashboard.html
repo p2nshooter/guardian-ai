@@ -1,0 +1,391 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO Compliance</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#040b0f;--surf:#071018;--surf2:#0b1620;--surf3:#101e2c;--border:#152030;--border2:#1e3048;--teal:#0d9488;--teal2:#14b8a6;--teal3:#2dd4bf;--green:#10b981;--red:#ef4444;--yellow:#f59e0b;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--mono:'JetBrains Mono',monospace}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--surf)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+header{background:rgba(4,11,15,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0d9488,#0891b2);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 16px rgba(13,148,136,.35)}
+.logo-name{font-size:16px;font-weight:800}.logo-name span{color:#2dd4bf}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid}
+.pill-teal{background:rgba(13,148,136,.12);border-color:rgba(13,148,136,.3);color:#2dd4bf}
+.pill-green{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25);color:#34d399}
+nav{background:var(--surf);border-bottom:1px solid var(--border);display:flex;padding:0 28px;overflow-x:auto}
+nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 16px;height:44px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:#2dd4bf;border-bottom-color:#0d9488}
+main{padding:24px;max-width:1500px;margin:0 auto}
+.section{display:none}.section.active{display:block}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--border2)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.teal::after{background:linear-gradient(90deg,#0d9488,#14b8a6)}
+.kpi.green::after{background:linear-gradient(90deg,#10b981,#059669)}
+.kpi.red::after{background:linear-gradient(90deg,#ef4444,#f97316)}
+.kpi.yellow::after{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.kpi.blue::after{background:linear-gradient(90deg,#3b82f6,#06b6d4)}
+.kpi.purple::after{background:linear-gradient(90deg,#7c3aed,#6366f1)}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px}
+.kpi-val{font-size:34px;font-weight:900;letter-spacing:-2px;margin:6px 0 2px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text2)}
+.kpi-icon{position:absolute;right:14px;top:16px;font-size:20px;opacity:.2}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.mb{margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:9px 12px;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(21,32,48,.6);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(13,148,136,.04)}
+.mono{font-family:var(--mono);font-size:11px}
+.tbl-wrap{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid}
+.badge-green{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.25)}
+.badge-red{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}
+.badge-yellow{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.25)}
+.badge-teal{background:rgba(13,148,136,.12);color:#2dd4bf;border-color:rgba(13,148,136,.25)}
+.badge-gray{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,#0d9488,#0891b2);color:#fff;box-shadow:0 4px 14px rgba(13,148,136,.3)}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--surf2);border:1px solid var(--border2);color:var(--text)}
+.btn-ghost:hover{background:var(--surf3)}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-xs{padding:4px 9px;font-size:11px}
+.input,.select,textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;width:100%}
+.input:focus,.select:focus,textarea:focus{border-color:rgba(13,148,136,.5)}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.form-group{margin-bottom:14px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(21,32,48,.5);font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{color:var(--text2)}.stat-val{font-weight:700;font-family:var(--mono);font-size:12px}
+.fw-card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .2s}
+.fw-card:hover{border-color:rgba(13,148,136,.4);transform:translateY(-2px)}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.5}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:24px}
+.overlay.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--border2);border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:20px}
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#toast.ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#34d399}
+#toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">✅</div>
+    <div><div class="logo-name">AXTO <span>Compliance</span></div><div class="logo-sub">Automated Audit &amp; Compliance Platform</div></div>
+  </div>
+  <div class="hdr-right">
+    <span id="lic-plan" class="pill pill-teal">LICENSED</span>
+    <span class="pill pill-green"><span class="pulse"></span>LIVE</span>
+  </div>
+</header>
+<nav>
+  <button class="tab active" onclick="tab('overview',this)">📊 Overview</button>
+  <button class="tab" onclick="tab('frameworks',this)">📋 Frameworks</button>
+  <button class="tab" onclick="tab('assessments',this)">🔍 Assessments</button>
+  <button class="tab" onclick="tab('controls',this)">🎛 Controls</button>
+  <button class="tab" onclick="tab('risks',this)">⚠️ Risks</button>
+  <button class="tab" onclick="tab('evidence',this)">📁 Evidence</button>
+  <button class="tab" onclick="tab('reports',this)">📄 Reports</button>
+</nav>
+<main>
+<div id="sec-overview" class="section active">
+  <div class="kpi-grid">
+    <div class="kpi teal"><div class="kpi-icon">📋</div><div class="kpi-label">Frameworks</div><div class="kpi-val" style="color:#2dd4bf" id="k-fw">—</div><div class="kpi-sub">Active standards</div></div>
+    <div class="kpi green"><div class="kpi-icon">✅</div><div class="kpi-label">Avg Score</div><div class="kpi-val" style="color:#34d399" id="k-score">—</div><div class="kpi-sub">Overall compliance</div></div>
+    <div class="kpi red"><div class="kpi-icon">⚠️</div><div class="kpi-label">Open Risks</div><div class="kpi-val" style="color:#f87171" id="k-risks">—</div><div class="kpi-sub">Need remediation</div></div>
+    <div class="kpi yellow"><div class="kpi-icon">📁</div><div class="kpi-label">Evidence</div><div class="kpi-val" style="color:#fbbf24" id="k-evidence">—</div><div class="kpi-sub">Uploaded artifacts</div></div>
+    <div class="kpi blue"><div class="kpi-icon">🔍</div><div class="kpi-label">Last Assessment</div><div class="kpi-val" style="color:#60a5fa;font-size:16px" id="k-last">—</div><div class="kpi-sub">Most recent</div></div>
+    <div class="kpi purple"><div class="kpi-icon">🎛</div><div class="kpi-label">Controls Pass</div><div class="kpi-val" style="color:#c4b5fd;font-size:22px" id="k-ctrl">—</div><div class="kpi-sub">Of total</div></div>
+  </div>
+  <div class="grid2 mb">
+    <div class="card"><div class="card-title">📋 Framework Scores</div><div id="fw-scores"><div style="color:var(--text3);font-size:12px">Loading…</div></div></div>
+    <div class="card"><div class="card-title">⚠️ Top Risk Items</div><div id="top-risks"></div></div>
+  </div>
+  <div class="card"><div class="card-title">🔒 System Info</div><div id="sys-info" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div></div>
+</div>
+<div id="sec-frameworks" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">📋 Compliance Frameworks</span>
+    <button class="btn btn-primary btn-sm" onclick="runAssessAll()">⚡ Run All Assessments</button>
+  </div>
+  <div id="fw-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"><div class="empty" style="grid-column:1/-1"><div class="empty-icon">📋</div><div>Loading frameworks…</div></div></div>
+</div>
+<div id="sec-assessments" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <span style="font-size:16px;font-weight:800">🔍 Assessment History</span>
+    <div style="display:flex;gap:8px">
+      <select class="select" id="assess-fw" style="width:auto;min-width:160px" onchange="loadAssessments()"><option value="">All Frameworks</option></select>
+      <button class="btn btn-ghost btn-sm" onclick="loadAssessments()">↻</button>
+    </div>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>Framework</th><th>Score</th><th>Pass</th><th>Fail</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+    <tbody id="assess-tbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<div id="sec-controls" class="section">
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:800">🎛 Controls</span>
+    <select class="select" id="ctrl-fw" style="width:auto;min-width:160px" onchange="loadControls()"><option value="">Select Framework</option></select>
+    <select class="select" id="ctrl-status" style="width:auto;min-width:140px" onchange="loadControls()">
+      <option value="">All Status</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="partial">Partial</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="loadControls()">↻</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>Control ID</th><th>Title</th><th>Category</th><th>Status</th><th>Score</th><th>Evidence</th></tr></thead>
+    <tbody id="ctrl-tbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Select a framework above</td></tr></tbody>
+  </table></div></div>
+</div>
+<div id="sec-risks" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">⚠️ Risk Register</span>
+    <button class="btn btn-ghost btn-sm" onclick="loadRisks()">↻</button>
+  </div>
+  <div class="card"><div class="tbl-wrap"><table>
+    <thead><tr><th>Risk</th><th>Framework</th><th>Severity</th><th>Status</th><th>Owner</th><th>Due</th></tr></thead>
+    <tbody id="risks-tbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<div id="sec-evidence" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">📁 Evidence Vault</span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('evid-modal')">+ Upload Evidence</button>
+  </div>
+  <div class="grid3 mb">
+    <div class="card"><div style="font-size:24px;margin-bottom:8px">📋</div><div style="font-weight:700">Policy Documents</div><div style="font-size:12px;color:var(--text2)">Upload policies and procedures</div></div>
+    <div class="card"><div style="font-size:24px;margin-bottom:8px">📸</div><div style="font-weight:700">Screenshots &amp; Logs</div><div style="font-size:12px;color:var(--text2)">System state evidence</div></div>
+    <div class="card"><div style="font-size:24px;margin-bottom:8px">🏆</div><div style="font-weight:700">Certifications</div><div style="font-size:12px;color:var(--text2)">Vendor and audit certs</div></div>
+  </div>
+  <div class="card"><div class="empty"><div class="empty-icon">📁</div><div>Select a control in the Controls tab to view evidence, or upload new evidence above.</div></div></div>
+</div>
+<div id="sec-reports" class="section">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">📄 Compliance Reports</div>
+  <div class="grid3 mb">
+    <div class="fw-card" onclick="generateReport('full')"><div style="font-size:28px;margin-bottom:10px">📋</div><div style="font-weight:700;margin-bottom:4px">Full Compliance Report</div><div style="font-size:12px;color:var(--text2)">All frameworks, controls, risks, evidence</div></div>
+    <div class="fw-card" onclick="generateReport('executive')"><div style="font-size:28px;margin-bottom:10px">📊</div><div style="font-weight:700;margin-bottom:4px">Executive Summary</div><div style="font-size:12px;color:var(--text2)">Scores, trends, and priorities for leadership</div></div>
+    <div class="fw-card" onclick="generateReport('gaps')"><div style="font-size:28px;margin-bottom:10px">⚠️</div><div style="font-weight:700;margin-bottom:4px">Gap Analysis</div><div style="font-size:12px;color:var(--text2)">Failed controls and remediation roadmap</div></div>
+  </div>
+  <div id="report-output"></div>
+</div>
+</main>
+
+<div class="overlay" id="evid-modal" onclick="if(event.target===this)closeModal('evid-modal')">
+  <div class="modal">
+    <div class="modal-title">📁 Upload Evidence</div>
+    <div class="form-group"><div class="form-label">Framework</div><select class="select" id="ev-fw"><option value="">Select…</option></select></div>
+    <div class="form-group"><div class="form-label">Control ID</div><input type="text" class="input" id="ev-ctrl" placeholder="e.g. CC6.1, AC-2"></div>
+    <div class="form-group"><div class="form-label">Type</div><select class="select" id="ev-type"><option value="screenshot">Screenshot</option><option value="log">Log File</option><option value="policy">Policy Document</option><option value="audit_report">Audit Report</option><option value="certification">Certification</option></select></div>
+    <div class="form-group"><div class="form-label">Description</div><textarea class="input" id="ev-desc" rows="3" placeholder="Describe the evidence…"></textarea></div>
+    <div class="form-group"><div class="form-label">URL / Reference</div><input type="text" class="input" id="ev-url" placeholder="https://…"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('evid-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addEvidence()">Submit</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const SEV_BADGE={critical:'<span class="badge badge-red">Critical</span>',high:'<span class="badge badge-red">High</span>',medium:'<span class="badge badge-yellow">Medium</span>',low:'<span class="badge badge-gray">Low</span>'};
+const STATUS_BADGE={pass:'<span class="badge badge-green">Pass</span>',fail:'<span class="badge badge-red">Fail</span>',partial:'<span class="badge badge-yellow">Partial</span>',not_applicable:'<span class="badge badge-gray">N/A</span>'};
+const FW_ICONS={SOC2:'🏢','PCI-DSS':'💳',HIPAA:'🏥','ISO27001':'🌐',GDPR:'🇪🇺','NIST':'🇺🇸',CIS:'🛡'};
+function fmtDate(s){return s?new Date(s).toLocaleDateString():'—'}
+function scoreColor(s){return s>=80?'#34d399':s>=60?'#fbbf24':'#f87171'}
+function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.className=ok?'ok':'err';el.style.display='block';setTimeout(()=>el.style.display='none',3500)}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function tab(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  const loaders={frameworks:loadFrameworks,assessments:loadAssessments,risks:loadRisks};
+  if(loaders[name])loaders[name]();
+}
+async function api(path,body=null){
+  const opts=body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{};
+  const r=await fetch(path,opts);const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||r.statusText);return d;
+}
+async function loadOverview(){
+  try{
+    const sum=await api('/v1/summary');
+    document.getElementById('k-fw').textContent=sum.total_frameworks||'—';
+    document.getElementById('k-score').textContent=(sum.avg_score||sum.overall_score||0).toFixed(0)+'%';
+    document.getElementById('k-risks').textContent=sum.open_risks||'0';
+    document.getElementById('k-evidence').textContent=sum.evidence_count||'0';
+    document.getElementById('k-last').textContent=sum.last_assessment?new Date(sum.last_assessment).toLocaleDateString():'Never';
+    document.getElementById('k-ctrl').textContent=`${sum.controls_pass||0}/${sum.controls_total||0}`;
+    if(sum.license)document.getElementById('lic-plan').textContent=(sum.license.plan||'licensed').toUpperCase();
+    const fws=sum.frameworks||[];
+    document.getElementById('fw-scores').innerHTML=fws.length?fws.map(f=>`
+      <div style="padding:10px 0;border-bottom:1px solid rgba(21,32,48,.5)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:600;font-size:13px">${f.name||f.framework}</span><span style="font-weight:800;color:${scoreColor(f.score)}">${(f.score||0).toFixed(0)}%</span></div>
+        <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${f.score||0}%;background:${scoreColor(f.score)};transition:width .8s"></div></div>
+      </div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:10px 0">No frameworks assessed yet</div>';
+    document.getElementById('sys-info').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">Plan</span><span class="stat-val" style="color:#2dd4bf">${sum.license?.plan||'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Frameworks</span><span class="stat-val">${sum.total_frameworks||0}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Controls Total</span><span class="stat-val">${sum.controls_total||0}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Pass Rate</span><span class="stat-val" style="color:#34d399">${sum.controls_total?((sum.controls_pass||0)/sum.controls_total*100).toFixed(1)+'%':'—'}</span></div>`;
+    loadTopRisks();
+  }catch(e){console.warn('Overview:',e)}
+}
+async function loadTopRisks(){
+  try{
+    const d=await api('/v1/risk-items');const risks=d.items||d||[];
+    document.getElementById('top-risks').innerHTML=risks.slice(0,5).length?risks.slice(0,5).map(r=>`
+      <div style="padding:9px 0;border-bottom:1px solid rgba(21,32,48,.5);display:flex;align-items:flex-start;gap:8px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${r.severity==='critical'||r.severity==='high'?'#ef4444':'#f59e0b'};flex-shrink:0;margin-top:4px"></div>
+        <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.title||r.description||'—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${r.framework||''} · ${r.severity||'medium'}</div></div>
+        ${SEV_BADGE[r.severity]||SEV_BADGE.medium}</div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:10px 0">No open risks</div>';
+  }catch(e){}
+}
+async function loadFrameworks(){
+  try{
+    const d=await api('/v1/frameworks');const fws=d.frameworks||d||[];
+    const opts=fws.map(f=>`<option value="${f.id||f.name}">${f.name||f.id}</option>`).join('');
+    document.getElementById('ctrl-fw').innerHTML='<option value="">Select Framework</option>'+opts;
+    document.getElementById('assess-fw').innerHTML='<option value="">All Frameworks</option>'+opts;
+    document.getElementById('ev-fw').innerHTML='<option value="">Select…</option>'+opts;
+    document.getElementById('fw-grid').innerHTML=fws.length?fws.map(f=>`
+      <div class="fw-card" onclick="viewFramework('${f.id||f.name}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">${FW_ICONS[f.id||f.name]||'📋'}</span>
+            <div><div style="font-weight:700">${f.name||f.id}</div><div style="font-size:11px;color:var(--text3)">${f.version||''}</div></div></div>
+          <span style="font-size:22px;font-weight:900;color:${scoreColor(f.last_score||0)}">${(f.last_score||0).toFixed(0)}%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:12px">
+          <div style="height:100%;width:${f.last_score||0}%;background:${scoreColor(f.last_score||0)};transition:width .8s"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:12px">
+          <span>${f.controls_count||0} controls</span><span>Last: ${fmtDate(f.last_assessed_at||f.last_run)}</span></div>
+        <button class="btn btn-primary btn-xs" style="width:100%" onclick="event.stopPropagation();runAssessment('${f.id||f.name}')">▶ Run Assessment</button>
+      </div>`).join(''):'<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📋</div><div>No frameworks configured in compliance.yml</div></div>';
+  }catch(e){}
+}
+async function runAssessment(fw){
+  toast('Running assessment for '+fw+'…');
+  try{await api(`/v1/assess/${fw}`,{});toast('Assessment complete: '+fw);loadFrameworks();loadOverview();}
+  catch(e){toast('Error: '+e.message,false);}
+}
+async function runAssessAll(){
+  toast('Running all assessments…');
+  try{await api('/v1/assess-all',{});toast('All assessments complete');loadFrameworks();loadOverview();}
+  catch(e){toast('Error: '+e.message,false);}
+}
+function viewFramework(fw){
+  document.getElementById('ctrl-fw').value=fw;
+  tab('controls',document.querySelectorAll('.tab')[3]);
+  loadControls();
+}
+async function loadAssessments(){
+  const fw=document.getElementById('assess-fw')?.value||'';
+  const tbody=document.getElementById('assess-tbody');
+  tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api('/v1/frameworks');
+    const fws=(d.frameworks||d||[]).filter(f=>!fw||(f.id||f.name)===fw);
+    const rows=[];
+    for(const f of fws.slice(0,8)){
+      try{const h=await api(`/v1/assessments/${f.id||f.name}/history`);(h.history||h||[]).slice(0,3).forEach(a=>rows.push({...a,framework:f.name||f.id}));}catch(e){}
+    }
+    tbody.innerHTML=rows.length?rows.map(a=>`<tr>
+      <td style="font-weight:600">${a.framework}</td>
+      <td style="font-weight:800;color:${scoreColor(a.score||0)}">${(a.score||0).toFixed(0)}%</td>
+      <td class="mono" style="color:#34d399">${a.controls_pass||0}</td>
+      <td class="mono" style="color:#f87171">${a.controls_fail||0}</td>
+      <td><span class="badge badge-green">Complete</span></td>
+      <td style="color:var(--text3)">${fmtDate(a.assessed_at||a.created_at)}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="generateReport('${a.framework}')">Report</button></td>
+    </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No history yet. Run an assessment first.</td></tr>';
+  }catch(e){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function loadControls(){
+  const fw=document.getElementById('ctrl-fw')?.value||'';
+  const status=document.getElementById('ctrl-status')?.value||'';
+  const tbody=document.getElementById('ctrl-tbody');
+  if(!fw){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Select a framework above</td></tr>';return;}
+  tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api(`/v1/controls/${fw}`+(status?'?status='+status:''));
+    const ctrls=d.controls||d||[];
+    tbody.innerHTML=ctrls.length?ctrls.map(c=>`<tr>
+      <td class="mono" style="color:#2dd4bf;font-weight:600">${c.control_id||c.id}</td>
+      <td style="max-width:240px">${c.title||c.name||'—'}</td>
+      <td style="color:var(--text3)">${c.category||'—'}</td>
+      <td>${STATUS_BADGE[c.status||'not_applicable']||'<span class="badge badge-gray">—</span>'}</td>
+      <td style="font-weight:700;color:${scoreColor(c.score||0)}">${c.score!=null?c.score.toFixed(0)+'%':'—'}</td>
+      <td style="color:var(--text3)">${c.evidence_count||0} items</td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No controls found</td></tr>';
+  }catch(e){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function loadRisks(){
+  const tbody=document.getElementById('risks-tbody');
+  try{
+    const d=await api('/v1/risk-items');const risks=d.items||d||[];
+    tbody.innerHTML=risks.length?risks.map(r=>`<tr>
+      <td style="font-weight:600;max-width:220px">${r.title||r.description||'—'}</td>
+      <td class="mono" style="color:var(--text3)">${r.framework||'—'}</td>
+      <td>${SEV_BADGE[r.severity]||SEV_BADGE.medium}</td>
+      <td>${r.status==='open'?'<span class="badge badge-red">Open</span>':r.status==='in_progress'?'<span class="badge badge-yellow">In Progress</span>':'<span class="badge badge-green">Closed</span>'}</td>
+      <td style="color:var(--text2)">${r.owner||'—'}</td>
+      <td style="color:var(--text3)">${fmtDate(r.due_date)}</td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No risk items</td></tr>';
+  }catch(e){}
+}
+async function addEvidence(){
+  try{
+    await api('/v1/evidence',{framework:document.getElementById('ev-fw').value,control_id:document.getElementById('ev-ctrl').value,evidence_type:document.getElementById('ev-type').value,description:document.getElementById('ev-desc').value,url:document.getElementById('ev-url').value||null});
+    toast('Evidence submitted');closeModal('evid-modal');
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function generateReport(type){
+  document.getElementById('report-output').innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)">Generating…</div>';
+  try{
+    const d=await api('/v1/frameworks');const fws=d.frameworks||d||[];
+    if(!fws.length){document.getElementById('report-output').innerHTML='<div class="empty"><div>Run assessments first</div></div>';return;}
+    const fw=fws[0];
+    const rpt=await api(`/v1/report/${fw.id||fw.name}`);
+    const score=rpt.score||rpt.compliance_score||0;
+    document.getElementById('report-output').innerHTML=`<div class="card">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="font-size:42px;font-weight:900;color:${scoreColor(score)}">${score.toFixed(0)}<span style="font-size:22px">%</span></div>
+        <div><div style="font-size:16px;font-weight:800">${rpt.framework||fw.name||'Compliance'} Report</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">Generated ${new Date().toLocaleString()}</div></div>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px;margin-bottom:20px;overflow:hidden"><div style="height:100%;width:${score}%;background:${scoreColor(score)};transition:width .8s"></div></div>
+      ${(rpt.findings||rpt.failed_controls||[]).length?`<div class="card-title">⚠ Key Findings</div>${(rpt.findings||rpt.failed_controls||[]).slice(0,10).map(f=>`<div style="padding:8px 12px;margin-bottom:6px;border-radius:8px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);font-size:12px;color:#fca5a5">${typeof f==='string'?f:f.title||JSON.stringify(f)}</div>`).join('')}`:'<div style="color:#34d399;font-size:13px">✓ All controls passing</div>'}
+    </div>`;
+  }catch(e){document.getElementById('report-output').innerHTML='<div class="empty"><div>Report unavailable. Run assessments first.</div></div>';}
+}
+// Add root route to compliance api
+loadOverview();setInterval(loadOverview,60000);
+</script>
+</body>
+</html>

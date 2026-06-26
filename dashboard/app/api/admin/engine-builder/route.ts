@@ -1,557 +1,415 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getR2Builds, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
+import { getR2Builds, getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { generateLicenseKey } from "@/lib/license";
 
-// ── R2 key helper ───────────────────────────────────────────────────────────
-function r2KeyForBuild(buildId: string, product: string, buildType: string, arch: string): string {
-  const a = arch === "windows/amd64" ? "windows" : arch === "linux/arm64" ? "linux-arm64" : "linux";
-  return `builds/${buildId}/axto-${product}-${buildType}-${a}.zip`;
+/**
+ * AXTO Engine Builder API — Dual CI/CD (GitHub Actions + GitLab CI)
+ *
+ * Both pipelines do the full job:
+ *   GitHub Actions: build → upload R2
+ *   GitLab CI:      build → push registry.gitlab.com → upload R2
+ *
+ * Auto-selection: if GITLAB_TRIGGER_TOKEN is set → GitLab first.
+ * If not → GitHub. If both set → try GitLab, fallback GitHub.
+ */
+
+const PRODUCTS = [
+  { id: "guardian-core",        icon: "🖥️", name: "Guardian Core",        group: "guardian",   color: "#0284c7", desc: "Central API + security dashboard" },
+  { id: "guardian-node",        icon: "🤖", name: "Guardian Node Agent",  group: "guardian",   color: "#0284c7", desc: "Per-server threat detection" },
+  { id: "guardian-antivirus",   icon: "🦠", name: "Guardian Antivirus",   group: "guardian",   color: "#0284c7", desc: "ClamAV + AI scanner" },
+  { id: "orchestra-core",       icon: "⚡", name: "Orchestra Core",       group: "orchestra",  color: "#7c3aed", desc: "AI router + console" },
+  { id: "orchestra-worker-cpu", icon: "💻", name: "Orchestra Worker CPU", group: "orchestra",  color: "#7c3aed", desc: "Cloud AI routing" },
+  { id: "orchestra-worker-gpu", icon: "🎮", name: "Orchestra Worker GPU", group: "orchestra",  color: "#7c3aed", desc: "Local GPU inference" },
+  { id: "vault-core",           icon: "🔐", name: "Vault Core",           group: "vault",      color: "#6366f1", desc: "AI Privacy Layer — PII/PHI/financial redaction" },
+  { id: "edge-core",            icon: "🌐", name: "Edge Core",            group: "edge",       color: "#0891b2", desc: "AI Gateway — token metering & billing" },
+  { id: "soc-core",             icon: "🛡️", name: "SOC Core",             group: "soc",        color: "#dc2626", desc: "SIEM + SOAR + threat intelligence" },
+  { id: "compliance-core",      icon: "📋", name: "Compliance Core",      group: "compliance", color: "#16a34a", desc: "Automated audit — SOC2/ISO/HIPAA/GDPR" },
+  { id: "sentinel-core",        icon: "📡", name: "Sentinel Core",        group: "sentinel",   color: "#ca8a04", desc: "IoT/OT security — device discovery & CVE" },
+  { id: "antivirus-core",       icon: "🦠", name: "Antivirus Core",       group: "antivirus",  color: "#ea580c", desc: "ClamAV + ML behavioral detection" },
+  { id: "legal-core",           icon: "⚖️", name: "AXTO Legal Core",      group: "legal",      color: "#0d9488", desc: "AI legal & compliance workflow — multi-jurisdiction, BYOK" },
+];
+
+const BUILDABLE_NOW = new Set([
+  "guardian-core","guardian-node","guardian-antivirus",
+  "orchestra-core","orchestra-worker-cpu","orchestra-worker-gpu",
+  "vault-core","edge-core","soc-core","compliance-core","sentinel-core","antivirus-core",
+  "legal-core",
+]);
+
+const BUILD_TYPES = ["image","exe"] as const;
+type BuildType = typeof BUILD_TYPES[number];
+type CIProvider = "github" | "gitlab" | "auto";
+
+function r2LatestKey(product: string, type: BuildType) {
+  return type === "image"
+    ? `builds/latest/raw/${product}.tar.gz`
+    : `builds/latest/exe/${product}-windows.exe`;
+}
+function r2VersionKey(product: string, type: BuildType, version: string) {
+  return type === "image"
+    ? `builds/${version}/raw/${product}.tar.gz`
+    : `builds/${version}/exe/${product}-windows.exe`;
 }
 
-// ── Trigger GitHub Actions build ──────────────────────────────────────────────
-async function triggerGitHubBuild(p: {
-  product:string; buildType:string; buildId:string; licenseKey:string;
-  licenseType:string; trialDays:number; maxNodes:number; maxGpu:number;
-  maxWorkers:number; unlimited:boolean; arch:string; version:string;
-  clientName:string; clientEmail:string; label:string; r2Key:string;
-}) {
-  const token   = process.env.GITHUB_TOKEN;
-  const owner   = process.env.GITHUB_OWNER || process.env.GHCR_OWNER || "p2nshooter";
-  const repo    = process.env.GITHUB_REPO  || "guardian-ai";
-  const appUrl  = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
-  const secret  = process.env.BUILD_WEBHOOK_SECRET || "";
-  if (!token) return { triggered: false, status: 0 };
+// ── GitHub Actions dispatch ───────────────────────────────────────────────────
+async function triggerGitHub(
+  product: string, type: BuildType, version: string,
+  callbackUrl: string, env: Record<string,string>
+) {
+  const token = env.GITHUB_TOKEN;
+  const repo  = env.GITHUB_REPO || "axto-platform/axto-products";
+  if (!token) return { ok: false, error: "GITHUB_TOKEN not configured" };
 
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/actions/workflows/build-release.yml/dispatches`,
-    {
-      method: "POST",
-      headers: { Authorization:`Bearer ${token}`, Accept:"application/vnd.github+json", "Content-Type":"application/json" },
-      body: JSON.stringify({
-        ref: p.version === "latest" ? "main" : p.version,
-        inputs: {
-          build_id:         p.buildId,
-          product:          p.product,
-          build_type:       p.buildType,
-          license_key:      p.licenseKey,
-          license_type:     p.licenseType,
-          trial_days:       String(p.trialDays),
-          max_nodes:        p.unlimited ? "0" : String(p.maxNodes),
-          max_gpu:          p.unlimited ? "0" : String(p.maxGpu),
-          max_workers:      p.unlimited ? "0" : String(p.maxWorkers),
-          unlimited:        p.unlimited ? "1" : "0",
-          arch:             p.arch,
-          client_name:      p.clientName,
-          client_email:     p.clientEmail,
-          r2_upload_key:    p.r2Key,           // R2 key for GH Actions to upload binary
-          callback_url:     `${appUrl}/api/admin/engine-builder`,
-          callback_secret:  secret,
-        },
-      }),
-    }
-  );
-  return { triggered: res.ok, status: res.status };
-}
-
-// ── Delete GitHub Release (cleanup if it exists) ──────────────────────────────
-async function deleteGitHubRelease(releaseTag: string) {
-  const token = process.env.GITHUB_TOKEN;
-  const owner = process.env.GITHUB_OWNER || process.env.GHCR_OWNER || "p2nshooter";
-  const repo  = process.env.GITHUB_REPO  || "guardian-ai";
-  if (!token || !releaseTag) return;
   try {
-    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/${releaseTag}`,
-      { headers: { Authorization:`Bearer ${token}`, Accept:"application/vnd.github+json" } });
-    if (!r.ok) return;
-    const rel: any = await r.json();
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/${rel.id}`,
-      { method:"DELETE", headers: { Authorization:`Bearer ${token}`, Accept:"application/vnd.github+json" } });
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/tags/${releaseTag}`,
-      { method:"DELETE", headers: { Authorization:`Bearer ${token}`, Accept:"application/vnd.github+json" } });
-  } catch {}
+    const r = await fetch(`https://api.github.com/repos/${repo}/dispatches`, {
+      method: "POST",
+      headers: {
+        Authorization:  `token ${token}`,
+        Accept:         "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        event_type: "build_product",
+        client_payload: { product, build_type: type, version,
+          r2_upload_key: r2LatestKey(product, type), callback_url: callbackUrl },
+      }),
+    });
+    if (r.status === 204) return { ok: true, provider: "github",
+      pipeline_url: `https://github.com/${repo}/actions` };
+    const detail = await r.text().catch(()=>"");
+    return { ok: false, error: `GitHub ${r.status}: ${detail.slice(0,200)}` };
+  } catch(e:any) {
+    return { ok: false, error: `GitHub error: ${e.message}` };
+  }
 }
 
-// ── Config file generator (always available as ZIP alongside binary) ──────────
-function buildConfigFiles(b: any) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
-  const owner  = process.env.GHCR_OWNER || "p2nshooter";
-  const tag    = b.version || "latest";
-  const ts     = new Date().toISOString();
-  const maxN   = b.unlimited ? 9999 : b.max_nodes;
-  const maxW   = b.unlimited ? 9999 : b.max_workers;
-  const maxG   = b.unlimited ? 99   : b.max_gpu;
-  const isWin  = b.arch === "windows/amd64";
+// ── GitLab CI pipeline trigger ────────────────────────────────────────────────
+async function triggerGitLab(
+  product: string, type: BuildType, version: string,
+  callbackUrl: string, env: Record<string,string>
+) {
+  const token     = env.GITLAB_TRIGGER_TOKEN;
+  const projectId = env.GITLAB_PROJECT_ID;
+  const ref       = env.GITLAB_BRANCH || "main";
+  const host      = env.GITLAB_HOST   || "https://gitlab.com";
 
-  const gYml = `# AXTO Guardian AI\n# Build: ${b.label} | Client: ${b.client_name||"—"} <${b.client_email||""}> | ${ts}\nguardian:\n  license_key: "${b.license_key}"\n  license_validate_url: "${appUrl}/api/license-validate"\n  max_nodes: ${maxN}\n  scan_mode: "auto"\n  scan_interval: 300\n  scan_paths: [/host, /tmp, /var/www]\n  ai_pool:\n    routing: cost\n    fallback: true\n    providers:\n      - provider: openai\n        api_key: "sk-REPLACE_YOUR_KEY"\n        model: "gpt-4o-mini"\n      # - provider: groq\n      #   api_key: "gsk_REPLACE_ME"\n      # - provider: ollama\n      #   base_url: "http://localhost:11434"\n      #   model: "llama3"\n  alerts: { email: "", slack_webhook: "", discord_webhook: "" }\n  log_retention_days: 90\n`;
+  if (!token || !projectId) return {
+    ok: false,
+    error: "GITLAB_TRIGGER_TOKEN and GITLAB_PROJECT_ID not configured. " +
+           "Add them in Cloudflare Dashboard → Workers → axto-dashboard → Settings → Variables."
+  };
 
-  const gCompose = `version: "3.9"\n# AXTO Guardian AI | Build: ${b.label} | ${ts}\nservices:\n  guardian-db:\n    image: postgres:16-alpine\n    restart: unless-stopped\n    environment:\n      POSTGRES_USER: guardian\n      POSTGRES_PASSWORD: \${GUARDIAN_DB_PASSWORD:?set GUARDIAN_DB_PASSWORD}\n      POSTGRES_DB: guardian\n    volumes: [guardian-db-data:/var/lib/postgresql/data]\n    networks: [guardian-net]\n  guardian-core:\n    image: ghcr.io/${owner}/guardian-core:${tag}\n    restart: unless-stopped\n    ports: ["8080:8080"]\n    volumes: [./guardian.yml:/guardian/config/guardian.yml:ro, guardian-data:/guardian/data]\n    environment: [GUARDIAN_CONFIG=/guardian/config/guardian.yml, "GUARDIAN_DB_URL=postgresql://guardian:\${GUARDIAN_DB_PASSWORD}@guardian-db:5432/guardian"]\n    networks: [guardian-net]\n  guardian-node:\n    image: ghcr.io/${owner}/guardian-node:${tag}\n    restart: unless-stopped\n    privileged: true\n    cap_add: [NET_ADMIN, SYS_PTRACE, KILL]\n    volumes: [/:/host:ro, ./guardian.yml:/guardian/config/guardian.yml:ro]\n    environment: [GUARDIAN_CORE_URL=http://guardian-core:8080]\n    networks: [guardian-net]\n  clamav:\n    image: ghcr.io/${owner}/guardian-clamav:${tag}\n    restart: unless-stopped\n    volumes: [clamav-db:/var/lib/clamav, /:/scan-host:ro]\n    networks: [guardian-net]\nvolumes: { guardian-db-data: {}, guardian-data: {}, clamav-db: {} }\nnetworks: { guardian-net: { driver: bridge } }\n`;
+  try {
+    const vars = new URLSearchParams({
+      token, ref,
+      "variables[BUILD_PRODUCT]": product,
+      "variables[BUILD_TYPE]":    type,
+      "variables[BUILD_ID]":      version,
+      "variables[CALLBACK_URL]":  callbackUrl,
+    });
 
-  const oYml = `# AXTO Orchestra AI\n# Build: ${b.label} | Client: ${b.client_name||"—"} | ${ts}\norchestra:\n  license_key: "${b.license_key}"\n  license_validate_url: "${appUrl}/api/license-validate"\n  console_password: "CHANGE_THIS_PASSWORD"\n  worker_token: "CHANGE_THIS_TOKEN"\n  max_workers: ${maxW}\n  ai_pool:\n    default_routing: cost\n    fallback: true\n    providers:\n      - provider: groq\n        api_key: "gsk_REPLACE_YOUR_GROQ_KEY"\n        model: "llama-3.1-8b-instant"\n      - provider: deepseek\n        api_key: "sk-REPLACE_YOUR_DEEPSEEK_KEY"\n        model: "deepseek-chat"\n  autoscaler: { enabled: false, threshold: 20, max_cpu_workers: ${maxW}, max_gpu_workers: ${maxG} }\n  log_retention_days: 90\n`;
-
-  const oCompose = `version: "3.9"\n# AXTO Orchestra AI | Build: ${b.label} | ${ts}\nservices:\n  orchestra-db:\n    image: postgres:16-alpine\n    restart: unless-stopped\n    environment: { POSTGRES_USER: orchestra, POSTGRES_PASSWORD: "\${ORCHESTRA_DB_PASSWORD}", POSTGRES_DB: orchestra }\n    volumes: [orchestra-db-data:/var/lib/postgresql/data]\n    networks: [orchestra-net]\n  orchestra-core:\n    image: ghcr.io/${owner}/orchestra-core:${tag}\n    restart: unless-stopped\n    ports: ["8080:8080"]\n    volumes: [./orchestra.yml:/app/config/orchestra.yml:ro, orchestra-data:/app/data]\n    environment: [ORCHESTRA_CONFIG=/app/config/orchestra.yml, "DATABASE_URL=postgresql://orchestra:\${ORCHESTRA_DB_PASSWORD}@orchestra-db:5432/orchestra", "WORKER_TOKEN=\${WORKER_TOKEN}"]\n    networks: [orchestra-net]\n  worker-cpu:\n    image: ghcr.io/${owner}/orchestra-worker-cpu:${tag}\n    restart: unless-stopped\n    environment: [ORCHESTRA_CORE_URL=http://orchestra-core:8080, "ORCHESTRA_WORKER_TOKEN=\${WORKER_TOKEN}"]\n    networks: [orchestra-net]\n${maxG > 0 ? `  worker-gpu:\n    image: ghcr.io/${owner}/orchestra-worker-gpu:${tag}\n    restart: unless-stopped\n    runtime: nvidia\n    environment: [ORCHESTRA_CORE_URL=http://orchestra-core:8080, "ORCHESTRA_WORKER_TOKEN=\${WORKER_TOKEN}", WORKER_MODEL=llama3.2]\n    networks: [orchestra-net]` : ""}\nvolumes: { orchestra-db-data: {}, orchestra-data: {} }\nnetworks: { orchestra-net: { driver: bridge } }\n`;
-
-  const archSlug = isWin ? "windows" : b.arch === "linux/arm64" ? "linux-arm64" : "linux";
-  const installer = isWin
-    ? `@echo off\nREM AXTO ${b.product} | ${b.label}\nnet session >nul 2>&1 || (echo Run as Administrator & pause & exit /b 1)\ndocker pull ghcr.io/${owner}/${b.product.includes("orchestra")?"orchestra-core":"guardian-core"}:${tag}\ndocker compose -f docker-compose.yml up -d\necho Ready: http://localhost:8080\npause`
-    : `#!/bin/bash\n# AXTO ${b.product} | ${b.label}\nset -euo pipefail\ncommand -v docker &>/dev/null || { echo "Install Docker: https://docs.docker.com/get-docker/"; exit 1; }\n[ ! -f .env ] && printf 'GUARDIAN_DB_PASSWORD=%s\\nORCHESTRA_DB_PASSWORD=%s\\nWORKER_TOKEN=%s\\n' "$(openssl rand -hex 16)" "$(openssl rand -hex 16)" "$(openssl rand -hex 24)" > .env\ndocker compose pull\ndocker compose up -d\necho "Done! Dashboard: http://localhost:8080"`;
-
-  const readme = `AXTO ${b.product}\nBuild : ${b.label}\nClient: ${b.client_name||"—"} <${b.client_email||""}>\nLicense: ${b.license_type}${b.trial_days>0?" ("+b.trial_days+"d)":""}\nNodes: ${b.unlimited?"∞":b.max_nodes} | GPU: ${b.unlimited?"∞":b.max_gpu} | Workers: ${b.unlimited?"∞":b.max_workers}\n\nQUICK START (Docker)\n1. Edit guardian.yml / orchestra.yml — add AI API keys + change passwords\n2. docker compose pull\n3. docker compose up -d\n4. Dashboard: http://YOUR_SERVER:8080\n\nQUICK START (EXE/Binary — Linux)\n1. chmod +x ./install.sh\n2. sudo ./install.sh\n3. Dashboard: http://YOUR_SERVER:8080\n\nSupport: hallo@axto.io | Portal: ${appUrl}/portal\n`;
-
-  const isG = b.product.includes("guardian");
-  const isO = b.product.includes("orchestra");
-  const isB = b.product === "full-bundle";
-
-  const files: any = { "README.txt": { content:readme, type:"text/plain" } };
-  if (isG || isB) {
-    files["guardian.yml"]       = { content:gYml,     type:"text/yaml" };
-    files["guardian-compose.yml"] = { content:gCompose, type:"text/yaml" };
+    const r = await fetch(
+      `${host}/api/v4/projects/${encodeURIComponent(projectId)}/trigger/pipeline`,
+      { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body: vars.toString() }
+    );
+    if (!r.ok) {
+      const detail = await r.text().catch(()=>"");
+      return { ok: false, error: `GitLab ${r.status}: ${detail.slice(0,200)}` };
+    }
+    const data:any = await r.json();
+    const namespace = data.project?.path_with_namespace || projectId;
+    return { ok: true, provider: "gitlab",
+      pipeline_url: `${host}/${namespace}/-/pipelines/${data.id}`,
+      pipeline_id: data.id };
+  } catch(e:any) {
+    return { ok: false, error: `GitLab error: ${e.message}` };
   }
-  if (isO || isB) {
-    files["orchestra.yml"]       = { content:oYml,     type:"text/yaml" };
-    files["orchestra-compose.yml"] = { content:oCompose, type:"text/yaml" };
-  }
-  if (!isG && !isO && !isB) {
-    files["docker-compose.yml"] = { content:gCompose, type:"text/yaml" };
-    files["config.yml"]         = { content:gYml,     type:"text/yaml" };
-  }
-  if (b.build_type === "exe") {
-    files[isWin?"install.bat":"install.sh"] = { content:installer, type:"text/plain" };
-  }
-  return files;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET — list builds + stats
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Dispatch to best available CI ────────────────────────────────────────────
+async function dispatchBuild(
+  product: string, type: BuildType, version: string,
+  callbackUrl: string, env: Record<string,string>, prefer: CIProvider = "auto"
+) {
+  type Attempt = { provider: string; error?: string };
+  const log: Attempt[] = [];
+
+  // Determine order: GitLab primary (it's the primary repo), GitHub fallback
+  let order: ("gitlab"|"github")[];
+  if (prefer === "github")      order = ["github","gitlab"];
+  else if (prefer === "gitlab") order = ["gitlab","github"];
+  else order = env.GITLAB_TRIGGER_TOKEN ? ["gitlab","github"] : ["github","gitlab"];
+
+  for (const p of order) {
+    const res = p === "gitlab"
+      ? await triggerGitLab(product, type, version, callbackUrl, env)
+      : await triggerGitHub(product, type, version, callbackUrl, env);
+
+    if (res.ok) return { ...res, log };
+    log.push({ provider: p, error: (res as any).error });
+  }
+
+  return {
+    ok: false,
+    error: `CI dispatch failed on all providers. ` +
+           log.map(l=>`${l.provider}: ${l.error}`).join(" | "),
+    log,
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// GET — Dashboard status
+// ═════════════════════════════════════════════════════════════════════════════
 export async function GET(req: NextRequest) {
   const user = await requireAdmin(req);
-  if (!user) return NextResponse.json({ error:"Unauthorized" }, { status:401 });
-  let db: any;
-  try { db = getDB(req); } catch { return NextResponse.json({ error:"DB unavailable" }, { status:503 }); }
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const builds = await dbQuery<any>(db,
-    `SELECT * FROM engine_builds WHERE deleted_at='' ORDER BY created_at DESC LIMIT 500`
-  ).catch(() => []);
+  const env = (req as any).env || {};
+  let r2: any = null; let r2Available = false;
+  try { r2 = getR2Builds(req); r2Available = true; } catch {}
+  let db: any = null; try { db = getDB(req); } catch {}
 
-  const stats = await dbFirst<any>(db,
-    `SELECT COUNT(*) as total,
-       SUM(CASE WHEN status='ready'    THEN 1 ELSE 0 END) as ready,
-       SUM(CASE WHEN status='building' THEN 1 ELSE 0 END) as building_count,
-       SUM(CASE WHEN status='failed'   THEN 1 ELSE 0 END) as failed,
-       SUM(COALESCE(file_size,0))                         as total_bytes
-     FROM engine_builds WHERE deleted_at=''`
-  ).catch(() => ({}));
+  // R2 file status
+  const status: Record<string,any> = {};
+  if (r2Available) {
+    for (const p of PRODUCTS) {
+      for (const t of BUILD_TYPES) {
+        const head = await r2.head(r2LatestKey(p.id, t)).catch(()=>null);
+        status[`${p.id}:${t}`] = head ? {
+          exists: true, size: head.size,
+          uploaded:  head.uploaded?.toISOString?.() || "",
+          commit:    head.customMetadata?.commit    || "",
+          build_date:head.customMetadata?.build_date || "",
+        } : { exists: false };
+      }
+    }
+  }
+
+  // Active pipelines
+  let activePipelines: any[] = [];
+  if (db) {
+    try {
+      const rows = await db.prepare(
+        `SELECT product, build_type as type, status, pipeline_url as url,
+                pipeline_id, ci_provider, progress, build_id
+         FROM product_builds WHERE status IN ('building','pending')
+         ORDER BY created_at DESC LIMIT 30`
+      ).all();
+      activePipelines = rows?.results || [];
+    } catch {}
+  }
+
+  // GitLab registry info
+  const gitlabHost    = env.GITLAB_HOST || "https://gitlab.com";
+  const gitlabProject = env.GITLAB_PROJECT_ID || "";
+  const gitlabRegistry = gitlabProject
+    ? `registry.gitlab.com/${gitlabProject}`
+    : "registry.gitlab.com/axto-platform/axto-products";
 
   return NextResponse.json({
-    builds: builds || [],
-    stats: stats || {},
-    hasGithubToken: !!process.env.GITHUB_TOKEN,
-    hasR2: (() => { try { getR2Builds(req); return true; } catch { return false; } })(),
-    r2BindingMissing: (() => { try { getR2Builds(req); return false; } catch { return true; } })(),
+    products:       PRODUCTS,
+    buildTypes:     BUILD_TYPES,
+    buildableNow:   Array.from(BUILDABLE_NOW),
+    status,
+    r2Available,
+    activePipelines,
+    hasR2:          r2Available,
+    hasGithub:      !!env.GITHUB_TOKEN,
+    hasGitlab:      !!(env.GITLAB_TRIGGER_TOKEN && env.GITLAB_PROJECT_ID),
+    hasCi:          !!(env.GITHUB_TOKEN || (env.GITLAB_TRIGGER_TOKEN && env.GITLAB_PROJECT_ID)),
+    ciProviders: {
+      github: {
+        configured: !!env.GITHUB_TOKEN,
+        repo:       env.GITHUB_REPO || "",
+        actions_url:env.GITHUB_REPO ? `https://github.com/${env.GITHUB_REPO}/actions` : "",
+      },
+      gitlab: {
+        configured: !!(env.GITLAB_TRIGGER_TOKEN && env.GITLAB_PROJECT_ID),
+        project_id: gitlabProject,
+        host:       gitlabHost,
+        branch:     env.GITLAB_BRANCH || "main",
+        registry:   gitlabRegistry,
+        pipelines_url: gitlabProject
+          ? `${gitlabHost}/${gitlabProject}/-/pipelines`
+          : "",
+      },
+    },
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST — actions
-// ─────────────────────────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
+// POST — Actions
+// ═════════════════════════════════════════════════════════════════════════════
 export async function POST(req: NextRequest) {
-  const body: any = await req.json().catch(() => ({}));
-  const { action } = body;
-
-  // ── Webhook from GitHub Actions (no admin session — secured by secret) ────
-  if (action === "webhook_build_complete") {
-    const webhookSecret = process.env.BUILD_WEBHOOK_SECRET || "";
-    const reqSecret     = req.headers.get("X-Build-Webhook-Secret") || "";
-    if (!webhookSecret || reqSecret !== webhookSecret)
-      return NextResponse.json({ error:"Unauthorized" }, { status:401 });
-
-    let db: any;
-    try { db = getDB(req); } catch { return NextResponse.json({ error:"DB unavailable" }, { status:503 }); }
-
-    const { build_id, status, tag="", r2_key="", download_url="",
-            run_url="", artifact_size=0 } = body;
-    if (!build_id) return NextResponse.json({ error:"build_id required" }, { status:400 });
-
-    const newStatus = status === "ready" ? "ready" : "failed";
-    const sizeBytes = Number(artifact_size) || 0;
-    const sizeMB    = sizeBytes > 0 ? `${Math.round(sizeBytes/1024/1024)}MB` : "—";
-    // r2_key from GH Actions = builds/BUILD_ID/axto-product-type-arch.zip
-    const storedR2Key = r2_key || "";
-    // download_url: only used as fallback if no R2 (e.g. GH Release URL)
-    const storedDlUrl = storedR2Key ? "" : (download_url || "");
-    const releaseTag  = `build-${build_id}`;
-
-    await dbRun(db,
-      `UPDATE engine_builds
-         SET status=?, r2_key=?, download_url=?, version=?, file_size=?, run_url=?, gh_release_tag=?, updated_at=?
-       WHERE id=?`,
-      [newStatus, storedR2Key, storedDlUrl, tag, sizeBytes, run_url, releaseTag, now(), build_id]
-    );
-    await dbRun(db,
-      `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,
-      [newId(), build_id, newStatus==="ready"?"info":"error",
-        newStatus==="ready"
-          ? `[✅] Build complete! Size: ${sizeMB}. ${storedR2Key ? "Stored in CF R2: "+storedR2Key : "URL: "+storedDlUrl}`
-          : `[❌] Build failed. Run: ${run_url}`,
-        now()]
-    );
-    // If stored on GH Release AND R2 both, clean up GH Release (no longer needed)
-    if (storedR2Key && download_url && download_url.includes("github.com")) {
-      deleteGitHubRelease(releaseTag); // fire-and-forget
-    }
-    return NextResponse.json({ ok:true });
-  }
-
-  // ── All other actions require admin session ───────────────────────────────
   const user = await requireAdmin(req);
-  if (!user) return NextResponse.json({ error:"Unauthorized" }, { status:401 });
-  let db: any;
-  try { db = getDB(req); } catch { return NextResponse.json({ error:"DB unavailable" }, { status:503 }); }
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // ── create_build ──────────────────────────────────────────────────────────
-  if (action === "create_build") {
-    const {
-      build_type="docker", product="guardian", label="",
-      license_type="yearly", trial_days=0,
-      max_nodes=1, max_gpu=0, max_workers=10, unlimited=false,
-      client_name="", client_email="", client_org="",
-      arch="linux/amd64", notes="", version="latest",
-      existing_license_key="",
-    } = body;
+  let body:any = {}; try { body = await req.json(); } catch {}
+  const action = body.action || "trigger_build";
 
-    const validProducts = ["guardian-core","guardian-node","guardian-clamav","guardian-core-node","guardian-bundle",
-                           "orchestra-core","orchestra-worker-cpu","orchestra-worker-gpu","orchestra-core-cpu","orchestra-bundle","full-bundle"];
-    if (!validProducts.includes(product))
-      return NextResponse.json({ error:"Invalid product" }, { status:400 });
+  const env = (req as any).env || {};
+  let r2: any  = null; try { r2  = getR2Builds(req); } catch {}
+  let db: any  = null; try { db  = getDB(req); } catch {}
 
-    let expires_at = "2099-12-31T23:59:59Z";
-    if (license_type==="trial")   { const d=Math.min(Math.max(Number(trial_days)||3,1),7); const e=new Date(); e.setDate(e.getDate()+d); expires_at=e.toISOString(); }
-    if (license_type==="monthly") { const e=new Date(); e.setMonth(e.getMonth()+1); expires_at=e.toISOString(); }
-    if (license_type==="yearly")  { const e=new Date(); e.setFullYear(e.getFullYear()+1); expires_at=e.toISOString(); }
+  // ── Trigger build ──────────────────────────────────────────────────────────
+  if (action === "trigger_build") {
+    const product  = body.product   as string;
+    const type     = (body.type     as BuildType) || "image";
+    const version  = body.version   || `${new Date().toISOString().slice(0,10).replace(/-/g,"")}.${String(Date.now()).slice(-4)}`;
+    const provider = (body.ci_provider || "auto") as CIProvider;
 
-    const isOrchestra = product.startsWith("orchestra");
-    const licKey = existing_license_key || generateLicenseKey(isOrchestra?"orchestra":"guardian");
-    const id   = newId();
-    const nN   = unlimited ? 9999 : Math.max(1, Number(max_nodes)||1);
-    const nG   = unlimited ? 99   : Math.max(0, Number(max_gpu)||0);
-    const nW   = unlimited ? 9999 : Math.max(1, Number(max_workers)||10);
-    const lbl  = label || `${product}-${build_type}-${new Date().toISOString().slice(0,10)}`;
+    if (!PRODUCTS.find(p=>p.id===product))
+      return NextResponse.json({ error: `Unknown product: ${product}` }, { status: 400 });
+    if (!BUILDABLE_NOW.has(product))
+      return NextResponse.json({ error: `${product} is not yet buildable (coming soon).` }, { status: 400 });
+    if (!BUILD_TYPES.includes(type))
+      return NextResponse.json({ error: `Invalid type: ${type}` }, { status: 400 });
 
-    // Pre-compute R2 key so GH Actions knows where to upload
-    const r2Key = r2KeyForBuild(id, product, build_type, arch);
+    const callbackUrl = env.AXTO_APP_URL ? `${env.AXTO_APP_URL}/api/admin/engine-builder` : "";
+    const result = await dispatchBuild(product, type, version, callbackUrl, env, provider);
 
-    await dbRun(db,
-      `INSERT INTO engine_builds
-         (id,build_type,product,status,label,license_key,license_type,trial_days,
-          max_nodes,max_gpu,max_workers,unlimited,client_name,client_email,client_org,
-          r2_key,download_url,file_size,run_url,gh_release_tag,version,arch,notes,
-          expires_at,deleted_at,created_by,created_at,updated_at)
-       VALUES (?,?,?,'building',?,?,?,?,?,?,?,?,?,?,?,?,''  ,0,'','',?,?,?,?,?,'admin',?,?)`,
-      [id,build_type,product,lbl,licKey,license_type,Number(trial_days)||0,
-       nN,nG,nW,unlimited?1:0,client_name,client_email,client_org,
-       r2Key,        // pre-set R2 key so client/admin can find it
-       version,arch,notes,expires_at,"",now(),now()]
-    );
-
-    // ── Link build → license (so portal can find the R2 binary) ──────────
-    // If existing_license_key was provided, update that license record.
-    // If auto-generated key, also try to link by email + product match.
-    const keyToLink = licKey;
-    await dbRun(db,
-      `UPDATE licenses SET engine_build_id=?, updated_at=? WHERE license_key=? AND engine_build_id=''`,
-      [id, now(), keyToLink]
-    );
-    // Fallback: link by client_email + product if license exists but key was auto-generated
-    if (!existing_license_key && client_email) {
-      const prod = product.startsWith("orchestra") ? "orchestra" : "guardian";
-      await dbRun(db,
-        `UPDATE licenses SET engine_build_id=?, updated_at=?
-         WHERE client_id=(SELECT id FROM clients WHERE email=? LIMIT 1)
-           AND product=? AND engine_build_id='' AND status='active'
-         ORDER BY created_at DESC LIMIT 1`,
-        [id, now(), client_email.toLowerCase(), prod]
-      );
+    if (db) {
+      await db.prepare(
+        `INSERT OR REPLACE INTO product_builds
+           (id, product, build_type, status, pipeline_url, pipeline_id,
+            ci_provider, progress, build_id, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+      ).bind(
+        newId(), product, type,
+        result.ok ? "building" : "failed",
+        (result as any).pipeline_url || "",
+        String((result as any).pipeline_id || ""),
+        (result as any).provider || "unknown",
+        0, version, now(), now()
+      ).run().catch(()=>{});
     }
 
-    const log = (level:string, msg:string) => dbRun(db,
-      `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,
-      [newId(),id,level,msg,now()]
-    );
+    return NextResponse.json({
+      ok:           result.ok,
+      product, type, version,
+      provider:     (result as any).provider,
+      pipeline_url: (result as any).pipeline_url,
+      pipeline_id:  (result as any).pipeline_id,
+      error:        (result as any).error,
+      log:          (result as any).log,
+      message: result.ok
+        ? `Build triggered via ${(result as any).provider} — ${product} (${type}). Monitor: ${(result as any).pipeline_url}`
+        : `Build failed: ${(result as any).error}`,
+    });
+  }
 
-    await log("info", `[1/5] Build initiated — ${build_type.toUpperCase()} | ${product} | ${license_type} | ${arch}`);
-    await log("info", `[2/5] License key generated — ${licKey.slice(0,12)}...`);
-    await log("info", `[3/5] R2 destination set: ${r2Key}`);
+  // ── Check status ──────────────────────────────────────────────────────────
+  if (action === "check_build_status") {
+    const product = body.product as string;
+    const type    = body.type    as BuildType;
 
-    const hasGH = !!process.env.GITHUB_TOKEN;
-    let ghTriggered = false;
-    let ghStatus = 0;
+    if (r2) {
+      const head = await r2.head(r2LatestKey(product, type)).catch(()=>null);
+      if (head) {
+        if (db) await db.prepare(
+          `UPDATE product_builds SET status='ready',progress=100,updated_at=?
+           WHERE product=? AND build_type=? AND status IN ('building','pending')`
+        ).bind(now(),product,type).run().catch(()=>{});
+        return NextResponse.json({ done:true, status:"ready",
+          size:head.size, uploaded:head.uploaded?.toISOString?.()||"",
+          commit:head.customMetadata?.commit||"" });
+      }
+    }
 
-    if (hasGH) {
+    if (db) {
       try {
-        const gh = await triggerGitHubBuild({
-          product, buildType:build_type, buildId:id, licenseKey:licKey,
-          licenseType:license_type, trialDays:Number(trial_days)||0,
-          maxNodes:nN, maxGpu:nG, maxWorkers:nW, unlimited:!!unlimited,
-          arch, version, clientName:client_name, clientEmail:client_email,
-          label:lbl, r2Key,
+        const row = await db.prepare(
+          `SELECT status,progress,pipeline_url,pipeline_id,ci_provider
+           FROM product_builds WHERE product=? AND build_type=?
+           ORDER BY created_at DESC LIMIT 1`
+        ).bind(product,type).first();
+        if (row) return NextResponse.json({
+          done: row.status==="ready"||row.status==="failed",
+          status: row.status, progress: row.progress||0,
+          pipeline_url: row.pipeline_url, ci_provider: row.ci_provider,
         });
-        ghTriggered = gh.triggered;
-        ghStatus    = gh.status;
-        if (!ghTriggered)
-          await log("warn", `[4/5] ⚠️ GitHub Actions dispatch failed (HTTP ${gh.status}) — check GITHUB_TOKEN scope & GITHUB_REPO env var`);
-      } catch (e:any) {
-        await log("warn", `[4/5] ⚠️ GitHub error: ${e.message}`);
-      }
+      } catch {}
     }
 
-    if (ghTriggered) {
-      const sizeHint = build_type==="exe" ? "200MB–1GB per binary" : "200MB–2GB per image tarball";
-      await log("info", `[4/5] 🔨 GitHub Actions compiling (${sizeHint}) → upload to CF R2 axto-storage/${r2Key}`);
-      await log("info", `[5/5] ⏳ Waiting for compile… dashboard polls every 10s`);
-    } else if (!hasGH) {
-      // No GitHub token — config-only mode (YAML files only, no real binary)
-      await log("warn", `[4/5] ⚠️ GITHUB_TOKEN not set — config-only mode. Set GITHUB_TOKEN + GITHUB_REPO in CF Pages env vars to build real binaries.`);
-      await dbRun(db, `UPDATE engine_builds SET status='ready', updated_at=? WHERE id=?`, [now(),id]);
-      await log("info", `[5/5] ✅ Config files ready (no binary — GITHUB_TOKEN required for real Docker image/EXE build)`);
-    } else {
-      // GH token set but dispatch failed
-      await dbRun(db, `UPDATE engine_builds SET status='failed', updated_at=? WHERE id=?`, [now(),id]);
-      await log("error", `[4/5] ❌ GitHub Actions dispatch failed (HTTP ${ghStatus}). Check: GITHUB_TOKEN has 'actions:write' scope, GITHUB_REPO is correct, workflow file exists at .github/workflows/build-release.yml`);
-      await log("error", `[5/5] ❌ Build failed — fix GitHub config and use Retry Build`);
+    return NextResponse.json({ done:false, status:"unknown", progress:0 });
+  }
+
+  // ── Webhook callback from CI ───────────────────────────────────────────────
+  if (action === "build_callback") {
+    const secret   = env.BUILD_WEBHOOK_SECRET;
+    const incoming = req.headers.get("x-webhook-secret");
+    if (secret && incoming !== secret)
+      return NextResponse.json({ error: "Invalid webhook secret" }, { status: 401 });
+
+    const { product, type, status: st, pipeline_url } = body;
+    const isSuccess = st === "success";
+
+    if (db && product && type) {
+      await db.prepare(
+        `UPDATE product_builds
+         SET status=?, progress=?, pipeline_url=COALESCE(?,pipeline_url), updated_at=?
+         WHERE product=? AND build_type=? AND status IN ('building','pending')`
+      ).bind(isSuccess?"ready":"failed", isSuccess?100:0,
+             pipeline_url||null, now(), product, type
+      ).run().catch(()=>{});
     }
 
-    return NextResponse.json({ ok:true, id, licenseKey:licKey, githubTriggered:ghTriggered, configOnly:!hasGH, r2Key });
+    return NextResponse.json({ ok:true, product, type, status: isSuccess?"ready":"failed" });
   }
 
-  // ── get_progress ──────────────────────────────────────────────────────────
-  if (action === "get_progress") {
-    const { id } = body;
-    if (!id) return NextResponse.json({ error:"id required" }, { status:400 });
-    const build = await dbFirst<any>(db,
-      `SELECT id,status,label,license_key,product,build_type,arch,expires_at,r2_key,download_url,run_url,file_size
-       FROM engine_builds WHERE id=?`, [id]);
-    const logs = await dbQuery<any>(db,
-      `SELECT level,message,created_at FROM engine_build_logs WHERE build_id=? ORDER BY created_at ASC`, [id]
-    ).catch(()=>[]);
-    const steps  = (logs||[]).filter((l:any)=>/^\[\d/.test(l.message)).length;
-    const isDone = build?.status==="ready" || build?.status==="failed";
-    const pct    = isDone ? (build.status==="ready"?100:0) : Math.min(steps*20,80);
-    return NextResponse.json({ build, logs:logs||[], progress:pct, run_url:build?.run_url||"" });
+  // ── Manual upload ──────────────────────────────────────────────────────────
+  if (action === "upload") {
+    if (!r2) return NextResponse.json({ error: "R2 not configured" }, { status: 503 });
+    const product = body.product as string;
+    const type    = body.type    as BuildType;
+    const version = body.version || "manual";
+    const b64     = body.content as string;
+
+    if (!PRODUCTS.find(p=>p.id===product))
+      return NextResponse.json({ error: `Unknown product: ${product}` }, { status: 400 });
+    if (!b64)
+      return NextResponse.json({ error: "content (base64) required" }, { status: 400 });
+
+    const bytes  = Uint8Array.from(atob(b64), c=>c.charCodeAt(0));
+    const ct     = type==="image" ? "application/gzip" : "application/octet-stream";
+    const meta   = { product, type, version, build_date: new Date().toISOString(), manual:"true" };
+
+    await r2.put(r2LatestKey(product,type),        bytes, { httpMetadata:{contentType:ct}, customMetadata:meta });
+    await r2.put(r2VersionKey(product,type,version),bytes, { httpMetadata:{contentType:ct}, customMetadata:meta });
+
+    if (db) await db.prepare(
+      `INSERT OR REPLACE INTO product_builds
+         (id,product,build_type,status,progress,ci_provider,build_id,created_at,updated_at)
+       VALUES (?,?,?,'ready',100,'manual',?,?,?)`
+    ).bind(newId(),product,type,version,now(),now()).run().catch(()=>{});
+
+    return NextResponse.json({ ok:true, product, type, version,
+      r2_key:r2LatestKey(product,type), size:bytes.length });
   }
 
-  // ── get_download_files ────────────────────────────────────────────────────
-  if (action === "get_download_files") {
-    const { id } = body;
-    if (!id) return NextResponse.json({ error:"id required" }, { status:400 });
-    const build = await dbFirst<any>(db, `SELECT * FROM engine_builds WHERE id=? AND deleted_at=''`, [id]);
-    if (!build) return NextResponse.json({ error:"Build not found" }, { status:404 });
-    if (build.status !== "ready") return NextResponse.json({ error:"Build not ready yet" }, { status:400 });
+  // ── Delete ────────────────────────────────────────────────────────────────
+  if (action === "delete") {
+    if (!r2) return NextResponse.json({ error: "R2 not configured" }, { status: 503 });
+    const product = body.product as string;
+    const type    = body.type    as BuildType;
 
-    const hasBinary = !!build.r2_key;  // true = real artifact stored in CF R2
-    const sizeMB    = build.file_size > 0 ? Math.round(build.file_size/1024/1024) : 0;
+    await r2.delete(r2LatestKey(product,type)).catch(()=>{});
+    if (db) await db.prepare(
+      `UPDATE product_builds SET status='pending',progress=0,updated_at=?
+       WHERE product=? AND build_type=?`
+    ).bind(now(),product,type).run().catch(()=>{});
 
-    return NextResponse.json({
-      ok: true,
-      build,
-      has_binary:   hasBinary,
-      file_size_mb: sizeMB,
-      // Download via /api/admin/engine-builder/download?id=BUILD_ID (streams from R2)
-      files: buildConfigFiles(build),
-    });
+    return NextResponse.json({ ok:true, deleted: r2LatestKey(product,type) });
   }
 
-  // ── delete_build ──────────────────────────────────────────────────────────
-  // hard=false → soft delete (hide from list, keep in DB + R2)
-  // hard=true  → delete from DB + R2 + GitHub Release
-  if (action === "delete_build") {
-    const { id, hard=false } = body;
-    if (!id) return NextResponse.json({ error:"id required" }, { status:400 });
-    const build = await dbFirst<any>(db,
-      `SELECT id,label,r2_key,gh_release_tag FROM engine_builds WHERE id=? AND deleted_at=''`, [id]);
-    if (!build) return NextResponse.json({ error:"Not found" }, { status:404 });
-
-    if (hard) {
-      let r2Deleted = false;
-      // Delete from CF R2
-      if (build.r2_key) {
-        try {
-          const r2 = getR2Builds(req);
-          await r2.delete(build.r2_key);
-          r2Deleted = true;
-        } catch {}
-      }
-      // Delete GitHub Release if still exists
-      if (build.gh_release_tag) {
-        deleteGitHubRelease(build.gh_release_tag);
-      }
-      // Hard delete from DB
-      await dbRun(db, `DELETE FROM engine_build_logs WHERE build_id=?`, [id]);
-      await dbRun(db, `DELETE FROM engine_builds WHERE id=?`, [id]);
-      return NextResponse.json({ ok:true, hard:true, r2Deleted });
-    } else {
-      await dbRun(db, `UPDATE engine_builds SET status='deleted',deleted_at=?,updated_at=? WHERE id=?`, [now(),now(),id]);
-      await dbRun(db, `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,
-        [newId(),id,"warn","Soft-deleted by admin",now()]);
-      return NextResponse.json({ ok:true, hard:false });
-    }
-  }
-
-  // ── purge_all_deleted ─────────────────────────────────────────────────────
-  if (action === "hard_delete_all") {
-    const rows = await dbQuery(db, `SELECT id,r2_key,gh_release_tag FROM engine_builds`).catch(()=>[]);
-    let deleted = 0;
-    for (const r of (rows||[])) {
-      if (r.r2_key) { try { const r2 = getR2Builds(req); await r2.delete(r.r2_key); } catch {} }
-      if (r.gh_release_tag && typeof r.gh_release_tag === "string") deleteGitHubRelease(r.gh_release_tag);
-      await dbRun(db, `DELETE FROM engine_build_logs WHERE build_id=?`, [r.id]);
-      await dbRun(db, `DELETE FROM engine_builds WHERE id=?`, [r.id]);
-      deleted++;
-    }
-    return NextResponse.json({ ok:true, deleted });
-  }
-
-  if (action === "purge_all_deleted") {
-    const rows = await dbQuery<any>(db,
-      `SELECT id,r2_key,gh_release_tag FROM engine_builds WHERE deleted_at!=''`
-    ).catch(()=>[]);
-    let r2Count = 0;
-    for (const r of (rows||[])) {
-      if (r.r2_key) {
-        try { const r2 = getR2Builds(req); await r2.delete(r.r2_key); r2Count++; } catch {}
-      }
-      if (r.gh_release_tag) deleteGitHubRelease(r.gh_release_tag);
-      await dbRun(db, `DELETE FROM engine_build_logs WHERE build_id=?`, [r.id]);
-      await dbRun(db, `DELETE FROM engine_builds WHERE id=?`, [r.id]);
-    }
-    return NextResponse.json({ ok:true, purged:(rows||[]).length, r2FilesDeleted:r2Count });
-  }
-
-
-  // ── retry_build ───────────────────────────────────────────────────────────
-  if (action === "retry_build") {
-    const { id } = body;
-    if (!id) return NextResponse.json({ error:"id required" }, { status:400 });
-
-    const build = await dbFirst<any>(db,
-      `SELECT * FROM engine_builds WHERE id=? AND deleted_at=''`, [id]);
-    if (!build) return NextResponse.json({ error:"Build not found" }, { status:404 });
-
-    const hasGH = !!process.env.GITHUB_TOKEN;
-    if (!hasGH) return NextResponse.json({
-      error:"GITHUB_TOKEN not configured. Go to Cloudflare Pages → Settings → Variables & Secrets → add GITHUB_TOKEN."
-    }, { status:400 });
-
-    const retryR2Key = build.r2_key || r2KeyForBuild(id, build.product, build.build_type, build.arch || "linux/amd64");
-    await dbRun(db,
-      `UPDATE engine_builds SET status='building', run_url='', updated_at=? WHERE id=?`,
-      [now(), id]
-    );
-
-    const log = (level:string, msg:string) => dbRun(db,
-      `INSERT INTO engine_build_logs (id,build_id,level,message,created_at) VALUES (?,?,?,?,?)`,
-      [newId(),id,level,msg,now()]
-    );
-    await log("info", `[RETRY] 🔄 Retrying — ${build.build_type} | ${build.product} | ${build.arch || "linux/amd64"}`);
-
-    let ghTriggered = false, ghStatus = 0;
-    try {
-      const gh = await triggerGitHubBuild({
-        product:    build.product,
-        buildType:  build.build_type,
-        buildId:    id,
-        licenseKey: build.license_key,
-        licenseType:build.license_type,
-        trialDays:  Number(build.trial_days)||0,
-        maxNodes:   Number(build.max_nodes)||1,
-        maxGpu:     Number(build.max_gpu)||0,
-        maxWorkers: Number(build.max_workers)||10,
-        unlimited:  !!build.unlimited,
-        arch:       build.arch || "linux/amd64",
-        version:    build.version || "latest",
-        clientName: build.client_name  || "",
-        clientEmail:build.client_email || "",
-        label:      build.label,
-        r2Key:      retryR2Key,
-      });
-      ghTriggered = gh.triggered;
-      ghStatus    = gh.status;
-    } catch (e:any) {
-      await log("error", `[RETRY] GitHub error: ${e.message}`);
-    }
-
-    if (ghTriggered) {
-      await log("info", `[RETRY] ✅ GitHub Actions re-triggered successfully. Compiling…`);
-      await log("info", `[RETRY] ⏳ Dashboard will poll every 10s. Binary upload to R2: ${retryR2Key}`);
-    } else {
-      await dbRun(db, `UPDATE engine_builds SET status='failed', updated_at=? WHERE id=?`, [now(), id]);
-      await log("error", `[RETRY] ❌ GitHub Actions dispatch failed (HTTP ${ghStatus}).`);
-      await log("error", `[RETRY] Fix: 1) Verify GITHUB_TOKEN has 'repo' + 'workflow' scope. 2) Verify GITHUB_REPO env var is correct. 3) Ensure .github/workflows/build-release.yml exists in your repo.`);
-    }
-
-    return NextResponse.json({ ok:ghTriggered, githubTriggered:ghTriggered, status:ghStatus });
-  }
-
-  // ── test_github_connection ────────────────────────────────────────────────
-  // Test apakah GitHub token valid dan bisa trigger workflow
-  if (action === "test_github_connection") {
-    const token = process.env.GITHUB_TOKEN;
-    const owner = process.env.GITHUB_OWNER || process.env.GHCR_OWNER || "p2nshooter";
-    const repo  = process.env.GITHUB_REPO  || "guardian-ai";
-
-    if (!token) return NextResponse.json({
-      ok: false,
-      error: "GITHUB_TOKEN tidak ada di CF Pages env vars",
-      fix: "Buka CF Pages → Settings → Variables & Secrets → + Add → Name: GITHUB_TOKEN → Value: ghp_xxx"
-    });
-
-    // Test 1: token valid?
-    const meRes = await fetch("https://api.github.com/user",
-      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
-    );
-    if (!meRes.ok) return NextResponse.json({
-      ok: false, error: `Token invalid (HTTP ${meRes.status})`,
-      fix: "GITHUB_TOKEN expired atau salah. Generate baru di GitHub → Settings → Developer settings → Personal access tokens"
-    });
-    const me: any = await meRes.json();
-
-    // Test 2: repo exists?
-    const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`,
-      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
-    );
-    if (!repoRes.ok) return NextResponse.json({
-      ok: false, error: `Repo ${owner}/${repo} tidak bisa diakses (HTTP ${repoRes.status})`,
-      fix: `Cek GITHUB_OWNER="${owner}" dan GITHUB_REPO="${repo}" sudah benar di CF Pages env vars`
-    });
-
-    // Test 3: workflow file exists?
-    const wfRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/build-release.yml`,
-      { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
-    );
-    if (!wfRes.ok) return NextResponse.json({
-      ok: false, error: `Workflow build-release.yml tidak ditemukan di repo (HTTP ${wfRes.status})`,
-      fix: "Pastikan file .github/workflows/build-release.yml ada di repo"
-    });
-    const wf: any = await wfRes.json();
-
-    // Test 4: token punya scope actions?
-    const scopeHeader = meRes.headers.get("x-oauth-scopes") || "";
-    const hasActions = scopeHeader.includes("workflow") || scopeHeader.includes("repo");
-
-    return NextResponse.json({
-      ok: true,
-      user: me.login,
-      repo: `${owner}/${repo}`,
-      workflow: wf.name,
-      workflow_state: wf.state,
-      token_scopes: scopeHeader || "(classic token — scopes tidak terlihat di API)",
-      has_workflow_scope: hasActions,
-      warning: !hasActions ? "Token mungkin tidak punya scope 'workflow'. Pastikan centang 'workflow' saat generate token." : null
-    });
-  }
-
-  return NextResponse.json({ error:"Unknown action" }, { status:400 });
+  return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
 }

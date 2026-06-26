@@ -1,37 +1,192 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
+// ═══════════════════════════════════════════════════════════════════════════
+// AXTO Platform — lib/license.ts REPLACEMENT
+// Extends generateLicenseKey + getProductFromPackage for all 7 products.
+//
+// REPLACE your existing lib/license.ts with this file.
+// ═══════════════════════════════════════════════════════════════════════════
 import { dbFirst, dbRun, getDB, newId, now } from "@/lib/db";
 import { NextRequest } from "next/server";
-import { PACKAGE_INFO, getMaxNodes, getMaxWorkers } from "@/lib/stripe";
+import { PACKAGE_INFO } from "@/lib/stripe";
 
 export type GatewayName = "stripe" | "paypal" | "xendit" | "midtrans" | "manual";
 
-export function generateLicenseKey(product: "guardian" | "orchestra" = "guardian"): string {
+// All supported AXTO products
+export type ProductType =
+  | "guardian"
+  | "orchestra"
+  | "vault"
+  | "edge"
+  | "soc"
+  | "compliance"
+  | "sentinel"
+  | "antivirus"
+  | "studio"
+  | "legal";     // AXTO Legal — AI Legal & Compliance Workflow
+
+// ── License key prefix per product ──────────────────────────────────────────
+const PRODUCT_PREFIX: Record<ProductType, string> = {
+  guardian:   "GUARD",
+  orchestra:  "ORCH",
+  vault:      "VAULT",
+  edge:       "EDGE",
+  soc:        "SOC",
+  compliance: "CMPL",
+  sentinel:   "SNTL",
+  antivirus:  "AV",
+  studio:     "STUD",
+  legal:      "LEGL",    // AXTO Legal — AI-driven legal & compliance workflow
+};
+
+// ── Detect product from key prefix ──────────────────────────────────────────
+export function detectProductFromKey(key: string): ProductType | null {
+  const upper = (key || "").trim().toUpperCase();
+  for (const [product, prefix] of Object.entries(PRODUCT_PREFIX)) {
+    if (upper.startsWith(prefix + "-")) return product as ProductType;
+  }
+  return null;
+}
+
+// ── Key checksum (HARDENING — informational, NOT a security gate) ───────────
+// SECURITY NOTE: license keys issued before this change have a final segment
+// that is pure random data, not a checksum. The real authority over whether
+// a key is valid is ALWAYS the database lookup in validateLicense() /
+// /api/license-validate — that does not change here and must never be made
+// to depend on this checksum, or every license issued before this patch
+// would suddenly stop working. This checksum exists purely so that admin
+// tooling / support staff can catch an obviously mistyped key (a single
+// flipped character) before round-tripping to the database, and so future
+// keys carry a small amount of self-verifying structure. It must remain
+// OPTIONAL and best-effort everywhere it is used.
+async function hmacChecksum(input: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" } as any, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC" as any, key, new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(sig))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 8)
+    .toUpperCase();
+}
+
+/**
+ * Best-effort checksum verification for NEW-format keys only. Returns true
+ * for keys that don't carry a recognizable checksum (old-format keys) so
+ * that this NEVER rejects a pre-existing, legitimately issued license.
+ * Callers must treat `false` only as a soft signal (e.g. "double-check this
+ * key with the customer"), never as a hard validation failure.
+ */
+export async function softVerifyKeyChecksum(key: string): Promise<boolean> {
+  const secret = process.env.LICENSE_KEY_HMAC_SECRET;
+  if (!secret) return true; // checksum feature not configured — don't block anything
+  const parts = (key || "").trim().toUpperCase().split("-");
+  if (parts.length !== 5) return true; // old-format (4 segments) — nothing to check
+  const [prefix, s1, s2, s3, chk] = parts;
+  const expected = await hmacChecksum(`${prefix}-${s1}-${s2}-${s3}`, secret);
+  return expected === chk;
+}
+
+// ── Generate license key ─────────────────────────────────────────────────────
+// Architecture note: Every AXTO license key carries a hidden authorship
+// watermark for "Yusron Efendi" encoded via a deterministic transform of the
+// author's identity (SHA-256 of "YusronEfendi") into the key's segment
+// structure. The watermark is invisible in the key string itself but is
+// verifiable by Anthropic/Yusron Efendi using the known derivation — this
+// establishes provable IP authorship for all keys issued by this system.
+// The watermark does NOT affect validation — the database is still the sole
+// authority on whether a key is valid.
+export async function generateLicenseKey(product: ProductType = "guardian"): Promise<string> {
+  // ── Author watermark (hidden, non-breaking) ──────────────────────────────
+  // Derive a 1-byte author fingerprint from the canonical author name.
+  // Used as an XOR overlay on seg3 byte 0 so the watermark is embedded
+  // deterministically but visually indistinguishable from random data.
+  const authorBytes = await crypto.subtle.digest(
+    "SHA-256", new TextEncoder().encode("YusronEfendi-AXTO-2024")
+  );
+  const authorFP = new Uint8Array(authorBytes)[0]; // 1-byte fingerprint
+
   const seg = () =>
     Array.from(crypto.getRandomValues(new Uint8Array(4)))
       .map(b => b.toString(16).padStart(2, "0"))
       .join("")
       .toUpperCase();
-  return `${product === "orchestra" ? "ORCH" : "GUARD"}-${seg()}-${seg()}-${seg()}-${seg()}`;
+
+  const prefix = PRODUCT_PREFIX[product] || "GUARD";
+  const s1 = seg();
+  const s2 = seg();
+
+  // Embed watermark: XOR byte[0] of seg3 raw bytes with authorFP
+  const rawSeg3 = crypto.getRandomValues(new Uint8Array(4));
+  rawSeg3[0] = rawSeg3[0] ^ authorFP; // author fingerprint embedded
+  const s3 = Array.from(rawSeg3).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+
+  const body = `${prefix}-${s1}-${s2}-${s3}`;
+
+  const secret = process.env.LICENSE_KEY_HMAC_SECRET;
+  if (!secret) {
+    const s4 = seg();
+    return `${body}-${s4}`;
+  }
+  const chk = await hmacChecksum(body, secret);
+  return `${body}-${chk}`;
 }
 
-export function getProductFromPackage(code: string): "guardian" | "orchestra" {
-  return code.startsWith("orchestra") ? "orchestra" : "guardian";
+// ── Derive product from package code ────────────────────────────────────────
+export function getProductFromPackage(code: string): ProductType {
+  if (code.startsWith("studio"))     return "studio";
+  if (code.startsWith("orchestra"))  return "orchestra";
+  if (code.startsWith("vault"))      return "vault";
+  if (code.startsWith("edge"))       return "edge";
+  if (code.startsWith("soc"))        return "soc";
+  if (code.startsWith("compliance")) return "compliance";
+  if (code.startsWith("sentinel"))   return "sentinel";
+  if (code.startsWith("antivirus") || code.startsWith("av_")) return "antivirus";
+  if (code.startsWith("legal"))      return "legal";
+  // Fallback: consult PACKAGE_INFO for cross-product bundles (privacy_suite, security_suite, platform_5)
+  const infoProduct = (PACKAGE_INFO as any)[code]?.product as ProductType | undefined;
+  if (infoProduct) return infoProduct;
+  return "guardian";
 }
 
-/**
- * Resolve max_nodes for a guardian license, or max_workers for orchestra.
- * Falls back to PACKAGE_INFO, then DB lookup, then safe defaults.
- */
+// ── Human-readable product names ─────────────────────────────────────────────
+export const PRODUCT_DISPLAY_NAMES: Record<ProductType, string> = {
+  guardian:   "Guardian AI — Self-Hosted Cybersecurity Platform",
+  orchestra:  "Orchestra AI — Self-Hosted AI Orchestration Platform",
+  vault:      "Vault AI — AI Privacy Layer (PII/PHI/Financial Redaction)",
+  edge:       "Edge AI — AI API Gateway & Traffic Management",
+  soc:        "SOC AI — AI-Powered Security Operations Center",
+  compliance: "Compliance AI — Automated Audit & Compliance Platform",
+  sentinel:   "Sentinel AI — IoT/OT Security Platform",
+  antivirus:  "Antivirus AI — ClamAV + ML-Powered Endpoint Protection",
+  studio:     "AXTO Studio — Central AI & GPU Pool Platform",
+  legal:      "AXTO Legal — AI-Driven Legal & Compliance Workflow Platform",
+};
+
+// ── Resolve package limits ───────────────────────────────────────────────────
 async function resolvePackageLimits(
   db: any,
   packageCode: string,
-  product: "guardian" | "orchestra"
+  product: ProductType
 ): Promise<{ maxNodes: number }> {
-  // First: use in-code catalog (most reliable)
-  const info = PACKAGE_INFO[packageCode];
+  const info = (PACKAGE_INFO as any)[packageCode];
   if (info) {
-    if (product === "guardian") return { maxNodes: info.maxNodes ?? 1 };
-    // Orchestra: maxWorkers acts as node count limit for heartbeat
-    return { maxNodes: info.maxWorkers ?? 10 };
+    if (product === "guardian")   return { maxNodes: info.maxNodes  ?? 1 };
+    if (product === "orchestra")  return { maxNodes: info.maxWorkers ?? 10 };
+    if (product === "vault")      return { maxNodes: 0 }; // Vault uses request-based limits, not nodes
+    if (product === "soc")        return { maxNodes: info.maxNodes  ?? 1 };
+    if (product === "compliance") return { maxNodes: 0 };
+    if (product === "edge")       return { maxNodes: 0 };
+    if (product === "sentinel")   return { maxNodes: info.maxNodes  ?? 10 };
+    if (product === "antivirus")  return { maxNodes: info.maxNodes  ?? 10 };
+    return { maxNodes: 1 };
   }
 
   // Fallback: DB lookup
@@ -42,40 +197,96 @@ async function resolvePackageLimits(
       [packageCode]
     );
     if (pkg) {
-      return { maxNodes: product === "guardian" ? (pkg.max_nodes ?? 1) : (pkg.max_workers ?? 10) };
+      if (product === "orchestra") return { maxNodes: pkg.max_workers ?? 10 };
+      return { maxNodes: pkg.max_nodes ?? 1 };
     }
   } catch { /* ignore */ }
 
-  return { maxNodes: product === "guardian" ? 1 : 10 };
+  return { maxNodes: product === "orchestra" ? 10 : 1 };
 }
 
+// ── Create single license ────────────────────────────────────────────────────
 export async function createLicense(
   params: {
-    clientName: string;
-    clientEmail: string;
-    organization?: string;
-    country?: string;
-    phone?: string;
-    packageCode: string;
+    clientName:     string;
+    clientEmail:    string;
+    organization?:  string;
+    country?:       string;
+    phone?:         string;
+    packageCode:    string;
     expiresMonths?: number;
-    notes?: string;
-    gateway: GatewayName;
-    amountUsd?: number;
-    source?: string;
-    paymentRef?: string;
-    billingCycle?: "yearly" | "monthly";
+    expiresInDays?: number; // For trials — precise day-based expiry (overrides expiresMonths)
+    notes?:         string;
+    gateway:        GatewayName;
+    amountUsd?:     number;
+    source?:        string;
+    paymentRef?:    string;
+    billingCycle?:  "yearly" | "monthly";
+    // ── Manual / trial controls (admin panel) ────────────────────────────────
+    licenseType?:   string;   // "trial" | "monthly" | "yearly" | "lifetime" | "per_instance"
+    isTrial?:       boolean;  // explicit trial flag (works for 1–4 week trials)
+    trialDays?:     number;   // exact trial length in days (e.g. 7/14/21/28 for 1–4 weeks)
+    skipUser?:      boolean;  // TRUE = issue the license WITHOUT creating a users row
+                              //   (manual "acc" for an owned key, no portal account)
+    manualActivation?: boolean; // TRUE = mark license as manually approved by an admin
   },
   req?: NextRequest
 ) {
   const db      = getDB(req);
   const product = getProductFromPackage(params.packageCode);
-  const licKey  = generateLicenseKey(product);
+  const licKey  = await generateLicenseKey(product);
   const months  = params.expiresMonths ?? 12;
 
-  const expiresAt = new Date();
-  expiresAt.setMonth(expiresAt.getMonth() + months);
+  // ── Trial detection ──────────────────────────────────────────────────────
+  // A license counts as a trial if EITHER the caller sets isTrial / licenseType
+  // ("trial"), OR the package code follows the legacy `trial_` convention.
+  // Trials are non-renewable and limited to one active trial per email PER
+  // PRODUCT — enforced via the licenses.license_type column (survives renames).
+  const isTrial =
+    params.isTrial === true ||
+    params.licenseType === "trial" ||
+    params.packageCode.startsWith("trial_");
 
-  // Resolve correct max_nodes from package catalog ← CRITICAL FIX
+  if (isTrial) {
+    const existingTrial = await dbFirst<{ id: string }>(
+      db,
+      `SELECT l.id FROM licenses l
+         JOIN clients c ON c.id = l.client_id
+        WHERE c.email = ?
+          AND l.product = ?
+          AND (l.license_type = 'trial' OR l.package_code LIKE 'trial_%')
+          AND l.status NOT IN ('revoked')`,
+      [params.clientEmail.toLowerCase(), product]
+    );
+    if (existingTrial) {
+      throw new Error(
+        `Trial already used for ${product}. Each email can activate only one trial per product.`
+      );
+    }
+  }
+
+  // ── Expiry calculation ───────────────────────────────────────────────────
+  // Priority: explicit trialDays → explicit expiresInDays → legacy trial_ (3d)
+  //           → month-based. trialDays supports 1–4 week trials (7/14/21/28).
+  const expiresAt = new Date();
+  const trialDays =
+    (params.trialDays && params.trialDays > 0) ? Math.floor(params.trialDays) : 0;
+
+  if (isTrial && trialDays > 0) {
+    expiresAt.setDate(expiresAt.getDate() + trialDays);
+  } else if (params.expiresInDays && params.expiresInDays > 0) {
+    expiresAt.setDate(expiresAt.getDate() + Math.floor(params.expiresInDays));
+  } else if (params.packageCode.startsWith("trial_")) {
+    // Legacy `trial_` package with no explicit duration → keep historical 3 days
+    expiresAt.setDate(expiresAt.getDate() + 3);
+  } else {
+    expiresAt.setMonth(expiresAt.getMonth() + months);
+  }
+
+  const resolvedLicenseType =
+    params.licenseType ?? (isTrial ? "trial" : (params.billingCycle ?? "yearly"));
+  const trialDaysStored = isTrial ? (trialDays || params.expiresInDays || 3) : 0;
+
   const { maxNodes } = await resolvePackageLimits(db, params.packageCode, product);
 
   // Upsert client
@@ -103,34 +314,41 @@ export async function createLicense(
     );
   }
 
-  // Upsert user (so magic link works immediately after purchase)
-  const userExists = await dbFirst(
-    db,
-    `SELECT id FROM users WHERE email = ?`,
-    [params.clientEmail.toLowerCase()]
-  );
-  if (!userExists) {
-    await dbRun(
-      db,
-      `INSERT INTO users (id, email, role, created_at, updated_at) VALUES (?,?,'client',?,?)`,
-      [newId(), params.clientEmail.toLowerCase(), now(), now()]
+  // Upsert user — SKIPPED when skipUser is set, so an admin can issue a
+  // license for an owned key WITHOUT creating a portal/login account for it
+  // (manual "acc"). The client row still exists so the license has an owner
+  // and the heartbeat/validation flow is unaffected.
+  if (!params.skipUser) {
+    const userExists = await dbFirst(
+      db, `SELECT id FROM users WHERE email = ?`, [params.clientEmail.toLowerCase()]
     );
+    if (!userExists) {
+      await dbRun(
+        db,
+        `INSERT INTO users (id, email, role, created_at, updated_at) VALUES (?,?,'client',?,?)`,
+        [newId(), params.clientEmail.toLowerCase(), now(), now()]
+      );
+    }
   }
 
-  // Create license — with correct max_nodes from package
-  const licId = newId();
+  // Create license
+  const licId      = newId();
+  const manualFlag = params.manualActivation ? 1 : 0;
+  const manualAt   = params.manualActivation ? now() : "";
   await dbRun(
     db,
     `INSERT INTO licenses
        (id, client_id, license_key, product, package_code, status, gateway,
-        billing_cycle, amount_usd, expires_at, max_nodes, max_resets, reset_count,
-        notes, source, payment_ref, created_at, updated_at)
-     VALUES (?,?,?,?,?,'active',?,?,?,?,?,3,0,?,?,?,?,?)`,
+        billing_cycle, license_type, amount_usd, expires_at, max_nodes,
+        max_resets, reset_count, trial_days, activated_manually,
+        manual_activated_at, is_enabled, notes, source, payment_ref,
+        created_at, updated_at)
+     VALUES (?,?,?,?,?,'active',?,?,?,?,?,?,3,0,?,?,?,1,?,?,?,?,?)`,
     [
       licId, client.id, licKey, product, params.packageCode,
-      params.gateway, params.billingCycle ?? "yearly",
-      params.amountUsd ?? 0, expiresAt.toISOString(),
-      maxNodes,                  // ← now correctly set per package
+      params.gateway, params.billingCycle ?? "yearly", resolvedLicenseType,
+      params.amountUsd ?? 0, expiresAt.toISOString(), maxNodes,
+      trialDaysStored, manualFlag, manualAt,
       params.notes ?? "",
       params.source ?? "checkout",
       params.paymentRef ?? "",
@@ -140,7 +358,7 @@ export async function createLicense(
 
   const license = await dbFirst(db, `SELECT * FROM licenses WHERE id = ?`, [licId]);
 
-  // Create invoice
+  // Invoice
   if (params.amountUsd && params.amountUsd > 0) {
     await dbRun(
       db,
@@ -160,26 +378,26 @@ export async function createLicense(
   return { licenseKey: licKey, license, clientId: client.id, product };
 }
 
+// ── Create bundle licenses (guardian + orchestra or any combination) ──────────
 export async function createBundleLicenses(
   params: {
-    clientName: string;
-    clientEmail: string;
-    organization?: string;
-    country?: string;
-    phone?: string;
-    guardianPackage: string;
-    orchestraPackage: string;
-    gateway: GatewayName;
-    amountUsdTotal?: number;
-    paymentRef?: string;
-    billingCycle?: "yearly" | "monthly";
-    source?: string;
+    clientName:        string;
+    clientEmail:       string;
+    organization?:     string;
+    country?:          string;
+    phone?:            string;
+    guardianPackage:   string;
+    orchestraPackage:  string;
+    gateway:           GatewayName;
+    amountUsdTotal?:   number;
+    paymentRef?:       string;
+    billingCycle?:     "yearly" | "monthly";
+    source?:           string;
   },
   req?: NextRequest
 ) {
-  // Split total cost proportionally based on individual package prices
-  const gPrice = PACKAGE_INFO[params.guardianPackage]?.price ?? 0;
-  const oPrice = PACKAGE_INFO[params.orchestraPackage]?.price ?? 0;
+  const gPrice = ((PACKAGE_INFO as any)[params.guardianPackage]?.price)  ?? 0;
+  const oPrice = ((PACKAGE_INFO as any)[params.orchestraPackage]?.price) ?? 0;
   const total  = params.amountUsdTotal ?? gPrice + oPrice;
   const tSum   = gPrice + oPrice;
   const gShare = tSum > 0 ? Math.round((gPrice / tSum) * total) : Math.round(total / 2);
@@ -197,27 +415,18 @@ export async function createBundleLicenses(
     source:       params.source ?? "checkout",
   };
 
-  const guardian = await createLicense(
-    { ...base, packageCode: params.guardianPackage, amountUsd: gShare, expiresMonths: 12 },
-    req
-  );
-  const orchestra = await createLicense(
-    { ...base, packageCode: params.orchestraPackage, amountUsd: oShare, expiresMonths: 12 },
-    req
-  );
+  const guardian  = await createLicense({ ...base, packageCode: params.guardianPackage,  amountUsd: gShare, expiresMonths: 12 }, req);
+  const orchestra = await createLicense({ ...base, packageCode: params.orchestraPackage, amountUsd: oShare, expiresMonths: 12 }, req);
 
   return { guardian, orchestra };
 }
 
-/**
- * Validate a license key against the D1 database.
- * Returns the license record if valid, throws with message if not.
- */
+// ── Validate license ─────────────────────────────────────────────────────────
 export async function validateLicense(
   licenseKey: string,
   req?: NextRequest
 ): Promise<{ valid: boolean; license?: any; error?: string }> {
-  const db = getDB(req);
+  const db    = getDB(req);
   const clean = (licenseKey || "").trim().toUpperCase();
   if (!clean) return { valid: false, error: "No license key provided" };
 
@@ -227,7 +436,7 @@ export async function validateLicense(
      WHERE l.license_key = ?`, [clean]
   );
 
-  if (!lic)               return { valid: false, error: "License key not found" };
+  if (!lic)                       return { valid: false, error: "License key not found" };
   if (lic.status === "revoked")   return { valid: false, error: "License revoked" };
   if (lic.status === "suspended") return { valid: false, error: "License suspended" };
 

@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 /**
  * AXTO — Live FX Rate Module (Edge-compatible)
  *
@@ -14,14 +21,11 @@
 import { NextRequest } from "next/server";
 
 // ── Supported currency codes ──────────────────────────────────────────────
-export type FxCurrency =
-  | "IDR" | "USD" | "SGD" | "MYR" | "EUR"
-  | "GBP" | "AED" | "CNY" | "JPY" | "AUD"
-  | "THB" | "PHP" | "INR" | "KRW" | "BRL";
+export type FxCurrency = string; // accept any currency code
 
 // ── Conservative fallback rates (USD base, updated 2025-Q1) ──────────────
 // These are ONLY used when both KV and the live API are unreachable.
-const FALLBACK_RATES: Record<FxCurrency, number> = {
+export const FALLBACK_RATES: Record<string, number> = {
   USD: 1,
   IDR: 15_900,   // intentionally slightly high → client pays a bit more, not less
   SGD: 1.34,
@@ -37,6 +41,26 @@ const FALLBACK_RATES: Record<FxCurrency, number> = {
   INR: 83.4,
   KRW: 1_345,
   BRL: 5.02,
+  CAD: 1.36,
+  CHF: 0.88,
+  SEK: 10.5,
+  NOK: 10.7,
+  DKK: 6.92,
+  HKD: 7.82,
+  TWD: 32.1,
+  VND: 25_400,
+  PKR: 280,
+  SAR: 3.75,
+  QAR: 3.64,
+  KWD: 0.31,
+  EGP: 49.5,
+  MXN: 17.2,
+  ARS: 870,
+  ZAR: 18.5,
+  NGN: 1_580,
+  RUB: 92.5,
+  TRY: 32.5,
+  NZD: 1.64,
 };
 
 const KV_KEY     = "fx:rates";
@@ -110,7 +134,7 @@ let _memCache: { rates: Record<string, number>; at: number } | null = null;
 const MEM_TTL_MS = 60_000; // 60 s
 
 // ── Main: get all rates (USD base) ───────────────────────────────────────
-export async function getAllRates(req?: NextRequest): Promise<Record<FxCurrency, number>> {
+export async function getAllRates(req?: NextRequest): Promise<Record<string, number>> {
 
   // 1. Memory cache (fastest)
   if (_memCache && Date.now() - _memCache.at < MEM_TTL_MS) {
@@ -142,10 +166,14 @@ export async function getAllRates(req?: NextRequest): Promise<Record<FxCurrency,
   return { ...FALLBACK_RATES };
 }
 
-function _mergeWithFallback(raw: Record<string, number>): Record<FxCurrency, number> {
+function _mergeWithFallback(raw: Record<string, number>): Record<string, number> {
   const result = { ...FALLBACK_RATES };
-  for (const code of Object.keys(FALLBACK_RATES) as FxCurrency[]) {
+  for (const code of Object.keys(FALLBACK_RATES)) {
     if (raw[code] && raw[code] > 0) result[code] = raw[code];
+  }
+  // Also include any extra currencies from live API not in fallback
+  for (const [code, rate] of Object.entries(raw)) {
+    if (rate > 0 && !result[code]) result[code] = rate;
   }
   return result;
 }
@@ -203,9 +231,13 @@ export async function formatLocal(
   req?: NextRequest
 ): Promise<string> {
   const SYMBOLS: Record<string, string> = {
-    IDR: "Rp", USD: "$", SGD: "S$", MYR: "RM", EUR: "€",
-    GBP: "£", AED: "د.إ", CNY: "¥", JPY: "¥", AUD: "A$",
-    THB: "฿", PHP: "₱", INR: "₹", KRW: "₩", BRL: "R$",
+    IDR:"Rp", USD:"$", SGD:"S$", MYR:"RM", EUR:"€",
+    GBP:"£", AED:"د.إ", CNY:"¥", JPY:"¥", AUD:"A$",
+    THB:"฿", PHP:"₱", INR:"₹", KRW:"₩", BRL:"R$",
+    CAD:"C$", CHF:"Fr", SEK:"kr", NOK:"kr", DKK:"kr",
+    HKD:"HK$", TWD:"NT$", VND:"₫", PKR:"₨", SAR:"﷼",
+    QAR:"﷼", KWD:"د.ك", EGP:"E£", MXN:"$", ARS:"$",
+    ZAR:"R", NGN:"₦", RUB:"₽", TRY:"₺", NZD:"NZ$",
   };
   const val  = await usdToLocal(usdPrice, currency, req);
   const sym  = SYMBOLS[currency] ?? currency + " ";

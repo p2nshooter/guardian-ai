@@ -1,0 +1,1854 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# AXTO Platform — GitLab CI/CD Pipeline v3.0 (HARDENED + SMART REBUILD)
+#
+# WHAT CHANGED IN v3.0 (see AXTO_CICD_Hardening_Report.pdf for full detail):
+#   1. SMART REBUILD: on every push to main, each product's Docker image AND
+#      .exe are only rebuilt if files under that product's own folder (or
+#      this file) actually changed since the last commit on this branch —
+#      using GitLab's native `rules:changes:`. A push that only touches the
+#      dashboard, for example, no longer rebuilds all 13 product images.
+#   2. orchestra-worker-gpu is now COMPLETELY EXCLUDED from automatic builds
+#      (push to main, BUILD_PRODUCT=all). It can only be built by an admin
+#      explicitly selecting it (BUILD_PRODUCT=orchestra-worker-gpu), and even
+#      then requires one extra manual confirmation click in the pipeline UI
+#      (`when: manual`) before it actually runs — this is intentional, do not
+#      remove, until GPU build infrastructure is verified ready.
+#   3. FIXED: the previous "build-exe" stage built a LINUX binary (image:
+#      python:3.11, a Linux container) and uploaded it to
+#      builds/latest/exe/<product>-linux — which the dashboard's download
+#      route never looked for (it expects
+#      builds/latest/exe/<product>-windows.exe). Every .exe "build" was
+#      therefore silently undownloadable. EXE jobs now run on a Windows
+#      GitLab Runner (tag: windows) and upload to the correct path. You MUST
+#      register at least one Windows runner with the `windows` tag for these
+#      jobs to run — see docs/admin/SETUP_CI_CD.md.
+#   4. ADDED: antivirus-core was a product the dashboard's Engine Builder
+#      already listed as buildable, but no matching GitLab job existed for
+#      it at all — clicking "Build" for it silently did nothing. Added.
+#   5. Docker build jobs now also check $BUILD_TYPE (image/exe/both) so that
+#      requesting only an .exe build for one product no longer also
+#      triggers an unwanted Docker image build for that same product.
+#
+# STAGES:
+#   1. build-images   → Docker images, smart-rebuild, GPU worker excluded
+#   2. push-registry  → Push to GitLab Container Registry
+#   3. upload-r2      → Upload .tar.gz to Cloudflare R2 (axto-builds bucket)
+#   4. build-exe      → Real Windows .exe via PyInstaller (Windows runner)
+#   5. deploy-cf      → Dashboard → CF Pages + Workers
+#   6. notify         → Dashboard callback + Slack
+#
+# TRIGGER MODES:
+#   A) Auto  → push to main → BUILD_PRODUCT=all → smart rebuild (changed only)
+#   B) API   → POST from admin dashboard → BUILD_PRODUCT=<id>, BUILD_TYPE=<image|exe>
+#              → always builds that exact product/type, ignores change-detection
+#   C) Web   → GitLab UI manual run → same defaults as push unless overridden
+#
+# REQUIRED CI/CD VARIABLES (Settings → CI/CD → Variables):
+#   CF_R2_ACCESS_KEY_ID       Cloudflare R2 Access Key ID
+#   CF_R2_SECRET_ACCESS_KEY   Cloudflare R2 Secret Access Key
+#   CF_R2_ACCOUNT_ID          Cloudflare Account ID (found in R2 dashboard)
+#   CF_PAGES_API_TOKEN        CF API Token (Pages:Edit + D1:Edit + R2:Edit)
+#   CF_ACCOUNT_ID             Cloudflare Account ID
+#   AXTO_APP_URL              Dashboard URL (https://axto.io)
+#   BUILD_WEBHOOK_SECRET      HMAC secret for dashboard callbacks
+#   SLACK_WEBHOOK_URL         (Optional) Slack incoming webhook
+#
+# REQUIRED RUNNERS:
+#   - A Linux runner with Docker-in-Docker support, tagged "docker" (for
+#     build-images/push-registry/upload-r2/deploy-cf/notify stages).
+#   - A Windows runner with Python 3.11 + PowerShell, tagged "windows" (for
+#     build-exe stage). Without this, build-exe jobs simply won't pick up —
+#     they'll sit pending. See docs/admin/SETUP_CI_CD.md to register one.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+default:
+  image: docker:24
+  tags:
+    - docker
+
+stages:
+  - verify
+  - build-images
+  - push-registry
+  - upload-r2
+  - build-exe
+  - deploy-cf
+  - cleanup
+  - notify
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"'
+      variables:
+        PIPELINE_MODE: "auto"
+        BUILD_PRODUCT: "all"
+        BUILD_TYPE:    "both"
+    # ── Nightly scheduled run: full rebuild of latest + redeploy + cleanup ──
+    # Create the schedule in GitLab → CI/CD → Schedules (e.g. cron "0 18 * * *" UTC = 01:00 WIB).
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      variables:
+        PIPELINE_MODE: "auto"
+        BUILD_PRODUCT: "all"
+        BUILD_TYPE:    "both"
+        NIGHTLY:       "1"
+    - if: '$CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "api"'
+      variables:
+        PIPELINE_MODE: "manual"
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      variables:
+        PIPELINE_MODE: "manual"
+    - when: never
+
+variables:
+  DOCKER_DRIVER:          overlay2
+  DOCKER_TLS_CERTDIR:     ""
+  DOCKER_BUILDKIT:        "1"
+  BUILD_PRODUCT:          "all"
+  BUILD_TYPE:             "both"
+  BUILD_ID:               ""
+  # Cloudflare R2 — hardcoded bucket endpoint
+  R2_BUCKET:              "axto-builds"
+  R2_ENDPOINT:            "https://${CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+  REGISTRY:               "${CI_REGISTRY}"
+  REGISTRY_IMAGE:         "${CI_REGISTRY_IMAGE}"
+  DOCKER_CACHE_REGISTRY:  "${CI_REGISTRY_IMAGE}/cache"
+
+# ── Shared: Docker build template ────────────────────────────────────────────
+
+.build_image_template:
+  stage: build-images
+  services:
+    - docker:24-dind
+  variables:
+    GIT_DEPTH: 1
+    DOCKER_HOST: tcp://docker:2375
+  before_script:
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+    - docker buildx install || true
+  script:
+    - |
+      FULL_TAG="${REGISTRY_IMAGE}/${IMAGE_NAME}:latest"
+      VERSIONED_TAG="${REGISTRY_IMAGE}/${IMAGE_NAME}:${CI_COMMIT_SHA:0:8}"
+      CACHE_TAG="${DOCKER_CACHE_REGISTRY}/${IMAGE_NAME}:buildcache"
+
+      docker buildx create --use --name "axto-${IMAGE_NAME}" 2>/dev/null || \
+        docker buildx use "axto-${IMAGE_NAME}" 2>/dev/null || true
+
+      docker buildx build \
+        --platform linux/amd64 \
+        --file "${BUILD_DOCKERFILE}" \
+        --context "${BUILD_CONTEXT}" \
+        --tag "${FULL_TAG}" \
+        --tag "${VERSIONED_TAG}" \
+        --cache-from "type=registry,ref=${CACHE_TAG}" \
+        --cache-to   "type=registry,ref=${CACHE_TAG},mode=max" \
+        --load \
+        --label "io.axto.product=${IMAGE_NAME}" \
+        --label "io.axto.version=2.1.0" \
+        --label "io.axto.commit=${CI_COMMIT_SHA}" \
+        --label "io.axto.branch=${CI_COMMIT_BRANCH}" \
+        --label "io.axto.build-date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        .
+
+      echo "✅ Build complete: ${IMAGE_NAME}"
+      docker images "${FULL_TAG}"
+
+      mkdir -p /builds/artifacts
+      docker save "${FULL_TAG}" | gzip -9 > "/builds/artifacts/${IMAGE_NAME}.tar.gz"
+      SIZE=$(du -sh "/builds/artifacts/${IMAGE_NAME}.tar.gz" | cut -f1)
+      echo "💾 Saved: ${SIZE} → /builds/artifacts/${IMAGE_NAME}.tar.gz"
+  artifacts:
+    name: "${IMAGE_NAME}-image"
+    paths:
+      - /builds/artifacts/${IMAGE_NAME}.tar.gz
+    expire_in: 24 hours
+    when: on_success
+
+# ── Shared: Registry push template ───────────────────────────────────────────
+
+.push_registry_template:
+  stage: push-registry
+  services:
+    - docker:24-dind
+  variables:
+    GIT_DEPTH: 1
+    DOCKER_HOST: tcp://docker:2375
+  before_script:
+    - docker login -u "${CI_REGISTRY_USER}" -p "${CI_REGISTRY_PASSWORD}" "${CI_REGISTRY}"
+  script:
+    - |
+      FULL_TAG="${REGISTRY_IMAGE}/${IMAGE_NAME}:latest"
+      VERSIONED_TAG="${REGISTRY_IMAGE}/${IMAGE_NAME}:${CI_COMMIT_SHA:0:8}"
+
+      if [ -f "/builds/artifacts/${IMAGE_NAME}.tar.gz" ]; then
+        docker load < "/builds/artifacts/${IMAGE_NAME}.tar.gz"
+      fi
+
+      docker push "${FULL_TAG}"
+      docker push "${VERSIONED_TAG}"
+      echo "✅ Pushed: ${IMAGE_NAME} → ${CI_REGISTRY}"
+
+# ── Shared: R2 upload template ────────────────────────────────────────────────
+# Always uploads to:
+#   builds/latest/raw/<image>.tar.gz   (latest — overwritten)
+#   builds/<sha8>/raw/<image>.tar.gz   (versioned — for rollback)
+
+.upload_r2_template:
+  stage: upload-r2
+  image: python:3.11-alpine
+  variables:
+    GIT_DEPTH: 1
+  before_script:
+    - pip install -q "awscli>=1.32"
+    - export AWS_ACCESS_KEY_ID="${CF_R2_ACCESS_KEY_ID}"
+    - export AWS_SECRET_ACCESS_KEY="${CF_R2_SECRET_ACCESS_KEY}"
+    - export AWS_DEFAULT_REGION="auto"
+  script:
+    - |
+      FILE="/builds/artifacts/${IMAGE_NAME}.tar.gz"
+
+      if [ ! -f "${FILE}" ]; then
+        echo "❌ Artifact missing: ${FILE}"
+        exit 1
+      fi
+
+      SIZE=$(du -sh "${FILE}" | cut -f1)
+      SHA8="${CI_COMMIT_SHA:0:8}"
+      META="product=${IMAGE_NAME},commit=${SHA8},build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ),build_id=${BUILD_ID:-ci-${CI_PIPELINE_ID}}"
+
+      LATEST_KEY="builds/latest/raw/${IMAGE_NAME}.tar.gz"
+      VERSION_KEY="builds/${SHA8}/raw/${IMAGE_NAME}.tar.gz"
+
+      echo "☁️  Uploading ${IMAGE_NAME} (${SIZE}) → R2..."
+
+      aws s3 cp "${FILE}" "s3://${R2_BUCKET}/${VERSION_KEY}" \
+        --endpoint-url "${R2_ENDPOINT}" \
+        --no-progress \
+        --metadata "${META}"
+
+      aws s3 cp "${FILE}" "s3://${R2_BUCKET}/${LATEST_KEY}" \
+        --endpoint-url "${R2_ENDPOINT}" \
+        --no-progress \
+        --metadata "${META}"
+
+      echo "✅ R2 uploaded:"
+      echo "   latest    → ${R2_ENDPOINT}/${R2_BUCKET}/${LATEST_KEY}"
+      echo "   versioned → ${R2_ENDPOINT}/${R2_BUCKET}/${VERSION_KEY}"
+  allow_failure: false
+
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 1: BUILD IMAGES (smart rebuild — see header)
+# NOTE: orchestra-worker-gpu is EXCLUDED from automatic builds entirely.
+# ═════════════════════════════════════════════════════════════════════════════
+
+# ── Guardian / Antivirus / Vault / Edge / SOC / Compliance / Sentinel / Studio / Orchestra / Legal ──
+
+build:guardian-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       guardian-core
+    BUILD_CONTEXT:    engine
+    BUILD_DOCKERFILE: engine/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:guardian-node:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       guardian-node
+    BUILD_CONTEXT:    engine
+    BUILD_DOCKERFILE: engine/Dockerfile.node
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-node" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:guardian-antivirus:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       guardian-antivirus
+    BUILD_CONTEXT:    antivirus
+    BUILD_DOCKERFILE: antivirus/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-antivirus" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:antivirus-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       antivirus-core
+    BUILD_CONTEXT:    antivirus
+    BUILD_DOCKERFILE: antivirus/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "antivirus-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:vault-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       vault-core
+    BUILD_CONTEXT:    vault
+    BUILD_DOCKERFILE: vault/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "vault-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - vault/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:edge-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       edge-core
+    BUILD_CONTEXT:    edge
+    BUILD_DOCKERFILE: edge/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "edge-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - edge/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:soc-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       soc-core
+    BUILD_CONTEXT:    soc
+    BUILD_DOCKERFILE: soc/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "soc-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - soc/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:compliance-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       compliance-core
+    BUILD_CONTEXT:    compliance
+    BUILD_DOCKERFILE: compliance/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "compliance-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - compliance/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:sentinel-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       sentinel-core
+    BUILD_CONTEXT:    sentinel
+    BUILD_DOCKERFILE: sentinel/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "sentinel-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - sentinel/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:studio-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       studio-core
+    BUILD_CONTEXT:    studio
+    BUILD_DOCKERFILE: studio/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "studio-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - studio/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:orchestra-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       orchestra-core
+    BUILD_CONTEXT:    orchestra
+    BUILD_DOCKERFILE: orchestra/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:orchestra-worker-cpu:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       orchestra-worker-cpu
+    BUILD_CONTEXT:    orchestra
+    BUILD_DOCKERFILE: orchestra/Dockerfile.worker-cpu
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-worker-cpu" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:legal-core:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       legal-core
+    BUILD_CONTEXT:    legal
+    BUILD_DOCKERFILE: legal/Dockerfile
+  rules:
+    - if: '$BUILD_PRODUCT == "legal-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - legal/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+
+build:orchestra-worker-gpu:
+  extends: .build_image_template
+  variables:
+    IMAGE_NAME:       orchestra-worker-gpu
+    BUILD_CONTEXT:    orchestra
+    BUILD_DOCKERFILE: orchestra/Dockerfile.worker-gpu
+  needs:
+    - job: build:guardian-core
+      optional: true
+    - job: build:guardian-node
+      optional: true
+    - job: build:guardian-antivirus
+      optional: true
+    - job: build:antivirus-core
+      optional: true
+    - job: build:vault-core
+      optional: true
+    - job: build:edge-core
+      optional: true
+    - job: build:soc-core
+      optional: true
+    - job: build:compliance-core
+      optional: true
+    - job: build:sentinel-core
+      optional: true
+    - job: build:studio-core
+      optional: true
+    - job: build:orchestra-core
+      optional: true
+    - job: build:orchestra-worker-cpu
+      optional: true
+    - job: build:legal-core
+      optional: true
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-worker-gpu" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: manual
+      allow_failure: true
+    - when: never
+# ═══ STAGE 2: PUSH TO REGISTRY ═══
+push:guardian-core:
+  extends: .push_registry_template
+  needs: [build:guardian-core]
+  variables:
+    IMAGE_NAME: guardian-core
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:guardian-node:
+  extends: .push_registry_template
+  needs: [build:guardian-node]
+  variables:
+    IMAGE_NAME: guardian-node
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-node" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:guardian-antivirus:
+  extends: .push_registry_template
+  needs: [build:guardian-antivirus]
+  variables:
+    IMAGE_NAME: guardian-antivirus
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-antivirus" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:antivirus-core:
+  extends: .push_registry_template
+  needs: [build:antivirus-core]
+  variables:
+    IMAGE_NAME: antivirus-core
+  rules:
+    - if: '$BUILD_PRODUCT == "antivirus-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:vault-core:
+  extends: .push_registry_template
+  needs: [build:vault-core]
+  variables:
+    IMAGE_NAME: vault-core
+  rules:
+    - if: '$BUILD_PRODUCT == "vault-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - vault/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:edge-core:
+  extends: .push_registry_template
+  needs: [build:edge-core]
+  variables:
+    IMAGE_NAME: edge-core
+  rules:
+    - if: '$BUILD_PRODUCT == "edge-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - edge/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:soc-core:
+  extends: .push_registry_template
+  needs: [build:soc-core]
+  variables:
+    IMAGE_NAME: soc-core
+  rules:
+    - if: '$BUILD_PRODUCT == "soc-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - soc/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:compliance-core:
+  extends: .push_registry_template
+  needs: [build:compliance-core]
+  variables:
+    IMAGE_NAME: compliance-core
+  rules:
+    - if: '$BUILD_PRODUCT == "compliance-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - compliance/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:sentinel-core:
+  extends: .push_registry_template
+  needs: [build:sentinel-core]
+  variables:
+    IMAGE_NAME: sentinel-core
+  rules:
+    - if: '$BUILD_PRODUCT == "sentinel-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - sentinel/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:studio-core:
+  extends: .push_registry_template
+  needs: [build:studio-core]
+  variables:
+    IMAGE_NAME: studio-core
+  rules:
+    - if: '$BUILD_PRODUCT == "studio-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - studio/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:orchestra-core:
+  extends: .push_registry_template
+  needs: [build:orchestra-core]
+  variables:
+    IMAGE_NAME: orchestra-core
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:orchestra-worker-cpu:
+  extends: .push_registry_template
+  needs: [build:orchestra-worker-cpu]
+  variables:
+    IMAGE_NAME: orchestra-worker-cpu
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-worker-cpu" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:legal-core:
+  extends: .push_registry_template
+  needs: [build:legal-core]
+  variables:
+    IMAGE_NAME: legal-core
+  rules:
+    - if: '$BUILD_PRODUCT == "legal-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - legal/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+push:orchestra-worker-gpu:
+  extends: .push_registry_template
+  needs: [build:orchestra-worker-gpu]
+  variables:
+    IMAGE_NAME: orchestra-worker-gpu
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-worker-gpu" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+      allow_failure: true
+    - when: never
+# ═══ STAGE 3: UPLOAD TO R2 ═══
+upload-r2:guardian-core:
+  extends: .upload_r2_template
+  needs: [push:guardian-core]
+  variables: { IMAGE_NAME: guardian-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:guardian-node:
+  extends: .upload_r2_template
+  needs: [push:guardian-node]
+  variables: { IMAGE_NAME: guardian-node }
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-node" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:guardian-antivirus:
+  extends: .upload_r2_template
+  needs: [push:guardian-antivirus]
+  variables: { IMAGE_NAME: guardian-antivirus }
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-antivirus" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:antivirus-core:
+  extends: .upload_r2_template
+  needs: [push:antivirus-core]
+  variables: { IMAGE_NAME: antivirus-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "antivirus-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:vault-core:
+  extends: .upload_r2_template
+  needs: [push:vault-core]
+  variables: { IMAGE_NAME: vault-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "vault-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - vault/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:edge-core:
+  extends: .upload_r2_template
+  needs: [push:edge-core]
+  variables: { IMAGE_NAME: edge-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "edge-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - edge/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:soc-core:
+  extends: .upload_r2_template
+  needs: [push:soc-core]
+  variables: { IMAGE_NAME: soc-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "soc-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - soc/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:compliance-core:
+  extends: .upload_r2_template
+  needs: [push:compliance-core]
+  variables: { IMAGE_NAME: compliance-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "compliance-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - compliance/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:sentinel-core:
+  extends: .upload_r2_template
+  needs: [push:sentinel-core]
+  variables: { IMAGE_NAME: sentinel-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "sentinel-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - sentinel/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:studio-core:
+  extends: .upload_r2_template
+  needs: [push:studio-core]
+  variables: { IMAGE_NAME: studio-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "studio-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - studio/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:orchestra-core:
+  extends: .upload_r2_template
+  needs: [push:orchestra-core]
+  variables: { IMAGE_NAME: orchestra-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:orchestra-worker-cpu:
+  extends: .upload_r2_template
+  needs: [push:orchestra-worker-cpu]
+  variables: { IMAGE_NAME: orchestra-worker-cpu }
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-worker-cpu" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:legal-core:
+  extends: .upload_r2_template
+  needs: [push:legal-core]
+  variables: { IMAGE_NAME: legal-core }
+  rules:
+    - if: '$BUILD_PRODUCT == "legal-core" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - legal/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
+
+upload-r2:orchestra-worker-gpu:
+  extends: .upload_r2_template
+  needs: [push:orchestra-worker-gpu]
+  variables: { IMAGE_NAME: orchestra-worker-gpu }
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-worker-gpu" && ($BUILD_TYPE == "image" || $BUILD_TYPE == "both")'
+      when: on_success
+      allow_failure: true
+    - when: never
+# ═══ STAGE 4: BUILD WINDOWS EXE ═══
+build-exe:guardian-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r engine/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/guardian_core_entry.py" "engine/_build_entry.py" -Force
+      Push-Location "engine"
+      python -m PyInstaller --onefile --name "guardian-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog \
+        --hidden-import=psutil \
+        --hidden-import=numpy \
+        --hidden-import=sklearn \
+        --hidden-import=pandas \
+        --hidden-import=reportlab \
+        --hidden-import=aiosmtplib \
+        --hidden-import=dnspython `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "engine/dist/guardian-core-windows.exe" "builds_out/guardian-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/guardian-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/guardian-core-windows.exe" "s3://axto-builds/builds/latest/exe/guardian-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/guardian-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/guardian-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/guardian-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/guardian-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:guardian-node:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-node" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - engine/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r engine/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/guardian_node_entry.py" "engine/_build_entry.py" -Force
+      Push-Location "engine"
+      python -m PyInstaller --onefile --name "guardian-node-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog \
+        --hidden-import=psutil `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "engine/dist/guardian-node-windows.exe" "builds_out/guardian-node-windows.exe" -Force
+      $size = (Get-Item "builds_out/guardian-node-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/guardian-node-windows.exe" "s3://axto-builds/builds/latest/exe/guardian-node-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/guardian-node-windows.exe" "s3://axto-builds/builds/$sha8/exe/guardian-node-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/guardian-node-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/guardian-node-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:guardian-antivirus:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "guardian-antivirus" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r antivirus/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/antivirus_entry.py" "antivirus/_build_entry.py" -Force
+      Push-Location "antivirus"
+      python -m PyInstaller --onefile --name "guardian-antivirus-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog \
+        --hidden-import=clamd `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "antivirus/dist/guardian-antivirus-windows.exe" "builds_out/guardian-antivirus-windows.exe" -Force
+      $size = (Get-Item "builds_out/guardian-antivirus-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/guardian-antivirus-windows.exe" "s3://axto-builds/builds/latest/exe/guardian-antivirus-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/guardian-antivirus-windows.exe" "s3://axto-builds/builds/$sha8/exe/guardian-antivirus-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/guardian-antivirus-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/guardian-antivirus-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:antivirus-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "antivirus-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - antivirus/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r antivirus/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/antivirus_entry.py" "antivirus/_build_entry.py" -Force
+      Push-Location "antivirus"
+      python -m PyInstaller --onefile --name "antivirus-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog \
+        --hidden-import=clamd `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "antivirus/dist/antivirus-core-windows.exe" "builds_out/antivirus-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/antivirus-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/antivirus-core-windows.exe" "s3://axto-builds/builds/latest/exe/antivirus-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/antivirus-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/antivirus-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/antivirus-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/antivirus-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:vault-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "vault-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - vault/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r vault/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/vault_entry.py" "vault/_build_entry.py" -Force
+      Push-Location "vault"
+      python -m PyInstaller --onefile --name "vault-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "vault/dist/vault-core-windows.exe" "builds_out/vault-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/vault-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/vault-core-windows.exe" "s3://axto-builds/builds/latest/exe/vault-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/vault-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/vault-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/vault-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/vault-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:edge-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "edge-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - edge/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r edge/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/edge_core_entry.py" "edge/_build_entry.py" -Force
+      Push-Location "edge"
+      python -m PyInstaller --onefile --name "edge-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "edge/dist/edge-core-windows.exe" "builds_out/edge-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/edge-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/edge-core-windows.exe" "s3://axto-builds/builds/latest/exe/edge-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/edge-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/edge-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/edge-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/edge-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:soc-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "soc-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - soc/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r soc/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/soc_entry.py" "soc/_build_entry.py" -Force
+      Push-Location "soc"
+      python -m PyInstaller --onefile --name "soc-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "soc/dist/soc-core-windows.exe" "builds_out/soc-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/soc-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/soc-core-windows.exe" "s3://axto-builds/builds/latest/exe/soc-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/soc-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/soc-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/soc-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/soc-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:compliance-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "compliance-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - compliance/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r compliance/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/compliance_entry.py" "compliance/_build_entry.py" -Force
+      Push-Location "compliance"
+      python -m PyInstaller --onefile --name "compliance-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "compliance/dist/compliance-core-windows.exe" "builds_out/compliance-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/compliance-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/compliance-core-windows.exe" "s3://axto-builds/builds/latest/exe/compliance-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/compliance-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/compliance-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/compliance-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/compliance-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:sentinel-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "sentinel-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - sentinel/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r sentinel/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/sentinel_entry.py" "sentinel/_build_entry.py" -Force
+      Push-Location "sentinel"
+      python -m PyInstaller --onefile --name "sentinel-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "sentinel/dist/sentinel-core-windows.exe" "builds_out/sentinel-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/sentinel-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/sentinel-core-windows.exe" "s3://axto-builds/builds/latest/exe/sentinel-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/sentinel-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/sentinel-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/sentinel-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/sentinel-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:orchestra-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "orchestra-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - orchestra/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r orchestra/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/orchestra_entry.py" "orchestra/_build_entry.py" -Force
+      Push-Location "orchestra"
+      python -m PyInstaller --onefile --name "orchestra-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog \
+        --hidden-import=openai \
+        --hidden-import=anthropic \
+        --hidden-import=google.generativeai `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "orchestra/dist/orchestra-core-windows.exe" "builds_out/orchestra-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/orchestra-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/orchestra-core-windows.exe" "s3://axto-builds/builds/latest/exe/orchestra-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/orchestra-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/orchestra-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/orchestra-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/orchestra-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+
+build-exe:legal-core:
+  stage: build-exe
+  tags:
+    - windows
+  variables:
+    GIT_DEPTH: 1
+  rules:
+    - if: '$BUILD_PRODUCT == "legal-core" && ($BUILD_TYPE == "exe" || $BUILD_TYPE == "both")'
+      when: always
+    - if: '$BUILD_PRODUCT == "all"'
+      changes:
+        - legal/**/*
+        - .gitlab-ci.yml
+      when: always
+    - when: never
+  before_script:
+    - python -m pip install -q --upgrade pip
+    - python -m pip install -q pyinstaller pyinstaller-hooks-contrib
+    - python -m pip install -q -r legal/requirements.txt
+  script:
+    - |
+      $ErrorActionPreference = "Stop"
+      Copy-Item "build-scripts/exe-entrypoints/legal_entry.py" "legal/_build_entry.py" -Force
+      Push-Location "legal"
+      python -m PyInstaller --onefile --name "legal-core-windows" --noconfirm --clean `
+        --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops.auto `
+        --hidden-import=uvicorn.protocols.http.auto --hidden-import=uvicorn.lifespan.on `
+        --hidden-import=aiosqlite --hidden-import=yaml --hidden-import=httpx `
+        --hidden-import=cryptography --hidden-import=structlog \
+        --hidden-import=pypdf \
+        --hidden-import=docx \
+        --hidden-import=httpx \
+        --hidden-import=cryptography `
+        --collect-all fastapi --collect-all uvicorn --collect-all starlette --collect-all pydantic `
+        "_build_entry.py"
+      Remove-Item "_build_entry.py" -Force
+      Pop-Location
+      New-Item -ItemType Directory -Force -Path "builds_out" | Out-Null
+      Move-Item "legal/dist/legal-core-windows.exe" "builds_out/legal-core-windows.exe" -Force
+      $size = (Get-Item "builds_out/legal-core-windows.exe").Length / 1MB
+      Write-Host ("EXE built: {0:N1} MB" -f $size)
+
+      pip install -q "awscli>=1.32"
+      $env:AWS_ACCESS_KEY_ID = $env:CF_R2_ACCESS_KEY_ID
+      $env:AWS_SECRET_ACCESS_KEY = $env:CF_R2_SECRET_ACCESS_KEY
+      $env:AWS_DEFAULT_REGION = "auto"
+      $sha8 = $env:CI_COMMIT_SHA.Substring(0,8)
+      $endpoint = "https://$($env:CF_R2_ACCOUNT_ID).r2.cloudflarestorage.com"
+
+      aws s3 cp "builds_out/legal-core-windows.exe" "s3://axto-builds/builds/latest/exe/legal-core-windows.exe" --endpoint-url $endpoint --no-progress
+      aws s3 cp "builds_out/legal-core-windows.exe" "s3://axto-builds/builds/$sha8/exe/legal-core-windows.exe" --endpoint-url $endpoint --no-progress
+      Write-Host "Uploaded -> builds/latest/exe/legal-core-windows.exe"
+  artifacts:
+    paths:
+      - builds_out/legal-core-windows.exe
+    expire_in: 7 days
+    when: on_success
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 5: DEPLOY TO CLOUDFLARE
+# ═════════════════════════════════════════════════════════════════════════════
+
+deploy-dashboard:
+  stage: deploy-cf
+  image: node:20-alpine
+  variables:
+    GIT_DEPTH: 1
+    CLOUDFLARE_API_TOKEN: "${CF_PAGES_API_TOKEN}"
+    CLOUDFLARE_ACCOUNT_ID: "${CF_ACCOUNT_ID}"
+  before_script:
+    - apk add --no-cache git bash curl
+  script:
+    - |
+      echo "🚀 Deploying AXTO Dashboard → Cloudflare Pages..."
+      cd dashboard
+
+      npm ci --prefer-offline
+
+      # Apply D1 migrations
+      echo "📦 Applying D1 migrations..."
+      npx wrangler d1 migrations apply axto-db --remote 2>&1 | tee /tmp/d1.txt || true
+      echo "  ✅ $(grep -c 'Applying migration' /tmp/d1.txt 2>/dev/null || echo 0) migrations applied"
+
+      # Build
+      npm run pages:build
+
+      # Deploy
+      npx wrangler pages deploy .vercel/output/static \
+        --project-name=axto-dashboard \
+        --branch=main \
+        --commit-hash="${CI_COMMIT_SHA}" \
+        --commit-message="${CI_COMMIT_MESSAGE}"
+
+      echo "✅ Dashboard deployed → https://axto.io"
+  environment:
+    name: production
+    url: https://axto.io
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $PIPELINE_MODE == "auto"'
+      changes:
+        - dashboard/**/*
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "main" && $BUILD_PRODUCT == "dashboard"'
+      when: on_success
+    - when: never
+
+deploy-workers:
+  stage: deploy-cf
+  image: node:20-alpine
+  variables:
+    GIT_DEPTH: 1
+    CLOUDFLARE_API_TOKEN: "${CF_PAGES_API_TOKEN}"
+    CLOUDFLARE_ACCOUNT_ID: "${CF_ACCOUNT_ID}"
+  before_script:
+    - apk add --no-cache git bash
+    - npm install -g wrangler@latest
+  script:
+    - |
+      echo "⚙️  Deploying Cloudflare Workers..."
+      DEPLOYED=0; FAILED=0
+
+      deploy_worker() {
+        local dir="$1"; local name="$2"; local cfg="${3:-wrangler.toml}"
+        if [ -f "${dir}/${cfg}" ]; then
+          echo "  → Deploying ${name}..."
+          cd "${dir}"
+          wrangler deploy --config "${cfg}" 2>&1 \
+            && { echo "  ✅ ${name}"; DEPLOYED=$((DEPLOYED+1)); } \
+            || { echo "  ⚠️  ${name} failed (non-fatal)"; FAILED=$((FAILED+1)); }
+          cd -
+        fi
+      }
+
+      deploy_worker "cloudflare"         "Main Worker"
+      deploy_worker "cloudflare-workers" "AutoPost Worker"    "wrangler-autopost.toml"
+      deploy_worker "cloudflare-workers" "Threat Intel Worker" "wrangler-threat-intel.toml"
+
+      echo ""
+      echo "Workers: ${DEPLOYED} deployed, ${FAILED} failed"
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $PIPELINE_MODE == "auto"'
+      changes:
+        - cloudflare/**/*
+        - cloudflare-workers/**/*
+      when: on_success
+    - if: '$CI_COMMIT_BRANCH == "main" && $BUILD_PRODUCT == "workers"'
+      when: on_success
+    - when: never
+
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 6: NOTIFY
+# ═════════════════════════════════════════════════════════════════════════════
+
+notify-dashboard:
+  stage: notify
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      [ -z "${AXTO_APP_URL}" ] && echo "ℹ️  AXTO_APP_URL not set — skip" && exit 0
+
+      STATUS="${CI_JOB_STATUS:-success}"
+      SHA8="${CI_COMMIT_SHA:0:8}"
+
+      notify_product() {
+        local prod="$1"
+        HTTP=$(curl -sf --max-time 15 -w "%{http_code}" -o /dev/null \
+          -X POST "${AXTO_APP_URL}/api/admin/engine-builder" \
+          -H "Content-Type: application/json" \
+          -H "X-Webhook-Secret: ${BUILD_WEBHOOK_SECRET:-}" \
+          -d "{
+            \"action\":       \"build_callback\",
+            \"build_id\":     \"${BUILD_ID:-ci-${CI_PIPELINE_ID}}\",
+            \"product\":      \"${prod}\",
+            \"type\":         \"image\",
+            \"status\":       \"${STATUS}\",
+            \"pipeline_url\": \"${CI_PIPELINE_URL}\",
+            \"commit\":       \"${SHA8}\",
+            \"r2_endpoint\":  \"https://${CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com\",
+            \"r2_key\":       \"builds/latest/raw/${prod}.tar.gz\",
+            \"gitlab\":       true
+          }" 2>/dev/null || echo "000")
+        echo "  → ${prod}: HTTP ${HTTP}"
+      }
+
+      # NOTE: this always notifies for the full canonical 12-product list when
+      # BUILD_PRODUCT=all, regardless of which ones were actually rebuilt this
+      # run (smart-rebuild may have skipped most of them) — the dashboard's
+      # build_callback handler treats this as "still current as of this
+      # commit", which is correct: an unrebuilt product's last successful
+      # build IS still its current state.
+      case "${BUILD_PRODUCT}" in
+        all)
+          notify_product "guardian-core"
+          notify_product "guardian-node"
+          notify_product "guardian-antivirus"
+          notify_product "antivirus-core"
+          notify_product "vault-core"
+          notify_product "edge-core"
+          notify_product "soc-core"
+          notify_product "compliance-core"
+          notify_product "sentinel-core"
+          notify_product "studio-core"
+          notify_product "orchestra-core"
+          notify_product "orchestra-worker-cpu"
+          # orchestra-worker-gpu intentionally NOT notified automatically —
+          # it is never auto-built, so there is nothing new to report here.
+          ;;
+        guardian-bundle)
+          notify_product "guardian-core"
+          notify_product "guardian-node"
+          notify_product "guardian-antivirus"
+          ;;
+        orchestra-bundle)
+          notify_product "orchestra-core"
+          notify_product "orchestra-worker-cpu"
+          notify_product "orchestra-worker-gpu"
+          ;;
+        *)
+          notify_product "${BUILD_PRODUCT}"
+          ;;
+      esac
+
+      echo "✅ Dashboard notified"
+  when: always
+
+notify-slack:
+  stage: notify
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      [ -z "${SLACK_WEBHOOK_URL}" ] && echo "ℹ️  SLACK_WEBHOOK_URL not set" && exit 0
+
+      [ "${CI_JOB_STATUS}" = "success" ] && EMOJI="✅" || EMOJI="❌"
+      [ "${CI_JOB_STATUS}" = "success" ] && COLOR="good" || COLOR="danger"
+
+      curl -sf -X POST "${SLACK_WEBHOOK_URL}" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"attachments\": [{
+            \"color\": \"${COLOR}\",
+            \"title\": \"${EMOJI} AXTO Build — ${BUILD_PRODUCT}\",
+            \"text\": \"Pipeline *${CI_PIPELINE_ID}* completed\\nBranch: \`${CI_COMMIT_BRANCH}\` | Commit: \`${CI_COMMIT_SHA:0:8}\`\",
+            \"fields\": [
+              {\"title\": \"Product\",  \"value\": \"${BUILD_PRODUCT}\",   \"short\": true},
+              {\"title\": \"Status\",   \"value\": \"${CI_JOB_STATUS}\",   \"short\": true},
+              {\"title\": \"R2 Bucket\",\"value\": \"axto-builds\",        \"short\": true},
+              {\"title\": \"Pipeline\", \"value\": \"<${CI_PIPELINE_URL}|View>\", \"short\": true}
+            ],
+            \"footer\": \"AXTO GitLab CI\",
+            \"ts\": $(date +%s)
+          }]
+        }" || echo "⚠️  Slack notification failed (non-fatal)"
+  when: always
+  allow_failure: true
+
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 0: VERIFY  — quality gate that runs BEFORE any build or deploy.
+#   Hard gates (block deploy): logic tests (134 checks) + completeness scan.
+#   Soft gate (reports only):  TypeScript typecheck + lint.
+# ═════════════════════════════════════════════════════════════════════════════
+
+verify:tests:
+  stage: verify
+  image: node:20-alpine
+  script:
+    - echo "🧪 Running deterministic logic suites (no network needed)..."
+    - node dashboard/tests/test-lifecycle.mjs
+    - node dashboard/tests/test-license-logic.mjs
+    - echo "✅ All logic suites passed (lifecycle + license)."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $PIPELINE_MODE == "auto"'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "dashboard" || $BUILD_PRODUCT == "all"'
+      when: on_success
+    - when: never
+
+verify:completeness:
+  stage: verify
+  image: node:20-alpine
+  script:
+    - echo "🔍 Completeness & freshness scan (target 100%)..."
+    - node scripts/ci/scan-completeness.mjs --min 95
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $PIPELINE_MODE == "auto"'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "dashboard" || $BUILD_PRODUCT == "all"'
+      when: on_success
+    - when: never
+
+verify:typecheck:
+  stage: verify
+  image: node:20-alpine
+  before_script:
+    - apk add --no-cache git
+    - cd dashboard && npm ci --prefer-offline --no-audit --no-fund
+  script:
+    - echo "Typecheck (report-only, does not block deploy)..."
+    - npx tsc --noEmit || echo "⚠️  Typecheck reported issues (non-blocking)"
+    - npx next lint || echo "⚠️  Lint reported issues (non-blocking)"
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $PIPELINE_MODE == "auto"'
+      changes:
+        - dashboard/**/*
+      when: on_success
+    - if: '$BUILD_PRODUCT == "dashboard" || $BUILD_PRODUCT == "all"'
+      when: on_success
+    - when: never
+
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 7: CLEANUP — keep "latest" only; prune stale versioned artifacts so old
+#                    files never accumulate. Runs mainly on the nightly schedule.
+# ═════════════════════════════════════════════════════════════════════════════
+
+cleanup:prune-r2:
+  stage: cleanup
+  image: amazon/aws-cli:2.15.0
+  variables:
+    AWS_ACCESS_KEY_ID:     "${CF_R2_ACCESS_KEY_ID}"
+    AWS_SECRET_ACCESS_KEY: "${CF_R2_SECRET_ACCESS_KEY}"
+    KEEP_DAYS:             "14"
+  script:
+    - |
+      echo "🧹 Pruning stale R2 build artifacts (keeping builds/latest/** and last ${KEEP_DAYS}d)..."
+      ENDPOINT="https://${CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+      CUTOFF=$(date -d "-${KEEP_DAYS} days" +%Y-%m-%d 2>/dev/null || date +%Y-%m-%d)
+      # List every object under builds/, skip anything under builds/latest/, delete those older than cutoff.
+      aws s3 ls "s3://axto-builds/builds/" --recursive --endpoint-url "$ENDPOINT" 2>/dev/null \
+        | while read -r d t sz key; do
+            case "$key" in
+              builds/latest/*) : ;;  # never delete the live "latest" artifacts
+              *) if [ "$d" \< "$CUTOFF" ]; then
+                   echo "  - prune $key ($d)";
+                   aws s3 rm "s3://axto-builds/$key" --endpoint-url "$ENDPOINT" --only-show-errors || true;
+                 fi ;;
+            esac
+          done
+      echo "✅ R2 prune complete — latest artifacts untouched."
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main" && $BUILD_PRODUCT == "cleanup"'
+      when: manual
+    - when: never
+
+cleanup:registry-note:
+  stage: cleanup
+  image: alpine:3.18
+  script:
+    - |
+      echo "ℹ️  Container image retention is handled by GitLab's native Cleanup Policy."
+      echo "    Configure once: Settings → Packages & registries → Clean up image tags:"
+      echo "      • Keep the N most recent tags per image (e.g. 5)"
+      echo "      • Keep tags matching: ^latest$|^v\\d+"
+      echo "      • Remove tags older than 14d"
+      echo "    This keeps ':latest' (always overwritten) plus a small rolling history,"
+      echo "    so old image tags never accumulate."
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - when: never
+
+# ═════════════════════════════════════════════════════════════════════════════
+# GUIDES: build branded PDF guides for all products and push to Cloudflare R2.
+#   Runs on every push to main and on the nightly schedule. Output is served by
+#   the dashboard download menu (format=pdf). "latest" is overwritten each run.
+# ═════════════════════════════════════════════════════════════════════════════
+guides:pdf:
+  stage: build-exe
+  image: node:22-bookworm
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq python3 python3-pip awscli >/dev/null
+    - pip3 install --quiet --break-system-packages reportlab
+  script:
+    - echo "📄 Rendering guide markdown for all products (EN + ID)..."
+    - node --experimental-strip-types scripts/ci/render-guides.mjs dist/guides
+    - echo "📄 Building branded PDFs..."
+    - python3 scripts/ci/build-guide-pdfs.py dist/guides dist/guides
+    - echo "☁️  Pushing PDFs to Cloudflare R2 (builds/latest/guides/ — overwrites)..."
+    - |
+      ENDPOINT="https://${CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+      export AWS_ACCESS_KEY_ID="${CF_R2_ACCESS_KEY_ID}"
+      export AWS_SECRET_ACCESS_KEY="${CF_R2_SECRET_ACCESS_KEY}"
+      for f in dist/guides/*.pdf; do
+        key="builds/latest/guides/$(basename "$f")"
+        aws s3 cp "$f" "s3://axto-builds/$key" --endpoint-url "$ENDPOINT" --only-show-errors \
+          --content-type application/pdf
+        echo "  ✓ $key"
+      done
+    - echo "✅ Guide PDFs published to R2."
+  artifacts:
+    paths: [dist/guides/]
+    expire_in: 7 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" && $PIPELINE_MODE == "auto"'
+      when: on_success
+    - if: '$BUILD_PRODUCT == "dashboard" || $BUILD_PRODUCT == "all"'
+      when: on_success
+    - when: never

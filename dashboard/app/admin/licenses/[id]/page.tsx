@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 "use client";
 export const runtime = "edge";
 import { useEffect, useState } from "react";
@@ -17,6 +24,8 @@ export default function LicenseDetailPage() {
   const [actionError, setActionError] = useState<string|null>(null);
   const [extending, setExtending]         = useState(false);
   const [extMonths, setExtMonths]         = useState(12);
+  const [addingDays, setAddingDays]       = useState(false);
+  const [daysToAdd, setDaysToAdd]         = useState(7);
   const [copied, setCopied]               = useState(false);
   const router = useRouter();
 
@@ -50,6 +59,24 @@ export default function LicenseDetailPage() {
     const d = await res.json();
     if(!d.success) setActionError(d.error||"Extend failed");
     else { setActionError(null); setExtending(false); await load(); }
+    setActionLoading(null);
+  }
+
+  async function addDaysToLicense(){
+    setActionLoading("add_days");
+    const res = await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"add_days",licenseId:id,days:daysToAdd})});
+    const d = await res.json();
+    if(!d.success) setActionError(d.error||"Add days failed");
+    else { setActionError(null); setAddingDays(false); await load(); }
+    setActionLoading(null);
+  }
+
+  async function toggleEnabled(){
+    setActionLoading("toggle_enabled");
+    const res = await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"toggle_enabled",licenseId:id})});
+    const d = await res.json();
+    if(!d.success) setActionError(d.error||"Toggle failed");
+    else { setActionError(null); await load(); }
     setActionLoading(null);
   }
 
@@ -109,14 +136,26 @@ export default function LicenseDetailPage() {
                 {copied?"✓ Copied":"📋 Copy Key"}
               </button>
               <button onClick={()=>action("resend_email")} disabled={!!actionLoading} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-cyan-400 disabled:opacity-40">📧 Resend Email</button>
+              {/* ON/OFF switch — independent of lifecycle status. license.is_enabled
+                  defaults to 1 (ON) for every pre-existing license via migration 0035. */}
+              <button onClick={toggleEnabled} disabled={!!actionLoading}
+                className={`glass glass-hover text-sm px-3 py-2 rounded-xl disabled:opacity-40 ${license.is_enabled===0?"text-red-400":"text-emerald-400"}`}
+                title={license.is_enabled===0?"License is OFF — click to turn ON":"License is ON — click to turn OFF"}>
+                {license.is_enabled===0?"🔴 OFF → turn ON":"🟢 ON → turn OFF"}
+              </button>
               {license.status==="active"?(
                 <>
-                  <button onClick={()=>setExtending(true)} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-green-400">⊕ Extend</button>
+                  <button onClick={()=>setExtending(true)} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-green-400">⊕ Extend (months)</button>
+                  <button onClick={()=>setAddingDays(true)} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-green-400">⊕ Add Days</button>
                   <button onClick={()=>action("suspend")} disabled={!!actionLoading} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-yellow-400 disabled:opacity-40">⏸ Suspend</button>
                   <button onClick={()=>{if(confirm("Revoke this license?"))action("revoke")}} disabled={!!actionLoading} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-red-400 disabled:opacity-40">✕ Revoke</button>
                 </>
               ):(
-                <button onClick={()=>action("reactivate")} disabled={!!actionLoading} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-green-400 disabled:opacity-40">▶ Activate</button>
+                <>
+                  <button onClick={()=>action("reactivate")} disabled={!!actionLoading} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-green-400 disabled:opacity-40">▶ Activate</button>
+                  <button onClick={()=>setAddingDays(true)} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-green-400">⊕ Add Days</button>
+                  <button onClick={()=>action("activate_manual")} disabled={!!actionLoading} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-teal-400 disabled:opacity-40" title="Approve an owned key without creating a user account">✓ Manual Activate</button>
+                </>
               )}
             </div>
           </div>
@@ -130,6 +169,25 @@ export default function LicenseDetailPage() {
                 {actionLoading==="extend"?"Extending…":"Confirm"}
               </button>
               <button onClick={()=>setExtending(false)} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-slate-400">Cancel</button>
+            </div>
+          )}
+
+          {addingDays&&(
+            <div className="mt-4 p-4 bg-white/5 border border-slate-200 rounded-xl flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-slate-400">Add</span>
+              {[7,14,30,90].map(q=>(
+                <button key={q} onClick={()=>setDaysToAdd(q)}
+                  className={`text-sm px-3 py-2 rounded-xl border ${daysToAdd===q?"border-teal-400 text-teal-300 bg-teal-400/10":"border-slate-300 text-slate-400"}`}>
+                  +{q}d
+                </button>
+              ))}
+              <input type="number" min={-3650} max={3650} value={daysToAdd}
+                onChange={e=>setDaysToAdd(parseInt(e.target.value)||0)} className="input text-sm" style={{width:"90px"}}/>
+              <span className="text-sm text-slate-400">days (negative claws back)</span>
+              <button onClick={addDaysToLicense} disabled={!!actionLoading} className="bg-gradient-to-r from-teal-700 to-teal-500 text-white text-sm font-bold px-4 py-2 rounded-xl disabled:opacity-50">
+                {actionLoading==="add_days"?"Applying…":"Apply"}
+              </button>
+              <button onClick={()=>setAddingDays(false)} className="glass glass-hover text-sm px-3 py-2 rounded-xl text-slate-400">Cancel</button>
             </div>
           )}
         </div>

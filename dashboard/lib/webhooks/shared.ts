@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, dbQuery, newId, now } from "@/lib/db";
 import { createLicense, createBundleLicenses } from "@/lib/license";
@@ -15,10 +22,16 @@ export async function processPlaybookPurchase(req: NextRequest, params: {
   const existing = await dbFirst(db, `SELECT id FROM playbook_purchases WHERE payment_ref = ?`, [paymentRef]);
   if (existing) return NextResponse.json({ ok: true });
 
-  // Create purchase record
+  // Create purchase record - need client_id for FK but also store email
+  let clientId = "unknown";
+  try {
+    const clientRow = await dbFirst<any>(db, `SELECT id FROM clients WHERE email = ?`, [email.toLowerCase()]);
+    if (clientRow) clientId = clientRow.id;
+  } catch {}
+
   await dbRun(db,
-    `INSERT INTO playbook_purchases (id, client_email, playbook_id, bundle_id, amount_usd, gateway, payment_ref, status, created_at) VALUES (?,?,?,?,?,?,?,?,?)`,
-    [newId(), email, playbookId || null, bundleId || null, amountUsd, gateway, paymentRef, "completed", now()]
+    `INSERT INTO playbook_purchases (id, client_id, client_email, playbook_id, bundle_id, amount_usd, gateway, payment_ref, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    [newId(), clientId, email.toLowerCase(), playbookId || "", bundleId || "", amountUsd, gateway, paymentRef, "completed", now()]
   );
 
   // If bundle, create individual purchase records for each playbook in the bundle

@@ -1,4 +1,10 @@
 #!/bin/bash
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 # ═══════════════════════════════════════════════════════════════════════════
 # AXTO Platform — 1 Command Full Deploy
 # Usage: ./push.sh "commit message"
@@ -6,7 +12,7 @@
 # Yang terjadi otomatis:
 #   1. D1 migrations (semua pending, termasuk 0016 + 0017)
 #   2. Upload 48 PDFs → R2 axto-storage
-#   3. git add + commit + push → GitHub
+#   3. git add + commit + push → GitLab
 #   4. CF Pages auto-build & deploy dashboard
 #   5. CF Workers deploy
 # ═══════════════════════════════════════════════════════════════════════════
@@ -83,13 +89,13 @@ if [ -f cloudflare-workers/wrangler-autopost.toml ]; then
 fi
 
 # ── Step 4: Git push → trigger CF Pages build ──────────────────────────────
-info "Step 4/4 — Git push → GitHub (auto-trigger CF Pages deploy)..."
+info "Step 4/4 — Git push → GitLab (auto-trigger CF Pages deploy)..."
 git add .
 
 CHANGED=$(git diff --cached --name-only 2>/dev/null | wc -l)
 if [ "$CHANGED" -eq 0 ]; then
   warn "Tidak ada file baru untuk di-commit"
-  REPO=$(git remote get-url origin 2>/dev/null | sed 's/.*github.com[:/]//' | sed 's/\.git$//')
+  REPO=$(git remote get-url origin 2>/dev/null | sed 's/.*gitlab.com[:/]//' | sed 's/\.git$//')
   echo ""
   ok "Sudah up-to-date. CF Pages deploy terakhir:"
   echo "  👉 https://dash.cloudflare.com/pages"
@@ -105,7 +111,7 @@ echo ""
 git commit -m "$MSG"
 git push origin main
 
-REPO=$(git remote get-url origin | sed 's/.*github.com[:/]//' | sed 's/\.git$//')
+REPO=$(git remote get-url origin | sed 's/.*gitlab.com[:/]//' | sed 's/\.git$//')
 
 echo ""
 ok "SEMUA SELESAI!"
@@ -118,7 +124,7 @@ echo "  │  ✅ CF Workers        → deployed                           │"
 echo "  │  ✅ Git push          → origin/main                        │"
 echo "  │                                                             │"
 echo "  │  CF Pages build sedang berjalan (~3-5 menit):              │"
-echo "  │  👉 https://github.com/${REPO}/actions                     │"
+echo "  │  👉 https://gitlab.com/${REPO}/-/pipelines                     │"
 echo "  │                                                             │"
 echo "  │  Live setelah build:                                        │"
 echo "  │  🌐 https://axto.io                                        │"

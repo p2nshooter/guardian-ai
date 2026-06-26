@@ -1,0 +1,647 @@
+{
+  "info": {
+    "name": "AXTO 5 Products API Collection",
+    "_postman_id": "axto-5products-v1",
+    "description": "Complete API collection for AXTO Vault, SOC, Compliance, Edge & Sentinel",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "vault_url",
+      "value": "http://localhost:8091"
+    },
+    {
+      "key": "soc_url",
+      "value": "http://localhost:8092"
+    },
+    {
+      "key": "compliance_url",
+      "value": "http://localhost:8093"
+    },
+    {
+      "key": "edge_url",
+      "value": "http://localhost:8094"
+    },
+    {
+      "key": "sentinel_url",
+      "value": "http://localhost:8095"
+    },
+    {
+      "key": "vault_key",
+      "value": "your-vault-api-key"
+    },
+    {
+      "key": "soc_key",
+      "value": "your-soc-api-key"
+    },
+    {
+      "key": "edge_customer_key",
+      "value": "cust-key-001"
+    }
+  ],
+  "item": [
+    {
+      "name": "\ud83d\udd12 AXTO Vault",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{vault_url}}/health"
+          }
+        },
+        {
+          "name": "Scan PII",
+          "request": {
+            "method": "POST",
+            "url": "{{vault_url}}/v1/scan",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Vault-Key",
+                "value": "{{vault_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"text\": \"Name: John Doe, Email: john.doe@company.com, Phone: 081234567890, KTP: 3201234567890001\", \"strategy\": \"pseudonymize\", \"use_ai\": false}"
+            }
+          }
+        },
+        {
+          "name": "Mask Only",
+          "request": {
+            "method": "POST",
+            "url": "{{vault_url}}/v1/mask",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Vault-Key",
+                "value": "{{vault_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"text\": \"Credit card: 4532015112830366\", \"strategy\": \"tokenize\"}"
+            }
+          }
+        },
+        {
+          "name": "Detect Only",
+          "request": {
+            "method": "POST",
+            "url": "{{vault_url}}/v1/detect",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Vault-Key",
+                "value": "{{vault_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"text\": \"SSN: 123-45-6789\", \"use_ai\": false}"
+            }
+          }
+        },
+        {
+          "name": "GDPR Erasure Request",
+          "request": {
+            "method": "POST",
+            "url": "{{vault_url}}/v1/erasure",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Vault-Key",
+                "value": "{{vault_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"identifier\": \"user@example.com\", \"reason\": \"user_request\"}"
+            }
+          }
+        },
+        {
+          "name": "Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{vault_url}}/v1/stats",
+            "header": [
+              {
+                "key": "X-Vault-Key",
+                "value": "{{vault_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Verify Audit Integrity",
+          "request": {
+            "method": "POST",
+            "url": "{{vault_url}}/v1/audit/verify",
+            "header": [
+              {
+                "key": "X-Vault-Key",
+                "value": "{{vault_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "List PII Types",
+          "request": {
+            "method": "GET",
+            "url": "{{vault_url}}/v1/pii-types"
+          }
+        },
+        {
+          "name": "List Frameworks",
+          "request": {
+            "method": "GET",
+            "url": "{{vault_url}}/v1/frameworks"
+          }
+        }
+      ]
+    },
+    {
+      "name": "\ud83d\udee1\ufe0f AXTO SOC",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{soc_url}}/health"
+          }
+        },
+        {
+          "name": "Ingest Logs \u2014 SSH Brute Force",
+          "request": {
+            "method": "POST",
+            "url": "{{soc_url}}/v1/ingest",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"logs\": [\"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\", \"Failed password for root from 45.33.32.156 port 22 ssh2\"], \"source\": \"syslog\"}"
+            }
+          }
+        },
+        {
+          "name": "Ingest Logs \u2014 Ransomware IOC",
+          "request": {
+            "method": "POST",
+            "url": "{{soc_url}}/v1/ingest",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"logs\": [\"README_RANSOM.txt created at /home/user/documents/README_RANSOM.txt\"], \"source\": \"json_api\"}"
+            }
+          }
+        },
+        {
+          "name": "Get Alerts (Critical)",
+          "request": {
+            "method": "GET",
+            "url": "{{soc_url}}/v1/alerts?severity=critical&limit=20",
+            "header": [
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Open Incidents",
+          "request": {
+            "method": "GET",
+            "url": "{{soc_url}}/v1/incidents?status=new",
+            "header": [
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{soc_url}}/v1/dashboard",
+            "header": [
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "List Detection Rules",
+          "request": {
+            "method": "GET",
+            "url": "{{soc_url}}/v1/rules",
+            "header": [
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mark False Positive",
+          "request": {
+            "method": "POST",
+            "url": "{{soc_url}}/v1/feedback/false-positive",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-SOC-Key",
+                "value": "{{soc_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"alert_id\": \"ALERT_ID_HERE\", \"analyst\": \"alice\", \"reason\": \"Internal vulnerability scanner\"}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "\ud83d\udccb AXTO Compliance",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{compliance_url}}/health"
+          }
+        },
+        {
+          "name": "Run SOC 2 Assessment",
+          "request": {
+            "method": "POST",
+            "url": "{{compliance_url}}/v1/assess/soc2",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Run GDPR Assessment",
+          "request": {
+            "method": "POST",
+            "url": "{{compliance_url}}/v1/assess/gdpr",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Run PCI-DSS Assessment",
+          "request": {
+            "method": "POST",
+            "url": "{{compliance_url}}/v1/assess/pci_dss",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{compliance_url}}/v1/summary",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "SOC 2 Report",
+          "request": {
+            "method": "GET",
+            "url": "{{compliance_url}}/v1/report/soc2",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Failing Controls",
+          "request": {
+            "method": "GET",
+            "url": "{{compliance_url}}/v1/controls/soc2?status=fail",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Open Risk Items",
+          "request": {
+            "method": "GET",
+            "url": "{{compliance_url}}/v1/risk-items?status=open",
+            "header": [
+              {
+                "key": "X-Compliance-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "List Frameworks",
+          "request": {
+            "method": "GET",
+            "url": "{{compliance_url}}/v1/frameworks"
+          }
+        }
+      ]
+    },
+    {
+      "name": "\u26a1 AXTO Edge",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{edge_url}}/health"
+          }
+        },
+        {
+          "name": "Chat Completion (OpenAI-compatible)",
+          "request": {
+            "method": "POST",
+            "url": "{{edge_url}}/v1/chat/completions",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{edge_customer_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"model\": \"gpt-4o-mini\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello! What is 2+2?\"}], \"max_tokens\": 100}"
+            }
+          }
+        },
+        {
+          "name": "List Models",
+          "request": {
+            "method": "GET",
+            "url": "{{edge_url}}/v1/models",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{edge_customer_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Usage Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{edge_url}}/v1/stats",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{edge_customer_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Customer Billing (this month)",
+          "request": {
+            "method": "GET",
+            "url": "{{edge_url}}/v1/billing/customer-001/2025-01",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{edge_customer_key}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Cache Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{edge_url}}/v1/cache/stats",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{edge_customer_key}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "\ud83d\udce1 AXTO Sentinel",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/health"
+          }
+        },
+        {
+          "name": "Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/dashboard",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "All Devices",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/devices",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "PLC Devices Only",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/devices?device_type=plc",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Critical Alerts",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/alerts?severity=critical&acknowledged=false",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Authorize Device",
+          "request": {
+            "method": "POST",
+            "url": "{{sentinel_url}}/v1/devices/authorize",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"ip\": \"192.168.100.10\"}"
+            }
+          }
+        },
+        {
+          "name": "IEC 62443 Compliance",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/compliance/iec62443",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "NERC CIP Compliance",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/compliance/nerc_cip",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Modbus Register Anomalies",
+          "request": {
+            "method": "GET",
+            "url": "{{sentinel_url}}/v1/register-readings?anomaly_only=true&limit=50",
+            "header": [
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Ingest OT Log",
+          "request": {
+            "method": "POST",
+            "url": "{{sentinel_url}}/v1/ingest",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Sentinel-Key",
+                "value": "your-key"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"logs\": [\"nmap scan detected from 10.0.0.50\"], \"source_ip\": \"10.0.0.50\"}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

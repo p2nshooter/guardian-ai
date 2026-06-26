@@ -1,8 +1,17 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 "use client";
 export const runtime = "edge";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-provider";
+import { PACKAGE_INFO, isProductForSale } from "@/lib/stripe";
+import ReviewsSection from "@/components/ReviewsSection";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -11,44 +20,44 @@ const GUARDIAN_PRICING = [
   {
     name: "Sentinel",
     code: "lite",
-    price: 249,
+    price: 990,
     period: "/year",
     servers: "1 server",
-    desc: "Perfect for individual developers & small workloads.",
-    features: ["AI Behavioral Analysis","Real-time Threat Feed","Email & Webhook Alerts","Automated Quarantine","1 Node Dashboard"],
+    desc: "Deploy enterprise-grade AI threat detection on your most critical server — from a home lab to a production workload. Your keys, your infrastructure, absolute privacy.",
+    features: ["7-Layer AI Behavioral Analysis","Real-time Global Threat Intelligence","Automated Quarantine & Kill","Built-in ClamAV Antivirus Engine","Email, Slack & Discord Alerts","Self-Learning Malware Detection"],
     popular: false,
     color: "#0284c7",
   },
   {
-    name: "Pro",
+    name: "Professional",
     code: "pro",
-    price: 990,
+    price: 4990,
     period: "/year",
-    servers: "Up to 20 servers",
-    desc: "The right scale for growing teams and infrastructure.",
-    features: ["All Sentinel features","Threat Hunting & UEBA","Central Multi-Server Dashboard","API Access & Integrations","Compliance Reports (SOC2, ISO)"],
+    servers: "Up to 25 servers",
+    desc: "Complete infrastructure visibility with AI-powered threat hunting. From a startup rack to a growing enterprise — compliance-ready, self-hosted, BYOK.",
+    features: ["Everything in Sentinel","AI Threat Hunting & UEBA Analytics","Multi-Server Central Command","SOC 2, ISO 27001, HIPAA, PCI-DSS Reports","SIEM Forwarding (Splunk, ELK, Datadog)","Standalone Antivirus with REST API"],
     popular: true,
     color: "#0284c7",
   },
   {
     name: "Business",
     code: "shield",
-    price: 3990,
+    price: 19900,
     period: "/year",
     servers: "Up to 100 servers",
-    desc: "Enterprise-grade protection for serious operations.",
-    features: ["All Pro features","eBPF Deep Inspection","mTLS Node Encryption","SIEM / SOAR Integration","Rootkit & Memory Scanner","Custom Alert Runbooks"],
+    desc: "Enterprise-grade kernel-level inspection with eBPF and encrypted node mesh. Zero blind spots. Zero data leaves your network. Zero compromise.",
+    features: ["Everything in Professional","eBPF Deep Kernel Inspection","mTLS Encrypted Node Mesh","Rootkit & Memory Forensics","Custom Incident Runbooks","Deception Engine (Honeypots & Decoys)"],
     popular: false,
     color: "#0284c7",
   },
   {
     name: "Enterprise",
     code: "aegis",
-    price: 17900,
+    price: 79000,
     period: "/year",
     servers: "Up to 1,000 servers",
-    desc: "Unlimited scale, white-label, dedicated SLA.",
-    features: ["All Business features","1,000 Node Support","Custom SLA & Uptime Guarantee","White-label Dashboard","Priority Dedicated Support","Custom Threat Feed"],
+    desc: "Global-scale protection for organizations that demand absolute sovereignty. Multi-tenant architecture, white-label ready, custom threat intelligence.",
+    features: ["Everything in Business","1,000 Node Global Scale","White-Label Dashboard","Custom Threat Intelligence Feed","Multi-Tenant Architecture","Comprehensive Interactive Setup Guide (10 Languages)"],
     popular: false,
     color: "#7c3aed",
   },
@@ -56,33 +65,33 @@ const GUARDIAN_PRICING = [
 
 const ORCHESTRA_PRICING = [
   {
-    name: "Core",
+    name: "Starter",
     code: "orchestra_core",
-    price: 9900,
+    price: 34900,
     period: "/year",
     workers: "Up to 10 workers",
-    desc: "Ideal for startups routing AI workloads across providers.",
-    features: ["CPU & GPU Worker Support","5 Routing Strategies","OpenAI, Claude, Gemini, Ollama","Cost Optimization Engine","Basic Analytics Dashboard"],
+    desc: "Route AI workloads across OpenAI, Claude, Gemini, Groq, DeepSeek & 15+ providers with intelligent cost optimization. Your API keys, your control.",
+    features: ["CPU & GPU Auto-Detect Workers","Smart Routing (5 Strategies)","OpenAI, Claude, Gemini, Groq, Ollama","Cost Optimization & Budget Caps","Real-time Analytics Dashboard","OpenAI-Compatible Drop-in API"],
     popular: false,
   },
   {
-    name: "Scale",
+    name: "Professional",
     code: "orchestra_scale",
-    price: 24900,
+    price: 89900,
     period: "/year",
     workers: "Up to 50 workers",
-    desc: "For teams running multiple AI pipelines at scale.",
-    features: ["All Core features","All Routing Modes (6 strategies)","Priority Job Queue","Auto Failover & Health Checks","Advanced Performance Analytics","Custom Provider Endpoints"],
+    desc: "Scale AI operations across multiple teams with advanced failover, autoscaling, and cost analytics. Built for organizations that run AI at the core of their business.",
+    features: ["Everything in Starter","All 6 Routing Strategies","Priority Job Queue & Dead Letter","Autoscaler (scale-to-zero capable)","Federated Multi-Region Support","Custom Provider Endpoints"],
     popular: true,
   },
   {
     name: "Enterprise",
     code: "orchestra_unlimited",
-    price: 59900,
+    price: 249000,
     period: "/year",
     workers: "Unlimited workers",
-    desc: "No limits. Full control. Dedicated support.",
-    features: ["All Scale features","Unlimited Workers (CPU + GPU)","Custom Routing Logic","White-label API Gateway","Dedicated Infrastructure Support","Federation (Multi-Region)"],
+    desc: "Unlimited scale. Full sovereignty. White-label ready. For enterprises that demand absolute control over their AI infrastructure.",
+    features: ["Everything in Professional","Unlimited Workers (CPU + GPU)","White-Label API Gateway","Custom Routing Logic","Credential Vault & Rotation","Comprehensive Interactive Setup Guide (10 Languages)"],
     popular: false,
   },
 ];
@@ -91,11 +100,11 @@ const BUNDLE_PRICING = [
   {
     name: "Starter Bundle",
     code: "bundle_starter",
-    guardian: "Guardian Pro",
-    orchestra: "Orchestra Core",
-    originalPrice: 990 + 9900,
-    bundlePrice: 9490,
-    savings: 990 + 9900 - 9490,
+    guardian: "Guardian Professional",
+    orchestra: "Orchestra Starter",
+    originalPrice: 4990 + 34900,
+    bundlePrice: 33900,
+    savings: 4990 + 34900 - 33900,
     color: "#0284c7",
     highlight: false,
   },
@@ -103,10 +112,10 @@ const BUNDLE_PRICING = [
     name: "Professional Bundle",
     code: "bundle_professional",
     guardian: "Guardian Business",
-    orchestra: "Orchestra Scale",
-    originalPrice: 3990 + 24900,
-    bundlePrice: 24900,
-    savings: 3990 + 24900 - 24900,
+    orchestra: "Orchestra Professional",
+    originalPrice: 19900 + 89900,
+    bundlePrice: 93300,
+    savings: 19900 + 89900 - 93300,
     color: "#0d9488",
     highlight: true,
   },
@@ -115,9 +124,9 @@ const BUNDLE_PRICING = [
     code: "bundle_enterprise",
     guardian: "Guardian Enterprise",
     orchestra: "Orchestra Enterprise",
-    originalPrice: 17900 + 59900,
-    bundlePrice: 69900,
-    savings: 17900 + 59900 - 69900,
+    originalPrice: 79000 + 249000,
+    bundlePrice: 278800,
+    savings: 79000 + 249000 - 278800,
     color: "#7c3aed",
     highlight: false,
   },
@@ -165,6 +174,55 @@ const JSONLD = {
     },
   ],
 };
+
+// ── Coming Soon / Buy Button helper ─────────────────────────────────────
+function LocalPriceTag({ usd, period }: { usd: number; period?: string }) {
+  const { currency, fmtPrice } = useLocale();
+  if (currency === "USD" || usd === 0) return null;
+  return (
+    <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
+      ≈ {fmtPrice(usd)}{period || ""}
+    </div>
+  );
+}
+
+/** Reusable price display: shows USD price with local currency subtitle */
+function PriceDisplay({ usd, period, color }: { usd: number; period?: string; color?: string }) {
+  return (
+    <>
+      <div className="price-tag" style={{ marginBottom: 2, color: color || "#0a1628" }}>
+        <sup>$</sup>{usd.toLocaleString("en-US")}
+      </div>
+      <LocalPriceTag usd={usd} period={period || "/yr"} />
+    </>
+  );
+}
+
+function ProductBuyButton({ code, popular, color, label }: { code: string; popular?: boolean; color: string; label?: string }) {
+  const forSale = (PACKAGE_INFO[code]?.forSale !== false);
+  if (!forSale) {
+    return (
+      <div style={{ display: "block", textAlign: "center", padding: "14px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, background: "rgba(148,163,184,0.12)", color: "#94a3b8", border: "1.5px solid rgba(148,163,184,0.2)", cursor: "not-allowed", position: "relative" }}>
+        🔜 Coming Soon
+      </div>
+    );
+  }
+  return (
+    <Link href={`/register?pkg=${code}`} style={{ display: "block", textAlign: "center", padding: "14px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: popular ? `linear-gradient(135deg,${color},${color}cc)` : "transparent", color: popular ? "#fff" : color, border: popular ? "none" : `1.5px solid ${color}`, boxShadow: popular ? `0 4px 20px ${color}40` : "none" }}>
+      {label || "Get Started"}
+    </Link>
+  );
+}
+
+function ComingSoonBanner({ product, color }: { product: string; color: string }) {
+  if (isProductForSale(product)) return null;
+  return (
+    <div style={{ textAlign: "center", marginBottom: 24, padding: "12px 20px", borderRadius: 12, background: `${color}08`, border: `1.5px dashed ${color}40`, display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <span style={{ fontSize: 20 }}>🔜</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color }}>Coming Soon — Not Yet Available for Purchase</span>
+    </div>
+  );
+}
 
 // ── Inline SVG animations ───────────────────────────────────────────────
 
@@ -384,6 +442,28 @@ export default function HomePage() {
   // Legacy compat - same function name, uses context
   const fmtUSD = fmtPrice;
 
+  // ── Live prices from DB (admin-editable, no deploy needed) ─────────────
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  useEffect(() => {
+    fetch("/api/packages")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.prices) {
+          const m: Record<string, number> = {};
+          for (const [code, v] of Object.entries(d.prices as Record<string, any>)) {
+            m[code] = v.price ?? 0;
+          }
+          setLivePrices(m);
+        }
+      })
+      .catch(() => {}); // silently fall back to static prices on error
+  }, []);
+
+  // Helper: get live price with static fallback
+  function lp(code: string, staticPrice: number): number {
+    return livePrices[code] && livePrices[code] > 0 ? livePrices[code] : staticPrice;
+  }
+
 
   return (
     <>
@@ -403,7 +483,7 @@ export default function HomePage() {
             <span style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif", letterSpacing: "-0.5px" }}>AXTO</span>
           </Link>
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {[["#features","Features"],["#pricing","Pricing"],["#byok","BYOK"],["#playbooks","Playbooks"],["#faq","FAQ"],["/guide","📖 Guide"]].map(([href,label])=>(
+            {[["#products","Platform"],["#features","Products"],["#pricing","Pricing"],["#vault","Vault"],["#soc","SOC"],["#compliance","Compliance"],["#edge","Edge"],["#sentinel","Sentinel"],["#studio","Studio"],["#byok","BYOK"],["#faq","FAQ"],["/guide","📖 Guide"]].map(([href,label])=>(
               <a key={label} href={href} style={{ color: "#475569", fontSize: 14, fontWeight: 600, padding: "8px 14px", borderRadius: 8, transition: "all 0.15s", textDecoration: "none" }}
                 onMouseOver={e=>{(e.currentTarget as HTMLElement).style.background="rgba(2,132,199,0.08)";(e.currentTarget as HTMLElement).style.color="#0284c7";}}
                 onMouseOut={e=>{(e.currentTarget as HTMLElement).style.background="transparent";(e.currentTarget as HTMLElement).style.color="#475569";}}
@@ -454,7 +534,7 @@ export default function HomePage() {
               { value: "100%", label: "BYOK — Your Keys Only", icon: "🔑" },
               { value: "0 bytes", label: "Data Sent to AXTO", icon: "🛡️" },
               { value: "< 30 min", label: "Deployment Time", icon: "⚡" },
-              { value: "99.9%", label: "Uptime SLA", icon: "📈" },
+              { value: "9 products", label: "Complete Platform", icon: "📈" },
             ].map((s, i) => (
               <div key={s.label} style={{ flex: "1 1 140px", textAlign: "center", padding: "8px 16px", borderRight: i < 3 ? "1px solid rgba(2,132,199,0.1)" : "none" }}>
                 <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
@@ -536,7 +616,132 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── PLATFORM OVERVIEW — compact, elegant product grid (code-driven availability) ── */}
+      <section id="products" style={{ padding: "96px 24px", background: "linear-gradient(180deg,#ffffff,#f8fafc)", borderTop: "1px solid #e2e8f0" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", maxWidth: 680, margin: "0 auto 8px" }}>
+            <div style={{ display: "inline-block", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#0284c7", textTransform: "uppercase", marginBottom: 12 }}>The AXTO Platform</div>
+            <h2 style={{ fontSize: 36, fontWeight: 900, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14, fontFamily: "Sora, sans-serif" }}>Ten focused products, one platform</h2>
+            <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.65 }}>
+              Self-hosted, bring-your-own-key. Your servers, your keys, your data — nothing leaves your network.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(248px, 1fr))", gap: 16, marginTop: 44 }}>
+            {[
+              { product: "guardian", icon: "🛡️", name: "Guardian AI", tag: "Self-hosted AI cybersecurity for your servers." },
+              { product: "orchestra", icon: "🎼", name: "Orchestra AI", tag: "Smart AI routing across 15+ model providers." },
+              { product: "legal", icon: "⚖️", name: "AXTO Legal", tag: "Private AI for legal research & compliance." },
+              { product: "studio", icon: "🧠", name: "AXTO Studio", tag: "AI & GPU workspace — chat, pipelines, APIs." },
+              { product: "antivirus", icon: "🦠", name: "AXTO Antivirus", tag: "ClamAV + ML endpoint protection." },
+              { product: "vault", icon: "🔒", name: "AXTO Vault", tag: "Redact PII before it reaches any model." },
+              { product: "edge", icon: "🌐", name: "AXTO Edge", tag: "AI gateway & API management for customers." },
+              { product: "soc", icon: "🎯", name: "AXTO SOC", tag: "AI-assisted SIEM + SOAR operations." },
+              { product: "compliance", icon: "📋", name: "AXTO Compliance", tag: "Automated, continuous audit monitoring." },
+              { product: "sentinel", icon: "🏭", name: "AXTO Sentinel", tag: "Security for industrial IoT & OT." },
+            ].map((p) => {
+              const available = isProductForSale(p.product);
+              return (
+                <div key={p.product} style={{ position: "relative", background: "#fff", border: "1px solid #e8edf3", borderRadius: 16, padding: "22px 20px", display: "flex", flexDirection: "column", gap: 10, transition: "transform .15s, box-shadow .15s", boxShadow: "0 1px 2px rgba(10,22,40,0.04)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, rgba(2,132,199,0.10), rgba(13,148,136,0.10))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{p.icon}</div>
+                    <span title={available ? "Available now" : "Coming soon"} style={{ width: 9, height: 9, borderRadius: 999, background: available ? "#10b981" : "#f59e0b", boxShadow: `0 0 0 3px ${available ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"}` }} />
+                  </div>
+                  <h3 style={{ fontSize: 16.5, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.3px", margin: 0 }}>{p.name}</h3>
+                  <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: available ? "#047857" : "#b45309", letterSpacing: 0.3 }}>
+                    {available ? "Available now" : "Coming soon"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", marginTop: 32, maxWidth: 640, marginLeft: "auto", marginRight: "auto", lineHeight: 1.65 }}>
+            Availability reflects our live catalog. Every plan is self-hosted and bring-your-own-key.
+          </p>
+        </div>
+      </section>
+
       {/* ── BYOK SECTION ──────────────────────────────────────────── */}
+      {/* ── STATS & TRUST BAR ──────────────────────────────────────────── */}
+      <section style={{ background: "#0a1628", padding: "44px 24px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 32, textAlign: "center" }}>
+          {[
+            { stat: "12", label: "Security Products", icon: "🛡️" },
+            { stat: "40+", label: "Pricing Tiers", icon: "💰" },
+            { stat: "100%", label: "Self-Hosted", icon: "🏠" },
+            { stat: "0 bytes", label: "Data to AXTO", icon: "🔒" },
+            { stat: "10", label: "Guide Languages", icon: "🌍" },
+            { stat: "$0", label: "Cloud AI Fees", icon: "⚡" },
+          ].map(({ stat, label, icon }) => (
+            <div key={label}>
+              <div style={{ fontSize: 13, marginBottom: 4 }}>{icon}</div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: "#fff", letterSpacing: "-1px" }}>{stat}</div>
+              <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, marginTop: 2 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── COMPETITOR COMPARISON TABLE ─────────────────────────────────── */}
+      <section style={{ background: "#f8fafc", padding: "100px 24px", borderTop: "1px solid #e2e8f0" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>WHY AXTO</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(26px,3.5vw,42px)", fontWeight: 900, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14 }}>
+              One Platform, Fraction of the Cost
+            </h2>
+            <p style={{ color: "#475569", fontSize: 16, maxWidth: 600, margin: "0 auto" }}>
+              Enterprise security normally costs $1–5M/year across fragmented vendors. AXTO consolidates every capability into one self-hosted platform.
+            </p>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", border: "1.5px solid #e2e8f0" }}>
+              <thead>
+                <tr style={{ background: "#0a1628" }}>
+                  <th style={{ padding: "16px 20px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "#94a3b8", width: "26%" }}>Capability</th>
+                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>Traditional Vendor</th>
+                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#94a3b8" }}>Typical Annual Cost</th>
+                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#38bdf8" }}>AXTO Equivalent</th>
+                  <th style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 800, color: "#4ade80" }}>AXTO Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { cap: "Endpoint Threat Protection", vendor: "CrowdStrike Falcon", cost: "$150K–500K", axto: "Guardian AI", axcost: "from $990" },
+                  { cap: "AI Orchestration Gateway", vendor: "AWS Bedrock / Azure OpenAI", cost: "$50K–300K+", axto: "Orchestra AI", axcost: "from $34,900" },
+                  { cap: "AI Privacy & PII Redaction", vendor: "BigID / Securiti", cost: "$80K–120K", axto: "Vault AI", axcost: "from $4,990" },
+                  { cap: "AI API Gateway & Billing", vendor: "Kong / AWS API GW", cost: "$30K–150K", axto: "Edge AI", axcost: "from $7,990" },
+                  { cap: "SIEM + SOAR + SOC", vendor: "Splunk / Managed SOC", cost: "$150K–2M", axto: "AXTO SOC", axcost: "from $24,900" },
+                  { cap: "Compliance Automation", vendor: "Drata / Vanta", cost: "$25K–80K", axto: "Compliance AI", axcost: "from $7,990" },
+                  { cap: "OT/ICS Security", vendor: "Claroty / Dragos", cost: "$200K–800K", axto: "Sentinel OT", axcost: "from $12,900" },
+                  { cap: "Antivirus REST API", vendor: "Sophos / ESET cloud", cost: "$10K–50K", axto: "AXTO Antivirus", axcost: "from $2,900" },
+                ].map((row, i) => (
+                  <tr key={row.cap} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderTop: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "14px 20px", fontSize: 13, fontWeight: 700, color: "#0a1628" }}>{row.cap}</td>
+                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, color: "#64748b" }}>{row.vendor}</td>
+                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, color: "#dc2626", fontWeight: 700 }}>{row.cost}/yr</td>
+                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#0284c7" }}>{row.axto}</td>
+                    <td style={{ padding: "14px 12px", textAlign: "center", fontSize: 13, fontWeight: 900, color: "#16a34a" }}>{row.axcost}/yr</td>
+                  </tr>
+                ))}
+                <tr style={{ background: "#0a1628" }}>
+                  <td style={{ padding: "16px 20px", fontSize: 13, fontWeight: 900, color: "#fff" }}>TOTAL PLATFORM</td>
+                  <td colSpan={2} style={{ padding: "16px 12px", textAlign: "center", fontSize: 14, fontWeight: 900, color: "#fca5a5" }}>$695K – $4M+/year</td>
+                  <td style={{ padding: "16px 12px", textAlign: "center", fontSize: 12, fontWeight: 700, color: "#38bdf8" }}>Full Platform Bundle</td>
+                  <td style={{ padding: "16px 12px", textAlign: "center", fontSize: 14, fontWeight: 900, color: "#4ade80" }}>from $130,400/yr</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "#94a3b8" }}>
+            All AXTO products are self-hosted — zero per-request cloud fees, zero data custody, zero lock-in.{" "}
+            <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>Contact us for custom enterprise pricing →</a>
+          </p>
+        </div>
+      </section>
+
       <section id="byok" style={{ background: "linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 100%)", padding: "100px 24px", borderTop: "1px solid rgba(2,132,199,0.08)", borderBottom: "1px solid rgba(2,132,199,0.08)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
@@ -650,7 +855,7 @@ export default function HomePage() {
               <h4 style={{ fontSize: 22, fontWeight: 800, color: "#0a1628", marginBottom: 2, fontFamily: "Sora, sans-serif" }}>{p.name}</h4>
               <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>{p.servers}</p>
               <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}>
-                <sup>$</sup>{p.price.toLocaleString("en-US")}
+                <sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}
               </div>
               <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20 }}>per year · billed annually</p>
               <p style={{ fontSize: 13, color: "#475569", marginBottom: 20, lineHeight: 1.5 }}>{p.desc}</p>
@@ -698,7 +903,7 @@ export default function HomePage() {
               <h4 style={{ fontSize: 22, fontWeight: 800, color: "#0a1628", marginBottom: 2, fontFamily: "Sora, sans-serif" }}>{p.name}</h4>
               <p style={{ fontSize: 12, color: "#64748b", marginBottom: 16 }}>{p.workers}</p>
               <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}>
-                <sup>$</sup>{p.price.toLocaleString("en-US")}
+                <sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}
               </div>
               <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20 }}>per year · billed annually</p>
               <p style={{ fontSize: 13, color: "#475569", marginBottom: 20, lineHeight: 1.5 }}>{p.desc}</p>
@@ -820,7 +1025,7 @@ export default function HomePage() {
                 <h4 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{p.name}</h4>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · PDF download · Works with ChatGPT, Claude, Gemini</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${p.price}</span>
+                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${lp(p.code, p.price)}</span>
                   <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${p.original}</span>
                 </div>
                 <Link href="/playbooks" style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
@@ -852,6 +1057,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── CUSTOMER REVIEWS (real, moderated; renders nothing if none) ── */}
+      <ReviewsSection />
+
       {/* ── FAQ ───────────────────────────────────────────────────── */}
       <section id="faq" style={{ background: "linear-gradient(160deg, #f0f9ff, #ecfdf5)", padding: "100px 24px", borderTop: "1px solid rgba(2,132,199,0.08)" }}>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
@@ -865,7 +1073,7 @@ export default function HomePage() {
               { q:"What does BYOK (Bring Your Own Keys) mean?", a:"Your AI provider credentials (OpenAI, Anthropic, etc.) are stored on your server. Orchestra reads them locally. AXTO has no copy of your keys." },
               { q:"How long does initial setup take?", a:"Under 30 minutes. Download ZIP from portal → run install.sh → open browser → enter license key. Admin dashboard is live immediately." },
               { q:"Can I run Guardian and Orchestra on the same server?", a:"Yes. Both products run as separate Docker Compose stacks on the same host. For large deployments, separate hosts are recommended." },
-              { q:"Is there a free trial?", a:"Yes! Trial licenses (1–7 days) are available directly from admin panel. Contact hallo@axto.io for a demo. 30-day satisfaction guarantee on all paid plans." },
+              { q:"Is there a free trial?", a:"Yes. Every product offers a free 3-day trial — full features, limited capacity, locked to one server/IP. Register at axto.io, select any Trial plan, and your license key is delivered instantly. One trial per product per email. No credit card required." },
               { q:"What happens if my license expires?", a:"Products continue in read-only mode for a 7-day grace period. Automated renewal reminders sent at 30, 14, and 3 days before expiry." },
             ],
             id:[
@@ -873,7 +1081,7 @@ export default function HomePage() {
               { q:"Apa itu BYOK?", a:"Bring Your Own Keys — API key AI Anda (OpenAI, Anthropic, dll) disimpan di server Anda sendiri. Orchestra membacanya secara lokal. AXTO tidak punya salinan key Anda." },
               { q:"Berapa lama setup awal?", a:"Di bawah 30 menit. Download ZIP dari portal → jalankan install.sh → buka browser → masukkan license key. Dashboard admin langsung aktif." },
               { q:"Bisakah Guardian dan Orchestra di server yang sama?", a:"Ya. Keduanya berjalan sebagai Docker Compose stack terpisah di host yang sama. Untuk deployment skala besar, server terpisah lebih disarankan." },
-              { q:"Apakah ada trial gratis?", a:"Ya! Trial 1–7 hari tersedia langsung dari admin panel. Hubungi hallo@axto.io untuk demo. Garansi kepuasan 30 hari untuk semua paket berbayar." },
+              { q:"Apakah ada trial gratis?", a:"Ya. Setiap produk menawarkan trial gratis 3 hari — fitur lengkap, kapasitas terbatas, terkunci ke 1 server/IP. Daftar di axto.io, pilih paket Trial, dan license key langsung dikirim. Satu trial per produk per email. Tanpa kartu kredit." },
               { q:"Apa yang terjadi jika lisensi kedaluwarsa?", a:"Produk terus beroperasi dalam mode read-only selama 7 hari. Pengingat pembaruan dikirim 30, 14, dan 3 hari sebelum kedaluwarsa." },
             ],
             zh:[
@@ -902,6 +1110,729 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── VAULT PRICING ─────────────────────────────────────────── */}
+      <section id="vault" style={{ padding: "100px 24px", background: "linear-gradient(160deg,#f5f3ff,#ede9fe)", borderTop: "1px solid rgba(99,102,241,0.1)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#6366f1", fontWeight: 700, marginBottom: 16 }}>🔐 AXTO VAULT — AI DATA PRIVACY PLATFORM</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              Your AI Must Never See<br /><span style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Sensitive Data</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
+              Banks, hospitals, and law firms cannot send raw PII, PHI, or financial data to OpenAI or Claude. Vault intercepts every AI API call, automatically redacts sensitive entities, and re-injects original values after the response — invisible to the AI, invisible to your users. EU AI Act, HIPAA, PCI-DSS and GDPR compliant by design. The alternative is a $300K fine or a breach.
+            </p>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+              {["BigID: $80K+/yr", "Securiti: $120K+/yr", "Privacera: $100K+/yr"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.15)", fontSize: 12, color: "#6366f1", fontWeight: 600 }}>vs. {c}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <ComingSoonBanner product="vault" color="#6366f1" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+            {[
+              {
+                name: "Professional", code: "vault_professional", price: 14900,
+                limit: "Up to 500K intercepts/day · Single tenant",
+                target: "Regulated mid-market: fintech, healthtech, legal SaaS",
+                features: [
+                  "Intercept & redact: PII, PHI, PCI, NPI (150+ entity types)",
+                  "Session-based re-injection — AI never sees original",
+                  "Proxy: OpenAI, Anthropic, Gemini, Azure AI compatible",
+                  "Audit log with masked evidence — auditor-ready export",
+                  "HIPAA & SOC 2 pre-built compliance reports",
+                  "Custom regex patterns + dictionary-based entities",
+                  "Real-time SIEM stream (Splunk, Elastic, Datadog)",
+                  "Interactive multi-language setup guide",
+                ],
+                popular: false, savings: "Save $55K vs BigID",
+              },
+              {
+                name: "Business", code: "vault_business", price: 39900,
+                limit: "Up to 5M intercepts/day · Multi-department",
+                target: "Enterprise: banks, hospital networks, insurance, law firms",
+                features: [
+                  "Everything in Professional",
+                  "AI-assisted NLP entity detection (fine-tunable per industry)",
+                  "Multi-department isolation with separate audit streams",
+                  "GDPR data subject request automation",
+                  "PCI-DSS tokenization for payment card data",
+                  "Custom redaction policies per AI use case",
+                  "SIEM + ticketing integration (Jira, ServiceNow, PagerDuty)",
+                  "Comprehensive interactive setup guide (40hr onboarding)",
+                  "Automated compliance health dashboard",
+                ],
+                popular: true, savings: "Save $45K vs Securiti",
+              },
+              {
+                name: "Enterprise", code: "vault_enterprise", price: 119000,
+                limit: "Unlimited intercepts · Multi-region · Custom Deployment",
+                target: "Fortune 500 / Tier-1 banks / Global health systems",
+                features: [
+                  "Everything in Business",
+                  "Custom redaction AI model — trained on your entity taxonomy",
+                  "Multi-region active-active deployment",
+                  "Real-time compliance dashboard for Board/DPO",
+                  "Cross-border data residency enforcement",
+                  "Automated DPIA (Data Protection Impact Assessment) generation",
+                  "High-availability architecture with automated failover",
+                  "Email community support",
+                  "Pen-test ready architecture documentation",
+                ],
+                popular: false, savings: "Save $101K vs Privacera",
+              },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #6366f1" : "1px solid rgba(99,102,241,0.15)", background: p.popular ? "linear-gradient(160deg,#f5f3ff,#ede9fe)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#6366f1,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>MOST SELECTED BY ENTERPRISE</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>VAULT</span>
+                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, background: "rgba(22,163,74,0.08)", padding: "2px 8px", borderRadius: 6 }}>{p.savings}</span>
+                </div>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#6366f1", fontWeight: 600, marginBottom: 4 }}>{p.limit}</p>
+                <p style={{ fontSize: 11, color: "#64748b", marginBottom: 18, fontStyle: "italic" }}>{p.target}</p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                  <div className="price-tag" style={{ color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                </div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · annual contract · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(99,102,241,0.1)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#6366f1" />
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers include: Self-hosted. No cloud dependency. 3-day free trial available. · <a href="mailto:hallo@axto.io" style={{ color: "#6366f1", textDecoration: "none", fontWeight: 600 }}>Contact us for volume pricing</a></p>
+        </div>
+      </section>
+
+      {/* ── SOC PRICING ───────────────────────────────────────────── */}
+      <section id="soc" style={{ padding: "100px 24px", background: "#fff", borderTop: "1px solid rgba(220,38,38,0.08)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#dc2626", fontWeight: 700, marginBottom: 16 }}>🛡️ AXTO SOC — AI SECURITY OPERATIONS CENTER</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              Fortune 500-Grade SOC.<br /><span style={{ background: "linear-gradient(135deg,#dc2626,#7c3aed)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Without the $2M Annual Bill.</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
+              Enterprise companies pay $500K–2M/year for managed SOC services. AXTO SOC delivers the same capability: full SIEM aggregation from every data source, SOAR automation that responds in under 30 seconds, AI-assisted threat hunting, 5M+ IOC threat intelligence, incident management, and executive reporting — all on your infrastructure. Your logs never leave your network.
+            </p>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+              {["Splunk SIEM: $150K+/yr", "CrowdStrike: $200K+/yr", "Managed SOC: $500K+/yr"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(220,38,38,0.06)", border: "1px solid rgba(220,38,38,0.15)", fontSize: 12, color: "#dc2626", fontWeight: 600 }}>vs. {c}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <ComingSoonBanner product="soc" color="#dc2626" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+            {[
+              {
+                name: "Starter", code: "soc_starter", price: 24900,
+                limit: "Up to 5 log sources · 30-day retention",
+                target: "SMB and growing companies: 50–500 employees",
+                features: [
+                  "SIEM: syslog UDP, CEF, API push ingestion",
+                  "5 automated detection rules (MITRE ATT&CK)",
+                  "Threat intel: 1M+ IOCs, updated daily",
+                  "Email + Slack alert delivery",
+                  "Basic incident tracking dashboard",
+                  "Weekly executive summary report",
+                ],
+                popular: false, savings: "Save $475K vs Managed SOC",
+              },
+              {
+                name: "Professional", code: "soc_professional", price: 79000,
+                limit: "Up to 25 log sources · 90-day retention",
+                target: "Mid-market: 500–2,000 employee companies",
+                features: [
+                  "SIEM: syslog UDP, CEF, API push from unlimited agents",
+                  "SOAR: 20 automated playbooks (block IP, isolate, alert)",
+                  "Threat intel: 5M+ IOCs, updated every 6 hours",
+                  "Incident management: create, assign, track, resolve",
+                  "Guardian AI deep integration — correlated threat view",
+                  "90-day compressed log retention",
+                  "Executive security report (weekly + monthly)",
+                  "Email, Slack, PagerDuty alerting",
+                ],
+                popular: false, savings: "Save $100K vs Splunk",
+              },
+              {
+                name: "Business", code: "soc_business", price: 136900,
+                limit: "Up to 100 log sources · 1-year retention",
+                target: "Enterprise: 2,000–20,000 employee companies",
+                features: [
+                  "Everything in Professional",
+                  "AI-assisted threat hunting — proactive IOC correlation",
+                  "Custom SOAR playbooks via visual workflow editor",
+                  "Private threat intelligence feed integration",
+                  "1-year encrypted log retention with audit chain",
+                  "SIEM forwarding: Splunk, Elastic, Microsoft Sentinel",
+                  "MITRE ATT&CK framework mapping per incident",
+                  "Comprehensive onboarding documentation",
+                  "Automated threat landscape dashboard",
+                ],
+                popular: true, savings: "Save $350K vs managed SOC",
+              },
+              {
+                name: "Enterprise", code: "soc_enterprise", price: 249000,
+                limit: "Unlimited log sources · Unlimited retention",
+                target: "Fortune 500, critical infrastructure, government",
+                features: [
+                  "Everything in Business",
+                  "Multi-tenant SOC: isolate subsidiaries / business units",
+                  "White-label SOC platform for MSSPs",
+                  "Custom threat intelligence exchange (STIX/TAXII)",
+                  "Unlimited log retention with tamper-proof chain-of-custody",
+                  "Air-gap deployment support",
+                  "SOAR integration: Jira, ServiceNow, Palo Alto XSOAR",
+                  "High-availability architecture with automated failover",
+                  "Email community support",
+                ],
+                popular: false, savings: "Save $1.5M vs managed SOC",
+              },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #dc2626" : "1px solid rgba(220,38,38,0.1)", background: p.popular ? "linear-gradient(160deg,#fff5f5,#fef2f2)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#dc2626,#7c3aed)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>MOST SELECTED BY ENTERPRISE</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ background: "rgba(220,38,38,0.08)", color: "#dc2626", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>SOC</span>
+                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, background: "rgba(22,163,74,0.08)", padding: "2px 8px", borderRadius: 6 }}>{p.savings}</span>
+                </div>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 600, marginBottom: 4 }}>{p.limit}</p>
+                <p style={{ fontSize: 11, color: "#64748b", marginBottom: 18, fontStyle: "italic" }}>{p.target}</p>
+                <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · annual contract · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(220,38,38,0.08)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(220,38,38,0.08)", color: "#dc2626", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#dc2626" />
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers: self-hosted, your logs never leave your network, 3-day free trial available · <a href="mailto:hallo@axto.io" style={{ color: "#dc2626", textDecoration: "none", fontWeight: 600 }}>Get SOC Started</a></p>
+        </div>
+      </section>
+
+      {/* ── COMPLIANCE PRICING ────────────────────────────────────── */}
+      <section id="compliance" style={{ padding: "100px 24px", background: "linear-gradient(160deg,#f0fdf4,#dcfce7)", borderTop: "1px solid rgba(22,163,74,0.1)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(22,163,74,0.1)", border: "1px solid rgba(22,163,74,0.25)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#16a34a", fontWeight: 700, marginBottom: 16 }}>📋 AXTO COMPLIANCE — AUTOMATED AUDIT PLATFORM</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              Cut Audit Costs by 80%.<br /><span style={{ background: "linear-gradient(135deg,#16a34a,#0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Be Audit-Ready in 30 Days.</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
+              Companies spend $50K–300K every year on compliance consultants, auditor pre-work, and evidence collection. AXTO Compliance automates all of it: continuous monitoring for SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA, and NIST CSF — evidence collected automatically, gaps identified in real time, audit-ready reports in minutes. Vanta charges $15K/yr and doesn't even run on your infra.
+            </p>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+              {["Drata: $20K+/yr (cloud)", "Vanta: $15K+/yr (cloud)", "Compliance auditor: $50K+/yr"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.2)", fontSize: 12, color: "#16a34a", fontWeight: 600 }}>vs. {c}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <ComingSoonBanner product="compliance" color="#16a34a" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+            {[
+              {
+                name: "Starter", code: "compliance_starter", price: 7990,
+                limit: "SOC 2 + GDPR · 2 frameworks",
+                target: "Startups seeking first SOC 2 certification",
+                features: [
+                  "SOC 2 Type II + GDPR continuous monitoring",
+                  "80+ automated control checks",
+                  "Gap analysis with prioritized remediation list",
+                  "Evidence collection dashboard",
+                  "One-click audit-ready PDF export",
+                ],
+                popular: false, savings: "Save $90K vs Drata",
+              },
+              {
+                name: "Professional", code: "compliance_professional", price: 19900,
+                limit: "6 frameworks · Daily automated scans",
+                target: "SaaS companies pursuing SOC 2, ISO 27001, HIPAA certification",
+                features: [
+                  "SOC 2 Type II continuous control monitoring",
+                  "ISO 27001:2022 — all 93 controls mapped",
+                  "HIPAA technical & administrative safeguards",
+                  "PCI-DSS v4.0 — 12 requirements tracked",
+                  "GDPR + PDPA automated controls",
+                  "Automated evidence collection every 24 hours",
+                  "Gap analysis with prioritized remediation roadmap",
+                  "Audit-ready reports exportable to PDF",
+                ],
+                popular: false, savings: "Save $35K vs auditor pre-work",
+              },
+              {
+                name: "Business", code: "compliance_business", price: 31900,
+                limit: "7 frameworks · Hourly scans · API-first",
+                target: "Enterprise handling EU customer data or healthcare records",
+                features: [
+                  "Everything in Professional",
+                  "NIST Cybersecurity Framework 2.0",
+                  "API-first: compliance gates in your CI/CD pipeline",
+                  "Guardian + SOC integration — security + compliance unified",
+                  "Evidence version history with tamper-proof timestamps",
+                  "Vendor risk assessment",
+                  "Comprehensive onboarding documentation",
+                  "Auditor collaboration portal (share evidence packages)",
+                ],
+                popular: true, savings: "Save $201K vs annual audit firm",
+              },
+              {
+                name: "Enterprise", code: "compliance_enterprise", price: 49000,
+                limit: "Custom frameworks · Multi-tenant · M&A support",
+                target: "Global enterprises, MSPs, M&A compliance programs",
+                features: [
+                  "Everything in Business",
+                  "Custom framework builder (any standard or internal policy)",
+                  "Multi-tenant: isolate BUs, subsidiaries, acquired companies",
+                  "M&A due diligence compliance package (rapid target assessment)",
+                  "Continuous regulatory change monitoring (EU AI Act, DORA)",
+                  "White-label for MSSPs and compliance consulting firms",
+                  "Board-level compliance dashboard with risk heat maps",
+                  "Automated compliance health dashboard",
+                  "Email community support",
+                ],
+                popular: false, savings: "Save $151K vs Drata Enterprise",
+              },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #16a34a" : "1px solid rgba(22,163,74,0.15)", background: p.popular ? "linear-gradient(160deg,#f0fdf4,#dcfce7)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#16a34a,#0d9488)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>MOST SELECTED BY ENTERPRISE</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ background: "rgba(22,163,74,0.1)", color: "#16a34a", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>COMPLIANCE</span>
+                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, background: "rgba(22,163,74,0.08)", padding: "2px 8px", borderRadius: 6 }}>{p.savings}</span>
+                </div>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#16a34a", fontWeight: 600, marginBottom: 4 }}>{p.limit}</p>
+                <p style={{ fontSize: 11, color: "#64748b", marginBottom: 18, fontStyle: "italic" }}>{p.target}</p>
+                <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · annual contract · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(22,163,74,0.1)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(22,163,74,0.1)", color: "#16a34a", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#16a34a" />
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers: Self-hosted. Evidence never leaves your network. 3-day free trial available. · <a href="mailto:hallo@axto.io" style={{ color: "#16a34a", textDecoration: "none", fontWeight: 600 }}>Get Compliance Started</a></p>
+        </div>
+      </section>
+
+      {/* ── SENTINEL PRICING ──────────────────────────────────────── */}
+      <section id="sentinel" style={{ padding: "100px 24px", background: "#fff", borderTop: "1px solid rgba(124,58,237,0.08)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#7c3aed", fontWeight: 700, marginBottom: 16 }}>📡 AXTO SENTINEL — IoT/OT SECURITY PLATFORM</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              Your Factory Floor Is<br /><span style={{ background: "linear-gradient(135deg,#7c3aed,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>the #1 Unprotected Attack Surface</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
+              The average manufacturing plant has 3,000+ connected OT devices — PLCs, SCADA, HMIs, sensors — and 70% have never been inventoried. A single breach costs $5M+ in downtime. Claroty and Dragos charge $100K–500K/yr for OT visibility. AXTO Sentinel delivers the same: device discovery, 15+ industrial protocol detection, real-time risk scoring, CVE tracking, and IEC 62443 compliance reporting — at a fraction of the cost.
+            </p>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+              {["Claroty: $100K+/yr", "Dragos: $150K+/yr", "Nozomi: $80K+/yr"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", fontSize: 12, color: "#7c3aed", fontWeight: 600 }}>vs. {c}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <ComingSoonBanner product="sentinel" color="#7c3aed" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+            {[
+              {
+                name: "Starter", code: "sentinel_starter", price: 12900,
+                limit: "Up to 50 OT/IoT devices · passive only",
+                target: "Small facilities: single-site manufacturers, utilities",
+                features: [
+                  "Passive asset discovery (zero traffic injection)",
+                  "Modbus, DNP3, EtherNet/IP protocol support",
+                  "50-device inventory with CVE matching",
+                  "IEC 62443 compliance reporting",
+                  "Email and Slack anomaly alerts",
+                ],
+                popular: false, savings: "Save $200K vs Claroty",
+              },
+              {
+                name: "Professional", code: "sentinel_professional", price: 39900,
+                limit: "Up to 500 devices · Single facility",
+                target: "Mid-size manufacturers, hospitals, smart buildings",
+                features: [
+                  "Active + passive network discovery (ARP, mDNS, SNMP)",
+                  "OT protocol detection: Modbus, DNP3, BACnet, S7, EtherNet/IP, MQTT, 15+",
+                  "Per-device risk score 0–100 with full justification",
+                  "New device instant alert (rogue asset detection)",
+                  "CVE database matching per device firmware",
+                  "Default credential detection (500+ known device default passwords)",
+                  "IEC 62443 zone/conduit mapping",
+                  "SOC + Guardian integration for correlated OT/IT response",
+                ],
+                popular: false, savings: "Save $75K vs Claroty",
+              },
+              {
+                name: "Business", code: "sentinel_business", price: 68900,
+                limit: "Up to 5,000 devices · Multi-facility",
+                target: "Enterprise manufacturers, energy companies, large hospitals",
+                features: [
+                  "Everything in Professional",
+                  "Multi-facility centralized OT dashboard",
+                  "OT asset lifecycle management (procurement → decommission)",
+                  "Firmware vulnerability tracking with patch status",
+                  "SOAR auto-response: isolate, alert, ticket creation",
+                  "IEC 62443 compliance reporting for auditors",
+                  "Network segmentation gap analysis",
+                  "Comprehensive onboarding documentation",
+                  "Automated OT threat landscape dashboard",
+                ],
+                popular: true, savings: "Save $70K vs Dragos",
+              },
+              {
+                name: "Enterprise", code: "sentinel_enterprise", price: 129000,
+                limit: "Unlimited devices · Unlimited sites · Custom protocols",
+                target: "Critical infrastructure: energy grids, utilities, global manufacturers",
+                features: [
+                  "Everything in Business",
+                  "Custom OT protocol decoder development",
+                  "Air-gap deployment support (offline IOC updates)",
+                  "NERC CIP compliance package (energy sector)",
+                  "OT threat intelligence: Dragos WorldView-comparable feeds",
+                  "Multi-org white-label for MSSPs and system integrators",
+                  "Board-level OT risk dashboard",
+                  "Air-gap deployment documentation",
+                  "Comprehensive setup documentation",
+                ],
+                popular: false, savings: "Save $201K vs Claroty Enterprise",
+              },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.12)", background: p.popular ? "linear-gradient(160deg,#faf5ff,#f3e8ff)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#7c3aed,#3b82f6)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>MOST SELECTED BY ENTERPRISE</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ background: "rgba(124,58,237,0.08)", color: "#7c3aed", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>SENTINEL</span>
+                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, background: "rgba(22,163,74,0.08)", padding: "2px 8px", borderRadius: 6 }}>{p.savings}</span>
+                </div>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#7c3aed", fontWeight: 600, marginBottom: 4 }}>{p.limit}</p>
+                <p style={{ fontSize: 11, color: "#64748b", marginBottom: 18, fontStyle: "italic" }}>{p.target}</p>
+                <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · annual contract · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(124,58,237,0.08)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(124,58,237,0.08)", color: "#7c3aed", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#7c3aed" />
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>3-day free trial available for all tiers · <a href="mailto:hallo@axto.io" style={{ color: "#7c3aed", textDecoration: "none", fontWeight: 600 }}>Get Sentinel Started</a></p>
+        </div>
+      </section>
+
+      {/* ── EDGE PRICING ──────────────────────────────────────────── */}
+      <section id="edge" style={{ padding: "100px 24px", background: "linear-gradient(160deg,#eff6ff,#dbeafe)", borderTop: "1px solid rgba(59,130,246,0.1)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#3b82f6", fontWeight: 700, marginBottom: 16 }}>⚡ AXTO EDGE — AI GATEWAY & API MANAGEMENT</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              The Revenue & Security Layer<br /><span style={{ background: "linear-gradient(135deg,#3b82f6,#0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Every AI SaaS Needs</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
+              Every SaaS company embedding AI faces the same three problems: how to bill customers for AI usage, how to prevent prompt injection and abuse, and how to stay profitable as AI costs scale. Edge solves all three. Deploy it between your customers and AI providers — it meters every token, enforces rate limits, detects abuse in real time, and generates invoices automatically. Think of it as Stripe for AI API billing.
+            </p>
+            <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
+              {["Kong Enterprise: $50K+/yr", "Apigee: $40K+/yr", "Custom build: $200K+"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", fontSize: 12, color: "#3b82f6", fontWeight: 600 }}>vs. {c}</div>
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <ComingSoonBanner product="edge" color="#3b82f6" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 24 }}>
+            {[
+              {
+                name: "Starter", code: "edge_starter", price: 7990,
+                limit: "Up to 100K req/day · 5 customer API keys",
+                target: "Startups building AI products with multiple providers",
+                features: [
+                  "7 AI providers (OpenAI, Claude, Gemini, Groq, Ollama + 2)",
+                  "5 customer API keys with independent rate limits",
+                  "Cost-optimized routing",
+                  "Prompt injection firewall",
+                  "Basic request analytics dashboard",
+                ],
+                popular: false, savings: "100% self-hosted — no AWS API Gateway fees",
+              },
+              {
+                name: "Professional", code: "edge_professional", price: 24900,
+                limit: "Unlimited customers · 1M req/day",
+                target: "SaaS startups monetizing embedded AI",
+                features: [
+                  "Per-customer API key issuance & revocation",
+                  "Token metering: input, output, cached — per model",
+                  "Rate limiting per customer tier (requests/min, tokens/day)",
+                  "Prompt injection detection (50+ attack patterns)",
+                  "Content filtering — block PII, NSFW, custom topics",
+                  "Real-time usage dashboard per customer",
+                  "OpenAI-compatible proxy — zero code change to integrate",
+                  "Webhook events: quota exceeded, abuse detected",
+                ],
+                popular: false, savings: "Save $40K vs Kong Enterprise",
+              },
+              {
+                name: "Business", code: "edge_business", price: 40900,
+                limit: "Unlimited customers · 10M req/day",
+                target: "Growing AI SaaS with $1M+ ARR",
+                features: [
+                  "Everything in Professional",
+                  "Automatic invoice generation (PDF + webhook)",
+                  "Tiered customer billing plans with markup",
+                  "Stripe sync for subscription management",
+                  "Advanced abuse detection: jailbreak, multi-turn attacks",
+                  "Model cost analytics: margin per customer",
+                  "Custom firewall rules via no-code rule builder",
+                  "SIEM forwarding for security events",
+                  "Interactive Multi-Language Setup Guide (PDF Download)",
+                ],
+                popular: true, savings: "ROI in <30 days from AI cost control",
+              },
+              {
+                name: "Enterprise", code: "edge_enterprise", price: 69000,
+                limit: "Unlimited · White-label · Multi-tenant",
+                target: "AI infrastructure providers, telcos, large SaaS platforms",
+                features: [
+                  "Everything in Business",
+                  "White-label: deploy as your own branded AI gateway",
+                  "Multi-tenant: resell AI gateway capacity to your customers",
+                  "Custom billing engine (prepaid credits, postpaid, subscriptions)",
+                  "Regulatory compliance: EU AI Act, FTC AI guidelines",
+                  "Custom LLM routing logic via programmable middleware",
+                  "Air-gap + VPC deployment support",
+                  "Comprehensive Interactive Setup Guide (PDF, 10 Languages)",
+                  "Email community support",
+                ],
+                popular: false, savings: "Save $101K vs custom build",
+              },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #3b82f6" : "1px solid rgba(59,130,246,0.15)", background: p.popular ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#3b82f6,#0d9488)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap", letterSpacing: "0.5px" }}>HIGHEST ROI</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>EDGE</span>
+                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, background: "rgba(22,163,74,0.08)", padding: "2px 8px", borderRadius: 6 }}>{p.savings}</span>
+                </div>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#3b82f6", fontWeight: 600, marginBottom: 4 }}>{p.limit}</p>
+                <p style={{ fontSize: 11, color: "#64748b", marginBottom: 18, fontStyle: "italic" }}>{p.target}</p>
+                <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · annual contract · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(59,130,246,0.08)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#3b82f6" />
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>3-day free trial available · No credit card required · <a href="mailto:hallo@axto.io" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 600 }}>Get Edge Started</a></p>
+        </div>
+      </section>
+
+      {/* ── ANTIVIRUS PRICING ─────────────────────────────────────── */}
+      <section id="antivirus" style={{ padding: "100px 24px", background: "#fff", borderTop: "1px solid rgba(234,88,12,0.08)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(234,88,12,0.08)", border: "1px solid rgba(234,88,12,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#ea580c", fontWeight: 700, marginBottom: 16 }}>🦠 AXTO ANTIVIRUS — ClamAV + ML ENDPOINT PROTECTION</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              Enterprise Antivirus.<br /><span style={{ background: "linear-gradient(135deg,#ea580c,#dc2626)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Self-Hosted. AI-Enhanced.</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
+              ClamAV signature engine combined with ML behavioral detection and YARA custom rules. Integrates with Guardian AI for correlated threat response. REST API for CI/CD pipeline scanning. All data stays on your infrastructure.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
+            {[
+              { name: "Starter", code: "antivirus_starter", price: 2900, limit: "Up to 10 endpoints", features: ["ClamAV signature engine", "YARA custom rules", "REST API for scanning", "Quarantine management", "Scheduled & on-demand scans", "Email alerts"] },
+              { name: "Professional", code: "antivirus_professional", price: 9900, limit: "Up to 100 endpoints", popular: true, features: ["All Starter features", "ML behavioral detection", "Guardian AI integration", "Real-time file monitoring", "Process reputation scoring", "SIEM log forwarding"] },
+              { name: "Enterprise", code: "antivirus_enterprise", price: 29900, limit: "Unlimited endpoints", features: ["All Professional features", "Custom YARA rule builder", "SOC integration", "White-label dashboard", "Multi-tenant support", "Centralized management"] },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #ea580c" : "1px solid rgba(234,88,12,0.12)", background: p.popular ? "linear-gradient(160deg,#fff7ed,#ffedd5)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#ea580c,#dc2626)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap" }}>BEST VALUE</div>}
+                <span style={{ background: "rgba(234,88,12,0.08)", color: "#ea580c", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>ANTIVIRUS</span>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2, marginTop: 8 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#ea580c", fontWeight: 600, marginBottom: 18 }}>{p.limit}</p>
+                <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(234,88,12,0.08)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(234,88,12,0.08)", color: "#ea580c", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#ea580c" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── STUDIO PRICING ──────────────────────────────────────── */}
+      <section id="studio" style={{ padding: "100px 24px", background: "linear-gradient(160deg,#0f0a1e,#1a0f2e)", borderTop: "1px solid rgba(139,92,246,0.15)" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#a78bfa", fontWeight: 700, marginBottom: 16 }}>🧠 AXTO STUDIO — AI & GPU POOL PLATFORM</span>
+            <h2 style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#fff", letterSpacing: "-1.2px", marginBottom: 14, fontFamily: "Sora, sans-serif" }}>
+              Your AI. Your GPU.<br /><span style={{ background: "linear-gradient(135deg,#8b5cf6,#06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Your Professional Studio.</span>
+            </h2>
+            <p style={{ color: "#94a3b8", fontSize: 17, maxWidth: 700, margin: "0 auto", lineHeight: 1.7 }}>
+              Stop paying AI markup. Bring your own API keys — OpenAI, Claude, Gemini, Groq, DeepSeek, and 14+ providers — and use them in a professional workspace. Generate images and videos via GPU APIs. Automate full content workflows with the visual pipeline builder. Everything runs on your server. Your data never leaves your infrastructure.
+            </p>
+          </div>
+
+          {/* 3 Studios visual */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginBottom: 48 }}>
+            {[
+              { icon: "🧠", name: "AI Studio", color: "#8b5cf6", desc: "Chat with 14+ AI providers using your own API keys. Prompt library, batch processing, multi-model comparison, session history, and per-provider cost analytics." },
+              { icon: "🎨", name: "GPU Studio", color: "#f59e0b", desc: "Generate images and videos using Stability AI, Replicate, Fal.ai, ComfyUI, or Automatic1111. Connect any GPU endpoint — cloud API or self-hosted." },
+              { icon: "⚡", name: "Hybrid Studio", color: "#06b6d4", desc: "Visual pipeline builder — chain AI text, image generation, voice TTS/STT, sound effects, and translation into fully automated workflows." },
+            ].map(s => (
+              <div key={s.name} style={{ background: `${s.color}08`, border: `1.5px solid ${s.color}25`, borderRadius: 16, padding: "28px 24px" }}>
+                <div style={{ fontSize: 36, marginBottom: 14 }}>{s.icon}</div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 8 }}>{s.name}</h3>
+                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>{s.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Pricing cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+            {[
+              {
+                name: "Starter", code: "studio_starter", price: 49, period: "/mo",
+                annual: "$490/yr (2 months free)",
+                target: "Solo developers, freelancers, small teams",
+                features: ["AI Studio — Chat, Batch Processing & Prompt Library", "GPU Studio — Image & Video Generation (1 endpoint)", "5 AI providers: OpenAI, Claude, Gemini, Groq, Mistral", "WebSocket streaming + REST API", "Usage analytics & per-provider cost tracking", "30-day session retention, 90-day usage logs", "Complete setup guide with menu-level documentation", "Docker Image + Windows EXE — identical builds"],
+                popular: false, color: "#8b5cf6",
+              },
+              {
+                name: "Professional", code: "studio_professional", price: 199, period: "/mo",
+                annual: "$1,990/yr (2 months free)",
+                target: "Teams shipping AI products, startups, agencies",
+                features: ["All 3 Studios: AI Chat + GPU Generation + Hybrid Pipeline", "14+ AI providers + any OpenAI-compatible endpoint", "Unlimited GPU endpoints: Stability, Replicate, Fal.ai, ComfyUI, A1111", "REST API + WebSocket streaming on all endpoints", "Hybrid Pipeline Builder — 18 node types", "Batch AI processing with CSV export", "Multi-model compare (up to 6 models side-by-side)", "Cartoon & Animation studio + Sound & Music generation", "Voice TTS/STT in 16 languages + Voice Cloning"],
+                popular: true, color: "#8b5cf6",
+              },
+              {
+                name: "Enterprise", code: "studio_enterprise", price: 799, period: "/mo",
+                annual: "$7,990/yr (2 months free)",
+                target: "Organizations running AI at scale",
+                features: ["All Professional features — fully unlocked", "Priority license with 4-hour offline grace period", "Dedicated support channel via email & Slack", "Access to all future Studio modules at no extra cost", "Credential encryption (Fernet/AES) — machine-bound keys", "Unlimited pipeline workflows in Hybrid Studio", "10 cartoon film templates + 6 sound design workflows", "Extended data retention: 90-day sessions, 1-year logs", "Custom endpoint support for any GPU or AI provider"],
+                popular: false, color: "#8b5cf6",
+              },
+            ].map(p => (
+              <div key={p.name} style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 32, position: "relative", border: p.popular ? "2px solid #8b5cf6" : "1px solid rgba(255,255,255,0.08)" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#8b5cf6,#06b6d4)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap" }}>MOST POPULAR</div>}
+                <span style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>STUDIO</span>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 2, marginTop: 8 }}>{p.name}</h4>
+                <p style={{ fontSize: 11, color: "#64748b", marginBottom: 16, fontStyle: "italic" }}>{p.target}</p>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+                  <span style={{ fontSize: 40, fontWeight: 800, color: "#fff", fontFamily: "Sora, sans-serif" }}><sup style={{ fontSize: 18 }}>$</sup>{p.price}</span>
+                  <span style={{ fontSize: 14, color: "#64748b" }}>{p.period}</span>
+                </div>
+                <p style={{ fontSize: 12, color: "#a78bfa", marginBottom: 20 }}>{p.annual}</p>
+                <div style={{ borderTop: "1px solid rgba(139,92,246,0.15)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, fontSize: 13, color: "#cbd5e1", lineHeight: 1.5 }}><span style={{ color: "#8b5cf6", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}</div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#8b5cf6" />
+              </div>
+            ))}
+          </div>
+
+          {/* Security & Privacy notice */}
+          <div style={{ marginTop: 32, padding: "20px 28px", borderRadius: 14, background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.15)", display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 28 }}>🔒</span>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <h4 style={{ fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: 6 }}>Enterprise-Grade Isolation</h4>
+              <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>
+                Every Studio instance runs on your own server with your own SQLite database. API credentials are encrypted with Fernet (AES-128-CBC) using a machine-bound key derived from your host identity — keys are never transmitted to AXTO. License validates every 30 minutes with a 4-hour offline grace period. Session data auto-purges after 30 days. Usage logs after 90 days.
+              </p>
+            </div>
+          </div>
+
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#475569" }}>3-day free trial · No credit card required · <a href="mailto:hallo@axto.io" style={{ color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>Contact us</a></p>
+        </div>
+      </section>
+
+      {/* ── WHAT YOU GET — Delivery & Packaging ──────────────────── */}
+      <section id="delivery" style={{ padding: "100px 24px", background: "linear-gradient(160deg,#f8fafc,#f1f5f9)", borderTop: "1px solid rgba(2,132,199,0.08)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>📦 WHAT YOU GET</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14 }}>
+              Every License Includes<br /><span className="gradient-text">Docker Image + Windows EXE</span>
+            </h2>
+            <p style={{ color: "#475569", fontSize: 17, maxWidth: 640, margin: "0 auto", lineHeight: 1.7 }}>
+              Purchase any plan — from Starter to Enterprise — and receive the complete product package. No feature gates hidden behind upsells. What your tier includes is exactly what you get.
+            </p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24, marginBottom: 48 }}>
+            {[
+              { icon: "🐳", title: "Docker Image (Linux)", desc: "Production-ready Docker Compose stack. Pull from your private registry, run `docker compose up -d`, and your product is live in under 5 minutes. Includes health checks, auto-restart, and log rotation.", tag: "docker compose up -d" },
+              { icon: "💻", title: "Windows EXE (Portable)", desc: "Single-file PyInstaller executable. No Python installation required. Double-click to run. Ideal for Windows Server environments, air-gapped networks, and quick evaluation.", tag: "axto-vault.exe --port 8080" },
+              { icon: "📖", title: "Interactive Setup Guide", desc: "Step-by-step guide in 10 languages (EN, ID, AR, ZH, FR, DE, ES, PT, RU, JA). Covers installation, configuration, AI provider setup, and production hardening. Downloadable as PDF.", tag: "axto.io/guide → Download PDF" },
+              { icon: "🔑", title: "License Key (Instant)", desc: "Delivered to your email within 60 seconds of purchase. Locked to 1 server (machine-id + IP). Enter in YAML config, restart, and your product activates immediately.", tag: "VAULT-A1B2-C3D4-E5F6-G7H8..." },
+              { icon: "🆓", title: "3-Day Free Trial", desc: "Every product offers a free 3-day trial — full features, limited capacity, locked to one server. No credit card required. One trial per product per email address.", tag: "Register → Select Trial → Instant activation" },
+              { icon: "🔄", title: "All Updates Included", desc: "Your annual license includes every update released during the license period. New features, security patches, and performance improvements — all included at no extra cost.", tag: "docker pull :latest → restart" },
+            ].map(item => (
+              <div key={item.title} className="card" style={{ padding: 28 }}>
+                <div style={{ fontSize: 32, marginBottom: 14 }}>{item.icon}</div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, color: "#0a1628", marginBottom: 8 }}>{item.title}</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.7, marginBottom: 14 }}>{item.desc}</p>
+                <code style={{ fontSize: 11, color: "#0284c7", background: "rgba(2,132,199,0.06)", padding: "6px 10px", borderRadius: 6, display: "block", wordBreak: "break-all" }}>{item.tag}</code>
+              </div>
+            ))}
+          </div>
+
+          {/* License enforcement notice */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "32px 40px", border: "1px solid rgba(2,132,199,0.12)", display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div style={{ fontSize: 36 }}>🔒</div>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>License Enforcement</h3>
+              <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.7 }}>
+                Each license key is cryptographically bound to a single machine (machine-id + IP address + instance). License validation occurs every 30 minutes with a 4-hour offline grace period. Attempting to run on multiple servers or share keys will result in automatic suspension. This ensures every client receives the full value of their investment without unfair usage.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TRIAL CTA BANNER ─────────────────────────────────────── */}
+      <section style={{ padding: "60px 24px", background: "linear-gradient(135deg,#0284c7,#0d9488)", textAlign: "center" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <h2 style={{ fontSize: "clamp(24px, 3.5vw, 38px)", fontWeight: 800, color: "#fff", marginBottom: 14, letterSpacing: "-0.5px" }}>
+            Try Any Product Free for 3 Days
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 1.7, marginBottom: 28, maxWidth: 560, margin: "0 auto 28px" }}>
+            Full features. No credit card. One click to activate. Experience the complete AXTO platform on your own infrastructure before you commit.
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            {["Guardian","Orchestra","Vault","Edge","SOC","Compliance","Sentinel","Antivirus"].map(p => {
+              const product = p.toLowerCase();
+              const forSale = isProductForSale(product);
+              if (!forSale) {
+                return (
+                  <span key={p} style={{ padding: "10px 20px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 700 }}>
+                    {p} — Coming Soon
+                  </span>
+                );
+              }
+              return (
+                <Link key={p} href={`/register?pkg=trial_${product}`} style={{ padding: "10px 20px", borderRadius: 10, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.15s", backdropFilter: "blur(4px)" }}>
+                  {p} Trial →
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ───────────────────────────────────────────────────── */}
       <section style={{ padding: "100px 24px", textAlign: "center" }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
@@ -914,7 +1845,7 @@ export default function HomePage() {
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("hero.cta")}</a>
-            <a href="mailto:hallo@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>Talk to Sales</a>
+            <a href="mailto:hallo@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>Contact Us</a>
           </div>
         </div>
       </section>
@@ -933,11 +1864,11 @@ export default function HomePage() {
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Products</h4>
-              {["Guardian AI","Orchestra AI","Bundle Plans","Pricing"].map(l => <div key={l} style={{ marginBottom: 10 }}><a href="#features" style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</a></div>)}
+              {["Guardian AI","Orchestra AI","Vault","Edge","SOC","Compliance","Sentinel","Antivirus","Studio"].map(l => <div key={l} style={{ marginBottom: 10 }}><a href={`#${l.toLowerCase().replace(" ai","")}`} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</a></div>)}
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Resources</h4>
-              {["Documentation","Setup Guide","API Reference","Changelog"].map(l => <div key={l} style={{ marginBottom: 10 }}><a href="#" style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</a></div>)}
+              {[["Setup Guide","/guide"],["Playbooks","/playbooks"],["Terms of Service","/terms"],["Privacy Policy","/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Legal</h4>

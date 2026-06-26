@@ -1,0 +1,346 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO Antivirus — Security Scanner</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#050b04;--surf:#08130a;--surf2:#0c1c0d;--surf3:#112214;--border:#162818;--border2:#1e3a22;--g:#16a34a;--g2:#22c55e;--g3:#4ade80;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--mono:"JetBrains Mono",monospace}
+body{background:var(--bg);color:var(--text);font-family:"Inter",-apple-system,sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--surf)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+header{background:rgba(5,11,4,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:12px}
+.li{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#16a34a,#15803d);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 16px rgba(22,163,74,.35)}
+.ln{font-size:16px;font-weight:800}.ln span{color:#4ade80}
+.ls{font-size:10px;color:var(--text3);margin-top:1px}
+.hr{display:flex;align-items:center;gap:14px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--g2);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid}
+.pg{background:rgba(22,163,74,.12);border-color:rgba(22,163,74,.3);color:#4ade80}
+.pr{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:#f87171}
+nav{background:var(--surf);border-bottom:1px solid var(--border);display:flex;padding:0 28px;overflow-x:auto}
+nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 16px;height:44px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:#4ade80;border-bottom-color:#16a34a}
+main{padding:24px;max-width:1400px;margin:0 auto}
+.sec{display:none}.sec.active{display:block}
+.kg{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:20px}
+.k{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.k:hover{border-color:var(--border2)}
+.k::after{content:"";position:absolute;top:0;left:0;right:0;height:2px}
+.k.g::after{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.k.r::after{background:linear-gradient(90deg,#ef4444,#f97316)}
+.k.y::after{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.k.b::after{background:linear-gradient(90deg,#3b82f6,#06b6d4)}
+.k.p::after{background:linear-gradient(90deg,#7c3aed,#6366f1)}
+.kl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px}
+.kv{font-size:34px;font-weight:900;letter-spacing:-2px;margin:6px 0 2px;line-height:1}
+.ks{font-size:11px;color:var(--text2)}
+.ki{position:absolute;right:14px;top:16px;font-size:20px;opacity:.2}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.ct{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.g3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.mb{margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:9px 12px;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(22,40,24,.6);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(22,163,74,.04)}
+.mono{font-family:var(--mono);font-size:11px}
+.tw{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid}
+.bg{background:rgba(34,197,94,.12);color:#4ade80;border-color:rgba(34,197,94,.25)}
+.br{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}
+.by{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.25)}
+.bb{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.25)}
+.bgr{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btnp{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 14px rgba(22,163,74,.3)}
+.btnp:hover{filter:brightness(1.1)}
+.btng{background:var(--surf2);border:1px solid var(--border2);color:var(--text)}
+.btng:hover{background:var(--surf3)}
+.btnr{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171}
+.sm{padding:6px 12px;font-size:12px}.xs{padding:4px 9px;font-size:11px}
+.inp,.sel,textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:100%}
+.inp:focus,.sel:focus,textarea:focus{border-color:rgba(22,163,74,.5)}
+.fg{margin-bottom:14px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(22,40,24,.5);font-size:13px}
+.sr:last-child{border-bottom:none}
+.sl{color:var(--text2)}.sv{font-weight:700;font-family:var(--mono);font-size:12px}
+.scan-card{padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surf2);margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.ei{font-size:36px;margin-bottom:10px;opacity:.5}
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#toast.ok{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#4ade80}
+#toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="li">🛡</div>
+    <div><div class="ln">AXTO <span>Antivirus</span></div><div class="ls">Real-Time Security Scanner &amp; Threat Protection</div></div>
+  </div>
+  <div class="hr">
+    <span id="lp" class="pill pg">LICENSED</span>
+    <span id="eng-status" class="pill pg"><span class="pulse"></span>ACTIVE</span>
+  </div>
+</header>
+<nav>
+  <button class="tab active" onclick="tab('overview',this)">📊 Overview</button>
+  <button class="tab" onclick="tab('scan',this)">🔍 Scan</button>
+  <button class="tab" onclick="tab('quarantine',this)">🔒 Quarantine</button>
+  <button class="tab" onclick="tab('learn',this)">🧠 Learning</button>
+  <button class="tab" onclick="tab('live',this)">📡 Live Events</button>
+</nav>
+<main>
+<!-- OVERVIEW -->
+<div id="sec-overview" class="sec active">
+  <div class="kg">
+    <div class="k g"><div class="ki">✅</div><div class="kl">Files Scanned</div><div class="kv" style="color:#4ade80" id="k-scanned">—</div><div class="ks">Total scans</div></div>
+    <div class="k r"><div class="ki">🦠</div><div class="kl">Threats Found</div><div class="kv" style="color:#f87171" id="k-threats">—</div><div class="ks">Malware detected</div></div>
+    <div class="k y"><div class="ki">🔒</div><div class="kl">Quarantined</div><div class="kv" style="color:#fbbf24" id="k-quarantine">—</div><div class="ks">Isolated files</div></div>
+    <div class="k b"><div class="ki">🧠</div><div class="kl">Signatures</div><div class="kv" style="color:#60a5fa" id="k-sigs">—</div><div class="ks">Threat definitions</div></div>
+    <div class="k p"><div class="ki">⚡</div><div class="kl">Clean Rate</div><div class="kv" style="color:#c4b5fd" id="k-clean">—</div><div class="ks">% clean files</div></div>
+  </div>
+  <div class="g2 mb">
+    <div class="card">
+      <div class="ct">📊 Detection by Category</div>
+      <div id="cat-dist"></div>
+    </div>
+    <div class="card">
+      <div class="ct">🚨 Recent Threats</div>
+      <div id="recent-threats"></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct">🔒 Engine Status</div><div id="eng-info"></div></div>
+    <div class="card"><div class="ct">🔒 License</div><div id="lic-info"></div></div>
+  </div>
+</div>
+<!-- SCAN -->
+<div id="sec-scan" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">🔍 Scan Files &amp; Paths</div>
+  <div class="g2 mb">
+    <div class="card">
+      <div class="ct">📁 Scan File (by path)</div>
+      <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">File Path</label>
+        <input type="text" class="inp" id="scan-path" placeholder="/tmp/upload.exe or /var/uploads/document.pdf">
+      </div>
+      <button class="btn btnp" onclick="scanFile()">🔍 Scan File</button>
+      <div id="scan-result" style="margin-top:14px"></div>
+    </div>
+    <div class="card">
+      <div class="ct">📂 Scan Directory</div>
+      <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Directory Path</label>
+        <input type="text" class="inp" id="scan-dir" placeholder="/uploads or /var/www/files">
+      </div>
+      <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Scan Mode</label>
+        <select class="sel" id="scan-mode">
+          <option value="quick">Quick (changed files only)</option>
+          <option value="full">Full (all files)</option>
+          <option value="deep">Deep (with heuristics)</option>
+        </select>
+      </div>
+      <button class="btn btnp" onclick="scanDirectory()">🔍 Scan Directory</button>
+      <div id="dir-result" style="margin-top:14px"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">🔬 Check Hash</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <input type="text" class="inp" id="hash-input" placeholder="SHA256 hash to check…" style="font-family:var(--mono)">
+      <button class="btn btnp" onclick="checkHash()">Check</button>
+    </div>
+    <div id="hash-result"></div>
+  </div>
+</div>
+<!-- QUARANTINE -->
+<div id="sec-quarantine" class="sec">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">🔒 Quarantine Vault</span>
+    <button class="btn btng sm" onclick="loadQuarantine()">↻ Refresh</button>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>SHA256</th><th>File Name</th><th>Threat</th><th>Severity</th><th>Size</th><th>Quarantined</th><th>Actions</th></tr></thead>
+    <tbody id="q-tbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<!-- LEARNING -->
+<div id="sec-learn" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">🧠 Threat Intelligence Learning</div>
+  <div class="g3 mb">
+    <div class="card">
+      <div class="ct">➕ Add Malicious Hash</div>
+      <div class="fg"><input type="text" class="inp" id="lh-hash" placeholder="SHA256 hash" style="font-family:var(--mono)"></div>
+      <div class="fg"><input type="text" class="inp" id="lh-name" placeholder="Threat name (e.g. Trojan.Generic)"></div>
+      <button class="btn btnp sm" onclick="learnHash()">Add Hash</button>
+    </div>
+    <div class="card">
+      <div class="ct">📡 Feed Status</div>
+      <div id="feed-status"></div>
+      <button class="btn btng sm" style="margin-top:12px" onclick="refreshFeed()">↻ Refresh Feeds</button>
+    </div>
+    <div class="card">
+      <div class="ct">📊 Learning Stats</div>
+      <div id="learn-stats"></div>
+    </div>
+  </div>
+</div>
+<!-- LIVE EVENTS -->
+<div id="sec-live" class="sec">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">📡 Live Scan Events</span>
+    <span id="ws-status" class="badge bgr">Connecting…</span>
+  </div>
+  <div class="card">
+    <div id="live-feed" style="height:500px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+      <div class="empty"><div class="ei">📡</div><div>Connecting to live event stream…</div></div>
+    </div>
+  </div>
+</div>
+</main>
+<div id="toast"></div>
+<script>
+function fd(s){return s?new Date(s).toLocaleString():'—'}
+function fmt(n){return n==null?'—':Number(n).toLocaleString()}
+function toast(m,ok=true){const e=document.getElementById('toast');e.textContent=m;e.className=ok?'ok':'err';e.style.display='block';setTimeout(()=>e.style.display='none',3500)}
+function tab(n,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+n).classList.add('active');
+  if(el)el.classList.add('active');
+  const L={quarantine:loadQuarantine,learn:loadLearn};
+  if(L[n])L[n]();
+}
+async function api(p,b=null){
+  const o=b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{};
+  const r=await fetch(p,o);const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||r.statusText);return d;
+}
+async function loadOverview(){
+  try{
+    const h=await api('/health');
+    const sc=h.stats||h.scanner||{};const lic=h.license||{};
+    document.getElementById('k-scanned').textContent=fmt(sc.total_scanned||sc.files_scanned||0);
+    document.getElementById('k-threats').textContent=fmt(sc.threats_detected||sc.threats||0);
+    document.getElementById('k-quarantine').textContent=fmt(sc.quarantined||sc.quarantine_count||0);
+    document.getElementById('k-sigs').textContent=fmt(sc.signature_count||sc.signatures||0);
+    const total=sc.total_scanned||1;const threats=sc.threats_detected||0;
+    document.getElementById('k-clean').textContent=((total-threats)/total*100).toFixed(1)+'%';
+    if(lic.plan)document.getElementById('lp').textContent=lic.plan.toUpperCase();
+    const cats=sc.by_category||sc.categories||{};
+    const CCAT={trojan:'#f87171',ransomware:'#fb923c',adware:'#fbbf24',pua:'#c4b5fd',exploit:'#f43f5e'};
+    document.getElementById('cat-dist').innerHTML=Object.entries(cats).length?
+      Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,n])=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(22,40,24,.5)"><span style="font-size:11px;font-weight:600;min-width:90px;color:${CCAT[c]||'#94a3b8'}">${c}</span><div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${(n/Math.max(...Object.values(cats))*100).toFixed(0)}%;background:${CCAT[c]||'#22c55e'};border-radius:3px"></div></div><span style="font-size:11px;font-weight:700;color:${CCAT[c]||'#4ade80'}">${n}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No threats detected</div>':
+      '<div style="color:var(--text3);font-size:12px;padding:10px 0">No detection data yet</div>';
+    document.getElementById('eng-info').innerHTML=`<div class="sr"><span class="sl">Status</span><span class="badge bg">Active</span></div><div class="sr"><span class="sl">Engine</span><span class="sv">${h.version||h.engine||'v1.0'}</span></div><div class="sr"><span class="sl">Signatures</span><span class="sv" style="color:#4ade80">${fmt(sc.signature_count||0)}</span></div><div class="sr"><span class="sl">Uptime</span><span class="sv">${h.uptime_seconds?Math.floor(h.uptime_seconds/3600)+'h':'—'}</span></div>`;
+    document.getElementById('lic-info').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#4ade80">${lic.plan||'—'}</span></div><div class="sr"><span class="sl">Expires</span><span class="sv">${lic.expires_at?new Date(lic.expires_at).toLocaleDateString():'—'}</span></div><a href="https://axto.io/portal" target="_blank" class="btn btng xs" style="margin-top:10px">Manage →</a>`;
+    // Recent threats
+    const recents=sc.recent_threats||[];
+    document.getElementById('recent-threats').innerHTML=recents.length?recents.slice(0,5).map(t=>`<div class="scan-card"><div style="font-size:20px">${t.severity==='high'||t.severity==='critical'?'🔴':'🟡'}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.threat_name||t.name||'Unknown threat'}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${t.file_path||t.path||'—'}</div></div><span class="badge ${t.severity==='critical'||t.severity==='high'?'br':'by'}">${t.severity||'medium'}</span></div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:10px 0">No recent threats — system is clean ✅</div>';
+  }catch(e){console.warn('Overview:',e)}
+}
+async function scanFile(){
+  const path=document.getElementById('scan-path').value.trim();if(!path){toast('Enter a file path',false);return;}
+  document.getElementById('scan-result').innerHTML='<span style="color:var(--text3)">Scanning…</span>';
+  try{
+    const d=await api('/v1/scan/file',{file_path:path});
+    const clean=!d.infected&&!d.threat_found;
+    document.getElementById('scan-result').innerHTML=`<div style="padding:14px;border-radius:10px;background:${clean?'rgba(34,197,94,.08)':'rgba(239,68,68,.1)'};border:1px solid ${clean?'rgba(34,197,94,.2)':'rgba(239,68,68,.25)'}">
+      <div style="font-size:15px;font-weight:800;margin-bottom:8px">${clean?'✅ Clean':'🔴 THREAT DETECTED'}</div>
+      ${!clean?`<div style="font-size:13px;margin-bottom:6px;color:#fca5a5">Threat: <strong>${d.threat_name||d.malware_name||'Unknown'}</strong></div>`:''}
+      <div style="font-size:12px;color:var(--text2)">SHA256: <span class="mono">${d.sha256||(path.split('/').pop())}</span></div>
+      ${d.scan_time?`<div style="font-size:11px;color:var(--text3);margin-top:4px">Scan time: ${d.scan_time}ms</div>`:''}
+    </div>`;
+    if(!clean)toast('Threat detected: '+d.threat_name,false);else toast('✅ Clean');
+  }catch(e){document.getElementById('scan-result').innerHTML=`<div style="color:#f87171;font-size:13px">Scan failed: ${e.message}</div>`;}
+}
+async function scanDirectory(){
+  const dir=document.getElementById('scan-dir').value.trim();if(!dir){toast('Enter a directory path',false);return;}
+  const mode=document.getElementById('scan-mode').value;
+  document.getElementById('dir-result').innerHTML='<span style="color:var(--text3)">Scanning directory…</span>';
+  try{
+    const d=await api('/v1/scan/directory',{directory:dir,mode});
+    document.getElementById('dir-result').innerHTML=`<div style="padding:14px;border-radius:10px;background:var(--surf2);border:1px solid var(--border2)">
+      <div style="font-weight:700;margin-bottom:8px">${d.scan_id?'⚡ Scan started':'✅ Scan complete'}</div>
+      <div style="font-size:12px;color:var(--text2)">Files: ${fmt(d.files_scanned||d.total_files||0)} · Threats: <span style="color:${(d.threats_found||0)>0?'#f87171':'#4ade80'}">${d.threats_found||0}</span></div>
+      ${d.scan_id?`<div style="font-size:11px;color:var(--text3);margin-top:4px">Scan ID: <span class="mono">${d.scan_id}</span></div>`:''}
+    </div>`;
+  }catch(e){document.getElementById('dir-result').innerHTML=`<span style="color:#f87171;font-size:13px">Failed: ${e.message}</span>`;}
+}
+async function checkHash(){
+  const hash=document.getElementById('hash-input').value.trim();if(!hash){toast('Enter a hash',false);return;}
+  try{
+    const d=await api('/v1/scan/file',{sha256:hash});
+    const found=d.infected||d.threat_found||d.known_malicious;
+    document.getElementById('hash-result').innerHTML=found?
+      `<div style="padding:10px 12px;border-radius:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#f87171;font-size:13px">🔴 <strong>MALICIOUS</strong> — ${d.threat_name||'Known malware'}</div>`:
+      '<div style="padding:10px 12px;border-radius:8px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#4ade80;font-size:13px">✅ Clean — not in threat database</div>';
+  }catch(e){document.getElementById('hash-result').innerHTML=`<span style="color:#f87171;font-size:12px">Lookup failed: ${e.message}</span>`;}
+}
+async function loadQuarantine(){
+  const tb=document.getElementById('q-tbody');
+  tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api('/v1/quarantine');const items=d.quarantined||d||[];
+    tb.innerHTML=items.length?items.map(q=>`<tr>
+      <td class="mono" style="color:var(--text2);font-size:10px">${(q.sha256||'').slice(0,20)}…</td>
+      <td style="font-weight:600">${q.file_name||q.original_path?.split('/').pop()||'—'}</td>
+      <td style="color:#f87171">${q.threat_name||'Unknown'}</td>
+      <td><span class="badge ${q.severity==='high'||q.severity==='critical'?'br':'by'}">${q.severity||'medium'}</span></td>
+      <td class="mono" style="color:var(--text3)">${q.file_size?Math.round(q.file_size/1024)+'KB':'—'}</td>
+      <td style="color:var(--text3)">${fd(q.quarantined_at||q.timestamp)}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btnr xs" onclick="deleteFromQ('${q.sha256}')">Delete</button>
+          <button class="btn btng xs" onclick="restoreFromQ('${q.sha256}')">Restore</button>
+        </div>
+      </td>
+    </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Quarantine is empty ✅</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function deleteFromQ(sha){if(!confirm('Permanently delete from quarantine?'))return;try{await fetch('/v1/quarantine/'+sha,{method:'DELETE'});toast('Deleted');loadQuarantine();}catch(e){toast(e.message,false);}}
+async function restoreFromQ(sha){try{await api('/v1/quarantine/restore',{sha256:sha});toast('File restored');loadQuarantine();}catch(e){toast(e.message,false);}}
+async function loadLearn(){
+  try{
+    const [f,s]=await Promise.all([api('/health').catch(()=>({})),api('/v1/learn/stats').catch(()=>({}))]);
+    document.getElementById('feed-status').innerHTML=`<div class="sr"><span class="sl">Last Update</span><span class="sv">${f.feed_updated_at?new Date(f.feed_updated_at).toLocaleDateString():'—'}</span></div><div class="sr"><span class="sl">Status</span><span class="badge bg">Active</span></div>`;
+    document.getElementById('learn-stats').innerHTML=`<div class="sr"><span class="sl">Custom Hashes</span><span class="sv" style="color:#4ade80">${fmt(s.custom_hashes||s.learned_hashes||0)}</span></div><div class="sr"><span class="sl">Samples</span><span class="sv">${fmt(s.samples||0)}</span></div><div class="sr"><span class="sl">Total Rules</span><span class="sv">${fmt(s.total_rules||s.rules||0)}</span></div>`;
+  }catch(e){}
+}
+async function learnHash(){
+  const hash=document.getElementById('lh-hash').value.trim();const name=document.getElementById('lh-name').value.trim();
+  if(!hash||!name){toast('Enter hash and threat name',false);return;}
+  try{await api('/v1/learn/hash',{sha256:hash,threat_name:name});toast('Hash added to threat database');document.getElementById('lh-hash').value='';document.getElementById('lh-name').value='';}
+  catch(e){toast(e.message,false);}
+}
+async function refreshFeed(){try{await api('/feed/refresh',{});toast('Feeds refreshing…');}catch(e){toast(e.message,false);}}
+// Live event WebSocket
+let liveFeed=[];
+function connectWS(){
+  const p=location.protocol==='https:'?'wss:':'ws:';
+  const ws=new WebSocket(`${p}//${location.host}/ws/events`);
+  ws.onopen=()=>{document.getElementById('ws-status').className='badge bg';document.getElementById('ws-status').textContent='Connected';}
+  ws.onmessage=e=>{
+    try{const d=JSON.parse(e.data);if(d.type==='ping')return;
+      liveFeed.unshift(d);if(liveFeed.length>50)liveFeed.pop();
+      const el=document.getElementById('live-feed');
+      el.innerHTML=liveFeed.map(ev=>`<div style="padding:8px 12px;border-radius:8px;border:1px solid ${ev.infected||ev.threat_found?'rgba(239,68,68,.2)':'rgba(22,40,24,.5)'};background:${ev.infected||ev.threat_found?'rgba(239,68,68,.06)':'var(--surf2)'};font-size:12px"><div style="display:flex;align-items:center;gap:8px"><span>${ev.infected||ev.threat_found?'🔴':'✅'}</span><span class="mono" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.file_path||ev.path||'scan event'}</span><span style="color:var(--text3);white-space:nowrap">${ev.timestamp?new Date(ev.timestamp).toLocaleTimeString():'now'}</span></div>${ev.threat_name?`<div style="margin-top:4px;color:#f87171">${ev.threat_name}</div>`:''}</div>`).join('');
+    }catch(err){}
+  };
+  ws.onclose=()=>{document.getElementById('ws-status').className='badge br';document.getElementById('ws-status').textContent='Disconnected';setTimeout(connectWS,4000);}
+}
+loadOverview();connectWS();setInterval(loadOverview,30000);
+</script>
+</body></html>

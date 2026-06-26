@@ -1,0 +1,84 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# =====================================================
+#  AXTO Guardian Antivirus — Docker Compose
+#  Docs: https://docs.axto.io/guardian/antivirus
+# =====================================================
+
+services:
+  # ── ClamAV Virus Database ─────────────────────────
+  clamav:
+    image: clamav/clamav:stable
+    container_name: axto-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    networks:
+      - axto-antivirus
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 60s
+      timeout: 30s
+      start_period: 120s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ── Guardian Antivirus Engine ─────────────────────
+  antivirus:
+    image: registry.gitlab.com/axto-platform/guardian-antivirus/guardian-antivirus:latest
+    container_name: axto-antivirus
+    restart: unless-stopped
+    depends_on:
+      clamav:
+        condition: service_healthy
+    ports:
+      - "8097:8097"
+    volumes:
+      - ./antivirus.yml:/guardian/config/guardian.yml:ro
+      - antivirus_data:/guardian/data
+      - antivirus_logs:/guardian/logs
+      # Mount host filesystem for scanning (optional — adjust path)
+      # - /:/host:ro
+    environment:
+      - ANTIVIRUS_CONFIG=/guardian/config/guardian.yml
+      - AV_PORT=8097
+      - CLAMD_HOST=clamav
+      - CLAMD_PORT=3310
+    networks:
+      - axto-antivirus
+    healthcheck:
+      test: >
+        curl -sf http://localhost:8097/health |
+        python3 -c "import sys,json; d=json.load(sys.stdin);
+        sys.exit(0 if d.get('status') in ('ok','grace_period') else 1)"
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+networks:
+  axto-antivirus:
+    driver: bridge
+
+volumes:
+  clamav_data:
+    driver: local
+  antivirus_data:
+    driver: local
+  antivirus_logs:
+    driver: local

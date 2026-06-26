@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration | License Enforcement Engine
 Fail-closed. No fallback. No grace period. No bypass.
@@ -18,7 +24,7 @@ from typing import Optional
 
 # ── Embedded public key (injected at build time by AXTO CI) ─────────────────
 EMBEDDED_PUBLIC_KEY_PEM = os.environ.get("ORCHESTRA_PUBLIC_KEY_PEM", "")
-AXTO_LICENSE_SERVER     = os.environ.get("AXTO_LICENSE_SERVER", "https://license.axto.ai")
+AXTO_LICENSE_SERVER     = os.environ.get("AXTO_LICENSE_SERVER", "https://axto.io/api/license-validate")
 AIR_GAP_MODE            = os.environ.get("ORCHESTRA_AIR_GAP", "false").lower() == "true"
 
 DATA_DIR              = Path(os.environ.get("DATA_DIR", "./data"))
@@ -191,8 +197,17 @@ def _check_expiry(payload: dict) -> None:
         raise EnforcementError("MISSING_EXPIRY", "License has no expiry field")
     try:
         exp_dt = datetime.fromisoformat(exp.replace("Z", "+00:00"))
-        if datetime.now(timezone.utc) > exp_dt:
+        now_dt  = datetime.now(timezone.utc)
+        if now_dt > exp_dt:
             raise EnforcementError("EXPIRED", f"License expired at {exp}")
+        # Expiry warnings
+        days_left = (exp_dt - now_dt).days
+        if days_left == 0:
+            logger.warning(f"⚠️  ORCHESTRA LICENSE EXPIRES TODAY — renew at https://axto.io/portal | Expires: {exp}")
+        elif days_left <= 7:
+            logger.warning(f"⚠️  ORCHESTRA LICENSE EXPIRES IN {days_left} DAYS — renew at https://axto.io/portal | Expires: {exp}")
+        elif days_left <= 30:
+            logger.info(f"Orchestra license expires in {days_left} days ({exp}) — renew at https://axto.io/portal")
     except EnforcementError:
         raise
     except Exception as e:

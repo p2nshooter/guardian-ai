@@ -1,0 +1,15 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+compliance:
+  license_key: "CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  frameworks: [soc2]
+  run_on_startup: true
+  continuous_monitoring_interval_hours: 24
+  endpoints:
+    app_url: "https://your-app.example.com"
+  db_path: "/compliance/data/compliance.db"

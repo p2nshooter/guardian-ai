@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration | Routing Engine (Production v2)
 Determines which worker/provider handles each job.
@@ -232,3 +238,65 @@ def get_routing_status(workers: List[dict]) -> dict:
         "force_local_for":  _load_setting_list("force_local_for"),
         "cheapest_provider": get_cheapest_provider(workers),
     }
+
+
+# ── Routing rules persistence (called from main.py /api/routing/rules) ────────
+
+def load_rules() -> dict:
+    """Return the full set of routing rules from DB settings."""
+    import json as _json
+    return {
+        "routing_mode":              db.get_setting("routing_mode", "smart_balance"),
+        "blacklist":                 _load_setting_list("blacklist"),
+        "fallback_chain":            _load_setting_list("fallback_chain"),
+        "force_local_for":           _load_setting_list("force_local_for"),
+        "quality_retry_enabled":     db.get_setting("quality_retry_enabled", "true") == "true",
+        "quality_retry_threshold":   float(db.get_setting("quality_retry_threshold", "0.30")),
+        "semantic_cache_enabled":    db.get_setting("semantic_cache_enabled", "true") == "true",
+        "cache_ttl_sec":             int(db.get_setting("cache_ttl_sec", "3600")),
+        "max_queue_size":            int(db.get_setting("max_queue_size", "50000")),
+    }
+
+
+def save_rules(rules: dict) -> None:
+    """Persist routing rules from the admin console to DB settings."""
+    import json as _json
+
+    _str_settings = {
+        "routing_mode":            str,
+    }
+    _bool_settings = {
+        "quality_retry_enabled":   None,
+        "semantic_cache_enabled":  None,
+    }
+    _num_settings = {
+        "quality_retry_threshold": str,
+        "cache_ttl_sec":           int,
+        "max_queue_size":          int,
+    }
+    _list_settings = {
+        "blacklist":       None,
+        "fallback_chain":  None,
+        "force_local_for": None,
+    }
+
+    for key, cast in _str_settings.items():
+        if key in rules:
+            db.set_setting(key, cast(rules[key]))
+
+    for key in _bool_settings:
+        if key in rules:
+            db.set_setting(key, "true" if rules[key] else "false")
+
+    for key, cast in _num_settings.items():
+        if key in rules:
+            db.set_setting(key, str(cast(rules[key])))
+
+    for key in _list_settings:
+        if key in rules:
+            val = rules[key]
+            if not isinstance(val, list):
+                val = []
+            db.set_setting(key, _json.dumps(val))
+
+    logger.info(f"Routing rules saved: {list(rules.keys())}")

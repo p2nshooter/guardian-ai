@@ -1,0 +1,121 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Studio — Self-Hosted AI & GPU Pool Platform
+#
+# CARA PAKAI / HOW TO USE:
+#   1. Isi license_key dari: https://axto.io/portal
+#   2. Tambahkan AI provider API key Anda (minimal 1)
+#   3. docker compose -f studio-compose.yml up -d
+#   4. Buka: http://YOUR_SERVER:8090
+#
+# PRIVASI:
+#   ✅ Semua data disimpan di server ANDA
+#   ✅ Prompt dan response TIDAK pernah dikirim ke AXTO
+#   ✅ Credentials dienkripsi di disk Anda
+#   ✅ Artifact otomatis terhapus setelah 14 hari
+#
+# Pull: docker pull registry.gitlab.com/axto-platform/studio/studio-engine:latest
+# Docs: https://axto.io/guide
+# ============================================================
+
+studio:
+
+  # ── License ──────────────────────────────────────────────
+  license_key: "STUD-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  # ── AI Provider Pool (BYOK — Bring Your Own Keys) ────────
+  # Tambahkan API key provider AI Anda di bawah ini.
+  # Studio akan menggunakan KEY ANDA untuk semua request.
+  # AXTO tidak pernah melihat prompt atau response.
+  ai_providers:
+
+    # OpenAI
+    - provider: openai
+      api_key: "sk-GANTI-INI"
+      default_model: "gpt-4o-mini"
+
+    # Anthropic Claude
+    # - provider: anthropic
+    #   api_key: "sk-ant-GANTI-INI"
+    #   default_model: "claude-sonnet-4-20250514"
+
+    # Google Gemini
+    # - provider: google
+    #   api_key: "AIza-GANTI-INI"
+    #   default_model: "gemini-2.5-flash"
+
+    # Groq (ultra-fast)
+    # - provider: groq
+    #   api_key: "gsk_GANTI-INI"
+    #   default_model: "llama-3.3-70b-versatile"
+
+    # Mistral
+    # - provider: mistral
+    #   api_key: "GANTI-INI"
+    #   default_model: "mistral-large-latest"
+
+    # DeepSeek
+    # - provider: deepseek
+    #   api_key: "sk-GANTI-INI"
+    #   default_model: "deepseek-chat"
+
+    # xAI Grok
+    # - provider: xai
+    #   api_key: "xai-GANTI-INI"
+    #   default_model: "grok-3-mini"
+
+    # Ollama (local, free)
+    # - provider: ollama
+    #   endpoint: "http://ollama:11434/v1"
+    #   default_model: "llama3.3"
+
+    # Custom OpenAI-compatible endpoint
+    # - provider: custom_ai
+    #   api_key: "GANTI-INI"
+    #   endpoint: "http://your-server:8000/v1"
+    #   label: "My Custom Model"
+
+  # ── GPU Provider Pool (BYOK) ─────────────────────────────
+  # Connect GPU Anda sendiri (RunPod, Lambda, vast.ai, custom).
+  gpu_providers:
+
+    # RunPod
+    # - provider: runpod
+    #   api_key: "GANTI-INI"
+
+    # Lambda
+    # - provider: lambda
+    #   api_key: "GANTI-INI"
+
+    # vast.ai
+    # - provider: vastai
+    #   api_key: "GANTI-INI"
+
+    # Custom GPU server (Ollama/vLLM endpoint)
+    # - provider: custom_gpu
+    #   endpoint: "http://your-gpu-server:8000/v1"
+    #   label: "My RTX 4090 Server"
+
+  # ── Storage ───────────────────────────────────────────────
+  data_dir: /studio/data
+  log_dir:  /studio/logs
+  artifacts_dir: /studio/artifacts
+
+  # ── Retention Policy ──────────────────────────────────────
+  # Sessions, artifacts, pipelines auto-delete after this many days
+  retention_days: 14
+
+  # ── Security ──────────────────────────────────────────────
+  # Enable password protection for the local dashboard
+  # dashboard_password: ""
+
+  # ── API Access ─────────────────────────────────────────────
+  # REST API: http://YOUR_SERVER:8090/api/chat
+  # WebSocket: ws://YOUR_SERVER:8090/ws/chat
+  # Both use the same credentials stored in your local database.

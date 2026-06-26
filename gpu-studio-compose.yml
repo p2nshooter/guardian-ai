@@ -1,0 +1,41 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# ============================================================
+# AXTO GPU Studio — Self-Hosted Creative AI Workspace
+# Image · Video · Upscale — via your own GPU endpoints
+#
+# CARA PAKAI:
+#   1. Edit gpu-studio.yml → set license_key
+#   2. docker compose -f gpu-studio-compose.yml up -d
+#   3. Open: http://YOUR_SERVER:8092
+# ============================================================
+
+services:
+  gpu-studio:
+    image: registry.gitlab.com/axto-platform/studio/gpu-studio:latest
+    container_name: axto-gpu-studio
+    restart: unless-stopped
+    ports:
+      - "8092:8092"
+    volumes:
+      - ./gpu-studio.yml:/gpu-studio/config/gpu-studio.yml:ro
+      - gpu-studio-data:/gpu-studio/data
+      - gpu-studio-logs:/gpu-studio/logs
+    environment:
+      - GPU_STUDIO_CONFIG=/gpu-studio/config/gpu-studio.yml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  gpu-studio-data:
+  gpu-studio-logs:

@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 "use client";
 /**
  * AXTO Global Locale Context
@@ -69,16 +76,24 @@ const COUNTRY_TO_LOCALE: Record<string, Locale> = {
 
 // ── Currency mapping ──────────────────────────────────────────────────────
 export const COUNTRY_CURRENCY: Record<string, string> = {
-  ID:"IDR", MY:"MYR", SG:"SGD", TH:"THB", VN:"VND", PH:"PHP",
-  JP:"JPY", KR:"KRW", CN:"CNY", TW:"TWD", HK:"HKD",
-  IN:"INR", PK:"PKR",
-  SA:"SAR", AE:"AED", EG:"EGP", QA:"QAR", KW:"KWD",
-  DE:"EUR", FR:"EUR", ES:"EUR", IT:"EUR", NL:"EUR", PT:"EUR", BE:"EUR",
-  GB:"GBP", CH:"CHF", SE:"SEK", NO:"NOK", DK:"DKK",
-  BR:"BRL", MX:"MXN", AR:"ARS",
-  AU:"AUD", NZ:"NZD", CA:"CAD",
-  RU:"RUB", TR:"TRY",
-  NG:"NGN", ZA:"ZAR",
+  // Southeast Asia
+  ID:"IDR", MY:"MYR", SG:"SGD", TH:"THB", VN:"VND", PH:"PHP", MM:"MMK", KH:"KHR", LA:"LAK",
+  // East Asia
+  JP:"JPY", KR:"KRW", CN:"CNY", TW:"TWD", HK:"HKD", MO:"MOP",
+  // South Asia
+  IN:"INR", PK:"PKR", BD:"BDT", LK:"LKR", NP:"NPR",
+  // Middle East
+  SA:"SAR", AE:"AED", EG:"EGP", QA:"QAR", KW:"KWD", BH:"BHD", OM:"OMR", JO:"JOD", LB:"LBP", IQ:"IQD",
+  // Europe
+  DE:"EUR", FR:"EUR", ES:"EUR", IT:"EUR", NL:"EUR", PT:"EUR", BE:"EUR", AT:"EUR", IE:"EUR", FI:"EUR", GR:"EUR", LU:"EUR",
+  GB:"GBP", CH:"CHF", SE:"SEK", NO:"NOK", DK:"DKK", PL:"PLN", CZ:"CZK", HU:"HUF", RO:"RON",
+  // Americas
+  US:"USD", CA:"CAD", MX:"MXN", BR:"BRL", AR:"ARS", CO:"COP", CL:"CLP", PE:"PEN",
+  // Oceania
+  AU:"AUD", NZ:"NZD",
+  // Other
+  RU:"RUB", TR:"TRY", UA:"UAH",
+  NG:"NGN", ZA:"ZAR", GH:"GHS", KE:"KES",
 };
 
 // ── RTL locales ───────────────────────────────────────────────────────────
@@ -144,6 +159,38 @@ const TRANSLATIONS: Record<string, Partial<Record<Locale, string>>> = {
 
   "setup.step4.title": { en:"4. Deploy & Start",      id:"4. Deploy & Mulai",        zh:"4. 部署并启动",     ar:"4. النشر والبدء",         de:"4. Deployen & Starten",     fr:"4. Déployer et démarrer",  es:"4. Desplegar e iniciar",    pt:"4. Implantar e Iniciar",  ja:"4. デプロイ＆開始",   ko:"4. 배포 및 시작" },
   "setup.step4.desc":  { en:"docker compose up -d → dashboard live at port 8080. All features unlocked after license activation. Add AI API keys in Settings for full BYOK mode.", id:"docker compose up -d → dashboard aktif di port 8080. Semua fitur aktif setelah aktivasi lisensi. Tambah AI API key di Settings untuk mode BYOK.", zh:"docker compose up -d → 仪表板在8080端口上线。许可证激活后所有功能解锁。在设置中添加AI API密钥。", ar:"docker compose up -d → لوحة التحكم تعمل على المنفذ 8080. جميع الميزات مفعّلة بعد تفعيل الترخيص.", de:"docker compose up -d → Dashboard auf Port 8080 aktiv. Alle Funktionen nach Lizenzaktivierung freigeschaltet.", fr:"docker compose up -d → tableau de bord actif sur le port 8080. Toutes les fonctionnalités débloquées.", es:"docker compose up -d → dashboard activo en el puerto 8080. Todas las funciones desbloqueadas.", pt:"docker compose up -d → dashboard ativo na porta 8080. Todos os recursos desbloqueados.", ja:"docker compose up -d → ポート8080でダッシュボードが起動。ライセンス認証後、全機能が利用可能。", ko:"docker compose up -d → 포트 8080에서 대시보드 활성화. 라이선스 활성화 후 모든 기능 사용 가능." },
+
+  // ── Setup step detail lines (d1–d6) ──
+  "setup.step3.d1": { en:"Run: sudo bash install.sh (loads Docker images offline — no internet required)", id:"Jalankan: sudo bash install.sh (memuat Docker images offline — tidak butuh internet)", zh:"运行：sudo bash install.sh（离线加载Docker镜像—无需联网）", ar:"شغّل: sudo bash install.sh (يحمّل صور Docker بلا إنترنت)", de:"Ausführen: sudo bash install.sh (lädt Docker-Images offline)", fr:"Exécuter: sudo bash install.sh (charge les images Docker hors ligne)", es:"Ejecutar: sudo bash install.sh (carga imágenes Docker sin internet)", pt:"Executar: sudo bash install.sh (carrega imagens Docker offline)", ja:"実行: sudo bash install.sh（オフラインでDockerイメージをロード）", ko:"실행: sudo bash install.sh (오프라인으로 Docker 이미지 로드)" },
+  "setup.step3.d2": { en:"Run: docker compose up -d", id:"Jalankan: docker compose up -d", zh:"运行：docker compose up -d", ar:"شغّل: docker compose up -d", de:"Ausführen: docker compose up -d", fr:"Exécuter: docker compose up -d", es:"Ejecutar: docker compose up -d", pt:"Executar: docker compose up -d", ja:"実行: docker compose up -d", ko:"실행: docker compose up -d" },
+  "setup.step3.d3": { en:"Open browser: http://YOUR_SERVER_IP:8080", id:"Buka browser: http://YOUR_SERVER_IP:8080", zh:"打开浏览器：http://YOUR_SERVER_IP:8080", ar:"افتح المتصفح: http://YOUR_SERVER_IP:8080", de:"Browser öffnen: http://IHR_SERVER_IP:8080", fr:"Ouvrir le navigateur: http://VOTRE_SERVEUR_IP:8080", es:"Abrir navegador: http://TU_SERVIDOR_IP:8080", pt:"Abrir navegador: http://SEU_SERVIDOR_IP:8080", ja:"ブラウザを開く: http://YOUR_SERVER_IP:8080", ko:"브라우저 열기: http://YOUR_SERVER_IP:8080" },
+  "setup.step3.d4": { en:"Activation wizard appears automatically — no file editing needed", id:"Wizard aktivasi muncul otomatis — tidak perlu edit file apapun", zh:"激活向导自动出现—无需编辑任何文件", ar:"يظهر معالج التفعيل تلقائياً — لا حاجة لتعديل أي ملف", de:"Aktivierungsassistent erscheint automatisch — keine Dateibearbeitung nötig", fr:"L'assistant d'activation apparaît automatiquement — aucune édition de fichier", es:"El asistente de activación aparece automáticamente — no se necesita editar archivos", pt:"Assistente de ativação aparece automaticamente — sem edição de arquivos", ja:"アクティベーションウィザードが自動表示—ファイル編集不要", ko:"활성화 마법사 자동 표시 — 파일 편집 불필요" },
+  "setup.step3.d5": { en:"Paste your license key from the portal → click Activate & Start", id:"Tempel license key dari portal → klik Activate & Start", zh:"粘贴门户中的许可证密钥 → 点击激活并开始", ar:"الصق مفتاح الترخيص من البوابة ← انقر تفعيل والبدء", de:"Lizenzschlüssel aus dem Portal einfügen → Aktivieren & Starten klicken", fr:"Collez la clé de licence du portail → cliquez Activer et démarrer", es:"Pega la clave de licencia del portal → haz clic en Activar e Iniciar", pt:"Cole a chave de licença do portal → clique em Ativar e Iniciar", ja:"ポータルからライセンスキーを貼り付け → アクティベートして開始をクリック", ko:"포털의 라이선스 키 붙여넣기 → 활성화 및 시작 클릭" },
+  "setup.step3.d6": { en:"You are redirected to the dashboard — all features are immediately active", id:"Anda diarahkan ke dashboard — semua fitur langsung aktif", zh:"您将被重定向到仪表板—所有功能立即激活", ar:"ستُحوَّل إلى لوحة التحكم — جميع الميزات مفعّلة فوراً", de:"Sie werden zum Dashboard weitergeleitet — alle Funktionen sofort aktiv", fr:"Vous êtes redirigé vers le tableau de bord — toutes les fonctionnalités sont actives", es:"Eres redirigido al dashboard — todas las funciones están activas inmediatamente", pt:"Você é redirecionado ao dashboard — todos os recursos estão ativos imediatamente", ja:"ダッシュボードにリダイレクト—すべての機能がすぐに利用可能", ko:"대시보드로 리디렉션 — 모든 기능이 즉시 활성화됨" },
+
+  "setup.step4.d1": { en:"Make sure Docker Engine is installed on your server (Docker 20.10+)", id:"Pastikan Docker Engine terinstall di server Anda (Docker 20.10+)", zh:"确保服务器已安装Docker Engine（Docker 20.10+）", ar:"تأكد من تثبيت Docker Engine على خادمك (Docker 20.10+)", de:"Stellen Sie sicher, dass Docker Engine installiert ist (Docker 20.10+)", fr:"Assurez-vous que Docker Engine est installé (Docker 20.10+)", es:"Asegúrate de tener Docker Engine instalado (Docker 20.10+)", pt:"Certifique-se de ter o Docker Engine instalado (Docker 20.10+)", ja:"Docker Engineがインストールされていることを確認（Docker 20.10+）", ko:"Docker Engine이 설치되어 있는지 확인 (Docker 20.10+)" },
+  "setup.step4.d2": { en:"Extract ZIP: unzip axto-guardian-bundle-docker-linux.zip", id:"Ekstrak ZIP: unzip axto-guardian-bundle-docker-linux.zip", zh:"解压ZIP：unzip axto-guardian-bundle-docker-linux.zip", ar:"استخرج ZIP: unzip axto-guardian-bundle-docker-linux.zip", de:"ZIP entpacken: unzip axto-guardian-bundle-docker-linux.zip", fr:"Extraire ZIP: unzip axto-guardian-bundle-docker-linux.zip", es:"Extraer ZIP: unzip axto-guardian-bundle-docker-linux.zip", pt:"Extrair ZIP: unzip axto-guardian-bundle-docker-linux.zip", ja:"ZIP展開: unzip axto-guardian-bundle-docker-linux.zip", ko:"ZIP 압축 해제: unzip axto-guardian-bundle-docker-linux.zip" },
+  "setup.step4.d3": { en:"Run: sudo bash install.sh (loads Docker images offline, ~2–3 min)", id:"Jalankan: sudo bash install.sh (muat Docker images offline, ~2–3 menit)", zh:"运行：sudo bash install.sh（离线加载Docker镜像，约2–3分钟）", ar:"شغّل: sudo bash install.sh (يحمّل صور Docker بلا إنترنت، ~2–3 دقائق)", de:"Ausführen: sudo bash install.sh (~2–3 Min. offline)", fr:"Exécuter: sudo bash install.sh (~2–3 min hors ligne)", es:"Ejecutar: sudo bash install.sh (~2–3 min sin internet)", pt:"Executar: sudo bash install.sh (~2–3 min offline)", ja:"実行: sudo bash install.sh（オフライン~2–3分）", ko:"실행: sudo bash install.sh (오프라인 ~2–3분)" },
+  "setup.step4.d4": { en:"Run: docker compose up -d", id:"Jalankan: docker compose up -d", zh:"运行：docker compose up -d", ar:"شغّل: docker compose up -d", de:"Ausführen: docker compose up -d", fr:"Exécuter: docker compose up -d", es:"Ejecutar: docker compose up -d", pt:"Executar: docker compose up -d", ja:"実行: docker compose up -d", ko:"실행: docker compose up -d" },
+  "setup.step4.d5": { en:"Wait ~60 seconds until all containers report healthy", id:"Tunggu ~60 detik hingga semua container healthy", zh:"等待约60秒直到所有容器显示healthy", ar:"انتظر ~60 ثانية حتى تظهر جميع الحاويات healthy", de:"~60 Sekunden warten bis alle Container healthy sind", fr:"Attendre ~60 secondes que tous les conteneurs soient healthy", es:"Esperar ~60 segundos hasta que todos los contenedores estén healthy", pt:"Aguardar ~60 segundos até todos os containers estarem healthy", ja:"すべてのコンテナがhealthyになるまで~60秒待機", ko:"모든 컨테이너가 healthy 상태가 될 때까지 ~60초 대기" },
+  "setup.step4.d6": { en:"Open browser: http://YOUR_SERVER:8080 → activation wizard appears", id:"Buka browser: http://YOUR_SERVER:8080 → wizard aktivasi muncul", zh:"打开浏览器: http://YOUR_SERVER:8080 → 激活向导出现", ar:"افتح المتصفح: http://YOUR_SERVER:8080 ← يظهر معالج التفعيل", de:"Browser öffnen: http://IHR_SERVER:8080 → Assistent erscheint", fr:"Ouvrir le navigateur: http://VOTRE_SERVEUR:8080 → l'assistant apparaît", es:"Abrir navegador: http://TU_SERVIDOR:8080 → aparece el asistente", pt:"Abrir navegador: http://SEU_SERVIDOR:8080 → assistente aparece", ja:"ブラウザ: http://YOUR_SERVER:8080 → ウィザード表示", ko:"브라우저: http://YOUR_SERVER:8080 → 마법사 표시" },
+
+  "setup.step5.title": { en:"5. Or Use EXE Binary (No Docker)", id:"5. Atau Gunakan EXE Binary (Tanpa Docker)", zh:"5. 或使用EXE二进制文件（无需Docker）", ar:"5. أو استخدم EXE Binary (بدون Docker)", de:"5. Oder EXE Binary nutzen (ohne Docker)", fr:"5. Ou utiliser le binaire EXE (sans Docker)", es:"5. O usar EXE binario (sin Docker)", pt:"5. Ou usar EXE binário (sem Docker)", ja:"5. またはEXEバイナリを使用（Dockerなし）", ko:"5. 또는 EXE 바이너리 사용 (Docker 없이)" },
+  "setup.step5.desc": { en:"Download EXE binary for Linux or Windows from your portal. Run install.sh / install.bat — the binary starts automatically as a systemd service. Docker is not required.", id:"Download EXE binary Linux atau Windows dari portal. Jalankan install.sh / install.bat — binary langsung berjalan sebagai systemd service. Tidak butuh Docker.", zh:"从门户下载Linux或Windows EXE二进制文件。运行install.sh/install.bat — 二进制文件自动作为systemd服务启动。不需要Docker。", ar:"نزّل ملف EXE لـ Linux أو Windows من البوابة. شغّل install.sh / install.bat — يبدأ الملف تلقائياً كـ systemd service. لا حاجة لـ Docker.", de:"EXE-Binary für Linux oder Windows aus dem Portal herunterladen. install.sh / install.bat ausführen — Binary startet automatisch als systemd-Dienst. Docker nicht erforderlich.", fr:"Téléchargez le binaire EXE pour Linux ou Windows depuis le portail. Exécutez install.sh / install.bat — le binaire démarre automatiquement en tant que service systemd. Docker n'est pas requis.", es:"Descarga el binario EXE para Linux o Windows desde el portal. Ejecuta install.sh / install.bat — el binario arranca automáticamente como servicio systemd. No se requiere Docker.", pt:"Baixe o binário EXE para Linux ou Windows do portal. Execute install.sh / install.bat — o binário inicia automaticamente como serviço systemd. Docker não é necessário.", ja:"ポータルからLinuxまたはWindows EXEバイナリをダウンロード。install.sh/install.batを実行 — バイナリはsystemdサービスとして自動起動。Dockerは不要。", ko:"포털에서 Linux 또는 Windows EXE 바이너리 다운로드. install.sh / install.bat 실행 — 바이너리가 자동으로 systemd 서비스로 시작. Docker 불필요." },
+  "setup.step5.d1": { en:"Download EXE ZIP from portal (e.g. axto-guardian-bundle-exe-linux.zip)", id:"Download EXE ZIP dari portal (misal: axto-guardian-bundle-exe-linux.zip)", zh:"从门户下载EXE ZIP（如：axto-guardian-bundle-exe-linux.zip）", ar:"نزّل ZIP من البوابة (مثل: axto-guardian-bundle-exe-linux.zip)", de:"EXE ZIP aus dem Portal herunterladen", fr:"Télécharger le ZIP EXE depuis le portail", es:"Descargar ZIP EXE desde el portal", pt:"Baixar ZIP EXE do portal", ja:"ポータルからEXE ZIPをダウンロード", ko:"포털에서 EXE ZIP 다운로드" },
+  "setup.step5.d2": { en:"Extract and run: sudo bash install.sh", id:"Ekstrak dan jalankan: sudo bash install.sh", zh:"解压并运行：sudo bash install.sh", ar:"استخرج وشغّل: sudo bash install.sh", de:"Entpacken und ausführen: sudo bash install.sh", fr:"Extraire et exécuter: sudo bash install.sh", es:"Extraer y ejecutar: sudo bash install.sh", pt:"Extrair e executar: sudo bash install.sh", ja:"展開して実行: sudo bash install.sh", ko:"압축 해제 후 실행: sudo bash install.sh" },
+  "setup.step5.d3": { en:"Windows: run install.bat as Administrator", id:"Windows: jalankan install.bat sebagai Administrator", zh:"Windows：以管理员身份运行install.bat", ar:"ويندوز: شغّل install.bat كمسؤول", de:"Windows: install.bat als Administrator ausführen", fr:"Windows: exécuter install.bat en tant qu'Administrateur", es:"Windows: ejecutar install.bat como Administrador", pt:"Windows: executar install.bat como Administrador", ja:"Windows: install.batを管理者として実行", ko:"Windows: Administrator로 install.bat 실행" },
+  "setup.step5.d4": { en:"Binary automatically registers as a systemd service (Linux) or Windows Service", id:"Binary otomatis terdaftar sebagai systemd service (Linux) atau Windows Service", zh:"二进制文件自动注册为systemd服务（Linux）或Windows Service", ar:"يُسجَّل الملف تلقائياً كـ systemd service (Linux) أو Windows Service", de:"Binary registriert sich automatisch als systemd-Dienst oder Windows-Dienst", fr:"Le binaire s'enregistre automatiquement comme service systemd ou Windows", es:"El binario se registra automáticamente como servicio systemd o Windows Service", pt:"O binário registra-se automaticamente como serviço systemd ou Windows Service", ja:"バイナリはsystemdサービス（Linux）またはWindowsサービスとして自動登録", ko:"바이너리가 자동으로 systemd 서비스(Linux) 또는 Windows 서비스로 등록" },
+  "setup.step5.d5": { en:"Open browser: http://YOUR_SERVER:8080 → activation wizard", id:"Buka browser: http://YOUR_SERVER:8080 → wizard aktivasi", zh:"打开浏览器: http://YOUR_SERVER:8080 → 激活向导", ar:"افتح المتصفح: http://YOUR_SERVER:8080 ← معالج التفعيل", de:"Browser öffnen: http://IHR_SERVER:8080 → Aktivierungsassistent", fr:"Navigateur: http://VOTRE_SERVEUR:8080 → assistant d'activation", es:"Navegador: http://TU_SERVIDOR:8080 → asistente de activación", pt:"Navegador: http://SEU_SERVIDOR:8080 → assistente de ativação", ja:"ブラウザ: http://YOUR_SERVER:8080 → アクティベーションウィザード", ko:"브라우저: http://YOUR_SERVER:8080 → 활성화 마법사" },
+  "setup.step5.d6": { en:"Docker is not required — standalone binary with all dependencies bundled", id:"Docker tidak diperlukan — binary standalone dengan semua dependensi terpacked", zh:"不需要Docker — 独立二进制文件包含所有依赖项", ar:"لا حاجة لـ Docker — ملف مستقل يحتوي على جميع التبعيات", de:"Docker nicht erforderlich — standalone Binary mit allen Abhängigkeiten", fr:"Docker non requis — binaire autonome avec toutes les dépendances", es:"Docker no requerido — binario independiente con todas las dependencias", pt:"Docker não necessário — binário independente com todas as dependências", ja:"Docker不要 — すべての依存関係が含まれたスタンドアロンバイナリ", ko:"Docker 불필요 — 모든 종속성이 포함된 독립 실행형 바이너리" },
+
+  "setup.step6.title": { en:"6. Connect Your AI API Keys", id:"6. Hubungkan API Key AI Anda", zh:"6. 连接您的AI API密钥", ar:"6. اربط مفاتيح API الذكاء الاصطناعي", de:"6. Ihre KI API-Schlüssel verbinden", fr:"6. Connecter vos clés API AI", es:"6. Conectar tus claves API de IA", pt:"6. Conectar suas chaves de API de IA", ja:"6. AI APIキーを接続する", ko:"6. AI API 키 연결" },
+  "setup.step6.desc": { en:"Orchestra AI is a drop-in replacement for the OpenAI API. Change base_url in your app to the Orchestra endpoint. Requests are automatically routed to the best provider.", id:"Orchestra AI adalah pengganti drop-in untuk OpenAI API. Ubah base_url di aplikasi Anda ke endpoint Orchestra. Request otomatis diarahkan ke provider terbaik.", zh:"Orchestra AI是OpenAI API的即插即用替代品。将应用中的base_url改为Orchestra端点。请求自动路由到最佳提供商。", ar:"Orchestra AI بديل مباشر لـ OpenAI API. غيّر base_url في تطبيقك إلى نقطة Orchestra. يتم توجيه الطلبات تلقائياً للمزود الأفضل.", de:"Orchestra AI ist ein Drop-in-Ersatz für die OpenAI API. Ändern Sie base_url in Ihrer App zum Orchestra-Endpunkt.", fr:"Orchestra AI est un remplacement direct de l'API OpenAI. Changez base_url dans votre app vers l'endpoint Orchestra.", es:"Orchestra AI es un reemplazo directo de la API de OpenAI. Cambia base_url en tu app al endpoint de Orchestra.", pt:"Orchestra AI é um substituto direto da API OpenAI. Mude base_url no seu app para o endpoint Orchestra.", ja:"Orchestra AIはOpenAI APIのドロップイン代替品。アプリのbase_urlをOrchestraエンドポイントに変更。", ko:"Orchestra AI는 OpenAI API의 드롭인 대체품입니다. 앱의 base_url을 Orchestra 엔드포인트로 변경하세요." },
+  "setup.step6.d1": { en:"Orchestra endpoint: http://YOUR_SERVER:8080/v1/chat/completions", id:"Endpoint Orchestra: http://YOUR_SERVER:8080/v1/chat/completions", zh:"Orchestra端点：http://YOUR_SERVER:8080/v1/chat/completions", ar:"نقطة Orchestra: http://YOUR_SERVER:8080/v1/chat/completions", de:"Orchestra-Endpunkt: http://IHR_SERVER:8080/v1/chat/completions", fr:"Endpoint Orchestra: http://VOTRE_SERVEUR:8080/v1/chat/completions", es:"Endpoint Orchestra: http://TU_SERVIDOR:8080/v1/chat/completions", pt:"Endpoint Orchestra: http://SEU_SERVIDOR:8080/v1/chat/completions", ja:"Orchestraエンドポイント: http://YOUR_SERVER:8080/v1/chat/completions", ko:"Orchestra 엔드포인트: http://YOUR_SERVER:8080/v1/chat/completions" },
+  "setup.step6.d2": { en:"Change base_url in your app — no other code changes needed", id:"Ubah base_url di aplikasi Anda — tidak perlu ubah kode lain", zh:"更改应用中的base_url — 无需其他代码更改", ar:"غيّر base_url في تطبيقك — لا حاجة لتغييرات أخرى", de:"base_url in Ihrer App ändern — keine anderen Codeänderungen nötig", fr:"Changez base_url dans votre app — aucune autre modification nécessaire", es:"Cambia base_url en tu app — no se necesitan otros cambios", pt:"Mude base_url no seu app — sem outras alterações necessárias", ja:"アプリのbase_urlを変更 — 他のコード変更不要", ko:"앱의 base_url 변경 — 다른 코드 변경 불필요" },
+  "setup.step6.d3": { en:"Orchestra automatically routes to the cheapest / fastest available provider", id:"Orchestra otomatis memilih provider termurah/tercepat yang tersedia", zh:"Orchestra自动路由到最便宜/最快的可用提供商", ar:"يوجّه Orchestra تلقائياً للمزود الأرخص والأسرع", de:"Orchestra leitet automatisch zum günstigsten/schnellsten Anbieter", fr:"Orchestra route automatiquement vers le fournisseur le moins cher/rapide", es:"Orchestra enruta automáticamente al proveedor más barato/rápido", pt:"Orchestra roteia automaticamente para o provedor mais barato/rápido", ja:"Orchestraが最安/最速のプロバイダに自動ルーティング", ko:"Orchestra가 가장 저렴하고 빠른 제공업체로 자동 라우팅" },
+  "setup.step6.d4": { en:"All requests logged in Console: cost, latency, provider used", id:"Semua request tercatat di Console: biaya, latency, provider yang digunakan", zh:"所有请求记录在Console中：成本、延迟、使用的提供商", ar:"جميع الطلبات مسجّلة في Console: التكلفة، الكمون، المزود المستخدم", de:"Alle Anfragen im Console protokolliert: Kosten, Latenz, genutzter Anbieter", fr:"Toutes les requêtes journalisées dans la Console: coût, latence, fournisseur", es:"Todas las solicitudes registradas en la Consola: coste, latencia, proveedor", pt:"Todas as requisições registradas no Console: custo, latência, provedor", ja:"すべてのリクエストをConsoleに記録：コスト、レイテンシ、使用プロバイダ", ko:"모든 요청이 콘솔에 기록됨: 비용, 지연시간, 사용된 제공업체" },
+  "setup.step6.d5": { en:"BYOK: your API keys stay on your server and never leave it", id:"BYOK: API key Anda tetap di server Anda dan tidak pernah keluar", zh:"BYOK：您的API密钥保留在您的服务器上，永不离开", ar:"BYOK: مفاتيح API تبقى على خادمك ولا تغادره أبداً", de:"BYOK: Ihre API-Schlüssel bleiben auf Ihrem Server", fr:"BYOK: vos clés API restent sur votre serveur et n'en partent jamais", es:"BYOK: tus claves API se quedan en tu servidor y nunca lo abandonan", pt:"BYOK: suas chaves de API ficam no seu servidor e nunca o deixam", ja:"BYOK：APIキーはサーバー上に留まり、外部に送信されません", ko:"BYOK: API 키는 서버에 유지되며 절대 외부로 나가지 않습니다" },
 
   // ── Portal ──
   "portal.welcome":  { en:"Welcome",       id:"Selamat datang", zh:"欢迎",     ar:"مرحباً",    de:"Willkommen",   fr:"Bienvenue",       es:"Bienvenido",      pt:"Bem-vindo",    ja:"ようこそ",   ko:"환영합니다" },
@@ -276,18 +323,24 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
               document.documentElement.dir = RTL_LOCALES.has(detectedLocale) ? "rtl" : "ltr";
             }
           }
-          // Set currency
+          // Set currency from country
           const detectedCurrency = COUNTRY_CURRENCY[cfCountry] || "USD";
-          if (detectedCurrency !== "USD" && data.rates?.[detectedCurrency]) {
-            setCurrency(detectedCurrency);
-            setFxRate(data.rates[detectedCurrency]);
-            const symbols: Record<string, string> = {
-              IDR:"Rp", MYR:"RM", SGD:"S$", JPY:"¥", CNY:"¥", EUR:"€",
-              GBP:"£", AUD:"A$", AED:"د.إ", KRW:"₩", THB:"฿", INR:"₹",
-              BRL:"R$", MXN:"$", CAD:"C$", CHF:"Fr", SEK:"kr", NOK:"kr",
-              DKK:"kr", HKD:"HK$", TWD:"NT$", RUB:"₽", TRY:"₺", ZAR:"R",
-            };
-            setFxSymbol(symbols[detectedCurrency] || detectedCurrency + " ");
+          if (detectedCurrency !== "USD") {
+            // Try to get rate from live data, fallback to 1
+            const rate = data.rates?.[detectedCurrency] || 1;
+            if (rate > 0 && rate !== 1) {
+              setCurrency(detectedCurrency);
+              setFxRate(rate);
+              const symbols: Record<string, string> = {
+                IDR:"Rp", MYR:"RM", SGD:"S$", JPY:"¥", CNY:"¥", EUR:"€",
+                GBP:"£", AUD:"A$", AED:"د.إ", KRW:"₩", THB:"฿", INR:"₹",
+                BRL:"R$", MXN:"$", CAD:"C$", CHF:"Fr", SEK:"kr", NOK:"kr",
+                DKK:"kr", HKD:"HK$", TWD:"NT$", RUB:"₽", TRY:"₺", ZAR:"R",
+                VND:"₫", PHP:"₱", PKR:"₨", SAR:"﷼", QAR:"﷼", KWD:"د.ك",
+                EGP:"E£", ARS:"$", NGN:"₦", NZD:"NZ$",
+              };
+              setFxSymbol(symbols[detectedCurrency] || detectedCurrency + " ");
+            }
           }
         }
       } catch {}
@@ -300,10 +353,16 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const t = useCallback((key: string) => translate(key, locale), [locale]);
 
   const fmtPrice = useCallback((usd: number): string => {
+    if (currency === "USD" || fxRate <= 0) return "$" + usd.toLocaleString("en-US");
     const local = Math.round(usd * fxRate);
+    // Special formatting for large-unit currencies
     if (currency === "IDR") return "Rp" + (local >= 1_000_000 ? (local/1_000_000).toFixed(0)+"jt" : local.toLocaleString("id-ID"));
-    if (currency === "JPY" || currency === "KRW") return fxSymbol + local.toLocaleString();
+    if (currency === "VND") return "₫" + (local >= 1_000_000 ? (local/1_000_000).toFixed(1)+"tr" : local.toLocaleString("vi-VN"));
+    if (currency === "KRW") return "₩" + local.toLocaleString("ko-KR");
+    if (currency === "JPY") return "¥" + local.toLocaleString("ja-JP");
     if (currency === "INR") return "₹" + (local >= 100_000 ? (local/100_000).toFixed(1)+"L" : local.toLocaleString("en-IN"));
+    if (currency === "NGN") return "₦" + (local >= 1_000_000 ? (local/1_000_000).toFixed(1)+"M" : local.toLocaleString());
+    // Standard formatting
     return fxSymbol + local.toLocaleString("en-US");
   }, [currency, fxRate, fxSymbol]);
 

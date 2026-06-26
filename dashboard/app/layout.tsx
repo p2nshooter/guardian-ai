@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 export const runtime = "edge";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
@@ -18,7 +25,7 @@ export const metadata: Metadata = {
     "AI orchestration", "GPU cluster management", "BYOK AI",
     "enterprise cybersecurity", "behavioral threat detection",
     "Guardian AI", "Orchestra AI", "AXTO",
-    "keamanan server AI", "platform AI enterprise", "self-hosted",
+    "AI server security", "enterprise AI platform", "self-hosted",
     "AI workflow orchestration", "multi-provider AI routing",
   ],
   authors: [{ name: "AXTO", url: APP_URL }],

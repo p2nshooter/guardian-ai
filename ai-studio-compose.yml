@@ -1,0 +1,45 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# ============================================================
+# AXTO AI Studio — Self-Hosted AI Workspace
+# Supports 14+ AI providers via YOUR own API keys
+#
+# CARA PAKAI:
+#   1. Edit ai-studio.yml → set license_key
+#   2. docker compose -f ai-studio-compose.yml up -d
+#   3. Open: http://YOUR_SERVER:8091
+#
+# Data stays on YOUR server. AXTO never sees your prompts.
+# Portal:  https://axto.io/portal
+# Docs:    https://axto.io/guide/ai-studio
+# ============================================================
+
+services:
+  ai-studio:
+    image: registry.gitlab.com/axto-platform/studio/ai-studio:latest
+    container_name: axto-ai-studio
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    volumes:
+      - ./ai-studio.yml:/ai-studio/config/ai-studio.yml:ro
+      - ai-studio-data:/ai-studio/data
+      - ai-studio-logs:/ai-studio/logs
+    environment:
+      - AI_STUDIO_CONFIG=/ai-studio/config/ai-studio.yml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+
+volumes:
+  ai-studio-data:
+  ai-studio-logs:

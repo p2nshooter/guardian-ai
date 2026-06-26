@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.source="https://github.com/p2nshooter/guardian-ai"
+LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Guardian Node Agent"
 LABEL org.opencontainers.image.description="AXTO Guardian — Node Agent (threat detection, runs on each protected server)"
 LABEL org.opencontainers.image.licenses="Commercial"
@@ -16,12 +16,12 @@ LABEL org.opencontainers.image.licenses="Commercial"
 #   curl                : healthcheck + webhook alerts
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
-    python3-bcc \
     libpcap0.8 libpcap-dev tcpdump \
     nftables \
     libmagic1 libmagic-dev \
     curl procps iproute2 iptables libcap2-bin \
     net-tools strace \
+    && apt-get install -y --no-install-recommends python3-bcc 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /guardian

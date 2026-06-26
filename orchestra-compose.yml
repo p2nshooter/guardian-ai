@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 version: "3.9"
 
 # ============================================================
@@ -14,7 +20,7 @@ version: "3.9"
 services:
 
   orchestra-core:
-    image: ghcr.io/p2nshooter/orchestra-engine:latest
+    image: registry.gitlab.com/axto-platform/orchestra-engine/orchestra-core:latest
     container_name: orchestra-core
     restart: unless-stopped
     ports:
@@ -43,7 +49,7 @@ services:
       options: { max-size: "20m", max-file: "5" }
 
   orchestra-worker-cpu:
-    image: ghcr.io/p2nshooter/orchestra-engine:latest
+    image: registry.gitlab.com/axto-platform/orchestra-engine/orchestra-core:latest
     container_name: orchestra-worker-cpu-1
     restart: unless-stopped
     command: python orchestra_worker/worker_cpu.py
@@ -67,10 +73,10 @@ services:
 
   # ── GPU Worker (uncomment if you have NVIDIA GPU) ──────────────
   # orchestra-worker-gpu:
-  #   image: ghcr.io/p2nshooter/orchestra-engine:latest
+  #   image: registry.gitlab.com/axto-platform/orchestra-engine/orchestra-worker-gpu:latest
   #   container_name: orchestra-worker-gpu-1
   #   restart: unless-stopped
-  #   command: python orchestra_worker/worker_gpu.py
+  #   command: python -m orchestra_worker.worker_gpu
   #   runtime: nvidia
   #   deploy:
   #     resources:
@@ -90,6 +96,11 @@ services:
   #     - OLLAMA_BASE_URL=http://localhost:11434
   #     - WORKER_PORT=7892
   #     - NODE_ID=gpu-node-1
+  #     # WORKER_SELF_URL: address reachable from orchestra-core container
+  #     # Use the container name + port so core can POST tasks to /run
+  #     - WORKER_SELF_URL=http://orchestra-worker-gpu-1:7892
+  #   ports:
+  #     - "7892:7892"
   #   networks:
   #     - orchestra-net
 

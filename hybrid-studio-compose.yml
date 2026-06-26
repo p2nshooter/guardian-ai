@@ -1,0 +1,31 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+# AXTO Hybrid Studio — Pipeline Automation: AI + GPU + Voice + Sound
+# Port: 8093  |  Docs: axto.io/guide/hybrid-studio
+services:
+  hybrid-studio:
+    image: registry.gitlab.com/axto-platform/studio/hybrid-studio:latest
+    container_name: axto-hybrid-studio
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    volumes:
+      - ./hybrid-studio.yml:/hybrid-studio/config/hybrid-studio.yml:ro
+      - hybrid-studio-data:/hybrid-studio/data
+      - hybrid-studio-logs:/hybrid-studio/logs
+    environment:
+      - HYBRID_STUDIO_CONFIG=/hybrid-studio/config/hybrid-studio.yml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8093/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+volumes:
+  hybrid-studio-data:
+  hybrid-studio-logs:

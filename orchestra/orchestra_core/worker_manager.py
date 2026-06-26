@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration | Worker Manager (Production v2)
 SQLite-backed worker registry. Replaces JSON file storage.
@@ -11,7 +17,8 @@ logger = logging.getLogger("orchestra.workers")
 
 def register_worker(node_id, worker_type, provider_id, model,
                     concurrency=5, timeout_sec=60, retry_count=3,
-                    priority="normal", gpu_vram_gb=None, label="", base_url="") -> dict:
+                    priority="normal", gpu_vram_gb=None, label="", base_url="",
+                    worker_url="") -> dict:
     workers = db.get_active_workers()
     cpu_count = sum(1 for w in workers if w.get("worker_type")=="cpu")
     gpu_count = sum(1 for w in workers if w.get("worker_type")=="gpu")
@@ -24,7 +31,7 @@ def register_worker(node_id, worker_type, provider_id, model,
         "id": wid, "node_id": node_id, "worker_type": worker_type,
         "provider_id": provider_id, "model": model, "concurrency": concurrency,
         "timeout_sec": timeout_sec, "retry_count": retry_count, "priority": priority,
-        "gpu_vram_gb": gpu_vram_gb or 0, "base_url": base_url,
+        "gpu_vram_gb": gpu_vram_gb or 0, "base_url": base_url, "worker_url": worker_url,
         "label": label or f"{model} on {node_id}", "status": "active",
     })
     logger.info(f"Worker registered: {wid} ({worker_type}, {provider_id}/{model})")

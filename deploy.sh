@@ -1,8 +1,14 @@
 #!/bin/bash
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 # AXTO Platform — Manual Deploy Script
 # Usage: ./deploy.sh [--workers-only|--db-only|--skip-docker]
 #
-# NOTE: Dashboard (CF Pages) di-deploy otomatis saat push ke GitHub main.
+# NOTE: Dashboard (CF Pages) di-deploy otomatis saat push ke GitLab main.
 #       Script ini untuk: D1 migrations, CF Workers, Docker images, R2 updates.
 set -e
 NC='\033[0m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; RED='\033[0;31m'

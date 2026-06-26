@@ -1,0 +1,376 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO Vault — Data Privacy Platform</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#030c08;--surf:#061410;--surf2:#091c16;--surf3:#0e241e;--border:#122a20;--border2:#1a3d2e;--em:#059669;--em2:#10b981;--em3:#34d399;--red:#ef4444;--yellow:#f59e0b;--blue:#3b82f6;--purple:#8b5cf6;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--mono:"JetBrains Mono",monospace}
+body{background:var(--bg);color:var(--text);font-family:"Inter",-apple-system,sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--surf)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+header{background:rgba(3,12,8,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:12px}
+.li{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#059669,#0d9488);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 16px rgba(5,150,105,.35)}
+.ln{font-size:16px;font-weight:800}.ln span{color:#34d399}
+.ls{font-size:10px;color:var(--text3);margin-top:1px}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--em2);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid}
+.pem{background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.3);color:#34d399}
+.pg{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25);color:#34d399}
+nav{background:var(--surf);border-bottom:1px solid var(--border);display:flex;padding:0 28px;overflow-x:auto}
+nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 16px;height:44px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:#34d399;border-bottom-color:#059669}
+main{padding:24px;max-width:1500px;margin:0 auto}
+.sec{display:none}.sec.active{display:block}
+.kg{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:20px}
+.k{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.k:hover{border-color:var(--border2)}
+.k::after{content:"";position:absolute;top:0;left:0;right:0;height:2px}
+.k.g::after{background:linear-gradient(90deg,#059669,#10b981)}
+.k.b::after{background:linear-gradient(90deg,#3b82f6,#06b6d4)}
+.k.y::after{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.k.r::after{background:linear-gradient(90deg,#ef4444,#f97316)}
+.k.p::after{background:linear-gradient(90deg,#7c3aed,#6366f1)}
+.k.t::after{background:linear-gradient(90deg,#0d9488,#0891b2)}
+.kl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px}
+.kv{font-size:34px;font-weight:900;letter-spacing:-2px;margin:6px 0 2px;line-height:1}
+.ks{font-size:11px;color:var(--text2)}
+.ki{position:absolute;right:14px;top:16px;font-size:20px;opacity:.2}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.ct{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.g3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.mb{margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:9px 12px;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(18,42,32,.6);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(5,150,105,.04)}
+.mono{font-family:var(--mono);font-size:11px}
+.tw{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid}
+.bg{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.25)}
+.br{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}
+.by{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.25)}
+.bb{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.25)}
+.bgr{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
+.bp{background:rgba(124,58,237,.12);color:#c4b5fd;border-color:rgba(124,58,237,.25)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btnp{background:linear-gradient(135deg,#059669,#0d9488);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)}
+.btnp:hover{filter:brightness(1.1)}
+.btng{background:var(--surf2);border:1px solid var(--border2);color:var(--text)}
+.btng:hover{background:var(--surf3)}
+.sm{padding:6px 12px;font-size:12px}.xs{padding:4px 9px;font-size:11px}
+.inp,.sel,textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:100%}
+.inp:focus,.sel:focus,textarea:focus{border-color:rgba(5,150,105,.5)}
+.fg{margin-bottom:14px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(18,42,32,.5);font-size:13px}
+.sr:last-child{border-bottom:none}
+.sl{color:var(--text2)}.sv{font-weight:700;font-family:var(--mono);font-size:12px}
+.br2{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(18,42,32,.5)}
+.br2:last-child{border-bottom:none}
+.bl{font-size:11px;font-weight:600;min-width:120px;color:var(--text2)}
+.bt{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px;transition:width .6s;background:linear-gradient(90deg,#059669,#10b981)}
+.bc{font-size:11px;font-weight:700;min-width:32px;text-align:right;color:var(--em3)}
+.pol-card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s}
+.pol-card:hover{border-color:rgba(5,150,105,.4)}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.ei{font-size:36px;margin-bottom:10px;opacity:.5}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:24px}
+.ov.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--border2);border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.mt{font-size:18px;font-weight:800;margin-bottom:20px}
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#toast.ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#34d399}
+#toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="li">🔐</div>
+    <div><div class="ln">AXTO <span>Vault</span></div><div class="ls">Data Privacy &amp; PII Protection Platform</div></div>
+  </div>
+  <div class="hdr-r">
+    <span id="lp" class="pill pem">LICENSED</span>
+    <span class="pill pg"><span class="pulse"></span>PROTECTING</span>
+  </div>
+</header>
+<nav>
+  <button class="tab active" onclick="tab('overview',this)">📊 Overview</button>
+  <button class="tab" onclick="tab('policies',this)">📋 Policies</button>
+  <button class="tab" onclick="tab('audit',this)">🔍 Audit Log</button>
+  <button class="tab" onclick="tab('compliance',this)">✅ Compliance</button>
+  <button class="tab" onclick="tab('test',this)">🧪 Live Test</button>
+  <button class="tab" onclick="tab('settings',this)">⚙ Settings</button>
+</nav>
+<main>
+<!-- OVERVIEW -->
+<div id="sec-overview" class="sec active">
+  <div class="kg">
+    <div class="k g"><div class="ki">🔐</div><div class="kl">Requests Today</div><div class="kv" style="color:#34d399" id="k-req">—</div><div class="ks">Proxied &amp; scanned</div></div>
+    <div class="k b"><div class="ki">🔍</div><div class="kl">PII Detected</div><div class="kv" style="color:#60a5fa" id="k-pii">—</div><div class="ks">Entities found</div></div>
+    <div class="k y"><div class="ki">✂</div><div class="kl">Redacted</div><div class="kv" style="color:#fbbf24" id="k-red">—</div><div class="ks">Tokens masked</div></div>
+    <div class="k r"><div class="ki">🚫</div><div class="kl">Blocked</div><div class="kv" style="color:#f87171" id="k-blk">—</div><div class="ks">Policy violations</div></div>
+    <div class="k p"><div class="ki">📋</div><div class="kl">Active Policies</div><div class="kv" style="color:#c4b5fd" id="k-pol">—</div><div class="ks">DLP rules active</div></div>
+    <div class="k t"><div class="ki">⏱</div><div class="kl">Avg Latency</div><div class="kv" style="color:#2dd4bf;font-size:24px" id="k-lat">—</div><div class="ks">Added overhead ms</div></div>
+  </div>
+  <div class="g2 mb">
+    <div class="card">
+      <div class="ct">📊 Entity Types Detected (Today)</div>
+      <div id="entity-dist"></div>
+    </div>
+    <div class="card">
+      <div class="ct">📈 Request Volume — Last 7 Days</div>
+      <div id="vol-chart" style="display:flex;align-items:flex-end;gap:4px;height:80px;margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)"><span>7d ago</span><span>Today</span></div>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="ct">🔒 Compliance Summary</div><div id="comp-summary"></div></div>
+    <div class="card"><div class="ct">🚫 Top Blocked Patterns</div><div id="blocked-patterns"></div></div>
+    <div class="card"><div class="ct">🔒 License &amp; System</div><div id="sys-info"></div></div>
+  </div>
+</div>
+<!-- POLICIES -->
+<div id="sec-policies" class="sec">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">📋 Data Protection Policies</span>
+    <button class="btn btnp sm" onclick="openOv('np-modal')">+ New Policy</button>
+  </div>
+  <div id="pol-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+    <div class="empty" style="grid-column:1/-1"><div class="ei">📋</div><div>Loading policies…</div></div>
+  </div>
+</div>
+<!-- AUDIT LOG -->
+<div id="sec-audit" class="sec">
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:800">🔍 Audit Log</span>
+    <select class="sel" id="audit-action" style="width:auto;min-width:160px" onchange="loadAudit()">
+      <option value="">All Actions</option><option value="redacted">Redacted</option><option value="blocked">Blocked</option><option value="passed">Passed</option>
+    </select>
+    <button class="btn btng sm" onclick="loadAudit()">↻</button>
+    <a href="/vault/audit/export" target="_blank" class="btn btng sm" style="margin-left:auto">⬇ Export CSV</a>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Request ID</th><th>Action</th><th>Policy</th><th>Entities Found</th><th>Tokens Redacted</th><th>Provider</th><th>Latency</th><th>Time</th></tr></thead>
+    <tbody id="audit-tb"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<!-- COMPLIANCE -->
+<div id="sec-compliance" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">✅ Compliance Assessment</div>
+  <div class="g3 mb">
+    <div class="card" style="cursor:pointer" onclick="loadComp('GDPR')" onmouseover="this.style.borderColor='rgba(5,150,105,.4)'" onmouseout="this.style.borderColor=''">
+      <div style="font-size:28px;margin-bottom:10px">🇪🇺</div><div style="font-weight:700;margin-bottom:4px">GDPR</div><div style="font-size:12px;color:var(--text2)">General Data Protection Regulation</div>
+    </div>
+    <div class="card" style="cursor:pointer" onclick="loadComp('HIPAA')" onmouseover="this.style.borderColor='rgba(5,150,105,.4)'" onmouseout="this.style.borderColor=''">
+      <div style="font-size:28px;margin-bottom:10px">🏥</div><div style="font-weight:700;margin-bottom:4px">HIPAA</div><div style="font-size:12px;color:var(--text2)">Health Insurance Portability &amp; Accountability</div>
+    </div>
+    <div class="card" style="cursor:pointer" onclick="loadComp('CCPA')" onmouseover="this.style.borderColor='rgba(5,150,105,.4)'" onmouseout="this.style.borderColor=''">
+      <div style="font-size:28px;margin-bottom:10px">🇺🇸</div><div style="font-weight:700;margin-bottom:4px">CCPA</div><div style="font-size:12px;color:var(--text2)">California Consumer Privacy Act</div>
+    </div>
+    <div class="card" style="cursor:pointer" onclick="loadComp('SOC2')" onmouseover="this.style.borderColor='rgba(5,150,105,.4)'" onmouseout="this.style.borderColor=''">
+      <div style="font-size:28px;margin-bottom:10px">🏢</div><div style="font-weight:700;margin-bottom:4px">SOC 2</div><div style="font-size:12px;color:var(--text2)">Service Organization Control 2</div>
+    </div>
+  </div>
+  <div id="comp-result"></div>
+</div>
+<!-- LIVE TEST -->
+<div id="sec-test" class="sec">
+  <div style="max-width:700px">
+    <div style="font-size:16px;font-weight:800;margin-bottom:6px">🧪 Live Redaction Test</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Paste text containing PII to see how Vault redacts it in real-time through your active policies.</div>
+    <div class="card mb">
+      <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Input Text</label>
+        <textarea class="inp" id="test-input" rows="5" placeholder="e.g. Contact John Smith at john@example.com or call 555-1234. SSN: 123-45-6789"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btnp" onclick="testRedact()">🔐 Redact Now</button>
+        <button class="btn btng" onclick="document.getElementById('test-input').value='';document.getElementById('test-result').innerHTML=''">Clear</button>
+      </div>
+    </div>
+    <div id="test-result"></div>
+  </div>
+</div>
+<!-- SETTINGS -->
+<div id="sec-settings" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">⚙ Settings</div>
+  <div style="max-width:640px;display:grid;gap:14px">
+    <div class="card"><div class="ct">🌐 Proxy Endpoints</div>
+      <div class="sr"><span class="sl">OpenAI</span><span class="sv mono" style="color:#34d399">POST /v1/chat/completions</span></div>
+      <div class="sr"><span class="sl">Anthropic</span><span class="sv mono" style="color:#34d399">POST /v1/messages</span></div>
+      <div class="sr"><span class="sl">Any Provider</span><span class="sv mono" style="color:#34d399">ANY /v1/*</span></div>
+    </div>
+    <div class="card"><div class="ct">🔒 System</div><div id="lic-detail"></div></div>
+    <div class="card"><div class="ct">📖 Resources</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="https://axto.io/guide" target="_blank" class="btn btng sm">📚 Docs</a>
+        <a href="https://axto.io/portal" target="_blank" class="btn btng sm">🏠 Portal</a>
+        <a href="/support" class="btn btng sm">🛠 Support</a>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+
+<div class="ov" id="np-modal" onclick="if(event.target===this)closeOv('np-modal')">
+  <div class="modal">
+    <div class="mt">📋 New DLP Policy</div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Policy Name</label><input type="text" class="inp" id="np-name" placeholder="HIPAA PHI Redaction"></div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Action</label>
+      <select class="sel" id="np-action"><option value="redact">Redact PII</option><option value="block">Block Request</option><option value="mask">Mask &amp; Allow</option><option value="audit">Audit Only</option></select>
+    </div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Entity Types (comma-separated)</label>
+      <input type="text" class="inp" id="np-entities" placeholder="email, phone, ssn, credit_card, name, address">
+    </div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Description</label>
+      <textarea class="inp" id="np-desc" rows="2" placeholder="Policy description…"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btng" onclick="closeOv('np-modal')">Cancel</button>
+      <button class="btn btnp" onclick="createPolicy()">Create Policy</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+function fd(s){return s?new Date(s).toLocaleString():'—'}
+function fds(s){return s?new Date(s).toLocaleDateString():'—'}
+function fmt(n){return n==null?'—':Number(n).toLocaleString()}
+function toast(m,ok=true){const e=document.getElementById('toast');e.textContent=m;e.className=ok?'ok':'err';e.style.display='block';setTimeout(()=>e.style.display='none',3500)}
+function openOv(id){document.getElementById(id).classList.add('open')}
+function closeOv(id){document.getElementById(id).classList.remove('open')}
+function tab(n,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+n).classList.add('active');
+  if(el)el.classList.add('active');
+  const L={policies:loadPolicies,audit:loadAudit,compliance:()=>{}};
+  if(L[n])L[n]();
+}
+async function api(p,b=null){
+  const o=b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{};
+  const r=await fetch(p,o);const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||r.statusText);return d;
+}
+async function loadOverview(){
+  try{
+    const s=await api('/vault/stats');
+    document.getElementById('k-req').textContent=fmt(s.total_requests||s.requests_today||0);
+    document.getElementById('k-pii').textContent=fmt(s.total_pii_detected||s.pii_detected||0);
+    document.getElementById('k-red').textContent=fmt(s.total_redacted||s.redacted||0);
+    document.getElementById('k-blk').textContent=fmt(s.total_blocked||s.blocked||0);
+    document.getElementById('k-pol').textContent=s.active_policies||s.policy_count||0;
+    document.getElementById('k-lat').textContent=(s.avg_overhead_ms||s.avg_latency_ms||0)+'ms';
+    if(s.license)document.getElementById('lp').textContent=(s.license.plan||'vault').toUpperCase();
+    // Entity dist
+    const ed=s.entity_types||s.entities_by_type||{};
+    const total=Object.values(ed).reduce((a,b)=>a+b,0)||1;
+    const ENTITY_COLORS={email:'#60a5fa',phone:'#34d399',ssn:'#f87171',credit_card:'#fbbf24',name:'#c4b5fd',address:'#fb923c',dob:'#2dd4bf'};
+    document.getElementById('entity-dist').innerHTML=Object.entries(ed).sort((a,b)=>b[1]-a[1]).slice(0,7).map(([e,n])=>`<div class="br2"><span class="bl" style="color:${ENTITY_COLORS[e]||'#94a3b8'};">${e}</span><div class="bt"><div class="bf" style="width:${(n/total*100).toFixed(0)}%;background:${ENTITY_COLORS[e]||'#059669'}"></div></div><span class="bc">${fmt(n)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No PII detected today</div>';
+    // Volume chart
+    try{
+      const tl=await api('/vault/stats/timeline');
+      const days=tl.timeline||tl||[];
+      const max=Math.max(...days.map(d=>d.requests||0),1);
+      document.getElementById('vol-chart').innerHTML=days.slice(-7).map(d=>`<div style="flex:1;height:${Math.round((d.requests||0)/max*72)+8}px;background:linear-gradient(180deg,#059669,#10b981);border-radius:3px 3px 0 0;opacity:.85"></div>`).join('');
+    }catch(e){}
+    // Compliance summary
+    try{
+      const ca=await api('/vault/compliance');
+      const comps=ca.frameworks||ca||[];
+      document.getElementById('comp-summary').innerHTML=comps.length?comps.map(c=>
+        `<div class="sr"><span class="sl">${c.framework}</span><span style="font-weight:800;color:${c.score>=80?'#34d399':c.score>=60?'#fbbf24':'#f87171'}">${(c.score||0).toFixed(0)}%</span></div>`).join(''):'<div style="color:var(--text3);font-size:12px">No compliance data</div>';
+    }catch(e){}
+    // Blocked
+    document.getElementById('blocked-patterns').innerHTML=Object.entries(ed).length?
+      Object.entries(s.blocked_by_type||{}).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([t,n])=>`<div class="sr"><span class="sl">${t}</span><span class="sv" style="color:#f87171">${n}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No blocked requests</div>':
+      '<div style="color:var(--text3);font-size:12px">No blocked requests</div>';
+    // Sys info
+    document.getElementById('sys-info').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#34d399">${s.license?.plan||'—'}</span></div><div class="sr"><span class="sl">Mode</span><span class="sv">${s.mode||'proxy'}</span></div><div class="sr"><span class="sl">Expires</span><span class="sv">${s.license?.expires_at?fds(s.license.expires_at):'—'}</span></div><a href="https://axto.io/portal" target="_blank" class="btn btng xs" style="margin-top:10px">Manage →</a>`;
+    document.getElementById('lic-detail').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#34d399">${s.license?.plan||'—'}</span></div><div class="sr"><span class="sl">Machine</span><span class="sv mono" style="font-size:10px">${s.license?.machine_id?s.license.machine_id.slice(0,20)+'…':'—'}</span></div><div class="sr"><span class="sl">Expires</span><span class="sv">${s.license?.expires_at?fds(s.license.expires_at):'—'}</span></div>`;
+  }catch(e){console.warn('OV:',e)}
+}
+async function loadPolicies(){
+  try{
+    const d=await api('/vault/policies');const pols=d.policies||d||[];
+    const ACTION_COLOR={redact:'bg',block:'br',mask:'by',audit:'bgr'};
+    document.getElementById('pol-grid').innerHTML=pols.length?pols.map(p=>`
+      <div class="pol-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-weight:700">${p.name||p.policy_name||'—'}</div>
+          <span class="badge ${ACTION_COLOR[p.action]||'bb'}">${p.action||'redact'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${p.description||'DLP policy'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${(p.entity_types||p.entities||[]).map(e=>`<span class="mono" style="font-size:10px;background:var(--surf2);padding:2px 7px;border-radius:4px;border:1px solid var(--border2)">${e}</span>`).join('')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="badge ${p.enabled!==false?'bg':'bgr'}">${p.enabled!==false?'Active':'Disabled'}</span>
+          <button class="btn btng xs" onclick="deletePolicy('${p.policy_id||p.id}')">Delete</button>
+        </div>
+      </div>`).join(''):'<div class="empty" style="grid-column:1/-1"><div class="ei">📋</div><div>No policies configured.</div><button class="btn btnp" style="margin-top:14px" onclick="openOv('np-modal')">+ Create Policy</button></div>';
+  }catch(e){}
+}
+async function createPolicy(){
+  try{
+    await api('/vault/policies',{name:document.getElementById('np-name').value,action:document.getElementById('np-action').value,entity_types:document.getElementById('np-entities').value.split(',').map(e=>e.trim()).filter(e=>e),description:document.getElementById('np-desc').value});
+    toast('Policy created');closeOv('np-modal');loadPolicies();loadOverview();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function deletePolicy(id){
+  if(!confirm('Delete this policy?'))return;
+  try{await fetch('/vault/policies/'+id,{method:'DELETE'});toast('Deleted');loadPolicies();}catch(e){toast(e.message,false);}
+}
+async function loadAudit(){
+  const action=document.getElementById('audit-action')?.value||'';
+  const tb=document.getElementById('audit-tb');
+  tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api('/vault/audit?limit=100'+(action?'&action='+action:''));
+    const rows=d.requests||d.audit||d||[];
+    tb.innerHTML=rows.length?rows.map(r=>`<tr>
+      <td class="mono" style="color:#34d399">${(r.request_id||r.id||'').slice(0,12)}…</td>
+      <td><span class="badge ${r.action==='redacted'?'by':r.action==='blocked'?'br':'bg'}">${r.action||'passed'}</span></td>
+      <td style="color:var(--text2)">${r.policy||r.policy_name||'—'}</td>
+      <td class="mono" style="color:#60a5fa">${fmt(r.entities_found||r.pii_count||0)}</td>
+      <td class="mono" style="color:#fbbf24">${fmt(r.tokens_redacted||r.redacted_count||0)}</td>
+      <td style="color:var(--text2)">${r.provider||'—'}</td>
+      <td class="mono" style="color:var(--text3)">${r.latency_ms||0}ms</td>
+      <td style="color:var(--text3);white-space:nowrap">${fd(r.created_at||r.timestamp)}</td>
+    </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No audit records</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function loadComp(fw){
+  document.getElementById('comp-result').innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">Loading…</div>';
+  try{
+    const d=await api('/vault/compliance/'+fw);const score=d.score||d.compliance_score||0;
+    document.getElementById('comp-result').innerHTML=`<div class="card"><div style="display:flex;align-items:center;gap:20px;margin-bottom:18px"><div style="font-size:44px;font-weight:900;color:${score>=80?'#34d399':score>=60?'#fbbf24':'#f87171'}">${score.toFixed(0)}<span style="font-size:22px">%</span></div><div><div style="font-size:16px;font-weight:800">${fw}</div><div style="font-size:12px;color:var(--text2);margin-top:4px">${(d.findings||d.gaps||[]).length} findings</div></div></div><div style="height:6px;background:var(--border);border-radius:3px;margin-bottom:18px;overflow:hidden"><div style="height:100%;width:${score}%;background:${score>=80?'#059669':score>=60?'#f59e0b':'#ef4444'};transition:width .8s"></div></div>${(d.findings||d.gaps||[]).length?`<div class="ct">⚠ Gaps</div>${(d.findings||d.gaps||[]).slice(0,8).map(f=>`<div style="padding:8px 12px;margin-bottom:6px;border-radius:8px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);font-size:12px;color:#fca5a5">${typeof f==='string'?f:f.title||JSON.stringify(f)}</div>`).join('')}`:'<div style="color:#34d399;font-size:13px">✓ Fully compliant</div>'}</div>`;
+  }catch(e){document.getElementById('comp-result').innerHTML='<div class="empty"><div>Compliance data unavailable</div></div>';}
+}
+async function testRedact(){
+  const text=document.getElementById('test-input').value.trim();if(!text){toast('Enter text to test',false);return;}
+  document.getElementById('test-result').innerHTML='<div style="text-align:center;padding:16px;color:var(--text3)">Redacting…</div>';
+  try{
+    const r=await fetch('/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','X-Vault-Test':'1'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:text}]})});
+    const d=await r.json().catch(()=>({}));
+    const redacted=d._vault_redacted_prompt||d.redacted_text||'[Redaction applied — check audit log]';
+    const entities=d._vault_entities||[];
+    document.getElementById('test-result').innerHTML=`<div class="card"><div class="ct" style="margin-bottom:10px">🔐 Redaction Result</div><div style="font-family:var(--mono);font-size:12px;color:#34d399;background:var(--surf2);padding:12px;border-radius:8px;border:1px solid var(--border2);white-space:pre-wrap;word-break:break-all">${redacted}</div>${entities.length?`<div style="margin-top:12px;font-size:12px;color:var(--text2)">Detected: ${entities.map(e=>`<span class="mono" style="padding:1px 6px;border-radius:3px;background:rgba(245,158,11,.1);color:#fbbf24;margin:2px">${e.type||e}</span>`).join(' ')}</div>`:''}</div>`;
+  }catch(e){document.getElementById('test-result').innerHTML=`<div class="card"><div style="color:var(--text2);font-size:13px">Live test requires an active proxy request. The Vault redacts PII inline as requests pass through. Check the Audit Log to see real redactions.</div></div>`;}
+}
+loadOverview();setInterval(loadOverview,30000);
+</script>
+</body>
+</html>

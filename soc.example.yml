@@ -1,0 +1,68 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO SOC — AI Security Operations Center | Configuration
+#
+# HOW TO USE:
+#   1. Get your SOC license key from: https://axto.io/portal
+#   2. Set license_key below (starts with SOC-)
+#   3. Configure syslog sources and alerting
+#   4. docker compose -f soc-compose.yml up -d
+#   5. Dashboard: http://YOUR_SERVER:8085
+#
+# Pull image: docker pull registry.gitlab.com/axto-platform/soc/soc-engine:latest
+# Portal:     https://axto.io/portal
+# Docs:       https://axto.io/guide
+# ============================================================
+
+soc:
+
+  # ── License ──────────────────────────────────────────────
+  license_key: "SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  # ── API Server ───────────────────────────────────────────
+  host: "0.0.0.0"
+  port: 8085
+
+  # ── Storage ──────────────────────────────────────────────
+  data_dir: /soc/data
+  event_retention_days: 90
+  incident_retention_days: 365
+
+  # ── Syslog Receiver ──────────────────────────────────────
+  # Point your servers to: YOUR_SOC_SERVER:5514 (UDP)
+  syslog_port: 5514
+
+  # ── Threat Intelligence ──────────────────────────────────
+  threat_intel_update_hours: 6
+  # Additional private threat feeds (optional):
+  # threat_intel_feeds:
+  #   - url: "https://your-internal-feed.com/iocs.txt"
+  #     format: "txt_ip"
+  #     ioc_type: "ip"
+  #     name: "Internal Blocklist"
+
+  # ── SOAR (Automated Response) ────────────────────────────
+  soar_auto_respond: true
+
+  # ── Guardian AI Integration (Optional) ───────────────────
+  # Connect SOC to your Guardian instance for deeper correlation
+  # guardian_api_url: "http://guardian:8080"
+  # guardian_api_key: "YOUR_GUARDIAN_ADMIN_KEY"
+
+  # ── Alerting ─────────────────────────────────────────────
+  alerting:
+    # Slack Incoming Webhook
+    # slack_webhook: "https://hooks.slack.com/services/XXXX/YYYY/ZZZZ"
+
+    # Email Alerts
+    # smtp_host: "smtp.example.com"
+    # smtp_port: 587
+    # smtp_user: "alerts@example.com"
+    # smtp_pass: "your-password"
+    # alert_email_to: "security@example.com"

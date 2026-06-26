@@ -1,0 +1,65 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO AI Studio — Activation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#02040a;color:#edf2f7;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.w{max-width:480px;width:100%;text-align:center}
+.ic{width:80px;height:80px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 28px;box-shadow:0 8px 40px rgba(59,130,246,.4)}
+h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+h1 span{background:linear-gradient(135deg,#93c5fd,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:#4a6580;font-size:14px;line-height:1.7;margin-bottom:32px}
+.box{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:18px;padding:28px;text-align:left;margin-bottom:24px}
+.bt{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#93c5fd;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
+.step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(59,130,246,.08)}
+.step:last-child{border-bottom:none;padding-bottom:0}
+.sn{width:26px;height:26px;border-radius:50%;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#93c5fd;flex-shrink:0;margin-top:1px}
+.st{font-size:13px;color:#8ba3c0;line-height:1.6}
+.st a{color:#60a5fa;text-decoration:none;font-weight:600}
+code{background:rgba(59,130,246,.1);padding:2px 7px;border-radius:4px;font-size:12px;color:#93c5fd;font-family:monospace}
+.cta{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:13px 28px;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;box-shadow:0 4px 20px rgba(59,130,246,.35);transition:filter .12s}
+.cta:hover{filter:brightness(1.12)}
+.version{margin-top:28px;font-size:11px;color:#2d4158;font-family:monospace}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="ic">🧠</div>
+  <h1>AXTO <span>AI Studio</span></h1>
+  <p class="sub">Self-Hosted AI Workspace — 14+ Providers, Chat, Batch, Compare<br>License activation required to continue</p>
+
+  <div class="box">
+    <div class="bt">Activation Steps</div>
+    <div class="step">
+      <div class="sn">1</div>
+      <div class="st">Purchase your AI Studio license at <a href="https://axto.io/register?pkg=ai_studio" target="_blank">axto.io</a></div>
+    </div>
+    <div class="step">
+      <div class="sn">2</div>
+      <div class="st">Edit <code>ai-studio.yml</code> and set <code>license_key: YOUR_KEY</code></div>
+    </div>
+    <div class="step">
+      <div class="sn">3</div>
+      <div class="st">Restart the server: <code>docker compose restart</code></div>
+    </div>
+    <div class="step">
+      <div class="sn">4</div>
+      <div class="st">Reload this page — your full AI Studio workspace will appear</div>
+    </div>
+  </div>
+
+  <a href="https://axto.io/register?pkg=ai_studio" class="cta" target="_blank">Get AI Studio License →</a>
+  <div class="version">AXTO AI Studio v2.0.0</div>
+</div>
+</body>
+</html>

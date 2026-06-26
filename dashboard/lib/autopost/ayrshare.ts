@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 /**
  * AXTO AutoPost — Ayrshare Integration
  *
@@ -33,7 +40,7 @@ export interface AyrshareResult {
   error?:   string;
 }
 
-const AYRSHARE_BASE = "https://app.ayrshare.com/api";
+const AYRSHARE_BASE = "https://api.ayrshare.com/api";
 
 // Platform name mapping: our names → Ayrshare names
 const PLATFORM_MAP: Record<string, string> = {
@@ -48,6 +55,7 @@ const PLATFORM_MAP: Record<string, string> = {
   telegram:          "telegram",
   reddit:            "reddit",
   gmb:               "gmb",
+  snapchat:          "snapchat",
 };
 
 export async function postViaAyrshare(
@@ -76,10 +84,22 @@ export async function postViaAyrshare(
     platforms,
   };
 
-  if (post.mediaUrls?.length) body.mediaUrls = post.mediaUrls;
+  // Platforms that REQUIRE media: pinterest, instagram, tiktok, snapchat, youtube
+  const needsMedia = platforms.some(p => ["pinterest","instagram","tiktok","snapchat","youtube"].includes(p));
+  if (post.mediaUrls?.length) {
+    body.mediaUrls = post.mediaUrls;
+  } else if (needsMedia) {
+    // Use default AXTO logo as fallback — prevents "Missing Required Fields" error
+    body.mediaUrls = ["https://axto.io/og-image.png"];
+  }
   if (post.scheduleDate)      body.scheduleDate = post.scheduleDate;
   if (post.title)             body.title = post.title;
   if (post.shortenLinks)      body.shortenLinks = true;
+
+  // YouTube requires 'title' in youTubeOptions
+  if (platforms.includes("youtube")) {
+    body.youTubeOptions = { title: post.title || text.slice(0, 70), visibility: "public" };
+  }
 
   try {
     const res = await fetch(`${AYRSHARE_BASE}/post`, {
@@ -139,21 +159,40 @@ export async function getAyrshareProfiles(apiKey: string): Promise<{
   if (!apiKey) return { connected: [], profiles: {}, error: "No API key" };
 
   try {
-    const res = await fetch(`${AYRSHARE_BASE}/profiles`, {
+    const res = await fetch(`${AYRSHARE_BASE}/user`, {
       headers: { "Authorization": `Bearer ${apiKey}` },
     });
     const data: any = await res.json();
 
     if (!res.ok) {
-      return { connected: [], profiles: {}, error: data.message || "API error" };
+      return { connected: [], profiles: {}, error: data.message || data.action || "API error" };
     }
 
     const profiles: Record<string, { name: string; username: string; avatar?: string }> = {};
     const connected: string[] = [];
 
-    // Ayrshare returns user object with connected platforms
-    const user = data.user || data;
+    // Ayrshare /user returns { activeSocialAccounts: [...] } on free plan
+    const user = data;
+    const activeSocials: string[] = user.activeSocialAccounts || [];
 
+    // Map Ayrshare social names to our platform IDs
+    const nameMap: Record<string, string> = {
+      facebook: "facebook", instagram: "instagram", twitter: "twitter",
+      linkedin: "linkedin", pinterest: "pinterest", tiktok: "tiktok",
+      youtube: "youtube_community", telegram: "telegram", reddit: "reddit",
+      threads: "threads", snapchat: "snapchat",
+    };
+
+    for (const social of activeSocials) {
+      const ourId = nameMap[social.toLowerCase()] || social.toLowerCase();
+      connected.push(ourId);
+      profiles[ourId] = {
+        name: social,
+        username: user.email || "",
+      };
+    }
+
+    // Also check legacy format with *Profiles fields
     const platformFields: Record<string, string> = {
       facebookProfiles:  "facebook",
       instagramProfiles: "instagram",

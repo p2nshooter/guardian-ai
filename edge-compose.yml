@@ -1,0 +1,46 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+# ============================================================
+# AXTO Edge — AI API Gateway & Billing
+#
+# Start: docker compose -f edge-compose.yml up -d
+# Dashboard: http://localhost:8080
+# Customer API base_url: http://YOUR_SERVER:8080/v1
+# ============================================================
+services:
+  edge-core:
+    image: registry.gitlab.com/axto-platform/edge/edge-engine:latest
+    container_name: edge-core
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./edge.yml:/edge/config/edge.yml:ro
+      - edge-data:/edge/data
+      - edge-logs:/edge/logs
+    environment:
+      - EDGE_CONFIG=/edge/config/edge.yml
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - edge-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+volumes:
+  edge-data:
+  edge-logs:
+networks:
+  edge-net:
+    driver: bridge

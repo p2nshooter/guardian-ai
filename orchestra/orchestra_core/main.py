@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration — Main API
 FastAPI engine: job routing, worker management, AI provider orchestration.
@@ -84,9 +90,9 @@ async def shutdown():
     # Give active threads up to 10s to finish
     import time as _time
     deadline = _time.time() + 10
-    while job_router.get_queue_stats().get("active", 0) > 0 and _time.time() < deadline:
+    while job_router.get_queue_stats().get("active_threads", 0) > 0 and _time.time() < deadline:
         _time.sleep(0.2)
-    active = job_router.get_queue_stats().get("active", 0)
+    active = job_router.get_queue_stats().get("active_threads", 0)
     if active:
         logger.warning(f"Shutdown: {active} job(s) still running — forcing exit")
     else:
@@ -321,6 +327,7 @@ class RegisterWorkerRequest(BaseModel):
     gpu_vram_gb: Optional[int] = None
     label:       str   = ""
     base_url:    str   = ""
+    worker_url:  str   = ""   # GPU worker's own FastAPI endpoint (e.g. http://gpu-node:7892)
 
 
 @app.get("/api/workers")
@@ -347,7 +354,7 @@ async def register_worker(req: RegisterWorkerRequest, _=Depends(require_console)
         node_id=req.node_id, worker_type=req.type, provider_id=req.provider_id,
         model=req.model, concurrency=req.concurrency, timeout_sec=req.timeout_sec,
         retry_count=req.retry_count, priority=req.priority, gpu_vram_gb=req.gpu_vram_gb,
-        label=req.label, base_url=req.base_url,
+        label=req.label, base_url=req.base_url, worker_url=req.worker_url,
     )
     return result
 
@@ -553,6 +560,71 @@ async def autoscaler_toggle(request: Request, _=Depends(require_console)):
     if enabled:
         get_autoscaler().start()
     return {"ok": True, "autoscale_enabled": enabled}
+
+
+@app.post("/api/autoscaler/settings")
+async def autoscaler_settings(request: Request, _=Depends(require_console)):
+    """Update autoscaler thresholds (hot-reloadable, takes effect immediately)."""
+    body = await request.json()
+    if "threshold" in body:
+        db.set_setting("autoscale_threshold", str(body["threshold"]))
+    if "max_cpu" in body:
+        db.set_setting("autoscale_max_cpu", str(body["max_cpu"]))
+    if "max_gpu" in body:
+        db.set_setting("autoscale_max_gpu", str(body["max_gpu"]))
+    if "idle_timeout" in body:
+        db.set_setting("idle_worker_timeout", str(body["idle_timeout"]))
+    return {"ok": True, "settings": {
+        "threshold": int(db.get_setting("autoscale_threshold", "20")),
+        "max_cpu": int(db.get_setting("autoscale_max_cpu", "10")),
+        "max_gpu": int(db.get_setting("autoscale_max_gpu", "4")),
+        "idle_timeout": int(db.get_setting("idle_worker_timeout", "300")),
+    }}
+
+
+@app.post("/api/autoscaler/scale-up")
+async def manual_scale_up(request: Request, _=Depends(require_console)):
+    """Manually spawn a new worker (respects license limits)."""
+    enforcement.require_active()
+    body = await request.json()
+    worker_type = body.get("type", "cpu")
+
+    state = enforcement.get_enforcement_state()
+    workers = worker_manager.get_all_workers()
+    cpu_count = sum(1 for w in workers if w.get("worker_type") == "cpu" and w.get("status") == "active")
+    gpu_count = sum(1 for w in workers if w.get("worker_type") == "gpu" and w.get("status") == "active")
+
+    if worker_type == "cpu" and cpu_count >= state.get("cpu_workers", 2):
+        raise HTTPException(400, f"CPU worker limit reached ({cpu_count}/{state.get('cpu_workers',2)} for your license tier). Upgrade your plan for more workers.")
+    if worker_type == "gpu" and gpu_count >= state.get("gpu_workers", 0):
+        raise HTTPException(400, f"GPU worker limit reached ({gpu_count}/{state.get('gpu_workers',0)} for your license tier). Upgrade your plan for GPU workers.")
+
+    autoscaler = get_autoscaler()
+    success = autoscaler._spawn_worker(worker_type)
+    return {"ok": success, "type": worker_type, "current": {"cpu": cpu_count, "gpu": gpu_count},
+            "limits": {"max_cpu": state.get("cpu_workers", 2), "max_gpu": state.get("gpu_workers", 0)}}
+
+
+@app.post("/api/autoscaler/scale-down")
+async def manual_scale_down(request: Request, _=Depends(require_console)):
+    """Manually drain and remove an idle worker."""
+    body = await request.json()
+    worker_id = body.get("worker_id", "")
+
+    if not worker_id:
+        # Find the most idle worker to drain
+        idle = db.get_idle_workers(idle_threshold_sec=0)
+        if not idle:
+            raise HTTPException(400, "No idle workers to scale down")
+        worker_id = idle[0]["id"]
+
+    worker = worker_manager.get_worker(worker_id)
+    if not worker:
+        raise HTTPException(404, f"Worker {worker_id} not found")
+
+    autoscaler = get_autoscaler()
+    autoscaler._drain_worker(worker)
+    return {"ok": True, "drained": worker_id}
 
 
 # ── Semantic Router ────────────────────────────────────────────────────────────

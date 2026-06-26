@@ -1,3 +1,9 @@
+[//]: # (==============================================================================)
+[//]: # (Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.)
+[//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
+[//]: # (Author & Architect: Yusron Efendi <hallo@axto.io>)
+[//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
+[//]: # (==============================================================================)
 # AXTO — AI eXecution & Tools Orchestration — Deploy Guide
 
 ## Arsitektur
@@ -6,8 +12,8 @@
 GitHub → push ke main
   ├── GitHub Actions
   │     ├── D1 migrations (wrangler)
-  │     ├── Guardian Engine → GHCR (Docker)
-  │     ├── Orchestra Engine → GHCR (Docker)
+  │     ├── Guardian Engine → GitLab Registry
+  │     ├── Orchestra Engine → GitLab Registry
   │     ├── Threat Feed → R2 (wrangler)
   │     └── CF Workers deploy (wrangler)
   │
@@ -26,7 +32,7 @@ GitHub → push ke main
 | Cron        | Cloudflare Workers   |
 | DNS/CDN     | Cloudflare           |
 
-Docker images → GHCR (untuk client self-host Guardian & Orchestra)
+Docker images → GitLab Registry (untuk client self-host Guardian & Orchestra)
 
 ---
 
@@ -35,7 +41,7 @@ Docker images → GHCR (untuk client self-host Guardian & Orchestra)
 ### 1. Clone & setup CF resources
 
 ```bash
-git clone https://github.com/p2nshooter/guardian-ai.git
+git clone https://github.com/your-org/guardian-ai.git
 cd guardian-ai
 
 export CF_API_TOKEN=your_token

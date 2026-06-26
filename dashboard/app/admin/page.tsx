@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 "use client";
 export const runtime = "edge";
 import { useEffect, useState, useCallback } from "react";
@@ -5,16 +12,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-provider";
 import { getSessionUser, signOut } from "@/lib/client-auth";
+import { PRODUCT_ICONS, PRODUCT_NAMES } from "@/lib/stripe";
 
 const NAV_STATIC: {href:string;icon:string;tKey:string;fallback:string}[] = [
   { href: "/admin",                icon: "📊", tKey: "admin.title",    fallback: "Dashboard" },
   { href: "/admin/releases",       icon: "☁️", tKey: "admin.releases", fallback: "Releases" },
+  { href: "/admin/pricing",        icon: "💰", tKey: "",              fallback: "💰 Pricing" },
   { href: "/admin/playbooks",     icon: "📦", tKey: "",             fallback: "📦 Playbooks" },
   { href: "/admin/engine-builder", icon: "🔧", tKey: "",             fallback: "🔧 Engine Builder" },
   { href: "/guide",                icon: "📖", tKey: "nav.guide",    fallback: "📖 Guide" },
   { href: "/admin/licenses",       icon: "🔑", tKey: "admin.licenses", fallback: "Licenses" },
   { href: "/admin/clients",        icon: "👥", tKey: "admin.clients",  fallback: "Clients" },
   { href: "/admin/gateways",       icon: "💳", tKey: "admin.gateways", fallback: "Gateways" },
+  { href: "/admin/payment-methods", icon: "🪙", tKey: "",            fallback: "🪙 Payment Methods" },
   { href: "/admin/revenue",        icon: "💰", tKey: "admin.revenue",  fallback: "Revenue" },
   { href: "/admin/content",        icon: "📝", tKey: "",             fallback: "Content" },
   { href: "/admin/autopost",       icon: "📢", tKey: "",             fallback: "AutoPost" },
@@ -26,6 +36,96 @@ const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
   expired:   { color: "#ef4444", bg: "rgba(239,68,68,0.1)"  },
   revoked:   { color: "#94a3b8", bg: "rgba(148,163,184,0.1)"},
 };
+
+const SALE_PRODUCTS = [
+  { key: "guardian",   icon: "🛡️", name: "Guardian AI" },
+  { key: "orchestra",  icon: "🎼", name: "Orchestra AI" },
+  { key: "vault",      icon: "🔒", name: "Vault AI" },
+  { key: "edge",       icon: "🌐", name: "Edge AI" },
+  { key: "soc",        icon: "🎯", name: "SOC AI" },
+  { key: "compliance", icon: "📋", name: "Compliance AI" },
+  { key: "sentinel",   icon: "🏭", name: "Sentinel OT" },
+  { key: "antivirus",  icon: "🦠", name: "Antivirus" },
+  { key: "studio",     icon: "🧠", name: "AXTO Studio" },
+];
+
+function ProductSalePanel() {
+  const [saleStatus, setSaleStatus] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/product-sale", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => { setSaleStatus(d.products || {}); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  async function toggle(product: string) {
+    setToggling(product);
+    const newVal = !saleStatus[product];
+    try {
+      const res = await fetch("/api/admin/product-sale", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product, forSale: newVal }),
+      });
+      if (res.ok) setSaleStatus(s => ({ ...s, [product]: newVal }));
+    } catch {}
+    setToggling(null);
+  }
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", overflow: "hidden", marginTop: 28, marginBottom: 28 }}>
+      <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 20 }}>🏷️</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: "#0a1628" }}>Product Sale Status</div>
+            <div style={{ color: "#94a3b8", fontSize: 12 }}>Toggle products between For Sale and Coming Soon. Not-for-sale products show &quot;Coming Soon&quot; on landing page & portal.</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        {SALE_PRODUCTS.map(p => {
+          const isOn = saleStatus[p.key] ?? (p.key === "guardian" || p.key === "orchestra" || p.key === "antivirus");
+          const isLoading = loading || toggling === p.key;
+          return (
+            <div key={p.key} style={{
+              padding: "14px 16px", borderRadius: 10,
+              border: isOn ? "1.5px solid #22c55e" : "1.5px solid #e2e8f0",
+              background: isOn ? "rgba(34,197,94,0.04)" : "#f8fafc",
+              opacity: isLoading ? 0.6 : 1,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 20 }}>{p.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0a1628" }}>{p.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: isOn ? "#22c55e" : "#f59e0b" }}>
+                    {isOn ? "✅ For Sale" : "🔜 Coming Soon"}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => toggle(p.key)}
+                disabled={isLoading}
+                style={{
+                  padding: "6px 14px", borderRadius: 8, border: "none", cursor: isLoading ? "default" : "pointer",
+                  background: isOn ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)",
+                  color: isOn ? "#ef4444" : "#22c55e",
+                  fontWeight: 700, fontSize: 11,
+                }}
+              >
+                {isOn ? "Set Coming Soon" : "Set For Sale"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -189,8 +289,9 @@ export default function AdminPage() {
                       <div style={{ color: "#475569", fontSize: 11, marginTop: 2 }}>{l.client_email}</div>
                     </td>
                     <td style={{ padding: "11px 14px" }}>
-                      <span style={{ fontSize: 13 }}>{l.product === "orchestra" ? "🎼" : "🛡️"}</span>
-                      <span style={{ color: "#94a3b8", marginLeft: 6 }}>{l.package_code}</span>
+                      <span style={{ fontSize: 13 }}>{PRODUCT_ICONS[l.product] || "📦"}</span>
+                      <span style={{ color: "#0f172a", marginLeft: 6, fontWeight: 600, fontSize: 12 }}>{PRODUCT_NAMES[l.product] || l.product}</span>
+                      <span style={{ color: "#94a3b8", marginLeft: 6, fontSize: 11 }}>{l.package_code}</span>
                     </td>
                     <td style={{ padding: "11px 14px" }}>
                       <span style={{ display: "inline-block", fontSize: 11, padding: "3px 8px", borderRadius: 6, background: st.bg, color: st.color, fontWeight: 700 }}>
@@ -255,112 +356,167 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* ── Admin Engine Downloads ─────────────────────────────── */}
+        {/* ── Admin Product Sell / Not Sell Toggle ──────────────── */}
+        <ProductSalePanel />
+
+        {/* ── Admin Product Downloads — All 7 Products ──────────────── */}
         <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", overflow: "hidden", marginTop: 28 }}>
-          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 20 }}>⬇️</span>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 15, color: "#0a1628" }}>Engine Downloads</div>
-              <div style={{ color: "#94a3b8", fontSize: 12 }}>Download Guardian AI, Orchestra AI, and all components — admin access, no payment required</div>
+          <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 20 }}>📦</span>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: "#0a1628" }}>Product Package Downloads</div>
+                <div style={{ color: "#94a3b8", fontSize: 12 }}>All 7 AXTO products — professionally packaged per tier. Admin only. Clients see only what they paid for.</div>
+              </div>
             </div>
+            <Link href="/admin/releases" style={{ fontSize: 13, color: "#0284c7", textDecoration: "none", fontWeight: 700, padding: "8px 16px", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 8 }}>
+              ☁️ CI/CD Releases →
+            </Link>
           </div>
-          <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-            {/* Guardian AI */}
-            <div style={{ background: "rgba(2,132,199,0.04)", border: "1.5px solid rgba(2,132,199,0.15)", borderRadius: 12, padding: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 24 }}>🛡️</span>
-                <div>
-                  <div style={{ fontWeight: 800, color: "#0a1628", fontSize: 14 }}>Guardian AI Engine</div>
-                  <div style={{ color: "#64748b", fontSize: 11 }}>Cybersecurity · Docker · Multi-node</div>
-                </div>
+          {[
+            { key: "guardian", icon: "🛡️", name: "Guardian AI", sub: "AI Cybersecurity", color: "#0284c7", bg: "rgba(2,132,199,0.04)", border: "rgba(2,132,199,0.15)",
+              packages: [
+                { name: "Sentinel (1 server)", file: "guardian-sentinel-bundle" },
+                { name: "Professional (25 servers)", file: "guardian-professional-bundle" },
+                { name: "Business (100 servers)", file: "guardian-business-bundle" },
+                { name: "Enterprise (1,000 servers)", file: "guardian-enterprise-bundle" },
+              ], composeFile: "guardian-compose.yml", configFile: "guardian.example.yml",
+              registry: "registry.gitlab.com/axto-platform/guardian-ai/guardian-engine:latest",
+            },
+            { key: "orchestra", icon: "⚡", name: "Orchestra AI", sub: "AI Orchestration", color: "#7c3aed", bg: "rgba(124,58,237,0.04)", border: "rgba(124,58,237,0.15)",
+              packages: [
+                { name: "Starter (10 workers)", file: "orchestra-starter-bundle" },
+                { name: "Professional (50 workers)", file: "orchestra-professional-bundle" },
+                { name: "Enterprise (unlimited)", file: "orchestra-enterprise-bundle" },
+              ], composeFile: "orchestra-compose.yml", configFile: "orchestra.example.yml",
+              registry: "registry.gitlab.com/axto-platform/guardian-ai/orchestra-core:latest",
+            },
+            { key: "vault", icon: "🔒", name: "Vault AI", sub: "Data Privacy & PII Redaction", color: "#0d9488", bg: "rgba(13,148,136,0.04)", border: "rgba(13,148,136,0.15)",
+              packages: [
+                { name: "Growth (100k req/day)", file: "vault-growth-bundle" },
+                { name: "Professional (1M req/day)", file: "vault-professional-bundle" },
+                { name: "Enterprise (multi-tenant)", file: "vault-enterprise-bundle" },
+                { name: "Sovereign (air-gap)", file: "vault-sovereign-bundle" },
+              ], composeFile: "vault-compose.yml", configFile: "vault.example.yml",
+              registry: "registry.gitlab.com/axto-platform/vault-ai/vault-engine:latest",
+            },
+            { key: "edge", icon: "🌐", name: "Edge AI", sub: "AI API Gateway", color: "#f59e0b", bg: "rgba(245,158,11,0.04)", border: "rgba(245,158,11,0.15)",
+              packages: [
+                { name: "Growth (500k req/day)", file: "edge-growth-bundle" },
+                { name: "Professional (unlimited)", file: "edge-professional-bundle" },
+                { name: "Enterprise (white-label)", file: "edge-enterprise-bundle" },
+                { name: "Platform (multi-region HA)", file: "edge-platform-bundle" },
+              ], composeFile: "edge-compose.yml", configFile: "edge.example.yml",
+              registry: "registry.gitlab.com/axto-platform/edge-ai/edge-engine:latest",
+            },
+            { key: "soc", icon: "🎯", name: "SOC AI", sub: "Security Operations Center", color: "#ef4444", bg: "rgba(239,68,68,0.04)", border: "rgba(239,68,68,0.15)",
+              packages: [
+                { name: "Growth (10 sources, 50GB/day)", file: "soc-growth-bundle" },
+                { name: "Professional (100 sources)", file: "soc-professional-bundle" },
+                { name: "Enterprise (500 sources)", file: "soc-enterprise-bundle" },
+                { name: "Platform (unlimited + team)", file: "soc-platform-bundle" },
+              ], composeFile: "soc-compose.yml", configFile: "soc.example.yml",
+              registry: "registry.gitlab.com/axto-platform/soc-ai/soc-engine:latest",
+            },
+            { key: "compliance", icon: "📋", name: "Compliance AI", sub: "Compliance Automation", color: "#6366f1", bg: "rgba(99,102,241,0.04)", border: "rgba(99,102,241,0.15)",
+              packages: [
+                { name: "Growth (1 framework)", file: "compliance-growth-bundle" },
+                { name: "Professional (5 frameworks)", file: "compliance-professional-bundle" },
+                { name: "Enterprise (all frameworks)", file: "compliance-enterprise-bundle" },
+                { name: "Sovereign (white-label+FedRAMP)", file: "compliance-sovereign-bundle" },
+              ], composeFile: "compliance-compose.yml", configFile: "compliance.example.yml",
+              registry: "registry.gitlab.com/axto-platform/compliance-ai/compliance-engine:latest",
+            },
+            { key: "sentinel", icon: "🏭", name: "Sentinel OT", sub: "OT/ICS Industrial Security", color: "#ea580c", bg: "rgba(234,88,12,0.04)", border: "rgba(234,88,12,0.15)",
+              packages: [
+                { name: "Growth (250 devices)", file: "sentinel-growth-bundle" },
+                { name: "Professional (2,500 devices)", file: "sentinel-professional-bundle" },
+                { name: "Enterprise (25,000 devices)", file: "sentinel-enterprise-bundle" },
+                { name: "Critical (unlimited + air-gap)", file: "sentinel-critical-bundle" },
+              ], composeFile: "sentinel-compose.yml", configFile: "sentinel.example.yml",
+              registry: "registry.gitlab.com/axto-platform/sentinel-ot/sentinel-engine:latest",
+            },
+            { key: "studio", icon: "🧠", name: "AXTO Studio", sub: "Self-Hosted AI & GPU Pool Platform", color: "#8b5cf6", bg: "rgba(139,92,246,0.04)", border: "rgba(139,92,246,0.15)",
+              packages: [
+                { name: "Starter ($49/mo)", file: "studio-starter-bundle" },
+                { name: "Professional ($199/mo)", file: "studio-professional-bundle" },
+                { name: "Enterprise ($799/mo)", file: "studio-enterprise-bundle" },
+              ], composeFile: "studio-compose.yml", configFile: "studio.example.yml",
+              registry: "registry.gitlab.com/axto-platform/studio/studio-engine:latest",
+            },
+          ].map((prod: any) => (
+            <div key={prod.key} style={{ borderBottom: "1px solid #f1f5f9" }}>
+              <div style={{ padding: "13px 24px", display: "flex", alignItems: "center", gap: 10, background: prod.bg }}>
+                <span style={{ fontSize: 18 }}>{prod.icon}</span>
+                <span style={{ fontWeight: 800, fontSize: 13, color: "#0a1628" }}>{prod.name}</span>
+                <span style={{ color: "#94a3b8", fontSize: 11 }}>{prod.sub}</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <a href="/api/downloads?file=guardian-compose.yml"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8, background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
-                  ⬇ guardian-compose.yml
-                </a>
-                <a href="/api/downloads?file=guardian.example.yml"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8, border: "1.5px solid #0284c7", color: "#0284c7", textDecoration: "none", fontSize: 13, fontWeight: 700, background: "transparent" }}>
-                  ⬇ guardian.example.yml (config)
-                </a>
-                <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace", lineHeight: 1.7 }}>
-                  <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Docker Registry:</div>
-                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/guardian-engine:latest</div>
+              <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>📦 Client Packages</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {prod.packages.map((pkg: any) => (
+                      <div key={pkg.file} style={{ display: "flex", gap: 5 }}>
+                        <a href={`/api/admin/releases/download?product=${pkg.file}&type=docker&arch=linux`}
+                          style={{ flex: 1, padding: "8px 12px", borderRadius: 7, background: prod.bg, border: `1px solid ${prod.border}`, color: prod.color, textDecoration: "none", fontSize: 12, fontWeight: 600, display: "flex", gap: 6, alignItems: "center" }}>
+                          ⬇ {pkg.name}
+                        </a>
+                        <a href={`/api/admin/releases/download?product=${pkg.file}&type=exe&arch=windows`}
+                          style={{ padding: "8px 10px", borderRadius: 7, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#64748b", textDecoration: "none", fontSize: 11 }}>
+                          🪟
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>⚙️ Config Files</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    <a href={`/api/downloads?file=${prod.composeFile}`}
+                      style={{ padding: "8px 12px", borderRadius: 7, background: `${prod.color}`, color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 700 }}>
+                      ⬇ {prod.composeFile}
+                    </a>
+                    <a href={`/api/downloads?file=${prod.configFile}`}
+                      style={{ padding: "8px 12px", borderRadius: 7, border: `1.5px solid ${prod.color}`, color: prod.color, textDecoration: "none", fontSize: 12, fontWeight: 700, background: "transparent" }}>
+                      ⬇ {prod.configFile}
+                    </a>
+                    <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 7, padding: "8px 10px", fontSize: 10, color: "#64748b", fontFamily: "monospace", lineHeight: 1.6 }}>
+                      🐳 {prod.registry}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          ))}
 
-            {/* Orchestra AI */}
-            <div style={{ background: "rgba(124,58,237,0.04)", border: "1.5px solid rgba(124,58,237,0.15)", borderRadius: 12, padding: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 24 }}>⚡</span>
-                <div>
-                  <div style={{ fontWeight: 800, color: "#0a1628", fontSize: 14 }}>Orchestra AI Engine</div>
-                  <div style={{ color: "#64748b", fontSize: 11 }}>AI Orchestration · CPU+GPU Workers</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <a href="/api/downloads?file=orchestra-compose.yml"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8, background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>
-                  ⬇ orchestra-compose.yml
-                </a>
-                <a href="/api/downloads?file=orchestra.example.yml"
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 8, border: "1.5px solid #7c3aed", color: "#7c3aed", textDecoration: "none", fontSize: 13, fontWeight: 700, background: "transparent" }}>
-                  ⬇ orchestra.example.yml (config)
-                </a>
-                <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace", lineHeight: 1.7 }}>
-                  <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Docker Registry:</div>
-                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-core:latest</div>
-                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-worker-cpu:latest</div>
-                  <div>ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/orchestra-worker-gpu:latest</div>
-                </div>
-              </div>
+          {/* Bundle packages */}
+          <div>
+            <div style={{ padding: "13px 24px", background: "rgba(15,23,42,0.02)", display: "flex", alignItems: "center", gap: 10, borderTop: "1px solid #f1f5f9" }}>
+              <span style={{ fontSize: 18 }}>🎁</span>
+              <span style={{ fontWeight: 800, fontSize: 13, color: "#0a1628" }}>Multi-Product Bundles</span>
+              <span style={{ color: "#94a3b8", fontSize: 11 }}>Guardian AI + Orchestra AI combined</span>
             </div>
-
-            {/* Guardian Node + Antivirus */}
-            <div style={{ background: "rgba(15,23,42,0.02)", border: "1.5px solid #e2e8f0", borderRadius: 12, padding: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 24 }}>🖥️</span>
-                <div>
-                  <div style={{ fontWeight: 800, color: "#0a1628", fontSize: 14 }}>Guardian Node Agent</div>
-                  <div style={{ color: "#64748b", fontSize: 11 }}>Lightweight node for multi-server scan</div>
+            <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
+              {[
+                { name: "Security + AI Starter",      file: "bundle-starter",       color: "#0284c7" },
+                { name: "Security + AI Professional", file: "bundle-professional",  color: "#7c3aed" },
+                { name: "Security + AI Enterprise",   file: "bundle-enterprise",    color: "#0a1628" },
+              ].map(b => (
+                <div key={b.file} style={{ border: "1.5px solid #e2e8f0", borderRadius: 10, padding: 14 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0a1628", marginBottom: 10 }}>🎁 {b.name}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <a href={`/api/admin/releases/download?product=${b.file}&type=docker&arch=linux`}
+                      style={{ display: "block", padding: "8px 12px", borderRadius: 7, background: b.color, color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 700, textAlign: "center" }}>
+                      ⬇ Docker Linux
+                    </a>
+                    <a href={`/api/admin/releases/download?product=${b.file}&type=exe&arch=windows`}
+                      style={{ display: "block", padding: "8px 12px", borderRadius: 7, border: `1.5px solid ${b.color}`, color: b.color, textDecoration: "none", fontSize: 12, fontWeight: 700, textAlign: "center", background: "transparent" }}>
+                      ⬇ Windows EXE
+                    </a>
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ background: "rgba(15,23,42,0.04)", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#64748b", fontFamily: "monospace", lineHeight: 1.9 }}>
-                  <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Deploy on each server:</div>
-                  <div style={{ color: "#0284c7" }}>docker pull ghcr.io/{process.env.NEXT_PUBLIC_GHCR_OWNER||"p2nshooter"}/guardian-engine:latest</div>
-                  <div style={{ color: "#94a3b8", fontSize: 10, marginTop: 4 }}>Set GUARDIAN_CORE_URL + license key in env</div>
-                </div>
-                <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", fontSize: 11, color: "#16a34a" }}>
-                  ✅ Node agent is included in the same guardian-engine image. No separate download needed.
-                </div>
-              </div>
+              ))}
             </div>
-
-            {/* Antivirus Engine */}
-            <div style={{ background: "rgba(239,68,68,0.03)", border: "1.5px solid rgba(239,68,68,0.12)", borderRadius: 12, padding: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ fontSize: 24 }}>🦠</span>
-                <div>
-                  <div style={{ fontWeight: 800, color: "#0a1628", fontSize: 14 }}>Antivirus Engine (ClamAV)</div>
-                  <div style={{ color: "#64748b", fontSize: 11 }}>Embedded in Guardian · Auto-updated signatures</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(15,23,42,0.04)", fontSize: 11, color: "#64748b", lineHeight: 1.8 }}>
-                  <div style={{ color: "#94a3b8", fontWeight: 700, marginBottom: 4 }}>Status: Bundled with Guardian Engine</div>
-                  <div>ClamAV runs inside the guardian-engine container.</div>
-                  <div>Signature DB auto-updates every 6 hours.</div>
-                  <div style={{ marginTop: 6, color: "#0284c7" }}>Configure in guardian.yml → scanner.antivirus.enabled: true</div>
-                </div>
-                <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", fontSize: 11, color: "#16a34a" }}>
-                  ✅ No separate download. Enabled by default in guardian-compose.yml
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 

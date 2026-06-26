@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 Orchestra Worker GPU — Production v2
 GPU-accelerated inference worker: local LLM (Ollama/vLLM), image generation (SDXL/DALL-E),
@@ -39,6 +45,9 @@ HB_INTERVAL       = int(os.environ.get("WORKER_HEARTBEAT_INTERVAL", "30"))
 IDLE_SHUTDOWN_SEC = int(os.environ.get("WORKER_IDLE_SHUTDOWN",   "0"))   # 0 = stay alive
 OPENAI_KEY        = os.environ.get("OPENAI_API_KEY",             "")
 SD_MODEL          = os.environ.get("SD_MODEL",                   "stabilityai/stable-diffusion-xl-base-1.0")
+# Self URL: Orchestra Core uses this to POST GPU tasks directly to this worker's /run endpoint.
+# Set to the address reachable from the orchestra-core container (e.g. http://orchestra-worker-gpu:7892).
+WORKER_SELF_URL   = os.environ.get("WORKER_SELF_URL",            f"http://localhost:{WORKER_PORT}")
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s [%(name)s] %(levelname)s — %(message)s")
@@ -294,10 +303,11 @@ def register():
                 "concurrency": CONCURRENCY, "timeout_sec": 300,
                 "priority": "high", "gpu_vram_gb": GPU_INFO.get("vram_gb", 0),
                 "label": WORKER_LABEL, "base_url": OLLAMA_URL,
+                "worker_url": WORKER_SELF_URL,   # self endpoint for GPU task dispatch
             })
             _worker_id = r.get("worker_id", "W-GPU-001"); _registered = True
             logger.info(f"GPU Worker registered: {_worker_id} | {GPU_INFO['name']} "
-                        f"{GPU_INFO['vram_gb']}GB | caps={_capabilities()}")
+                        f"{GPU_INFO['vram_gb']}GB | caps={_capabilities()} | url={WORKER_SELF_URL}")
         except Exception as e:
             logger.warning(f"GPU register fail, retry 15s: {e}"); time.sleep(15)
 
@@ -495,16 +505,181 @@ def _handle_transcription(audio_b64: str, language: str = "auto",
         return {"ok": False, "error": f"Transcription failed: {e}"}
 
 
+# ── GPU Thermal & Health Monitoring ──────────────────────────────────────────
+def _gpu_thermal() -> dict:
+    """
+    Real-time GPU thermal & health data.
+    Returns temperature, utilization, memory usage, fan speed, power draw.
+    Works with: NVIDIA (nvidia-smi), AMD (rocm-smi), fallback to sysfs.
+    """
+    thermal = {
+        "temperature_c": None, "temperature_status": "unknown",
+        "utilization_pct": None, "memory_used_mb": None, "memory_total_mb": None,
+        "memory_pct": None, "fan_speed_pct": None, "power_draw_w": None,
+        "power_limit_w": None, "throttle_reason": None, "health": "unknown",
+    }
+    
+    # ── NVIDIA via nvidia-smi ──
+    try:
+        out = subprocess.check_output([
+            "nvidia-smi",
+            "--query-gpu=temperature.gpu,utilization.gpu,memory.used,memory.total,"
+            "fan.speed,power.draw,power.limit,clocks_throttle_reasons.active",
+            "--format=csv,noheader,nounits"
+        ], timeout=5, stderr=subprocess.DEVNULL).decode().strip()
+        parts = [x.strip() for x in out.split(",")]
+        if len(parts) >= 4:
+            temp = int(parts[0]) if parts[0].isdigit() else None
+            util = int(parts[1]) if parts[1].isdigit() else None
+            mem_used = int(parts[2]) if parts[2].isdigit() else None
+            mem_total = int(parts[3]) if parts[3].isdigit() else None
+            fan = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else None
+            power = float(parts[5]) if len(parts) > 5 and parts[5].replace('.','').isdigit() else None
+            power_limit = float(parts[6]) if len(parts) > 6 and parts[6].replace('.','').isdigit() else None
+            throttle = parts[7] if len(parts) > 7 else None
+            
+            thermal["temperature_c"] = temp
+            thermal["utilization_pct"] = util
+            thermal["memory_used_mb"] = mem_used
+            thermal["memory_total_mb"] = mem_total
+            thermal["memory_pct"] = round((mem_used / mem_total) * 100, 1) if mem_used and mem_total else None
+            thermal["fan_speed_pct"] = fan
+            thermal["power_draw_w"] = power
+            thermal["power_limit_w"] = power_limit
+            thermal["throttle_reason"] = throttle if throttle and throttle != "0x0000000000000000" else None
+            
+            # Health assessment
+            if temp is not None:
+                if temp >= 95:
+                    thermal["temperature_status"] = "CRITICAL"
+                    thermal["health"] = "critical"
+                elif temp >= 85:
+                    thermal["temperature_status"] = "HOT"
+                    thermal["health"] = "warning"
+                elif temp >= 75:
+                    thermal["temperature_status"] = "WARM"
+                    thermal["health"] = "ok"
+                else:
+                    thermal["temperature_status"] = "NORMAL"
+                    thermal["health"] = "excellent"
+            
+            if thermal["throttle_reason"]:
+                thermal["health"] = "throttled"
+                thermal["temperature_status"] = "THROTTLED — GPU sedang di-throttle karena thermal/power"
+            
+            return thermal
+    except Exception:
+        pass
+    
+    # ── AMD via rocm-smi ──
+    try:
+        out = subprocess.check_output(
+            ["rocm-smi", "--showtemp", "--showuse", "--showmemuse", "--showfan", "--json"],
+            timeout=5, stderr=subprocess.DEVNULL
+        ).decode()
+        data = json.loads(out)
+        for k, v in data.items():
+            if k.startswith("card"):
+                thermal["temperature_c"] = int(v.get("Temperature (Sensor edge) (C)", 0))
+                thermal["utilization_pct"] = int(v.get("GPU use (%)", 0))
+                thermal["fan_speed_pct"] = int(v.get("Fan Speed (%)", 0))
+                thermal["memory_pct"] = int(v.get("GPU memory use (%)", 0))
+                t = thermal["temperature_c"]
+                thermal["temperature_status"] = "CRITICAL" if t >= 95 else "HOT" if t >= 85 else "WARM" if t >= 75 else "NORMAL"
+                thermal["health"] = "critical" if t >= 95 else "warning" if t >= 85 else "ok"
+                break
+    except Exception:
+        pass
+    
+    # ── sysfs fallback (Linux) ──
+    try:
+        import glob
+        hwmon = glob.glob("/sys/class/drm/card*/device/hwmon/hwmon*/temp1_input")
+        if hwmon:
+            temp_mc = int(open(hwmon[0]).read().strip())
+            t = temp_mc // 1000
+            thermal["temperature_c"] = t
+            thermal["temperature_status"] = "CRITICAL" if t >= 95 else "HOT" if t >= 85 else "WARM" if t >= 75 else "NORMAL"
+            thermal["health"] = "critical" if t >= 95 else "warning" if t >= 85 else "ok"
+    except Exception:
+        pass
+    
+    return thermal
+
+
 # ── FastAPI endpoints ─────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
     with _lock: active = _tasks_active
-    return {"status": "ok", "worker_id": _worker_id, "type": "gpu", "gpu": GPU_INFO,
-            "concurrency": CONCURRENCY, "tasks_active": active, "tasks_total": _tasks_total,
-            "tasks_errors": _tasks_errors, "avg_latency_ms": round(_avg_latency, 1),
-            "load_pct": min(int((active/max(CONCURRENCY,1))*100), 100),
-            "idle": active == 0, "registered": _registered,
-            "capabilities": _capabilities(), "ollama_url": OLLAMA_URL, "vllm_url": VLLM_URL}
+    thermal = _gpu_thermal()
+    return {
+        "status": "ok", "worker_id": _worker_id, "type": "gpu",
+        "gpu": {**GPU_INFO, "thermal": thermal},
+        "concurrency": CONCURRENCY, "tasks_active": active, "tasks_total": _tasks_total,
+        "tasks_errors": _tasks_errors, "avg_latency_ms": round(_avg_latency, 1),
+        "load_pct": min(int((active/max(CONCURRENCY,1))*100), 100),
+        "idle": active == 0, "registered": _registered,
+        "capabilities": _capabilities(), "ollama_url": OLLAMA_URL, "vllm_url": VLLM_URL,
+    }
+
+
+@app.get("/gpu/status")
+async def gpu_status():
+    """Detailed GPU status — temperature, utilization, memory, fan, power, health."""
+    thermal = _gpu_thermal()
+    return {
+        "gpu": GPU_INFO,
+        "thermal": thermal,
+        "capabilities": _capabilities(),
+        "alerts": _gpu_alerts(thermal),
+    }
+
+
+def _gpu_alerts(thermal: dict) -> list:
+    """Generate human-readable alerts based on GPU health."""
+    alerts = []
+    temp = thermal.get("temperature_c")
+    if temp is not None:
+        if temp >= 95:
+            alerts.append({
+                "level": "critical", "icon": "🔥",
+                "message": f"GPU KRITIS: {temp}°C — Risiko kerusakan hardware! Segera matikan atau tingkatkan pendinginan.",
+                "action": "Periksa fan GPU, bersihkan debu, pastikan airflow case memadai. Kurangi beban kerja."
+            })
+        elif temp >= 85:
+            alerts.append({
+                "level": "warning", "icon": "🌡️",
+                "message": f"GPU PANAS: {temp}°C — Performa mungkin di-throttle.",
+                "action": "Pertimbangkan mengurangi concurrency worker atau menambah pendinginan."
+            })
+        elif temp >= 75:
+            alerts.append({
+                "level": "info", "icon": "♨️",
+                "message": f"GPU hangat: {temp}°C — Masih dalam batas aman.",
+            })
+    
+    mem_pct = thermal.get("memory_pct")
+    if mem_pct is not None and mem_pct >= 90:
+        alerts.append({
+            "level": "warning", "icon": "💾",
+            "message": f"VRAM hampir penuh: {mem_pct}% terpakai.",
+            "action": "Gunakan model yang lebih kecil atau kurangi batch size."
+        })
+    
+    if thermal.get("throttle_reason"):
+        alerts.append({
+            "level": "critical", "icon": "⚠️",
+            "message": "GPU sedang di-THROTTLE — performa berkurang.",
+            "action": f"Throttle reason: {thermal['throttle_reason']}"
+        })
+    
+    if thermal.get("health") == "excellent":
+        alerts.append({
+            "level": "ok", "icon": "✅",
+            "message": f"GPU sehat: {temp}°C — Performa optimal.",
+        })
+    
+    return alerts
 
 
 class GPUJobReq(BaseModel):

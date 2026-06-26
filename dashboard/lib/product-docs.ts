@@ -1,6 +1,13 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 /**
  * AXTO Product Documentation — Interactive Guides
- * Replaces human SLA support. Every menu, every function, explained.
+ * Comprehensive self-service setup guides. Every menu, every function, explained in 10 languages.
  */
 
 export interface DocSection {
@@ -508,16 +515,176 @@ Just change your base URL from api.openai.com to your Orchestra server.`
 // PRODUCT CATALOG (for portal store)
 // ═══════════════════════════════════════════════════════════════
 
+// PRODUCT_CATALOG — must match stripe.ts package codes exactly
 export const PRODUCT_CATALOG = {
   guardian: [
-    { code: "guardian_sentinel", name: "Guardian Sentinel", servers: 1, price: 249, priceMonthly: 24, icon: "🟢", description: "1 server protection" },
-    { code: "guardian_pro", name: "Guardian Pro", servers: 20, price: 990, priceMonthly: 99, icon: "🔵", description: "Up to 20 servers" },
-    { code: "guardian_business", name: "Guardian Business", servers: 100, price: 3990, priceMonthly: 399, icon: "🟣", description: "Up to 100 servers" },
-    { code: "guardian_enterprise", name: "Guardian Enterprise", servers: 1000, price: 17900, priceMonthly: 1790, icon: "🔴", description: "Up to 1,000 servers" },
+    { code: "lite",   name: "Guardian Sentinel",     servers: 1,    price: 990,   priceMonthly: 99,   icon: "🟢", description: "1 server protection" },
+    { code: "pro",    name: "Guardian Professional", servers: 25,   price: 4990,  priceMonthly: 499,  icon: "🔵", description: "Up to 25 servers" },
+    { code: "shield", name: "Guardian Business",     servers: 100,  price: 19900, priceMonthly: 1990,  icon: "🟣", description: "Up to 100 servers" },
+    { code: "aegis",  name: "Guardian Enterprise",   servers: 1000, price: 79000, priceMonthly: 7900, icon: "🔴", description: "Up to 1,000 servers" },
   ],
   orchestra: [
-    { code: "orchestra_core", name: "Orchestra Core", workers: 10, price: 9900, priceMonthly: 990, icon: "🟢", description: "10 AI workers" },
-    { code: "orchestra_scale", name: "Orchestra Scale", workers: 50, price: 29900, priceMonthly: 2990, icon: "🔵", description: "50 AI workers" },
-    { code: "orchestra_unlimited", name: "Orchestra Unlimited", workers: -1, price: 59900, priceMonthly: 5990, icon: "🟣", description: "Unlimited workers" },
+    { code: "orchestra_core",      name: "Orchestra Starter",      workers: 10, price: 34900, priceMonthly: 3490, icon: "🟢", description: "Up to 10 AI workers" },
+    { code: "orchestra_scale",     name: "Orchestra Professional", workers: 50, price: 89900, priceMonthly: 8990, icon: "🔵", description: "Up to 50 AI workers" },
+    { code: "orchestra_unlimited", name: "Orchestra Enterprise",   workers: -1, price: 249000, priceMonthly: 24900, icon: "🟣", description: "Unlimited workers" },
+  ],
+  bundles: [
+    { code: "bundle_starter",      name: "Starter Bundle",       guardian: "pro",    orchestra: "orchestra_core",      price: 33900, priceMonthly: 3390, icon: "🎁", description: "Guardian Professional + Orchestra Starter" },
+    { code: "bundle_professional", name: "Professional Bundle",  guardian: "shield", orchestra: "orchestra_scale",     price: 93300, priceMonthly: 9330, icon: "🎁", description: "Guardian Business + Orchestra Professional" },
+    { code: "bundle_enterprise",   name: "Enterprise Bundle",    guardian: "aegis",  orchestra: "orchestra_unlimited", price: 278800, priceMonthly: 27880, icon: "🎁", description: "Guardian Enterprise + Orchestra Enterprise" },
+  ],
+  vault: [
+    { code: "vault_starter",       name: "Vault Starter",       requests: 50000,    price: 4990,   priceMonthly: 499,   icon: "🔐", description: "50K req/day · GDPR + PDPA · PII/PHI/Financial redaction" },
+    { code: "vault_professional",  name: "Vault Professional",  requests: 500000,   price: 14900,  priceMonthly: 1490,  icon: "🔐", description: "500K intercepts/day · HIPAA + SOC2 · Single tenant" },
+    { code: "vault_business",      name: "Vault Business",      requests: 5000000,  price: 39900,  priceMonthly: 3990,  icon: "🔐", description: "5M intercepts/day · AI NLP detection · Multi-dept" },
+    { code: "vault_enterprise",    name: "Vault Enterprise",    requests: -1,       price: 119000, priceMonthly: 11900, icon: "🔐", description: "Unlimited · Custom AI model · Multi-region · Automated monitoring" },
+  ],
+  edge: [
+    { code: "edge_starter",       name: "Edge Starter",       customers: 5,  price: 7990,  priceMonthly: 799,  icon: "⚡", description: "100K req/day · 5 customer API keys · Cost routing" },
+    { code: "edge_professional",   name: "Edge Professional",   customers: -1, price: 24900,  priceMonthly: 2490,  icon: "⚡", description: "Unlimited customers · 1M req/day · Token metering" },
+    { code: "edge_business",       name: "Edge Business",       customers: -1, price: 40900, priceMonthly: 4090, icon: "⚡", description: "10M req/day · Auto invoicing · Stripe sync · AI cost analytics" },
+    { code: "edge_enterprise",     name: "Edge Enterprise",     customers: -1, price: 69000, priceMonthly: 6900, icon: "⚡", description: "White-label AI gateway · Multi-tenant · Custom billing engine" },
+  ],
+  soc: [
+    { code: "soc_starter",         name: "SOC Starter",         nodes: 5,   price: 24900,  priceMonthly: 2490,  icon: "🛡️", description: "5 sources · 200 EPS · SIEM + SOAR essentials" },
+    { code: "soc_professional",    name: "SOC Professional",    nodes: 25,  price: 79000,  priceMonthly: 7900,  icon: "🛡️", description: "25 sources · SIEM + SOAR + 5M IOCs · Replace Splunk $150K+" },
+    { code: "soc_business",        name: "SOC Business",        nodes: 100, price: 136900, priceMonthly: 13690, icon: "🛡️", description: "100 sources · AI threat hunting · 1yr retention · MITRE ATT&CK" },
+    { code: "soc_enterprise",      name: "SOC Enterprise",      nodes: -1,  price: 249000, priceMonthly: 24900, icon: "🛡️", description: "Unlimited · Multi-tenant · White-label MSSP · $1.5M savings" },
+  ],
+  compliance: [
+    { code: "compliance_starter",      name: "Compliance Starter",      frameworks: 2, price: 7990,  priceMonthly: 799,  icon: "📋", description: "SOC2 + GDPR continuous monitoring" },
+    { code: "compliance_professional", name: "Compliance Professional", frameworks: 6, price: 19900,  priceMonthly: 1990,  icon: "📋", description: "SOC2 + ISO27001 + HIPAA + PCI-DSS + GDPR + PDPA" },
+    { code: "compliance_business",     name: "Compliance Business",     frameworks: 7, price: 31900,  priceMonthly: 3190,  icon: "📋", description: "All 7 frameworks · NIST CSF · CI/CD gates" },
+    { code: "compliance_enterprise",   name: "Compliance Enterprise",   frameworks: -1, price: 49000, priceMonthly: 4900, icon: "📋", description: "Custom frameworks · Multi-tenant · M&A due diligence package" },
+  ],
+  sentinel: [
+    { code: "sentinel_starter",      name: "Sentinel Starter",      devices: 50,   price: 12900,  priceMonthly: 1290,  icon: "📡", description: "50 devices · Modbus polling · IEC 62443 report" },
+    { code: "sentinel_professional", name: "Sentinel Professional", devices: 500,  price: 39900,  priceMonthly: 3990,  icon: "📡", description: "500 devices · 15+ OT protocols · CVE tracking · Replaces Claroty" },
+    { code: "sentinel_business",     name: "Sentinel Business",     devices: 5000, price: 68900,  priceMonthly: 6890,  icon: "📡", description: "5,000 devices · Multi-facility · IEC 62443 compliance" },
+    { code: "sentinel_enterprise",   name: "Sentinel Enterprise",   devices: -1,   price: 129000, priceMonthly: 12900, icon: "📡", description: "Unlimited · Custom protocols · NERC CIP · Air-gap · White-label" },
+  ],
+  antivirus: [
+    { code: "antivirus_starter",      name: "Antivirus Starter",      endpoints: 10,  price: 2900,  priceMonthly: 290,  icon: "🦠", description: "ClamAV + YARA rules · 10 endpoints · REST API" },
+    { code: "antivirus_professional", name: "Antivirus Professional", endpoints: 100, price: 9900,  priceMonthly: 990,  icon: "🦠", description: "ML behavioral detection · Guardian integration · 100 endpoints" },
+    { code: "antivirus_enterprise",   name: "Antivirus Enterprise",   endpoints: -1,  price: 29900, priceMonthly: 2990, icon: "🦠", description: "Unlimited · Custom YARA · SOC integration · White-label" },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// AXTO VAULT DOCUMENTATION
+// ═══════════════════════════════════════════════════════════════
+export const VAULT_DOCS = {
+  name: "Vault", icon: "🔐",
+  overview: "AI Privacy Layer. Intercepts every AI request, auto-redacts PII/PHI/financial data, re-injects after response. Self-hosted. OpenAI & Anthropic compatible.",
+  menus: [
+    { title: "Dashboard",        desc: "Daily requests used vs limit, redaction counts by type (PII/PHI/Financial), active policies, audit events, performance stats." },
+    { title: "Redaction Policies", desc: "Create rules per project: which patterns to redact, which AI providers to forward to, re-injection toggle. Supports regex + built-in entity types." },
+    { title: "Audit Log",        desc: "Every request logged with: timestamp, policy applied, types redacted, masked evidence (not originals). Export CSV/JSON." },
+    { title: "Compliance Reports", desc: "One-click SOC 2 and HIPAA evidence reports showing your AI privacy controls. Exportable for auditors." },
+    { title: "WebSocket Stream", desc: "Real-time audit events at /vault/audit/stream. Connect your SIEM or monitoring dashboard." },
+    { title: "Settings",         desc: "License key, AI vendor pool (BYOK), rate limits, alerting (Slack/webhook/SIEM), data retention, audit options." },
+  ],
+  setup: [
+    "1. Download vault-compose.yml + vault.yml from this portal",
+    "2. Edit vault.yml → license_key + at least one AI vendor API key",
+    "3. Run: docker compose -f vault-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8080",
+    "5. In your app: replace api.openai.com with YOUR_SERVER:8080",
+    "6. Vault handles the rest — intercepts, redacts, forwards, re-injects",
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// AXTO SOC DOCUMENTATION
+// ═══════════════════════════════════════════════════════════════
+export const SOC_DOCS = {
+  name: "SOC", icon: "🛡️",
+  overview: "AI Security Operations Center. SIEM aggregation from syslog + API push. SOAR automation. OSINT threat intelligence updated every 6 hours. Incident management. Executive reporting.",
+  menus: [
+    { title: "Overview Dashboard", desc: "Critical & high events in last 24h, open incidents, threat intel IOC count, live event feed, risk distribution by severity." },
+    { title: "Live Events",        desc: "Security event log filtered by severity, source, type. Real-time WebSocket feed. Ingest from syslog UDP (port 5514) or REST API." },
+    { title: "Incidents",         desc: "Create, assign, escalate, and close security incidents. Auto-created by SOAR. Timeline tracking. Resolution notes." },
+    { title: "Threat Intelligence", desc: "IOC lookup (IP, domain, hash, URL). Bulk import. Auto-updated OSINT feeds (Abuse.ch, Emerging Threats). 5M+ IOCs." },
+    { title: "SOAR Playbooks",    desc: "Automated response playbooks: block_ip, create_incident, alert_slack, alert_email, isolate_source. Triggers per event type." },
+    { title: "Executive Report",  desc: "7-day/30-day/90-day security summary: events, incidents, blocked IPs, threat intel coverage, recommendations." },
+  ],
+  setup: [
+    "1. Download soc-compose.yml + soc.yml from this portal",
+    "2. Edit soc.yml → license_key + alerting (Slack/email)",
+    "3. Run: docker compose -f soc-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8085",
+    "5. Point syslog to YOUR_SERVER:5514 (UDP) from all servers",
+    "6. Or push events via REST API: POST /soc/events/ingest",
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// AXTO COMPLIANCE DOCUMENTATION
+// ═══════════════════════════════════════════════════════════════
+export const COMPLIANCE_DOCS = {
+  name: "Compliance", icon: "📋",
+  overview: "Automated Audit Platform. Monitors SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA, NIST CSF. Collects evidence automatically. Generates audit-ready reports. Gap analysis with remediation steps.",
+  menus: [
+    { title: "Dashboard",     desc: "Overall compliance score, grade per framework (A–F), passing/failing/warning control counts, last scan time. Click any card to drill down." },
+    { title: "Frameworks",    desc: "Detailed control list per framework. Each control shows: status (pass/fail/warning/manual), evidence collected, severity, remediation recommendation." },
+    { title: "Gap Analysis",  desc: "Sorted by severity: all failing and warning controls across all frameworks. Prioritized remediation roadmap." },
+    { title: "Evidence",      desc: "Audit-ready evidence report per framework. Every control with: what was checked, what was found, timestamp. Export as JSON for auditors." },
+    { title: "Scan Trigger",  desc: "Run on-demand scan for individual framework or all frameworks. Also runs automatically every 24 hours." },
+  ],
+  setup: [
+    "1. Download compliance-compose.yml + compliance.yml from this portal",
+    "2. Edit compliance.yml → license_key + frameworks to enable",
+    "3. Run: docker compose -f compliance-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8086",
+    "5. Initial scan runs automatically after 60 seconds",
+    "6. Export evidence reports for your auditor",
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// AXTO SENTINEL DOCUMENTATION
+// ═══════════════════════════════════════════════════════════════
+export const SENTINEL_DOCS = {
+  name: "Sentinel", icon: "📡",
+  overview: "IoT/OT Security Platform. Discovers every device on your network. Detects OT/ICS protocols (Modbus, DNP3, BACnet, S7, MQTT, and 15+ more). Scores risk per device. Alerts on unauthorized devices and dangerous exposures.",
+  menus: [
+    { title: "Overview",      desc: "Total devices, critical/high risk count, OT device count, new devices in 24h, risk distribution bar chart, high-risk device list." },
+    { title: "Devices",       desc: "Full device table: IP, hostname, type, risk level, risk score, detected OT protocols, dangerous ports, issues. Click any row for full detail." },
+    { title: "Device Detail", desc: "Per-device: all open ports, detected protocols, banner grabs, security issues, first/last seen, vendor guess from MAC OUI." },
+    { title: "Scan",          desc: "Initiate manual scan on any CIDR range (e.g. 192.168.1.0/24). Results appear progressively. Auto-scan also runs every 4 hours." },
+  ],
+  setup: [
+    "1. Download sentinel-compose.yml + sentinel.yml from this portal",
+    "2. Edit sentinel.yml → license_key + scan_networks (your CIDR ranges)",
+    "3. Run: docker compose -f sentinel-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8087",
+    "5. Initial scan starts 60 seconds after startup",
+    "6. Configure Slack/email alerts for new device detections",
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// AXTO EDGE DOCUMENTATION
+// ═══════════════════════════════════════════════════════════════
+export const EDGE_DOCS = {
+  name: "Edge", icon: "⚡",
+  overview: "AI API Gateway & Billing Engine. Deploy between your customers and AI providers. Issue API keys, meter tokens, enforce rate limits per customer tier, generate invoices, detect abuse. OpenAI-compatible proxy.",
+  menus: [
+    { title: "Dashboard",        desc: "Total customers, active keys, requests today, revenue metered, firewall blocks. Real-time WebSocket usage stream." },
+    { title: "API Keys",         desc: "Issue/revoke customer API keys. Set per-key rate limits, daily quotas, allowed models. Auto-expire support." },
+    { title: "Customers",        desc: "Customer directory with usage stats, billing tier, active keys, total tokens consumed, last activity." },
+    { title: "Plans",            desc: "Define billing tiers (free/pro/enterprise) with token limits, rate limits, and markup percentage over cost." },
+    { title: "Usage Analytics",  desc: "Per-customer token usage, cost, latency. Daily/weekly trends. Model breakdown. Export for billing." },
+    { title: "Firewall",         desc: "Prompt injection detection, content filtering rules, abuse pattern detection, IP blocklist. Custom block rules." },
+    { title: "Invoices",         desc: "Generate customer invoices based on token usage × plan markup. Export PDF or send via webhook." },
+    { title: "Webhooks",         desc: "Event notifications: quota_exceeded, abuse_detected, customer_billing. Configure per-event HTTP endpoints." },
+  ],
+  setup: [
+    "1. Download edge-compose.yml + edge.yml from this portal",
+    "2. Edit edge.yml → license_key + your AI provider API keys",
+    "3. Run: docker compose -f edge-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8084",
+    "5. Create customer API keys via dashboard or REST API",
+    "6. Point your customers to: http://YOUR_SERVER:8084/v1/",
   ],
 };

@@ -1,8 +1,16 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { PACKAGE_INFO } from "@/lib/stripe";
+import { PACKAGE_INFO, isForSale } from "@/lib/stripe";
+import { getLivePrice } from "@/lib/pricing";
 import { getStripeCredentials, getPayPalCredentials, getXenditCredentials, getMidtransCredentials } from "@/lib/gateways";
 import { createPayPalOrderWithCreds } from "@/lib/paypal";
 import { createXenditInvoiceWithKey } from "@/lib/xendit";
@@ -85,7 +93,7 @@ export async function POST(req: NextRequest) {
       const orderId = `axto-playbook-${Date.now()}`;
       const base = creds.is_production ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com";
       const auth = btoa(creds.server_key + ":");
-      const { usdToLocal } = await import("@/lib/fx");
+      // usdToLocal already imported at the top of this file — no dynamic import needed
       const resp = await fetch(`${base}/snap/v1/transactions`, {
         method: "POST",
         headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
@@ -109,8 +117,18 @@ export async function POST(req: NextRequest) {
   const pkgInfo = PACKAGE_INFO[pkg];
   if (!pkgInfo) return NextResponse.json({ error: "Unknown package" }, { status: 400 });
 
+  // ── Block checkout for not-for-sale packages ──────────────────────────────
+  if (!isForSale(pkg)) {
+    return NextResponse.json({ error: "This product is not yet available for purchase (Coming Soon)" }, { status: 403 });
+  }
+
   const isYearly = billing !== "monthly";
-  const amountUsd = isYearly ? pkgInfo.price : pkgInfo.priceMonthly;
+
+  // ── LIVE PRICING: query DB first, fall back to PACKAGE_INFO if unavailable ─
+  // This is what makes prices editable from the admin panel without a deploy.
+  const livePrice = await getLivePrice(req, pkg);
+  const amountUsd = isYearly ? livePrice.price : livePrice.priceMonthly;
+
   const pkgName   = pkgInfo.name;
   const isBundle  = !!pkgInfo.isBundle;
 

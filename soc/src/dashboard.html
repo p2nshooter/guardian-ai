@@ -1,0 +1,446 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO SOC — Security Operations Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#03080e;--surf:#060f1a;--surf2:#091522;--surf3:#0e1e2e;--border:#122030;--border2:#1a2f44;--red:#ef4444;--orange:#f97316;--yellow:#f59e0b;--green:#10b981;--blue:#3b82f6;--purple:#8b5cf6;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--mono:"JetBrains Mono",monospace}
+body{background:var(--bg);color:var(--text);font-family:"Inter",-apple-system,sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--surf)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+header{background:rgba(3,8,14,.96);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:12px}
+.li{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 16px rgba(239,68,68,.35)}
+.ln{font-size:16px;font-weight:800}.ln span{color:#f87171}
+.ls{font-size:10px;color:var(--text3);margin-top:1px}
+.hdr-r{display:flex;align-items:center;gap:14px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid}
+.pr{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#f87171}
+.pg{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25);color:#34d399}
+nav{background:var(--surf);border-bottom:1px solid var(--border);display:flex;padding:0 28px;overflow-x:auto}
+nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 16px;height:44px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:#f87171;border-bottom-color:#ef4444}
+.tc{font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;background:rgba(239,68,68,.2);color:#f87171}
+main{padding:24px;max-width:1500px;margin:0 auto}
+.sec{display:none}.sec.active{display:block}
+.kg{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:20px}
+.k{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.k:hover{border-color:var(--border2)}
+.k::after{content:"";position:absolute;top:0;left:0;right:0;height:2px}
+.k.r::after{background:linear-gradient(90deg,#ef4444,#f97316)}
+.k.o::after{background:linear-gradient(90deg,#f97316,#f59e0b)}
+.k.y::after{background:linear-gradient(90deg,#f59e0b,#eab308)}
+.k.g::after{background:linear-gradient(90deg,#10b981,#059669)}
+.k.b::after{background:linear-gradient(90deg,#3b82f6,#06b6d4)}
+.k.p::after{background:linear-gradient(90deg,#7c3aed,#6366f1)}
+.kl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px}
+.kv{font-size:34px;font-weight:900;letter-spacing:-2px;margin:6px 0 2px;line-height:1}
+.ks{font-size:11px;color:var(--text2)}
+.ki{position:absolute;right:14px;top:16px;font-size:20px;opacity:.2}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.ct{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.g3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.mb{margin-bottom:18px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:9px 12px;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(18,32,48,.6);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(239,68,68,.03);cursor:pointer}
+.mono{font-family:var(--mono);font-size:11px}
+.tw{overflow-x:auto}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid}
+.br{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}
+.bo{background:rgba(249,115,22,.12);color:#fb923c;border-color:rgba(249,115,22,.25)}
+.by{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.25)}
+.bg{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.25)}
+.bb{background:rgba(59,130,246,.12);color:#60a5fa;border-color:rgba(59,130,246,.25)}
+.bgr{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
+.bp{background:rgba(124,58,237,.12);color:#c4b5fd;border-color:rgba(124,58,237,.25)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btnp{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.3)}
+.btnp:hover{filter:brightness(1.1)}
+.btng{background:var(--surf2);border:1px solid var(--border2);color:var(--text)}
+.btng:hover{background:var(--surf3)}
+.btngg{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#34d399}
+.sm{padding:6px 12px;font-size:12px}.xs{padding:4px 9px;font-size:11px}
+.inp,.sel,textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;font-family:inherit;outline:none;width:100%}
+.inp:focus,.sel:focus,textarea:focus{border-color:rgba(239,68,68,.4)}
+.fl{display:flex;form-label:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.fg{margin-bottom:14px}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(18,32,48,.5);font-size:13px}
+.sr:last-child{border-bottom:none}
+.sl{color:var(--text2)}.sv{font-weight:700;font-family:var(--mono);font-size:12px}
+.al{padding:11px 0;border-bottom:1px solid rgba(18,32,48,.5);display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.al:last-child{border-bottom:none}
+.al:hover{background:rgba(239,68,68,.03);margin:0 -4px;padding:11px 4px;border-radius:8px}
+.sd{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.br2{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(18,32,48,.5)}
+.br2:last-child{border-bottom:none}
+.bl{font-size:11px;font-weight:600;min-width:110px;color:var(--text2)}
+.bt{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px;transition:width .6s}
+.bc{font-size:11px;font-weight:700;min-width:32px;text-align:right}
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.ei{font-size:36px;margin-bottom:10px;opacity:.5}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:24px}
+.ov.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--border2);border-radius:20px;padding:28px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.mt{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#toast.ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#34d399}
+#toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="li">🛡</div>
+    <div><div class="ln">AXTO <span>SOC</span></div><div class="ls">Security Operations Center</div></div>
+  </div>
+  <div class="hdr-r">
+    <span id="lp" class="pill pr">LICENSED</span>
+    <span id="tl" class="pill pg"><span class="pulse"></span>MONITORING</span>
+  </div>
+</header>
+<nav>
+  <button class="tab active" onclick="tab('overview',this)">📊 Overview</button>
+  <button class="tab" onclick="tab('alerts',this)">🚨 Alerts <span id="ca" class="tc">—</span></button>
+  <button class="tab" onclick="tab('incidents',this)">🔥 Incidents <span id="ci" class="tc">—</span></button>
+  <button class="tab" onclick="tab('hunt',this)">🔍 Threat Hunt</button>
+  <button class="tab" onclick="tab('soar',this)">⚡ SOAR</button>
+  <button class="tab" onclick="tab('ueba',this)">👤 UEBA</button>
+  <button class="tab" onclick="tab('intel',this)">🌐 Threat Intel</button>
+  <button class="tab" onclick="tab('rules',this)">📋 Rules</button>
+</nav>
+<main>
+<!-- OVERVIEW -->
+<div id="sec-overview" class="sec active">
+  <div class="kg">
+    <div class="k r"><div class="ki">🚨</div><div class="kl">Critical</div><div class="kv" style="color:#f87171" id="kc">—</div><div class="ks">Immediate action</div></div>
+    <div class="k o"><div class="ki">⚠️</div><div class="kl">High Alerts</div><div class="kv" style="color:#fb923c" id="kh">—</div><div class="ks">Review &lt;4h</div></div>
+    <div class="k y"><div class="ki">🔥</div><div class="kl">Open Incidents</div><div class="kv" style="color:#fbbf24" id="ki">—</div><div class="ks">Active response</div></div>
+    <div class="k b"><div class="ki">📡</div><div class="kl">Events Today</div><div class="kv" style="color:#60a5fa" id="ke">—</div><div class="ks">Logs ingested</div></div>
+    <div class="k g"><div class="ki">✅</div><div class="kl">Resolved 24h</div><div class="kv" style="color:#34d399" id="kr">—</div><div class="ks">Closed alerts</div></div>
+    <div class="k p"><div class="ki">🤖</div><div class="kl">SOAR Actions</div><div class="kv" style="color:#c4b5fd" id="ks">—</div><div class="ks">Auto-remediated</div></div>
+  </div>
+  <div class="g2 mb">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="ct" style="margin:0">🚨 Live Alert Feed</div>
+        <button class="btn btng xs" onclick="tab('alerts',document.querySelectorAll('.tab')[1])">All →</button>
+      </div>
+      <div id="la"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="ct" style="margin:0">🔥 Active Incidents</div>
+        <button class="btn btng xs" onclick="tab('incidents',document.querySelectorAll('.tab')[2])">All →</button>
+      </div>
+      <div id="li2"></div>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="ct">📊 Severity Mix</div><div id="sd"></div></div>
+    <div class="card"><div class="ct">🎯 Top Techniques</div><div id="tt"></div></div>
+    <div class="card"><div class="ct">🔒 System Status</div><div id="ss"></div></div>
+  </div>
+</div>
+<!-- ALERTS -->
+<div id="sec-alerts" class="sec">
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:800">🚨 Alerts</span>
+    <select class="sel" id="asev" style="width:auto;min-width:140px" onchange="loadAlerts()"><option value="">All Severity</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+    <select class="sel" id="astat" style="width:auto;min-width:140px" onchange="loadAlerts()"><option value="open">Open</option><option value="">All</option><option value="resolved">Resolved</option><option value="false_positive">False Positive</option></select>
+    <button class="btn btng sm" onclick="loadAlerts()">↻</button>
+    <span id="ac" style="font-size:12px;color:var(--text3);margin-left:auto"></span>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Source IP</th><th>MITRE</th><th>Time</th><th>Actions</th></tr></thead>
+    <tbody id="atb"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<!-- INCIDENTS -->
+<div id="sec-incidents" class="sec">
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
+    <span style="font-size:16px;font-weight:800">🔥 Incidents</span>
+    <button class="btn btnp sm" onclick="openOv('ci-modal')">+ New Incident</button>
+    <button class="btn btng sm" style="margin-left:auto" onclick="loadIncidents()">↻</button>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Assignee</th><th>Alerts</th><th>Created</th><th>Actions</th></tr></thead>
+    <tbody id="itb"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<!-- THREAT HUNT -->
+<div id="sec-hunt" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">🔍 Threat Hunting</div>
+  <div class="g3 mb">
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🎯</div><div style="font-weight:700;margin-bottom:4px">IOC Search</div><div style="font-size:12px;color:var(--text2)">Search IPs, domains, hashes across all logs</div></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🗺</div><div style="font-weight:700;margin-bottom:4px">ATT&amp;CK Map</div><div style="font-size:12px;color:var(--text2)">Visualize techniques on MITRE matrix</div></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🔬</div><div style="font-weight:700;margin-bottom:4px">Hunt Queries</div><div style="font-size:12px;color:var(--text2)">Run ad-hoc queries against log store</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">🔍 IOC Lookup</div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <input type="text" class="inp" id="hioc" placeholder="IP, domain, hash, URL…" style="flex:1">
+      <button class="btn btnp" onclick="huntIOC()">Search</button>
+    </div>
+    <div id="hr"></div>
+  </div>
+</div>
+<!-- SOAR -->
+<div id="sec-soar" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">⚡ SOAR — Orchestration &amp; Automated Response</div>
+  <div class="g3 mb">
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🤖</div><div style="font-weight:700;margin-bottom:4px">Isolate Host</div><div style="font-size:12px;color:var(--text2)">Cut network access for compromised endpoints</div><button class="btn btnp xs" style="margin-top:10px" onclick="runSOAR('isolate_host')">Run</button></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🔒</div><div style="font-weight:700;margin-bottom:4px">Block IP/Domain</div><div style="font-size:12px;color:var(--text2)">Add to firewall blocklist instantly</div><button class="btn btnp xs" style="margin-top:10px" onclick="runSOAR('block_ip')">Run</button></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🔑</div><div style="font-weight:700;margin-bottom:4px">Revoke Credentials</div><div style="font-size:12px;color:var(--text2)">Force reset and revoke active sessions</div><button class="btn btnp xs" style="margin-top:10px" onclick="runSOAR('revoke_creds')">Run</button></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">📧</div><div style="font-weight:700;margin-bottom:4px">Escalate Alert</div><div style="font-size:12px;color:var(--text2)">Notify on-call via Slack / PagerDuty / Email</div><button class="btn btnp xs" style="margin-top:10px" onclick="runSOAR('escalate')">Run</button></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">📸</div><div style="font-weight:700;margin-bottom:4px">Memory Snapshot</div><div style="font-size:12px;color:var(--text2)">Forensic memory capture from affected host</div><button class="btn btnp xs" style="margin-top:10px" onclick="runSOAR('memory_dump')">Run</button></div>
+    <div class="card"><div style="font-size:26px;margin-bottom:8px">🧹</div><div style="font-weight:700;margin-bottom:4px">Kill Process</div><div style="font-size:12px;color:var(--text2)">Terminate suspicious processes by PID or hash</div><button class="btn btnp xs" style="margin-top:10px" onclick="runSOAR('kill_process')">Run</button></div>
+  </div>
+  <div class="card"><div class="ct">📋 Recent Actions</div><div id="sl"><div class="empty"><div class="ei" style="font-size:24px">⚡</div><div style="font-size:13px">No recent automated actions</div></div></div></div>
+</div>
+<!-- UEBA -->
+<div id="sec-ueba" class="sec">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">👤 User &amp; Entity Behavior Analytics</span>
+    <button class="btn btng sm" onclick="loadUEBA()">↻</button>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Entity</th><th>Type</th><th>Risk Score</th><th>Anomalies</th><th>Last Seen</th><th>Actions</th></tr></thead>
+    <tbody id="utb"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+<!-- THREAT INTEL -->
+<div id="sec-intel" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">🌐 Threat Intelligence</div>
+  <div class="g3 mb">
+    <div class="card"><div class="ct">📡 Active Feeds</div><div id="if"></div></div>
+    <div class="card"><div class="ct">📊 Feed Stats</div><div id="ist"></div></div>
+    <div class="card"><div class="ct">🔍 IOC Check</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" class="inp" id="ic" placeholder="IP / domain / hash…">
+        <button class="btn btnp sm" onclick="checkIOC()">Check</button>
+      </div>
+      <div id="ir"></div>
+    </div>
+  </div>
+</div>
+<!-- RULES -->
+<div id="sec-rules" class="sec">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">📋 Detection Rules</div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Rule ID</th><th>Name</th><th>Type</th><th>Severity</th><th>MITRE</th><th>Enabled</th><th>Hits 24h</th></tr></thead>
+    <tbody id="rtb"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+  </table></div></div>
+</div>
+</main>
+
+<div class="ov" id="alert-ov" onclick="if(event.target===this)closeOv('alert-ov')">
+  <div class="modal"><div class="mt" id="am-title">🚨 Alert</div><div id="am-body"></div></div>
+</div>
+<div class="ov" id="ci-modal" onclick="if(event.target===this)closeOv('ci-modal')">
+  <div class="modal">
+    <div class="mt">🔥 Create Incident</div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Title</label><input type="text" class="inp" id="it"></div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Severity</label><select class="sel" id="is"><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option></select></div>
+    <div class="fg"><label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px">Description</label><textarea class="inp" id="id2" rows="3"></textarea></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btng" onclick="closeOv('ci-modal')">Cancel</button>
+      <button class="btn btnp" onclick="createInc()">Create</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const SB={critical:'<span class="badge br">Critical</span>',high:'<span class="badge bo">High</span>',medium:'<span class="badge by">Medium</span>',low:'<span class="badge bgr">Low</span>',info:'<span class="badge bb">Info</span>'};
+const SD={critical:'#ef4444',high:'#f97316',medium:'#f59e0b',low:'#64748b'};
+function fd(s){return s?new Date(s).toLocaleString():'—'}
+function fds(s){return s?new Date(s).toLocaleDateString():'—'}
+function toast(m,ok=true){const e=document.getElementById('toast');e.textContent=m;e.className=ok?'ok':'err';e.style.display='block';setTimeout(()=>e.style.display='none',3500)}
+function openOv(id){document.getElementById(id).classList.add('open')}
+function closeOv(id){document.getElementById(id).classList.remove('open')}
+function tab(n,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+n).classList.add('active');
+  if(el)el.classList.add('active');
+  const L={alerts:loadAlerts,incidents:loadIncidents,ueba:loadUEBA,intel:loadIntel,rules:loadRules};
+  if(L[n])L[n]();
+}
+async function api(p,b=null){
+  const o=b?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{};
+  const r=await fetch(p,o);const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||r.statusText);return d;
+}
+async function loadOverview(){
+  try{
+    const d=await api('/v1/dashboard');
+    const al=d.alerts||{};const inc=d.incidents||{};const mx=d.metrics||{};
+    document.getElementById('kc').textContent=al.critical||al.by_severity?.critical||0;
+    document.getElementById('kh').textContent=al.high||al.by_severity?.high||0;
+    document.getElementById('ki').textContent=inc.open||inc.total||0;
+    document.getElementById('ke').textContent=(mx.events_today||mx.total_events||0).toLocaleString();
+    document.getElementById('kr').textContent=al.resolved_24h||al.closed||0;
+    document.getElementById('ks').textContent=mx.soar_actions||d.soar_actions||0;
+    document.getElementById('ca').textContent=al.open||al.total||0;
+    document.getElementById('ci').textContent=inc.open||0;
+    if(d.license)document.getElementById('lp').textContent=(d.license.plan||'SOC').toUpperCase();
+    const bySev=al.by_severity||{};const total=Object.values(bySev).reduce((a,b)=>a+b,0)||1;
+    const sevs=[['critical','#ef4444'],['high','#f97316'],['medium','#f59e0b'],['low','#64748b']];
+    document.getElementById('sd').innerHTML=sevs.map(([s,c])=>`<div class="br2"><span class="bl" style="color:${c}">${s}</span><div class="bt"><div class="bf" style="width:${((bySev[s]||0)/total*100).toFixed(1)}%;background:${c}"></div></div><span class="bc" style="color:${c}">${bySev[s]||0}</span></div>`).join('');
+    const tq=d.top_techniques||mx.top_techniques||[];
+    document.getElementById('tt').innerHTML=tq.length?tq.slice(0,5).map(t=>`<div class="br2"><span class="bl" style="font-size:10px">${t.technique||t.id||'—'}</span><div class="bt"><div class="bf" style="width:${t.pct||50}%;background:#ef4444"></div></div><span class="bc" style="color:#f87171">${t.count||0}</span></div>`).join(''):'<div style="color:var(--text3);font-size:12px">No technique data</div>';
+    document.getElementById('ss').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#f87171">${d.license?.plan||'—'}</span></div><div class="sr"><span class="sl">Engine</span><span class="sv" style="color:#34d399">Online</span></div><div class="sr"><span class="sl">Events</span><span class="sv">${(mx.events_today||0).toLocaleString()}</span></div><a href="https://axto.io/portal" target="_blank" class="btn btng xs" style="margin-top:10px">Portal ↗</a>`;
+    loadLA();loadLI();
+  }catch(e){console.warn('OV:',e)}
+}
+async function loadLA(){
+  try{
+    const d=await api('/v1/alerts?status=open&limit=6');const al=d.alerts||d||[];
+    document.getElementById('la').innerHTML=al.length?al.map(a=>`<div class="al" onclick="showAlert('${a.alert_id||a.id}')"><div class="sd" style="background:${SD[a.severity]||'#64748b'}"></div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.title||'Alert'}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${a.source_ip||'—'} · ${fd(a.created_at||a.timestamp)}</div></div>${SB[a.severity]||SB.medium}</div>`).join(''):'<div class="empty" style="padding:20px"><div class="ei" style="font-size:24px">✅</div><div style="font-size:13px">No open alerts</div></div>';
+  }catch(e){}
+}
+async function loadLI(){
+  try{
+    const d=await api('/v1/incidents?status=open&limit=4');const ic=d.incidents||d||[];
+    document.getElementById('li2').innerHTML=ic.length?ic.map(i=>`<div style="padding:10px 0;border-bottom:1px solid rgba(18,32,48,.5);cursor:pointer" onclick="toast('Incident: '+(i.title||i.incident_id||i.id))"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${SB[i.severity]||SB.high}<span style="font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.title||'Incident'}</span></div><div style="font-size:11px;color:var(--text3)">${i.alert_count||0} alerts · ${i.assignee||'Unassigned'} · ${fds(i.created_at)}</div></div>`).join(''):'<div class="empty" style="padding:20px"><div class="ei" style="font-size:24px">🔥</div><div style="font-size:13px">No active incidents</div></div>';
+  }catch(e){}
+}
+async function loadAlerts(){
+  const sev=document.getElementById('asev')?.value||'';
+  const stat=document.getElementById('astat')?.value||'open';
+  const tb=document.getElementById('atb');
+  tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    let url='/v1/alerts?limit=100';if(sev)url+='&severity='+sev;if(stat)url+='&status='+stat;
+    const d=await api(url);const al=d.alerts||d||[];
+    document.getElementById('ac').textContent=al.length+' alerts';
+    tb.innerHTML=al.length?al.map(a=>`<tr onclick="showAlert('${a.alert_id||a.id}')">
+      <td class="mono" style="color:#f87171">${(a.alert_id||a.id||'').slice(0,10)}…</td>
+      <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.title||'—'}</td>
+      <td>${SB[a.severity]||SB.medium}</td>
+      <td><span class="badge ${a.status==='open'?'br':a.status==='resolved'?'bg':'by'}">${a.status||'open'}</span></td>
+      <td class="mono" style="color:var(--text2)">${a.source_ip||'—'}</td>
+      <td class="mono" style="font-size:10px;color:#f87171">${(a.mitre_techniques||[]).slice(0,2).join(', ')||'—'}</td>
+      <td style="color:var(--text3);white-space:nowrap">${fd(a.created_at||a.timestamp)}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btngg xs" onclick="event.stopPropagation();closeAlert('${a.alert_id||a.id}')">Resolve</button>
+        <button class="btn btng xs" onclick="event.stopPropagation();markFP('${a.alert_id||a.id}')">FP</button>
+      </div></td>
+    </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No alerts</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function showAlert(id){
+  try{
+    const d=await api('/v1/alerts/'+id);const a=d.alert||d;
+    document.getElementById('am-title').textContent='🚨 '+(a.title||'Alert');
+    document.getElementById('am-body').innerHTML=`<div class="sr"><span class="sl">Severity</span>${SB[a.severity]||'—'}</div><div class="sr"><span class="sl">Status</span><span class="sv">${a.status||'open'}</span></div><div class="sr"><span class="sl">Source</span><span class="sv mono">${a.source_ip||'—'}</span></div><div class="sr"><span class="sl">Time</span><span class="sv">${fd(a.created_at||a.timestamp)}</span></div>${a.description?`<div style="margin-top:14px;font-size:13px;color:var(--text2);line-height:1.6">${a.description}</div>`:''}<div style="display:flex;gap:10px;margin-top:20px"><button class="btn btngg sm" onclick="closeAlert('${id}');closeOv('alert-ov')">✓ Resolve</button><button class="btn btng sm" onclick="closeOv('alert-ov')">Close</button></div>`;
+    openOv('alert-ov');
+  }catch(e){toast('Load failed',false);}
+}
+async function closeAlert(id){try{await api('/v1/feedback/false-positive',{alert_id:id,is_false_positive:false,analyst:'dashboard'});toast('Alert resolved');loadAlerts();loadOverview();}catch(e){toast(e.message,false);}}
+async function markFP(id){try{await api('/v1/feedback/false-positive',{alert_id:id,is_false_positive:true,analyst:'dashboard'});toast('Marked FP');loadAlerts();}catch(e){toast(e.message,false);}}
+async function loadIncidents(){
+  const tb=document.getElementById('itb');
+  tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api('/v1/incidents?limit=50');const ic=d.incidents||d||[];
+    tb.innerHTML=ic.length?ic.map(i=>`<tr>
+      <td class="mono" style="color:#fbbf24">${(i.incident_id||i.id||'').slice(0,10)}…</td>
+      <td style="font-weight:600;max-width:200px">${i.title||'—'}</td>
+      <td>${SB[i.severity]||SB.medium}</td>
+      <td><span class="badge ${i.status==='open'?'br':i.status==='resolved'?'bg':'by'}">${i.status||'open'}</span></td>
+      <td style="color:var(--text2)">${i.assignee||'Unassigned'}</td>
+      <td class="mono">${i.alert_count||0}</td>
+      <td style="color:var(--text3)">${fds(i.created_at)}</td>
+      <td><button class="btn btng xs">Update</button></td>
+    </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No incidents</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function createInc(){
+  try{
+    await api('/v1/incidents',{title:document.getElementById('it').value,severity:document.getElementById('is').value,description:document.getElementById('id2').value});
+    toast('Incident created');closeOv('ci-modal');loadIncidents();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function huntIOC(){
+  const ioc=document.getElementById('hioc').value.trim();if(!ioc){toast('Enter IOC',false);return;}
+  document.getElementById('hr').innerHTML='<span style="color:var(--text3)">Searching…</span>';
+  try{
+    const d=await api('/v1/threat-intel/check?indicator='+encodeURIComponent(ioc));
+    document.getElementById('hr').innerHTML=(d.found||d.malicious)?
+      `<div style="padding:12px;border-radius:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25)"><span style="color:#f87171;font-weight:700">🔴 MALICIOUS</span> <span style="color:#fca5a5;font-size:12px">${d.threat_type||'Threat detected'}</span></div>`:
+      '<div style="padding:12px;border-radius:8px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#34d399;font-size:13px">✓ Not found in threat feeds</div>';
+  }catch(e){document.getElementById('hr').innerHTML='<span style="color:#f87171">Lookup failed: '+e.message+'</span>';}
+}
+async function runSOAR(a){toast('SOAR queued: '+a+'. Check actions log.');}
+async function loadUEBA(){
+  const tb=document.getElementById('utb');
+  try{
+    const d=await api('/v1/ueba/anomalies');const it=d.anomalies||d||[];
+    tb.innerHTML=it.length?it.map(a=>`<tr>
+      <td style="font-weight:600">${a.entity||a.user||a.host||'—'}</td>
+      <td><span class="badge bb">${a.entity_type||'user'}</span></td>
+      <td style="font-weight:800;color:${a.risk_score>=80?'#f87171':a.risk_score>=50?'#fbbf24':'#34d399'}">${a.risk_score||0}</td>
+      <td style="color:var(--text2)">${(a.anomalies||[]).slice(0,2).join(', ')||'—'}</td>
+      <td style="color:var(--text3)">${fd(a.last_seen||a.timestamp)}</td>
+      <td><button class="btn btng xs">Investigate</button></td>
+    </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No anomalies detected</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">UEBA data unavailable</td></tr>';}
+}
+async function loadIntel(){
+  try{
+    const d=await api('/v1/threat-intel/feeds');const feeds=d.feeds||d||[];
+    document.getElementById('if').innerHTML=feeds.map(f=>`<div class="sr"><span class="sl">${f.name||f.feed}</span><span class="badge ${f.active?'bg':'bgr'}">${f.active?'Active':'Off'}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No feeds</div>';
+    document.getElementById('ist').innerHTML=`<div class="sr"><span class="sl">Total IOCs</span><span class="sv" style="color:#f87171">${(d.total_iocs||0).toLocaleString()}</span></div><div class="sr"><span class="sl">Active Feeds</span><span class="sv">${feeds.filter(f=>f.active).length}</span></div><div class="sr"><span class="sl">Last Update</span><span class="sv">${d.last_updated?new Date(d.last_updated).toLocaleDateString():'—'}</span></div>`;
+  }catch(e){}
+}
+async function checkIOC(){
+  const ioc=document.getElementById('ic').value.trim();if(!ioc)return;
+  try{
+    const d=await api('/v1/threat-intel/check?indicator='+encodeURIComponent(ioc));
+    document.getElementById('ir').innerHTML=(d.found||d.malicious)?'<span class="badge br">🔴 MALICIOUS</span>':'<span class="badge bg">✓ Clean</span>';
+  }catch(e){document.getElementById('ir').innerHTML='<span style="color:#f87171">Failed</span>';}
+}
+async function loadRules(){
+  const tb=document.getElementById('rtb');
+  try{
+    const d=await api('/v1/rules');const rl=d.rules||d||[];
+    tb.innerHTML=rl.length?rl.map(r=>`<tr>
+      <td class="mono" style="color:#c4b5fd">${r.rule_id||r.id||'—'}</td>
+      <td style="font-weight:600">${r.name||r.title||'—'}</td>
+      <td><span class="badge bb">${r.rule_type||r.type||'sigma'}</span></td>
+      <td>${SB[r.severity]||SB.medium}</td>
+      <td class="mono" style="font-size:10px;color:#f87171">${(r.mitre_techniques||[]).slice(0,2).join(', ')||'—'}</td>
+      <td>${r.enabled!==false?'<span class="badge bg">On</span>':'<span class="badge bgr">Off</span>'}</td>
+      <td class="mono" style="color:#60a5fa">${r.hits_24h||0}</td>
+    </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No rules configured</td></tr>';
+  }catch(e){tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Rules data unavailable</td></tr>';}
+}
+// Root → WebSocket alerts
+function connectWS(){
+  const p=location.protocol==='https:'?'wss:':'ws:';
+  try{
+    const ws=new WebSocket(`${p}//${location.host}/ws/alerts`);
+    ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.type==='ping')return;toast(`🚨 ${d.title||'New alert'} — ${d.severity||''}`);loadOverview();}catch(err){}};
+    ws.onclose=()=>setTimeout(connectWS,4000);
+  }catch(e){}
+}
+loadOverview();connectWS();setInterval(loadOverview,30000);
+</script>
+</body>
+</html>

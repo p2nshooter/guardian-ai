@@ -1,0 +1,79 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+# ============================================================
+# AXTO SOC — Tier 2 (PostgreSQL + Redis)
+# For enterprise: 10K+ EPS, multi-node correlation
+# docker compose -f soc-compose-tier2.yml up -d
+# ============================================================
+services:
+  soc-core:
+    image: registry.gitlab.com/axto-platform/soc-engine/soc-engine:latest
+    container_name: axto-soc
+    restart: unless-stopped
+    ports: ["8092:8092"]
+    volumes:
+      - ./soc.yml:/soc/config/soc.yml:ro
+      - soc-data:/soc/data
+      - soc-logs:/soc/logs
+      - ./threat-feed:/soc/threat-feed:ro
+    environment:
+      - SOC_CONFIG=/soc/config/soc.yml
+      - SOC_PORT=8092
+      - SOC_DB_URL=postgresql://soc:${POSTGRES_PASSWORD:-soc_change_me}@soc-postgres:5432/soc
+      - SOC_REDIS_URL=redis://:${REDIS_PASSWORD:-redis_change_me}@soc-redis:6379/0
+    depends_on:
+      soc-postgres: {condition: service_healthy}
+      soc-redis:    {condition: service_healthy}
+    healthcheck:
+      test: ["CMD","curl","-sf","http://localhost:8092/health"]
+      interval: 30s; timeout: 10s; retries: 3; start_period: 45s
+    networks: [soc-net]
+
+  soc-postgres:
+    image: postgres:16-alpine
+    container_name: soc-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: soc
+      POSTGRES_USER: soc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-soc_change_me}
+    volumes:
+      - soc-postgres-data:/var/lib/postgresql/data
+      - ./migrations/soc/0001_init.sql:/docker-entrypoint-initdb.d/0001_init.sql:ro
+    ports: ["127.0.0.1:5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U soc -d soc"]
+      interval: 10s; timeout: 5s; retries: 5; start_period: 30s
+    networks: [soc-net]
+
+  soc-redis:
+    image: redis:7-alpine
+    container_name: soc-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-redis_change_me}
+      --save 60 1000
+    volumes: [soc-redis-data:/data]
+    ports: ["127.0.0.1:6380:6379"]
+    healthcheck:
+      test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis_change_me}","ping"]
+      interval: 10s; timeout: 5s; retries: 5
+    networks: [soc-net]
+
+volumes:
+  soc-data:
+  soc-logs:
+  soc-postgres-data:
+  soc-redis-data:
+
+networks:
+  soc-net:
+    driver: bridge

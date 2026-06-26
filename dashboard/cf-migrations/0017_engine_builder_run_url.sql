@@ -1,3 +1,9 @@
+-- ==============================================================================
+-- Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+-- Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+-- Author & Architect: Yusron Efendi <hallo@axto.io>
+-- Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+-- ==============================================================================
 -- ============================================================
 -- Migration 0017: Add run_url + gh_release_tag to engine_builds
 -- Fixes: run_url never stored, GitHub Release cleanup on hard delete

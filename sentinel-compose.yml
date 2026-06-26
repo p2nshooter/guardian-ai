@@ -1,0 +1,48 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# ============================================================
+# AXTO Sentinel — IoT/OT Security
+# docker compose -f sentinel-compose.yml up -d
+# ============================================================
+
+services:
+  sentinel-core:
+    image: registry.gitlab.com/axto-platform/sentinel-engine/sentinel-engine:latest
+    container_name: sentinel-core
+    restart: unless-stopped
+    ports:
+      - "8095:8095"
+    volumes:
+      - ./sentinel.yml:/sentinel/config/sentinel.yml:ro
+      - sentinel-data:/sentinel/data
+      - sentinel-logs:/sentinel/logs
+    environment:
+      - SENTINEL_CONFIG=/sentinel/config/sentinel.yml
+      - SENTINEL_PORT=8095
+    healthcheck:
+      test: ["CMD","curl","-sf","http://localhost:8095/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    networks:
+      - sentinel-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  sentinel-data:
+  sentinel-logs:
+
+networks:
+  sentinel-net:
+    driver: bridge

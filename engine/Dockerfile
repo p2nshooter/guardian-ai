@@ -1,6 +1,12 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.source="https://github.com/p2nshooter/guardian-ai"
+LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Guardian Engine"
 LABEL org.opencontainers.image.description="AXTO Guardian — AI-Powered Cybersecurity Engine"
 LABEL org.opencontainers.image.licenses="Commercial"
@@ -18,12 +24,12 @@ LABEL org.opencontainers.image.licenses="Commercial"
 #   curl                : healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc g++ python3-dev libssl-dev libffi-dev libpq-dev \
-    python3-bcc \
     libpcap0.8 libpcap-dev \
     nftables \
     libmagic1 libmagic-dev \
     curl procps iproute2 iptables libcap2-bin \
     strace \
+    && apt-get install -y --no-install-recommends python3-bcc 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /guardian

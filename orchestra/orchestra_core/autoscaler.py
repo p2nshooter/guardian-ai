@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Orchestra — AI eXecution & Tools Orchestration | Autoscaler (Production)
 Monitors queue depth and spins up / shuts down workers on demand.
@@ -131,6 +137,9 @@ class Autoscaler:
             "ORCHESTRA_CONSOLE_PASSWORD":  CONSOLE_TOKEN,
             "WORKER_PORT":                 str(port),
             "NODE_ID":                     f"autoscale-{int(time.time())}",
+            # GPU workers need WORKER_SELF_URL so orchestra-core can POST tasks to /run.
+            # --network=host is used, so localhost:{port} is reachable from orchestra-core.
+            "WORKER_SELF_URL":             f"http://localhost:{port}",
         }
         cmd = ["docker", "run", "-d", "--rm", "--network=host"]
         for k, v in env.items():
@@ -172,7 +181,9 @@ class Autoscaler:
     def _drain_worker(self, worker: dict) -> None:
         """Gracefully deregister an idle worker."""
         worker_id = worker.get("id", "")
-        endpoint  = worker.get("base_url", "")
+        # Use worker_url (own FastAPI endpoint) for shutdown, not base_url (Ollama).
+        # Fall back to base_url for CPU workers that don't have worker_url.
+        endpoint  = worker.get("worker_url") or worker.get("base_url", "")
 
         # Mark draining in DB
         db.ex("UPDATE workers SET status='draining' WHERE id=?", (worker_id,))

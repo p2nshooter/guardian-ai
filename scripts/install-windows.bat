@@ -1,3 +1,9 @@
+@REM ==============================================================================
+@REM Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+@REM Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+@REM Author & Architect: Yusron Efendi <hallo@axto.io>
+@REM Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+@REM ==============================================================================
 @echo off
 echo ============================================
 echo  AXTO Platform Setup (Windows)

@@ -1,0 +1,837 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXTO Edge — AI Gateway</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030a14;--surf:#060f1e;--surf2:#0a1628;--surf3:#0f1e34;
+  --border:#142030;--border2:#1c2e44;
+  --cyan:#0891b2;--cyan2:#06b6d4;--cyan3:#22d3ee;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;--purple:#8b5cf6;--blue:#3b82f6;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+  --mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surf)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* Header */
+header{background:rgba(3,10,20,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0891b2,#0284c7);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 16px rgba(8,145,178,.35)}
+.logo-name{font-size:16px;font-weight:800}.logo-name span{color:#22d3ee}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid}
+.pill-cyan{background:rgba(8,145,178,.12);border-color:rgba(8,145,178,.3);color:#22d3ee}
+.pill-green{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.25);color:#34d399}
+.pill-red{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.25);color:#f87171}
+
+/* Nav */
+nav{background:var(--surf);border-bottom:1px solid var(--border);display:flex;padding:0 28px;overflow-x:auto}
+nav::-webkit-scrollbar{display:none}
+.tab{display:flex;align-items:center;gap:6px;padding:0 16px;height:44px;border:none;background:none;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.active{color:#22d3ee;border-bottom-color:#0891b2}
+.tab-cnt{font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;background:rgba(8,145,178,.2);color:#22d3ee}
+
+/* Main */
+main{padding:24px;max-width:1500px;margin:0 auto}
+.section{display:none}.section.active{display:block}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--border2)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.cyan::after{background:linear-gradient(90deg,#0891b2,#06b6d4)}
+.kpi.green::after{background:linear-gradient(90deg,#10b981,#059669)}
+.kpi.red::after{background:linear-gradient(90deg,#ef4444,#f97316)}
+.kpi.yellow::after{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.kpi.purple::after{background:linear-gradient(90deg,#7c3aed,#6366f1)}
+.kpi.blue::after{background:linear-gradient(90deg,#3b82f6,#06b6d4)}
+.kpi-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px}
+.kpi-val{font-size:34px;font-weight:900;letter-spacing:-2px;margin:6px 0 2px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text2)}
+.kpi-icon{position:absolute;right:14px;top:16px;font-size:20px;opacity:.2}
+
+/* Cards */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:18px}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.mb{margin-bottom:18px}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{text-align:left;padding:9px 12px;color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(20,32,48,.6);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(8,145,178,.04)}
+.mono{font-family:var(--mono);font-size:11px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid}
+.badge-green{background:rgba(16,185,129,.12);color:#34d399;border-color:rgba(16,185,129,.25)}
+.badge-red{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.25)}
+.badge-yellow{background:rgba(245,158,11,.12);color:#fbbf24;border-color:rgba(245,158,11,.25)}
+.badge-cyan{background:rgba(8,145,178,.12);color:#22d3ee;border-color:rgba(8,145,178,.25)}
+.badge-purple{background:rgba(124,58,237,.12);color:#c4b5fd;border-color:rgba(124,58,237,.25)}
+.badge-gray{background:rgba(100,116,139,.1);color:#94a3b8;border-color:rgba(100,116,139,.2)}
+
+/* Plan tags */
+.plan-free{background:rgba(100,116,139,.12);color:#94a3b8;border:1px solid rgba(100,116,139,.2)}
+.plan-pro{background:rgba(8,145,178,.12);color:#22d3ee;border:1px solid rgba(8,145,178,.25)}
+.plan-enterprise{background:rgba(124,58,237,.12);color:#c4b5fd;border:1px solid rgba(124,58,237,.25)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,#0891b2,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(8,145,178,.3)}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--surf2);border:1px solid var(--border2);color:var(--text)}
+.btn-ghost:hover{background:var(--surf3)}
+.btn-red{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171}
+.btn-red:hover{background:rgba(239,68,68,.22)}
+.btn-green{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#34d399}
+.btn-sm{padding:6px 12px;font-size:12px}.btn-xs{padding:4px 9px;font-size:11px}
+
+/* Form */
+.input,.select,textarea{background:var(--surf2);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s;width:100%}
+.input:focus,.select:focus,textarea:focus{border-color:rgba(8,145,178,.5);box-shadow:0 0 0 3px rgba(8,145,178,.08)}
+.input::placeholder{color:var(--text3)}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.form-group{margin-bottom:14px}
+.form-row{display:grid;gap:12px}.form-2{grid-template-columns:1fr 1fr}
+
+/* Stat row */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(20,32,48,.5);font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{color:var(--text2)}.stat-val{font-weight:700;font-family:var(--mono);font-size:12px}
+
+/* Bar */
+.bar-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(20,32,48,.5)}
+.bar-row:last-child{border-bottom:none}
+.bar-lbl{font-size:11px;font-weight:600;min-width:100px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease;background:linear-gradient(90deg,#0891b2,#22d3ee)}
+.bar-cnt{font-size:11px;font-weight:700;min-width:36px;text-align:right;color:var(--text2)}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;padding:24px}
+.overlay.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--border2);border-radius:20px;padding:28px;max-width:540px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+
+/* Firewall rule */
+.fw-rule{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surf2);margin-bottom:8px}
+.fw-rule:last-child{margin-bottom:0}
+
+/* Empty */
+.empty{text-align:center;padding:40px 20px;color:var(--text2)}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.5}
+
+/* Toast */
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+#toast.ok{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#34d399}
+#toast.err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+
+/* Live chart placeholder */
+.mini-chart{height:60px;display:flex;align-items:flex-end;gap:3px}
+.mini-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;background:linear-gradient(180deg,#0891b2,#0e7490);opacity:.8;transition:height .4s}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔀</div>
+    <div>
+      <div class="logo-name">AXTO <span>Edge</span></div>
+      <div class="logo-sub">AI Gateway &amp; BYOK Management Platform</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span id="plan-pill" class="pill pill-cyan">—</span>
+    <span id="lic-expires" style="font-size:11px;color:var(--text3)"></span>
+    <span class="pill pill-green"><span class="pulse"></span>LIVE</span>
+  </div>
+</header>
+
+<nav>
+  <button class="tab active" onclick="tab('overview',this)">📊 Overview</button>
+  <button class="tab" onclick="tab('customers',this)">👥 Customers <span id="cnt-cust" class="tab-cnt">—</span></button>
+  <button class="tab" onclick="tab('keys',this)">🔑 API Keys <span id="cnt-keys" class="tab-cnt">—</span></button>
+  <button class="tab" onclick="tab('plans',this)">💎 Plans</button>
+  <button class="tab" onclick="tab('usage',this)">📈 Usage</button>
+  <button class="tab" onclick="tab('billing',this)">💵 Billing</button>
+  <button class="tab" onclick="tab('firewall',this)">🛡 Firewall</button>
+  <button class="tab" onclick="tab('providers',this)">⚙ Providers</button>
+  <button class="tab" onclick="tab('webhooks',this)">🔔 Webhooks</button>
+</nav>
+
+<main>
+
+<!-- ── OVERVIEW ─────────────────────────────────────────── -->
+<div id="sec-overview" class="section active">
+  <div class="kpi-grid">
+    <div class="kpi cyan"><div class="kpi-icon">👥</div><div class="kpi-label">Customers</div><div class="kpi-val" style="color:#22d3ee" id="k-cust">—</div><div class="kpi-sub">Total accounts</div></div>
+    <div class="kpi green"><div class="kpi-icon">✅</div><div class="kpi-label">Active Keys</div><div class="kpi-val" style="color:#34d399" id="k-keys">—</div><div class="kpi-sub">Issued API keys</div></div>
+    <div class="kpi blue"><div class="kpi-icon">📡</div><div class="kpi-label">Req Today</div><div class="kpi-val" style="color:#60a5fa" id="k-req">—</div><div class="kpi-sub">API requests</div></div>
+    <div class="kpi yellow"><div class="kpi-icon">💵</div><div class="kpi-label">Revenue (Mo)</div><div class="kpi-val" style="color:#fbbf24" id="k-rev">—</div><div class="kpi-sub">This month</div></div>
+    <div class="kpi red"><div class="kpi-icon">🚫</div><div class="kpi-label">Blocked</div><div class="kpi-val" style="color:#f87171" id="k-blocked">—</div><div class="kpi-sub">Firewall blocks</div></div>
+    <div class="kpi purple"><div class="kpi-icon">⚡</div><div class="kpi-label">Avg Latency</div><div class="kpi-val" style="color:#c4b5fd" id="k-lat">—</div><div class="kpi-sub">Milliseconds P95</div></div>
+  </div>
+
+  <div class="grid2 mb">
+    <div class="card">
+      <div class="card-title">📈 Request Volume — Last 24h</div>
+      <div class="mini-chart" id="req-chart"></div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text3)">
+        <span>24h ago</span><span>Now</span>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="card-title" style="margin:0">🏆 Top Customers</div>
+        <button class="btn btn-ghost btn-xs" onclick="tab('customers',document.querySelectorAll('.tab')[1])">All →</button>
+      </div>
+      <div id="top-customers"></div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card"><div class="card-title">💎 Plan Distribution</div><div id="plan-dist"></div></div>
+    <div class="card"><div class="card-title">🤖 Top Models</div><div id="top-models"></div></div>
+    <div class="card"><div class="card-title">🔒 System Health</div><div id="sys-health"></div></div>
+  </div>
+</div>
+
+<!-- ── CUSTOMERS ────────────────────────────────────────── -->
+<div id="sec-customers" class="section">
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:800">👥 Customers</span>
+    <input type="text" class="input" id="cust-search" placeholder="Search name, email, ID…" style="width:240px" oninput="filterCustomers()">
+    <select class="select" id="cust-status" style="width:auto;min-width:140px" onchange="filterCustomers()">
+      <option value="">All Status</option>
+      <option value="active">Active</option>
+      <option value="suspended">Suspended</option>
+    </select>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openModal('new-cust-modal')">+ New Customer</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadCustomers()">↻</button>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Customer</th><th>Email</th><th>Plan</th><th>Status</th><th>Requests (Mo)</th><th>Quota Used</th><th>Revenue</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="cust-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── API KEYS ──────────────────────────────────────────── -->
+<div id="sec-keys" class="section">
+  <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:16px;font-weight:800">🔑 API Keys</span>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openModal('new-key-modal')">+ Issue Key</button>
+    <button class="btn btn-ghost btn-sm" onclick="loadKeys()">↻</button>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Key (masked)</th><th>Customer</th><th>Plan</th><th>Status</th><th>Requests</th><th>Last Used</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="keys-tbody"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── PLANS ─────────────────────────────────────────────── -->
+<div id="sec-plans" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">💎 Billing Plans</span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('new-plan-modal')">+ New Plan</button>
+  </div>
+  <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    <div class="empty" style="grid-column:1/-1"><div class="empty-icon">💎</div><div>Loading plans…</div></div>
+  </div>
+</div>
+
+<!-- ── USAGE ──────────────────────────────────────────────── -->
+<div id="sec-usage" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <span style="font-size:16px;font-weight:800">📈 Usage Analytics</span>
+    <div style="display:flex;gap:8px">
+      <select class="select" id="usage-period" style="width:auto;min-width:130px" onchange="loadUsage()">
+        <option value="today">Today</option>
+        <option value="week">Last 7 days</option>
+        <option value="month" selected>This month</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="loadUsage()">↻</button>
+    </div>
+  </div>
+  <div class="kpi-grid mb">
+    <div class="kpi cyan"><div class="kpi-label">Total Requests</div><div class="kpi-val" style="color:#22d3ee" id="u-req">—</div></div>
+    <div class="kpi green"><div class="kpi-label">Total Tokens</div><div class="kpi-val" style="color:#34d399;font-size:24px" id="u-tok">—</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Provider Cost</div><div class="kpi-val" style="color:#fbbf24" id="u-cost">—</div></div>
+    <div class="kpi purple"><div class="kpi-label">Your Revenue</div><div class="kpi-val" style="color:#c4b5fd" id="u-rev">—</div></div>
+  </div>
+  <div class="grid2 mb">
+    <div class="card"><div class="card-title">📋 By Model</div><div id="usage-models"></div></div>
+    <div class="card"><div class="card-title">🏆 Top Customers</div><div id="usage-top-cust"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📅 Timeline (daily)</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Requests</th><th>Tokens</th><th>Provider Cost</th><th>Revenue</th></tr></thead>
+        <tbody id="usage-timeline"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── BILLING ────────────────────────────────────────────── -->
+<div id="sec-billing" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">💵 Billing &amp; Invoices</span>
+    <button class="btn btn-primary btn-sm" onclick="generateInvoices()">⚡ Generate Invoices</button>
+  </div>
+  <div class="grid2 mb">
+    <div class="card"><div class="card-title">💰 Revenue Summary</div><div id="revenue-summary"></div></div>
+    <div class="card"><div class="card-title">📊 Margin Analysis</div><div id="margin-summary"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🧾 Invoices</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Invoice ID</th><th>Customer</th><th>Period</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="invoices-tbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── FIREWALL ───────────────────────────────────────────── -->
+<div id="sec-firewall" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">🛡 Content Firewall</span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('new-fw-modal')">+ Add Rule</button>
+  </div>
+  <div class="grid3 mb">
+    <div class="kpi cyan"><div class="kpi-label">Total Scanned</div><div class="kpi-val" style="color:#22d3ee;font-size:26px" id="fw-scanned">—</div></div>
+    <div class="kpi red"><div class="kpi-label">Blocked</div><div class="kpi-val" style="color:#f87171;font-size:26px" id="fw-blocked">—</div></div>
+    <div class="kpi green"><div class="kpi-label">Pass Rate</div><div class="kpi-val" style="color:#34d399;font-size:26px" id="fw-pass">—</div></div>
+  </div>
+  <div class="card mb">
+    <div class="card-title">📋 Firewall Rules</div>
+    <div id="fw-rules-list"><div class="empty"><div class="empty-icon">🛡</div><div>No custom rules. Default policies active.</div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🔍 Test Firewall Rule</div>
+    <div class="form-row form-2" style="margin-bottom:12px">
+      <div class="form-group" style="margin:0"><div class="form-label">Test Message</div><input type="text" class="input" id="fw-test-msg" placeholder="Enter message to test…"></div>
+      <div class="form-group" style="margin:0"><div class="form-label">Plan Code</div><input type="text" class="input" id="fw-test-plan" placeholder="free / pro / enterprise"></div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="testFirewall()">Test</button>
+    <div id="fw-test-result" style="margin-top:12px;font-size:13px"></div>
+  </div>
+</div>
+
+<!-- ── PROVIDERS ──────────────────────────────────────────── -->
+<div id="sec-providers" class="section">
+  <div style="font-size:16px;font-weight:800;margin-bottom:16px">⚙ AI Providers</div>
+  <div id="providers-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    <div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚙️</div><div>Loading providers…</div></div>
+  </div>
+</div>
+
+<!-- ── WEBHOOKS ────────────────────────────────────────────── -->
+<div id="sec-webhooks" class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <span style="font-size:16px;font-weight:800">🔔 Webhooks</span>
+    <button class="btn btn-primary btn-sm" onclick="openModal('new-wh-modal')">+ Add Webhook</button>
+  </div>
+  <div id="webhooks-list">
+    <div class="empty"><div class="empty-icon">🔔</div><div>No webhooks configured.</div></div>
+  </div>
+</div>
+
+</main>
+
+<!-- ─── MODALS ─────────────────────────────────────────────── -->
+
+<!-- New Customer -->
+<div class="overlay" id="new-cust-modal" onclick="if(event.target===this)closeModal('new-cust-modal')">
+  <div class="modal">
+    <div class="modal-title">👥 New Customer</div>
+    <div class="form-group"><div class="form-label">Display Name</div><input type="text" class="input" id="nc-name" placeholder="Acme Corp"></div>
+    <div class="form-group"><div class="form-label">Email</div><input type="email" class="input" id="nc-email" placeholder="admin@acme.com"></div>
+    <div class="form-group"><div class="form-label">Plan</div>
+      <select class="select" id="nc-plan"><option value="free">Free</option><option value="pro">Pro</option><option value="enterprise">Enterprise</option></select>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('new-cust-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCustomer()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Issue Key -->
+<div class="overlay" id="new-key-modal" onclick="if(event.target===this)closeModal('new-key-modal')">
+  <div class="modal">
+    <div class="modal-title">🔑 Issue API Key</div>
+    <div class="form-group"><div class="form-label">Customer ID</div><input type="text" class="input" id="nk-cid" placeholder="cust_xxxx"></div>
+    <div class="form-group"><div class="form-label">Label (optional)</div><input type="text" class="input" id="nk-label" placeholder="Production key"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('new-key-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="issueKey()">Issue Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Plan -->
+<div class="overlay" id="new-plan-modal" onclick="if(event.target===this)closeModal('new-plan-modal')">
+  <div class="modal">
+    <div class="modal-title">💎 New Billing Plan</div>
+    <div class="form-row form-2" style="margin-bottom:14px">
+      <div class="form-group" style="margin:0"><div class="form-label">Plan Code</div><input type="text" class="input" id="np-code" placeholder="pro_v2"></div>
+      <div class="form-group" style="margin:0"><div class="form-label">Display Name</div><input type="text" class="input" id="np-name" placeholder="Pro"></div>
+    </div>
+    <div class="form-row form-2" style="margin-bottom:14px">
+      <div class="form-group" style="margin:0"><div class="form-label">Monthly Price ($)</div><input type="number" class="input" id="np-price" placeholder="49" min="0"></div>
+      <div class="form-group" style="margin:0"><div class="form-label">RPM Limit</div><input type="number" class="input" id="np-rpm" placeholder="60" min="1"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Monthly Token Quota</div><input type="number" class="input" id="np-quota" placeholder="1000000"></div>
+    <div class="form-group"><div class="form-label">Markup % (on provider cost)</div><input type="number" class="input" id="np-markup" placeholder="20" min="0"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+      <button class="btn btn-ghost" onclick="closeModal('new-plan-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createPlan()">Create Plan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firewall Rule -->
+<div class="overlay" id="new-fw-modal" onclick="if(event.target===this)closeModal('new-fw-modal')">
+  <div class="modal">
+    <div class="modal-title">🛡 Add Firewall Rule</div>
+    <div class="form-group"><div class="form-label">Rule Type</div>
+      <select class="select" id="fw-type"><option value="keyword_block">Keyword Block</option><option value="regex_block">Regex Block</option><option value="rate_limit">Rate Limit Override</option></select>
+    </div>
+    <div class="form-group"><div class="form-label">Pattern / Value</div><input type="text" class="input" id="fw-pattern" placeholder="e.g. 'jailbreak' or ^ignore.*instructions"></div>
+    <div class="form-group"><div class="form-label">Apply to Plan (empty = all)</div><input type="text" class="input" id="fw-plan" placeholder="free"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('new-fw-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addFwRule()">Add Rule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Webhook -->
+<div class="overlay" id="new-wh-modal" onclick="if(event.target===this)closeModal('new-wh-modal')">
+  <div class="modal">
+    <div class="modal-title">🔔 Add Webhook</div>
+    <div class="form-group"><div class="form-label">Endpoint URL</div><input type="url" class="input" id="wh-url" placeholder="https://your-server.com/webhook"></div>
+    <div class="form-group"><div class="form-label">Events (comma-separated)</div><input type="text" class="input" id="wh-events" placeholder="quota_exceeded, abuse_detected, invoice_generated"></div>
+    <div class="form-group"><div class="form-label">Secret (optional)</div><input type="password" class="input" id="wh-secret" placeholder="Signing secret"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('new-wh-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addWebhook()">Add Webhook</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PLAN_CLASS={free:'badge badge-gray plan-free',pro:'badge badge-cyan plan-pro',enterprise:'badge badge-purple plan-enterprise'};
+function planBadge(p){return`<span class="${PLAN_CLASS[p]||'badge badge-gray'} badge">${(p||'free').toUpperCase()}</span>`}
+function statusBadge(s){return s==='active'?'<span class="badge badge-green">Active</span>':'<span class="badge badge-red">Suspended</span>'}
+function fmt(n){return n==null?'—':Number(n).toLocaleString()}
+function fmtMoney(n){return n==null?'—':'$'+Number(n).toFixed(2)}
+function fmtDate(s){return s?new Date(s).toLocaleDateString():'—'}
+function toast(msg,ok=true){const el=document.getElementById('toast');el.textContent=msg;el.className=ok?'ok':'err';el.style.display='block';setTimeout(()=>el.style.display='none',3500)}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function tab(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  const loaders={customers:loadCustomers,keys:loadKeys,plans:loadPlans,usage:loadUsage,billing:loadBilling,firewall:loadFirewall,providers:loadProviders,webhooks:loadWebhooks};
+  if(loaders[name])loaders[name]();
+}
+async function api(path,body=null){
+  const opts=body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{};
+  const r=await fetch(path,opts);
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||r.statusText);
+  return d;
+}
+
+// Overview
+async function loadOverview(){
+  try{
+    const h=await api('/health');
+    document.getElementById('k-cust').textContent=fmt(h.customers_active??h.customers??0);
+    document.getElementById('k-keys').textContent=fmt(h.api_keys_issued??h.keys??0);
+    document.getElementById('cnt-cust').textContent=h.customers_active??'—';
+    document.getElementById('cnt-keys').textContent=h.api_keys_issued??'—';
+    if(h.license){
+      document.getElementById('plan-pill').textContent=(h.license.plan||'edge').toUpperCase();
+      if(h.license.expires_at)document.getElementById('lic-expires').textContent='Exp '+new Date(h.license.expires_at).toLocaleDateString();
+    }
+    document.getElementById('sys-health').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">Status</span><span><span class="badge badge-green">✓ Healthy</span></span></div>
+      <div class="stat-row"><span class="stat-lbl">License</span><span class="stat-val" style="color:#c4b5fd">${h.license?.plan||'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Uptime</span><span class="stat-val" style="color:#34d399">${h.uptime_seconds?Math.floor(h.uptime_seconds/3600)+'h':'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Version</span><span class="stat-val">v${h.version||'1.0'}</span></div>
+      <a href="https://axto.io/portal" target="_blank" class="btn btn-ghost btn-xs" style="margin-top:10px">Portal ↗</a>`;
+  }catch(e){}
+
+  try{
+    const u=await api('/edge/usage');
+    document.getElementById('k-req').textContent=fmt(u.total_requests||u.requests_today||0);
+    document.getElementById('k-rev').textContent=fmtMoney(u.revenue_month||u.revenue||0);
+    document.getElementById('k-lat').textContent=(u.avg_latency_ms||u.p95_latency_ms||0)+'ms';
+    // Timeline mini chart
+    const tl=u.timeline||u.hourly||[];
+    if(tl.length){
+      const max=Math.max(...tl.map(x=>x.requests||x.count||0),1);
+      document.getElementById('req-chart').innerHTML=tl.slice(-24).map(x=>{
+        const h=Math.round(((x.requests||x.count||0)/max)*56)+4;
+        return`<div class="mini-bar" style="height:${h}px"></div>`;
+      }).join('');
+    }
+  }catch(e){}
+
+  try{
+    const tc=await api('/edge/usage/top-customers');
+    const list=tc.customers||tc||[];
+    document.getElementById('top-customers').innerHTML=list.slice(0,5).map(c=>`
+      <div class="bar-row"><span class="bar-lbl">${c.name||c.customer_id||'—'}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${c.pct||50}%"></div></div>
+      <span class="bar-cnt">${fmt(c.requests||0)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No data</div>';
+  }catch(e){}
+
+  try{
+    const fw=await api('/edge/firewall/stats');
+    document.getElementById('k-blocked').textContent=fmt(fw.blocked_total||fw.blocked||0);
+    document.getElementById('fw-scanned').textContent=fmt(fw.total_requests||fw.scanned||0);
+    document.getElementById('fw-blocked').textContent=fmt(fw.blocked_total||fw.blocked||0);
+    const pass=fw.total_requests>0?((fw.total_requests-(fw.blocked_total||0))/fw.total_requests*100).toFixed(1)+'%':'—';
+    document.getElementById('fw-pass').textContent=pass;
+  }catch(e){}
+
+  try{
+    const plans=await api('/edge/plans');
+    const pl=plans.plans||plans||[];
+    const counts={};pl.forEach(p=>{counts[p.code||(p.plan_code)]=(p.customer_count||0)});
+    const total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
+    document.getElementById('plan-dist').innerHTML=pl.length?pl.map(p=>`
+      <div class="bar-row">${planBadge(p.code||p.plan_code)}
+      <div class="bar-track"><div class="bar-fill" style="width:${((p.customer_count||0)/total*100).toFixed(0)}%"></div></div>
+      <span class="bar-cnt">${p.customer_count||0}</span></div>`).join(''):'<div style="color:var(--text3);font-size:12px">No plans</div>';
+  }catch(e){}
+
+  try{
+    const mu=await api('/edge/usage/models');
+    const ml=mu.models||mu||[];
+    document.getElementById('top-models').innerHTML=ml.slice(0,6).map(m=>{
+      const max=ml[0]?.requests||1;
+      return`<div class="bar-row"><span class="bar-lbl mono" style="font-size:10px">${(m.model||'—').slice(0,20)}</span><div class="bar-track"><div class="bar-fill" style="width:${((m.requests||0)/max*100).toFixed(0)}%"></div></div><span class="bar-cnt">${fmt(m.requests||0)}</span></div>`;
+    }).join('')||'<div style="color:var(--text3);font-size:12px">No data</div>';
+  }catch(e){}
+}
+
+// Customers
+let allCustomers=[];
+async function loadCustomers(){
+  const tbody=document.getElementById('cust-tbody');
+  tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api('/edge/customers');
+    allCustomers=d.customers||d||[];
+    renderCustomers(allCustomers);
+  }catch(e){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+function filterCustomers(){
+  const q=document.getElementById('cust-search').value.toLowerCase();
+  const s=document.getElementById('cust-status').value;
+  renderCustomers(allCustomers.filter(c=>(!q||(c.name||'').toLowerCase().includes(q)||(c.email||'').toLowerCase().includes(q)||(c.customer_id||'').toLowerCase().includes(q))&&(!s||c.status===s)));
+}
+function renderCustomers(list){
+  const tbody=document.getElementById('cust-tbody');
+  tbody.innerHTML=list.length?list.map(c=>`<tr>
+    <td style="font-weight:600">${c.name||'—'}<div class="mono" style="color:var(--text3)">${c.customer_id||''}</div></td>
+    <td style="color:var(--text2)">${c.email||'—'}</td>
+    <td>${planBadge(c.plan||c.plan_code)}</td>
+    <td>${statusBadge(c.status)}</td>
+    <td class="mono">${fmt(c.requests_month||c.total_requests||0)}</td>
+    <td>
+      <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;width:80px">
+        <div style="height:100%;background:${(c.quota_used_pct||0)>80?'#ef4444':'#0891b2'};width:${Math.min(c.quota_used_pct||0,100)}%"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${(c.quota_used_pct||0).toFixed(0)}%</div>
+    </td>
+    <td class="mono" style="color:#fbbf24">${fmtMoney(c.revenue_month||c.revenue||0)}</td>
+    <td style="color:var(--text3)">${fmtDate(c.created_at)}</td>
+    <td>
+      <div style="display:flex;gap:5px">
+        ${c.status==='active'?`<button class="btn btn-red btn-xs" onclick="suspendCustomer('${c.customer_id}')">Suspend</button>`:`<button class="btn btn-green btn-xs" onclick="activateCustomer('${c.customer_id}')">Activate</button>`}
+      </div>
+    </td>
+  </tr>`).join(''):'<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No customers found</td></tr>';
+}
+async function createCustomer(){
+  try{
+    await api('/edge/customers',{name:document.getElementById('nc-name').value,email:document.getElementById('nc-email').value,plan_code:document.getElementById('nc-plan').value});
+    toast('Customer created');closeModal('new-cust-modal');loadCustomers();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function suspendCustomer(id){if(!confirm('Suspend this customer?'))return;try{await api(`/edge/customers/${id}/suspend`,{});toast('Suspended');loadCustomers();}catch(e){toast(e.message,false);}}
+async function activateCustomer(id){try{await api(`/edge/customers/${id}/activate`,{});toast('Activated');loadCustomers();}catch(e){toast(e.message,false);}}
+
+// Keys
+async function loadKeys(){
+  const tbody=document.getElementById('keys-tbody');
+  tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Loading…</td></tr>';
+  try{
+    const d=await api('/edge/keys');
+    const keys=d.keys||d||[];
+    tbody.innerHTML=keys.length?keys.map(k=>`<tr>
+      <td class="mono" style="color:#22d3ee">${k.key_masked||k.key_prefix||('sk-edge-'+k.id?.slice(0,8)+'…')}</td>
+      <td>${k.customer_name||k.customer_id||'—'}</td>
+      <td>${planBadge(k.plan||k.plan_code)}</td>
+      <td>${statusBadge(k.status)}</td>
+      <td class="mono">${fmt(k.total_requests||0)}</td>
+      <td style="color:var(--text3)">${fmtDate(k.last_used_at)}</td>
+      <td style="color:var(--text3)">${fmtDate(k.created_at)}</td>
+      <td><button class="btn btn-red btn-xs" onclick="revokeKey('${k.id||k.key_id}')">Revoke</button></td>
+    </tr>`).join(''):'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No keys issued</td></tr>';
+  }catch(e){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:#f87171">Load failed</td></tr>';}
+}
+async function issueKey(){
+  try{
+    const d=await api('/edge/keys',{customer_id:document.getElementById('nk-cid').value,label:document.getElementById('nk-label').value});
+    toast('Key issued: '+(d.api_key||d.key||'').slice(0,20)+'…');
+    closeModal('new-key-modal');loadKeys();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function revokeKey(id){if(!confirm('Revoke this key?'))return;try{await fetch(`/edge/keys/${id}`,{method:'DELETE'});toast('Key revoked');loadKeys();}catch(e){toast(e.message,false);}}
+
+// Plans
+async function loadPlans(){
+  try{
+    const d=await api('/edge/plans');
+    const plans=d.plans||d||[];
+    document.getElementById('plans-grid').innerHTML=plans.length?plans.map(p=>`
+      <div class="card" style="position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#0891b2,#22d3ee)"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:16px;font-weight:800">${p.name||p.display_name||p.code||'Plan'}</div>
+            <div class="mono" style="font-size:11px;color:var(--text3)">${p.code||p.plan_code||''}</div>
+          </div>
+          <div style="font-size:22px;font-weight:900;color:#22d3ee">$${p.price_usd||p.monthly_price||0}<span style="font-size:12px;color:var(--text3)">/mo</span></div>
+        </div>
+        <div class="stat-row"><span class="stat-lbl">Rate Limit</span><span class="stat-val">${p.rate_limit_rpm||p.rpm||'∞'} RPM</span></div>
+        <div class="stat-row"><span class="stat-lbl">Token Quota</span><span class="stat-val">${p.monthly_token_quota?fmt(p.monthly_token_quota):'Unlimited'}</span></div>
+        <div class="stat-row"><span class="stat-lbl">Markup</span><span class="stat-val" style="color:#fbbf24">${p.markup_pct||p.markup||0}%</span></div>
+        <div class="stat-row"><span class="stat-lbl">Customers</span><span class="stat-val" style="color:#22d3ee">${p.customer_count||0}</span></div>
+        ${p.allowed_models?.length?`<div style="margin-top:10px"><div class="form-label" style="margin-bottom:5px">Allowed Models</div><div style="display:flex;flex-wrap:wrap;gap:4px">${p.allowed_models.map(m=>`<span class="mono" style="font-size:10px;background:var(--surf2);padding:2px 6px;border-radius:4px;border:1px solid var(--border2)">${m}</span>`).join('')}</div></div>`:''}
+      </div>`).join(''):
+      '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💎</div><div>No plans configured</div><button class="btn btn-primary" style="margin-top:14px" onclick="openModal(\'new-plan-modal\')">+ Create Plan</button></div>';
+  }catch(e){}
+}
+async function createPlan(){
+  try{
+    await api('/edge/plans',{code:document.getElementById('np-code').value,name:document.getElementById('np-name').value,price_usd:parseFloat(document.getElementById('np-price').value||0),rate_limit_rpm:parseInt(document.getElementById('np-rpm').value||60),monthly_token_quota:parseInt(document.getElementById('np-quota').value||0),markup_pct:parseFloat(document.getElementById('np-markup').value||0)});
+    toast('Plan created');closeModal('new-plan-modal');loadPlans();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+
+// Usage
+async function loadUsage(){
+  const period=document.getElementById('usage-period')?.value||'month';
+  try{
+    const d=await api('/edge/usage?period='+period);
+    document.getElementById('u-req').textContent=fmt(d.total_requests||0);
+    document.getElementById('u-tok').textContent=d.total_tokens>1e6?(d.total_tokens/1e6).toFixed(1)+'M':fmt(d.total_tokens||0);
+    document.getElementById('u-cost').textContent=fmtMoney(d.provider_cost||d.cost||0);
+    document.getElementById('u-rev').textContent=fmtMoney(d.revenue||0);
+
+    // Models
+    try{
+      const mu=await api('/edge/usage/models?period='+period);
+      const ml=mu.models||mu||[];
+      document.getElementById('usage-models').innerHTML=ml.slice(0,8).map(m=>{
+        const max=ml[0]?.requests||1;
+        return`<div class="bar-row"><span class="bar-lbl mono" style="font-size:10px">${(m.model||'—').slice(0,22)}</span><div class="bar-track"><div class="bar-fill" style="width:${((m.requests||0)/max*100).toFixed(0)}%"></div></div><span class="bar-cnt">${fmt(m.requests||0)}</span></div>`;
+      }).join('')||'<div style="color:var(--text3);font-size:12px">No data</div>';
+    }catch(e){}
+
+    // Top customers
+    try{
+      const tc=await api('/edge/usage/top-customers?period='+period);
+      const list=tc.customers||tc||[];
+      document.getElementById('usage-top-cust').innerHTML=list.slice(0,6).map(c=>`
+        <div class="bar-row"><span class="bar-lbl">${c.name||c.customer_id||'—'}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${c.pct||50}%"></div></div>
+        <span class="bar-cnt">${fmtMoney(c.revenue||0)}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No data</div>';
+    }catch(e){}
+
+    // Timeline
+    try{
+      const tl=await api('/edge/usage/timeline?period='+period);
+      const rows=tl.timeline||tl||[];
+      document.getElementById('usage-timeline').innerHTML=rows.length?rows.map(r=>`
+        <tr><td class="mono">${r.date||r.day||'—'}</td><td class="mono">${fmt(r.requests||0)}</td><td class="mono">${fmt(r.tokens||0)}</td><td class="mono" style="color:#f87171">${fmtMoney(r.provider_cost||r.cost||0)}</td><td class="mono" style="color:#34d399">${fmtMoney(r.revenue||0)}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">No data</td></tr>';
+    }catch(e){}
+  }catch(e){}
+}
+
+// Billing
+async function loadBilling(){
+  try{
+    const [inv,rev]=await Promise.all([api('/edge/billing/invoices'),api('/edge/billing/revenue')]);
+    const revenue=rev.revenue||rev||{};
+    document.getElementById('revenue-summary').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">This Month</span><span class="stat-val" style="color:#34d399">${fmtMoney(revenue.month||0)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Last Month</span><span class="stat-val">${fmtMoney(revenue.last_month||0)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">All Time</span><span class="stat-val" style="color:#22d3ee">${fmtMoney(revenue.total||0)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">MRR</span><span class="stat-val" style="color:#fbbf24">${fmtMoney(revenue.mrr||0)}</span></div>`;
+    document.getElementById('margin-summary').innerHTML=`
+      <div class="stat-row"><span class="stat-lbl">Provider Cost</span><span class="stat-val" style="color:#f87171">${fmtMoney(revenue.provider_cost||0)}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Gross Margin</span><span class="stat-val" style="color:#34d399">${revenue.margin_pct!=null?revenue.margin_pct.toFixed(1)+'%':'—'}</span></div>
+      <div class="stat-row"><span class="stat-lbl">Net Profit</span><span class="stat-val" style="color:#fbbf24">${fmtMoney(revenue.net_profit||0)}</span></div>`;
+    const invoices=inv.invoices||inv||[];
+    document.getElementById('invoices-tbody').innerHTML=invoices.length?invoices.map(i=>`
+      <tr>
+        <td class="mono" style="color:#22d3ee">${i.invoice_id||i.id||'—'}</td>
+        <td>${i.customer_name||i.customer_id||'—'}</td>
+        <td class="mono" style="color:var(--text3)">${i.period||'—'}</td>
+        <td class="mono" style="color:#fbbf24">${fmtMoney(i.amount||i.total||0)}</td>
+        <td>${i.status==='paid'?'<span class="badge badge-green">Paid</span>':i.status==='pending'?'<span class="badge badge-yellow">Pending</span>':'<span class="badge badge-gray">'+i.status+'</span>'}</td>
+        <td><a href="/edge/billing/invoices/${i.invoice_id||i.id}" target="_blank" class="btn btn-ghost btn-xs">View</a></td>
+      </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No invoices yet. Click Generate to create.</td></tr>';
+  }catch(e){}
+}
+async function generateInvoices(){
+  try{await api('/edge/billing/invoices/generate',{});toast('Invoices generated');loadBilling();}catch(e){toast('Error: '+e.message,false);}
+}
+
+// Firewall
+async function loadFirewall(){
+  try{
+    const [stats,rules]=await Promise.all([api('/edge/firewall/stats'),api('/edge/firewall/rules')]);
+    document.getElementById('fw-scanned').textContent=fmt(stats.total_requests||stats.scanned||0);
+    document.getElementById('fw-blocked').textContent=fmt(stats.blocked_total||stats.blocked||0);
+    const pass=stats.total_requests>0?((stats.total_requests-(stats.blocked_total||0))/stats.total_requests*100).toFixed(1)+'%':'100%';
+    document.getElementById('fw-pass').textContent=pass;
+    document.getElementById('k-blocked').textContent=fmt(stats.blocked_total||0);
+    const ruleList=rules.rules||rules||[];
+    document.getElementById('fw-rules-list').innerHTML=ruleList.length?ruleList.map(r=>`
+      <div class="fw-rule">
+        <span class="badge badge-cyan">${r.rule_type||r.type||'rule'}</span>
+        <span class="mono" style="flex:1;font-size:11px;color:var(--text2)">${r.pattern||r.value||'—'}</span>
+        ${r.plan?`<span class="badge badge-gray">${r.plan}</span>`:'<span style="font-size:11px;color:var(--text3)">All plans</span>'}
+        <button class="btn btn-red btn-xs" onclick="deleteFwRule('${r.rule_id||r.id}')">✕</button>
+      </div>`).join(''):'<div class="empty"><div class="empty-icon">🛡</div><div>No custom rules. Default content policies active.</div></div>';
+  }catch(e){}
+}
+async function addFwRule(){
+  try{
+    await api('/edge/firewall/rules',{rule_type:document.getElementById('fw-type').value,pattern:document.getElementById('fw-pattern').value,plan:document.getElementById('fw-plan').value||null});
+    toast('Rule added');closeModal('new-fw-modal');loadFirewall();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function deleteFwRule(id){try{await fetch(`/edge/firewall/rules/${id}`,{method:'DELETE'});toast('Rule deleted');loadFirewall();}catch(e){toast(e.message,false);}}
+async function testFirewall(){
+  const msg=document.getElementById('fw-test-msg').value;
+  const plan=document.getElementById('fw-test-plan').value||'free';
+  try{
+    const d=await api('/edge/firewall/test',{message:msg,plan_code:plan});
+    document.getElementById('fw-test-result').innerHTML=d.blocked?
+      `<span class="badge badge-red">🚫 BLOCKED</span> <span style="color:var(--text2)">${d.reason||'Policy violation'}</span>`:
+      '<span class="badge badge-green">✅ ALLOWED</span>';
+  }catch(e){document.getElementById('fw-test-result').innerHTML='<span style="color:#f87171">Test failed: '+e.message+'</span>';}
+}
+
+// Providers
+async function loadProviders(){
+  try{
+    const d=await api('/edge/providers');
+    const provs=d.providers||d||[];
+    const ICONS={openai:'🟢',anthropic:'🟣',gemini:'🔵',groq:'⚡',mistral:'🟡',custom:'⚙️'};
+    document.getElementById('providers-grid').innerHTML=provs.length?provs.map(p=>`
+      <div class="card" style="position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#0891b2,#22d3ee)"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <span style="font-size:28px">${ICONS[p.provider]||'🤖'}</span>
+          <div><div style="font-weight:700">${p.name||p.provider}</div>
+            <span class="badge ${p.active?'badge-green':'badge-gray'}">${p.active?'Active':'Inactive'}</span></div>
+        </div>
+        <div class="stat-row"><span class="stat-lbl">Models</span><span class="stat-val">${(p.models||[]).length}</span></div>
+        <div class="stat-row"><span class="stat-lbl">Requests</span><span class="stat-val">${fmt(p.total_requests||0)}</span></div>
+        <div class="stat-row"><span class="stat-lbl">Cost (Mo)</span><span class="stat-val" style="color:#f87171">${fmtMoney(p.cost_month||0)}</span></div>
+      </div>`).join(''):
+      '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">⚙️</div><div>No providers configured in edge.yml</div></div>';
+  }catch(e){}
+}
+
+// Webhooks
+async function loadWebhooks(){
+  try{
+    const d=await api('/edge/webhooks');
+    const wh=d.webhooks||d||[];
+    document.getElementById('webhooks-list').innerHTML=wh.length?`<div style="display:grid;gap:10px">${wh.map(w=>`
+      <div class="card" style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1">
+          <div class="mono" style="font-weight:600;font-size:13px">${w.url||w.endpoint}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">${(w.events||[]).join(', ')||'All events'}</div>
+        </div>
+        <span class="badge ${w.active?'badge-green':'badge-gray'}">${w.active?'Active':'Off'}</span>
+        <button class="btn btn-ghost btn-xs" onclick="testWebhook('${w.webhook_id||w.id}')">Test</button>
+        <button class="btn btn-red btn-xs" onclick="deleteWebhook('${w.webhook_id||w.id}')">✕</button>
+      </div>`).join('')}</div>`:
+      '<div class="empty"><div class="empty-icon">🔔</div><div>No webhooks configured.</div><button class="btn btn-primary" style="margin-top:14px" onclick="openModal(\'new-wh-modal\')">+ Add Webhook</button></div>';
+  }catch(e){}
+}
+async function addWebhook(){
+  try{
+    await api('/edge/webhooks',{url:document.getElementById('wh-url').value,events:document.getElementById('wh-events').value.split(',').map(e=>e.trim()).filter(e=>e),secret:document.getElementById('wh-secret').value||null});
+    toast('Webhook added');closeModal('new-wh-modal');loadWebhooks();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+async function testWebhook(id){try{await api(`/edge/webhooks/test`,{webhook_id:id});toast('Test event sent');}catch(e){toast(e.message,false);}}
+async function deleteWebhook(id){try{await fetch(`/edge/webhooks/${id}`,{method:'DELETE'});toast('Deleted');loadWebhooks();}catch(e){toast(e.message,false);}}
+
+// Boot
+loadOverview();
+setInterval(loadOverview,30000);
+
+// WS realtime
+try{
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  const ws=new WebSocket(`${proto}//${location.host}/ws/usage`);
+  ws.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.requests_total)document.getElementById('k-req').textContent=fmt(d.requests_total);}catch(err){}};
+  ws.onclose=()=>{};
+}catch(e){}
+</script>
+</body>
+</html>

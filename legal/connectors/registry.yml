@@ -1,0 +1,1043 @@
+# ==============================================================================
+# AXTO Legal — Master Connector Registry
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform: AXTO (axto.io) — Sovereign AI Infrastructure
+# ==============================================================================
+# This file defines ALL legal data source connectors. No URLs are hardcoded
+# in application code — this YAML is the single source of truth for all
+# data endpoints. Follow Bagian 12 of the architecture spec for adding new
+# sources. Format per Bagian 12.1 (Source Record Schema).
+#
+# avail   : yes | partial | no
+# auth    : open | apikey | oauth2 | subscription | crawl | manual
+# verified: true = endpoint confirmed working | false = needs verification
+# ==============================================================================
+
+version: "2.0"
+schema: "axto-legal-source-record-v2"
+
+# ── INTL: International Organizations ─────────────────────────────────────────
+intl:
+
+  INTL-01:
+    id: INTL-01
+    name: "United Nations (UN)"
+    country: Global
+    avail: partial
+    auth: open
+    verified: true
+    desc: "UN treaties, human rights instruments, SDG indicators, trade data"
+    format: "JSON, HTML, PDF"
+    update: "Real-time / on publication"
+    website: "https://www.un.org"
+    links:
+      - url: "https://treaties.un.org/Pages/UNTSOnline.aspx"
+        note: "UN Treaty Collection (UNTS Online)"
+      - url: "https://unstats.un.org/sdgs/api/"
+        note: "SDG Indicators API (REST, open)"
+      - url: "https://comtrade.un.org/data/dev/portal"
+        note: "UN Comtrade API (trade data)"
+      - url: "https://api.ohchr.org/"
+        note: "OHCHR Human Rights API"
+      - url: "https://documents.un.org/"
+        note: "UN Document System"
+    notes: "SDG API and Comtrade are fully REST. Treaty collection is HTML/PDF. OHCHR API is partial."
+
+  INTL-02:
+    id: INTL-02
+    name: "World Bank"
+    country: Global
+    avail: yes
+    auth: open
+    verified: true
+    desc: "World Bank open data — legal, economic, and governance indicators"
+    format: "JSON, XML"
+    update: "Quarterly"
+    website: "https://www.worldbank.org"
+    links:
+      - url: "https://api.worldbank.org/v2/"
+        note: "World Bank Open Data API v2 (fully open REST)"
+      - url: "https://datahelpdesk.worldbank.org/knowledgebase/articles/889392"
+        note: "API Documentation"
+      - url: "https://documents.worldbank.org/"
+        note: "Document Search Portal"
+
+  INTL-03:
+    id: INTL-03
+    name: "OECD"
+    country: "37 Member Nations"
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "OECD legal instruments, tax rules, financial regulations, governance data"
+    format: "SDMX-JSON, JSON"
+    update: "On publication"
+    website: "https://www.oecd.org"
+    links:
+      - url: "https://stats.oecd.org/SDMX-JSON/data/"
+        note: "OECD SDMX-JSON API (free registration)"
+      - url: "https://data.oecd.org/api/"
+        note: "OECD Data API documentation"
+      - url: "https://legalinstruments.oecd.org/api/"
+        note: "OECD Legal Instruments API"
+    notes: "Free API key via OECD account registration."
+
+  INTL-04:
+    id: INTL-04
+    name: "WTO (World Trade Organization)"
+    country: "164 Members"
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "Trade law, dispute settlement, tariff schedules, WTO agreements"
+    format: "JSON"
+    update: "On publication"
+    website: "https://www.wto.org"
+    links:
+      - url: "https://apiportal.wto.org/"
+        note: "WTO API Portal — register for free key"
+      - url: "https://api.wto.org/"
+        note: "WTO Data API base URL"
+      - url: "https://docs.wto.org/"
+        note: "WTO Document System"
+
+  INTL-05:
+    id: INTL-05
+    name: "ILO (International Labour Organization)"
+    country: "187 Members"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Labour standards, conventions, national labour laws (NATLEX), ILOSTAT"
+    format: "JSON, HTML"
+    update: "Continuous"
+    website: "https://www.ilo.org"
+    links:
+      - url: "https://ilostat.ilo.org/resources/ilostat-developer-tools/ilostat-api/"
+        note: "ILOSTAT API Documentation"
+      - url: "https://rplumber.ilo.org/data/"
+        note: "ILOSTAT REST API base (open)"
+      - url: "https://www.ilo.org/dyn/natlex/natlex4.listCountry"
+        note: "NATLEX — national labour law database"
+
+  INTL-06:
+    id: INTL-06
+    name: "WHO (World Health Organization)"
+    country: "194 Members"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "International health regulations, WHO publications, GHO data"
+    format: "JSON"
+    update: "Daily"
+    website: "https://www.who.int"
+    links:
+      - url: "https://ghoapi.azureedge.net/api/"
+        note: "Global Health Observatory API (open)"
+      - url: "https://apps.who.int/iris/"
+        note: "WHO IRIS Document Repository"
+
+  INTL-07:
+    id: INTL-07
+    name: "IMF (International Monetary Fund)"
+    country: "190 Members"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Monetary and financial laws, IMF Article IV consultations, FSAP"
+    format: "JSON, SDMX"
+    update: "Quarterly"
+    website: "https://www.imf.org"
+    links:
+      - url: "https://www.imf.org/external/datamapper/api/v1/"
+        note: "IMF DataMapper API v1 (open)"
+      - url: "https://sdmxcentral.imf.org/"
+        note: "IMF SDMX Central"
+
+  INTL-08:
+    id: INTL-08
+    name: "FATF (Financial Action Task Force)"
+    country: "39 Members + Global"
+    avail: partial
+    auth: open
+    verified: true
+    desc: "AML/CFT 40 Recommendations, country mutual evaluations, grey/black lists"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.fatf-gafi.org"
+    links:
+      - url: "https://www.fatf-gafi.org/en/publications.html"
+        note: "FATF Publications (HTML/PDF, no REST API)"
+      - url: "https://www.fatf-gafi.org/en/countries.html"
+        note: "Country risk ratings"
+    notes: "⚠️ No REST API. Requires HTML parsing or PDF extraction."
+
+  INTL-09:
+    id: INTL-09
+    name: "Basel Committee / BIS"
+    country: Global
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Banking regulation, Basel III/IV standards, BIS statistics"
+    format: "JSON, PDF"
+    update: "On publication"
+    website: "https://www.bis.org/bcbs"
+    links:
+      - url: "https://data.bis.org/"
+        note: "BIS Statistics API (open REST)"
+      - url: "https://www.bis.org/bcbs/publications.htm"
+        note: "BCBS Publications"
+
+# ── FIN: Financial Regulators ─────────────────────────────────────────────────
+financial:
+
+  FIN-01:
+    id: FIN-01
+    name: "SEC (Securities & Exchange Commission)"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "US securities law, EDGAR filings, XBRL data, regulations"
+    format: "JSON, XML, HTML"
+    update: "Real-time"
+    website: "https://www.sec.gov"
+    links:
+      - url: "https://data.sec.gov/"
+        note: "SEC EDGAR Data API (open, no key)"
+      - url: "https://efts.sec.gov/LATEST/search-index?q="
+        note: "EDGAR Full-Text Search"
+      - url: "https://www.sec.gov/developer"
+        note: "SEC Developer Portal"
+
+  FIN-02:
+    id: FIN-02
+    name: "FINRA (Financial Industry Regulatory Authority)"
+    country: USA
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "US broker-dealer regulations, FINRA rules, enforcement actions"
+    format: "JSON"
+    update: "Daily"
+    website: "https://www.finra.org"
+    links:
+      - url: "https://developer.finra.org/"
+        note: "FINRA Developer Portal (free key)"
+      - url: "https://api.finra.org/"
+        note: "FINRA API Base URL"
+
+  FIN-03:
+    id: FIN-03
+    name: "OJK (Otoritas Jasa Keuangan)"
+    country: Indonesia
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Indonesian financial sector regulations — banking, capital market, insurance, fintech"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.ojk.go.id"
+    links:
+      - url: "https://www.ojk.go.id/id/regulasi/Default.aspx"
+        note: "OJK Regulation portal"
+      - url: "https://sipo.ojk.go.id/"
+        note: "Capital market data"
+    notes: "⚠️ No formal REST API. Use web crawler with sitemap. OJK POJK/SEOJK series is the primary target."
+
+  FIN-04:
+    id: FIN-04
+    name: "Bank Indonesia"
+    country: Indonesia
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Indonesian monetary law, BI regulations, payment system rules"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.bi.go.id"
+    links:
+      - url: "https://www.bi.go.id/id/peraturan/Default.aspx"
+        note: "Bank Indonesia regulation portal"
+      - url: "https://www.bi.go.id/id/statistik/Default.aspx"
+        note: "BI Statistics"
+
+  FIN-05:
+    id: FIN-05
+    name: "MAS (Monetary Authority of Singapore)"
+    country: Singapore
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Singapore financial regulations, AML rules, payment systems"
+    format: "JSON"
+    update: "Daily"
+    website: "https://www.mas.gov.sg"
+    links:
+      - url: "https://eservices.mas.gov.sg/api/action/datastore/"
+        note: "MAS Open Data API (open REST)"
+      - url: "https://eservices.mas.gov.sg/apidoc/"
+        note: "MAS API Documentation"
+
+  FIN-06:
+    id: FIN-06
+    name: "HKMA (Hong Kong Monetary Authority)"
+    country: "Hong Kong"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Hong Kong banking and monetary regulations"
+    format: "JSON"
+    update: "Monthly"
+    website: "https://www.hkma.gov.hk"
+    links:
+      - url: "https://api.hkma.gov.hk/"
+        note: "HKMA Open Data API (open REST)"
+      - url: "https://www.hkma.gov.hk/eng/regulatory-resources/guidelines/"
+        note: "Regulatory Guidelines"
+
+  FIN-07:
+    id: FIN-07
+    name: "ASIC (Australian Securities & Investments Commission)"
+    country: Australia
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Australian corporate and financial law"
+    format: "JSON"
+    update: "On publication"
+    website: "https://www.asic.gov.au"
+    links:
+      - url: "https://www.legislation.gov.au/api/"
+        note: "Australian Federal Legislation API"
+      - url: "https://data.gov.au/api/3/"
+        note: "Australia Open Data API"
+
+  FIN-08:
+    id: FIN-08
+    name: "FCA (Financial Conduct Authority)"
+    country: UK
+    avail: yes
+    auth: open
+    verified: true
+    desc: "UK financial regulation, FCA handbook, enforcement"
+    format: "JSON, HTML"
+    update: "Daily"
+    website: "https://www.fca.org.uk"
+    links:
+      - url: "https://register.fca.org.uk/services/V0.1/"
+        note: "FCA Register API (open)"
+      - url: "https://www.handbook.fca.org.uk/"
+        note: "FCA Handbook"
+      - url: "https://caselaw.nationalarchives.gov.uk/"
+        note: "UK Case Law API"
+
+  FIN-09:
+    id: FIN-09
+    name: "BaFin (Germany)"
+    country: Germany
+    avail: yes
+    auth: open
+    verified: true
+    desc: "German financial regulation, banking law"
+    format: "JSON, HTML"
+    update: "On publication"
+    website: "https://www.bafin.de"
+    links:
+      - url: "https://www.gesetze-im-internet.de/"
+        note: "German Federal Laws (open REST API exists)"
+      - url: "https://api.rechtsinformationssystem.de/v1/"
+        note: "German Legal Information API"
+      - url: "https://portal.mvp.bafin.de/database/"
+        note: "BaFin Institution Database"
+
+  FIN-10:
+    id: FIN-10
+    name: "FINMA (Swiss)"
+    country: Switzerland
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Swiss financial market regulation, Fedlex laws"
+    format: "JSON, SPARQL"
+    update: "On publication"
+    website: "https://www.finma.ch"
+    links:
+      - url: "https://www.fedlex.admin.ch/api/"
+        note: "Fedlex SPARQL & REST API (Swiss federal law)"
+      - url: "https://www.fedlex.admin.ch/"
+        note: "Swiss Federal Law portal"
+
+  FIN-11:
+    id: FIN-11
+    name: "JFSA (Japan Financial Services Agency)"
+    country: Japan
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Japanese financial law, e-Gov law database"
+    format: "JSON, HTML"
+    update: "On publication"
+    website: "https://www.fsa.go.jp"
+    links:
+      - url: "https://elaws.e-gov.go.jp/api/1/lawlists/"
+        note: "Japan e-Gov Law API (open REST)"
+      - url: "https://elaws.e-gov.go.jp/"
+        note: "Japanese law database"
+
+  FIN-12:
+    id: FIN-12
+    name: "SEBI (Securities and Exchange Board of India)"
+    country: India
+    avail: partial
+    auth: apikey
+    verified: true
+    desc: "Indian securities law, SEBI regulations"
+    format: "JSON, HTML"
+    update: "On publication"
+    website: "https://www.sebi.gov.in"
+    links:
+      - url: "https://data.gov.in/"
+        note: "India Open Government Data (API key required)"
+      - url: "https://www.sebi.gov.in/legal/regulations.html"
+        note: "SEBI Regulations portal"
+
+# ── CRT: Courts & Judiciary ───────────────────────────────────────────────────
+courts:
+
+  CRT-01:
+    id: CRT-01
+    name: "ICJ (International Court of Justice)"
+    country: Global
+    avail: partial
+    auth: open
+    verified: true
+    desc: "ICJ cases, judgments, advisory opinions"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.icj-cij.org"
+    links:
+      - url: "https://www.icj-cij.org/cases"
+        note: "ICJ Cases Database"
+      - url: "https://www.icj-cij.org/decisions"
+        note: "ICJ Decisions"
+    notes: "⚠️ No REST API. HTML parsing required."
+
+  CRT-02:
+    id: CRT-02
+    name: "ICC (International Criminal Court)"
+    country: Global
+    avail: partial
+    auth: open
+    verified: true
+    desc: "ICC cases, indictments, rulings"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.icc-cpi.int"
+    links:
+      - url: "https://www.icc-cpi.int/cases"
+        note: "ICC Cases"
+
+  CRT-03:
+    id: CRT-03
+    name: "ECHR (European Court of Human Rights)"
+    country: Europe
+    avail: yes
+    auth: open
+    verified: true
+    desc: "European human rights case law — HUDOC database (800K+ decisions)"
+    format: "JSON"
+    update: "Daily"
+    website: "https://www.echr.coe.int"
+    links:
+      - url: "https://hudoc.echr.coe.int/app/query/results?query="
+        note: "HUDOC Case Law REST API (open, no key)"
+      - url: "https://hudoc.echr.coe.int/app/help#"
+        note: "HUDOC Query Documentation"
+
+  CRT-04:
+    id: CRT-04
+    name: "CJEU (Court of Justice of the EU)"
+    country: EU
+    avail: yes
+    auth: open
+    verified: true
+    desc: "EU court decisions, EU law full text via EUR-Lex"
+    format: "JSON, XML, SPARQL"
+    update: "Daily"
+    website: "https://curia.europa.eu"
+    links:
+      - url: "https://eur-lex.europa.eu/eur-lex-rest.html"
+        note: "EUR-Lex REST API (open, all EU law)"
+      - url: "https://op.europa.eu/en/web/cellar"
+        note: "EU CELLAR SPARQL endpoint"
+
+  CRT-06:
+    id: CRT-06
+    name: "US Federal Courts"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "50M+ US court opinions — CourtListener, Harvard Caselaw"
+    format: "JSON"
+    update: "Daily"
+    website: "https://www.supremecourt.gov"
+    links:
+      - url: "https://www.courtlistener.com/help/api/"
+        note: "CourtListener API (50M+ opinions, open)"
+      - url: "https://case.law/api/"
+        note: "Harvard Caselaw Access Project API"
+
+  CRT-07:
+    id: CRT-07
+    name: "UK Courts (National Archives)"
+    country: UK
+    avail: yes
+    auth: open
+    verified: true
+    desc: "UK case law, legislation full text"
+    format: "JSON, HTML"
+    update: "Daily"
+    website: "https://caselaw.nationalarchives.gov.uk"
+    links:
+      - url: "https://caselaw.nationalarchives.gov.uk/"
+        note: "Find Case Law API (open)"
+      - url: "https://legislation.gov.uk/api/"
+        note: "UK Legislation API (full text)"
+
+  CRT-08:
+    id: CRT-08
+    name: "Mahkamah Agung Indonesia"
+    country: Indonesia
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Indonesian Supreme Court decisions — 7M+ case decisions"
+    format: "HTML, PDF"
+    update: "Daily"
+    website: "https://mahkamahagung.go.id"
+    links:
+      - url: "https://putusan3.mahkamahagung.go.id/"
+        note: "Direktori Putusan MA (7M+ putusan)"
+    notes: "⚠️ No formal REST API. HTML/PDF crawling. Large-scale scraper needed."
+
+  CRT-09:
+    id: CRT-09
+    name: "Mahkamah Konstitusi Indonesia"
+    country: Indonesia
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Indonesian Constitutional Court decisions"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.mahkamahkonstitusi.go.id"
+    links:
+      - url: "https://www.mahkamahkonstitusi.go.id/index.php?page=web.Putusan"
+        note: "MK Decision Database"
+
+  CRT-10:
+    id: CRT-10
+    name: "Singapore Courts"
+    country: Singapore
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Singapore case law and statutes"
+    format: "HTML, JSON"
+    update: "Daily"
+    website: "https://www.judiciary.gov.sg"
+    links:
+      - url: "https://www.singaporelawwatch.sg/"
+        note: "Singapore Law Watch (case law)"
+      - url: "https://sso.agc.gov.sg/"
+        note: "Singapore Statutes Online API"
+
+  CRT-11:
+    id: CRT-11
+    name: "AustLII (Australia & NZ)"
+    country: Australia
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Australian and NZ case law, legislation"
+    format: "JSON, HTML"
+    update: "Daily"
+    website: "https://www.austlii.edu.au"
+    links:
+      - url: "https://api3.austlii.edu.au/"
+        note: "AustLII REST API v3 (open)"
+      - url: "https://www.legislation.gov.au/api/"
+        note: "Australian Federal Legislation API"
+
+# ── STD: Standards Organizations ──────────────────────────────────────────────
+standards:
+
+  STD-04:
+    id: STD-04
+    name: "NIST"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "NIST cybersecurity standards, CVE database, AI RMF, SP 800 series"
+    format: "JSON"
+    update: "Continuous"
+    website: "https://www.nist.gov"
+    links:
+      - url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+        note: "NVD CVE API v2 (open)"
+      - url: "https://csrc.nist.gov/extensions/nudp/services/json/"
+        note: "NIST SP Controls API (JSON)"
+      - url: "https://airc.nist.gov/"
+        note: "NIST AI Risk Management Framework"
+
+  STD-07:
+    id: STD-07
+    name: "CSA (Cloud Security Alliance)"
+    country: Global
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Cloud security standards, STAR registry, CCM controls"
+    format: "HTML, JSON"
+    update: "On publication"
+    website: "https://cloudsecurityalliance.org"
+    links:
+      - url: "https://cloudsecurityalliance.org/star/registry/"
+        note: "CSA STAR Registry (open)"
+      - url: "https://cloudsecurityalliance.org/research/cloud-controls-matrix/"
+        note: "CCM Controls"
+
+# ── PRIV: Privacy & Cyber Regulators ──────────────────────────────────────────
+privacy:
+
+  PRIV-01:
+    id: PRIV-01
+    name: "EDPB (European Data Protection Board)"
+    country: EU
+    avail: yes
+    auth: open
+    verified: true
+    desc: "GDPR guidelines, opinions, enforcement decisions, data protection law"
+    format: "JSON, HTML"
+    update: "On publication"
+    website: "https://edpb.europa.eu"
+    links:
+      - url: "https://eur-lex.europa.eu/eur-lex-rest.html"
+        note: "EUR-Lex REST API — GDPR text and all EU law"
+      - url: "https://edpb.europa.eu/our-work-tools/documents_en"
+        note: "EDPB Guidelines & Opinions"
+
+  PRIV-03:
+    id: PRIV-03
+    name: "PDPC Singapore"
+    country: Singapore
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Singapore Personal Data Protection Act, enforcement decisions"
+    format: "HTML, JSON"
+    update: "On publication"
+    website: "https://www.pdpc.gov.sg"
+    links:
+      - url: "https://sso.agc.gov.sg/Act/PDPA2012"
+        note: "PDPA 2012 full text (Singapore Statutes Online)"
+
+  PRIV-06:
+    id: PRIV-06
+    name: "NIST CSF & AI RMF"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "NIST Cybersecurity Framework 2.0, AI Risk Management Framework"
+    format: "JSON, HTML"
+    update: "On major version"
+    website: "https://csrc.nist.gov"
+    links:
+      - url: "https://www.nist.gov/cyberframework"
+        note: "NIST CSF 2.0"
+      - url: "https://airc.nist.gov/"
+        note: "NIST AI RMF"
+
+  PRIV-07:
+    id: PRIV-07
+    name: "CISA (US Cybersecurity)"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Known exploited vulnerabilities, CISA advisories, cybersecurity guidance"
+    format: "JSON, XML/RSS"
+    update: "Daily"
+    website: "https://www.cisa.gov"
+    links:
+      - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+        note: "KEV Catalog (JSON, always open)"
+      - url: "https://www.cisa.gov/cybersecurity-advisories/all-advisories.xml"
+        note: "CISA Advisories RSS feed"
+
+  PRIV-08:
+    id: PRIV-08
+    name: "ENISA (EU Cybersecurity Agency)"
+    country: EU
+    avail: yes
+    auth: open
+    verified: true
+    desc: "EU cybersecurity reports, NIS2 implementation, threat landscape"
+    format: "RSS, HTML"
+    update: "On publication"
+    website: "https://www.enisa.europa.eu"
+    links:
+      - url: "https://www.enisa.europa.eu/publications/rss"
+        note: "ENISA Publications RSS (open)"
+
+# ── ODP: Open Data Portals ────────────────────────────────────────────────────
+open_data:
+
+  ODP-01:
+    id: ODP-01
+    name: "data.gov (USA)"
+    country: USA
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "US federal open data including regulations, rulemaking documents"
+    format: "JSON"
+    update: "Real-time"
+    website: "https://www.data.gov"
+    links:
+      - url: "https://api.data.gov/"
+        note: "Federal API Gateway (free key)"
+      - url: "https://api.regulations.gov/v4/documents"
+        note: "Regulations.gov API v4 (free key)"
+
+  ODP-02:
+    id: ODP-02
+    name: "data.europa.eu (EU)"
+    country: EU
+    avail: yes
+    auth: open
+    verified: true
+    desc: "EU open data portal and EUR-Lex full legal text"
+    format: "JSON, SPARQL"
+    update: "Daily"
+    website: "https://data.europa.eu"
+    links:
+      - url: "https://eur-lex.europa.eu/eur-lex-rest.html"
+        note: "EUR-Lex REST API (all EU legislation, open)"
+      - url: "https://data.europa.eu/api/hub/api/"
+        note: "EU Data Portal API"
+
+  ODP-03:
+    id: ODP-03
+    name: "data.gov.sg (Singapore)"
+    country: Singapore
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Singapore statutes, MAS data, open government datasets"
+    format: "JSON"
+    update: "Daily"
+    website: "https://data.gov.sg"
+    links:
+      - url: "https://api.data.gov.sg/v1/"
+        note: "Singapore Open Data API v1 (open)"
+      - url: "https://sso.agc.gov.sg/"
+        note: "Singapore Statutes Online"
+
+  ODP-04:
+    id: ODP-04
+    name: "data.gov.au (Australia)"
+    country: Australia
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Australian federal legislation, open government data"
+    format: "JSON"
+    update: "Daily"
+    website: "https://data.gov.au"
+    links:
+      - url: "https://www.legislation.gov.au/api/"
+        note: "Federal Register of Legislation API (open)"
+      - url: "https://api3.austlii.edu.au/"
+        note: "AustLII Legal API v3"
+
+  ODP-05:
+    id: ODP-05
+    name: "JDIHN (Indonesia)"
+    country: Indonesia
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Indonesian national legal documentation network — all laws, regulations"
+    format: "HTML, PDF"
+    update: "Daily"
+    website: "https://jdihn.go.id"
+    links:
+      - url: "https://jdihn.go.id/"
+        note: "JDIHN — Portal Hukum Nasional"
+      - url: "https://peraturan.go.id/"
+        note: "peraturan.go.id — Government Regulations"
+      - url: "https://jdih.kemenkeu.go.id/"
+        note: "Ministry of Finance Legal Hub"
+      - url: "https://jdih.bpk.go.id/"
+        note: "BPK Legal Hub"
+    notes: "No REST API — HTML/PDF. The official Indonesian legal portal."
+
+  ODP-06:
+    id: ODP-06
+    name: "data.gov.uk (UK)"
+    country: UK
+    avail: yes
+    auth: open
+    verified: true
+    desc: "UK legislation full text, case law, open government data"
+    format: "JSON, HTML"
+    update: "Daily"
+    website: "https://www.data.gov.uk"
+    links:
+      - url: "https://legislation.gov.uk/api/"
+        note: "UK Legislation API (full text, open)"
+      - url: "https://caselaw.nationalarchives.gov.uk/"
+        note: "UK Case Law API"
+
+  ODP-07:
+    id: ODP-07
+    name: "data.canada.ca"
+    country: Canada
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Canadian federal laws, open government data"
+    format: "JSON"
+    update: "Daily"
+    website: "https://open.canada.ca"
+    links:
+      - url: "https://laws.justice.gc.ca/eng/"
+        note: "Canada Justice Laws (open)"
+      - url: "https://api.open.canada.ca/data/api/"
+        note: "Canada Open Data API"
+
+# ── LIC: Licensed Legal Databases (subscription required) ─────────────────────
+licensed:
+
+  LIC-01:
+    id: LIC-01
+    name: "LexisNexis"
+    country: Global
+    avail: yes
+    auth: subscription
+    verified: true
+    desc: "Global legal database — 100+ countries, case law, statutes, secondary sources"
+    format: "JSON"
+    update: "Real-time"
+    website: "https://developer.lexisnexis.com"
+    links:
+      - url: "https://developer.lexisnexis.com/"
+        note: "LexisNexis Developer Portal (subscription)"
+      - url: "https://developer.lexisnexis.com/documentation"
+        note: "API Documentation"
+    notes: "⚠️ Enterprise subscription required. Contact LexisNexis for pricing."
+
+  LIC-02:
+    id: LIC-02
+    name: "Westlaw / Thomson Reuters"
+    country: Global
+    avail: yes
+    auth: subscription
+    verified: true
+    desc: "Comprehensive US and global legal research platform"
+    format: "JSON"
+    update: "Real-time"
+    website: "https://developer.westlaw.com"
+    links:
+      - url: "https://developer.westlaw.com/"
+        note: "Westlaw Developer Portal"
+    notes: "⚠️ Enterprise subscription required."
+
+  LIC-04:
+    id: LIC-04
+    name: "vLex"
+    country: "100+ countries"
+    avail: yes
+    auth: subscription
+    verified: true
+    desc: "Global legal content — 100+ countries, AI-powered, multilingual"
+    format: "JSON"
+    update: "Daily"
+    website: "https://vlex.com"
+    links:
+      - url: "https://vlex.com/api/"
+        note: "vLex Developer API"
+      - url: "https://developer.vlex.com/"
+        note: "vLex API Documentation"
+    notes: "⚠️ Subscription required. Has free trial for developers."
+
+  LIC-05:
+    id: LIC-05
+    name: "Fastcase"
+    country: USA
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "US case law database — accessible pricing for mid-market"
+    format: "JSON"
+    update: "Daily"
+    website: "https://fastcase.com"
+    links:
+      - url: "https://www.fastcase.com/api/"
+        note: "Fastcase API (contact for key)"
+
+  LIC-06:
+    id: LIC-06
+    name: "Hukumonline"
+    country: Indonesia
+    avail: yes
+    auth: subscription
+    verified: true
+    desc: "Indonesia's premier legal database — UU, PP, PerMen, court decisions"
+    format: "JSON, HTML"
+    update: "Daily"
+    website: "https://www.hukumonline.com"
+    links:
+      - url: "https://www.hukumonline.com/api/"
+        note: "Hukumonline API (enterprise subscription)"
+      - url: "https://pro.hukumonline.com/"
+        note: "Hukumonline Pro"
+    notes: "⚠️ Enterprise subscription. Critical for Indonesia coverage."
+
+# ── GAP SOURCES: Known gaps that need verification ────────────────────────────
+# These are countries/sources with NO formal API per the spec.
+# The system will display ⚠️ NEEDS VERIFICATION warnings for these.
+gap_sources:
+
+  GAP-CN:
+    id: GAP-CN
+    name: "China (NPC Laws)"
+    country: China
+    avail: no
+    auth: crawl
+    verified: false
+    desc: "Chinese national laws — NPC database"
+    notes: "⚠️ flk.npc.gov.cn — NO API. HTML/PDF only in Chinese. Machine translation required. Status: NEEDS VERIFICATION"
+    links:
+      - url: "https://flk.npc.gov.cn"
+        note: "National People's Congress Law Database"
+
+  GAP-KR:
+    id: GAP-KR
+    name: "Korea (Open.law.go.kr)"
+    country: "South Korea"
+    avail: yes
+    auth: open
+    verified: false
+    desc: "Korean law database — open REST API from government"
+    notes: "✅ open.law.go.kr — Good REST API. English version at law.go.kr/eng. Status: NEEDS FULL TESTING"
+    links:
+      - url: "https://open.law.go.kr"
+        note: "Korean Open Law API"
+      - url: "https://law.go.kr/eng/engMain.do"
+        note: "English version"
+
+  GAP-AE:
+    id: GAP-AE
+    name: "UAE (uaelegislation.gov.ae)"
+    country: UAE
+    avail: no
+    auth: crawl
+    verified: false
+    desc: "UAE federal legislation"
+    notes: "⚠️ NO formal REST API. HTML only. Status: NEEDS VERIFICATION"
+    links:
+      - url: "https://uaelegislation.gov.ae/en"
+        note: "UAE Legislation portal"
+      - url: "https://elaws.moj.gov.ae"
+        note: "UAE Ministry of Justice e-Laws"
+
+  GAP-SA:
+    id: GAP-SA
+    name: "Saudi Arabia (boe.gov.sa)"
+    country: "Saudi Arabia"
+    avail: no
+    auth: crawl
+    verified: false
+    desc: "Saudi Bureau of Experts regulations"
+    notes: "⚠️ NO API. Arabic HTML/PDF only. Status: NEEDS VERIFICATION"
+    links:
+      - url: "https://boe.gov.sa"
+        note: "Bureau of Experts of Council of Ministers"
+
+  GAP-BR:
+    id: GAP-BR
+    name: "Brazil (planalto.gov.br)"
+    country: Brazil
+    avail: no
+    auth: crawl
+    verified: false
+    desc: "Brazilian federal legislation"
+    notes: "⚠️ NO public REST API. HTML/PDF. Internal CodeX project exists but not public. Status: NEEDS VERIFICATION"
+    links:
+      - url: "https://www.planalto.gov.br/ccivil_03"
+        note: "Brazilian laws portal"
+
+  GAP-UK-CH:
+    id: GAP-UK-CH
+    name: "UK Companies House API"
+    country: UK
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "UK company registration, beneficial ownership — critical for AML/KYC"
+    notes: "✅ Free API key. api.company-information.service.gov.uk — fully functional"
+    links:
+      - url: "https://api.company-information.service.gov.uk"
+        note: "UK Companies House API (free key)"
+      - url: "https://developer.company-information.service.gov.uk"
+        note: "Developer documentation"
+
+  GAP-WIPO:
+    id: GAP-WIPO
+    name: "WIPO Lex (IP Law)"
+    country: "200 jurisdictions"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Intellectual property laws — 200 jurisdictions, multilingual"
+    notes: "✅ wipo.int/wipolex — open, good coverage. Needs full API testing"
+    links:
+      - url: "https://www.wipo.int/wipolex/en/"
+        note: "WIPO Lex — IP Law Database"
+      - url: "https://www.wipo.int/wipolex/en/api/"
+        note: "WIPO Lex API"
+
+  GAP-OFAC:
+    id: GAP-OFAC
+    name: "OFAC SDN (Sanctions)"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "US sanctions list — Specially Designated Nationals, bulk and API"
+    notes: "✅ Direct download JSON/XML. Also sanctionslistservice.ofac.treas.gov for real-time API"
+    links:
+      - url: "https://sanctionslistservice.ofac.treas.gov"
+        note: "OFAC Sanctions List Service API"
+      - url: "https://sanctionslist.ofac.treas.gov/Home/SdnList"
+        note: "SDN List direct download"
+
+  GAP-OPENCORP:
+    id: GAP-OPENCORP
+    name: "OpenCorporates (Global Registry)"
+    country: Global
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "Global company registry aggregator — 200+ jurisdictions"
+    notes: "Free tier available. Important for cross-border AML/KYC"
+    links:
+      - url: "https://api.opencorporates.com/"
+        note: "OpenCorporates API (free + paid tiers)"

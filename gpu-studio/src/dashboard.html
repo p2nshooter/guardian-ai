@@ -1,0 +1,1358 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AXTO — GPU Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080e;--s1:#0d0d16;--s2:#12121e;--s3:#181826;--s4:#1e1e2e;
+  --b:rgba(255,255,255,.06);
+  --p:#f59e0b;--p2:#fbbf24;--pa:rgba(245,158,11,.12);
+  --t:#f0f0ff;--t2:#8b8baa;--t3:#4a4a6a;
+  --g:#10b981;--r:#f43f5e;--c:#06b6d4;--v:#a78bfa;
+  --f:'Geist',sans-serif;--mono:'Geist Mono',monospace;
+  --rad:10px;
+}
+html,body{background:var(--bg);color:var(--t);font-family:var(--f);height:100%;overflow:hidden;font-size:14px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+/* TOP BAR */
+.topbar{height:50px;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:100;position:relative}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none}
+.brand-logo{width:30px;height:30px;background:linear-gradient(135deg,#f59e0b,#f97316,#ec4899);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.04em;color:var(--t)}
+.brand-tag{font-size:11px;font-weight:600;color:var(--p2);background:var(--pa);padding:2px 8px;border-radius:20px;border:1px solid rgba(245,158,11,.25)}
+.sep{width:1px;height:22px;background:var(--b)}
+.modes{display:flex;gap:1px;background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:3px}
+.mode{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t3);border:none;background:transparent;font-family:var(--f);transition:all .15s;white-space:nowrap}
+.mode:hover{color:var(--t2)}
+.mode.on{background:var(--s4);color:var(--t);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.gpu-pill{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--b);font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;margin-left:auto}
+.gpu-dot{width:7px;height:7px;border-radius:50%;background:var(--g);box-shadow:0 0 6px var(--g)}
+.icon-btn{width:32px;height:32px;border-radius:8px;background:transparent;border:1px solid var(--b);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;color:var(--t2)}
+.icon-btn:hover{background:var(--s3);color:var(--t)}
+
+/* SHELL */
+.shell{display:flex;height:calc(100vh - 50px);overflow:hidden}
+
+/* LEFT CONTROLS */
+.lctrl{width:300px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden}
+.lctrl-scroll{flex:1;overflow-y:auto;padding:14px}
+.ctrl-section{margin-bottom:18px}
+.ctrl-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.ctrl-row{margin-bottom:10px}
+.ctrl-row-title{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.ctrl-val{font-size:10px;font-family:var(--mono);color:var(--p2)}
+
+/* Textarea for prompt */
+.prompt-ta{width:100%;padding:10px 12px;border-radius:var(--rad);background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:13px;resize:none;outline:none;line-height:1.6;transition:border-color .2s}
+.prompt-ta:focus{border-color:rgba(245,158,11,.4)}
+.prompt-ta::placeholder{color:var(--t3)}
+
+/* Tags */
+.tag-list{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.tag{padding:4px 9px;border-radius:6px;background:var(--s3);border:1px solid var(--b);font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;transition:all .13s}
+.tag:hover{border-color:rgba(245,158,11,.4);color:var(--p2);background:var(--pa)}
+.tag.on{background:var(--pa);border-color:rgba(245,158,11,.4);color:var(--p2)}
+
+/* Style cards */
+.style-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.style-card{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:all .15s;position:relative}
+.style-card:hover{border-color:rgba(245,158,11,.4)}
+.style-card.on{border-color:var(--p2);box-shadow:0 0 0 2px rgba(245,158,11,.15)}
+.style-thumb{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:22px}
+.style-name{font-size:10px;font-weight:700;text-align:center;padding:4px;background:var(--s2);color:var(--t2)}
+
+/* Ratio */
+.ratio-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.ratio-btn{padding:6px 4px;border-radius:7px;border:1px solid var(--b);background:var(--s3);cursor:pointer;font-family:var(--f);transition:all .15s;text-align:center}
+.ratio-btn:hover{border-color:rgba(245,158,11,.3)}
+.ratio-btn.on{border-color:var(--p);background:var(--pa)}
+.ratio-icon{font-size:16px;margin-bottom:2px}
+.ratio-txt{font-size:9px;font-weight:700;color:var(--t2)}
+
+/* Select */
+.sel{width:100%;padding:7px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none;cursor:pointer}
+.sel:focus{border-color:rgba(245,158,11,.4)}
+
+/* Range */
+.range-row{display:flex;align-items:center;gap:8px}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--s4);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--p2);cursor:pointer}
+.rval{font-size:10px;font-family:var(--mono);color:var(--p2);width:36px;text-align:right;flex-shrink:0}
+
+/* Generate button */
+.gen-btn{width:100%;padding:12px;border-radius:var(--rad);background:linear-gradient(135deg,#f59e0b,#f97316);border:none;color:#0d0d16;font-size:14px;font-weight:800;cursor:pointer;font-family:var(--f);letter-spacing:-.01em;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.gen-btn:hover{transform:scale(1.02);box-shadow:0 4px 20px rgba(245,158,11,.4)}
+.gen-btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.gen-info{display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-top:6px;padding:0 2px}
+
+/* MAIN CANVAS */
+.canvas{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.canvas-toolbar{height:44px;border-bottom:1px solid var(--b);background:var(--s1);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0}
+.ct-btn{padding:4px 12px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid var(--b);background:transparent;color:var(--t3);cursor:pointer;font-family:var(--f);transition:all .13s;display:flex;align-items:center;gap:5px}
+.ct-btn:hover{background:var(--s3);color:var(--t2);border-color:rgba(255,255,255,.1)}
+.ct-btn.on{background:var(--pa);color:var(--p2);border-color:rgba(245,158,11,.3)}
+.ct-sep{width:1px;height:20px;background:var(--b)}
+
+/* Gallery grid */
+.gallery-area{flex:1;overflow-y:auto;padding:16px}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.gen-card{border-radius:12px;overflow:hidden;background:var(--s2);border:1px solid var(--b);cursor:pointer;transition:all .2s;position:relative}
+.gen-card:hover{border-color:rgba(245,158,11,.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.gen-card.selected{border-color:var(--p2);box-shadow:0 0 0 2px rgba(245,158,11,.2)}
+.gen-thumb{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.gen-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.gen-card-info{padding:10px 12px}
+.gci-prompt{font-size:11px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.gci-meta{font-size:10px;color:var(--t3);display:flex;align-items:center;gap:8px}
+.gen-card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.gen-card:hover .gen-card-actions{opacity:1}
+.gca-btn{width:28px;height:28px;border-radius:6px;background:rgba(8,8,14,.7);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.1);color:var(--t);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s}
+.gca-btn:hover{background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.4)}
+.progress-bar{height:2px;background:var(--s4);border-radius:1px;overflow:hidden;margin-top:4px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#f59e0b,#f97316);border-radius:1px;transition:width .3s;width:0%}
+
+/* RIGHT PANEL */
+.rpanel{width:280px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden}
+.rp-header{padding:12px 14px;border-bottom:1px solid var(--b);font-size:12px;font-weight:700;color:var(--t);display:flex;align-items:center;justify-content:space-between}
+.rp-scroll{flex:1;overflow-y:auto;padding:12px}
+.rp-section{margin-bottom:16px}
+.rp-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.detail-img{width:100%;border-radius:10px;aspect-ratio:1;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:10px;overflow:hidden}
+.detail-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px}
+.dr-label{color:var(--t3)}
+.dr-val{color:var(--t2);font-family:var(--mono);font-size:10px}
+.action-btns{display:flex;flex-direction:column;gap:6px}
+.ab-btn{padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:var(--f);transition:all .15s;width:100%;display:flex;align-items:center;gap:8px}
+.ab-btn.primary{background:linear-gradient(135deg,#f59e0b,#f97316);color:#0d0d16}
+.ab-btn.ghost{background:var(--s3);border:1px solid var(--b);color:var(--t2)}
+.ab-btn.ghost:hover{border-color:rgba(245,158,11,.3);color:var(--t)}
+
+/* VIDEO / ANIMATION specific */
+.vid-preview{width:100%;aspect-ratio:16/9;background:var(--s3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden;border:1px solid var(--b)}
+.vid-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);opacity:0;transition:opacity .2s}
+.vid-preview:hover .vid-overlay{opacity:1}
+.vid-play{width:56px;height:56px;border-radius:50%;background:rgba(245,158,11,.9);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
+.timeline{height:32px;background:var(--s3);border-radius:6px;border:1px solid var(--b);position:relative;overflow:hidden;cursor:pointer;margin-top:8px}
+.timeline-progress{height:100%;background:linear-gradient(90deg,rgba(245,158,11,.3),rgba(249,115,22,.2));width:35%}
+.timeline-cursor{position:absolute;top:0;left:35%;width:2px;height:100%;background:var(--p2)}
+
+/* Pill / badge */
+.pill{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.pill.amber{background:rgba(245,158,11,.15);color:var(--p2);border:1px solid rgba(245,158,11,.25)}
+.pill.green{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.pill.purple{background:rgba(167,139,250,.12);color:#c4b5fd;border:1px solid rgba(167,139,250,.2)}
+.pill.cyan{background:rgba(6,182,212,.12);color:#22d3ee;border:1px solid rgba(6,182,212,.2)}
+.pill.red{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+
+/* Generation status */
+.gen-status{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--s2);border:1px solid var(--b);border-radius:9px;margin-bottom:10px}
+.gs-dot{width:7px;height:7px;border-radius:50%}
+.gs-dot.running{background:var(--g);box-shadow:0 0 6px var(--g);animation:pulse 1s infinite}
+.gs-dot.idle{background:var(--t3)}
+.gs-text{font-size:11px;font-weight:600;color:var(--t2);flex:1}
+.gs-time{font-size:10px;font-family:var(--mono);color:var(--t3)}
+
+/* Model badge */
+.model-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:7px;background:var(--s3);border:1px solid var(--b);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.model-badge:hover{border-color:rgba(245,158,11,.3)}
+
+/* Anim type */
+.anim-types{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.anim-type{padding:10px;border-radius:9px;background:var(--s3);border:1px solid var(--b);cursor:pointer;transition:all .15s;text-align:center}
+.anim-type:hover{border-color:rgba(245,158,11,.3)}
+.anim-type.on{border-color:rgba(245,158,11,.5);background:var(--pa)}
+.at-icon{font-size:22px;margin-bottom:4px}
+.at-name{font-size:11px;font-weight:700;color:var(--t)}
+.at-sub{font-size:10px;color:var(--t3);margin-top:2px;line-height:1.4}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.skeleton{background:linear-gradient(90deg,var(--s2) 0%,var(--s3) 50%,var(--s2) 100%);background-size:400px 100%;animation:shimmer 1.4s infinite}
+
+/* ─── Cartoon & Sound mode extras ─── */
+.cartoon-styles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cs-card{border-radius:9px;border:1px solid var(--b);cursor:pointer;overflow:hidden;transition:all .15s;background:var(--s3)}
+.cs-card:hover{border-color:rgba(167,139,250,.4);transform:translateY(-1px)}
+.cs-card.on{border-color:rgba(167,139,250,.6);box-shadow:0 0 0 2px rgba(167,139,250,.15)}
+.cs-thumb{height:52px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.cs-name{font-size:10px;font-weight:700;text-align:center;padding:4px 2px;color:var(--t2);line-height:1.2}
+.cs-card.on .cs-name{color:#c4b5fd}
+.char-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.char-card{padding:8px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.char-card:hover{border-color:rgba(167,139,250,.4)}
+.char-card.on{border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.08)}
+.char-icon{font-size:20px;flex-shrink:0}
+.cn{font-size:11px;font-weight:700;color:var(--t)}
+.chs{font-size:10px;color:var(--t3)}
+.sfx-cats{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.sfx-cat{padding:4px 9px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--b);background:transparent;color:var(--t3);cursor:pointer;transition:all .15s;font-family:var(--f)}
+.sfx-cat.on{background:rgba(6,182,212,.12);border-color:rgba(6,182,212,.4);color:#22d3ee}
+.sfx-cat:hover{color:var(--t2)}
+.sfx-preset{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);cursor:pointer;transition:all .15s;margin-bottom:6px}
+.sfx-preset:hover{border-color:rgba(6,182,212,.3)}
+.sfx-preset.on{border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.08)}
+.sfx-icon{font-size:18px;flex-shrink:0}
+.sn{font-size:11px;font-weight:700;color:var(--t)}
+.ss{font-size:10px;color:var(--t3)}
+.sfx-play{width:26px;height:26px;border-radius:50%;background:var(--s4);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--t2);cursor:pointer;margin-left:auto;flex-shrink:0}
+.sfx-play:hover{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4);color:#22d3ee}
+.me-card{padding:10px;border-radius:9px;background:var(--s3);border:1px solid var(--b);cursor:pointer;transition:all .15s;text-align:center}
+.me-card:hover{border-color:rgba(6,182,212,.35)}
+.me-card.on{border-color:rgba(6,182,212,.55);background:rgba(6,182,212,.1)}
+.me-icon{font-size:22px;margin-bottom:4px}
+.me-name{font-size:11px;font-weight:700;color:var(--t)}
+.me-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.gen-btn-v{padding:10px 16px;border-radius:var(--rad);background:linear-gradient(135deg,#7c3aed,#6366f1);border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;width:100%;font-family:var(--f);transition:all .15s;margin-top:4px}
+.gen-btn-v:hover{transform:scale(1.01);box-shadow:0 4px 16px rgba(124,58,237,.35)}
+.gen-btn-s{padding:10px 16px;border-radius:var(--rad);background:linear-gradient(135deg,#0891b2,#06b6d4);border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;width:100%;font-family:var(--f);transition:all .15s;margin-top:4px}
+.gen-btn-s:hover{transform:scale(1.01);box-shadow:0 4px 16px rgba(6,182,212,.35)}
+.waveform{height:40px;background:var(--s3);border-radius:8px;border:1px solid var(--b);display:flex;align-items:center;justify-content:center;gap:2px;padding:6px 10px;overflow:hidden}
+.wf-bar{width:3px;border-radius:2px;background:linear-gradient(180deg,#22d3ee,#0891b2);opacity:.7;animation:wfwave .8s ease-in-out infinite}
+@keyframes wfwave{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.lang-flag-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.lf-btn{padding:5px;border-radius:7px;background:var(--s3);border:1px solid var(--b);cursor:pointer;text-align:center;transition:all .15s;font-size:11px}
+.lf-btn:hover{border-color:rgba(245,158,11,.3)}
+.lf-btn.on{border-color:rgba(245,158,11,.5);background:var(--pa)}
+.lf-flag{font-size:16px}
+.lf-name{font-size:9px;color:var(--t3);margin-top:2px;font-weight:600}
+.lf-btn.on .lf-name{color:var(--p2)}
+.seq-board{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.seq-board::-webkit-scrollbar{height:3px}
+.seq-frame{flex-shrink:0;width:100px;border-radius:9px;background:var(--s3);border:2px solid var(--b);overflow:hidden;cursor:pointer;transition:border-color .15s}
+.seq-frame:hover{border-color:rgba(167,139,250,.4)}
+.seq-frame.on{border-color:rgba(167,139,250,.6)}
+.seq-thumb{height:72px;display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--s4)}
+.seq-num{font-size:10px;font-weight:700;color:var(--t3);text-align:center;padding:4px}
+.seq-add{flex-shrink:0;width:100px;height:96px;border-radius:9px;border:2px dashed var(--b);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--t3);cursor:pointer;transition:all .15s}
+.seq-add:hover{border-color:rgba(167,139,250,.4);color:#c4b5fd}
+.sound-tabs{display:flex;gap:1px;background:var(--s3);border:1px solid var(--b);border-radius:9px;padding:3px;margin-bottom:14px}
+.stab{flex:1;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;color:var(--t3);border:none;background:transparent;font-family:var(--f);text-align:center;transition:all .15s}
+.stab:hover{color:var(--t2)}
+.stab.on{background:var(--s4);color:#22d3ee;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="#" class="brand" style="text-decoration:none">
+    <div class="brand-logo">🎨</div>
+    <span class="brand-name">AXTO</span>
+  </a>
+  <span class="brand-tag">GPU Studio</span>
+  <div class="sep"></div>
+
+  <div class="modes">
+    <button class="mode on"  onclick="setMode('image',this)">🎨 Image Gen</button>
+    <button class="mode" onclick="setMode('video',this)">🎬 Video Gen</button>
+    <button class="mode" onclick="setMode('photoanim',this)">👤 Photo Animate</button>
+    <button class="mode" onclick="setMode('imageanim',this)">✨ Image Animate</button>
+    <button class="mode" onclick="setMode('videoanim',this)">🎭 Video Enhance</button>
+    <button class="mode" onclick="setMode('upscale',this)">🔍 Upscale</button>
+    <button class="mode" onclick="setMode('tools',this)">🛠 Tools</button>
+    <button class="mode" onclick="setMode('cartoon',this)" style="color:#c4b5fd">🎬 Cartoon &amp; Anim</button>
+    <button class="mode" onclick="setMode('sound',this)" style="color:#22d3ee">🔊 Sound &amp; Music</button>
+  </div>
+
+  <div class="gpu-pill" style="margin-left:auto">
+    <div class="gpu-dot"></div>
+    <span id="gpuLabel">No endpoint connected</span>
+  </div>
+  <div class="model-badge" onclick="">
+    <span>Flux.1 Dev</span>
+    <span style="color:var(--t3);font-size:10px">▼</span>
+  </div>
+  <button class="icon-btn" title="Generation queue">📋</button>
+  <button class="icon-btn" title="API Connections">🔌</button>
+</div>
+
+<div class="shell">
+
+  <!-- LEFT CONTROLS -->
+  <div class="lctrl" id="lctrl">
+    <div class="lctrl-scroll" id="ctrlScrollArea">
+
+      <!-- IMAGE GEN controls (default) -->
+      <div id="ctrl-image">
+        <div class="ctrl-section">
+          <div class="ctrl-label">Prompt</div>
+          <textarea class="prompt-ta" id="imgPrompt" rows="5" placeholder="Describe your image in detail…
+
+Example: A photorealistic portrait of a cyberpunk samurai standing in rain-soaked neon streets of Tokyo, dramatic lighting, 8K detail, cinematic composition">A majestic snow leopard perched on a Himalayan cliff at golden hour, dramatic clouds, hyper-detailed fur texture, National Geographic style, ultra-realistic, 8K</textarea>
+          <div style="margin-top:6px">
+            <div class="ctrl-row-title"><span>Negative Prompt</span></div>
+            <textarea class="prompt-ta" rows="2" placeholder="What to exclude…" style="font-size:12px">blurry, low quality, watermark, text, deformed, ugly, poorly drawn</textarea>
+          </div>
+        </div>
+
+        <div class="ctrl-section">
+          <div class="ctrl-label">Quick Style Tags</div>
+          <div class="tag-list">
+            <span class="tag on" onclick="toggleTag(this)">Photorealistic</span>
+            <span class="tag" onclick="toggleTag(this)">Cinematic</span>
+            <span class="tag" onclick="toggleTag(this)">8K Detail</span>
+            <span class="tag" onclick="toggleTag(this)">Dramatic Light</span>
+            <span class="tag" onclick="toggleTag(this)">Golden Hour</span>
+            <span class="tag" onclick="toggleTag(this)">Minimalist</span>
+            <span class="tag" onclick="toggleTag(this)">Anime</span>
+            <span class="tag" onclick="toggleTag(this)">Oil Painting</span>
+            <span class="tag" onclick="toggleTag(this)">Watercolor</span>
+            <span class="tag" onclick="toggleTag(this)">Concept Art</span>
+            <span class="tag" onclick="toggleTag(this)">Isometric</span>
+            <span class="tag" onclick="toggleTag(this)">Studio Lighting</span>
+          </div>
+        </div>
+
+        <div class="ctrl-section">
+          <div class="ctrl-label">Style Preset</div>
+          <div class="style-grid">
+            <div class="style-card on" onclick="selectStyle(this)">
+              <div class="style-thumb" style="background:linear-gradient(135deg,#0c1117,#1a2744)">🌃</div>
+              <div class="style-name">Cinematic</div>
+            </div>
+            <div class="style-card" onclick="selectStyle(this)">
+              <div class="style-thumb" style="background:linear-gradient(135deg,#1a0a2e,#4a1a6b)">🎌</div>
+              <div class="style-name">Anime</div>
+            </div>
+            <div class="style-card" onclick="selectStyle(this)">
+              <div class="style-thumb" style="background:linear-gradient(135deg,#0a1628,#0d4f3c)">📸</div>
+              <div class="style-name">Photo</div>
+            </div>
+            <div class="style-card" onclick="selectStyle(this)">
+              <div class="style-thumb" style="background:linear-gradient(135deg,#1a1206,#4a3010)">🎨</div>
+              <div class="style-name">Oil Paint</div>
+            </div>
+            <div class="style-card" onclick="selectStyle(this)">
+              <div class="style-thumb" style="background:linear-gradient(135deg,#0a1830,#1a3060)">🔮</div>
+              <div class="style-name">Sci-Fi</div>
+            </div>
+            <div class="style-card" onclick="selectStyle(this)">
+              <div class="style-thumb" style="background:linear-gradient(135deg,#0d0d0d,#1a1a1a)">📐</div>
+              <div class="style-name">Minimal</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ctrl-section">
+          <div class="ctrl-label">Aspect Ratio</div>
+          <div class="ratio-grid">
+            <div class="ratio-btn on" onclick="setRatio(this,'1:1')"><div class="ratio-icon">⬛</div><div class="ratio-txt">1:1</div></div>
+            <div class="ratio-btn" onclick="setRatio(this,'16:9')"><div class="ratio-icon">▬</div><div class="ratio-txt">16:9</div></div>
+            <div class="ratio-btn" onclick="setRatio(this,'9:16')"><div class="ratio-icon">▮</div><div class="ratio-txt">9:16</div></div>
+            <div class="ratio-btn" onclick="setRatio(this,'4:3')"><div class="ratio-icon">▭</div><div class="ratio-txt">4:3</div></div>
+            <div class="ratio-btn" onclick="setRatio(this,'3:4')"><div class="ratio-icon">▯</div><div class="ratio-txt">3:4</div></div>
+          </div>
+        </div>
+
+        <div class="ctrl-section">
+          <div class="ctrl-label">Model</div>
+          <select class="sel" id="imgModel">
+            <option>Flux.1 Dev (Quality)</option>
+            <option>Flux.1 Schnell (Fast)</option>
+            <option>SDXL 1.0</option>
+            <option>SD 3.5 Large</option>
+            <option>Juggernaut XL</option>
+            <option>RealVisXL V5</option>
+            <option>DALL-E 3 (API)</option>
+            <option>Midjourney API</option>
+            <option>Ideogram API</option>
+            <option>Custom Endpoint…</option>
+          </select>
+        </div>
+
+        <div class="ctrl-section">
+          <div class="ctrl-label">Advanced</div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Steps</span><span class="ctrl-val" id="stepsVal">28</span></div>
+            <div class="range-row">
+              <input type="range" min="10" max="60" step="1" value="28" oninput="document.getElementById('stepsVal').textContent=this.value">
+            </div>
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>CFG Scale</span><span class="ctrl-val" id="cfgVal">7.5</span></div>
+            <div class="range-row">
+              <input type="range" min="1" max="20" step="0.5" value="7.5" oninput="document.getElementById('cfgVal').textContent=parseFloat(this.value).toFixed(1)">
+            </div>
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Batch Size</span><span class="ctrl-val" id="batchVal">4</span></div>
+            <div class="range-row">
+              <input type="range" min="1" max="8" step="1" value="4" oninput="document.getElementById('batchVal').textContent=this.value">
+            </div>
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Seed</span></div>
+            <input type="number" class="sel" placeholder="Random" style="height:34px;font-family:var(--mono)">
+          </div>
+        </div>
+
+        <div style="padding-bottom:4px">
+          <button class="gen-btn" onclick="startGenerate()">✦ Generate Images</button>
+          <div class="gen-info">
+            <span id="genEst">Est. ~8s · 4 images</span>
+            <span id="genCost">~$0.002</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIDEO GEN controls -->
+      <div id="ctrl-video" class="hidden">
+        <div class="ctrl-section">
+          <div class="ctrl-label">Video Prompt</div>
+          <textarea class="prompt-ta" rows="5" placeholder="Describe the video scene…
+
+Example: A lone astronaut walking slowly on the surface of Mars, red dust swirling, vast empty landscape, cinematic, slow motion">Time-lapse of cherry blossoms falling in a Japanese garden, soft pink petals drifting through warm afternoon light, meditative pace, 8K cinematic</textarea>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Input (Optional)</div>
+          <div style="width:100%;border:1px dashed var(--b);border-radius:var(--rad);padding:16px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="" onmouseover="this.style.borderColor='rgba(245,158,11,.35)'" onmouseout="this.style.borderColor='var(--b)'">
+            <div style="font-size:22px;margin-bottom:4px">🖼</div>
+            <div style="font-size:11px;font-weight:600;color:var(--t2)">Drop image for Image-to-Video</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">Optional — leave empty for text-to-video</div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Model</div>
+          <select class="sel">
+            <option>Wan 2.1 (Local GPU)</option>
+            <option>Kling AI 1.6 (API)</option>
+            <option>Runway Gen-3 (API)</option>
+            <option>Sora (API)</option>
+            <option>Hailuo MiniMax (API)</option>
+            <option>Stable Video (Local)</option>
+            <option>Custom Endpoint…</option>
+          </select>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Settings</div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Duration</span><span class="ctrl-val" id="vidDurVal">5s</span></div>
+            <input type="range" min="2" max="30" step="1" value="5" oninput="document.getElementById('vidDurVal').textContent=this.value+'s'">
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>FPS</span><span class="ctrl-val" id="vidFpsVal">24</span></div>
+            <input type="range" min="12" max="60" step="1" value="24" oninput="document.getElementById('vidFpsVal').textContent=this.value">
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Resolution</span></div>
+            <select class="sel" style="height:34px">
+              <option>1080p (1920×1080)</option>
+              <option>4K (3840×2160)</option>
+              <option>720p (1280×720)</option>
+              <option>Vertical 9:16</option>
+            </select>
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Motion Strength</span><span class="ctrl-val" id="motionVal">0.7</span></div>
+            <input type="range" min="0" max="1" step="0.05" value="0.7" oninput="document.getElementById('motionVal').textContent=parseFloat(this.value).toFixed(2)">
+          </div>
+        </div>
+        <button class="gen-btn" onclick="startVideoGen()">✦ Generate Video</button>
+        <div class="gen-info"><span>Est. ~45s</span><span>~$0.08</span></div>
+      </div>
+
+      <!-- PHOTO ANIMATE controls -->
+      <div id="ctrl-photoanim" class="hidden">
+        <div class="ctrl-section">
+          <div class="ctrl-label">Source Photo</div>
+          <div style="width:100%;border:1px dashed var(--b);border-radius:var(--rad);padding:20px;text-align:center;cursor:pointer;transition:all .15s" onclick="">
+            <div style="font-size:28px;margin-bottom:6px">👤</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t2)">Upload Portrait Photo</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">JPG, PNG — face must be clearly visible</div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Animation Type</div>
+          <div class="anim-types">
+            <div class="anim-type on" onclick="selectAnimType(this)">
+              <div class="at-icon">💬</div>
+              <div class="at-name">Talking Head</div>
+              <div class="at-sub">Lip-sync to audio or text</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">😊</div>
+              <div class="at-name">Emotion Drive</div>
+              <div class="at-sub">Add facial expressions</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">🕺</div>
+              <div class="at-name">Body Motion</div>
+              <div class="at-sub">From reference video</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">🌊</div>
+              <div class="at-name">Subtle Alive</div>
+              <div class="at-sub">Natural micro-movements</div>
+            </div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Audio / Script Input</div>
+          <textarea class="prompt-ta" rows="3" placeholder="Type text for talking head lip-sync, or…" placeholder="Type the dialogue or narration script for lip-sync animation…"></textarea>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button class="ct-btn" style="flex:1">🎙 Record Audio</button>
+            <button class="ct-btn" style="flex:1">📁 Upload Audio</button>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Voice for TTS</div>
+          <select class="sel">
+            <option>Nova (Female EN)</option>
+            <option>Alloy (Neutral EN)</option>
+            <option>Sari (Female ID)</option>
+            <option>Budi (Male ID)</option>
+            <option>Mei (Female ZH)</option>
+            <option>Sakura (Female JA)</option>
+          </select>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Model</div>
+          <select class="sel">
+            <option>SadTalker (Local)</option>
+            <option>Wav2Lip (Local)</option>
+            <option>DID API</option>
+            <option>HeyGen API</option>
+            <option>Hedra API</option>
+          </select>
+        </div>
+        <button class="gen-btn" onclick="startPhotoAnim()">✦ Animate Photo</button>
+        <div class="gen-info"><span>Est. ~30s</span><span>~$0.05</span></div>
+      </div>
+
+      <!-- IMAGE ANIMATE controls -->
+      <div id="ctrl-imageanim" class="hidden">
+        <div class="ctrl-section">
+          <div class="ctrl-label">Source Image</div>
+          <div style="width:100%;border:1px dashed var(--b);border-radius:var(--rad);padding:20px;text-align:center;cursor:pointer">
+            <div style="font-size:28px;margin-bottom:6px">🖼</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t2)">Upload Image to Animate</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">Landscapes, illustrations, art, scenes</div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Animation Effect</div>
+          <div class="anim-types">
+            <div class="anim-type on" onclick="selectAnimType(this)">
+              <div class="at-icon">💧</div>
+              <div class="at-name">Water / Fluid</div>
+              <div class="at-sub">Flowing liquids, rain, rivers</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">🌬</div>
+              <div class="at-name">Wind / Nature</div>
+              <div class="at-sub">Trees, grass, clouds</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">✨</div>
+              <div class="at-name">Magic / Particles</div>
+              <div class="at-sub">Sparkles, fire, energy</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">🌊</div>
+              <div class="at-name">Ocean / Waves</div>
+              <div class="at-sub">Sea motion, splash</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">⭐</div>
+              <div class="at-name">Starfield / Sky</div>
+              <div class="at-sub">Stars, aurora, nebula</div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)">
+              <div class="at-icon">🔥</div>
+              <div class="at-name">Fire / Smoke</div>
+              <div class="at-sub">Flames, embers, haze</div>
+            </div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Motion Prompt (Optional)</div>
+          <textarea class="prompt-ta" rows="2" placeholder="Describe the animation motion…">Gentle water ripples flowing through the mountain stream, soft breeze moving the trees</textarea>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Model</div>
+          <select class="sel">
+            <option>Stable Video Diffusion (Local)</option>
+            <option>Wan 2.1 (Local GPU)</option>
+            <option>Kling AI Image2Video (API)</option>
+            <option>Runway Gen-3 (API)</option>
+            <option>Luma Dream Machine (API)</option>
+          </select>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Output</div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Duration</span><span class="ctrl-val" id="animDurVal">4s</span></div>
+            <input type="range" min="2" max="15" step="1" value="4" oninput="document.getElementById('animDurVal').textContent=this.value+'s'">
+          </div>
+          <div class="ctrl-row">
+            <div class="ctrl-row-title"><span>Intensity</span><span class="ctrl-val" id="animIntVal">0.65</span></div>
+            <input type="range" min="0.1" max="1" step="0.05" value="0.65" oninput="document.getElementById('animIntVal').textContent=parseFloat(this.value).toFixed(2)">
+          </div>
+          <select class="sel" style="margin-top:6px">
+            <option>Loop seamlessly</option>
+            <option>Play once</option>
+            <option>Ping-pong loop</option>
+          </select>
+        </div>
+        <button class="gen-btn" onclick="">✦ Animate Image</button>
+        <div class="gen-info"><span>Est. ~25s</span><span>~$0.04</span></div>
+      </div>
+
+      <!-- VIDEO ENHANCE controls -->
+      <div id="ctrl-videoanim" class="hidden">
+        <div class="ctrl-section">
+          <div class="ctrl-label">Source Video</div>
+          <div style="width:100%;border:1px dashed var(--b);border-radius:var(--rad);padding:20px;text-align:center;cursor:pointer">
+            <div style="font-size:28px;margin-bottom:6px">🎬</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t2)">Upload Video to Enhance</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">MP4, MOV, AVI — up to 300MB</div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Enhancement Type</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="anim-type on" onclick="selectAnimType(this)" style="text-align:left;display:flex;gap:10px;align-items:center">
+              <div class="at-icon" style="font-size:18px">🔍</div>
+              <div><div class="at-name" style="text-align:left">Upscale to 4K</div><div class="at-sub" style="text-align:left">AI super-resolution</div></div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)" style="text-align:left;display:flex;gap:10px;align-items:center">
+              <div class="at-icon" style="font-size:18px">🎞</div>
+              <div><div class="at-name" style="text-align:left">Frame Interpolation</div><div class="at-sub" style="text-align:left">24fps → 60fps AI smoothing</div></div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)" style="text-align:left;display:flex;gap:10px;align-items:center">
+              <div class="at-icon" style="font-size:18px">🎨</div>
+              <div><div class="at-name" style="text-align:left">Style Transfer</div><div class="at-sub" style="text-align:left">Apply artistic style to video</div></div>
+            </div>
+            <div class="anim-type" onclick="selectAnimType(this)" style="text-align:left;display:flex;gap:10px;align-items:center">
+              <div class="at-icon" style="font-size:18px">✂️</div>
+              <div><div class="at-name" style="text-align:left">Background Remove</div><div class="at-sub" style="text-align:left">AI video matting</div></div>
+            </div>
+          </div>
+        </div>
+        <button class="gen-btn" onclick="">✦ Process Video</button>
+        <div class="gen-info"><span>Est. ~2 min</span><span>Local GPU</span></div>
+      </div>
+
+      <!-- UPSCALE controls -->
+      <div id="ctrl-upscale" class="hidden">
+        <div class="ctrl-section">
+          <div class="ctrl-label">Upload Image</div>
+          <div style="width:100%;border:1px dashed var(--b);border-radius:var(--rad);padding:20px;text-align:center;cursor:pointer">
+            <div style="font-size:28px;margin-bottom:6px">🔍</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t2)">Drop image to upscale</div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Model</div>
+          <select class="sel">
+            <option>Real-ESRGAN 4x+ (Local)</option>
+            <option>ESRGAN (Local)</option>
+            <option>Topaz AI Gigapixel (API)</option>
+            <option>Magnific AI (API)</option>
+          </select>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Scale Factor</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+            <button class="ratio-btn" onclick="setScale(this,'2×')"><div class="ratio-txt" style="font-size:13px;font-weight:800;color:var(--t)">2×</div></button>
+            <button class="ratio-btn on" onclick="setScale(this,'4×')"><div class="ratio-txt" style="font-size:13px;font-weight:800">4×</div></button>
+            <button class="ratio-btn" onclick="setScale(this,'6×')"><div class="ratio-txt" style="font-size:13px;font-weight:800;color:var(--t)">6×</div></button>
+            <button class="ratio-btn" onclick="setScale(this,'8×')"><div class="ratio-txt" style="font-size:13px;font-weight:800;color:var(--t)">8×</div></button>
+          </div>
+        </div>
+        <button class="gen-btn" onclick="">✦ Upscale Image</button>
+      </div>
+
+      <!-- TOOLS controls -->
+      <div id="ctrl-tools" class="hidden">
+        <div class="ctrl-label">AI Image Tools</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center;cursor:pointer">
+            <div style="font-size:18px;flex-shrink:0">✂️</div>
+            <div><div class="at-name" style="text-align:left">Remove Background</div><div class="at-sub" style="text-align:left">AI-powered transparent BG</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">🎭</div>
+            <div><div class="at-name" style="text-align:left">Inpainting</div><div class="at-sub" style="text-align:left">Edit specific regions with AI</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">⬛</div>
+            <div><div class="at-name" style="text-align:left">Outpainting / Expand</div><div class="at-sub" style="text-align:left">Extend image beyond borders</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">🔄</div>
+            <div><div class="at-name" style="text-align:left">Face Swap</div><div class="at-sub" style="text-align:left">Swap faces in photos</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">✨</div>
+            <div><div class="at-name" style="text-align:left">Face Enhance / Restore</div><div class="at-sub" style="text-align:left">GFPGAN, CodeFormer</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">🎨</div>
+            <div><div class="at-name" style="text-align:left">Colorize B&W Photo</div><div class="at-sub" style="text-align:left">AI automatic colorization</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">📐</div>
+            <div><div class="at-name" style="text-align:left">Image to 3D</div><div class="at-sub" style="text-align:left">Generate 3D mesh from photo</div></div>
+          </div>
+          <div class="anim-type" onclick="" style="text-align:left;display:flex;gap:10px;align-items:center">
+            <div style="font-size:18px;flex-shrink:0">🖼</div>
+            <div><div class="at-name" style="text-align:left">Style Transfer</div><div class="at-sub" style="text-align:left">Apply artistic style to photo</div></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- CARTOON & ANIMATION mode -->
+      <div id="ctrl-cartoon" class="hidden">
+        <div class="ctrl-section">
+          <div class="ctrl-label" style="color:#c4b5fd">Cartoon Style</div>
+          <div class="cartoon-styles">
+            <div class="cs-card on" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#1a0a2e,#3d1466)">🏰</div><div class="cs-name">Disney 3D</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#0a1a2e,#1a3a6b)">🤖</div><div class="cs-name">Pixar CGI</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#0a2014,#1a4a28)">🌿</div><div class="cs-name">Ghibli</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#1a0618,#4a0e40)">⚔️</div><div class="cs-name">Anime HD</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#1a1206,#4a3010)">🎨</div><div class="cs-name">2D Cartoon</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#1a0a0a,#4a1010)">🐻</div><div class="cs-name">Chibi / Cute</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#100a1a,#2a1040)">🦸</div><div class="cs-name">Comic Book</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#0a1020,#1a2840)">🧊</div><div class="cs-name">Stop Motion</div></div>
+            <div class="cs-card" onclick="selCS(this)"><div class="cs-thumb" style="background:linear-gradient(135deg,#1a1a06,#3a3a10)">🌈</div><div class="cs-name">Looney Tunes</div></div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Character Type</div>
+          <div class="char-grid">
+            <div class="char-card on" onclick="selChar(this)"><span class="char-icon">👦</span><div><div class="cn">Hero / Protagonist</div><div class="chs">Brave, expressive</div></div></div>
+            <div class="char-card" onclick="selChar(this)"><span class="char-icon">🧙</span><div><div class="cn">Wizard / Sage</div><div class="chs">Magic, wise elder</div></div></div>
+            <div class="char-card" onclick="selChar(this)"><span class="char-icon">🐉</span><div><div class="cn">Fantasy Creature</div><div class="chs">Dragon, phoenix…</div></div></div>
+            <div class="char-card" onclick="selChar(this)"><span class="char-icon">🐼</span><div><div class="cn">Cute Animal</div><div class="chs">Kawaii, chibi pet</div></div></div>
+            <div class="char-card" onclick="selChar(this)"><span class="char-icon">🦸</span><div><div class="cn">Superhero</div><div class="chs">Cape, powers, pose</div></div></div>
+            <div class="char-card" onclick="selChar(this)"><span class="char-icon">👸</span><div><div class="cn">Princess / Royalty</div><div class="chs">Elegance, gown</div></div></div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Scene Prompt</div>
+          <textarea class="prompt-ta" rows="4" placeholder="Describe your cartoon scene…&#10;&#10;Example: A brave young hero in Disney 3D style standing on a magical floating island, dramatic sunset, soft warm lighting, cinematic composition">A cheerful chibi panda chef in a cozy Japanese kitchen, magical cooking pot, golden steam particles, Studio Ghibli style, warm amber lighting, highly detailed</textarea>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Output Type</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <div class="anim-type on" onclick="selectAnimType(this)"><div class="at-icon">🖼</div><div class="at-name">Scene Image</div><div class="at-sub">Still frame HD</div></div>
+            <div class="anim-type" onclick="selectAnimType(this)"><div class="at-icon">🎬</div><div class="at-name">Animated Clip</div><div class="at-sub">3–8 sec loop</div></div>
+            <div class="anim-type" onclick="selectAnimType(this)"><div class="at-icon">📽</div><div class="at-name">Storyboard Seq.</div><div class="at-sub">Multi-frame panels</div></div>
+            <div class="anim-type" onclick="selectAnimType(this)"><div class="at-icon">🎭</div><div class="at-name">Character Sheet</div><div class="at-sub">F/S/B views</div></div>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label" style="margin-bottom:6px">Storyboard Builder</div>
+          <div class="seq-board" id="seqBoard">
+            <div class="seq-frame on"><div class="seq-thumb">🏰</div><div class="seq-num">Frame 1</div></div>
+            <div class="seq-frame"><div class="seq-thumb">👦</div><div class="seq-num">Frame 2</div></div>
+            <div class="seq-frame"><div class="seq-thumb">⚔️</div><div class="seq-num">Frame 3</div></div>
+            <div class="seq-add" onclick="addSeqFrame()" title="Add frame">＋</div>
+          </div>
+          <div style="font-size:10px;color:var(--t3);margin-top:4px">Click to select frame · Max 12 frames</div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Animation Settings</div>
+          <div class="ctrl-row"><div class="ctrl-row-title"><span>FPS</span><span class="ctrl-val" id="cFpsV">24fps</span></div><input type="range" min="12" max="60" step="6" value="24" oninput="document.getElementById('cFpsV').textContent=this.value+'fps'"></div>
+          <div class="ctrl-row"><div class="ctrl-row-title"><span>Duration</span><span class="ctrl-val" id="cDurV">4s</span></div><input type="range" min="2" max="12" step="1" value="4" oninput="document.getElementById('cDurV').textContent=this.value+'s'"></div>
+          <div class="ctrl-row"><div class="ctrl-row-title"><span>Motion Style</span></div>
+            <select class="sel"><option>Smooth Disney Flow</option><option>Bouncy Looney Tunes</option><option>Fluid Anime Motion</option><option>Subtle Ghibli Breathing</option><option>Stop-Frame Jerky</option><option>Hyper-Dynamic Action</option></select>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Quick Cartoon Templates</div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <button class="ab-btn ghost" onclick="loadCartoonTpl('intro')" style="justify-content:flex-start;font-size:11px">🎬 Epic Movie Intro — Logo reveal</button>
+            <button class="ab-btn ghost" onclick="loadCartoonTpl('chase')" style="justify-content:flex-start;font-size:11px">🏃 Action Chase Scene — Dynamic cam</button>
+            <button class="ab-btn ghost" onclick="loadCartoonTpl('magic')" style="justify-content:flex-start;font-size:11px">✨ Magic Transformation — Sparkles</button>
+            <button class="ab-btn ghost" onclick="loadCartoonTpl('emotion')" style="justify-content:flex-start;font-size:11px">💖 Emotional Close-up — Ghibli feel</button>
+            <button class="ab-btn ghost" onclick="loadCartoonTpl('battle')" style="justify-content:flex-start;font-size:11px">⚔️ Battle Scene — Anime impact FX</button>
+            <button class="ab-btn ghost" onclick="loadCartoonTpl('nature')" style="justify-content:flex-start;font-size:11px">🌿 Peaceful Nature — Landscape</button>
+          </div>
+        </div>
+        <div class="ctrl-section">
+          <div class="ctrl-label">Model</div>
+          <select class="sel">
+            <option>Flux.1 Dev + Cartoon LoRA</option>
+            <option>SDXL + AnimeMasterXL</option>
+            <option>Disney-Pixar Style (ComfyUI)</option>
+            <option>Stable Diffusion + CartoonMix</option>
+            <option>Wan 2.1 (Animated)</option>
+            <option>Kling AI — Cartoon Mode</option>
+            <option>Custom LoRA Endpoint…</option>
+          </select>
+        </div>
+        <button class="gen-btn-v" onclick="startGenerate()">🎬 Generate Cartoon Scene</button>
+        <div class="gen-info" style="margin-top:4px"><span>Est. ~15s/frame</span><span>~$0.004</span></div>
+      </div>
+
+      <!-- SOUND & MUSIC mode -->
+      <div id="ctrl-sound" class="hidden">
+        <div class="sound-tabs">
+          <button class="stab on" id="stab-sfx" onclick="setSoundTab('sfx',this)">💥 SFX</button>
+          <button class="stab" id="stab-music" onclick="setSoundTab('music',this)">🎵 Music</button>
+          <button class="stab" id="stab-voice" onclick="setSoundTab('voice',this)">🗣 Voice</button>
+        </div>
+
+        <!-- SFX sub-panel -->
+        <div id="sp-sfx">
+          <div class="ctrl-section">
+            <div class="ctrl-label">SFX Category</div>
+            <div class="sfx-cats">
+              <button class="sfx-cat on" onclick="selSfxCat(this)">All</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">🎬 Cartoon</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">💥 Impact</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">✨ Magic</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">🌿 Nature</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">👾 Sci-Fi</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">🎮 Game</button>
+              <button class="sfx-cat" onclick="selSfxCat(this)">😂 Comedy</button>
+            </div>
+            <div class="sfx-preset on" onclick="selSfx(this)">
+              <span class="sfx-icon">💨</span><div class="sfx-info"><div class="sn">Cartoon Whoosh</div><div class="ss">0.8s · Looney Tunes</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">💥</span><div class="sfx-info"><div class="sn">Impact POW!</div><div class="ss">0.6s · Comic book hit</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">✨</span><div class="sfx-info"><div class="sn">Magic Sparkle</div><div class="ss">1.2s · Disney fairy</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">🌊</span><div class="sfx-info"><div class="sn">Ocean Waves Loop</div><div class="ss">5s · Ambient</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">⚡</span><div class="sfx-info"><div class="sn">Lightning Strike</div><div class="ss">1.0s · Thunder crack</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">🎺</span><div class="sfx-info"><div class="sn">Cartoon Fanfare</div><div class="ss">2.0s · Victory jingle</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">😂</span><div class="sfx-info"><div class="sn">Audience Laugh</div><div class="ss">3s · Studio audience</div></div><div class="sfx-play">▶</div>
+            </div>
+            <div class="sfx-preset" onclick="selSfx(this)">
+              <span class="sfx-icon">🥁</span><div class="sfx-info"><div class="sn">Drum Roll + Crash</div><div class="ss">2.5s · Comedy timing</div></div><div class="sfx-play">▶</div>
+            </div>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Describe Custom SFX</div>
+            <textarea class="prompt-ta" rows="3" placeholder="Describe the sound…&#10;Example: A magical transformation sound with rising chimes and a sparkle burst, Disney style, 2 seconds">A cartoon character slipping — comedic slide followed by a crash and boing spring, 1.5 seconds</textarea>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Settings</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <div class="ctrl-row-title" style="margin-bottom:5px"><span>Duration</span><span class="ctrl-val" id="sfxDurV">2s</span></div>
+                <input type="range" min="0.5" max="30" step="0.5" value="2" oninput="document.getElementById('sfxDurV').textContent=this.value+'s'">
+              </div>
+              <select class="sel" style="height:34px;align-self:end"><option>MP3</option><option>WAV</option><option>FLAC</option></select>
+            </div>
+            <div style="margin-top:8px">
+              <div class="ctrl-label" style="margin-bottom:5px">SFX Engine</div>
+              <select class="sel"><option>ElevenLabs Sound FX</option><option>Stability AI Audio</option><option>Meta AudioCraft (Local)</option><option>Stable Audio 2.0</option></select>
+            </div>
+          </div>
+          <button class="gen-btn-s" onclick="startSoundGen('sfx')">💥 Generate Sound Effect</button>
+          <div class="gen-info" style="margin-top:4px"><span>Est. ~3s</span><span>~$0.001</span></div>
+        </div>
+
+        <!-- Music sub-panel -->
+        <div id="sp-music" style="display:none">
+          <div class="ctrl-section">
+            <div class="ctrl-label">Music Engine</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div class="me-card on" onclick="selMusicEng(this)"><div class="me-icon">🎵</div><div class="me-name">Suno AI</div><div class="me-sub">Full song</div></div>
+              <div class="me-card" onclick="selMusicEng(this)"><div class="me-icon">🎸</div><div class="me-name">Udio</div><div class="me-sub">Studio quality</div></div>
+              <div class="me-card" onclick="selMusicEng(this)"><div class="me-icon">🎹</div><div class="me-name">MusicGen</div><div class="me-sub">Meta (Local)</div></div>
+              <div class="me-card" onclick="selMusicEng(this)"><div class="me-icon">🎼</div><div class="me-name">Stable Audio</div><div class="me-sub">High quality</div></div>
+            </div>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Genre &amp; Mood</div>
+            <div class="sfx-cats">
+              <button class="sfx-cat on" onclick="selGenre(this)">🎬 Cartoon Theme</button>
+              <button class="sfx-cat" onclick="selGenre(this)">🏃 Action / Epic</button>
+              <button class="sfx-cat" onclick="selGenre(this)">💖 Emotional</button>
+              <button class="sfx-cat" onclick="selGenre(this)">😄 Comedy</button>
+              <button class="sfx-cat" onclick="selGenre(this)">🌿 Calm / Nature</button>
+              <button class="sfx-cat" onclick="selGenre(this)">👾 Sci-Fi</button>
+              <button class="sfx-cat" onclick="selGenre(this)">🎮 Game BGM</button>
+              <button class="sfx-cat" onclick="selGenre(this)">🎌 Anime OST</button>
+              <button class="sfx-cat" onclick="selGenre(this)">🏰 Fantasy</button>
+              <button class="sfx-cat" onclick="selGenre(this)">🎃 Horror</button>
+            </div>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Music Description</div>
+            <textarea class="prompt-ta" rows="4" placeholder="Describe the music…&#10;&#10;Example: Upbeat orchestral cartoon theme with playful brass and pizzicato strings, Disney adventure style, 30s loop">Cheerful anime opening with energetic J-pop, electric guitar riff, bright synth melody building to epic chorus, 45 seconds</textarea>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Settings</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <select class="sel" style="height:34px"><option>15s</option><option>30s</option><option>45s</option><option selected>1 min</option><option>2 min</option><option>3 min</option></select>
+              <input type="number" class="sel" placeholder="BPM 120" min="60" max="200" value="120" style="height:34px">
+            </div>
+            <input type="text" class="sel" placeholder="Instruments: orchestra, guitar, piano…" style="height:34px;font-size:12px;margin-top:8px">
+          </div>
+          <button class="gen-btn-s" onclick="startSoundGen('music')">🎵 Generate Music Track</button>
+          <div class="gen-info" style="margin-top:4px"><span>Est. ~20s</span><span>~$0.01</span></div>
+        </div>
+
+        <!-- Voice sub-panel -->
+        <div id="sp-voice" style="display:none">
+          <div class="ctrl-section">
+            <div class="ctrl-label">Language</div>
+            <div class="lang-flag-grid">
+              <div class="lf-btn on" onclick="selLang(this)"><div class="lf-flag">🇮🇩</div><div class="lf-name">Indonesia</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇺🇸</div><div class="lf-name">English</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇨🇳</div><div class="lf-name">中文</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇯🇵</div><div class="lf-name">日本語</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇰🇷</div><div class="lf-name">한국어</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇸🇦</div><div class="lf-name">العربية</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇪🇸</div><div class="lf-name">Español</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇫🇷</div><div class="lf-name">Français</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇮🇳</div><div class="lf-name">हिंदी</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇧🇷</div><div class="lf-name">Português</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇩🇪</div><div class="lf-name">Deutsch</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇷🇺</div><div class="lf-name">Русский</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇲🇾</div><div class="lf-name">Melayu</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇹🇭</div><div class="lf-name">ไทย</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🇻🇳</div><div class="lf-name">Việt</div></div>
+              <div class="lf-btn" onclick="selLang(this)"><div class="lf-flag">🌐</div><div class="lf-name">Auto</div></div>
+            </div>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Character Voice Type</div>
+            <div class="sfx-cats">
+              <button class="sfx-cat on" onclick="selVType(this)">👦 Child Hero</button>
+              <button class="sfx-cat" onclick="selVType(this)">🧙 Old Wizard</button>
+              <button class="sfx-cat" onclick="selVType(this)">👸 Princess</button>
+              <button class="sfx-cat" onclick="selVType(this)">🦁 Monster</button>
+              <button class="sfx-cat" onclick="selVType(this)">🤖 Robot</button>
+              <button class="sfx-cat" onclick="selVType(this)">😂 Comedy</button>
+              <button class="sfx-cat" onclick="selVType(this)">📺 Narrator</button>
+            </div>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Voice Engine</div>
+            <select class="sel"><option>ElevenLabs v3 (Best Quality)</option><option>OpenAI TTS-1 HD</option><option>Azure Neural TTS</option><option>Google WaveNet</option><option>Bark / XTTS (Local GPU)</option><option>Coqui XTTS v2 (Local)</option></select>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Script / Dialogue</div>
+            <textarea class="prompt-ta" rows="5" placeholder="Enter the character dialogue or narration…&#10;&#10;Example: &#x22;Halo teman-teman! Hari ini kita akan petualangan ke dunia sihir!&#x22;">Selamat datang di dunia sihir! Hari ini, kita akan belajar mantra paling ajaib yang pernah ada. Bersiaplah untuk petualangan yang tidak akan pernah kamu lupakan!</textarea>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Voice Parameters</div>
+            <div class="ctrl-row"><div class="ctrl-row-title"><span>Speed</span><span class="ctrl-val" id="vSpV">1.0×</span></div><input type="range" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('vSpV').textContent=parseFloat(this.value).toFixed(1)+'×'"></div>
+            <div class="ctrl-row"><div class="ctrl-row-title"><span>Pitch</span><span class="ctrl-val" id="vPtV">0</span></div><input type="range" min="-10" max="10" step="1" value="0" oninput="document.getElementById('vPtV').textContent=(this.value>0?'+':'')+this.value"></div>
+            <div class="ctrl-row"><div class="ctrl-row-title"><span>Emotion</span></div>
+              <select class="sel" style="height:34px"><option>Neutral</option><option>Excited / Happy</option><option>Dramatic</option><option>Sad / Soft</option><option>Angry</option><option>Scared</option><option>Mysterious</option></select>
+            </div>
+          </div>
+          <div class="ctrl-section">
+            <div class="ctrl-label">Voice Cloning (Optional)</div>
+            <div style="border:1px dashed var(--b);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='rgba(6,182,212,.4)'" onmouseout="this.style.borderColor='var(--b)'">
+              <div style="font-size:22px;margin-bottom:4px">🎤</div>
+              <div style="font-size:11px;font-weight:600;color:var(--t2)">Upload Voice Sample for Cloning</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:2px">30s+ · MP3, WAV · ElevenLabs or XTTS</div>
+            </div>
+          </div>
+          <button class="gen-btn-s" onclick="startSoundGen('voice')">🗣 Generate Voice Audio</button>
+          <div class="gen-info" style="margin-top:4px"><span>Est. ~5s</span><span>~$0.003/100 chars</span></div>
+        </div>
+
+        <!-- Waveform preview (shown after generation) -->
+        <div id="soundPreviewPanel" style="display:none;margin-top:14px">
+          <div class="ctrl-label" style="color:#22d3ee;margin-bottom:8px">Generated Audio</div>
+          <div class="waveform">
+            <div class="wf-bar" style="height:20px;animation-delay:.00s"></div><div class="wf-bar" style="height:30px;animation-delay:.08s"></div>
+            <div class="wf-bar" style="height:22px;animation-delay:.16s"></div><div class="wf-bar" style="height:35px;animation-delay:.24s"></div>
+            <div class="wf-bar" style="height:18px;animation-delay:.32s"></div><div class="wf-bar" style="height:28px;animation-delay:.40s"></div>
+            <div class="wf-bar" style="height:32px;animation-delay:.48s"></div><div class="wf-bar" style="height:20px;animation-delay:.56s"></div>
+            <div class="wf-bar" style="height:26px;animation-delay:.64s"></div><div class="wf-bar" style="height:34px;animation-delay:.72s"></div>
+            <div class="wf-bar" style="height:19px;animation-delay:.80s"></div><div class="wf-bar" style="height:28px;animation-delay:.88s"></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="ab-btn primary" style="flex:2;padding:8px;font-size:12px">▶ Play</button>
+            <button class="ab-btn ghost" style="flex:1;padding:8px;font-size:12px">⬇ Download</button>
+            <button class="ab-btn ghost" style="flex:1;padding:8px;font-size:12px">🔄 Regen</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAIN CANVAS -->
+  <div class="canvas">
+    <div class="canvas-toolbar">
+      <span style="font-size:11px;font-weight:700;color:var(--t3)">View:</span>
+      <button class="ct-btn on" onclick="setView('grid',this)">⊞ Grid</button>
+      <button class="ct-btn" onclick="setView('single',this)">⬜ Single</button>
+      <button class="ct-btn" onclick="setView('compare',this)">◫ Compare</button>
+      <div class="ct-sep"></div>
+      <button class="ct-btn">📋 History</button>
+      <button class="ct-btn">🌟 Favorites</button>
+      <div class="ct-sep"></div>
+      <div class="gen-status" id="genStatusBar" style="margin-left:auto">
+        <div class="gs-dot idle" id="genStatusDot"></div>
+        <span class="gs-text" id="genStatusText">Ready</span>
+        <span class="gs-time" id="genStatusTime"></span>
+      </div>
+      <button class="ct-btn">📥 Export All</button>
+    </div>
+
+    <div class="gallery-area" id="galleryArea">
+      <div class="gallery-grid" id="galleryGrid">
+
+        <!-- Gallery loaded dynamically from /api/jobs -->
+        <div id="gallery-empty-state" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:12px">
+          <div style="font-size:48px;opacity:.25">🎨</div>
+          <div style="font-size:15px;font-weight:700;color:var(--t2)">No generations yet</div>
+          <div style="font-size:13px;color:var(--t3);text-align:center;max-width:280px;line-height:1.5">Add a GPU endpoint and generate your first image or video.</div>
+        </div>
+
+        <!-- Generating card -->
+        <div class="gen-card" id="generatingCard" style="display:none">
+          <div class="gen-thumb skeleton" style="aspect-ratio:1">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="font-size:22px;opacity:.3">⏳</div>
+              <div style="font-size:11px;font-weight:600;color:var(--t3)" id="genCardPct">0%</div>
+            </div>
+          </div>
+          <div class="gen-card-info">
+            <div class="progress-bar"><div class="progress-fill" id="genProgressFill"></div></div>
+            <div class="gci-meta" style="margin-top:6px"><span style="color:var(--p2)">Generating…</span></div>
+          </div>
+        </div>
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT DETAIL PANEL -->
+  <div class="rpanel">
+    <div class="rp-header">
+      <span>Image Details</span>
+      <span class="pill green">✓ Ready</span>
+    </div>
+    <div class="rp-scroll">
+
+      <div class="rp-section">
+        <div class="detail-img">🏔</div>
+        <div class="action-btns">
+          <button class="ab-btn primary">⬇ Download PNG</button>
+          <button class="ab-btn ghost" onclick="">🔄 Variations</button>
+          <button class="ab-btn ghost" onclick="">✏ Edit / Inpaint</button>
+          <button class="ab-btn ghost" onclick="">🔍 Upscale 4×</button>
+          <button class="ab-btn ghost" onclick="">✨ Animate</button>
+          <button class="ab-btn ghost" onclick="">💬 Use in AI Studio</button>
+        </div>
+      </div>
+
+      <div class="rp-section" id="rp-gen-info" style="display:none">
+        <div class="rp-label">Generation Info</div>
+        <div class="detail-row"><span class="dr-label">Model</span><span class="dr-val" id="rp-model">—</span></div>
+        <div class="detail-row"><span class="dr-label">Size</span><span class="dr-val" id="rp-size">—</span></div>
+        <div class="detail-row"><span class="dr-label">Steps</span><span class="dr-val" id="rp-steps">—</span></div>
+        <div class="detail-row"><span class="dr-label">CFG Scale</span><span class="dr-val" id="rp-cfg">—</span></div>
+        <div class="detail-row"><span class="dr-label">Seed</span><span class="dr-val" id="rp-seed">—</span></div>
+        <div class="detail-row"><span class="dr-label">Gen Time</span><span class="dr-val" id="rp-time">—</span></div>
+        <div class="detail-row"><span class="dr-label">Cost</span><span class="dr-val" id="rp-cost">—</span></div>
+      </div>
+      <div id="rp-nosel" style="padding:20px;text-align:center;color:var(--t3);font-size:12px">
+        Generate an image to see details here
+      </div>
+
+      <div class="rp-section" id="rp-prompt-section" style="display:none">
+        <div class="rp-label">Prompt Used</div>
+        <div id="rp-prompt-text" style="padding:10px 12px;background:var(--s3);border-radius:8px;border:1px solid var(--b);font-size:11px;color:var(--t2);line-height:1.65">—</div>
+      </div>
+
+      <div class="rp-section" id="rp-gpu-stats">
+        <div class="rp-label">Endpoint Status</div>
+        <div class="detail-row"><span class="dr-label">Endpoint</span><span class="dr-val" id="rp-ep-name">—</span></div>
+        <div class="detail-row"><span class="dr-label">Status</span><span class="dr-val" id="rp-ep-status">—</span></div>
+        <div class="detail-row"><span class="dr-label">Queue</span><span class="dr-val" id="rp-ep-queue">—</span></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function setMode(m,btn){
+  document.querySelectorAll('.mode').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ['image','video','photoanim','imageanim','videoanim','upscale','tools'].forEach(id=>{
+    const el=document.getElementById('ctrl-'+id);
+    if(el) el.classList.toggle('hidden',id!==m);
+  });
+  // Update right panel label
+  const labels={image:'Image Details',video:'Video Details',photoanim:'Animation Details',imageanim:'Animation Details',videoanim:'Enhancement Details',upscale:'Upscale Details',tools:'Tool Output'};
+  document.querySelector('.rp-header span:first-child').textContent=labels[m]||'Details';
+}
+function selectStyle(el){
+  document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function setRatio(el,r){
+  document.querySelectorAll('.ratio-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+function setScale(el,s){
+  document.querySelectorAll('.ctrl-section .ratio-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+function setView(v,btn){
+  document.querySelectorAll('.ct-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function toggleTag(el){el.classList.toggle('on');}
+function selectAnimType(el){
+  el.closest('.anim-types,div').querySelectorAll('.anim-type').forEach(a=>a.classList.remove('on'));
+  el.classList.add('on');
+}
+function selectCard(el){
+  document.querySelectorAll('.gen-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+let genRunning=false;
+function startGenerate(){
+  if(genRunning)return;
+  genRunning=true;
+  const card=document.getElementById('generatingCard');
+  card.style.display='block';
+  const dot=document.getElementById('genStatusDot');
+  const txt=document.getElementById('genStatusText');
+  const timer=document.getElementById('genStatusTime');
+  dot.className='gs-dot running';
+  txt.textContent='Generating…';
+  let pct=0, sec=0;
+  const fill=document.getElementById('genProgressFill');
+  const pctTxt=document.getElementById('genCardPct');
+  const t=setInterval(()=>{
+    pct+=Math.random()*8+3;
+    sec++;
+    if(pct>=100){pct=100;clearInterval(t);finishGen();}
+    fill.style.width=Math.min(pct,100)+'%';
+    pctTxt.textContent=Math.floor(pct)+'%';
+    timer.textContent=sec+'s';
+  },300);
+}
+function finishGen(){
+  const card=document.getElementById('generatingCard');
+  card.style.display='none';
+  document.getElementById('genStatusDot').className='gs-dot idle';
+  document.getElementById('genStatusText').textContent='4 images generated ✓';
+  setTimeout(()=>{document.getElementById('genStatusText').textContent='Ready';},3000);
+  genRunning=false;
+  // Add new card
+  const grid=document.getElementById('galleryGrid');
+  const newCard=document.createElement('div');
+  newCard.className='gen-card';
+  newCard.onclick=function(){selectCard(this)};
+  newCard.innerHTML=`<div class="gen-thumb" style="background:linear-gradient(135deg,#1a1206,#3a280d)"><div class="gen-placeholder"><div style="font-size:44px">🏔</div></div></div><div class="gen-card-actions"><button class="gca-btn">⬇</button><button class="gca-btn">🔄</button><button class="gca-btn">⭐</button><button class="gca-btn" style="color:var(--r)">✕</button></div><div class="gen-card-info"><div class="gci-prompt">Snow leopard at golden hour…</div><div class="gci-meta"><span class="pill amber">Flux.1</span><span>1024×1024</span><span>8.1s</span></div></div>`;
+  grid.appendChild(newCard);
+}
+function startVideoGen(){startGenerate();}
+function startPhotoAnim(){startGenerate();}
+
+// ── Toast notification ────────────────────────────────────────────────
+function showGpuToast(msg, type='success'){
+  let el=document.getElementById('gpu-toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='gpu-toast';
+    el.style.cssText='position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.5)';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+  el.style.background=type==='error'?'rgba(239,68,68,.15)':'rgba(16,185,129,.15)';
+  el.style.border=type==='error'?'1px solid rgba(239,68,68,.3)':'1px solid rgba(16,185,129,.3)';
+  el.style.color=type==='error'?'#f87171':'#34d399';
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',3500);
+}
+
+// ── Load endpoints from API on boot ──────────────────────────────────
+async function loadEndpoints(){
+  try{
+    const r=await fetch('/api/endpoints',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'list'})});
+    const d=await r.json();
+    const eps=d.endpoints||[];
+    const sel=document.getElementById('gen-endpoint');
+    if(sel){
+      sel.innerHTML='<option value="">Select endpoint…</option>'+
+        eps.map(e=>`<option value="${e.id}">${escHtml(e.label||e.provider)} (${e.provider})</option>`).join('');
+    }
+    document.getElementById('gpuLabel').textContent=
+      eps.filter(e=>e.status==='online'||e.status==='configured').length
+        ? eps.find(e=>e.status==='online'||e.status==='configured')?.label||'Connected'
+        : eps.length ? `${eps.length} endpoint(s)` : 'No endpoints';
+  }catch(e){console.warn('Endpoints:',e);}
+}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Update finishGen to show real result panel ─────────────────────
+function updateRightPanel(result){
+  if(!result)return;
+  const info=document.getElementById('rp-gen-info');
+  const nosel=document.getElementById('rp-nosel');
+  const ps=document.getElementById('rp-prompt-section');
+  if(info){info.style.display='block';}
+  if(nosel){nosel.style.display='none';}
+  if(ps){ps.style.display='block';}
+  const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
+  set('rp-model', result.model||'—');
+  set('rp-size', `${result.width||'—'} × ${result.height||'—'}`);
+  set('rp-steps', result.steps||'—');
+  set('rp-cfg', result.cfg_scale||'—');
+  set('rp-seed', result.seed||'random');
+  set('rp-time', result.latency_ms ? (result.latency_ms/1000).toFixed(1)+'s' : '—');
+  set('rp-cost', result.cost ? '$'+result.cost.toFixed(4) : '$0.000');
+  const pt=document.getElementById('rp-prompt-text');
+  if(pt&&result.prompt) pt.textContent=result.prompt;
+}
+
+// ── Wire finishGen to API call ────────────────────────────────────────
+const _origFinishGen = finishGen;
+finishGen = function(){
+  _origFinishGen();
+  // Clear gallery empty state when first item added
+  const emptyState=document.getElementById('gallery-empty-state');
+  if(emptyState) emptyState.style.display='none';
+};
+
+// Boot
+loadEndpoints();
+
+// ── Extended mode list ──────────────────────────────────────────────────
+const ALL_MODES=['image','video','photoanim','imageanim','videoanim','upscale','tools','cartoon','sound'];
+const origSetMode=setMode;
+setMode=function(m,btn){
+  document.querySelectorAll('.mode').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ALL_MODES.forEach(id=>{
+    const el=document.getElementById('ctrl-'+id);
+    if(el) el.classList.toggle('hidden',id!==m);
+  });
+  const labels={image:'Image Details',video:'Video Details',photoanim:'Animation Details',imageanim:'Animation Details',videoanim:'Enhancement Details',upscale:'Upscale Details',tools:'Tool Output',cartoon:'Cartoon Details',sound:'Audio Output'};
+  const h=document.querySelector('.rp-header span:first-child');
+  if(h) h.textContent=labels[m]||'Details';
+};
+
+// ── Cartoon mode ────────────────────────────────────────────────────────
+function selCS(el){
+  el.closest('.cartoon-styles').querySelectorAll('.cs-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function selChar(el){
+  el.closest('.char-grid').querySelectorAll('.char-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+let seqCount=3;
+function addSeqFrame(){
+  if(seqCount>=12){showGpuToast('Maximum 12 storyboard frames reached');return;}
+  seqCount++;
+  const board=document.getElementById('seqBoard');
+  const icons=['🌅','🏃','💫','🔥','🌊','⭐','🎯','💎','🌙'];
+  const icon=icons[(seqCount-1)%icons.length];
+  const frame=document.createElement('div');
+  frame.className='seq-frame';
+  frame.innerHTML=`<div class="seq-thumb">${icon}</div><div class="seq-num">Frame ${seqCount}</div>`;
+  frame.onclick=function(){
+    document.querySelectorAll('.seq-frame').forEach(f=>f.classList.remove('on'));
+    this.classList.add('on');
+  };
+  board.insertBefore(frame, board.querySelector('.seq-add'));
+}
+const cartoonTpls={
+  intro:{prompt:'Epic movie intro sequence: AXTO logo materializes from golden particles on a dark background, dramatic orchestral swell, lens flare, cinematic 3D render, Disney/Pixar quality',style:'Disney 3D'},
+  chase:{prompt:'High-speed anime action chase scene: hero running across rooftops at night, dynamic camera angles, motion blur, speed lines, vivid neon city background, full animation',style:'Anime HD'},
+  magic:{prompt:'Magical transformation sequence: character surrounded by swirling sparkles and rainbow light, Disney fairy tale style, dramatic pose, soft glowing particles, warm magical atmosphere',style:'Disney 3D'},
+  emotion:{prompt:'Emotional close-up scene: character looking at sunset with tears in eyes, Ghibli soft lighting, gentle wind in hair, watercolor sky, deeply moving cinematic composition',style:'Ghibli'},
+  battle:{prompt:'Intense anime battle scene: two characters clashing with explosive energy, impact FX, shockwave rings, dramatic lighting, detailed action poses, Dragon Ball Z style intensity',style:'Anime HD'},
+  nature:{prompt:'Peaceful Ghibli-style nature landscape: rolling green hills, gentle river, wildflowers, soft clouds, golden afternoon light, a small cottage in the distance, serene atmosphere',style:'Ghibli'},
+};
+function loadCartoonTpl(key){
+  const tpl=cartoonTpls[key];
+  if(!tpl)return;
+  const ta=document.querySelector('#ctrl-cartoon .prompt-ta');
+  if(ta) ta.value=tpl.prompt;
+  // Select matching style card
+  document.querySelectorAll('.cs-card').forEach(c=>{
+    if(c.querySelector('.cs-name')?.textContent===tpl.style){
+      selCS(c);
+    }
+  });
+}
+
+// ── Sound mode ──────────────────────────────────────────────────────────
+function setSoundTab(tab,btn){
+  ['sfx','music','voice'].forEach(t=>{
+    const panel=document.getElementById('sp-'+t);
+    const stab=document.getElementById('stab-'+t);
+    if(panel) panel.style.display=t===tab?'':'none';
+    if(stab) stab.classList.toggle('on',t===tab);
+  });
+  document.getElementById('soundPreviewPanel').style.display='none';
+}
+function selSfxCat(el){
+  el.closest('.sfx-cats').querySelectorAll('.sfx-cat').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function selSfx(el){
+  el.closest('#sp-sfx').querySelectorAll('.sfx-preset').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+}
+function selMusicEng(el){
+  el.closest('div').querySelectorAll('.me-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function selGenre(el){
+  el.closest('.sfx-cats').querySelectorAll('.sfx-cat').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function selLang(el){
+  el.closest('.lang-flag-grid').querySelectorAll('.lf-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+function selVType(el){
+  el.closest('.sfx-cats').querySelectorAll('.sfx-cat').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function startSoundGen(type){
+  // Show waveform preview after short delay (simulate generation)
+  const statusDot=document.getElementById('genStatusDot');
+  const statusTxt=document.getElementById('genStatusText');
+  if(statusDot){statusDot.className='gs-dot running';}
+  if(statusTxt){statusTxt.textContent='Generating audio…';}
+  setTimeout(()=>{
+    document.getElementById('soundPreviewPanel').style.display='block';
+    if(statusDot){statusDot.className='gs-dot idle';}
+    const labels={sfx:'SFX generated ✓',music:'Music generated ✓',voice:'Voice generated ✓'};
+    if(statusTxt){statusTxt.textContent=labels[type]||'Audio generated ✓';}
+    setTimeout(()=>{if(statusTxt)statusTxt.textContent='Ready';},3000);
+  },2000);
+}
+</script>
+</body>
+</html>

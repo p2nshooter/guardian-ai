@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 /**
  * AXTO — i18n (Internationalization)
  * Supported: id (Indonesia), en (English), zh (Chinese), ar (Arabic)
@@ -127,7 +134,7 @@ const T = {
   stat_selfhosted: { id: "Self-Hosted", en: "Self-Hosted", zh: "自托管", ar: "استضافة ذاتية" },
   stat_detect:     { id: "Deteksi Ancaman", en: "Threat Detection", zh: "威胁检测", ar: "كشف التهديدات" },
   stat_byok:       { id: "Bawa Key Anda", en: "Bring Your Own Keys", zh: "自带密钥", ar: "أحضر مفاتيحك" },
-  stat_uptime:     { id: "Jaminan Uptime", en: "Uptime SLA", zh: "运行时间SLA", ar: "اتفاقية وقت التشغيل" },
+  stat_uptime:     { id: "Ketersediaan Platform", en: "Platform Availability", zh: "平台可用性", ar: "توافر المنصة" },
 
   // ── Features section ────────────────────────────────────────────────────
   feat_title:    { id: "Semua yang Anda Butuhkan", en: "Everything You Need", zh: "您所需要的一切", ar: "كل ما تحتاجه" },
@@ -293,7 +300,7 @@ export const PACKAGE_FEATURES: Record<Locale, {
       ["1 server dilindungi","AI Behavioral Analysis","Deteksi ancaman real-time","Email notifikasi"],
       ["10 server dilindungi","Semua fitur Lite","Threat Hunting","Dashboard terpusat","API akses"],
       ["100 server dilindungi","Semua fitur Pro","mTLS + eBPF","SIEM integration","Compliance report"],
-      ["1000 server dilindungi","Semua fitur Shield","Custom SLA","Dedicated support","White-label"],
+      ["1000 server dilindungi","Semua fitur Shield","Multi-tenant","Panduan Setup Lengkap","White-label"],
     ],
     orchestra: [
       ["1 cluster AI","10 worker node","5 GPU worker","5 mode routing","OpenAI + Claude + Gemini"],
@@ -301,27 +308,27 @@ export const PACKAGE_FEATURES: Record<Locale, {
       ["Cluster tak terbatas","Worker tak terbatas","GPU tak terbatas","Custom routing","White-label API"],
     ],
     bundle: [
-      ["Guardian Lite + Orchestra Core","Diskon 10%","1 server + 1 cluster AI"],
-      ["Guardian Pro + Orchestra Scale","Diskon 10%","10 server + 3 cluster AI","Paling populer"],
-      ["Guardian Shield + Orchestra Unlimited","Diskon 10%","Skala enterprise penuh"],
+      ["Guardian Professional + Orchestra Starter","Diskon $1,990","25 server + 10 worker"],
+      ["Guardian Business + Orchestra Professional","Diskon $7,990","100 server + 50 worker","Paling populer"],
+      ["Guardian Enterprise + Orchestra Enterprise","Diskon $19,900","Skala enterprise penuh"],
     ],
   },
   en: {
     guardian: [
       ["1 server protected","AI Behavioral Analysis","Real-time threat detection","Email notifications"],
-      ["10 servers protected","All Lite features","Threat Hunting","Central dashboard","API access"],
-      ["100 servers protected","All Pro features","mTLS + eBPF","SIEM integration","Compliance report"],
-      ["1000 servers protected","All Shield features","Custom SLA","Dedicated support","White-label"],
+      ["25 servers protected","All Sentinel features","Threat Hunting","Central dashboard","API access"],
+      ["100 servers protected","All Professional features","mTLS + eBPF","SIEM integration","Compliance report"],
+      ["1000 servers protected","All Business features","Multi-tenant","Comprehensive setup guide","White-label"],
     ],
     orchestra: [
-      ["1 AI cluster","10 worker nodes","5 GPU workers","5 routing modes","OpenAI + Claude + Gemini"],
-      ["3 AI clusters","50 worker nodes","Unlimited GPU","All routing modes","Auto failover"],
-      ["Unlimited clusters","Unlimited workers","Unlimited GPU","Custom routing","White-label API"],
+      ["10 AI workers","Smart routing","OpenAI + Claude + Gemini","Cost optimization"],
+      ["50 AI workers","All Starter features","Autoscaler","Priority queue","Federation"],
+      ["Unlimited workers","All Professional features","Custom routing","White-label API"],
     ],
     bundle: [
-      ["Guardian Lite + Orchestra Core","10% discount","1 server + 1 AI cluster"],
-      ["Guardian Pro + Orchestra Scale","10% discount","10 servers + 3 AI clusters","Most popular"],
-      ["Guardian Shield + Orchestra Unlimited","10% discount","Full enterprise scale"],
+      ["Guardian Professional + Orchestra Starter","Save $1,990","25 servers + 10 workers"],
+      ["Guardian Business + Orchestra Professional","Save $7,990","100 servers + 50 workers","Most popular"],
+      ["Guardian Enterprise + Orchestra Enterprise","Save $19,900","Full enterprise scale"],
     ],
   },
   zh: {
@@ -329,7 +336,7 @@ export const PACKAGE_FEATURES: Record<Locale, {
       ["1台服务器保护","AI行为分析","实时威胁检测","电子邮件通知"],
       ["10台服务器保护","所有Lite功能","威胁猎杀","中央仪表板","API访问"],
       ["100台服务器保护","所有Pro功能","mTLS + eBPF","SIEM集成","合规报告"],
-      ["1000台服务器保护","所有Shield功能","自定义SLA","专属支持","白标"],
+      ["1000台服务器保护","所有Shield功能","多租户","完整设置指南","白标"],
     ],
     orchestra: [
       ["1个AI集群","10个工作节点","5个GPU工作节点","5种路由模式","OpenAI + Claude + Gemini"],
@@ -347,7 +354,7 @@ export const PACKAGE_FEATURES: Record<Locale, {
       ["حماية خادم واحد","تحليل سلوكي بالذكاء الاصطناعي","كشف التهديدات في الوقت الفعلي","إشعارات البريد الإلكتروني"],
       ["حماية 10 خوادم","جميع ميزات Lite","صيد التهديدات","لوحة تحكم مركزية","وصول API"],
       ["حماية 100 خادم","جميع ميزات Pro","mTLS + eBPF","تكامل SIEM","تقرير الامتثال"],
-      ["حماية 1000 خادم","جميع ميزات Shield","SLA مخصص","دعم مخصص","علامة بيضاء"],
+      ["حماية 1000 خادم","جميع ميزات Shield","متعدد المستأجرين","دليل الإعداد الشامل","علامة بيضاء"],
     ],
     orchestra: [
       ["مجموعة ذكاء اصطناعي واحدة","10 عُقَد عاملة","5 عُقَد GPU","5 أوضاع توجيه","OpenAI + Claude + Gemini"],

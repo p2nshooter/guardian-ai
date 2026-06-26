@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 version: "3.9"
 
 # ============================================================
@@ -23,7 +29,7 @@ version: "3.9"
 services:
 
   guardian-core:
-    image: ghcr.io/p2nshooter/guardian-engine:latest
+    image: registry.gitlab.com/axto-platform/guardian-ai/guardian-engine:latest
     container_name: guardian-core
     restart: unless-stopped
     command: uvicorn src.api:app --host 0.0.0.0 --port 8080
@@ -62,7 +68,7 @@ services:
       options: { max-size: "20m", max-file: "5" }
 
   guardian-node:
-    image: ghcr.io/p2nshooter/guardian-engine:latest
+    image: registry.gitlab.com/axto-platform/guardian-ai/guardian-engine:latest
     container_name: guardian-node
     restart: unless-stopped
     command: python -m src

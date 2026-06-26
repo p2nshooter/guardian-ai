@@ -1,3 +1,9 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 """
 AXTO Guardian — Honeypot / Canary File Monitor
 Taruh file jebakan di direktori sensitif.
@@ -118,3 +124,16 @@ class HoneypotMonitor:
                 )
             except Exception:
                 pass
+
+
+    async def stop(self) -> None:
+        """Graceful shutdown — cleanup honeypot files and listeners."""
+        self._running = False
+        for path in self._deployed:
+            try:
+                import os
+                if os.path.exists(path):
+                    os.unlink(path)
+            except Exception:
+                pass
+        self._deployed.clear()

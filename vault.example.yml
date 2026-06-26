@@ -1,0 +1,106 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Vault — AI Privacy Layer | Client Configuration
+#
+# CARA PAKAI / HOW TO USE:
+#   1. Isi license_key dari / Get license_key from: https://axto.io/portal
+#   2. Isi minimal 1 AI vendor key / Add at least 1 AI vendor key
+#   3. docker compose -f vault-compose.yml up -d
+#   4. Buka / Open: http://YOUR_SERVER:8080
+#      → Akan redirect ke dashboard otomatis setelah aktivasi
+#      → Auto-redirects to dashboard after activation
+#
+# Pull image: docker pull registry.gitlab.com/axto-platform/vault/vault-engine:latest
+# Portal:     https://axto.io/portal
+# Docs:       https://axto.io/guide
+# ============================================================
+
+vault:
+
+  # ── License ──────────────────────────────────────────────
+  license_key: "VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  # ── AI Vendor Pool (BYOK — Bring Your Own Keys) ───────────
+  ai_pool:
+    vendors:
+
+      # OpenAI (Recommended)
+      - provider: openai
+        api_key: "sk-GANTI-INI"
+        default_model: "gpt-4o-mini"
+
+      # Anthropic Claude
+      # - provider: anthropic
+      #   api_key: "sk-ant-GANTI-INI"
+      #   default_model: "claude-haiku-4-5-20251001"
+
+      # Google Gemini
+      # - provider: gemini
+      #   api_key: "AIza-GANTI-INI"
+      #   default_model: "gemini-2.0-flash"
+
+      # Groq (ultra-cepat / ultra-fast)
+      # - provider: groq
+      #   api_key: "gsk_GANTI-INI"
+      #   default_model: "llama-3.1-8b-instant"
+
+      # Mistral
+      # - provider: mistral
+      #   api_key: "GANTI-INI"
+      #   default_model: "mistral-small-latest"
+
+      # DeepSeek (reasoning bagus / great reasoning)
+      # - provider: deepseek
+      #   api_key: "sk-GANTI-INI"
+      #   default_model: "deepseek-chat"
+
+      # Ollama (lokal / local, gratis / free)
+      # - provider: ollama
+      #   base_url: "http://ollama:11434"
+      #   default_model: "llama3"
+
+  # ── Storage ───────────────────────────────────────────────
+  data_dir: /vault/data
+  log_dir:  /vault/logs
+
+  # ── Rate Limiting ─────────────────────────────────────────
+  # Limit requests per minute (0 = unlimited)
+  # rate_limit_per_minute: 0
+
+  # ── Audit ─────────────────────────────────────────────────
+  # PERINGATAN / WARNING:
+  # audit_store_originals: false  # JANGAN aktifkan! Menyimpan PII asli = risiko privasi
+  # audit_retention_days: 90
+
+  # ── Alerting (Optional) ───────────────────────────────────
+  # Kirim alert ke Slack/webhook saat data sensitif (SSN, kartu kredit, dll) terdeteksi
+  # Send alert to Slack/webhook when high-sensitivity data (SSN, card, etc.) is detected
+  alerting:
+    # Slack Incoming Webhook URL
+    # Buat di: https://api.slack.com/apps → Incoming Webhooks
+    # slack_webhook: "https://hooks.slack.com/services/XXXX/YYYY/ZZZZ"
+
+    # Generic HTTP webhook (JSON POST)
+    # webhook_url: "https://your-server.com/webhook/vault-alerts"
+
+    # ── SIEM Forwarding ─────────────────────────────────────
+    # Forward setiap audit event ke Splunk HEC / Elastic / Datadog / QRadar
+    # Forward every audit event to Splunk HEC / Elastic / Datadog / QRadar
+    #
+    # Splunk HEC:
+    # siem_url:   "https://splunk:8088/services/collector"
+    # siem_token: "your-splunk-hec-token"
+    #
+    # Elastic HTTP input:
+    # siem_url:   "https://elastic:9200/_bulk"
+    # siem_token: "elastic-api-key"
+    #
+    # Datadog:
+    # siem_url:   "https://http-intake.logs.datadoghq.com/api/v2/logs"
+    # siem_token: "your-datadog-api-key"

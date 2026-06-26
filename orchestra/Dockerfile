@@ -1,6 +1,12 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
 FROM python:3.11-slim
 
-LABEL org.opencontainers.image.source="https://github.com/p2nshooter/guardian-ai"
+LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Orchestra Core"
 LABEL org.opencontainers.image.description="AXTO Orchestra — AI Workload Orchestration Engine"
 LABEL org.opencontainers.image.licenses="Commercial"

@@ -1,0 +1,74 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Edge — AI API Gateway & Billing | Configuration
+#
+# HOW TO USE:
+#   1. Enter license_key from https://axto.io/portal
+#   2. Add your AI vendor keys (BYOK) under ai_pool.vendors
+#   3. docker compose -f edge-compose.yml up -d
+#   4. Open http://YOUR_SERVER:8080 → Dashboard
+#   5. Create customers + issue API keys
+#   6. Customers call YOUR Edge endpoint instead of OpenAI
+#
+# Pull: docker pull registry.gitlab.com/axto-platform/edge/edge-engine:latest
+# ============================================================
+
+edge:
+
+  # ── License ──────────────────────────────────────────────
+  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  # ── AI Vendor Pool (BYOK) ─────────────────────────────────
+  # YOUR keys → YOUR customers route through Edge to these providers.
+  # Customers only see their Edge API key — they never know your AI keys.
+  ai_pool:
+    vendors:
+
+      # OpenAI (Recommended)
+      - provider: openai
+        api_key: "sk-GANTI-INI"
+        default_model: "gpt-4o-mini"
+
+      # Anthropic Claude
+      # - provider: anthropic
+      #   api_key: "sk-ant-GANTI-INI"
+      #   default_model: "claude-haiku-4-5-20251001"
+
+      # Google Gemini
+      # - provider: gemini
+      #   api_key: "AIza-GANTI-INI"
+      #   default_model: "gemini-2.0-flash"
+
+      # Groq (ultra-fast, low-cost — great for free tier)
+      # - provider: groq
+      #   api_key: "gsk_GANTI-INI"
+      #   default_model: "llama-3.1-8b-instant"
+
+      # DeepSeek (cheapest reasoning)
+      # - provider: deepseek
+      #   api_key: "sk-GANTI-INI"
+      #   default_model: "deepseek-chat"
+
+      # Ollama (local, free)
+      # - provider: ollama
+      #   base_url: "http://ollama:11434"
+      #   default_model: "llama3"
+
+  # ── Firewall ──────────────────────────────────────────────
+  firewall:
+    prompt_injection: true   # Detect + block prompt injection attacks
+    content_filter:   true   # Block CSAM, weapons synthesis, malware requests
+    abuse_detection:  true   # Flag unusual velocity patterns
+
+  # ── Defaults ─────────────────────────────────────────────
+  # default_rate_limit_rpm: 60   # Default req/min (overridden per plan)
+
+  # ── Storage ───────────────────────────────────────────────
+  data_dir: /edge/data
+  log_dir:  /edge/logs

@@ -1,0 +1,70 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO Vault — Activation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#030c08;color:#f1f5f9;font-family:"Inter",-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.w{max-width:500px;width:100%;text-align:center}
+.ic{width:80px;height:80px;background:linear-gradient(135deg,#059669,#0d9488);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 28px;box-shadow:0 8px 32px rgba(5,150,105,.4)}
+h1{font-size:30px;font-weight:900;letter-spacing:-1px;margin-bottom:8px}
+h1 span{background:linear-gradient(135deg,#34d399,#2dd4bf);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{color:#64748b;font-size:14px;line-height:1.7;margin-bottom:36px}
+.box{background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2);border-radius:18px;padding:28px;text-align:left;margin-bottom:24px}
+.bt{font-size:13px;font-weight:700;color:#34d399;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+.step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(5,150,105,.1)}
+.step:last-child{border-bottom:none;padding-bottom:0}
+.sn{width:24px;height:24px;border-radius:50%;background:rgba(5,150,105,.2);border:1px solid rgba(5,150,105,.4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#34d399;flex-shrink:0;margin-top:2px}
+.st{font-size:13px;color:#94a3b8;line-height:1.6}
+code{background:rgba(5,150,105,.12);padding:2px 7px;border-radius:5px;font-size:12px;color:#6ee7b7;font-family:monospace}
+form{display:flex;gap:10px}
+input{flex:1;background:#091c16;border:1px solid #1a3d2e;border-radius:10px;padding:11px 14px;color:#f1f5f9;font-size:14px;outline:none}
+input:focus{border-color:rgba(5,150,105,.5)}
+input::placeholder{color:#475569}
+.cta{padding:11px 24px;background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap}
+.cta:hover{filter:brightness(1.1)}
+#msg{margin-top:12px;font-size:13px;padding:8px 12px;border-radius:8px;display:none;text-align:left}
+.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#f87171}
+.ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:#34d399}
+a.l{display:inline-block;margin-top:16px;color:#34d399;font-size:13px;text-decoration:none;font-weight:600}
+</style></head>
+<body>
+<div class="w">
+  <div class="ic">🔐</div>
+  <h1>AXTO <span>Vault</span></h1>
+  <p class="sub">Data Privacy &amp; PII Protection Platform<br>Enter your license key to activate</p>
+  <div class="box">
+    <div class="bt">How to Activate</div>
+    <div class="step"><div class="sn">1</div><div class="st">Purchase a Vault license at <a href="https://axto.io/register?pkg=vault" style="color:#34d399">axto.io</a></div></div>
+    <div class="step"><div class="sn">2</div><div class="st">Your key starts with <code>VAULT-</code></div></div>
+    <div class="step"><div class="sn">3</div><div class="st">Enter it below and click Activate</div></div>
+  </div>
+  <form onsubmit="activate(event)">
+    <input type="text" id="ki" placeholder="VAULT-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+    <button class="cta" type="submit">Activate</button>
+  </form>
+  <div id="msg"></div>
+  <a href="https://axto.io/register?pkg=vault" target="_blank" class="l">Get Vault License →</a>
+</div>
+<script>
+async function activate(e){
+  e.preventDefault();
+  const key=document.getElementById("ki").value.trim().toUpperCase();
+  const msg=document.getElementById("msg");
+  if(!key.startsWith("VAULT-")){msg.className="err";msg.textContent="Key must start with VAULT-";msg.style.display="block";return;}
+  msg.style.color="#94a3b8";msg.textContent="Validating…";msg.style.display="block";msg.className="";
+  try{
+    const r=await fetch("/activate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({license_key:key})});
+    if(r.ok){msg.className="ok";msg.textContent="✓ Activated! Reloading…";setTimeout(()=>location.href="/",2000);}
+    else{const d=await r.json().catch(()=>({}));msg.className="err";msg.textContent="✗ "+(d.detail||"Invalid key");}
+  }catch(err){msg.className="err";msg.textContent="✗ "+err.message;}
+}
+</script>
+</body></html>

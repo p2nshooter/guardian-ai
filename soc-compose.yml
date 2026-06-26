@@ -1,0 +1,48 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# ============================================================
+# AXTO SOC — Security Operations Center
+# docker compose -f soc-compose.yml up -d
+# ============================================================
+
+services:
+  soc-core:
+    image: registry.gitlab.com/axto-platform/soc-engine/soc-engine:latest
+    container_name: soc-core
+    restart: unless-stopped
+    ports:
+      - "8092:8092"
+    volumes:
+      - ./soc.yml:/soc/config/soc.yml:ro
+      - soc-data:/soc/data
+      - soc-logs:/soc/logs
+    environment:
+      - SOC_CONFIG=/soc/config/soc.yml
+      - SOC_PORT=8092
+    healthcheck:
+      test: ["CMD","curl","-sf","http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    networks:
+      - soc-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  soc-data:
+  soc-logs:
+
+networks:
+  soc-net:
+    driver: bridge

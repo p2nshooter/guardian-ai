@@ -1,0 +1,1529 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AXTO — AI Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080e;--s1:#0d0d16;--s2:#12121e;--s3:#181826;--s4:#1e1e2e;
+  --b:rgba(255,255,255,.06);--bh:rgba(99,102,241,.5);
+  --p:#6366f1;--p2:#818cf8;--pa:rgba(99,102,241,.12);--pb:rgba(99,102,241,.06);
+  --t:#f0f0ff;--t2:#8b8baa;--t3:#4a4a6a;
+  --g:#10b981;--r:#f43f5e;--y:#f59e0b;--c:#06b6d4;
+  --f:'Geist',sans-serif;--mono:'Geist Mono',monospace;
+  --rad:10px;
+}
+html,body{background:var(--bg);color:var(--t);font-family:var(--f);height:100%;overflow:hidden;font-size:14px}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+/* ══ TOP BAR ══════════════════════════════════════════════════════════ */
+.topbar{height:50px;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 14px;gap:10px;position:relative;z-index:100}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.brand-logo{width:30px;height:30px;background:linear-gradient(135deg,#6366f1,#818cf8,#a78bfa);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.04em;color:var(--t)}
+.brand-tag{font-size:11px;font-weight:600;color:var(--p2);background:var(--pa);padding:2px 8px;border-radius:20px;border:1px solid rgba(99,102,241,.2);letter-spacing:.02em}
+.sep{width:1px;height:22px;background:var(--b)}
+
+/* Mode tabs */
+.modes{display:flex;gap:1px;background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:3px;flex-shrink:0}
+.mode{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t3);border:none;background:transparent;font-family:var(--f);transition:all .15s;white-space:nowrap}
+.mode:hover{color:var(--t2)}
+.mode.on{background:var(--s4);color:var(--t);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+/* Connection indicator */
+.conn-bar{display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--b);cursor:pointer;transition:all .15s;margin-left:auto}
+.conn-bar:hover{border-color:rgba(99,102,241,.3)}
+.conn-dot{width:7px;height:7px;border-radius:50%}
+.conn-dot.ok{background:var(--g);box-shadow:0 0 6px var(--g)}
+.conn-dot.warn{background:var(--y);box-shadow:0 0 6px var(--y)}
+.conn-dot.off{background:var(--t3)}
+.conn-label{font-size:12px;font-weight:600;color:var(--t2)}
+.conn-provider{font-size:11px;color:var(--t3)}
+
+.icon-btn{width:32px;height:32px;border-radius:8px;background:transparent;border:1px solid var(--b);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;color:var(--t2);flex-shrink:0}
+.icon-btn:hover{background:var(--s3);color:var(--t);border-color:rgba(255,255,255,.12)}
+
+/* ══ LAYOUT ══════════════════════════════════════════════════════════ */
+.shell{display:flex;height:calc(100vh - 50px)}
+
+/* ══ LEFT SIDEBAR ══════════════════════════════════════════════════ */
+.sidebar{width:240px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden}
+.sb-top{padding:12px;border-bottom:1px solid var(--b)}
+.new-btn{width:100%;padding:8px 12px;border-radius:var(--rad);background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(129,140,248,.1));border:1px solid rgba(99,102,241,.25);color:var(--p2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--f);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px;letter-spacing:.01em}
+.new-btn:hover{background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(129,140,248,.2));border-color:rgba(99,102,241,.5)}
+.sb-scroll{flex:1;overflow-y:auto;padding:8px}
+.sb-section{margin-bottom:20px}
+.sb-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;padding:0 8px;margin-bottom:6px}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.sb-item:hover{background:var(--s2);border-color:var(--b)}
+.sb-item.on{background:var(--s2);border-color:rgba(99,102,241,.2)}
+.sb-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.sb-text{flex:1;min-width:0}
+.sb-title{font-size:12px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.mode-tag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;letter-spacing:.03em;flex-shrink:0}
+
+/* ══ MAIN CANVAS ══════════════════════════════════════════════════ */
+.canvas{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* Chat mode */
+.chat-zone{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.msg-list{flex:1;overflow-y:auto;padding:20px}
+.msg-wrap{display:flex;gap:12px;margin-bottom:20px;animation:fadeUp .2s ease both}
+.msg-wrap.user{flex-direction:row-reverse}
+.avatar{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--s3);border:1px solid var(--b)}
+.avatar.user{background:linear-gradient(135deg,#6366f1,#818cf8)}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.65;background:var(--s2);border:1px solid var(--b);color:var(--t)}
+.msg-wrap.user .msg-bubble{background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(129,140,248,.12));border-color:rgba(99,102,241,.25);border-radius:12px 4px 12px 12px}
+.msg-wrap:not(.user) .msg-bubble{border-radius:4px 12px 12px 12px}
+.msg-meta{font-size:10px;color:var(--t3);margin-top:5px;display:flex;align-items:center;gap:6px}
+.msg-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.msg-wrap:hover .msg-actions{opacity:1}
+.msg-act-btn{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;border:1px solid var(--b);background:transparent;color:var(--t3);cursor:pointer;font-family:var(--f);transition:all .1s}
+.msg-act-btn:hover{background:var(--s3);color:var(--t2)}
+
+/* Code block in message */
+.code-block{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:12px 16px;margin:8px 0;font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:auto;position:relative}
+.code-lang{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.code-copy{position:absolute;top:8px;right:8px;padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;border:1px solid var(--b);background:var(--s2);color:var(--t3);cursor:pointer;font-family:var(--f)}
+
+/* Thinking indicator */
+.thinking{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s2);border:1px solid var(--b);border-radius:4px 12px 12px 12px;max-width:180px}
+.think-dots{display:flex;gap:4px}
+.think-dot{width:6px;height:6px;border-radius:50%;background:var(--p2);animation:blink 1.2s infinite}
+.think-dot:nth-child(2){animation-delay:.2s}
+.think-dot:nth-child(3){animation-delay:.4s}
+.think-label{font-size:12px;color:var(--t3)}
+
+/* ── Input area ── */
+.input-zone{border-top:1px solid var(--b);padding:12px 16px;background:var(--s1);flex-shrink:0}
+.input-tools{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.tool-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;background:var(--s2);border:1px solid var(--b);font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;transition:all .15s}
+.tool-chip:hover{border-color:rgba(99,102,241,.35);color:var(--p2);background:var(--pa)}
+.tool-chip.on{background:var(--pa);border-color:rgba(99,102,241,.4);color:var(--p2)}
+.input-box{display:flex;gap:10px;align-items:flex-end;background:var(--s2);border:1px solid var(--b);border-radius:var(--rad);padding:10px 14px;transition:border-color .2s}
+.input-box:focus-within{border-color:rgba(99,102,241,.4);box-shadow:0 0 0 3px rgba(99,102,241,.06)}
+.input-ta{flex:1;background:transparent;border:none;outline:none;color:var(--t);font-family:var(--f);font-size:14px;resize:none;min-height:22px;max-height:140px;line-height:1.5}
+.input-ta::placeholder{color:var(--t3)}
+.input-right{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0}
+.send-btn{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--p),var(--p2));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s;color:#fff;box-shadow:0 2px 12px rgba(99,102,241,.35)}
+.send-btn:hover{transform:scale(1.06);box-shadow:0 4px 16px rgba(99,102,241,.5)}
+.send-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.char-count{font-size:10px;color:var(--t3)}
+
+/* Quick prompts */
+.quick-row{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;padding-bottom:2px}
+.quick-pill{padding:5px 12px;border-radius:20px;background:var(--s2);border:1px solid var(--b);font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.quick-pill:hover{color:var(--t);border-color:rgba(255,255,255,.15);background:var(--s3)}
+
+/* ══ WRITE MODE ══════════════════════════════════════════════════ */
+.write-zone{flex:1;display:flex;overflow:hidden}
+.write-editor{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.write-tb{display:flex;align-items:center;gap:4px;padding:8px 14px;border-bottom:1px solid var(--b);background:var(--s1);flex-shrink:0;flex-wrap:wrap}
+.wt-btn{padding:4px 9px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid transparent;background:transparent;color:var(--t3);cursor:pointer;font-family:var(--f);transition:all .1s;letter-spacing:.01em}
+.wt-btn:hover{background:var(--s3);color:var(--t2);border-color:var(--b)}
+.wt-sep{width:1px;height:16px;background:var(--b);margin:0 2px}
+.write-area{flex:1;overflow-y:auto;padding:40px 0}
+.write-inner{max-width:720px;margin:0 auto;padding:0 40px}
+.doc-title-input{font-size:34px;font-weight:800;letter-spacing:-.04em;color:var(--t);border:none;background:transparent;outline:none;width:100%;margin-bottom:6px;line-height:1.2}
+.doc-title-input::placeholder{color:var(--t3)}
+.doc-meta{font-size:12px;color:var(--t3);margin-bottom:28px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.doc-tag{background:var(--s2);padding:3px 10px;border-radius:20px;border:1px solid var(--b)}
+.doc-body{font-size:15px;line-height:1.8;color:rgba(240,240,255,.85);border:none;background:transparent;outline:none;width:100%;resize:none;min-height:500px;font-family:var(--f)}
+.doc-body::placeholder{color:var(--t3)}
+.write-ai-bar{border-top:1px solid var(--b);background:var(--s1);padding:10px 16px;flex-shrink:0}
+.wai-inner{display:flex;gap:8px;align-items:center;background:var(--s2);border:1px solid var(--b);border-radius:var(--rad);padding:8px 12px}
+.wai-inner:focus-within{border-color:rgba(99,102,241,.4)}
+.wai-input{flex:1;background:transparent;border:none;outline:none;color:var(--t);font-family:var(--f);font-size:13px}
+.wai-input::placeholder{color:var(--t3)}
+.wai-chip{padding:4px 10px;border-radius:6px;background:var(--pa);border:1px solid rgba(99,102,241,.25);color:var(--p2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.wai-chip:hover{background:rgba(99,102,241,.2)}
+
+/* Write AI panel */
+.write-ai-panel{width:300px;border-left:1px solid var(--b);background:var(--s1);display:flex;flex-direction:column;overflow:hidden}
+.wap-header{padding:14px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between}
+.wap-title{font-size:13px;font-weight:700;color:var(--t)}
+.wap-body{flex:1;overflow-y:auto;padding:12px}
+.wap-section{margin-bottom:16px}
+.wap-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.wap-suggestion{padding:10px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--b);cursor:pointer;transition:all .15s;margin-bottom:6px}
+.wap-suggestion:hover{border-color:rgba(99,102,241,.3);background:var(--s3)}
+.wap-sug-title{font-size:12px;font-weight:600;color:var(--t);margin-bottom:3px}
+.wap-sug-sub{font-size:11px;color:var(--t3);line-height:1.5}
+
+/* ══ VOICE MODE ══════════════════════════════════════════════════ */
+.voice-zone{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.voice-main{flex:1;display:flex;gap:0;overflow:hidden}
+.voice-left{flex:1;display:flex;flex-direction:column;padding:20px;overflow-y:auto;gap:14px}
+.voice-right{width:280px;border-left:1px solid var(--b);background:var(--s1);padding:16px;overflow-y:auto;flex-shrink:0}
+.voice-card{background:var(--s2);border:1px solid var(--b);border-radius:14px;padding:16px}
+.vc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.vc-title{font-size:13px;font-weight:700;color:var(--t)}
+.vc-badge{padding:3px 8px;border-radius:5px;font-size:10px;font-weight:700}
+.lang-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.lang-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);cursor:pointer;transition:all .15s}
+.lang-item:hover{border-color:rgba(99,102,241,.3)}
+.lang-item.on{border-color:rgba(99,102,241,.4);background:var(--pa)}
+.lang-flag{font-size:18px}
+.lang-name{font-size:12px;font-weight:600;color:var(--t)}
+.lang-code{font-size:10px;color:var(--t3)}
+.voice-recorder{background:var(--s2);border:1px solid var(--b);border-radius:14px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.rec-vis{width:100%;height:60px;background:var(--bg);border-radius:10px;border:1px solid var(--b);overflow:hidden;display:flex;align-items:center;justify-content:center;gap:2px;padding:8px}
+.rec-bar{width:3px;border-radius:2px;background:var(--p2);animation:wave 0.8s ease-in-out infinite;transform-origin:bottom}
+.rec-controls{display:flex;gap:10px;align-items:center}
+.rec-btn{width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .2s}
+.rec-btn.record{background:linear-gradient(135deg,#f43f5e,#fb7185);box-shadow:0 4px 20px rgba(244,63,94,.4);color:#fff}
+.rec-btn.record:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(244,63,94,.55)}
+.rec-btn.stop{background:var(--s3);border:2px solid var(--b);color:var(--t2)}
+.rec-timer{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--t2)}
+.tts-box{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:12px;font-size:13px;color:var(--t2);font-family:var(--f);outline:none;resize:none;min-height:90px;line-height:1.6}
+.tts-box::placeholder{color:var(--t3)}
+.voice-settings-panel .wap-section{margin-bottom:14px}
+.select-input{width:100%;padding:7px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none;cursor:pointer}
+.select-input:focus{border-color:rgba(99,102,241,.4)}
+.range-row{display:flex;align-items:center;gap:8px}
+.range-label{font-size:11px;color:var(--t3);width:32px;text-align:right;flex-shrink:0;font-family:var(--mono)}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--s4);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--p2);cursor:pointer}
+
+/* ══ VISION MODE ══════════════════════════════════════════════════ */
+.vision-zone{flex:1;display:flex;overflow:hidden}
+.vision-left{width:420px;border-right:1px solid var(--b);display:flex;flex-direction:column;flex-shrink:0}
+.vision-upload{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:12px;cursor:pointer;border-bottom:1px solid var(--b);position:relative;overflow:hidden}
+.vision-upload::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(99,102,241,.04) 0%,transparent 70%);pointer-events:none}
+.vision-img{width:100%;height:220px;object-fit:contain;border-radius:10px;background:var(--s2)}
+.upload-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.upload-icon{font-size:36px;opacity:.4}
+.upload-text{font-size:14px;font-weight:600;color:var(--t2)}
+.upload-sub{font-size:12px;color:var(--t3)}
+.vision-controls{padding:14px;display:flex;flex-direction:column;gap:8px}
+.vision-right{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.vision-chat{flex:1;overflow-y:auto;padding:16px}
+
+/* ══ AGENT MODE ══════════════════════════════════════════════════ */
+.agent-zone{flex:1;display:flex;overflow:hidden}
+.agent-left{width:280px;border-right:1px solid var(--b);display:flex;flex-direction:column;background:var(--s1);flex-shrink:0}
+.agent-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.agent-tools-list{flex:1;overflow-y:auto;padding:12px}
+.tool-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:var(--s2);border:1px solid var(--b);cursor:pointer;transition:all .15s;margin-bottom:6px}
+.tool-row:hover{border-color:rgba(99,102,241,.3)}
+.tool-row.on{border-color:rgba(99,102,241,.4);background:var(--pa)}
+.tool-row .ti{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tool-row .tt{flex:1}
+.tool-row .tn{font-size:12px;font-weight:700;color:var(--t)}
+.tool-row .td{font-size:11px;color:var(--t3);margin-top:1px}
+.tool-toggle{width:28px;height:16px;border-radius:8px;background:var(--s4);border:1px solid var(--b);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.tool-toggle.on{background:var(--p)}
+.tool-toggle::after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .2s}
+.tool-toggle.on::after{left:14px}
+
+/* ══ RIGHT PANEL: CONNECTIONS ══════════════════════════════════ */
+.rpanel{width:300px;background:var(--s1);border-left:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.rpanel-header{padding:14px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between}
+.rpanel-title{font-size:13px;font-weight:700;color:var(--t);display:flex;align-items:center;gap:6px}
+.rpanel-body{flex:1;overflow-y:auto;padding:12px}
+.rp-section{margin-bottom:18px}
+.rp-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+
+/* Connection cards */
+.conn-card{border-radius:10px;border:1px solid var(--b);overflow:hidden;margin-bottom:8px;transition:border-color .15s}
+.conn-card.active{border-color:rgba(16,185,129,.3)}
+.conn-card.selected{border-color:rgba(99,102,241,.4);box-shadow:0 0 0 2px rgba(99,102,241,.08)}
+.cc-header{display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer;background:var(--s2)}
+.cc-header:hover{background:var(--s3)}
+.cc-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.cc-info{flex:1;min-width:0}
+.cc-name{font-size:12px;font-weight:700;color:var(--t)}
+.cc-type{font-size:10px;color:var(--t3);margin-top:1px}
+.cc-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cc-status.ok{background:var(--g);box-shadow:0 0 5px var(--g)}
+.cc-status.err{background:var(--r)}
+.cc-status.off{background:var(--t3)}
+.cc-body{padding:10px 12px;background:var(--bg);border-top:1px solid var(--b);display:none}
+.conn-card.open .cc-body{display:block}
+.cc-detail{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.cc-detail-label{color:var(--t3)}
+.cc-detail-value{color:var(--t2);font-family:var(--mono);font-size:10px;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.cc-btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;border:none;cursor:pointer;font-family:var(--f);transition:all .15s}
+.cc-btn.primary{background:var(--pa);color:var(--p2);border:1px solid rgba(99,102,241,.3)}
+.cc-btn.primary:hover{background:rgba(99,102,241,.2)}
+.cc-btn.danger{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.25)}
+
+/* Add connection */
+.add-conn-btn{width:100%;padding:9px;border-radius:var(--rad);background:transparent;border:1px dashed var(--b);color:var(--t3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.add-conn-btn:hover{border-color:rgba(99,102,241,.35);color:var(--p2);background:var(--pa)}
+
+/* Model settings */
+.setting-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.setting-label{font-size:11px;font-weight:600;color:var(--t2)}
+.setting-sub{font-size:10px;color:var(--t3)}
+.text-input{width:100%;padding:7px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none}
+.text-input:focus{border-color:rgba(99,102,241,.4)}
+.token-display{font-family:var(--mono);font-size:11px;color:var(--p2);background:var(--pa);padding:2px 7px;border-radius:4px}
+
+/* ══ TRANSLATE MODE ══════════════════════════════════════════════ */
+.translate-zone{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.translate-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--b);background:var(--s1);flex-shrink:0}
+.lang-sel{padding:6px 12px;border-radius:8px;background:var(--s2);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;font-weight:600;outline:none;cursor:pointer}
+.swap-btn{width:30px;height:30px;border-radius:8px;background:var(--s2);border:1px solid var(--b);color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;flex-shrink:0}
+.swap-btn:hover{background:var(--s3);color:var(--t)}
+.translate-cols{flex:1;display:flex;overflow:hidden}
+.translate-col{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.translate-col:first-child{border-right:1px solid var(--b)}
+.translate-col-head{padding:10px 16px;border-bottom:1px solid var(--b);background:var(--s1);font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;justify-content:space-between}
+.translate-ta{flex:1;padding:16px;background:transparent;border:none;outline:none;color:var(--t);font-family:var(--f);font-size:14px;resize:none;line-height:1.7}
+.translate-ta::placeholder{color:var(--t3)}
+.translate-footer{padding:10px 14px;border-top:1px solid var(--b);background:var(--s1);display:flex;gap:8px;align-items:center}
+.translate-stat{font-size:11px;color:var(--t3)}
+.translate-btn{padding:6px 16px;border-radius:8px;background:linear-gradient(135deg,var(--p),var(--p2));border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--f);transition:all .15s}
+.translate-btn:hover{transform:scale(1.02);box-shadow:0 4px 14px rgba(99,102,241,.35)}
+
+/* ══ MODALS ══════════════════════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--s2);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;width:520px;max-height:82vh;overflow-y:auto;animation:scaleIn .2s ease both}
+.modal-title{font-size:18px;font-weight:800;color:var(--t);letter-spacing:-.03em;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--t3);margin-bottom:20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.conn-type-card{padding:14px;border-radius:10px;background:var(--s3);border:2px solid transparent;cursor:pointer;transition:all .15s;text-align:center}
+.conn-type-card:hover{border-color:rgba(99,102,241,.3)}
+.conn-type-card.on{border-color:rgba(99,102,241,.6);background:var(--pa)}
+.ctc-icon{font-size:28px;margin-bottom:6px}
+.ctc-name{font-size:13px;font-weight:700;color:var(--t);margin-bottom:2px}
+.ctc-sub{font-size:11px;color:var(--t3);line-height:1.4}
+.modal-form{display:flex;flex-direction:column;gap:12px}
+.form-row{display:flex;flex-direction:column;gap:4px}
+.form-label{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em}
+.form-input{padding:9px 12px;border-radius:9px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:13px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:rgba(99,102,241,.5)}
+.form-select{padding:9px 12px;border-radius:9px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:13px;outline:none;cursor:pointer}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.btn-primary{padding:9px 20px;border-radius:9px;background:linear-gradient(135deg,var(--p),var(--p2));border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--f);transition:all .15s}
+.btn-primary:hover{transform:scale(1.02);box-shadow:0 4px 14px rgba(99,102,241,.35)}
+.btn-ghost{padding:9px 20px;border-radius:9px;background:transparent;border:1px solid var(--b);color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s}
+.btn-ghost:hover{background:var(--s3);border-color:rgba(255,255,255,.12)}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes scaleIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes wave{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1.1)}}
+
+/* Utility */
+.flex-center{display:flex;align-items:center;justify-content:center}
+.flex{display:flex;align-items:center}
+.gap4{gap:4px}.gap6{gap:6px}.gap8{gap:8px}.gap10{gap:10px}
+.hidden{display:none!important}
+.pill{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.03em}
+.pill.blue{background:rgba(99,102,241,.15);color:var(--p2);border:1px solid rgba(99,102,241,.25)}
+.pill.green{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.pill.yellow{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.pill.red{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+.pill.cyan{background:rgba(6,182,212,.12);color:#22d3ee;border:1px solid rgba(6,182,212,.2)}
+.badge{padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ TOP BAR ══════════════════════════════ -->
+<div class="topbar">
+  <a href="#" class="brand" style="text-decoration:none">
+    <div class="brand-logo">🧠</div>
+    <span class="brand-name" style="color:#f0f0ff">AXTO</span>
+  </a>
+  <span class="brand-tag">AI Studio</span>
+  <div class="sep"></div>
+
+  <div class="modes">
+    <button class="mode on" onclick="setMode('chat',this)">💬 Chat</button>
+    <button class="mode" onclick="setMode('write',this)">✍️ Write</button>
+    <button class="mode" onclick="setMode('translate',this)">🌐 Translate</button>
+    <button class="mode" onclick="setMode('voice',this)">🎙 Voice</button>
+    <button class="mode" onclick="setMode('vision',this)">👁 Vision</button>
+    <button class="mode" onclick="setMode('code',this)">⌨️ Code</button>
+    <button class="mode" onclick="setMode('agent',this)">🤖 Agent</button>
+  </div>
+
+  <div class="conn-bar" onclick="toggleConn()" style="margin-left:auto">
+    <div class="conn-dot ok"></div>
+    <span class="conn-label" id="connLabel">GPT-4o</span>
+    <span class="conn-provider" id="connProvider">OpenAI · REST</span>
+    <span style="font-size:10px;color:var(--t3);margin-left:4px">▼</span>
+  </div>
+
+  <button class="icon-btn" title="Session tokens" onclick="toggleConn()">📊</button>
+  <button class="icon-btn" title="Keyboard shortcuts">⌨</button>
+  <button class="icon-btn" title="Go to GPU Studio" onclick="window.open('http://localhost:8092','_blank')">🎨</button>
+</div>
+
+<!-- ═══════════════════════════════ SHELL ════════════════════════════════ -->
+<div class="shell">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-top">
+      <button class="new-btn" onclick="newSession()">＋ New Session</button>
+    </div>
+    <div class="sb-scroll">
+      <div class="sb-section">
+        <div class="sb-label">Today</div>
+        <div class="sb-item on">
+          <div class="sb-icon" style="background:rgba(99,102,241,.15)">💬</div>
+          <div class="sb-text">
+            <div class="sb-title">Competitive analysis report</div>
+            <div class="sb-sub">Chat · GPT-4o · 2 min ago</div>
+          </div>
+        </div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(245,158,11,.12)">✍️</div>
+          <div class="sb-text">
+            <div class="sb-title">Product launch email draft</div>
+            <div class="sb-sub">Write · Claude 3.5 · 34 min ago</div>
+          </div>
+        </div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(6,182,212,.12)">🌐</div>
+          <div class="sb-text">
+            <div class="sb-title">Legal doc EN→ID translation</div>
+            <div class="sb-sub">Translate · 1 hr ago</div>
+          </div>
+        </div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(16,185,129,.12)">⌨️</div>
+          <div class="sb-text">
+            <div class="sb-title">FastAPI auth middleware</div>
+            <div class="sb-sub">Code · DeepSeek · 2 hr ago</div>
+          </div>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Yesterday</div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(244,63,94,.1)">🤖</div>
+          <div class="sb-text">
+            <div class="sb-title">Research agent — AI 2025</div>
+            <div class="sb-sub">Agent · 8 tools · Yesterday</div>
+          </div>
+        </div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(139,92,246,.15)">👁</div>
+          <div class="sb-text">
+            <div class="sb-title">Invoice data extraction</div>
+            <div class="sb-sub">Vision · GPT-4V · Yesterday</div>
+          </div>
+        </div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(245,158,11,.12)">🎙</div>
+          <div class="sb-text">
+            <div class="sb-title">Podcast intro — Bahasa</div>
+            <div class="sb-sub">Voice TTS · ID · Yesterday</div>
+          </div>
+        </div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">This Week</div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(99,102,241,.15)">💬</div>
+          <div class="sb-text">
+            <div class="sb-title">Architecture review Q4</div>
+            <div class="sb-sub">Chat · 3 days ago</div>
+          </div>
+        </div>
+        <div class="sb-item">
+          <div class="sb-icon" style="background:rgba(16,185,129,.12)">⌨️</div>
+          <div class="sb-text">
+            <div class="sb-title">React data grid component</div>
+            <div class="sb-sub">Code · 4 days ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CANVAS -->
+  <div class="canvas">
+
+    <!-- CHAT MODE -->
+    <div id="mode-chat" class="chat-zone">
+      <div class="msg-list" id="msgList">
+
+        <div class="msg-wrap">
+          <div class="avatar">🧠</div>
+          <div>
+            <div class="msg-bubble">
+              Hello! I'm your AXTO AI Studio assistant. I can connect to <strong>any AI provider</strong> — OpenAI, Anthropic, Google Gemini, Mistral, Ollama, DeepSeek, or any custom REST/WebSocket endpoint you configure.<br><br>
+              What would you like to work on today?
+            </div>
+            <div class="msg-meta">
+              <span class="pill blue">GPT-4o</span>
+              <span>10:24 AM</span>
+              <div class="msg-actions">
+                <button class="msg-act-btn">📋 Copy</button>
+                <button class="msg-act-btn">🔄 Regenerate</button>
+                <button class="msg-act-btn">👍</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg-wrap user">
+          <div class="avatar user">Y</div>
+          <div>
+            <div class="msg-bubble">Analyze the key differences between transformer and diffusion model architectures, and explain when each is preferred.</div>
+            <div class="msg-meta" style="justify-content:flex-end">
+              <span>10:25 AM</span>
+              <div class="msg-actions">
+                <button class="msg-act-btn">✏️ Edit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg-wrap">
+          <div class="avatar">🧠</div>
+          <div>
+            <div class="msg-bubble">
+              Great question. Here's a concise architectural comparison:<br><br>
+              <strong>Transformer Models</strong> (GPT, Claude, Gemini)<br>
+              Operate via self-attention over token sequences. Trained with next-token prediction or masked language modeling. Strengths: long-range dependency modeling, few-shot reasoning, instruction following. Preferred for: text generation, code, chat, summarization, multilingual tasks.<br><br>
+              <strong>Diffusion Models</strong> (Stable Diffusion, DALL-E 3, Sora)<br>
+              Learn to reverse a noise process over continuous latent spaces. Trained to iteratively denoise. Strengths: high-fidelity continuous output, diversity, fine-grained control via conditioning. Preferred for: image synthesis, video generation, audio, 3D content.<br><br>
+              <div class="code-block">
+                <div class="code-lang">Architecture Comparison</div>
+                <button class="code-copy" onclick="this.textContent='✓ Copied'">Copy</button>
+Transformer: Input → Tokenize → Attention Layers → Output
+Diffusion:   Noise → Iterative Denoise → Clean Output
+
+Key metrics:
+  Inference speed:  Transformer >> Diffusion (single pass vs ~50 steps)
+  Output quality:   Diffusion >> Transformer (for media)
+  Controllability:  Both support conditioning (text, image, etc.)
+              </div>
+              The recent trend is <em>hybrid</em>: DiT (Diffusion Transformer) combines both — used in Sora and Stable Diffusion 3.
+            </div>
+            <div class="msg-meta">
+              <span class="pill blue">GPT-4o</span>
+              <span>2,140 tokens · 3.2s</span>
+              <div class="msg-actions">
+                <button class="msg-act-btn">📋 Copy</button>
+                <button class="msg-act-btn">🔄 Regenerate</button>
+                <button class="msg-act-btn">📥 Export</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input area -->
+      <div class="input-zone">
+        <div class="quick-row">
+          <span class="quick-pill" onclick="insertPrompt(this)">🔍 Summarize in 3 bullet points</span>
+          <span class="quick-pill" onclick="insertPrompt(this)">🌐 Translate to Indonesian</span>
+          <span class="quick-pill" onclick="insertPrompt(this)">⌨️ Write the code for this</span>
+          <span class="quick-pill" onclick="insertPrompt(this)">🔄 Explain differently</span>
+          <span class="quick-pill" onclick="insertPrompt(this)">📊 Create a comparison table</span>
+          <span class="quick-pill" onclick="insertPrompt(this)">✅ Check for errors</span>
+        </div>
+        <div class="input-tools">
+          <span class="tool-chip" onclick="toggleTool(this)" title="Attach file">📎 Attach</span>
+          <span class="tool-chip on" onclick="toggleTool(this)" title="Web search">🔍 Web Search</span>
+          <span class="tool-chip" onclick="toggleTool(this)" title="Code interpreter">⌨️ Code Run</span>
+          <span class="tool-chip" onclick="toggleTool(this)" title="RAG knowledge base">📚 Knowledge</span>
+          <span class="tool-chip" onclick="toggleTool(this)" title="Image understanding">🖼 Vision</span>
+          <span class="tool-chip" onclick="toggleTool(this)" title="Generate image">🎨 Gen Image</span>
+          <span class="tool-chip" onclick="toggleTool(this)" title="Voice output">🔊 TTS</span>
+        </div>
+        <div class="input-box">
+          <textarea class="input-ta" id="mainInput" placeholder="Message AI Studio…" rows="1"
+            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <div class="input-right">
+            <span class="char-count" id="charCount">0</span>
+            <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WRITE MODE -->
+    <div id="mode-write" class="write-zone hidden">
+      <div class="write-editor">
+        <div class="write-tb">
+          <button class="wt-btn">H1</button><button class="wt-btn">H2</button><button class="wt-btn">H3</button>
+          <div class="wt-sep"></div>
+          <button class="wt-btn"><b>B</b></button><button class="wt-btn"><i>I</i></button><button class="wt-btn"><u>U</u></button>
+          <div class="wt-sep"></div>
+          <button class="wt-btn">≡ List</button><button class="wt-btn">1. Ordered</button><button class="wt-btn">» Quote</button>
+          <div class="wt-sep"></div>
+          <button class="wt-btn">⌨ Code</button><button class="wt-btn">🔗 Link</button><button class="wt-btn">⊞ Table</button>
+          <div class="wt-sep"></div>
+          <button class="wt-btn" style="margin-left:auto">📥 Export .md</button>
+          <button class="wt-btn">📄 Export .docx</button>
+          <button class="wt-btn">📋 Copy All</button>
+        </div>
+        <div class="write-area">
+          <div class="write-inner">
+            <input class="doc-title-input" placeholder="Document title…" value="2025 AI Infrastructure Landscape">
+            <div class="doc-meta">
+              <span class="doc-tag">📝 Report</span>
+              <span class="doc-tag">~1,240 words</span>
+              <span class="doc-tag">Claude 3.5 Sonnet</span>
+              <span class="doc-tag" style="color:var(--g)">✓ Auto-saved</span>
+            </div>
+            <textarea class="doc-body" rows="30" placeholder="Start writing, or use the AI bar below to generate content…">The AI infrastructure landscape in 2025 has undergone a fundamental transformation. Organizations are no longer choosing between public cloud AI APIs and self-hosted solutions — they're building hybrid architectures that leverage both strategically.
+
+## The Shift to Sovereign AI
+
+Three forces are driving the sovereign AI movement: data residency regulations (GDPR, PDPA, PIPL), latency requirements for real-time applications, and total cost of ownership optimization for high-volume workloads.
+
+Organizations processing more than 10M tokens per month typically achieve positive ROI on self-hosted infrastructure within 18 months.
+
+## Infrastructure Patterns
+
+**Pattern 1: API-First with Fallback**
+Route all production traffic to vendor APIs (OpenAI, Anthropic) with automatic fallback to local models during outages or cost spikes.
+
+**Pattern 2: Tiered Processing**
+- Tier 1 (Simple tasks): Local small models (7B-13B params)
+- Tier 2 (Complex reasoning): GPT-4o, Claude 3.5 via API
+- Tier 3 (Specialized): Domain-fine-tuned models on owned GPU
+
+**Pattern 3: Privacy-Preserving Hybrid**
+Sensitive data processed locally; non-sensitive queries routed to external APIs after PII redaction.
+            </textarea>
+          </div>
+        </div>
+        <div class="write-ai-bar">
+          <div class="wai-inner">
+            <span style="font-size:16px">✨</span>
+            <input class="wai-input" placeholder="Ask AI to continue writing, rewrite, expand, summarize, or improve this section…">
+            <button class="wai-chip" onclick="">Continue</button>
+            <button class="wai-chip" onclick="">Rewrite</button>
+            <button class="wai-chip" onclick="">Expand</button>
+            <button class="wai-chip" onclick="">Fix grammar</button>
+          </div>
+        </div>
+      </div>
+      <div class="write-ai-panel">
+        <div class="wap-header">
+          <span class="wap-title">AI Suggestions</span>
+          <button class="icon-btn" style="width:26px;height:26px;font-size:12px">↺</button>
+        </div>
+        <div class="wap-body">
+          <div class="wap-section">
+            <div class="wap-label">Structure</div>
+            <div class="wap-suggestion">
+              <div class="wap-sug-title">Add Executive Summary</div>
+              <div class="wap-sug-sub">Insert a 3-paragraph executive summary at the beginning for C-level readers.</div>
+            </div>
+            <div class="wap-suggestion">
+              <div class="wap-sug-title">Add Cost Analysis Section</div>
+              <div class="wap-sug-sub">Include ROI calculations comparing cloud API vs self-hosted for 3 tiers.</div>
+            </div>
+          </div>
+          <div class="wap-section">
+            <div class="wap-label">Improve Writing</div>
+            <div class="wap-suggestion">
+              <div class="wap-sug-title">Strengthen Introduction</div>
+              <div class="wap-sug-sub">Opening lacks a compelling hook. Suggest leading with a striking 2025 statistic.</div>
+            </div>
+            <div class="wap-suggestion">
+              <div class="wap-sug-title">Add Concrete Examples</div>
+              <div class="wap-sug-sub">Paragraphs 3–5 are abstract. Add 2 real-world company case studies.</div>
+            </div>
+          </div>
+          <div class="wap-section">
+            <div class="wap-label">Tone & Style</div>
+            <div class="wap-suggestion">
+              <div class="wap-sug-title">More Technical Depth</div>
+              <div class="wap-sug-sub">Current level: Business audience. Switch to engineering audience with deeper specs.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSLATE MODE -->
+    <div id="mode-translate" class="translate-zone hidden">
+      <div class="translate-bar">
+        <select class="lang-sel" id="srcLang">
+          <option>🇺🇸 English (EN)</option>
+          <option>🇮🇩 Indonesian (ID)</option>
+          <option>🇨🇳 Chinese (ZH)</option>
+          <option>🇸🇦 Arabic (AR)</option>
+          <option>🇪🇸 Spanish (ES)</option>
+          <option>🇫🇷 French (FR)</option>
+          <option>🇩🇪 German (DE)</option>
+          <option>🇧🇷 Portuguese (PT)</option>
+          <option>🇯🇵 Japanese (JA)</option>
+          <option>🇰🇷 Korean (KO)</option>
+          <option>🇮🇳 Hindi (HI)</option>
+          <option>🇷🇺 Russian (RU)</option>
+        </select>
+        <button class="swap-btn" onclick="swapLangs()">⇄</button>
+        <select class="lang-sel" id="tgtLang">
+          <option>🇮🇩 Indonesian (ID)</option>
+          <option>🇺🇸 English (EN)</option>
+          <option>🇨🇳 Chinese (ZH)</option>
+          <option>🇸🇦 Arabic (AR)</option>
+          <option>🇪🇸 Spanish (ES)</option>
+          <option>🇫🇷 French (FR)</option>
+          <option>🇩🇪 German (DE)</option>
+          <option>🇧🇷 Portuguese (PT)</option>
+          <option>🇯🇵 Japanese (JA)</option>
+          <option>🇰🇷 Korean (KO)</option>
+          <option>🇮🇳 Hindi (HI)</option>
+          <option>🇷🇺 Russian (RU)</option>
+        </select>
+        <div style="margin-left:12px;display:flex;gap:8px">
+          <select class="lang-sel" style="font-size:11px">
+            <option>Formal tone</option>
+            <option>Casual tone</option>
+            <option>Technical</option>
+            <option>Legal / Official</option>
+            <option>Literary</option>
+          </select>
+          <select class="lang-sel" style="font-size:11px">
+            <option>GPT-4o Translate</option>
+            <option>Claude 3.5</option>
+            <option>Google Translate API</option>
+            <option>DeepL API</option>
+          </select>
+        </div>
+        <button class="translate-btn" onclick="doTranslate()" style="margin-left:auto">⇄ Translate</button>
+      </div>
+      <div class="translate-cols">
+        <div class="translate-col">
+          <div class="translate-col-head">
+            Source Text
+            <div style="display:flex;gap:6px">
+              <button class="msg-act-btn" onclick="">📎 File</button>
+              <button class="msg-act-btn" onclick="">🔊 Listen</button>
+              <button class="msg-act-btn" onclick="">🗑</button>
+            </div>
+          </div>
+          <textarea class="translate-ta" id="srcText" placeholder="Paste or type source text here…
+
+Supports: plain text, markdown, HTML, JSON strings, subtitle files (.srt), documents.">The rapid advancement of large language models has fundamentally altered how organizations approach knowledge work. What once required teams of specialized analysts can now be accomplished in seconds with the right AI orchestration architecture.
+
+This paradigm shift demands a rethinking of information workflows, data governance, and the fundamental economics of expertise at scale.</textarea>
+          <div class="translate-footer">
+            <span class="translate-stat" id="srcCount">248 characters · 42 words · 2 paragraphs</span>
+            <button class="msg-act-btn" style="margin-left:auto" onclick="">🔊 Read aloud</button>
+          </div>
+        </div>
+        <div class="translate-col">
+          <div class="translate-col-head">
+            Translation — Indonesian
+            <div style="display:flex;gap:6px">
+              <button class="msg-act-btn" onclick="">📋 Copy</button>
+              <button class="msg-act-btn" onclick="">🔊 Listen</button>
+              <button class="msg-act-btn" onclick="">📥 Export</button>
+            </div>
+          </div>
+          <textarea class="translate-ta" id="tgtText" placeholder="Translation will appear here…" readonly>Kemajuan pesat model bahasa besar telah mengubah secara mendasar cara organisasi menangani pekerjaan berbasis pengetahuan. Apa yang dulunya memerlukan tim analis khusus kini dapat diselesaikan dalam hitungan detik dengan arsitektur orkestrasi AI yang tepat.
+
+Pergeseran paradigma ini menuntut pemikiran ulang terhadap alur kerja informasi, tata kelola data, dan ekonomi mendasar dari keahlian dalam skala besar.</textarea>
+          <div class="translate-footer">
+            <span class="translate-stat">251 characters · 44 words</span>
+            <span class="pill green" style="margin-left:auto">✓ High confidence</span>
+            <button class="msg-act-btn" onclick="">🔊 Read aloud</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE MODE -->
+    <div id="mode-voice" class="voice-zone hidden">
+      <div class="voice-main">
+        <div class="voice-left">
+          <!-- STT -->
+          <div class="voice-card">
+            <div class="vc-header">
+              <span class="vc-title">🎙 Speech-to-Text (STT)</span>
+              <span class="vc-badge pill green">Whisper v3</span>
+            </div>
+            <div class="voice-recorder">
+              <div class="rec-vis" id="recVis">
+                <div style="font-size:12px;color:var(--t3)">Press record to start capturing audio</div>
+              </div>
+              <div class="rec-controls">
+                <button class="rec-btn record" id="recBtn" onclick="toggleRecord()">🎙</button>
+                <span class="rec-timer" id="recTimer">00:00</span>
+                <select class="select-input" style="width:140px;font-size:11px" id="sttLang">
+                  <option value="en">🇺🇸 English</option>
+                  <option value="id" selected>🇮🇩 Indonesian</option>
+                  <option value="zh">🇨🇳 Chinese</option>
+                  <option value="ar">🇸🇦 Arabic</option>
+                  <option value="es">🇪🇸 Spanish</option>
+                  <option value="fr">🇫🇷 French</option>
+                  <option value="de">🇩🇪 German</option>
+                  <option value="pt">🇧🇷 Portuguese</option>
+                  <option value="ja">🇯🇵 Japanese</option>
+                  <option value="ko">🇰🇷 Korean</option>
+                  <option value="hi">🇮🇳 Hindi</option>
+                  <option value="ru">🇷🇺 Russian</option>
+                  <option value="ms">🇲🇾 Malay</option>
+                  <option value="th">🇹🇭 Thai</option>
+                  <option value="vi">🇻🇳 Vietnamese</option>
+                  <option value="tr">🇹🇷 Turkish</option>
+                  <option value="nl">🇳🇱 Dutch</option>
+                  <option value="pl">🇵🇱 Polish</option>
+                  <option value="uk">🇺🇦 Ukrainian</option>
+                  <option value="auto">🌐 Auto-detect</option>
+                </select>
+              </div>
+              <textarea class="tts-box" id="sttOutput" placeholder="Transcription will appear here in real-time…" style="width:100%"></textarea>
+              <div style="display:flex;gap:8px;width:100%">
+                <button class="wai-chip" style="flex:1" onclick="">📋 Copy</button>
+                <button class="wai-chip" style="flex:1" onclick="">💬 Send to Chat</button>
+                <button class="wai-chip" style="flex:1" onclick="">✍️ Send to Write</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TTS -->
+          <div class="voice-card">
+            <div class="vc-header">
+              <span class="vc-title">🔊 Text-to-Speech (TTS)</span>
+              <span class="vc-badge pill blue">Multi-voice</span>
+            </div>
+            <textarea class="tts-box" id="ttsInput" placeholder="Type or paste text to convert to speech…
+Supports: plain text, SSML markup, markdown.
+
+Tip: Use [pause 1s] to add pauses, or wrap text in * * for emphasis."></textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+              <div>
+                <div class="wap-label" style="margin-bottom:4px">Voice</div>
+                <select class="select-input">
+                  <option>Alloy (Neutral EN)</option>
+                  <option>Nova (Female EN)</option>
+                  <option>Shimmer (Soft EN)</option>
+                  <option>Echo (Male EN)</option>
+                  <option>Onyx (Deep EN)</option>
+                  <option>─── Indonesian ───</option>
+                  <option>Sari (Female ID)</option>
+                  <option>Budi (Male ID)</option>
+                  <option>─── Mandarin ───</option>
+                  <option>Mei (Female ZH)</option>
+                  <option>Wei (Male ZH)</option>
+                  <option>─── Arabic ───</option>
+                  <option>Layla (Female AR)</option>
+                  <option>─── Japanese ───</option>
+                  <option>Sakura (Female JA)</option>
+                  <option>─── Korean ───</option>
+                  <option>Jia (Female KO)</option>
+                </select>
+              </div>
+              <div>
+                <div class="wap-label" style="margin-bottom:4px">Output Format</div>
+                <select class="select-input">
+                  <option>MP3 (Standard)</option>
+                  <option>WAV (Lossless)</option>
+                  <option>OPUS (Streaming)</option>
+                  <option>FLAC (High Quality)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+              <div class="range-row">
+                <span class="wap-label" style="width:48px;flex-shrink:0">Speed</span>
+                <input type="range" min="0.5" max="2" step="0.1" value="1" oninput="this.nextElementSibling.textContent=this.value+'×'">
+                <span class="range-label">1.0×</span>
+              </div>
+              <div class="range-row">
+                <span class="wap-label" style="width:48px;flex-shrink:0">Pitch</span>
+                <input type="range" min="-20" max="20" step="1" value="0" oninput="this.nextElementSibling.textContent=(this.value>0?'+':'')+this.value">
+                <span class="range-label">0</span>
+              </div>
+              <div class="range-row">
+                <span class="wap-label" style="width:48px;flex-shrink:0">Volume</span>
+                <input type="range" min="0" max="100" step="1" value="90" oninput="this.nextElementSibling.textContent=this.value+'%'">
+                <span class="range-label">90%</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="btn-primary" style="flex:2;padding:9px" onclick="">▶ Generate & Play</button>
+              <button class="btn-ghost" style="flex:1;padding:9px" onclick="">📥 Download</button>
+            </div>
+          </div>
+
+          <!-- Real-time translation -->
+          <div class="voice-card">
+            <div class="vc-header">
+              <span class="vc-title">🌐 Real-time Voice Translation</span>
+              <span class="vc-badge pill yellow">Beta</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <select class="select-input" style="flex:1">
+                <option>🇺🇸 English</option><option selected>🇮🇩 Indonesian</option>
+                <option>🇨🇳 Chinese</option><option>🇯🇵 Japanese</option>
+                <option>🇰🇷 Korean</option><option>🇸🇦 Arabic</option>
+                <option>🇪🇸 Spanish</option><option>🇫🇷 French</option>
+                <option>🇩🇪 German</option><option>🇮🇳 Hindi</option>
+                <option>🇧🇷 Portuguese</option><option>🇷🇺 Russian</option>
+                <option>🇲🇾 Malay</option><option>🇹🇭 Thai</option>
+                <option>🇻🇳 Vietnamese</option><option>🇹🇷 Turkish</option>
+                <option>🇳🇱 Dutch</option><option>🇵🇱 Polish</option>
+                <option>🇮🇹 Italian</option><option>🌐 Auto-detect</option>
+              </select>
+              <span style="color:var(--t3);align-self:center;font-size:18px">⇄</span>
+              <select class="select-input" style="flex:1">
+                <option selected>🇺🇸 English</option><option>🇮🇩 Indonesian</option>
+                <option>🇨🇳 Chinese</option><option>🇯🇵 Japanese</option>
+                <option>🇰🇷 Korean</option><option>🇸🇦 Arabic</option>
+                <option>🇪🇸 Spanish</option><option>🇫🇷 French</option>
+                <option>🇩🇪 German</option><option>🇮🇳 Hindi</option>
+                <option>🇧🇷 Portuguese</option><option>🇷🇺 Russian</option>
+                <option>🇲🇾 Malay</option><option>🇹🇭 Thai</option>
+                <option>🇻🇳 Vietnamese</option><option>🇹🇷 Turkish</option>
+                <option>🇳🇱 Dutch</option><option>🇵🇱 Polish</option>
+                <option>🇮🇹 Italian</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <button class="btn-primary" style="padding:9px">🎙 Start Translation</button>
+              <button class="btn-ghost" style="padding:9px">⚡ Instant Mode</button>
+            </div>
+          </div>
+
+          <!-- SFX & Voice Clone — NEW ─────────────────────────────────── -->
+          <div class="voice-card">
+            <div class="vc-header">
+              <span class="vc-title">💥 Sound Effects Generator</span>
+              <span class="vc-badge pill" style="background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25)">New</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+              <button class="wai-chip on" onclick="selSfxType(this)">🎬 Cartoon SFX</button>
+              <button class="wai-chip" onclick="selSfxType(this)">💥 Impact</button>
+              <button class="wai-chip" onclick="selSfxType(this)">✨ Magic</button>
+              <button class="wai-chip" onclick="selSfxType(this)">🌿 Nature</button>
+              <button class="wai-chip" onclick="selSfxType(this)">👾 Sci-Fi</button>
+              <button class="wai-chip" onclick="selSfxType(this)">😂 Comedy</button>
+              <button class="wai-chip" onclick="selSfxType(this)">🥁 Music SFX</button>
+              <button class="wai-chip" onclick="selSfxType(this)">🎮 Game</button>
+            </div>
+            <textarea class="tts-box" placeholder="Describe the sound effect…&#10;Example: A magical sparkle whoosh with a rising pitch and a final bell chime, Disney fairy style, 1.5 seconds" rows="3">A cartoon character slipping on a banana peel — comedic slide sound followed by a crash and boing spring, 1.5 seconds</textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;margin-bottom:8px">
+              <div>
+                <div class="wap-label" style="margin-bottom:4px">Engine</div>
+                <select class="select-input"><option>ElevenLabs SFX</option><option>Stability Audio</option><option>AudioCraft (Local)</option><option>Stable Audio 2.0</option></select>
+              </div>
+              <div>
+                <div class="wap-label" style="margin-bottom:4px">Duration</div>
+                <select class="select-input"><option>0.5s</option><option>1s</option><option selected>2s</option><option>3s</option><option>5s</option><option>10s</option></select>
+              </div>
+              <div>
+                <div class="wap-label" style="margin-bottom:4px">Format</div>
+                <select class="select-input"><option>MP3</option><option>WAV</option><option>FLAC</option></select>
+              </div>
+            </div>
+            <button class="btn-primary" style="width:100%;padding:9px" onclick="generateSFX()">💥 Generate Sound Effect</button>
+          </div>
+
+          <div class="voice-card">
+            <div class="vc-header">
+              <span class="vc-title">🎤 Voice Cloning</span>
+              <span class="vc-badge pill" style="background:rgba(139,92,246,.12);color:#c4b5fd;border:1px solid rgba(139,92,246,.25)">Pro</span>
+            </div>
+            <div style="border:1px dashed var(--b);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:10px" onmouseover="this.style.borderColor='rgba(245,158,11,.4)'" onmouseout="this.style.borderColor='var(--b)'">
+              <div style="font-size:28px;margin-bottom:6px">🎤</div>
+              <div style="font-size:12px;font-weight:600;color:var(--t2)">Upload Voice Sample</div>
+              <div style="font-size:10px;color:var(--t3);margin-top:3px">30 seconds minimum · MP3, WAV, M4A</div>
+            </div>
+            <div style="margin-bottom:10px">
+              <div class="wap-label" style="margin-bottom:5px">Clone with Engine</div>
+              <select class="select-input" style="width:100%">
+                <option>ElevenLabs Voice Clone (Best)</option>
+                <option>XTTS v2 (Local GPU)</option>
+                <option>OpenVoice v2 (Local)</option>
+                <option>Coqui XTTS (Local)</option>
+              </select>
+            </div>
+            <div style="margin-bottom:10px">
+              <div class="wap-label" style="margin-bottom:4px">Test Script</div>
+              <textarea class="tts-box" rows="2" placeholder="Type test sentence for cloned voice…">Hello, this is my cloned voice. Halo, ini adalah suara tiruan saya.</textarea>
+            </div>
+            <button class="btn-primary" style="width:100%;padding:9px">🎤 Clone &amp; Test Voice</button>
+          </div>
+        </div>
+
+        <!-- Settings panel -->
+        <div class="voice-right voice-settings-panel">
+          <div class="wap-label">Voice Engine</div>
+          <div class="wap-section">
+            <select class="select-input" style="width:100%">
+              <option>OpenAI TTS (API)</option>
+              <option>ElevenLabs (API)</option>
+              <option>Azure Speech</option>
+              <option>Google Cloud TTS</option>
+              <option>Coqui TTS (Local)</option>
+              <option>Bark (Local GPU)</option>
+              <option>Custom Endpoint</option>
+            </select>
+          </div>
+          <div class="wap-label">STT Engine</div>
+          <div class="wap-section">
+            <select class="select-input" style="width:100%">
+              <option>OpenAI Whisper v3 (API)</option>
+              <option>Whisper Large v3 (Local)</option>
+              <option>Azure Speech (API)</option>
+              <option>Google Speech-to-Text</option>
+              <option>AssemblyAI</option>
+              <option>Custom Endpoint</option>
+            </select>
+          </div>
+          <div class="wap-label" style="margin-top:4px">Supported Languages</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:10px;line-height:1.6">
+            STT: 99 languages<br>
+            TTS: 20+ voices, 12 languages<br>
+            Real-time translation: 24 language pairs
+          </div>
+          <div class="wap-label">Recent Audio Files</div>
+          <div id="recent-audio-files" style="display:flex;flex-direction:column;gap:6px">
+            <div style="font-size:11px;color:var(--t3);padding:4px 0">No audio files yet</div>
+          </div>
+          <div style="display:none"><!-- placeholder preserved -->
+            <div style="padding:8px 10px;background:var(--s2);border:1px solid var(--b);border-radius:8px">
+              <div style="font-size:11px;font-weight:600;color:var(--t);margin-bottom:2px">audio_file.mp3</div>
+              <div style="font-size:10px;color:var(--t3)">Generated via TTS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISION MODE -->
+    <div id="mode-vision" class="vision-zone hidden">
+      <div class="vision-left">
+        <div class="vision-upload" onclick="document.getElementById('visionFile').click()">
+          <input type="file" id="visionFile" accept="image/*,video/*,application/pdf" style="display:none">
+          <div class="upload-placeholder">
+            <div class="upload-icon">🖼</div>
+            <div class="upload-text">Drop image, video, or PDF here</div>
+            <div class="upload-sub">JPEG, PNG, GIF, WebP, MP4, PDF up to 20 MB</div>
+          </div>
+        </div>
+        <div class="vision-controls">
+          <div class="wap-label">Analysis Mode</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <button class="wai-chip on" onclick="toggleVisionMode(this)">📊 General Analysis</button>
+            <button class="wai-chip" onclick="toggleVisionMode(this)">📝 Extract Text (OCR)</button>
+            <button class="wai-chip" onclick="toggleVisionMode(this)">📐 Object Detection</button>
+            <button class="wai-chip" onclick="toggleVisionMode(this)">🎭 Face Analysis</button>
+            <button class="wai-chip" onclick="toggleVisionMode(this)">📄 Document Parse</button>
+            <button class="wai-chip" onclick="toggleVisionMode(this)">🎨 Style Analysis</button>
+          </div>
+          <select class="select-input" style="width:100%;margin-bottom:8px">
+            <option>GPT-4o Vision</option>
+            <option>Claude 3.5 Sonnet</option>
+            <option>Gemini 1.5 Pro Vision</option>
+            <option>LLaVA (Local)</option>
+          </select>
+          <button class="btn-primary" style="width:100%">🔍 Analyze Image</button>
+        </div>
+      </div>
+      <div class="vision-right">
+        <div class="translate-col-head">Analysis Result</div>
+        <div class="vision-chat">
+          <div style="padding:16px;color:var(--t3);font-size:13px;text-align:center;margin-top:40px">
+            Upload an image or document to start visual analysis.
+          </div>
+        </div>
+        <div class="input-zone" style="border-top:1px solid var(--b)">
+          <div class="input-box">
+            <textarea class="input-ta" placeholder="Ask about this image… (e.g. 'What text is visible?' / 'Describe in detail' / 'Extract all data')" rows="2"></textarea>
+            <div class="input-right">
+              <button class="send-btn">➤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODE MODE -->
+    <div id="mode-code" class="chat-zone hidden">
+      <div class="msg-list">
+        <div class="msg-wrap">
+          <div class="avatar">⌨️</div>
+          <div>
+            <div class="msg-bubble">
+              Code Studio ready. I can write, review, debug, refactor, and explain code in any language.<br><br>
+              Connected to: <span class="pill blue">DeepSeek Coder V2</span> with code execution enabled.
+            </div>
+            <div class="msg-meta"><span class="pill blue">DeepSeek Coder</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="input-zone">
+        <div class="input-tools">
+          <span class="tool-chip on">▶ Execute Code</span>
+          <span class="tool-chip on">📁 File Context</span>
+          <span class="tool-chip">🔍 Lint</span>
+          <span class="tool-chip">🔄 Refactor</span>
+          <span class="tool-chip">📝 Add Comments</span>
+          <span class="tool-chip">🧪 Write Tests</span>
+        </div>
+        <div class="input-box">
+          <textarea class="input-ta" placeholder="Describe what to build, paste code to review, or ask a question…" rows="1" oninput="autoResize(this)"></textarea>
+          <div class="input-right">
+            <button class="send-btn">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENT MODE -->
+    <div id="mode-agent" class="agent-zone hidden">
+      <div class="agent-left">
+        <div style="padding:12px;border-bottom:1px solid var(--b)">
+          <div class="wap-label">Active Tools</div>
+        </div>
+        <div class="agent-tools-list">
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(14,165,233,.15)">🔍</div>
+            <div class="tt"><div class="tn">Web Search</div><div class="td">Brave / Serper API</div></div>
+            <div class="tool-toggle on" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(16,185,129,.15)">⌨️</div>
+            <div class="tt"><div class="tn">Code Execution</div><div class="td">Python, Node, Bash</div></div>
+            <div class="tool-toggle on" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(245,158,11,.12)">📁</div>
+            <div class="tt"><div class="tn">File System</div><div class="td">Read, write, search</div></div>
+            <div class="tool-toggle" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(244,63,94,.1)">📧</div>
+            <div class="tt"><div class="tn">Email / Calendar</div><div class="td">Gmail, Outlook</div></div>
+            <div class="tool-toggle" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(99,102,241,.15)">🗃</div>
+            <div class="tt"><div class="tn">Database Query</div><div class="td">SQL / NoSQL</div></div>
+            <div class="tool-toggle on" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(139,92,246,.15)">🌐</div>
+            <div class="tt"><div class="tn">HTTP Request</div><div class="td">Any REST API</div></div>
+            <div class="tool-toggle on" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(6,182,212,.12)">⚡</div>
+            <div class="tt"><div class="tn">WebSocket Stream</div><div class="td">Live data feeds</div></div>
+            <div class="tool-toggle" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(245,158,11,.12)">🎨</div>
+            <div class="tt"><div class="tn">Image Generation</div><div class="td">Via GPU Studio</div></div>
+            <div class="tool-toggle on" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(244,63,94,.1)">🔊</div>
+            <div class="tt"><div class="tn">Voice Synthesis</div><div class="td">TTS 20+ langs</div></div>
+            <div class="tool-toggle" onclick="toggleTool2(this)"></div>
+          </div>
+          <div class="tool-row">
+            <div class="ti" style="background:rgba(16,185,129,.15)">📚</div>
+            <div class="tt"><div class="tn">Knowledge Base</div><div class="td">RAG over your docs</div></div>
+            <div class="tool-toggle on" onclick="toggleTool2(this)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="agent-main">
+        <div class="msg-list">
+          <div style="padding:24px;text-align:center;color:var(--t3)">
+            <div style="font-size:36px;margin-bottom:12px">🤖</div>
+            <div style="font-size:15px;font-weight:700;color:var(--t2);margin-bottom:6px">Agent Mode</div>
+            <div style="font-size:13px;max-width:380px;margin:0 auto;line-height:1.65">
+              Give the agent a complex, multi-step goal. It will autonomously plan, use tools, and iterate until complete.
+            </div>
+          </div>
+        </div>
+        <div class="input-zone">
+          <div class="input-tools">
+            <span class="tool-chip">Max steps: 20</span>
+            <span class="tool-chip on">Auto-approve safe actions</span>
+            <span class="tool-chip">Pause on decisions</span>
+          </div>
+          <div class="input-box">
+            <textarea class="input-ta" placeholder="Give the agent a task… e.g. 'Research the top 5 AI infrastructure companies in 2025, analyze their pricing, generate a comparison report, and save it as report.pdf'" rows="2" oninput="autoResize(this)"></textarea>
+            <div class="input-right">
+              <button class="send-btn">➤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL: CONNECTIONS -->
+  <div class="rpanel" id="rpanel">
+    <div class="rpanel-header">
+      <span class="rpanel-title">🔌 Connections</span>
+      <button class="icon-btn" style="width:26px;height:26px;font-size:12px" onclick="toggleConn()">×</button>
+    </div>
+    <div class="rpanel-body">
+
+      <div class="rp-section">
+        <div class="rp-label">Active Endpoint</div>
+        <div class="conn-card active selected open">
+          <div class="cc-header">
+            <div class="cc-icon" style="background:rgba(16,185,129,.12)">🤖</div>
+            <div class="cc-info">
+              <div class="cc-name">OpenAI API</div>
+              <div class="cc-type">REST API · GPT-4o, o1, DALL-E 3</div>
+            </div>
+            <div class="cc-status ok"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-detail-label">Endpoint</span><span class="cc-detail-value">api.openai.com/v1</span></div>
+            <div class="cc-detail"><span class="cc-detail-label">Model</span><span class="cc-detail-value">gpt-4o-2024-11-20</span></div>
+            <div class="cc-detail"><span class="cc-detail-label">Session Tokens</span><span class="token-display">3,840 / 128k</span></div>
+            <div class="cc-detail"><span class="cc-detail-label">Cost Today</span><span class="cc-detail-value">$0.042</span></div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="cc-btn primary">⚙ Configure</button>
+              <button class="cc-btn danger">Disconnect</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rp-section">
+        <div class="rp-label">Available Endpoints</div>
+
+        <div class="conn-card">
+          <div class="cc-header" onclick="toggleCard(this)">
+            <div class="cc-icon" style="background:rgba(245,158,11,.12)">🔮</div>
+            <div class="cc-info">
+              <div class="cc-name">Anthropic Claude</div>
+              <div class="cc-type">REST API · Claude 3.5 Sonnet/Haiku</div>
+            </div>
+            <div class="cc-status ok"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-detail-label">Model</span><span class="cc-detail-value">claude-3-5-sonnet-20241022</span></div>
+            <button class="cc-btn primary">Use This</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-header" onclick="toggleCard(this)">
+            <div class="cc-icon" style="background:rgba(99,102,241,.15)">💎</div>
+            <div class="cc-info">
+              <div class="cc-name">Google Gemini</div>
+              <div class="cc-type">REST API · Gemini 1.5 Pro/Flash</div>
+            </div>
+            <div class="cc-status ok"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-detail-label">Model</span><span class="cc-detail-value">gemini-1.5-pro-latest</span></div>
+            <button class="cc-btn primary">Use This</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-header" onclick="toggleCard(this)">
+            <div class="cc-icon" style="background:rgba(6,182,212,.12)">🐟</div>
+            <div class="cc-info">
+              <div class="cc-name">DeepSeek</div>
+              <div class="cc-type">REST API · DeepSeek V3, Coder V2</div>
+            </div>
+            <div class="cc-status ok"></div>
+          </div>
+          <div class="cc-body">
+            <button class="cc-btn primary">Use This</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-header" onclick="toggleCard(this)">
+            <div class="cc-icon" style="background:rgba(244,63,94,.1)">🦙</div>
+            <div class="cc-info">
+              <div class="cc-name">Ollama (Local)</div>
+              <div class="cc-type">REST · localhost:11434</div>
+            </div>
+            <div class="cc-status warn"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-detail-label">Status</span><span class="cc-detail-value" style="color:#fbbf24">Not running</span></div>
+            <button class="cc-btn primary">Start Ollama</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-header" onclick="toggleCard(this)">
+            <div class="cc-icon" style="background:rgba(139,92,246,.15)">⚡</div>
+            <div class="cc-info">
+              <div class="cc-name">Orchestra Worker</div>
+              <div class="cc-type">WebSocket · axto-orchestra:8080</div>
+            </div>
+            <div class="cc-status off"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-detail-label">Note</span><span class="cc-detail-value">Optional — one of many GPU backends</span></div>
+            <button class="cc-btn primary">Connect</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-header" onclick="toggleCard(this)">
+            <div class="cc-icon" style="background:rgba(99,102,241,.1)">🔗</div>
+            <div class="cc-info">
+              <div class="cc-name">Custom REST API</div>
+              <div class="cc-type">OpenAI-compatible endpoint</div>
+            </div>
+            <div class="cc-status off"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-detail-label">Endpoint</span><span class="cc-detail-value">Not configured</span></div>
+            <button class="cc-btn primary">Configure</button>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="add-conn-btn" onclick="openConnModal()">＋ Add Connection</button>
+
+      <div class="rp-section" style="margin-top:16px">
+        <div class="rp-label">Model Parameters</div>
+        <div class="setting-row">
+          <div class="flex" style="justify-content:space-between">
+            <span class="setting-label">Temperature</span>
+            <span class="range-label" id="tempVal">0.7</span>
+          </div>
+          <input type="range" min="0" max="2" step="0.05" value="0.7" oninput="document.getElementById('tempVal').textContent=parseFloat(this.value).toFixed(2)">
+        </div>
+        <div class="setting-row">
+          <div class="flex" style="justify-content:space-between">
+            <span class="setting-label">Max Tokens</span>
+            <span class="range-label" id="maxTokVal">4096</span>
+          </div>
+          <input type="range" min="256" max="128000" step="256" value="4096" oninput="document.getElementById('maxTokVal').textContent=parseInt(this.value).toLocaleString()">
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">System Prompt</span>
+          <textarea class="text-input" rows="3" style="resize:vertical" placeholder="You are a helpful AI assistant…">You are AXTO Studio AI, a professional AI assistant. Be concise, accurate, and helpful.</textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD CONNECTION MODAL -->
+<div class="modal-overlay" id="connModal">
+  <div class="modal">
+    <div class="modal-title">Add Connection</div>
+    <div class="modal-sub">Connect to any AI provider, local model, or custom API endpoint.</div>
+    <div class="rp-label" style="margin-bottom:8px">Connection Type</div>
+    <div class="modal-grid">
+      <div class="conn-type-card on" onclick="selectConnType(this)">
+        <div class="ctc-icon">🌐</div>
+        <div class="ctc-name">REST API</div>
+        <div class="ctc-sub">OpenAI-compatible. Any vendor API with an API key.</div>
+      </div>
+      <div class="conn-type-card" onclick="selectConnType(this)">
+        <div class="ctc-icon">⚡</div>
+        <div class="ctc-name">WebSocket</div>
+        <div class="ctc-sub">Live streaming. Local servers, Orchestra workers, custom backends.</div>
+      </div>
+      <div class="conn-type-card" onclick="selectConnType(this)">
+        <div class="ctc-icon">🦙</div>
+        <div class="ctc-name">Local Model</div>
+        <div class="ctc-sub">Ollama, LM Studio, llama.cpp — no API key needed.</div>
+      </div>
+      <div class="conn-type-card" onclick="selectConnType(this)">
+        <div class="ctc-icon">🏢</div>
+        <div class="ctc-name">Preset Provider</div>
+        <div class="ctc-sub">One-click setup for OpenAI, Anthropic, Gemini, Mistral, Cohere.</div>
+      </div>
+    </div>
+    <div class="modal-form">
+      <div class="form-row">
+        <label class="form-label">Display Name</label>
+        <input class="form-input" type="text" placeholder="My OpenAI Connection">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Endpoint URL</label>
+        <input class="form-input" type="text" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+      </div>
+      <div class="form-row">
+        <label class="form-label">API Key</label>
+        <input class="form-input" type="password" placeholder="sk-…">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Default Model</label>
+        <input class="form-input" type="text" placeholder="gpt-4o">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('connModal')">Cancel</button>
+      <button class="btn-primary" onclick="">🔌 Test & Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let connPanelOpen = true;
+function toggleConn(){
+  connPanelOpen=!connPanelOpen;
+  document.getElementById('rpanel').style.display=connPanelOpen?'flex':'none';
+}
+
+function setMode(m,btn){
+  document.querySelectorAll('.mode').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ['chat','write','translate','voice','vision','code','agent'].forEach(id=>{
+    const el=document.getElementById('mode-'+id);
+    if(el) el.classList.toggle('hidden',id!==m);
+  });
+}
+
+function toggleCard(el){
+  el.closest('.conn-card').classList.toggle('open');
+}
+
+function openConnModal(){
+  document.getElementById('connModal').classList.add('open');
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+}
+document.getElementById('connModal').addEventListener('click',function(e){
+  if(e.target===this) closeModal('connModal');
+});
+
+function selectConnType(el){
+  document.querySelectorAll('.conn-type-card').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function handleKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+}
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,140)+'px';
+  document.getElementById('charCount').textContent=el.value.length;
+}
+function insertPrompt(el){
+  const ta=document.getElementById('mainInput');
+  ta.value=el.textContent.replace(/^[^\s]+\s/,'');
+  ta.focus();
+  autoResize(ta);
+}
+function toggleTool(el){el.classList.toggle('on');}
+function toggleTool2(el){el.classList.toggle('on');}
+function toggleVisionMode(el){
+  document.querySelectorAll('.vision-controls .wai-chip').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+function newSession(){ document.getElementById('msgList').innerHTML=''; }
+function swapLangs(){
+  const s=document.getElementById('srcLang'),t=document.getElementById('tgtLang');
+  const tmp=s.value;s.value=t.value;t.value=tmp;
+}
+
+let recActive=false, recInterval=null, recSec=0;
+function toggleRecord(){
+  recActive=!recActive;
+  const btn=document.getElementById('recBtn');
+  const vis=document.getElementById('recVis');
+  if(recActive){
+    btn.textContent='⏹';
+    btn.className='rec-btn stop';
+    recSec=0;
+    recInterval=setInterval(()=>{
+      recSec++;
+      const m=String(Math.floor(recSec/60)).padStart(2,'0');
+      const s=String(recSec%60).padStart(2,'0');
+      document.getElementById('recTimer').textContent=m+':'+s;
+    },1000);
+    vis.innerHTML='';
+    for(let i=0;i<40;i++){
+      const bar=document.createElement('div');
+      bar.className='rec-bar';
+      bar.style.height=(Math.random()*36+8)+'px';
+      bar.style.animationDelay=(Math.random()*0.6)+'s';
+      bar.style.animationDuration=(0.4+Math.random()*0.6)+'s';
+      vis.appendChild(bar);
+    }
+  } else {
+    btn.textContent='🎙';
+    btn.className='rec-btn record';
+    clearInterval(recInterval);
+    vis.innerHTML='<div style="font-size:12px;color:var(--t3)">Recording stopped. Processing…</div>';
+    setTimeout(()=>{
+      document.getElementById('sttOutput').value='Selamat datang di AXTO Studio — platform AI profesional yang dirancang untuk kreator, pengembang, dan perusahaan yang menginginkan kendali penuh atas infrastruktur AI mereka.';
+      vis.innerHTML='<div style="font-size:12px;color:var(--g)">✓ Transcription complete</div>';
+    },1200);
+  }
+}
+
+function sendMsg(){
+  const ta=document.getElementById('mainInput');
+  const text=ta.value.trim();
+  if(!text)return;
+  const list=document.getElementById('msgList');
+  const userDiv=document.createElement('div');
+  userDiv.className='msg-wrap user';
+  userDiv.innerHTML=`<div class="avatar user">Y</div><div><div class="msg-bubble">${text.replace(/</g,'&lt;')}</div><div class="msg-meta" style="justify-content:flex-end"><span>${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div></div>`;
+  list.appendChild(userDiv);
+  ta.value='';ta.style.height='auto';
+  document.getElementById('charCount').textContent='0';
+  // Thinking
+  const thinkDiv=document.createElement('div');
+  thinkDiv.className='msg-wrap';
+  thinkDiv.innerHTML=`<div class="avatar">🧠</div><div class="thinking"><div class="think-dots"><div class="think-dot"></div><div class="think-dot"></div><div class="think-dot"></div></div><span class="think-label">Thinking…</span></div>`;
+  list.appendChild(thinkDiv);
+  list.scrollTop=list.scrollHeight;
+  setTimeout(()=>{
+    thinkDiv.remove();
+    const aiDiv=document.createElement('div');
+    aiDiv.className='msg-wrap';
+    aiDiv.innerHTML=`<div class="avatar">🧠</div><div><div class="msg-bubble">I've received your message. This is a live preview — in production, your configured AI endpoint would generate a full response here.</div><div class="msg-meta"><span class="pill blue">GPT-4o</span><span>${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div></div>`;
+    list.appendChild(aiDiv);
+    list.scrollTop=list.scrollHeight;
+  },1400);
+}
+function doTranslate(){ /* live would call API */ }
+
+// ── SFX & Voice Clone functions ──────────────────────────────────────────
+function selSfxType(el){
+  el.closest('div').querySelectorAll('.wai-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+function generateSFX(){
+  const btn=event.currentTarget;
+  btn.textContent='⟳ Generating…';
+  btn.disabled=true;
+  setTimeout(()=>{
+    btn.textContent='💥 Generate Sound Effect';
+    btn.disabled=false;
+    // Show a simple toast-like indicator
+    const toast=document.createElement('div');
+    toast.style.cssText='position:fixed;bottom:20px;right:20px;padding:10px 18px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);border-radius:10px;color:#34d399;font-size:13px;font-weight:600;z-index:9999;animation:fadeUp .2s ease';
+    toast.textContent='✓ SFX generated — ready to download';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),3000);
+  },2500);
+}
+</script>
+</body>
+</html>

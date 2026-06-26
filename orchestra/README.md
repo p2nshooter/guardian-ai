@@ -1,3 +1,9 @@
+[//]: # (==============================================================================)
+[//]: # (Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.)
+[//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
+[//]: # (Author & Architect: Yusron Efendi <hallo@axto.io>)
+[//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
+[//]: # (==============================================================================)
 # Orchestra AI - AI eXecution & Tools Orchestration — Orchestra
 
 ## Overview
@@ -15,7 +21,7 @@ Orchestra is an AI workflow orchestration engine that manages:
 
 ```bash
 # Pull from GHCR
-docker pull ghcr.io/p2nshooter/orchestra:latest
+docker pull ghcr.io/your-org/orchestra:latest
 
 # Run with license
 docker run -d \
@@ -23,7 +29,7 @@ docker run -d \
   -p 7890:7890 \
   -e ORCHESTRA_LICENSE_KEY=your-license-key \
   -v orchestra-data:/app/data \
-  ghcr.io/p2nshooter/orchestra:latest
+  ghcr.io/your-org/orchestra:latest
 ```
 
 ### Docker Compose
@@ -32,7 +38,7 @@ docker run -d \
 version: '3.8'
 services:
   orchestra:
-    image: ghcr.io/p2nshooter/orchestra:latest
+    image: ghcr.io/your-org/orchestra:latest
     ports:
       - "7890:7890"
     environment:

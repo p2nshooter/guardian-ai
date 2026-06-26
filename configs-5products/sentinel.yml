@@ -1,0 +1,20 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+sentinel:
+  license_key: "SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  db_path: "/sentinel/data/sentinel.db"
+  scan_subnets: ["192.168.1.0/24"]
+  scan_timeout_sec: 2
+  scan_interval_sec: 3600
+  poll_interval_sec: 60
+  authorized_devices: []
+  modbus_poll: {}
+  slack_webhook_url: ""
+  soar_webhook_url: ""
+ai_pool:
+  vendors: []

@@ -1,0 +1,1244 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AXTO — Hybrid Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080e;--s1:#0d0d16;--s2:#12121e;--s3:#181826;--s4:#1e1e2e;
+  --b:rgba(255,255,255,.06);
+  --p:#10b981;--p2:#34d399;--pa:rgba(16,185,129,.12);
+  --t:#f0f0ff;--t2:#8b8baa;--t3:#4a4a6a;
+  --ai:#6366f1;--gpu:#f59e0b;--web:#06b6d4;--code:#10b981;
+  --data:#f43f5e;--voice:#a78bfa;--cond:#8b5cf6;
+  --f:'Geist',sans-serif;--mono:'Geist Mono',monospace;
+  --rad:10px;
+}
+html,body{background:var(--bg);color:var(--t);font-family:var(--f);height:100%;overflow:hidden;font-size:14px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+/* ── TOP BAR ── */
+.topbar{height:50px;background:var(--s1);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 14px;gap:10px;z-index:100;position:relative;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:8px;text-decoration:none}
+.brand-logo{width:30px;height:30px;background:linear-gradient(135deg,#10b981,#06b6d4,#6366f1);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.brand-name{font-size:15px;font-weight:800;letter-spacing:-.04em;color:var(--t)}
+.brand-tag{font-size:11px;font-weight:600;color:var(--p2);background:var(--pa);padding:2px 8px;border-radius:20px;border:1px solid rgba(16,185,129,.25)}
+.sep{width:1px;height:22px;background:var(--b);flex-shrink:0}
+.tabs{display:flex;gap:1px;background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:3px}
+.tab{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;color:var(--t3);border:none;background:transparent;font-family:var(--f);transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--t2)}
+.tab.on{background:var(--s4);color:var(--t);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.icon-btn{width:32px;height:32px;border-radius:8px;background:transparent;border:1px solid var(--b);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;color:var(--t2);flex-shrink:0}
+.icon-btn:hover{background:var(--s3);color:var(--t)}
+.btn-primary{padding:6px 14px;border-radius:8px;background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--f);transition:all .15s;white-space:nowrap}
+.btn-primary:hover{transform:scale(1.02);box-shadow:0 3px 12px rgba(16,185,129,.35)}
+.btn-ghost{padding:6px 14px;border-radius:8px;background:transparent;border:1px solid var(--b);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--f);transition:all .15s}
+.btn-ghost:hover{background:var(--s3);border-color:rgba(255,255,255,.12)}
+
+/* ── SHELL ── */
+.shell{display:flex;height:calc(100vh - 50px);overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden}
+.sb-top{padding:12px;border-bottom:1px solid var(--b);display:flex;flex-direction:column;gap:8px}
+.sb-search{width:100%;padding:6px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none}
+.sb-scroll{flex:1;overflow-y:auto;padding:8px}
+.sb-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;padding:0 8px;margin-bottom:6px;margin-top:14px}
+.sb-label:first-child{margin-top:4px}
+.wf-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent}
+.wf-item:hover{background:var(--s2);border-color:var(--b)}
+.wf-item.on{background:var(--s2);border-color:rgba(16,185,129,.2)}
+.wfi-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wfi-text{flex:1;min-width:0}
+.wfi-name{font-size:12px;font-weight:600;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wfi-meta{font-size:10px;color:var(--t3);margin-top:1px}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── CANVAS TOOLBAR ── */
+.canvas-tb{height:44px;border-bottom:1px solid var(--b);background:var(--s1);display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;overflow-x:auto}
+.ctb-btn{padding:4px 11px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid var(--b);background:transparent;color:var(--t3);cursor:pointer;font-family:var(--f);transition:all .13s;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0}
+.ctb-btn:hover{background:var(--s3);color:var(--t2)}
+.ctb-btn.on{background:var(--pa);color:var(--p2);border-color:rgba(16,185,129,.3)}
+.ct-sep{width:1px;height:20px;background:var(--b);flex-shrink:0}
+.wf-name-input{background:transparent;border:none;outline:none;color:var(--t);font-family:var(--f);font-size:14px;font-weight:700;letter-spacing:-.02em;width:220px;flex-shrink:0}
+
+/* ── WORKFLOW CANVAS ── */
+.wf-canvas{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+.canvas-bg{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.035) 1px,transparent 1px);background-size:24px 24px;pointer-events:none}
+
+/* Nodes */
+.node{position:absolute;border-radius:12px;border:1.5px solid var(--b);background:var(--s2);min-width:190px;cursor:grab;user-select:none;transition:border-color .15s,box-shadow .15s;z-index:2}
+.node:hover{border-color:rgba(255,255,255,.12);z-index:10}
+.node.selected{box-shadow:0 0 0 2.5px rgba(16,185,129,.35);border-color:rgba(16,185,129,.55);z-index:20}
+.node-header{display:flex;align-items:center;gap:8px;padding:10px 12px 8px;border-bottom:1px solid var(--b)}
+.node-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.node-info{flex:1;min-width:0}
+.node-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:1px}
+.node-label{font-size:12px;font-weight:700;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node-status{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.node-body{padding:8px 12px;font-size:11px;color:var(--t3);line-height:1.55}
+.node-body strong{color:var(--t2)}
+.node-ports{padding:6px 12px 10px;display:flex;justify-content:space-between;align-items:center}
+.port-row{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+.port{width:11px;height:11px;border-radius:50%;border:2px solid rgba(255,255,255,.15);background:var(--s4);cursor:crosshair;transition:all .15s}
+.port:hover{border-color:rgba(16,185,129,.8);background:rgba(16,185,129,.3);transform:scale(1.4)}
+.port-in{margin-left:-17px}
+.port-out{margin-right:-17px}
+
+/* ── RIGHT PANEL ── */
+.rpanel{width:280px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden}
+.rp-header{padding:12px 14px;border-bottom:1px solid var(--b);font-size:12px;font-weight:700;color:var(--t);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.rp-scroll{flex:1;overflow-y:auto;padding:12px}
+.rp-section{margin-bottom:16px}
+.rp-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.form-label{font-size:11px;font-weight:600;color:var(--t2);margin-bottom:4px;display:block}
+.form-input{width:100%;padding:7px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none;margin-bottom:8px;transition:border-color .15s}
+.form-input:focus{border-color:rgba(16,185,129,.4)}
+.form-select{width:100%;padding:7px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none;cursor:pointer;margin-bottom:8px}
+.form-ta{width:100%;padding:8px 10px;border-radius:8px;background:var(--s3);border:1px solid var(--b);color:var(--t);font-family:var(--f);font-size:12px;outline:none;resize:vertical;min-height:64px;line-height:1.55;margin-bottom:8px}
+.form-ta::placeholder{color:var(--t3)}
+.form-ta:focus{border-color:rgba(16,185,129,.4)}
+
+/* Run log */
+.run-log{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:1.7;max-height:180px;overflow-y:auto}
+.log-ok{color:var(--p2)}
+.log-info{color:var(--t2)}
+.log-warn{color:#fbbf24}
+.log-time{color:var(--t3);margin-right:6px}
+
+/* ── NODE PALETTE ── */
+.node-palette{position:absolute;left:14px;top:14px;background:var(--s1);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px;z-index:60;width:200px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.np-label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.np-item{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;transition:all .13s;border:1px solid transparent}
+.np-item:hover{background:var(--s3);border-color:var(--b)}
+.npi-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.npi-name{font-size:11px;font-weight:700}
+.npi-sub{font-size:10px;color:var(--t3);margin-top:1px}
+
+/* ── RUN PANEL ── */
+.run-panel{position:absolute;right:296px;bottom:0;left:0;background:var(--s2);border:1px solid rgba(255,255,255,.08);border-bottom:none;border-radius:16px 16px 0 0;padding:18px;z-index:60;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1)}
+.run-panel.open{transform:translateY(0)}
+.rp-run-title{font-size:14px;font-weight:800;color:var(--t);letter-spacing:-.02em;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.step-list{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.step-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--s3);border:1px solid var(--b)}
+.step-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.step-info{flex:1;min-width:0}
+.step-name{font-size:12px;font-weight:600;color:var(--t)}
+.step-status{font-size:11px;margin-top:2px}
+.step-bar{height:2px;background:var(--s4);border-radius:1px;overflow:hidden;margin-top:5px}
+.step-fill{height:100%;border-radius:1px;background:var(--p2);transition:width .5s}
+
+/* ── PILLS ── */
+.pill{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.pill.green{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.pill.amber{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.pill.red{background:rgba(244,63,94,.1);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+.pill.purple{background:rgba(167,139,250,.12);color:#c4b5fd;border:1px solid rgba(167,139,250,.2)}
+.pill.blue{background:rgba(99,102,241,.12);color:#818cf8;border:1px solid rgba(99,102,241,.2)}
+.pill.cyan{background:rgba(6,182,212,.12);color:#22d3ee;border:1px solid rgba(6,182,212,.2)}
+.pill.gray{background:var(--s3);color:var(--t3);border:1px solid var(--b)}
+
+/* ── TEMPLATES PAGE ── */
+.tpl-bar{padding:12px 16px;border-bottom:1px solid var(--b);background:var(--s1);display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;flex-shrink:0}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;padding:16px}
+.tpl-card{background:var(--s2);border:1px solid var(--b);border-radius:14px;padding:16px;cursor:pointer;transition:all .2s}
+.tpl-card:hover{border-color:rgba(16,185,129,.3);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.tc-icon{font-size:28px;margin-bottom:10px}
+.tc-name{font-size:14px;font-weight:700;color:var(--t);margin-bottom:4px;letter-spacing:-.02em}
+.tc-desc{font-size:12px;color:var(--t3);line-height:1.6;margin-bottom:12px}
+.tc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.tc-tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--s3);border:1px solid var(--b);color:var(--t3)}
+.tc-footer{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3);padding-top:10px;border-top:1px solid var(--b)}
+.tc-use-btn{padding:5px 12px;border-radius:7px;background:var(--pa);border:1px solid rgba(16,185,129,.3);color:var(--p2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--f);transition:all .13s}
+.tc-use-btn:hover{background:rgba(16,185,129,.2)}
+
+/* ── RUNS PAGE ── */
+.run-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--s2);border:1px solid var(--b);border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:8px}
+.run-row:hover{border-color:rgba(255,255,255,.1)}
+.rr-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.rr-name{font-size:13px;font-weight:600;color:var(--t)}
+.rr-meta{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* ── CONNECTIONS PAGE ── */
+.conn-card{background:var(--s2);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.conn-card.active{border-color:rgba(16,185,129,.3)}
+.cc-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer}
+.cc-head:hover{background:var(--s3)}
+.cc-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.cc-info{flex:1}
+.cc-name{font-size:13px;font-weight:700;color:var(--t)}
+.cc-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.cc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cc-dot.ok{background:var(--g);box-shadow:0 0 5px var(--g)}
+.cc-dot.warn{background:#fbbf24}
+.cc-dot.off{background:var(--t3)}
+.cc-body{padding:12px 14px;background:var(--bg);border-top:1px solid var(--b);display:none}
+.conn-card.open .cc-body{display:block}
+.cc-detail{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.cc-dl{color:var(--t3)}
+.cc-dv{color:var(--t2);font-family:var(--mono);font-size:10px}
+
+/* ── SCHEDULER PAGE ── */
+.sched-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--s2);border:1px solid var(--b);border-radius:10px;margin-bottom:8px}
+.sr-icon{font-size:20px;flex-shrink:0}
+.sr-info{flex:1}
+.sr-name{font-size:13px;font-weight:600;color:var(--t)}
+.sr-meta{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* HIDDEN */
+.hidden{display:none!important}
+
+/* Animations */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fadein{animation:fadeIn .2s ease both}
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ════════════════════════════════════════════════ -->
+<div class="topbar">
+  <a href="#" class="brand" style="text-decoration:none">
+    <div class="brand-logo">⚡</div>
+    <span class="brand-name">AXTO</span>
+  </a>
+  <span class="brand-tag">Hybrid Studio</span>
+  <div class="sep"></div>
+
+  <div class="tabs">
+    <button class="tab on"  onclick="showPage('workflows',this)">⚡ Workflows</button>
+    <button class="tab" onclick="showPage('templates',this)">📋 Templates</button>
+    <button class="tab" onclick="showPage('runs',this)">▶ History</button>
+    <button class="tab" onclick="showPage('connections',this)">🔌 Connections</button>
+    <button class="tab" onclick="showPage('scheduler',this)">⏰ Scheduler</button>
+  </div>
+
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+    <button class="btn-ghost" id="addNodeBtn" onclick="togglePalette()">＋ Add Node</button>
+    <button class="btn-ghost" onclick="autoLayout()">⊞ Layout</button>
+    <button class="btn-primary" onclick="runWorkflow()">▶ Run Now</button>
+  </div>
+  <div class="sep"></div>
+  <button class="icon-btn" title="Save workflow">💾</button>
+  <button class="icon-btn" title="Export as JSON">📤</button>
+</div>
+
+<!-- ═══ SHELL ═════════════════════════════════════════════════ -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-top">
+      <button class="btn-primary" onclick="newWorkflow()" style="width:100%;padding:8px">＋ New Workflow</button>
+      <input class="sb-search" placeholder="🔍 Search workflows…">
+    </div>
+    <div class="sb-scroll">
+      <div class="sb-label">Active</div>
+
+      <div class="wf-item on" onclick="loadWF(this,'Social Content Factory','7 nodes · Daily 08:00')">
+        <div class="wfi-dot" style="background:var(--p);box-shadow:0 0 6px var(--p)"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">Social Content Factory</div>
+          <div class="wfi-meta">7 nodes · 2 min ago</div>
+        </div>
+        <span class="pill green">Live</span>
+      </div>
+
+      <div class="wf-item" onclick="loadWF(this,'Talking Product Video','10 nodes · Manual')">
+        <div class="wfi-dot" style="background:#6366f1;box-shadow:0 0 5px #6366f1"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">Talking Product Video</div>
+          <div class="wfi-meta">10 nodes · Manual</div>
+        </div>
+        <span class="pill blue">Paused</span>
+      </div>
+
+      <div class="wf-item" onclick="loadWF(this,'Blog Post Factory','5 nodes · Webhook')">
+        <div class="wfi-dot" style="background:var(--p)"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">Blog Post Factory</div>
+          <div class="wfi-meta">5 nodes · On webhook</div>
+        </div>
+        <span class="pill green">Live</span>
+      </div>
+
+      <div class="sb-label">Drafts</div>
+
+      <div class="wf-item" onclick="loadWF(this,'Podcast Transcriber','4 nodes · Draft')">
+        <div class="wfi-dot" style="background:var(--t3)"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">Podcast Transcriber</div>
+          <div class="wfi-meta">4 nodes · Draft</div>
+        </div>
+        <span class="pill amber">Draft</span>
+      </div>
+
+      <div class="wf-item" onclick="loadWF(this,'E-commerce Image Pack','6 nodes')">
+        <div class="wfi-dot" style="background:#f59e0b"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">E-commerce Image Pack</div>
+          <div class="wfi-meta">6 nodes · On upload</div>
+        </div>
+        <span class="pill amber">Live</span>
+      </div>
+
+      <div class="wf-item" onclick="loadWF(this,'Customer Email Localizer','8 nodes')">
+        <div class="wfi-dot" style="background:#06b6d4"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">Customer Email Localizer</div>
+          <div class="wfi-meta">8 nodes · API trigger</div>
+        </div>
+        <span class="pill cyan">Live</span>
+      </div>
+
+      <div class="wf-item" onclick="loadWF(this,'Report Generator','8 nodes')">
+        <div class="wfi-dot" style="background:var(--t3)"></div>
+        <div class="wfi-text">
+          <div class="wfi-name">Weekly Report Generator</div>
+          <div class="wfi-meta">8 nodes · Every Monday</div>
+        </div>
+        <span class="pill green">Live</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ══ WORKFLOWS PAGE ══════════════════════════════════════ -->
+    <div id="page-workflows" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="canvas-tb">
+        <input class="wf-name-input" value="Social Content Factory" id="wfNameInput">
+        <div class="ct-sep"></div>
+        <button class="ctb-btn on" onclick="setMode('move',this)">✋ Move</button>
+        <button class="ctb-btn" onclick="setMode('connect',this)">🔗 Connect</button>
+        <button class="ctb-btn" onclick="setMode('select',this)">⬜ Select</button>
+        <div class="ct-sep"></div>
+        <span style="font-size:11px;color:var(--t3);flex-shrink:0">7 nodes · 8 connections</span>
+        <div class="ct-sep"></div>
+        <button class="ctb-btn" onclick="toggleRunPanel()">▶ Run Log</button>
+        <span style="font-size:11px;color:var(--p2);margin-left:auto;flex-shrink:0;white-space:nowrap" id="wfStatus">● Last run: 2 min ago — Success</span>
+      </div>
+
+      <div style="display:flex;flex:1;overflow:hidden;position:relative">
+        <!-- Canvas -->
+        <div class="wf-canvas" id="wfCanvas">
+          <div class="canvas-bg"></div>
+
+          <!-- SVG wires -->
+          <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1">
+            <defs>
+              <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="rgba(255,255,255,.12)"/>
+              </marker>
+            </defs>
+            <path d="M 220 208 C 240 208 240 118 258 118" stroke="rgba(16,185,129,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 220 208 C 240 208 240 298 258 298" stroke="rgba(99,102,241,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 448 118 C 462 118 462 118 478 118" stroke="rgba(245,158,11,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 448 298 C 462 298 462 298 478 298" stroke="rgba(167,139,250,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 668 118 C 684 118 684 208 698 208" stroke="rgba(139,92,246,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 448 298 C 574 298 574 208 698 208" stroke="rgba(139,92,246,.25)" stroke-width="1.8" fill="none" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+            <path d="M 668 298 C 684 298 684 208 698 208" stroke="rgba(139,92,246,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 888 208 C 904 208 904 148 918 148" stroke="rgba(244,63,94,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+            <path d="M 888 208 C 904 208 904 338 918 338" stroke="rgba(16,185,129,.4)" stroke-width="1.8" fill="none" marker-end="url(#arr)"/>
+          </svg>
+
+          <!-- Nodes -->
+          <div style="position:absolute;inset:0;z-index:2">
+
+            <!-- TRIGGER -->
+            <div class="node" style="left:38px;top:178px" onclick="selectNode(this,'trigger')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(16,185,129,.15)">⚡</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--p2)">Trigger</div>
+                  <div class="node-label">Scheduler / Webhook</div>
+                </div>
+                <div class="node-status" style="background:var(--p2);box-shadow:0 0 5px var(--p2)"></div>
+              </div>
+              <div class="node-body"><strong>Daily 08:00 WIB</strong><br>or POST /api/trigger/social</div>
+              <div class="node-ports">
+                <span></span>
+                <div class="port-row">Out <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- FETCH -->
+            <div class="node" style="left:258px;top:78px" onclick="selectNode(this,'http')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(6,182,212,.15)">🌐</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--web)">HTTP Request</div>
+                  <div class="node-label">Fetch Product Data</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body">GET /api/products/today<br><strong>Response:</strong> product JSON list</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In</div>
+                <div class="port-row">Out <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- AI WRITE -->
+            <div class="node selected" style="left:258px;top:258px" onclick="selectNode(this,'ai')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(99,102,241,.15)">🤖</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--ai)">AI Text</div>
+                  <div class="node-label">Write Captions</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body"><strong>GPT-4o</strong> · 3 caption variants<br>Output: EN + ID + ZH</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In</div>
+                <div class="port-row">Out <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- IMAGE GEN -->
+            <div class="node" style="left:478px;top:78px" onclick="selectNode(this,'image')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(245,158,11,.12)">🎨</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--gpu)">Image Gen</div>
+                  <div class="node-label">Generate Product Images</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body"><strong>Flux.1 Dev</strong> · 3 images/product<br>Style: product photography</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In</div>
+                <div class="port-row">Out <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- TTS -->
+            <div class="node" style="left:478px;top:258px" onclick="selectNode(this,'voice')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(167,139,250,.15)">🔊</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--voice)">Voice TTS/STT</div>
+                  <div class="node-label">Generate Audio</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body"><strong>OpenAI TTS</strong> · Alloy + Sari<br>EN + ID · MP3 output</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In</div>
+                <div class="port-row">Out <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- MERGE -->
+            <div class="node" style="left:698px;top:178px" onclick="selectNode(this,'merge')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(139,92,246,.15)">⊕</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--cond)">Merge</div>
+                  <div class="node-label">Combine Outputs</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body">Wait for: captions + images + audio<br><strong>Pack:</strong> content bundle per product</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In ×3</div>
+                <div class="port-row">Out <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- PUBLISH -->
+            <div class="node" style="left:918px;top:118px" onclick="selectNode(this,'output')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(244,63,94,.1)">📤</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--data)">Publish</div>
+                  <div class="node-label">Post to Social Channels</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body">Instagram · X/Twitter · LinkedIn<br>+ Webhook callback on done</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In</div>
+                <div class="port-row">Done <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+            <!-- STORAGE -->
+            <div class="node" style="left:918px;top:308px" onclick="selectNode(this,'storage')">
+              <div class="node-header">
+                <div class="node-icon" style="background:rgba(16,185,129,.12)">💾</div>
+                <div class="node-info">
+                  <div class="node-type" style="color:var(--p2)">Storage</div>
+                  <div class="node-label">Archive to R2 / S3</div>
+                </div>
+                <div class="node-status" style="background:var(--p2)"></div>
+              </div>
+              <div class="node-body">Save all assets<br><strong>Path:</strong> /social/{YYYY-MM-DD}/</div>
+              <div class="node-ports">
+                <div class="port-row"><div class="port port-in"></div> In</div>
+                <div class="port-row">Done <div class="port port-out"></div></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Node Palette -->
+          <div class="node-palette hidden" id="nodePalette">
+            <div class="np-label">Add Node</div>
+            <div class="np-item" onclick="addNodeFromPalette('ai')">
+              <div class="npi-icon" style="background:rgba(99,102,241,.15)">🤖</div>
+              <div><div class="npi-name" style="color:var(--ai)">AI Text</div><div class="npi-sub">Chat, write, summarize</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('image')">
+              <div class="npi-icon" style="background:rgba(245,158,11,.12)">🎨</div>
+              <div><div class="npi-name" style="color:var(--gpu)">Image Gen</div><div class="npi-sub">Flux, SDXL, DALL-E, API</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('video')">
+              <div class="npi-icon" style="background:rgba(245,158,11,.12)">🎬</div>
+              <div><div class="npi-name" style="color:var(--gpu)">Video Gen</div><div class="npi-sub">Text or image to video</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('photoanim')">
+              <div class="npi-icon" style="background:rgba(245,158,11,.12)">👤</div>
+              <div><div class="npi-name" style="color:var(--gpu)">Photo Animate</div><div class="npi-sub">Talking head, motion drive</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('imageanim')">
+              <div class="npi-icon" style="background:rgba(245,158,11,.12)">✨</div>
+              <div><div class="npi-name" style="color:var(--gpu)">Image Animate</div><div class="npi-sub">Water, wind, particles</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('voice')">
+              <div class="npi-icon" style="background:rgba(167,139,250,.15)">🔊</div>
+              <div><div class="npi-name" style="color:var(--voice)">Voice TTS / STT</div><div class="npi-sub">20+ languages</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('sfx')">
+              <div class="npi-icon" style="background:rgba(6,182,212,.15)">💥</div>
+              <div><div class="npi-name" style="color:#22d3ee">Sound FX Generator</div><div class="npi-sub">ElevenLabs / AudioCraft</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('music')">
+              <div class="npi-icon" style="background:rgba(6,182,212,.15)">🎵</div>
+              <div><div class="npi-name" style="color:#22d3ee">Music Generator</div><div class="npi-sub">Suno AI / MusicGen</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('cartoon')">
+              <div class="npi-icon" style="background:rgba(167,139,250,.15)">🎬</div>
+              <div><div class="npi-name" style="color:#c4b5fd">Cartoon Render</div><div class="npi-sub">Disney / Anime / Ghibli</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('voiceclone')">
+              <div class="npi-icon" style="background:rgba(236,72,153,.12)">🎤</div>
+              <div><div class="npi-name" style="color:#f9a8d4">Voice Clone</div><div class="npi-sub">ElevenLabs / XTTS</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('audiomix')">
+              <div class="npi-icon" style="background:rgba(6,182,212,.12)">🎚</div>
+              <div><div class="npi-name" style="color:#22d3ee">Audio Mixer</div><div class="npi-sub">BGM + SFX + Voice blend</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('translate')">
+              <div class="npi-icon" style="background:rgba(6,182,212,.12)">🌐</div>
+              <div><div class="npi-name" style="color:var(--web)">Translate</div><div class="npi-sub">24 language pairs, any model</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('http')">
+              <div class="npi-icon" style="background:rgba(6,182,212,.12)">🌐</div>
+              <div><div class="npi-name" style="color:var(--web)">HTTP Request</div><div class="npi-sub">REST, GraphQL, any API</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('ws')">
+              <div class="npi-icon" style="background:rgba(6,182,212,.12)">⚡</div>
+              <div><div class="npi-name" style="color:var(--web)">WebSocket</div><div class="npi-sub">Live stream, real-time data</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('code')">
+              <div class="npi-icon" style="background:rgba(16,185,129,.12)">⌨️</div>
+              <div><div class="npi-name" style="color:var(--code)">Code Execute</div><div class="npi-sub">Python, Node.js, Bash</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('condition')">
+              <div class="npi-icon" style="background:rgba(139,92,246,.15)">⟨⟩</div>
+              <div><div class="npi-name" style="color:var(--cond)">Condition / Branch</div><div class="npi-sub">If/else logic, routing</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('loop')">
+              <div class="npi-icon" style="background:rgba(139,92,246,.15)">🔁</div>
+              <div><div class="npi-name" style="color:var(--cond)">Loop / Iterator</div><div class="npi-sub">For each item in array</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('trigger')">
+              <div class="npi-icon" style="background:rgba(16,185,129,.12)">⚡</div>
+              <div><div class="npi-name" style="color:var(--p2)">Trigger</div><div class="npi-sub">Schedule, webhook, API call</div></div>
+            </div>
+            <div class="np-item" onclick="addNodeFromPalette('storage')">
+              <div class="npi-icon" style="background:rgba(16,185,129,.12)">💾</div>
+              <div><div class="npi-name" style="color:var(--p2)">Storage</div><div class="npi-sub">S3, R2, database, local file</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="rpanel">
+          <div class="rp-header">
+            <span id="rpTitle">Write Captions — AI Text</span>
+            <span class="pill green">Ready</span>
+          </div>
+          <div class="rp-scroll">
+
+            <div class="rp-section">
+              <div class="rp-label">AI Provider</div>
+              <select class="form-select">
+                <option>OpenAI · GPT-4o</option>
+                <option>Anthropic · Claude 3.5 Sonnet</option>
+                <option>Google · Gemini 1.5 Pro</option>
+                <option>DeepSeek V3</option>
+                <option>Mistral Large</option>
+                <option>Local · Ollama</option>
+                <option>Orchestra Worker (WebSocket)</option>
+                <option>Any Custom REST Endpoint…</option>
+              </select>
+            </div>
+
+            <div class="rp-section">
+              <div class="rp-label">Prompt</div>
+              <div>
+                <label class="form-label">System</label>
+                <textarea class="form-ta" rows="2">You are a social media copywriter. Write compelling captions with relevant hashtags.</textarea>
+              </div>
+              <div>
+                <label class="form-label">User Prompt</label>
+                <textarea class="form-ta" rows="3">Write 3 caption variants for: {{product_name}}
+Description: {{description}}
+Output JSON array with fields: en, id, zh, hashtags</textarea>
+              </div>
+            </div>
+
+            <div class="rp-section">
+              <div class="rp-label">Output</div>
+              <select class="form-select">
+                <option>JSON (structured)</option>
+                <option>Plain text</option>
+                <option>Markdown</option>
+              </select>
+            </div>
+
+            <div class="rp-section">
+              <div class="rp-label">Last Run Log</div>
+              <div class="run-log">
+                <div><span class="log-time">08:00:01</span><span class="log-ok">✓ Node started</span></div>
+                <div><span class="log-time">08:00:02</span><span class="log-info">→ Calling GPT-4o…</span></div>
+                <div><span class="log-time">08:00:05</span><span class="log-ok">✓ 36 captions generated (3.2s)</span></div>
+                <div><span class="log-time">08:00:05</span><span class="log-ok">✓ Output forwarded to next nodes</span></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:6px">
+              <button class="btn-ghost" style="flex:1;font-size:11px">⟳ Test Node</button>
+              <button class="btn-ghost" style="flex:1;font-size:11px">📋 View Output</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Run Log Panel (slides up) -->
+      <div class="run-panel" id="runPanel">
+        <div class="rp-run-title">
+          <span>▶ Run Log — Social Content Factory</span>
+          <button onclick="toggleRunPanel()" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:18px;line-height:1">×</button>
+        </div>
+        <div style="font-size:11px;color:var(--t3)">Started 08:00:01 · 5 of 7 steps complete · Est. 6s remaining</div>
+        <div class="step-list">
+          <div class="step-row">
+            <div class="step-icon" style="background:rgba(16,185,129,.12)">⚡</div>
+            <div class="step-info"><div class="step-name">Trigger</div><div class="step-status" style="color:var(--p2)">✓ Fired (0.1s)</div></div>
+            <span class="pill green">Done</span>
+          </div>
+          <div class="step-row">
+            <div class="step-icon" style="background:rgba(6,182,212,.12)">🌐</div>
+            <div class="step-info"><div class="step-name">Fetch Product Data</div><div class="step-status" style="color:var(--p2)">✓ 12 products loaded (0.4s)</div></div>
+            <span class="pill green">Done</span>
+          </div>
+          <div class="step-row">
+            <div class="step-icon" style="background:rgba(99,102,241,.12)">🤖</div>
+            <div class="step-info"><div class="step-name">Write Captions (GPT-4o)</div><div class="step-status" style="color:var(--p2)">✓ 36 captions EN/ID/ZH (3.2s)</div></div>
+            <span class="pill green">Done</span>
+          </div>
+          <div class="step-row">
+            <div class="step-icon" style="background:rgba(245,158,11,.12)">🎨</div>
+            <div class="step-info"><div class="step-name">Generate Product Images (Flux.1)</div><div class="step-status" style="color:var(--p2)">✓ 36 images (18.4s)</div></div>
+            <span class="pill green">Done</span>
+          </div>
+          <div class="step-row">
+            <div class="step-icon" style="background:rgba(167,139,250,.12)">🔊</div>
+            <div class="step-info">
+              <div class="step-name">Generate Audio — TTS (EN + ID)</div>
+              <div class="step-status" style="color:var(--p2)">⟳ Running…</div>
+              <div class="step-bar"><div class="step-fill" id="audioFill" style="width:68%"></div></div>
+            </div>
+            <span class="pill amber">68%</span>
+          </div>
+          <div class="step-row" style="opacity:.45">
+            <div class="step-icon" style="background:rgba(244,63,94,.08)">📤</div>
+            <div class="step-info"><div class="step-name">Publish to Social Channels</div><div class="step-status" style="color:var(--t3)">Waiting for audio…</div></div>
+            <span class="pill gray">Pending</span>
+          </div>
+          <div class="step-row" style="opacity:.45">
+            <div class="step-icon" style="background:rgba(16,185,129,.08)">💾</div>
+            <div class="step-info"><div class="step-name">Archive to R2</div><div class="step-status" style="color:var(--t3)">Waiting…</div></div>
+            <span class="pill gray">Pending</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn-ghost" style="flex:1" onclick="toggleRunPanel()">Hide</button>
+          <button class="btn-ghost" style="flex:1;color:#fb7185;border-color:rgba(244,63,94,.3)">⏸ Pause</button>
+          <button class="btn-ghost" style="flex:1;color:#fb7185;border-color:rgba(244,63,94,.3)">⏹ Stop</button>
+        </div>
+      </div>
+
+    </div><!-- end workflows -->
+
+    <!-- ══ TEMPLATES PAGE ═════════════════════════════════════ -->
+    <div id="page-templates" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="tpl-bar">
+        <button class="ctb-btn on" onclick="filterTpl(this)">All</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">📱 Social</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">✍️ Content</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">🎨 Visuals</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">🎬 Video</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">🔊 Voice</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">🛒 E-commerce</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">📊 Data</button>
+        <button class="ctb-btn" onclick="filterTpl(this)">🤖 Automation</button>
+        <button class="ctb-btn" onclick="filterTpl(this)" style="color:#c4b5fd;border-color:rgba(167,139,250,.3)">🎬 Cartoon Film</button>
+        <button class="ctb-btn" onclick="filterTpl(this)" style="color:#22d3ee;border-color:rgba(6,182,212,.3)">🔊 Sound Design</button>
+        <button class="ctb-btn" onclick="filterTpl(this)" style="color:#f9a8d4;border-color:rgba(236,72,153,.3)">🌐 Multilingual</button>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+        <div class="tpl-grid">
+          <div class="tpl-card">
+            <div class="tc-icon">📱</div>
+            <div class="tc-name">Social Content Pack</div>
+            <div class="tc-desc">Generate captions in 3 languages, matching product images via Flux.1, and TTS audio voiceovers — all in one automated daily workflow.</div>
+            <div class="tc-tags"><span class="tc-tag">GPT-4o</span><span class="tc-tag">Flux.1</span><span class="tc-tag">TTS Multi-lang</span><span class="tc-tag">Social APIs</span></div>
+            <div class="tc-footer"><span>7 nodes · 12k uses</span><button class="tc-use-btn" onclick="useTpl('Social Content Pack')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">🎬</div>
+            <div class="tc-name">Talking Product Video</div>
+            <div class="tc-desc">Upload a product image → AI writes a script → Photo animation lip-syncs to TTS voice → Export a ready-to-post video reel.</div>
+            <div class="tc-tags"><span class="tc-tag">Photo Animate</span><span class="tc-tag">TTS 20+ langs</span><span class="tc-tag">Video Export</span></div>
+            <div class="tc-footer"><span>6 nodes · New</span><button class="tc-use-btn" onclick="useTpl('Talking Product Video')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">✨</div>
+            <div class="tc-name">Animated Scene Factory</div>
+            <div class="tc-desc">Text prompt → generate concept image → animate with water / particles / wind effects → add narration → export looping MP4.</div>
+            <div class="tc-tags"><span class="tc-tag">Image Gen</span><span class="tc-tag">Image Animate</span><span class="tc-tag">TTS Narration</span></div>
+            <div class="tc-footer"><span>5 nodes · Popular</span><button class="tc-use-btn" onclick="useTpl('Animated Scene')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">✍️</div>
+            <div class="tc-name">Multilingual Blog Factory</div>
+            <div class="tc-desc">Topic input → AI drafts full long-form article → auto-translate to 5 languages → generate hero image → publish to CMS.</div>
+            <div class="tc-tags"><span class="tc-tag">Claude 3.5</span><span class="tc-tag">Translation ×5</span><span class="tc-tag">Image Gen</span><span class="tc-tag">CMS API</span></div>
+            <div class="tc-footer"><span>8 nodes</span><button class="tc-use-btn" onclick="useTpl('Multilingual Blog')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">🎙</div>
+            <div class="tc-name">Podcast Full Pipeline</div>
+            <div class="tc-desc">Upload audio → Whisper STT transcription → AI generates show notes, chapters, social clips → TTS audiogram → distribute.</div>
+            <div class="tc-tags"><span class="tc-tag">Whisper STT</span><span class="tc-tag">GPT-4o</span><span class="tc-tag">TTS</span><span class="tc-tag">Ayrshare</span></div>
+            <div class="tc-footer"><span>7 nodes</span><button class="tc-use-btn" onclick="useTpl('Podcast Pipeline')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">🛒</div>
+            <div class="tc-name">E-commerce Image Pack</div>
+            <div class="tc-desc">Product description → generate 3 hero images + 6 variant shots → remove backgrounds → upscale 4× → upload to CDN automatically.</div>
+            <div class="tc-tags"><span class="tc-tag">Flux.1</span><span class="tc-tag">BG Remove</span><span class="tc-tag">4× Upscale</span><span class="tc-tag">CDN Upload</span></div>
+            <div class="tc-footer"><span>9 nodes · Popular</span><button class="tc-use-btn" onclick="useTpl('Ecommerce Images')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">🤖</div>
+            <div class="tc-name">Customer Support AI</div>
+            <div class="tc-desc">CRM webhook → AI classifies intent & sentiment → route to department or auto-respond → translate reply to client language → send.</div>
+            <div class="tc-tags"><span class="tc-tag">Webhook</span><span class="tc-tag">Claude 3.5</span><span class="tc-tag">Auto-translate</span><span class="tc-tag">Email API</span></div>
+            <div class="tc-footer"><span>10 nodes · Enterprise</span><button class="tc-use-btn" onclick="useTpl('Support AI')">Use Template</button></div>
+          </div>
+          <div class="tpl-card">
+            <div class="tc-icon">📊</div>
+            <div class="tc-name">Automated Report Generator</div>
+            <div class="tc-desc">Query database → AI analyzes data & writes insights → generate charts via code execution → export PDF → send email summary.</div>
+            <div class="tc-tags"><span class="tc-tag">SQL Query</span><span class="tc-tag">GPT-4o</span><span class="tc-tag">Code Run</span><span class="tc-tag">PDF Export</span></div>
+            <div class="tc-footer"><span>8 nodes</span><button class="tc-use-btn" onclick="useTpl('Report Generator')">Use Template</button></div>
+          </div>
+
+          <!-- ══ CARTOON FILM TEMPLATES ══ -->
+          <div class="tpl-card" style="border-color:rgba(167,139,250,.25)">
+            <div class="tc-icon" style="background:rgba(167,139,250,.15);font-size:26px">🎬</div>
+            <div class="tc-name">Cartoon Film — Full Episode</div>
+            <div class="tc-desc">Script input → AI generates scene-by-scene storyboard → GPU renders each cartoon frame (Disney/Anime style) → Image animate each scene → Add SFX + BGM + Voice narration → Stitch into full episode MP4.</div>
+            <div class="tc-tags"><span class="tc-tag">GPT-4o Script</span><span class="tc-tag">Flux.1 Cartoon</span><span class="tc-tag">AnimateDiff</span><span class="tc-tag">ElevenLabs TTS</span><span class="tc-tag">Audio SFX</span><span class="tc-tag">FFmpeg</span></div>
+            <div class="tc-footer"><span>12 nodes · 🎬 Flagship</span><button class="tc-use-btn" onclick="useTpl('Cartoon Film Episode')" style="background:linear-gradient(135deg,#7c3aed,#6366f1)">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(167,139,250,.2)">
+            <div class="tc-icon" style="background:rgba(167,139,250,.12);font-size:26px">🎌</div>
+            <div class="tc-name">Anime Opening Sequence</div>
+            <div class="tc-desc">Title + theme → AI writes lyrics → Generate anime-style key frames → Animate with motion effects → Generate J-pop BGM via Suno AI → Add character voice narration → Export 90-second anime opening.</div>
+            <div class="tc-tags"><span class="tc-tag">SDXL Anime</span><span class="tc-tag">AnimateDiff</span><span class="tc-tag">Suno AI BGM</span><span class="tc-tag">TTS Multi-lang</span></div>
+            <div class="tc-footer"><span>9 nodes · Popular</span><button class="tc-use-btn" onclick="useTpl('Anime Opening')">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(167,139,250,.2)">
+            <div class="tc-icon" style="background:rgba(167,139,250,.12);font-size:26px">🧒</div>
+            <div class="tc-name">Children&apos;s Story Animation</div>
+            <div class="tc-desc">Story topic → AI writes child-friendly script → Generate cute Pixar-style character art → Animate scenes → Add child voice narration in any language → Add playful SFX → Export multilingual learning video.</div>
+            <div class="tc-tags"><span class="tc-tag">Pixar Style GPU</span><span class="tc-tag">AnimateDiff</span><span class="tc-tag">Child Voice TTS</span><span class="tc-tag">15+ Languages</span></div>
+            <div class="tc-footer"><span>10 nodes</span><button class="tc-use-btn" onclick="useTpl('Children Story')">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(167,139,250,.2)">
+            <div class="tc-icon" style="background:rgba(167,139,250,.12);font-size:26px">🏃</div>
+            <div class="tc-name">Action Scene Pack</div>
+            <div class="tc-desc">Scene description → Generate action frames in chosen anime/cartoon style → Animate with speed lines + motion blur → Auto-add impact SFX (punch, explosion, whoosh) → BGM battle theme → MP4 export.</div>
+            <div class="tc-tags"><span class="tc-tag">Anime Style</span><span class="tc-tag">AnimateDiff</span><span class="tc-tag">Impact SFX</span><span class="tc-tag">Battle BGM</span></div>
+            <div class="tc-footer"><span>8 nodes</span><button class="tc-use-btn" onclick="useTpl('Action Scene')">Use Template</button></div>
+          </div>
+
+          <!-- ══ SOUND DESIGN TEMPLATES ══ -->
+          <div class="tpl-card" style="border-color:rgba(6,182,212,.25)">
+            <div class="tc-icon" style="background:rgba(6,182,212,.12);font-size:26px">🎵</div>
+            <div class="tc-name">Full Audio Production Pipeline</div>
+            <div class="tc-desc">Video upload → AI analyzes scenes → Auto-generate matching SFX for each action → Generate BGM score → Add voice narration in selected language → Mix all audio tracks → Export final video with professional audio.</div>
+            <div class="tc-tags"><span class="tc-tag">Scene Analysis</span><span class="tc-tag">ElevenLabs SFX</span><span class="tc-tag">Suno BGM</span><span class="tc-tag">Voice TTS</span><span class="tc-tag">FFmpeg Mix</span></div>
+            <div class="tc-footer"><span>11 nodes · 🔊 Featured</span><button class="tc-use-btn" onclick="useTpl('Audio Production')" style="background:linear-gradient(135deg,#0891b2,#06b6d4)">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(6,182,212,.2)">
+            <div class="tc-icon" style="background:rgba(6,182,212,.12);font-size:26px">🎙</div>
+            <div class="tc-name">Multilingual Voiceover Studio</div>
+            <div class="tc-desc">Upload script or video → AI translates to selected languages (up to 12) → Generate natural TTS voiceover per language → Time-sync to video → Export separate audio tracks or dubbed video files.</div>
+            <div class="tc-tags"><span class="tc-tag">GPT-4o Translate</span><span class="tc-tag">TTS 20+ voices</span><span class="tc-tag">12 Languages</span><span class="tc-tag">Audio Sync</span></div>
+            <div class="tc-footer"><span>8 nodes</span><button class="tc-use-btn" onclick="useTpl('Multilingual Voiceover')">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(6,182,212,.2)">
+            <div class="tc-icon" style="background:rgba(6,182,212,.12);font-size:26px">🎭</div>
+            <div class="tc-name">Character Voice Pack Generator</div>
+            <div class="tc-desc">Character descriptions → AI generates personality & dialogue samples → Clone or synthesize unique voice per character → Generate test dialogues in multiple languages → Export voice asset pack for game or film.</div>
+            <div class="tc-tags"><span class="tc-tag">Voice Clone</span><span class="tc-tag">ElevenLabs</span><span class="tc-tag">Multi-character</span><span class="tc-tag">Game Ready</span></div>
+            <div class="tc-footer"><span>7 nodes</span><button class="tc-use-btn" onclick="useTpl('Character Voices')">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(6,182,212,.2)">
+            <div class="tc-icon" style="background:rgba(6,182,212,.12);font-size:26px">💥</div>
+            <div class="tc-name">SFX Library Auto-Generator</div>
+            <div class="tc-desc">Category list input → AI generates descriptions for 50+ custom sound effects → Batch-generate via AudioCraft or ElevenLabs → Auto-tag and organize → Export as labeled ZIP archive ready for production.</div>
+            <div class="tc-tags"><span class="tc-tag">Batch SFX</span><span class="tc-tag">AudioCraft</span><span class="tc-tag">ElevenLabs</span><span class="tc-tag">Auto-tag</span></div>
+            <div class="tc-footer"><span>6 nodes</span><button class="tc-use-btn" onclick="useTpl('SFX Library')">Use Template</button></div>
+          </div>
+
+          <!-- ══ MULTILINGUAL CONTENT TEMPLATES ══ -->
+          <div class="tpl-card" style="border-color:rgba(236,72,153,.2)">
+            <div class="tc-icon" style="background:rgba(236,72,153,.1);font-size:26px">🌍</div>
+            <div class="tc-name">Global Content Localizer</div>
+            <div class="tc-desc">Any content (text, image, video) → AI translates text to 10 languages → Adapts tone per region/culture → Re-generates images with localized visual context → Produces region-specific TTS audio → Auto-publishes to CDN.</div>
+            <div class="tc-tags"><span class="tc-tag">10 Languages</span><span class="tc-tag">Cultural Adapt</span><span class="tc-tag">Regional Image Gen</span><span class="tc-tag">Multi-TTS</span></div>
+            <div class="tc-footer"><span>14 nodes · Enterprise</span><button class="tc-use-btn" onclick="useTpl('Global Localizer')">Use Template</button></div>
+          </div>
+
+          <div class="tpl-card" style="border-color:rgba(236,72,153,.2)">
+            <div class="tc-icon" style="background:rgba(236,72,153,.1);font-size:26px">📱</div>
+            <div class="tc-name">Multilingual Social Media Blast</div>
+            <div class="tc-desc">One product/event description → AI writes platform-optimized captions for Instagram, TikTok, Twitter, LinkedIn in 8 languages → Matching visuals per platform size → Schedule and post to all channels simultaneously.</div>
+            <div class="tc-tags"><span class="tc-tag">8 Languages</span><span class="tc-tag">Platform Sizes</span><span class="tc-tag">Flux.1 Visual</span><span class="tc-tag">Multi-platform Post</span></div>
+            <div class="tc-footer"><span>11 nodes · Popular</span><button class="tc-use-btn" onclick="useTpl('Multilingual Social')">Use Template</button></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RUNS HISTORY PAGE ══════════════════════════════════ -->
+    <div id="page-runs" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--b);background:var(--s1);display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:var(--t2)">Run History</span>
+        <select style="padding:5px 10px;border-radius:7px;background:var(--s2);border:1px solid var(--b);color:var(--t2);font-family:var(--f);font-size:11px;outline:none;margin-left:auto">
+          <option>All workflows</option><option>Social Content Factory</option>
+        </select>
+        <select style="padding:5px 10px;border-radius:7px;background:var(--s2);border:1px solid var(--b);color:var(--t2);font-family:var(--f);font-size:11px;outline:none">
+          <option>Last 7 days</option><option>Last 30 days</option>
+        </select>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:14px">
+        <div class="run-row">
+          <div class="rr-icon" style="background:rgba(16,185,129,.12)">⚡</div>
+          <div style="flex:1"><div class="rr-name">Social Content Factory</div><div class="rr-meta">7 nodes · 22.4s · Scheduled · Today 08:00:01</div></div>
+          <span class="pill green">Success</span>
+        </div>
+        <div class="run-row">
+          <div class="rr-icon" style="background:rgba(245,158,11,.12)">🎬</div>
+          <div style="flex:1"><div class="rr-name">Talking Product Video</div><div class="rr-meta">10 nodes · 4m 12s · Manual · Today 06:23</div></div>
+          <span class="pill green">Success</span>
+        </div>
+        <div class="run-row">
+          <div class="rr-icon" style="background:rgba(99,102,241,.12)">✍️</div>
+          <div style="flex:1"><div class="rr-name">Blog Post Factory</div><div class="rr-meta">5 nodes · 8.1s · Webhook · Yesterday 14:30</div></div>
+          <span class="pill green">Success</span>
+        </div>
+        <div class="run-row">
+          <div class="rr-icon" style="background:rgba(244,63,94,.1)">❌</div>
+          <div style="flex:1"><div class="rr-name">E-commerce Image Pack</div><div class="rr-meta">6 nodes · Failed at node 4 · Yesterday 11:02</div></div>
+          <span class="pill red">Failed</span>
+        </div>
+        <div class="run-row">
+          <div class="rr-icon" style="background:rgba(16,185,129,.12)">⚡</div>
+          <div style="flex:1"><div class="rr-name">Social Content Factory</div><div class="rr-meta">7 nodes · 19.8s · Scheduled · 2 days ago 08:00</div></div>
+          <span class="pill green">Success</span>
+        </div>
+        <div class="run-row">
+          <div class="rr-icon" style="background:rgba(6,182,212,.12)">🌐</div>
+          <div style="flex:1"><div class="rr-name">Customer Email Localizer</div><div class="rr-meta">8 nodes · 4.2s · API trigger · 2 days ago 15:44</div></div>
+          <span class="pill green">Success</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CONNECTIONS PAGE ═══════════════════════════════════ -->
+    <div id="page-connections" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--b);background:var(--s1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:var(--t2)">Endpoint Connections</span>
+        <button class="btn-primary" onclick="">＋ Add Connection</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;align-content:start">
+
+        <div class="conn-card active open">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(16,185,129,.12)">🤖</div>
+            <div class="cc-info"><div class="cc-name">OpenAI API</div><div class="cc-sub">REST · GPT-4o, o1, DALL-E 3, TTS, Whisper</div></div>
+            <div class="cc-dot ok"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-dl">Endpoint</span><span class="cc-dv">api.openai.com/v1</span></div>
+            <div class="cc-detail"><span class="cc-dl">Models available</span><span class="cc-dv">gpt-4o, o1, dall-e-3, tts-1, whisper</span></div>
+            <div class="cc-detail"><span class="cc-dl">Tokens today</span><span class="cc-dv" style="color:var(--p2)">142,840</span></div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="btn-ghost" style="font-size:11px;padding:5px 12px">⚙ Edit</button>
+              <button class="btn-ghost" style="font-size:11px;padding:5px 12px;color:#fb7185;border-color:rgba(244,63,94,.3)">Disconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="conn-card active">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(245,158,11,.12)">🔮</div>
+            <div class="cc-info"><div class="cc-name">Anthropic Claude</div><div class="cc-sub">REST · Claude 3.5 Sonnet / Haiku</div></div>
+            <div class="cc-dot ok"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-dl">Model</span><span class="cc-dv">claude-3-5-sonnet-20241022</span></div>
+            <button class="btn-ghost" style="font-size:11px;padding:5px 12px;margin-top:6px">⚙ Edit</button>
+          </div>
+        </div>
+
+        <div class="conn-card active">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(99,102,241,.12)">💎</div>
+            <div class="cc-info"><div class="cc-name">Google Gemini</div><div class="cc-sub">REST · Gemini 1.5 Pro / Flash</div></div>
+            <div class="cc-dot ok"></div>
+          </div>
+          <div class="cc-body">
+            <button class="btn-ghost" style="font-size:11px;padding:5px 12px">⚙ Edit</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(167,139,250,.12)">⚡</div>
+            <div class="cc-info"><div class="cc-name">GPU Studio (Local)</div><div class="cc-sub">Internal WebSocket · Flux.1, Video Gen, Animate</div></div>
+            <div class="cc-dot ok"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-dl">Endpoint</span><span class="cc-dv">ws://localhost:8090/ws</span></div>
+            <div class="cc-detail"><span class="cc-dl">Note</span><span class="cc-dv" style="color:var(--t2)">AXTO GPU Studio — not Orchestra</span></div>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(6,182,212,.12)">🌐</div>
+            <div class="cc-info"><div class="cc-name">ElevenLabs TTS</div><div class="cc-sub">REST API · High-quality voice synthesis</div></div>
+            <div class="cc-dot ok"></div>
+          </div>
+          <div class="cc-body">
+            <button class="btn-ghost" style="font-size:11px;padding:5px 12px">⚙ Edit</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(244,63,94,.08)">🦙</div>
+            <div class="cc-info"><div class="cc-name">Ollama (Local)</div><div class="cc-sub">REST · localhost:11434</div></div>
+            <div class="cc-dot warn"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-dl">Status</span><span class="cc-dv" style="color:#fbbf24">Not running</span></div>
+            <button class="btn-primary" style="margin-top:6px;font-size:11px;padding:5px 12px">Start Ollama</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(139,92,246,.12)">⚡</div>
+            <div class="cc-info"><div class="cc-name">Orchestra Worker</div><div class="cc-sub">WebSocket · Optional GPU backend</div></div>
+            <div class="cc-dot off"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-dl">Note</span><span class="cc-dv" style="color:var(--t2)">One of many possible GPU endpoints</span></div>
+            <button class="btn-ghost" style="font-size:11px;padding:5px 12px;margin-top:6px">Configure</button>
+          </div>
+        </div>
+
+        <div class="conn-card">
+          <div class="cc-head" onclick="toggleConn(this)">
+            <div class="cc-icon" style="background:rgba(99,102,241,.1)">🔗</div>
+            <div class="cc-info"><div class="cc-name">Custom REST Endpoint</div><div class="cc-sub">Any OpenAI-compatible API</div></div>
+            <div class="cc-dot off"></div>
+          </div>
+          <div class="cc-body">
+            <div class="cc-detail"><span class="cc-dl">Endpoint</span><span class="cc-dv">Not configured</span></div>
+            <button class="btn-ghost" style="font-size:11px;padding:5px 12px;margin-top:6px">Configure</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ SCHEDULER PAGE ════════════════════════════════════ -->
+    <div id="page-scheduler" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--b);background:var(--s1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <span style="font-size:13px;font-weight:700;color:var(--t2)">Scheduled Workflows</span>
+        <button class="btn-primary" onclick="">＋ Add Schedule</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px">
+        <div class="sched-row">
+          <div class="sr-icon">⚡</div>
+          <div class="sr-info"><div class="sr-name">Social Content Factory</div><div class="sr-meta">Every day at 08:00 WIB (Asia/Jakarta) · Next: Tomorrow 08:00</div></div>
+          <span class="pill green">Active</span>
+          <button class="btn-ghost" style="font-size:11px;padding:4px 10px">⚙</button>
+        </div>
+        <div class="sched-row">
+          <div class="sr-icon">✍️</div>
+          <div class="sr-info"><div class="sr-name">Blog Post Factory</div><div class="sr-meta">Every Monday at 07:00 WIB · Next: Mon 07:00</div></div>
+          <span class="pill green">Active</span>
+          <button class="btn-ghost" style="font-size:11px;padding:4px 10px">⚙</button>
+        </div>
+        <div class="sched-row">
+          <div class="sr-icon">📊</div>
+          <div class="sr-info"><div class="sr-name">Weekly Report Generator</div><div class="sr-meta">Every Friday at 17:00 WIB · Next: Fri 17:00</div></div>
+          <span class="pill green">Active</span>
+          <button class="btn-ghost" style="font-size:11px;padding:4px 10px">⚙</button>
+        </div>
+        <div class="sched-row" style="opacity:.5">
+          <div class="sr-icon">🛒</div>
+          <div class="sr-info"><div class="sr-name">E-commerce Image Pack</div><div class="sr-meta">Webhook-only — no schedule set</div></div>
+          <span class="pill gray">Webhook</span>
+          <button class="btn-ghost" style="font-size:11px;padding:4px 10px">+ Schedule</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main -->
+</div><!-- end shell -->
+
+<script>
+// ── Page navigation ───────────────────────────────────────────
+const PAGES = ['workflows','templates','runs','connections','scheduler'];
+function showPage(id, btn){
+  PAGES.forEach(p => {
+    const el = document.getElementById('page-'+p);
+    if(el) el.style.display = (p===id) ? 'flex' : 'none';
+    if(el && p!==id) el.classList.add('hidden');
+    if(el && p===id) el.classList.remove('hidden');
+  });
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+
+  // Show/hide toolbar buttons only on workflows
+  const isWF = id==='workflows';
+  ['addNodeBtn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display = isWF ? '' : 'none';
+  });
+}
+
+// ── Canvas interactions ───────────────────────────────────────
+function setMode(m, btn){
+  document.querySelectorAll('.ctb-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function selectNode(el, type){
+  document.querySelectorAll('.node').forEach(n=>n.classList.remove('selected'));
+  el.classList.add('selected');
+  const titles = {
+    trigger:'Trigger Node — Scheduler / Webhook',
+    http:'HTTP Request — Fetch Product Data',
+    ai:'AI Text — Write Captions',
+    image:'Image Gen — Generate Product Images',
+    voice:'Voice TTS — Generate Audio',
+    merge:'Merge — Combine Outputs',
+    output:'Publish — Post to Social Channels',
+    storage:'Storage — Archive to R2/S3',
+  };
+  document.getElementById('rpTitle').textContent = titles[type] || 'Node Configuration';
+}
+
+// ── Palette ───────────────────────────────────────────────────
+function togglePalette(){
+  const p = document.getElementById('nodePalette');
+  p.classList.toggle('hidden');
+}
+function addNodeFromPalette(type){
+  document.getElementById('nodePalette').classList.add('hidden');
+  // In production: drop a new node onto canvas
+    const names = {ai:'AI Text',image:'Image Gen',video:'Video Gen',photoanim:'Photo Animate',imageanim:'Image Animate',voice:'Voice TTS/STT',sfx:'Sound FX',music:'Music Gen',cartoon:'Cartoon Render',voiceclone:'Voice Clone',audiomix:'Audio Mixer',translate:'Translate',http:'HTTP Request',ws:'WebSocket',code:'Code Execute',condition:'Condition',loop:'Loop',trigger:'Trigger',storage:'Storage'};;
+  const canvas=document.getElementById('wf-canvas');
+  if(!canvas){showHybridToast('Open a workflow first','error');return;}
+  const colors={ai:'#6366f1',image:'#f59e0b',video:'#f97316',photoanim:'#f97316',imageanim:'#f97316',
+    cartoon:'#a78bfa',voice:'#a78bfa',voiceclone:'#f9a8d4',sfx:'#22d3ee',music:'#22d3ee',
+    audiomix:'#22d3ee',translate:'#06b6d4',http:'#06b6d4',condition:'#8b5cf6',
+    loop:'#8b5cf6',trigger:'#10b981',storage:'#64748b',code:'#10b981'};
+  const icons={ai:'🤖',image:'🖼',video:'🎬',photoanim:'👤',imageanim:'✨',cartoon:'🎬',
+    voice:'🎙',voiceclone:'🎤',sfx:'💥',music:'🎵',audiomix:'🎚',translate:'🌐',
+    http:'🌐',condition:'❓',loop:'🔄',trigger:'⚡',storage:'💾',code:'⌨'};
+  const nodeId='node_'+Math.random().toString(36).slice(2,8);
+  const x=80+Math.floor(Math.random()*200);
+  const y=80+Math.floor(Math.random()*200);
+  const color=colors[type]||'#64748b';
+  const icon=icons[type]||'⚙';
+  const label=names[type]||type;
+  // Add to canvas as a draggable node element
+  const node=document.createElement('div');
+  node.id=nodeId;
+  node.className='node';
+  node.style.cssText=`left:${x}px;top:${y}px`;
+  node.setAttribute('draggable','true');
+  node.onclick=function(){selectNode(this,type);};
+  node.innerHTML=`<div class="node-header"><span class="node-icon">${icon}</span><div class="node-type" style="color:${color}">${label}</div></div><div class="node-body">${label} node</div>`;
+  document.getElementById('nodeCanvas').appendChild(node);
+  showHybridToast(label+' node added to canvas');
+}
+
+// ── Run panel ─────────────────────────────────────────────────
+let runOpen = false;
+function toggleRunPanel(){
+  runOpen = !runOpen;
+  document.getElementById('runPanel').classList.toggle('open', runOpen);
+}
+
+// Animate the audio progress bar
+let fillPct = 68;
+setInterval(()=>{
+  const fill = document.getElementById('audioFill');
+  if(!fill || fillPct >= 100) return;
+  fillPct = Math.min(fillPct + (Math.random() * 2), 100);
+  fill.style.width = fillPct + '%';
+  if(fillPct >= 100) fill.parentElement.parentElement.querySelector('.step-status').textContent = '✓ Complete (8.7s)';
+}, 500);
+
+// ── Connections ───────────────────────────────────────────────
+function toggleConn(el){
+  el.closest('.conn-card').classList.toggle('open');
+}
+
+// ── Templates ─────────────────────────────────────────────────
+function filterTpl(btn){
+  document.querySelectorAll('.tpl-bar .ctb-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function useTpl(name){
+  if(confirm('Load template: "'+name+'"?\n\nThis will create a new workflow with pre-configured nodes.')){
+    showPage('workflows', document.querySelector('.tab'));
+    document.getElementById('wfNameInput').value = name;
+    document.querySelector('.tab').classList.add('on');
+  }
+}
+
+// ── Sidebar ───────────────────────────────────────────────────
+function loadWF(el, name, meta){
+  document.querySelectorAll('.wf-item').forEach(i=>i.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('wfNameInput').value = name;
+}
+function newWorkflow(){
+  const name = prompt('Workflow name:','New Workflow');
+  if(name){
+    document.getElementById('wfNameInput').value = name;
+  }
+}
+function autoLayout(){
+  // In production: auto-arrange nodes using a DAG layout algorithm
+}
+function runWorkflow(){
+  toggleRunPanel();
+  document.getElementById('wfStatus').textContent = '⟳ Running…';
+  setTimeout(()=>{ document.getElementById('wfStatus').textContent = '● Last run: just now — Success'; }, 4000);
+}
+
+function showHybridToast(msg,type='success'){
+  let el=document.getElementById('hybrid-toast');
+  if(!el){
+    el=document.createElement('div');el.id='hybrid-toast';
+    el.style.cssText='position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;backdrop-filter:blur(12px);box-shadow:0 8px 32px rgba(0,0,0,.5)';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;
+  el.style.background=type==='error'?'rgba(239,68,68,.15)':'rgba(16,185,129,.15)';
+  el.style.border=type==='error'?'1px solid rgba(239,68,68,.3)':'1px solid rgba(16,185,129,.3)';
+  el.style.color=type==='error'?'#f87171':'#34d399';
+  el.style.display='block';clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',3000);
+}
+
+// Load workflows and connections from API on boot
+async function bootHybrid(){
+  try{
+    const r=await fetch('/api/status');
+    if(r.ok){
+      const d=await r.json();
+      const lic=d.license||{};
+      const licEl=document.querySelector('.brand-tag');
+      if(licEl&&lic.plan) licEl.textContent=lic.plan.toUpperCase();
+    }
+  }catch(e){console.warn('Boot:',e);}
+  try{
+    const r=await fetch('/api/workflows',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'list'})});
+    if(r.ok){
+      const d=await r.json();
+      const wfs=d.workflows||[];
+      // Populate sidebar
+      const sb=document.querySelector('.sb-scroll');
+      if(sb&&wfs.length){
+        const existing=sb.querySelectorAll('.wf-item');
+        existing.forEach(e=>e.remove());
+        const label=sb.querySelector('.sb-label');
+        wfs.forEach(wf=>{
+          const el=document.createElement('div');
+          el.className='wf-item';
+          el.onclick=function(){loadWF(this,wf.title,wf.run_count+' runs');};
+          el.innerHTML=`<div class="wfi-icon">⚡</div><div class="wfi-info"><div class="wfi-name">${escHtml(wf.title)}</div><div class="wfi-meta">${wf.run_count||0} runs · ${wf.category||'general'}</div></div>`;
+          if(label&&label.nextSibling) sb.insertBefore(el,label.nextSibling);
+          else sb.appendChild(el);
+        });
+      }
+    }
+  }catch(e){console.warn('Workflows:',e);}
+}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+bootHybrid();
+</script>
+</body>
+</html>

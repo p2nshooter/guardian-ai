@@ -1,0 +1,377 @@
+{
+  "suite": "full-lifecycle",
+  "passed": 92,
+  "failed": 0,
+  "total": 92,
+  "timestamp": "2026-06-26T05:32:51.245Z",
+  "results": [
+    {
+      "name": "checkout blocks Coming Soon (vault)",
+      "ok": true
+    },
+    {
+      "name": "checkout blocks Coming Soon (soc)",
+      "ok": true
+    },
+    {
+      "name": "checkout allows for-sale (legal)",
+      "ok": true
+    },
+    {
+      "name": "checkout allows for-sale (guardian)",
+      "ok": true
+    },
+    {
+      "name": "checkout rejects missing email",
+      "ok": true
+    },
+    {
+      "name": "checkout rejects unknown pkg",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: lite",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: pro",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: shield",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: aegis",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: orchestra_core",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: orchestra_scale",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: orchestra_unlimited",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: antivirus_starter",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: antivirus_professional",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: antivirus_enterprise",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: studio_starter",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: studio_professional",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: studio_enterprise",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: legal_starter",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: legal_professional",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: legal_business",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: legal_enterprise",
+      "ok": true
+    },
+    {
+      "name": "checkout ok: bundle_starter",
+      "ok": true
+    },
+    {
+      "name": "first webhook issues a license",
+      "ok": true
+    },
+    {
+      "name": "duplicate webhook is idempotent (still 1 license)",
+      "ok": true
+    },
+    {
+      "name": "issue lite: key prefix GUARD",
+      "ok": true
+    },
+    {
+      "name": "issue lite: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue lite: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue pro: key prefix GUARD",
+      "ok": true
+    },
+    {
+      "name": "issue pro: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue pro: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue shield: key prefix GUARD",
+      "ok": true
+    },
+    {
+      "name": "issue shield: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue shield: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue aegis: key prefix GUARD",
+      "ok": true
+    },
+    {
+      "name": "issue aegis: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue aegis: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_core: key prefix ORCH",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_core: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_core: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_scale: key prefix ORCH",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_scale: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_scale: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_unlimited: key prefix ORCH",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_unlimited: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue orchestra_unlimited: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_starter: key prefix AV",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_starter: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_starter: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_professional: key prefix AV",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_professional: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_professional: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_enterprise: key prefix AV",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_enterprise: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue antivirus_enterprise: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue studio_starter: key prefix STUD",
+      "ok": true
+    },
+    {
+      "name": "issue studio_starter: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue studio_starter: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue studio_professional: key prefix STUD",
+      "ok": true
+    },
+    {
+      "name": "issue studio_professional: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue studio_professional: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue studio_enterprise: key prefix STUD",
+      "ok": true
+    },
+    {
+      "name": "issue studio_enterprise: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue studio_enterprise: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue legal_starter: key prefix LEGL",
+      "ok": true
+    },
+    {
+      "name": "issue legal_starter: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue legal_starter: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue legal_professional: key prefix LEGL",
+      "ok": true
+    },
+    {
+      "name": "issue legal_professional: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue legal_professional: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue legal_business: key prefix LEGL",
+      "ok": true
+    },
+    {
+      "name": "issue legal_business: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue legal_business: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "issue legal_enterprise: key prefix LEGL",
+      "ok": true
+    },
+    {
+      "name": "issue legal_enterprise: active+enabled",
+      "ok": true
+    },
+    {
+      "name": "issue legal_enterprise: ~365d expiry",
+      "ok": true
+    },
+    {
+      "name": "legal trial = 7 days",
+      "ok": true
+    },
+    {
+      "name": "guardian trial = 3 days",
+      "ok": true
+    },
+    {
+      "name": "manual activation: no user row created",
+      "ok": true
+    },
+    {
+      "name": "manual activation: flagged + active",
+      "ok": true
+    },
+    {
+      "name": "valid at install (bound machine, in-window)",
+      "ok": true
+    },
+    {
+      "name": "blocked when machine mismatch (license sharing)",
+      "ok": true
+    },
+    {
+      "name": "blocked when key prefix wrong for product",
+      "ok": true
+    },
+    {
+      "name": "OFF toggle blocks validation",
+      "ok": true
+    },
+    {
+      "name": "node over limit blocked",
+      "ok": true
+    },
+    {
+      "name": "unlimited nodes (-1) allowed",
+      "ok": true
+    },
+    {
+      "name": "valid one day before expiry",
+      "ok": true
+    },
+    {
+      "name": "expiry cron flips 1 license to expired",
+      "ok": true
+    },
+    {
+      "name": "post-expiry validation blocked",
+      "ok": true
+    },
+    {
+      "name": "validation also blocks purely by date even if status stale",
+      "ok": true
+    },
+    {
+      "name": "offline grace 4h is positive + bounded",
+      "ok": true
+    }
+  ]
+}

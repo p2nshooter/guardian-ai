@@ -1,0 +1,92 @@
+<!-- ==============================================================================
+     Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+     Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+     Author & Architect: Yusron Efendi <hallo@axto.io>
+     Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+     ==============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AXTO Edge — Support</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#030a14;--surf:#060f1e;--surf2:#0a1628;--border:#142030;--border2:#1c2e44;--cyan:#22d3ee;--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--mono:'JetBrains Mono',monospace}
+body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;min-height:100vh}
+header{background:var(--surf);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;gap:12px}
+.logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#0891b2,#0284c7);display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-name{font-size:15px;font-weight:800}.logo-name span{color:#22d3ee}
+main{max-width:900px;margin:0 auto;padding:32px 24px}
+h1{font-size:22px;font-weight:800;margin-bottom:6px}
+.sub{font-size:14px;color:var(--text2);margin-bottom:28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:20px;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-icon{font-size:24px;margin-bottom:10px}
+.card-title{font-size:14px;font-weight:700;margin-bottom:6px}
+.card-text{font-size:12px;color:var(--text2);line-height:1.6}
+.endpoint-section{margin-bottom:24px}
+.ep-title{font-size:13px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.ep{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px}
+.method{font-size:11px;font-weight:800;padding:3px 8px;border-radius:5px;flex-shrink:0;font-family:var(--mono)}
+.method-get{background:rgba(16,185,129,.15);color:#34d399}
+.method-post{background:rgba(8,145,178,.15);color:#22d3ee}
+.method-del{background:rgba(239,68,68,.15);color:#f87171}
+.method-patch{background:rgba(245,158,11,.15);color:#fbbf24}
+.ep-path{font-family:var(--mono);font-size:12px;color:#22d3ee;font-weight:500}
+.ep-desc{font-size:12px;color:var(--text2);margin-top:3px}
+a.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;transition:all .15s;background:linear-gradient(135deg,#0891b2,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(8,145,178,.3)}
+a.btn:hover{filter:brightness(1.1)}
+a.btn-ghost{background:var(--surf2);border:1px solid var(--border2);color:var(--text)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-icon">🔀</div>
+  <div class="logo-name">AXTO <span>Edge</span> — Support &amp; API Reference</div>
+</header>
+<main>
+  <h1>Developer Reference</h1>
+  <p class="sub">AXTO Edge — AI Gateway, BYOK Management &amp; Multi-tenant API Platform</p>
+
+  <div class="grid">
+    <div class="card"><div class="card-icon">📡</div><div class="card-title">Proxy Endpoints</div><div class="card-text">Drop-in replacement for OpenAI, Anthropic, and other AI providers. Point your SDK to Edge and it handles routing, rate limiting, and billing automatically.</div></div>
+    <div class="card"><div class="card-icon">👥</div><div class="card-title">Customer Management</div><div class="card-text">Create customers, issue API keys, set plans, and track usage per customer. Full lifecycle management via REST API or the dashboard.</div></div>
+    <div class="card"><div class="card-icon">💎</div><div class="card-title">Billing Plans</div><div class="card-text">Define tiered plans with RPM limits, token quotas, model access lists, and markup percentages. Auto-generate invoices monthly.</div></div>
+    <div class="card"><div class="card-icon">🛡</div><div class="card-title">Content Firewall</div><div class="card-text">Block prompt injections, NSFW content, and policy violations before they reach your AI provider. Configurable per plan.</div></div>
+  </div>
+
+  <div class="endpoint-section">
+    <div class="ep-title">🤖 AI Proxy (Customer-Facing)</div>
+    <div class="ep"><span class="method method-post">POST</span><div><div class="ep-path">/v1/chat/completions</div><div class="ep-desc">OpenAI-compatible chat completions. Pass customer's Edge API key in X-API-Key or Authorization header.</div></div></div>
+    <div class="ep"><span class="method method-post">POST</span><div><div class="ep-path">/v1/messages</div><div class="ep-desc">Anthropic-compatible messages endpoint.</div></div></div>
+    <div class="ep"><span class="method method-get">GET</span><div><div class="ep-path">/v1/models</div><div class="ep-desc">List models available for the customer's plan.</div></div></div>
+  </div>
+
+  <div class="endpoint-section">
+    <div class="ep-title">👥 Customer &amp; Key Management (Admin)</div>
+    <div class="ep"><span class="method method-get">GET</span><div><div class="ep-path">/edge/customers</div><div class="ep-desc">List all customers with usage stats</div></div></div>
+    <div class="ep"><span class="method method-post">POST</span><div><div class="ep-path">/edge/customers</div><div class="ep-desc">Create new customer</div></div></div>
+    <div class="ep"><span class="method method-post">POST</span><div><div class="ep-path">/edge/keys</div><div class="ep-desc">Issue API key for a customer</div></div></div>
+    <div class="ep"><span class="method method-del">DEL</span><div><div class="ep-path">/edge/keys/{key_id}</div><div class="ep-desc">Revoke an API key instantly</div></div></div>
+    <div class="ep"><span class="method method-post">POST</span><div><div class="ep-path">/edge/customers/{id}/suspend</div><div class="ep-desc">Suspend a customer account</div></div></div>
+  </div>
+
+  <div class="endpoint-section">
+    <div class="ep-title">📈 Usage &amp; Billing (Admin)</div>
+    <div class="ep"><span class="method method-get">GET</span><div><div class="ep-path">/edge/usage</div><div class="ep-desc">Aggregated usage stats (requests, tokens, cost, revenue)</div></div></div>
+    <div class="ep"><span class="method method-get">GET</span><div><div class="ep-path">/edge/usage/top-customers</div><div class="ep-desc">Top customers by request volume or revenue</div></div></div>
+    <div class="ep"><span class="method method-get">GET</span><div><div class="ep-path">/edge/billing/revenue</div><div class="ep-desc">Revenue summary, margins, MRR</div></div></div>
+    <div class="ep"><span class="method method-post">POST</span><div><div class="ep-path">/edge/billing/invoices/generate</div><div class="ep-desc">Generate invoices for current billing period</div></div></div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+    <a href="/" class="btn">← Dashboard</a>
+    <a href="https://axto.io/guide" target="_blank" class="btn btn-ghost">📚 Full Docs</a>
+    <a href="mailto:hallo@axto.io" class="btn btn-ghost">✉ Support</a>
+  </div>
+</main>
+</body>
+</html>

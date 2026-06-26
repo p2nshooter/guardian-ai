@@ -1,3 +1,10 @@
+/* ==============================================================================
+ * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+ * ==============================================================================
+ */
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
@@ -46,8 +53,8 @@ export async function POST(req: NextRequest) {
 
   const { action } = body;
 
-  // ── Magic Link ─────────────────────────────────────────────────────────
-  if (action === "magic_link") {
+  // ── Magic Link (admin) ─────────────────────────────────────────────────
+  if (action === "magic_link" || action === "client_magic_link") {
     const email = (body.email || "").trim().toLowerCase();
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
