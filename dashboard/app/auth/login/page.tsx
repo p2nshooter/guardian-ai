@@ -228,14 +228,14 @@ function LoginInner() {
 
           <div>
             <label style={{ display: "block", color: "#475569", fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.4px" }}>Email Address *</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" autoComplete="email" required />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" autoComplete={mode === "admin" ? "off" : "email"} required />
           </div>
 
           {showPassword && (
             <div>
               <label style={{ display: "block", color: "#475569", fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.4px" }}>Password *</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder={mode === "register" ? "Min. 8 characters" : "Your password"} autoComplete={mode === "register" ? "new-password" : "current-password"} required />
+                placeholder={mode === "register" ? "Min. 8 characters" : "Your password"} autoComplete={mode === "admin" ? "off" : (mode === "register" ? "new-password" : "current-password")} required />
             </div>
           )}
 
