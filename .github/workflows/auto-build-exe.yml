@@ -1,0 +1,95 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 AXTO (axto.io). All rights reserved.
+# Platform: AXTO (axto.io) — Sovereign AI Infrastructure.
+# ==============================================================================
+# Builds standalone Windows .exe binaries (PyInstaller) for the shipping products
+# and uploads them to Cloudflare R2 at builds/latest/exe/<product>-windows.exe,
+# which is exactly where the client portal downloads them from.
+#
+# Only products with a proven EXE setup are built (the others are "Coming Soon"
+# and gated off in the portal anyway).
+#
+# Trigger: manual (workflow_dispatch) or when their source changes.
+# Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY  (R2 S3 keys)
+name: Build Client EXEs → R2
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "engine/**"
+      - "orchestra/**"
+      - "antivirus/**"
+      - "vault/**"
+      - ".github/workflows/auto-build-exe.yml"
+
+concurrency:
+  group: build-exe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exe:
+    name: "🪟 ${{ matrix.product }}"
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { product: guardian-core,        src: engine }
+          - { product: guardian-node,        src: engine }
+          - { product: guardian-antivirus,   src: antivirus }
+          - { product: orchestra-core,       src: orchestra }
+          - { product: orchestra-worker-cpu, src: orchestra }
+          - { product: vault-core,           src: vault }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pyinstaller==6.3.0" "awscli>=1.32"
+          if [ -f "${{ matrix.src }}/requirements.txt" ]; then
+            pip install -r "${{ matrix.src }}/requirements.txt" || echo "⚠️ some deps skipped"
+          fi
+
+      - name: Build EXE (PyInstaller)
+        shell: bash
+        env:
+          PRODUCT: ${{ matrix.product }}
+          SRC: ${{ matrix.src }}
+        run: |
+          EXE_NAME="axto-${PRODUCT}"
+          # Bundle any UI html assets that actually exist for this product.
+          ADD=()
+          for f in activation.html support_ui.html dashboard.html; do
+            [ -f "${SRC}/src/${f}" ] && ADD+=(--add-data "${SRC}/src/${f};src")
+          done
+          pyinstaller --onefile --name "${EXE_NAME}" "${ADD[@]}" \
+            --collect-all fastapi --collect-all pydantic --collect-all structlog \
+            --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops \
+            --hidden-import=uvicorn.loops.auto --hidden-import=uvicorn.protocols \
+            --hidden-import=uvicorn.protocols.http --hidden-import=uvicorn.protocols.http.auto \
+            --hidden-import=uvicorn.lifespan --hidden-import=uvicorn.lifespan.on \
+            --icon NONE "${SRC}/src/__main__.py"
+          ls -lh "dist/${EXE_NAME}.exe"
+
+      - name: Upload EXE to R2
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
+          R2_BUCKET:             axto-builds
+          PRODUCT:               ${{ matrix.product }}
+        run: |
+          aws s3 cp "dist/axto-${PRODUCT}.exe" \
+            "s3://${R2_BUCKET}/builds/latest/exe/${PRODUCT}-windows.exe" \
+            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --no-progress
+          echo "☁️ → R2 builds/latest/exe/${PRODUCT}-windows.exe"
