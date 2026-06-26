@@ -19,8 +19,8 @@ on:
   workflow_dispatch:
     inputs:
       build_id:    { description: "Build ID",            required: false, default: "" }
-      callback_url:{ description: "Dashboard callback",  required: false, default: "" }
-      callback_secret:{ description: "Webhook secret",  required: false, default: "" }
+      callback_url: { description: "Dashboard callback",  required: false, default: "" }
+      callback_secret: { description: "Webhook secret",  required: false, default: "" }
   repository_dispatch:
     types: [build_product]
 

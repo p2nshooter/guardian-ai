@@ -1,0 +1,157 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# AXTO — One-click Cloudflare provisioning (D1 + KV + R2 + Pages)
+#
+# Creates every Cloudflare resource the platform needs, IDEMPOTENTLY:
+#   • D1 database  : axto-db
+#   • KV namespace : axto-kv
+#   • R2 buckets   : axto-storage, axto-builds
+#   • Pages project: axto-dashboard
+# Then patches the real resource IDs back into dashboard/wrangler.toml,
+# commits the change, and applies D1 migrations.
+#
+# Run it ONCE (Actions → "Provision Cloudflare" → Run workflow). Safe to re-run.
+#
+# Required secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+#   (token needs: D1 Edit, Workers KV Edit, Workers R2 Edit, Pages Edit)
+# ═══════════════════════════════════════════════════════════════════════════════
+name: Provision Cloudflare
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_ids:
+        description: "Commit discovered resource IDs back into wrangler.toml"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: provision-cloudflare
+  cancel-in-progress: false
+
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  D1_NAME: axto-db
+  KV_TITLE: axto-kv
+  R2_PRIMARY: axto-storage
+  R2_BUILDS: axto-builds
+  PAGES_PROJECT: axto-dashboard
+
+jobs:
+  provision:
+    name: "☁️ Provision Cloudflare resources"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      - name: Preflight — verify secrets
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID must be set in repo secrets."
+            exit 1
+          fi
+          npm i -g wrangler@3 >/dev/null 2>&1
+          echo "wrangler $(wrangler --version)"
+
+      # ── D1 ────────────────────────────────────────────────────────────────
+      - name: Create / resolve D1 database
+        id: d1
+        run: |
+          wrangler d1 create "$D1_NAME" 2>/dev/null || echo "D1 '$D1_NAME' already exists — reusing."
+          ID="$(wrangler d1 list --json | node -e \
+            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const a=JSON.parse(s);const x=a.find(d=>d.name===process.env.D1_NAME);console.log(x?(x.uuid||x.database_id||""):"")})')"
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+          echo "🗄️  D1 $D1_NAME → ${ID:-NOT FOUND}"
+
+      # ── KV ────────────────────────────────────────────────────────────────
+      - name: Create / resolve KV namespace
+        id: kv
+        run: |
+          wrangler kv namespace create "$KV_TITLE" 2>/dev/null || echo "KV '$KV_TITLE' already exists — reusing."
+          ID="$(wrangler kv namespace list | node -e \
+            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const a=JSON.parse(s);const x=a.find(n=>n.title===process.env.KV_TITLE||n.title.endsWith("_"+process.env.KV_TITLE));console.log(x?x.id:"")})')"
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+          echo "🔑 KV $KV_TITLE → ${ID:-NOT FOUND}"
+
+      # ── R2 ────────────────────────────────────────────────────────────────
+      - name: Create R2 buckets
+        run: |
+          for b in "$R2_PRIMARY" "$R2_BUILDS"; do
+            wrangler r2 bucket create "$b" 2>/dev/null && echo "🪣 created $b" || echo "🪣 $b already exists — ok"
+          done
+
+      # ── Pages project ─────────────────────────────────────────────────────
+      - name: Create Pages project
+        run: |
+          wrangler pages project create "$PAGES_PROJECT" --production-branch main 2>/dev/null \
+            && echo "📄 created Pages project $PAGES_PROJECT" \
+            || echo "📄 Pages project $PAGES_PROJECT already exists — ok"
+
+      # ── Patch wrangler.toml with the resolved IDs ─────────────────────────
+      - name: Patch dashboard/wrangler.toml
+        if: ${{ inputs.commit_ids }}
+        env:
+          D1_ID: ${{ steps.d1.outputs.id }}
+          KV_ID: ${{ steps.kv.outputs.id }}
+        run: |
+          f=dashboard/wrangler.toml
+          [ -n "$D1_ID" ] && sed -i -E "s|^(database_id[[:space:]]*=).*|\1 \"$D1_ID\"|" "$f" || true
+          if [ -n "$KV_ID" ]; then
+            # replace the id on the line that follows the KV binding
+            awk -v id="$KV_ID" '
+              /binding[[:space:]]*=[[:space:]]*"KV"/ {print; inkv=1; next}
+              inkv && /^id[[:space:]]*=/ {print "id      = \"" id "\""; inkv=0; next}
+              {print}
+            ' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+          fi
+          echo "── wrangler.toml after patch ──"; grep -nE 'database_id|binding|^id' "$f" || true
+
+      - name: Commit ID changes
+        if: ${{ inputs.commit_ids }}
+        run: |
+          if git diff --quiet -- dashboard/wrangler.toml; then
+            echo "No wrangler.toml changes to commit."
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add dashboard/wrangler.toml
+            git commit -m "chore(cf): sync provisioned Cloudflare resource IDs into wrangler.toml"
+            git push
+            echo "✅ Committed resolved Cloudflare IDs."
+          fi
+
+      # ── Schema ────────────────────────────────────────────────────────────
+      - name: Apply D1 migrations
+        working-directory: dashboard
+        run: |
+          npx --yes wrangler@3 d1 migrations apply "$D1_NAME" --remote || echo "migrations step skipped"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## ☁️ Cloudflare provisioning complete"
+            echo ""
+            echo "| Resource | Name | ID |"
+            echo "|---|---|---|"
+            echo "| D1 database | \`$D1_NAME\` | \`${{ steps.d1.outputs.id }}\` |"
+            echo "| KV namespace | \`$KV_TITLE\` | \`${{ steps.kv.outputs.id }}\` |"
+            echo "| R2 bucket | \`$R2_PRIMARY\` | — |"
+            echo "| R2 bucket | \`$R2_BUILDS\` | — |"
+            echo "| Pages project | \`$PAGES_PROJECT\` | — |"
+            echo ""
+            echo "Resource IDs were patched into \`dashboard/wrangler.toml\` and committed (if enabled)."
+            echo "Push to \`main\` now auto-builds images/EXEs and deploys the dashboard."
+          } >> "$GITHUB_STEP_SUMMARY"

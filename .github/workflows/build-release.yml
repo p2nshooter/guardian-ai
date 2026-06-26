@@ -107,7 +107,8 @@ jobs:
         with:
           context: ./engine
           file: ./engine/Dockerfile
-          push: false; load: true
+          push: false
+          load: true
           tags: axto/guardian-core:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=guardian-core
           cache-to: type=gha,mode=max,scope=guardian-core
@@ -118,7 +119,8 @@ jobs:
         with:
           context: ./engine
           file: ./engine/Dockerfile.node
-          push: false; load: true
+          push: false
+          load: true
           tags: axto/guardian-node:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=guardian-node
           cache-to: type=gha,mode=max,scope=guardian-node
@@ -129,7 +131,8 @@ jobs:
         with:
           context: ./antivirus
           file: ./antivirus/Dockerfile
-          push: false; load: true
+          push: false
+          load: true
           tags: axto/guardian-antivirus:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=guardian-antivirus
           cache-to: type=gha,mode=max,scope=guardian-antivirus
@@ -140,7 +143,8 @@ jobs:
         with:
           context: ./orchestra
           file: ./orchestra/Dockerfile
-          push: false; load: true
+          push: false
+          load: true
           tags: axto/orchestra-core:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=orchestra-core
           cache-to: type=gha,mode=max,scope=orchestra-core
@@ -151,7 +155,8 @@ jobs:
         with:
           context: ./orchestra
           file: ./orchestra/Dockerfile.worker-cpu
-          push: false; load: true
+          push: false
+          load: true
           tags: axto/orchestra-worker-cpu:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=orchestra-worker-cpu
           cache-to: type=gha,mode=max,scope=orchestra-worker-cpu
@@ -162,7 +167,8 @@ jobs:
         with:
           context: ./orchestra
           file: ./orchestra/Dockerfile.worker-gpu
-          push: false; load: true
+          push: false
+          load: true
           tags: axto/orchestra-worker-gpu:${{ steps.meta.outputs.tag }}
           cache-from: type=gha,scope=orchestra-worker-gpu
           cache-to: type=gha,mode=max,scope=orchestra-worker-gpu
