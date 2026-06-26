@@ -102,6 +102,11 @@ function RegisterInner() {
   });
   const [loading,     setLoading]     = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
+  // Single-package focus: when the visitor arrived from a specific "Get Started",
+  // show only that package so they aren't confused by the full catalog. They can
+  // still switch via "Change package".
+  const cameWithPkg = !!(urlPkg && PACKAGES.find(p => p.code === urlPkg));
+  const [showAllPkgs, setShowAllPkgs] = useState(false);
   const [availableGateways, setAvailableGateways] = useState<string[]>(["stripe"]); // default fallback
 
   // ── Live prices from admin panel (no deploy needed) ─────────────────────
@@ -268,8 +273,29 @@ function RegisterInner() {
 
             {/* Package selector */}
             <div>
-              <label style={{ display: "block", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>Package *</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#475569", fontSize: 11, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <span>Package *</span>
+                {cameWithPkg && (
+                  <span onClick={() => setShowAllPkgs(s => !s)} style={{ cursor: "pointer", color: "#0284c7", textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>
+                    {showAllPkgs ? "← Back to your package" : "Change package"}
+                  </span>
+                )}
+              </label>
+
+              {cameWithPkg && !showAllPkgs && selectedPkg && (
+                <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 12, border: "1.5px solid #0284c7", background: "rgba(2,132,199,0.04)" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, color: "#0a1628", fontSize: 15 }}>{selectedPkg.label}</div>
+                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>{selectedPkg.sub} · Annual license</div>
+                  </div>
+                  <span style={{ fontWeight: 800, color: "#0284c7", fontSize: 16, fontFamily: "Sora, sans-serif" }}>
+                    {getPrice(selectedPkg.code, selectedPkg.price) === 0 ? "Free" : `$${getPrice(selectedPkg.code, selectedPkg.price).toLocaleString()}`}
+                    {getPrice(selectedPkg.code, selectedPkg.price) > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: "#94a3b8" }}>/yr</span>}
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: (cameWithPkg && !showAllPkgs) ? "none" : "flex", flexDirection: "column", gap: 6 }}>
                 {/* Group packages by product */}
                 {[
                   { product: "guardian",   icon: "🛡", color: "#0284c7" },
