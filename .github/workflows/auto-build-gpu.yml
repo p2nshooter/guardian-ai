@@ -1,0 +1,71 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 AXTO (axto.io). All rights reserved.
+# Platform: AXTO (axto.io) — Sovereign AI Infrastructure.
+# ==============================================================================
+# Builds the Orchestra GPU Worker image (orchestra/Dockerfile.worker-gpu) and
+# uploads it to Cloudflare R2. Kept SEPARATE from auto-build-all because the
+# CUDA-based image is large (~4–5 GB) and needs extra runner disk space.
+#
+# Trigger: manual (workflow_dispatch) or when the GPU Dockerfile/source changes.
+# Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY  (R2 S3 keys)
+name: Build Orchestra GPU Worker → R2
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "orchestra/Dockerfile.worker-gpu"
+      - ".github/workflows/auto-build-gpu.yml"
+
+concurrency:
+  group: build-gpu-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-gpu-worker:
+    name: "🎮 Orchestra Worker GPU"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # CUDA images are large — reclaim ~25 GB of runner disk before building.
+      - name: Free disk space
+        run: |
+          echo "Before:"; df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          docker image prune -af || true
+          echo "After:"; df -h / | tail -1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build GPU worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./orchestra
+          file: ./orchestra/Dockerfile.worker-gpu
+          push: false
+          load: true
+          tags: axto/orchestra-worker-gpu:latest
+          # No GHA layer cache here — the image is too large to cache cheaply.
+
+      - name: Save & upload to R2
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          # Account ID & bucket are not secret — hardcoded for reliability.
+          CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
+          R2_BUCKET:             axto-builds
+        run: |
+          echo "💾 Saving orchestra-worker-gpu..."
+          docker save axto/orchestra-worker-gpu:latest | gzip -9 > orchestra-worker-gpu.tar.gz
+          echo "✅ size: $(du -sh orchestra-worker-gpu.tar.gz | cut -f1)"
+          pip install -q "awscli>=1.32"
+          aws s3 cp orchestra-worker-gpu.tar.gz \
+            "s3://${R2_BUCKET}/builds/latest/raw/orchestra-worker-gpu.tar.gz" \
+            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --no-progress
+          echo "☁️ → R2 builds/latest/raw/orchestra-worker-gpu.tar.gz"
