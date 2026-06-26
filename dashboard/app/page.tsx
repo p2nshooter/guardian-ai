@@ -977,7 +977,7 @@ export default function HomePage() {
               { icon: "🏠", name: "Real Estate", count: "25+ prompts" },
               { icon: "📝", name: "Content & SEO", count: "110+ prompts" },
             ].map(cat => (
-              <Link key={cat.name} href="/playbooks" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", textDecoration: "none", transition: "all 0.15s" }}>
+              <Link key={cat.name} href={`/playbooks?cat=${encodeURIComponent(cat.name)}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "#f8fafc", borderRadius: 12, border: "1px solid #e2e8f0", textDecoration: "none", transition: "all 0.15s" }}>
                 <span style={{ fontSize: 22 }}>{cat.icon}</span>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0a1628" }}>{cat.name}</div>

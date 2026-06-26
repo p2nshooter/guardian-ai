@@ -43,6 +43,19 @@ export default function PlaybooksPage() {
     fetch("/api/playbooks").then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
+  // Honor ?cat=<slug|name> from the landing page so a clicked category opens
+  // pre-filtered (read client-side to avoid a Suspense boundary requirement).
+  useEffect(() => {
+    if (!data?.categories?.length) return;
+    const cat = new URLSearchParams(window.location.search).get("cat");
+    if (!cat) return;
+    const want = cat.toLowerCase();
+    const hit = data.categories.find(
+      (c: any) => c.slug?.toLowerCase() === want || c.name?.toLowerCase() === want,
+    );
+    if (hit) setActiveCategory(hit.slug);
+  }, [data]);
+
   async function handleCheckout(playbookId?: string, bundleId?: string) {
     if (!email.trim()) { setCheckoutError("Email is required"); return; }
     setCheckoutLoading(true); setCheckoutError("");
