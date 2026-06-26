@@ -6,8 +6,10 @@
 # and uploads them to Cloudflare R2 at builds/latest/exe/<product>-windows.exe,
 # which is exactly where the client portal downloads them from.
 #
-# Only products with a proven EXE setup are built (the others are "Coming Soon"
-# and gated off in the portal anyway).
+# Entry points differ per product:
+#   guardian/antivirus/vault → <dir>/src/__main__.py
+#   orchestra                → build-scripts/exe-entrypoints/orchestra_entry.py
+#                              (imports orchestra_core.main; needs --paths orchestra)
 #
 # Trigger: manual (workflow_dispatch) or when their source changes.
 # Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY  (R2 S3 keys)
@@ -22,6 +24,7 @@ on:
       - "orchestra/**"
       - "antivirus/**"
       - "vault/**"
+      - "build-scripts/exe-entrypoints/**"
       - ".github/workflows/auto-build-exe.yml"
 
 concurrency:
@@ -36,12 +39,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { product: guardian-core,        src: engine }
-          - { product: guardian-node,        src: engine }
-          - { product: guardian-antivirus,   src: antivirus }
-          - { product: orchestra-core,       src: orchestra }
-          - { product: orchestra-worker-cpu, src: orchestra }
-          - { product: vault-core,           src: vault }
+          - { product: guardian-core,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "" }
+          - { product: guardian-node,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "" }
+          - { product: guardian-antivirus,   reqdir: antivirus, entry: "antivirus/src/__main__.py", addsrc: "antivirus/src", paths: "" }
+          - { product: orchestra-core,       reqdir: orchestra, entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra" }
+          - { product: orchestra-worker-cpu, reqdir: orchestra, entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra" }
+          - { product: vault-core,           reqdir: vault,     entry: "vault/src/__main__.py",     addsrc: "vault/src",     paths: "" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -54,29 +57,36 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install "pyinstaller==6.3.0" "awscli>=1.32"
-          if [ -f "${{ matrix.src }}/requirements.txt" ]; then
-            pip install -r "${{ matrix.src }}/requirements.txt" || echo "⚠️ some deps skipped"
+          if [ -f "${{ matrix.reqdir }}/requirements.txt" ]; then
+            pip install -r "${{ matrix.reqdir }}/requirements.txt" || echo "⚠️ some deps skipped"
           fi
 
       - name: Build EXE (PyInstaller)
         shell: bash
         env:
           PRODUCT: ${{ matrix.product }}
-          SRC: ${{ matrix.src }}
+          ENTRY:   ${{ matrix.entry }}
+          ADDSRC:  ${{ matrix.addsrc }}
+          PATHS:   ${{ matrix.paths }}
         run: |
           EXE_NAME="axto-${PRODUCT}"
+          if [ ! -f "$ENTRY" ]; then echo "::error::entry not found: $ENTRY"; exit 1; fi
+          ARGS=(--onefile --name "$EXE_NAME"
+                --collect-all fastapi --collect-all pydantic --collect-all structlog
+                --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops
+                --hidden-import=uvicorn.loops.auto --hidden-import=uvicorn.protocols
+                --hidden-import=uvicorn.protocols.http --hidden-import=uvicorn.protocols.http.auto
+                --hidden-import=uvicorn.lifespan --hidden-import=uvicorn.lifespan.on
+                --icon NONE)
+          # Make the product package importable (e.g. orchestra_core).
+          [ -n "$PATHS" ] && ARGS+=(--paths "$PATHS")
           # Bundle any UI html assets that actually exist for this product.
-          ADD=()
-          for f in activation.html support_ui.html dashboard.html; do
-            [ -f "${SRC}/src/${f}" ] && ADD+=(--add-data "${SRC}/src/${f};src")
-          done
-          pyinstaller --onefile --name "${EXE_NAME}" "${ADD[@]}" \
-            --collect-all fastapi --collect-all pydantic --collect-all structlog \
-            --hidden-import=uvicorn.logging --hidden-import=uvicorn.loops \
-            --hidden-import=uvicorn.loops.auto --hidden-import=uvicorn.protocols \
-            --hidden-import=uvicorn.protocols.http --hidden-import=uvicorn.protocols.http.auto \
-            --hidden-import=uvicorn.lifespan --hidden-import=uvicorn.lifespan.on \
-            --icon NONE "${SRC}/src/__main__.py"
+          if [ -n "$ADDSRC" ]; then
+            for f in activation.html support_ui.html dashboard.html; do
+              [ -f "${ADDSRC}/${f}" ] && ARGS+=(--add-data "${ADDSRC}/${f};src")
+            done
+          fi
+          pyinstaller "${ARGS[@]}" "$ENTRY"
           ls -lh "dist/${EXE_NAME}.exe"
 
       - name: Upload EXE to R2
