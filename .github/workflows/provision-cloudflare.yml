@@ -76,13 +76,11 @@ jobs:
         env:
           D1_ID_SECRET: ${{ secrets.CF_D1_DATABASE_ID }}
         run: |
-          # Prefer the existing id from secrets; fall back to live discovery.
-          ID="$D1_ID_SECRET"
+          # Discover the REAL id from the account (authoritative); secret is only a fallback.
           wrangler d1 create "$D1_NAME" 2>/dev/null || echo "D1 '$D1_NAME' exists or create skipped."
-          if [ -z "$ID" ]; then
-            ID="$(wrangler d1 list --json 2>/dev/null | node -e \
-              'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(d=>d.name===process.env.D1_NAME);console.log(x?(x.uuid||x.database_id||""):"")}catch(e){console.log("")}})')"
-          fi
+          ID="$(wrangler d1 list --json 2>/dev/null | node -e \
+            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(d=>d.name===process.env.D1_NAME);console.log(x?(x.uuid||x.database_id||""):"")}catch(e){console.log("")}})')"
+          [ -z "$ID" ] && ID="$D1_ID_SECRET"
           echo "id=$ID" >> "$GITHUB_OUTPUT"
           echo "🗄️  D1 $D1_NAME → ${ID:-NOT FOUND}"
 
@@ -93,12 +91,10 @@ jobs:
         env:
           KV_ID_SECRET: ${{ secrets.CF_KV_NAMESPACE_ID }}
         run: |
-          ID="$KV_ID_SECRET"
           wrangler kv namespace create "$KV_TITLE" 2>/dev/null || echo "KV '$KV_TITLE' exists or create skipped."
-          if [ -z "$ID" ]; then
-            ID="$(wrangler kv namespace list 2>/dev/null | node -e \
-              'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(n=>n.title===process.env.KV_TITLE||(n.title||"").endsWith("_"+process.env.KV_TITLE));console.log(x?x.id:"")}catch(e){console.log("")}})')"
-          fi
+          ID="$(wrangler kv namespace list 2>/dev/null | node -e \
+            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(n=>n.title===process.env.KV_TITLE||(n.title||"").endsWith("_"+process.env.KV_TITLE));console.log(x?x.id:"")}catch(e){console.log("")}})')"
+          [ -z "$ID" ] && ID="$KV_ID_SECRET"
           echo "id=$ID" >> "$GITHUB_OUTPUT"
           echo "🔑 KV $KV_TITLE → ${ID:-NOT FOUND}"
 
