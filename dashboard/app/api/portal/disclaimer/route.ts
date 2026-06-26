@@ -13,7 +13,7 @@ import { DISCLAIMER, DISCLAIMER_VERSION, type DisclaimerLang } from "@/lib/discl
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
-export async function hasAcceptedCurrent(db: any, email: string): Promise<boolean> {
+async function hasAcceptedCurrent(db: any, email: string): Promise<boolean> {
   try {
     const row = await db.prepare(
       "SELECT id FROM disclaimer_acceptances WHERE user_email = ? AND version = ? LIMIT 1",
