@@ -1097,8 +1097,8 @@ export default function HomePage() {
               Banks, hospitals, and law firms cannot send raw PII, PHI, or financial data to OpenAI or Claude. Vault intercepts every AI API call, automatically redacts sensitive entities, and re-injects original values after the response — invisible to the AI, invisible to your users. EU AI Act, HIPAA, PCI-DSS and GDPR compliant by design — so your teams can safely adopt AI without exposing regulated data.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-              {["BigID: $80K+/yr", "Securiti: $120K+/yr", "Privacera: $100K+/yr"].map(c => (
-                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.15)", fontSize: 12, color: "#6366f1", fontWeight: 600 }}>vs. {c}</div>
+              {["150+ entity types", "Session-based re-injection", "Auditor-ready exports"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.15)", fontSize: 12, color: "#6366f1", fontWeight: 600 }}>{c}</div>
               ))}
             </div>
           </div>
@@ -1121,7 +1121,7 @@ export default function HomePage() {
                   "Real-time SIEM stream (Splunk, Elastic, Datadog)",
                   "Interactive multi-language setup guide",
                 ],
-                popular: false, savings: "Save $55K vs BigID",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Business", code: "vault_business", price: 39900,
@@ -1138,7 +1138,7 @@ export default function HomePage() {
                   "Comprehensive interactive setup guide (40hr onboarding)",
                   "Automated compliance health dashboard",
                 ],
-                popular: true, savings: "Save $45K vs Securiti",
+                popular: true, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Enterprise", code: "vault_enterprise", price: 119000,
@@ -1155,7 +1155,7 @@ export default function HomePage() {
                   "Email community support",
                   "Pen-test ready architecture documentation",
                 ],
-                popular: false, savings: "Save $101K vs Privacera",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
             ].map(p => (
               <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #6366f1" : "1px solid rgba(99,102,241,0.15)", background: p.popular ? "linear-gradient(160deg,#f5f3ff,#ede9fe)" : "#fff" }}>
@@ -1216,7 +1216,7 @@ export default function HomePage() {
                   "Basic incident tracking dashboard",
                   "Weekly executive summary report",
                 ],
-                popular: false, savings: "Save $475K vs Managed SOC",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Professional", code: "soc_professional", price: 79000,
@@ -1232,7 +1232,7 @@ export default function HomePage() {
                   "Executive security report (weekly + monthly)",
                   "Email, Slack, PagerDuty alerting",
                 ],
-                popular: false, savings: "Save $100K vs Splunk",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Business", code: "soc_business", price: 136900,
@@ -1249,7 +1249,7 @@ export default function HomePage() {
                   "Comprehensive onboarding documentation",
                   "Automated threat landscape dashboard",
                 ],
-                popular: true, savings: "Save $350K vs managed SOC",
+                popular: true, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Enterprise", code: "soc_enterprise", price: 249000,
@@ -1266,7 +1266,7 @@ export default function HomePage() {
                   "High-availability architecture with automated failover",
                   "Email community support",
                 ],
-                popular: false, savings: "Save $1.5M vs managed SOC",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
             ].map(p => (
               <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #dc2626" : "1px solid rgba(220,38,38,0.1)", background: p.popular ? "linear-gradient(160deg,#fff5f5,#fef2f2)" : "#fff" }}>
@@ -1300,11 +1300,11 @@ export default function HomePage() {
               Cut Audit Costs by 80%.<br /><span style={{ background: "linear-gradient(135deg,#16a34a,#0d9488)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Be Audit-Ready in 30 Days.</span>
             </h2>
             <p style={{ color: "#475569", fontSize: 17, maxWidth: 680, margin: "0 auto", lineHeight: 1.7 }}>
-              Companies spend $50K–300K every year on compliance consultants, auditor pre-work, and evidence collection. AXTO Compliance automates all of it: continuous monitoring for SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA, and NIST CSF — evidence collected automatically, gaps identified in real time, audit-ready reports in minutes. Vanta charges $15K/yr and doesn't even run on your infra.
+              Compliance work normally means months of consultants, auditor pre-work, and manual evidence collection. AXTO Compliance automates all of it: continuous monitoring for SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA, and NIST CSF — evidence collected automatically, gaps identified in real time, audit-ready reports in minutes — all running on your own infrastructure.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-              {["Drata: $20K+/yr (cloud)", "Vanta: $15K+/yr (cloud)", "Compliance auditor: $50K+/yr"].map(c => (
-                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.2)", fontSize: 12, color: "#16a34a", fontWeight: 600 }}>vs. {c}</div>
+              {["7 frameworks built-in", "Continuous evidence collection", "Runs on your infra"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(22,163,74,0.08)", border: "1px solid rgba(22,163,74,0.2)", fontSize: 12, color: "#16a34a", fontWeight: 600 }}>{c}</div>
               ))}
             </div>
           </div>
@@ -1324,7 +1324,7 @@ export default function HomePage() {
                   "Evidence collection dashboard",
                   "One-click audit-ready PDF export",
                 ],
-                popular: false, savings: "Save $90K vs Drata",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Professional", code: "compliance_professional", price: 19900,
@@ -1340,7 +1340,7 @@ export default function HomePage() {
                   "Gap analysis with prioritized remediation roadmap",
                   "Audit-ready reports exportable to PDF",
                 ],
-                popular: false, savings: "Save $35K vs auditor pre-work",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Business", code: "compliance_business", price: 31900,
@@ -1356,7 +1356,7 @@ export default function HomePage() {
                   "Comprehensive onboarding documentation",
                   "Auditor collaboration portal (share evidence packages)",
                 ],
-                popular: true, savings: "Save $201K vs annual audit firm",
+                popular: true, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Enterprise", code: "compliance_enterprise", price: 49000,
@@ -1373,7 +1373,7 @@ export default function HomePage() {
                   "Automated compliance health dashboard",
                   "Email community support",
                 ],
-                popular: false, savings: "Save $151K vs Drata Enterprise",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
             ].map(p => (
               <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #16a34a" : "1px solid rgba(22,163,74,0.15)", background: p.popular ? "linear-gradient(160deg,#f0fdf4,#dcfce7)" : "#fff" }}>
@@ -1410,8 +1410,8 @@ export default function HomePage() {
               The average manufacturing plant has 3,000+ connected OT devices — PLCs, SCADA, HMIs, sensors — and most have never been inventoried. AXTO Sentinel brings them into full view: device discovery, 15+ industrial protocol detection, real-time risk scoring, CVE tracking, and IEC 62443 compliance reporting — all self-hosted.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-              {["Claroty: $100K+/yr", "Dragos: $150K+/yr", "Nozomi: $80K+/yr"].map(c => (
-                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", fontSize: 12, color: "#7c3aed", fontWeight: 600 }}>vs. {c}</div>
+              {["15+ industrial protocols", "Real-time risk scoring", "IEC 62443 reporting"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", fontSize: 12, color: "#7c3aed", fontWeight: 600 }}>{c}</div>
               ))}
             </div>
           </div>
@@ -1431,7 +1431,7 @@ export default function HomePage() {
                   "IEC 62443 compliance reporting",
                   "Email and Slack anomaly alerts",
                 ],
-                popular: false, savings: "Save $200K vs Claroty",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Professional", code: "sentinel_professional", price: 39900,
@@ -1447,7 +1447,7 @@ export default function HomePage() {
                   "IEC 62443 zone/conduit mapping",
                   "SOC + Guardian integration for correlated OT/IT response",
                 ],
-                popular: false, savings: "Save $75K vs Claroty",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Business", code: "sentinel_business", price: 68900,
@@ -1464,7 +1464,7 @@ export default function HomePage() {
                   "Comprehensive onboarding documentation",
                   "Automated OT threat landscape dashboard",
                 ],
-                popular: true, savings: "Save $70K vs Dragos",
+                popular: true, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Enterprise", code: "sentinel_enterprise", price: 129000,
@@ -1475,13 +1475,13 @@ export default function HomePage() {
                   "Custom OT protocol decoder development",
                   "Air-gap deployment support (offline IOC updates)",
                   "NERC CIP compliance package (energy sector)",
-                  "OT threat intelligence: Dragos WorldView-comparable feeds",
+                  "OT threat intelligence: curated industrial threat feeds",
                   "Multi-org white-label for MSSPs and system integrators",
                   "Board-level OT risk dashboard",
                   "Air-gap deployment documentation",
                   "Comprehensive setup documentation",
                 ],
-                popular: false, savings: "Save $201K vs Claroty Enterprise",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
             ].map(p => (
               <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #7c3aed" : "1px solid rgba(124,58,237,0.12)", background: p.popular ? "linear-gradient(160deg,#faf5ff,#f3e8ff)" : "#fff" }}>
@@ -1518,8 +1518,8 @@ export default function HomePage() {
               Every SaaS company embedding AI faces the same three problems: how to bill customers for AI usage, how to prevent prompt injection and abuse, and how to stay profitable as AI costs scale. Edge solves all three. Deploy it between your customers and AI providers — it meters every token, enforces rate limits, detects abuse in real time, and generates invoices automatically. Think of it as Stripe for AI API billing.
             </p>
             <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20, flexWrap: "wrap" }}>
-              {["Kong Enterprise: $50K+/yr", "Apigee: $40K+/yr", "Custom build: $200K+"].map(c => (
-                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", fontSize: 12, color: "#3b82f6", fontWeight: 600 }}>vs. {c}</div>
+              {["OpenAI-compatible gateway", "Usage metering & billing", "Self-hosted"].map(c => (
+                <div key={c} style={{ padding: "6px 14px", borderRadius: 8, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", fontSize: 12, color: "#3b82f6", fontWeight: 600 }}>{c}</div>
               ))}
             </div>
           </div>
@@ -1555,7 +1555,7 @@ export default function HomePage() {
                   "OpenAI-compatible proxy — zero code change to integrate",
                   "Webhook events: quota exceeded, abuse detected",
                 ],
-                popular: false, savings: "Save $40K vs Kong Enterprise",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
               {
                 name: "Business", code: "edge_business", price: 40900,
@@ -1589,7 +1589,7 @@ export default function HomePage() {
                   "Comprehensive Interactive Setup Guide (PDF, 10 Languages)",
                   "Email community support",
                 ],
-                popular: false, savings: "Save $101K vs custom build",
+                popular: false, savings: "Self-hosted • predictable pricing",
               },
             ].map(p => (
               <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #3b82f6" : "1px solid rgba(59,130,246,0.15)", background: p.popular ? "linear-gradient(160deg,#eff6ff,#dbeafe)" : "#fff" }}>
