@@ -65,39 +65,58 @@ jobs:
           npm i -g wrangler@3 >/dev/null 2>&1
           echo "wrangler $(wrangler --version)"
 
+      # Robustly extract JSON from wrangler output (it may print an info notice
+      # like "📎 It looks like you are authenticating..." before the JSON).
+      # parse_json <name-field> <id-field>  — reads stdin, prints matching id.
+
       # ── D1 ────────────────────────────────────────────────────────────────
       - name: Create / resolve D1 database
         id: d1
+        continue-on-error: true
+        env:
+          D1_ID_SECRET: ${{ secrets.CF_D1_DATABASE_ID }}
         run: |
-          wrangler d1 create "$D1_NAME" 2>/dev/null || echo "D1 '$D1_NAME' already exists — reusing."
-          ID="$(wrangler d1 list --json | node -e \
-            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const a=JSON.parse(s);const x=a.find(d=>d.name===process.env.D1_NAME);console.log(x?(x.uuid||x.database_id||""):"")})')"
+          # Prefer the existing id from secrets; fall back to live discovery.
+          ID="$D1_ID_SECRET"
+          wrangler d1 create "$D1_NAME" 2>/dev/null || echo "D1 '$D1_NAME' exists or create skipped."
+          if [ -z "$ID" ]; then
+            ID="$(wrangler d1 list --json 2>/dev/null | node -e \
+              'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(d=>d.name===process.env.D1_NAME);console.log(x?(x.uuid||x.database_id||""):"")}catch(e){console.log("")}})')"
+          fi
           echo "id=$ID" >> "$GITHUB_OUTPUT"
           echo "🗄️  D1 $D1_NAME → ${ID:-NOT FOUND}"
 
       # ── KV ────────────────────────────────────────────────────────────────
       - name: Create / resolve KV namespace
         id: kv
+        continue-on-error: true
+        env:
+          KV_ID_SECRET: ${{ secrets.CF_KV_NAMESPACE_ID }}
         run: |
-          wrangler kv namespace create "$KV_TITLE" 2>/dev/null || echo "KV '$KV_TITLE' already exists — reusing."
-          ID="$(wrangler kv namespace list | node -e \
-            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const a=JSON.parse(s);const x=a.find(n=>n.title===process.env.KV_TITLE||n.title.endsWith("_"+process.env.KV_TITLE));console.log(x?x.id:"")})')"
+          ID="$KV_ID_SECRET"
+          wrangler kv namespace create "$KV_TITLE" 2>/dev/null || echo "KV '$KV_TITLE' exists or create skipped."
+          if [ -z "$ID" ]; then
+            ID="$(wrangler kv namespace list 2>/dev/null | node -e \
+              'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(n=>n.title===process.env.KV_TITLE||(n.title||"").endsWith("_"+process.env.KV_TITLE));console.log(x?x.id:"")}catch(e){console.log("")}})')"
+          fi
           echo "id=$ID" >> "$GITHUB_OUTPUT"
           echo "🔑 KV $KV_TITLE → ${ID:-NOT FOUND}"
 
       # ── R2 ────────────────────────────────────────────────────────────────
       - name: Create R2 buckets
+        continue-on-error: true
         run: |
           for b in "$R2_PRIMARY" "$R2_BUILDS"; do
-            wrangler r2 bucket create "$b" 2>/dev/null && echo "🪣 created $b" || echo "🪣 $b already exists — ok"
+            wrangler r2 bucket create "$b" 2>/dev/null && echo "🪣 created $b" || echo "🪣 $b exists or create skipped"
           done
 
       # ── Pages project ─────────────────────────────────────────────────────
       - name: Create Pages project
+        continue-on-error: true
         run: |
           wrangler pages project create "$PAGES_PROJECT" --production-branch main 2>/dev/null \
             && echo "📄 created Pages project $PAGES_PROJECT" \
-            || echo "📄 Pages project $PAGES_PROJECT already exists — ok"
+            || echo "📄 Pages project $PAGES_PROJECT exists or create skipped"
 
       # ── Patch wrangler.toml with the resolved IDs ─────────────────────────
       - name: Patch dashboard/wrangler.toml
