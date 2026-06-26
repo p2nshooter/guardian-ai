@@ -22,6 +22,7 @@ export default function AdminClientsPage() {
   const [editForm, setEditForm] = useState({ name: "", organization: "", country: "", phone: "" });
   const [saving,  setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [busy,    setBusy]      = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
@@ -59,6 +60,36 @@ export default function AdminClientsPage() {
       else { const d = await res.json(); setSaveError(d.error || "Save failed"); }
     } catch { setSaveError("Network error"); }
     finally { setSaving(false); }
+  }
+
+  async function toggleBan(c: any) {
+    const banned = c.status === "banned";
+    const verb = banned ? "Unban" : "Ban";
+    if (!confirm(`${verb} ${c.name || c.email}?${banned ? "" : "\n\nThis suspends all their licenses (downloads & activation blocked)."}`)) return;
+    setBusy(c.id);
+    try {
+      const res = await fetch("/api/admin/clients", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: c.id, action: banned ? "unban" : "ban" }),
+      });
+      if (res.ok) await load();
+      else { const d = await res.json().catch(() => ({})); setError(d.error || `${verb} failed`); }
+    } catch { setError("Network error"); }
+    finally { setBusy(null); }
+  }
+
+  async function deleteClient(c: any) {
+    if (!confirm(`Permanently DELETE ${c.name || c.email}?\n\nThis removes the client and ALL their licenses & invoices. This cannot be undone.`)) return;
+    setBusy(c.id);
+    try {
+      const res = await fetch(`/api/admin/clients?id=${encodeURIComponent(c.id)}`, {
+        method: "DELETE", credentials: "include",
+      });
+      if (res.ok) await load();
+      else { const d = await res.json().catch(() => ({})); setError(d.error || "Delete failed"); }
+    } catch { setError("Network error"); }
+    finally { setBusy(null); }
   }
 
   const filtered = clients.filter(c =>
@@ -111,17 +142,22 @@ export default function AdminClientsPage() {
                       {(c.name || c.email || "?")[0].toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ color: "#0a1628", fontWeight: 700, fontSize: 14 }}>{c.name || <span style={{ color: "#475569" }}>No name</span>}</div>
+                      <div style={{ color: "#0a1628", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                        {c.name || <span style={{ color: "#475569" }}>No name</span>}
+                        {c.status === "banned" && <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, padding: "1px 7px", letterSpacing: 0.5 }}>BANNED</span>}
+                      </div>
                       <div style={{ color: "#475569", fontSize: 12 }}>{c.email}</div>
                       {c.organization && <div style={{ color: "#64748b", fontSize: 11, marginTop: 1 }}>{c.organization}{c.country ? ` · ${c.country}` : ""}</div>}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: 13, color: "#22c55e", fontWeight: 700 }}>{c.active_count || 0} active</div>
                       <div style={{ fontSize: 11, color: "#475569" }}>{c.license_count || 0} total license{c.license_count !== 1 ? "s" : ""}</div>
                     </div>
                     <button onClick={() => startEdit(c)} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2e8f0", background: "transparent", color: "#38bdf8", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Edit</button>
+                    <button onClick={() => toggleBan(c)} disabled={busy === c.id} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid", borderColor: c.status === "banned" ? "rgba(34,197,94,0.4)" : "rgba(245,158,11,0.4)", background: "transparent", color: c.status === "banned" ? "#16a34a" : "#d97706", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: busy === c.id ? 0.5 : 1 }}>{c.status === "banned" ? "Unban" : "Ban"}</button>
+                    <button onClick={() => deleteClient(c)} disabled={busy === c.id} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.4)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer", opacity: busy === c.id ? 0.5 : 1 }}>Delete</button>
                   </div>
                 </div>
               )}
