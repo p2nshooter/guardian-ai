@@ -308,81 +308,6 @@ const SEARCH_PINGS: ClassifiedSite[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMBINE ALL SITES
-// ═══════════════════════════════════════════════════════════════════════════
-export const ALL_CLASSIFIED_SITES: ClassifiedSite[] = [
-  ...USA_CLASSIFIEDS,
-  ...GLOBAL_CLASSIFIEDS,
-  ...UK_CLASSIFIEDS,
-  ...AU_CLASSIFIEDS,
-  ...CA_CLASSIFIEDS,
-  ...IN_CLASSIFIEDS,
-  ...EU_CLASSIFIEDS,
-  ...BUSINESS_DIRECTORIES,
-  ...TECH_DIRECTORIES,
-  ...SEO_DIRECTORIES,
-  ...SEARCH_PINGS,
-  ...EXTRA_SITES,
-];
-
-// Stats
-export const CLASSIFIED_STATS = {
-  total: ALL_CLASSIFIED_SITES.length,
-  byRegion: {
-    USA: USA_CLASSIFIEDS.length,
-    Global: GLOBAL_CLASSIFIEDS.length,
-    UK: UK_CLASSIFIEDS.length,
-    Australia: AU_CLASSIFIEDS.length,
-    Canada: CA_CLASSIFIEDS.length,
-    India: IN_CLASSIFIEDS.length,
-    Europe: EU_CLASSIFIEDS.length,
-  },
-  byCategory: {
-    general: USA_CLASSIFIEDS.length + GLOBAL_CLASSIFIEDS.length + UK_CLASSIFIEDS.length + AU_CLASSIFIEDS.length + CA_CLASSIFIEDS.length + IN_CLASSIFIEDS.length + EU_CLASSIFIEDS.length,
-    business: BUSINESS_DIRECTORIES.length,
-    tech: TECH_DIRECTORIES.length,
-    seo: SEO_DIRECTORIES.length,
-    ping: SEARCH_PINGS.length,
-  },
-  byPriority: {
-    high: ALL_CLASSIFIED_SITES.filter(s => s.priority === 1).length,
-    medium: ALL_CLASSIFIED_SITES.filter(s => s.priority === 2).length,
-    low: ALL_CLASSIFIED_SITES.filter(s => s.priority === 3).length,
-  },
-};
-
-// Get sites by filter
-export function getClassifiedSites(options?: {
-  regions?: string[];
-  categories?: string[];
-  priorities?: number[];
-  limit?: number;
-}): ClassifiedSite[] {
-  let sites = ALL_CLASSIFIED_SITES;
-  
-  if (options?.regions?.length) {
-    sites = sites.filter(s => options.regions!.includes(s.region));
-  }
-  if (options?.categories?.length) {
-    sites = sites.filter(s => options.categories!.includes(s.category));
-  }
-  if (options?.priorities?.length) {
-    sites = sites.filter(s => options.priorities!.includes(s.priority));
-  }
-  if (options?.limit) {
-    sites = sites.slice(0, options.limit);
-  }
-  
-  return sites;
-}
-
-// Get random sites
-export function getRandomClassifiedSites(count: number): ClassifiedSite[] {
-  const shuffled = [...ALL_CLASSIFIED_SITES].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 // ADDITIONAL 1000 CLASSIFIED SITES — Expanded global coverage
 // ═══════════════════════════════════════════════════════════════════════════
 const EXTRA_SITES: ClassifiedSite[] = [
@@ -482,3 +407,79 @@ const EXTRA_SITES: ClassifiedSite[] = [
     fields: { title: "title", description: "description" },
   })),
 ];
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMBINE ALL SITES
+// ═══════════════════════════════════════════════════════════════════════════
+export const ALL_CLASSIFIED_SITES: ClassifiedSite[] = [
+  ...USA_CLASSIFIEDS,
+  ...GLOBAL_CLASSIFIEDS,
+  ...UK_CLASSIFIEDS,
+  ...AU_CLASSIFIEDS,
+  ...CA_CLASSIFIEDS,
+  ...IN_CLASSIFIEDS,
+  ...EU_CLASSIFIEDS,
+  ...BUSINESS_DIRECTORIES,
+  ...TECH_DIRECTORIES,
+  ...SEO_DIRECTORIES,
+  ...SEARCH_PINGS,
+  ...EXTRA_SITES,
+];
+
+// Stats
+export const CLASSIFIED_STATS = {
+  total: ALL_CLASSIFIED_SITES.length,
+  byRegion: {
+    USA: USA_CLASSIFIEDS.length,
+    Global: GLOBAL_CLASSIFIEDS.length,
+    UK: UK_CLASSIFIEDS.length,
+    Australia: AU_CLASSIFIEDS.length,
+    Canada: CA_CLASSIFIEDS.length,
+    India: IN_CLASSIFIEDS.length,
+    Europe: EU_CLASSIFIEDS.length,
+  },
+  byCategory: {
+    general: USA_CLASSIFIEDS.length + GLOBAL_CLASSIFIEDS.length + UK_CLASSIFIEDS.length + AU_CLASSIFIEDS.length + CA_CLASSIFIEDS.length + IN_CLASSIFIEDS.length + EU_CLASSIFIEDS.length,
+    business: BUSINESS_DIRECTORIES.length,
+    tech: TECH_DIRECTORIES.length,
+    seo: SEO_DIRECTORIES.length,
+    ping: SEARCH_PINGS.length,
+  },
+  byPriority: {
+    high: ALL_CLASSIFIED_SITES.filter(s => s.priority === 1).length,
+    medium: ALL_CLASSIFIED_SITES.filter(s => s.priority === 2).length,
+    low: ALL_CLASSIFIED_SITES.filter(s => s.priority === 3).length,
+  },
+};
+
+// Get sites by filter
+export function getClassifiedSites(options?: {
+  regions?: string[];
+  categories?: string[];
+  priorities?: number[];
+  limit?: number;
+}): ClassifiedSite[] {
+  let sites = ALL_CLASSIFIED_SITES;
+  
+  if (options?.regions?.length) {
+    sites = sites.filter(s => options.regions!.includes(s.region));
+  }
+  if (options?.categories?.length) {
+    sites = sites.filter(s => options.categories!.includes(s.category));
+  }
+  if (options?.priorities?.length) {
+    sites = sites.filter(s => options.priorities!.includes(s.priority));
+  }
+  if (options?.limit) {
+    sites = sites.slice(0, options.limit);
+  }
+  
+  return sites;
+}
+
+// Get random sites
+export function getRandomClassifiedSites(count: number): ClassifiedSite[] {
+  const shuffled = [...ALL_CLASSIFIED_SITES].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
