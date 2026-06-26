@@ -61,7 +61,15 @@ jobs:
           R2_BUCKET:             axto-builds
         run: |
           echo "💾 Saving orchestra-worker-gpu..."
-          docker save axto/orchestra-worker-gpu:latest | gzip -9 > orchestra-worker-gpu.tar.gz
+          # pigz = parallel gzip (all cores) — far faster than single-thread gzip
+          # for a multi-GB CUDA image. Pre-installed on GitHub runners; install as
+          # a safety net, fall back to gzip if unavailable.
+          sudo apt-get install -y pigz >/dev/null 2>&1 || true
+          if command -v pigz >/dev/null 2>&1; then
+            docker save axto/orchestra-worker-gpu:latest | pigz -6 -p "$(nproc)" > orchestra-worker-gpu.tar.gz
+          else
+            docker save axto/orchestra-worker-gpu:latest | gzip -6 > orchestra-worker-gpu.tar.gz
+          fi
           echo "✅ size: $(du -sh orchestra-worker-gpu.tar.gz | cut -f1)"
           pip install -q "awscli>=1.32"
           aws s3 cp orchestra-worker-gpu.tar.gz \
