@@ -42,8 +42,8 @@ jobs:
           - { product: guardian-core,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "" }
           - { product: guardian-node,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "" }
           - { product: guardian-antivirus,   reqdir: antivirus, entry: "antivirus/src/__main__.py", addsrc: "antivirus/src", paths: "" }
-          - { product: orchestra-core,       reqdir: orchestra, entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra" }
-          - { product: orchestra-worker-cpu, reqdir: orchestra, entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra" }
+          - { product: orchestra-core,       reqdir: orchestra/orchestra_core,   entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra orchestra/orchestra_core",  collect: "orchestra_core",   collectall: "sklearn numpy pandas" }
+          - { product: orchestra-worker-cpu, reqdir: orchestra/orchestra_worker, entry: "orchestra/orchestra_worker/worker_cpu.py",            addsrc: "", paths: "orchestra/orchestra_worker", collect: "",               collectall: "" }
           - { product: vault-core,           reqdir: vault,     entry: "vault/src/__main__.py",     addsrc: "vault/src",     paths: "" }
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +68,8 @@ jobs:
           ENTRY:   ${{ matrix.entry }}
           ADDSRC:  ${{ matrix.addsrc }}
           PATHS:   ${{ matrix.paths }}
+          COLLECT: ${{ matrix.collect }}
+          COLLECTALL: ${{ matrix.collectall }}
         run: |
           EXE_NAME="axto-${PRODUCT}"
           if [ ! -f "$ENTRY" ]; then echo "::error::entry not found: $ENTRY"; exit 1; fi
@@ -78,8 +80,14 @@ jobs:
                 --hidden-import=uvicorn.protocols.http --hidden-import=uvicorn.protocols.http.auto
                 --hidden-import=uvicorn.lifespan --hidden-import=uvicorn.lifespan.on
                 --icon NONE)
-          # Make the product package importable (e.g. orchestra_core).
-          [ -n "$PATHS" ] && ARGS+=(--paths "$PATHS")
+          # Add every search path (space-separated) so bare sibling imports
+          # like 'import enforcement' inside orchestra_core resolve & get bundled.
+          for p in $PATHS; do ARGS+=(--paths "$p"); done
+          # Collect ALL submodules of the app package (catches modules that
+          # PyInstaller's static analysis would otherwise miss).
+          [ -n "$COLLECT" ] && ARGS+=(--collect-submodules "$COLLECT")
+          # Fully collect heavy libs that ship data files (sklearn/numpy/pandas).
+          for c in $COLLECTALL; do ARGS+=(--collect-all "$c"); done
           # Bundle any UI html assets that actually exist for this product.
           if [ -n "$ADDSRC" ]; then
             for f in activation.html support_ui.html dashboard.html; do
