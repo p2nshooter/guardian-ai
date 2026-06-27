@@ -1,0 +1,223 @@
+# ==============================================================================
+# AXTO — Worldwide Catalog of FREE / Free-Tier Public AI API Providers
+# Platform: AXTO (axto.io) — Sovereign AI Infrastructure (BYOK)
+# ==============================================================================
+# Single source of truth for free & free-tier AI endpoints a client can use with
+# BYOK (Bring Your Own Key). No keys are stored here — only where to get one,
+# the endpoint, OpenAI-compatibility, and the free-tier terms. Surfaced in the
+# client portal ("Connect Your AI Keys") and used by AXTO Legal's LLM router.
+#
+# Field schema:
+#   id            : stable identifier
+#   name          : display name
+#   region        : primary operating region (Global unless noted)
+#   openai_compat : true = drop-in /v1/chat/completions compatible
+#   base_url      : OpenAI-compatible base (or native endpoint)
+#   auth          : apikey | oauth | none(local)
+#   free          : short description of the free tier
+#   signup        : where to obtain a free key
+#   notes         : caveats / rate limits / privacy
+# ==============================================================================
+
+version: "1.0"
+schema: "axto-free-ai-providers-v1"
+updated: "2026-06"
+
+providers:
+
+  # ── Fast free inference (OpenAI-compatible) ────────────────────────────────
+  - id: groq
+    name: "Groq Cloud"
+    region: "Global (US)"
+    openai_compat: true
+    base_url: "https://api.groq.com/openai/v1"
+    auth: apikey
+    free: "Generous free tier — Llama 3.x, Mixtral, Gemma at very high speed."
+    signup: "https://console.groq.com/keys"
+    notes: "Per-minute & per-day rate limits on free tier. No training on your data."
+
+  - id: cerebras
+    name: "Cerebras Inference"
+    region: "Global (US)"
+    openai_compat: true
+    base_url: "https://api.cerebras.ai/v1"
+    auth: apikey
+    free: "Free tier with the fastest token throughput available (Llama models)."
+    signup: "https://cloud.cerebras.ai"
+    notes: "Daily token cap on free tier."
+
+  - id: sambanova
+    name: "SambaNova Cloud"
+    region: "Global (US)"
+    openai_compat: true
+    base_url: "https://api.sambanova.ai/v1"
+    auth: apikey
+    free: "Free tier — Llama 3.1/3.3 incl. 405B, fast inference."
+    signup: "https://cloud.sambanova.ai"
+    notes: "Rate-limited free tier."
+
+  # ── Major labs with real free tiers ────────────────────────────────────────
+  - id: google_ai_studio
+    name: "Google AI Studio (Gemini API)"
+    region: "Global"
+    openai_compat: true
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+    auth: apikey
+    free: "Free Gemini 1.5/2.0 Flash & Pro tier — large context, multimodal."
+    signup: "https://aistudio.google.com/app/apikey"
+    notes: "Free tier has RPM/RPD limits; data may be used to improve products on the free tier — review terms before sending sensitive data."
+
+  - id: mistral
+    name: "Mistral La Plateforme"
+    region: "EU (France)"
+    openai_compat: true
+    base_url: "https://api.mistral.ai/v1"
+    auth: apikey
+    free: "Free experimentation tier (mistral-small, codestral, etc.)."
+    signup: "https://console.mistral.ai"
+    notes: "EU-hosted — good for GDPR-sensitive workloads."
+
+  - id: cohere
+    name: "Cohere"
+    region: "Global (Canada)"
+    openai_compat: false
+    base_url: "https://api.cohere.com/v2"
+    auth: apikey
+    free: "Free trial keys (rate-limited) — Command R/R+, strong RAG & rerank."
+    signup: "https://dashboard.cohere.com/api-keys"
+    notes: "Trial keys are rate-limited and not for production."
+
+  - id: deepseek
+    name: "DeepSeek"
+    region: "Asia (China)"
+    openai_compat: true
+    base_url: "https://api.deepseek.com"
+    auth: apikey
+    free: "Very low cost + periodic free credits — strong reasoning (R1) & coding."
+    signup: "https://platform.deepseek.com"
+    notes: "Review data-residency terms for regulated data."
+
+  # ── Aggregators / free model routers ───────────────────────────────────────
+  - id: openrouter
+    name: "OpenRouter"
+    region: "Global"
+    openai_compat: true
+    base_url: "https://openrouter.ai/api/v1"
+    auth: apikey
+    free: "Many models tagged ':free' (e.g. deepseek, llama, qwen) at $0."
+    signup: "https://openrouter.ai/keys"
+    notes: "Single key → hundreds of models. Free models are rate-limited."
+
+  - id: github_models
+    name: "GitHub Models"
+    region: "Global"
+    openai_compat: true
+    base_url: "https://models.inference.ai.azure.com"
+    auth: apikey
+    free: "Free for developers — GPT-4o, Llama, Phi, Mistral via a GitHub PAT."
+    signup: "https://github.com/marketplace/models"
+    notes: "Auth with a GitHub fine-grained PAT (models:read). Low rate limits."
+
+  - id: cloudflare_workers_ai
+    name: "Cloudflare Workers AI"
+    region: "Global (edge)"
+    openai_compat: true
+    base_url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1"
+    auth: apikey
+    free: "Free daily Neuron allocation — Llama, Mistral, Whisper at the edge."
+    signup: "https://dash.cloudflare.com (AI → Workers AI)"
+    notes: "Requires Cloudflare account_id in the URL."
+
+  - id: huggingface
+    name: "Hugging Face Inference"
+    region: "Global / EU"
+    openai_compat: true
+    base_url: "https://api-inference.huggingface.co/v1"
+    auth: apikey
+    free: "Free serverless inference for thousands of open models."
+    signup: "https://huggingface.co/settings/tokens"
+    notes: "Cold starts & rate limits on the free tier."
+
+  - id: nvidia_nim
+    name: "NVIDIA NIM (build.nvidia.com)"
+    region: "Global (US)"
+    openai_compat: true
+    base_url: "https://integrate.api.nvidia.com/v1"
+    auth: apikey
+    free: "Free API credits — Llama, Nemotron, Mistral, and more."
+    signup: "https://build.nvidia.com"
+    notes: "Credit-based free tier."
+
+  - id: together
+    name: "Together AI"
+    region: "Global (US)"
+    openai_compat: true
+    base_url: "https://api.together.xyz/v1"
+    auth: apikey
+    free: "Free signup credits — 100+ open models."
+    signup: "https://api.together.ai"
+    notes: "One free model tier + credits."
+
+  - id: fireworks
+    name: "Fireworks AI"
+    region: "Global (US)"
+    openai_compat: true
+    base_url: "https://api.fireworks.ai/inference/v1"
+    auth: apikey
+    free: "Free signup credits — fast open-model serving."
+    signup: "https://fireworks.ai"
+    notes: "Credit-based."
+
+  - id: scaleway
+    name: "Scaleway Generative APIs"
+    region: "EU (France)"
+    openai_compat: true
+    base_url: "https://api.scaleway.ai/v1"
+    auth: apikey
+    free: "Free beta tier — EU-sovereign hosting (Llama, Mistral)."
+    signup: "https://console.scaleway.com"
+    notes: "EU data residency — strong for legal/regulated workloads."
+
+  # ── 100% local / self-hosted (no key, no data leaves your machine) ─────────
+  - id: ollama
+    name: "Ollama (local)"
+    region: "Self-hosted"
+    openai_compat: true
+    base_url: "http://localhost:11434/v1"
+    auth: none
+    free: "Completely free & offline — runs Llama, Qwen, Phi, Mistral locally."
+    signup: "https://ollama.com/download"
+    notes: "Best privacy: nothing leaves your infrastructure. Recommended default for AXTO Legal on sensitive matters."
+
+  - id: llamacpp
+    name: "llama.cpp server (local)"
+    region: "Self-hosted"
+    openai_compat: true
+    base_url: "http://localhost:8080/v1"
+    auth: none
+    free: "Free & offline — run any GGUF model with an OpenAI-compatible server."
+    signup: "https://github.com/ggml-org/llama.cpp"
+    notes: "Maximum control; CPU or GPU."
+
+  - id: vllm
+    name: "vLLM (self-hosted)"
+    region: "Self-hosted"
+    openai_compat: true
+    base_url: "http://localhost:8000/v1"
+    auth: none
+    free: "Free & offline — high-throughput OpenAI-compatible serving on your GPU."
+    signup: "https://github.com/vllm-project/vllm"
+    notes: "Pairs with AXTO Orchestra Worker GPU."
+
+# ── Guidance surfaced to clients ──────────────────────────────────────────────
+guidance:
+  privacy_first: >-
+    For confidential or regulated matters (legal, PII, PHI, financial), prefer a
+    self-hosted provider (Ollama / vLLM / llama.cpp) so no data ever leaves your
+    infrastructure. Cloud free tiers may log or train on free-tier traffic —
+    always read each provider's terms before sending sensitive data.
+  recommended_free_start:
+    - groq            # fastest free cloud, OpenAI-compatible
+    - google_ai_studio # large free context, multimodal
+    - openrouter      # widest model choice, many ':free' models
+    - ollama          # zero-cost, fully private, offline
