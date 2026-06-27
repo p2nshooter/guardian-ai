@@ -438,8 +438,10 @@ export default function PortalPage() {
                                 {/* ── Download buttons — respect admin build-format toggle ── */}
                                 {(() => {
                                   const dockerOn    = isFormatAdminEnabled(lic.product, "docker");
-                                  const exeLinuxOn  = isFormatAdminEnabled(lic.product, "exe-linux");
-                                  const exeWinOn    = isFormatAdminEnabled(lic.product, "exe-windows");
+                                  // EXE binaries are temporarily in active development — disabled
+                                  // platform-wide so clients only get the production-ready Docker build.
+                                  const exeLinuxOn  = false;
+                                  const exeWinOn    = false;
 
                                   return (<>
                                     {/* 🐳 Docker */}
@@ -487,7 +489,7 @@ export default function PortalPage() {
                                         background:"rgba(245,158,11,0.06)", color:"#f59e0b", fontSize:12, fontWeight:700,
                                         display:"flex", alignItems:"center", gap:5, cursor:"default", whiteSpace:"nowrap",
                                       }}>
-                                        🔜 EXE Linux — Coming Soon
+                                        🔧 EXE Linux — In Development
                                       </div>
                                     )}
 
@@ -512,7 +514,7 @@ export default function PortalPage() {
                                         background:"rgba(245,158,11,0.06)", color:"#f59e0b", fontSize:12, fontWeight:700,
                                         display:"flex", alignItems:"center", gap:5, cursor:"default", whiteSpace:"nowrap",
                                       }}>
-                                        🔜 Windows — Coming Soon
+                                        🔧 Windows EXE — In Development
                                       </div>
                                     )}
                                   </>);

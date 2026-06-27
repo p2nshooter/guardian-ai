@@ -85,6 +85,15 @@ export async function GET(req: NextRequest) {
   if (!licenseId)
     return NextResponse.json({ error: "license_id required" }, { status: 400 });
 
+  // Standalone EXE binaries are temporarily disabled platform-wide (in active
+  // development). Guides and the Docker build remain fully available. This is a
+  // hard backend guard so a direct API call can't bypass the disabled UI.
+  if ((type as string).startsWith("exe") && action === "download") {
+    return NextResponse.json(
+      { error: "The standalone EXE is in active development and not yet available. Please use the Docker build for now.", code: "exe_in_development" },
+      { status: 503 });
+  }
+
   let db: any;
   try { db = getDB(req); } catch {
     return NextResponse.json({ error: "DB unavailable" }, { status: 503 });
