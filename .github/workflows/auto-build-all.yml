@@ -45,6 +45,7 @@ jobs:
       compliance: ${{ steps.f.outputs.compliance }}
       sentinel: ${{ steps.f.outputs.sentinel }}
       studio: ${{ steps.f.outputs.studio }}
+      legal: ${{ steps.f.outputs.legal }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -60,6 +61,7 @@ jobs:
             compliance: ['compliance/**']
             sentinel: ['sentinel/**']
             studio: ['studio/**']
+            legal: ['legal/**']
 
   build-guardian-core:
     name: "🛡️ Guardian Core"
@@ -149,9 +151,17 @@ jobs:
     with: { context: ./studio, dockerfile: ./studio/Dockerfile, image_name: studio-core }
     secrets: inherit
 
+  build-legal-core:
+    name: "⚖️ Legal Core"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.legal == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./legal, dockerfile: ./legal/Dockerfile, image_name: legal-core }
+    secrets: inherit
+
   summary:
     name: "📊 Summary"
-    needs: [build-guardian-core,build-guardian-node,build-guardian-antivirus,build-orchestra-core,build-orchestra-worker-cpu,build-vault-core,build-edge-core,build-soc-core,build-compliance-core,build-sentinel-core,build-studio-core]
+    needs: [build-guardian-core,build-guardian-node,build-guardian-antivirus,build-orchestra-core,build-orchestra-worker-cpu,build-vault-core,build-edge-core,build-soc-core,build-compliance-core,build-sentinel-core,build-studio-core,build-legal-core]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -168,4 +178,5 @@ jobs:
           echo "Compliance:    ${{ needs.build-compliance-core.result }}"
           echo "Sentinel:      ${{ needs.build-sentinel-core.result }}"
           echo "Studio:        ${{ needs.build-studio-core.result }}"
+          echo "Legal:         ${{ needs.build-legal-core.result }}"
           echo "══════════════════════════"

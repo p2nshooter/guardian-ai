@@ -32,11 +32,12 @@ const COMPLIANCE_PRODUCTS = ["compliance-core"];
 const SENTINEL_PRODUCTS   = ["sentinel-core", "sentinel-agent"];
 const ANTIVIRUS_PRODUCTS  = ["guardian-antivirus"];
 const STUDIO_PRODUCTS     = ["studio-core"];
+const LEGAL_PRODUCTS      = ["legal-core"];
 
 const ALL_PRODUCTS = [
   ...GUARDIAN_PRODUCTS, ...ORCHESTRA_PRODUCTS, ...VAULT_PRODUCTS,
   ...EDGE_PRODUCTS, ...SOC_PRODUCTS, ...COMPLIANCE_PRODUCTS, ...SENTINEL_PRODUCTS,
-  ...STUDIO_PRODUCTS,
+  ...STUDIO_PRODUCTS, ...LEGAL_PRODUCTS,
 ];
 
 const PRODUCT_LABELS: Record<string, string> = {
@@ -54,6 +55,7 @@ const PRODUCT_LABELS: Record<string, string> = {
   "sentinel-core":      "Sentinel Core — IoT/OT Security",
   "sentinel-agent":     "Sentinel Agent — IoT Edge Agent",
   "studio-core":        "Studio Core — AI & GPU Pool Platform (AI Studio + GPU Studio + Hybrid Studio)",
+  "legal-core":         "AXTO Legal Core — AI Legal Research, Contract Intelligence & Document Builder",
 };
 
 function getProductsForLicense(product: string): string[] {
@@ -67,6 +69,7 @@ function getProductsForLicense(product: string): string[] {
     case "sentinel":    return SENTINEL_PRODUCTS;
     case "antivirus":   return ANTIVIRUS_PRODUCTS;
     case "studio":      return STUDIO_PRODUCTS;
+    case "legal":       return LEGAL_PRODUCTS;
     default:            return [];
   }
 }
