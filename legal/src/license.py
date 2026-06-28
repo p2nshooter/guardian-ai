@@ -245,6 +245,36 @@ def _parse_entitlements(s: str) -> dict:
     return out
 
 
+# Field order of the separately-signed entitlements payload — must match
+# buildEntitlementsPayload() in dashboard/lib/license-signing.ts byte-for-byte.
+ENTITLEMENTS_FIELDS = ["license_key", "machine_id", "product", "entitlements", "issued_at", "nonce"]
+
+
+def _verified_entitlements(data: dict, expected_key: str = "") -> dict:
+    """Verify and parse the SEPARATELY-signed entitlements block. Returns the
+    parsed entitlements dict only if its Ed25519 signature is valid, it is bound
+    to this product, and (when known) to this license_key — otherwise {} so the
+    caller falls back to safe defaults. Older issuers that don't send the block
+    simply yield {}; this never weakens the main license verification."""
+    ep = data.get("entitlements_payload", "")
+    es = data.get("entitlements_signature", "")
+    if not ep or not es:
+        return {}
+    if not _verify_signature(ep, es):
+        logger.warning("AXTO Legal — entitlements signature invalid, ignoring (safe defaults apply)")
+        return {}
+    parts = ep.split("|")
+    if len(parts) < len(ENTITLEMENTS_FIELDS):
+        return {}
+    fields = dict(zip(ENTITLEMENTS_FIELDS, parts))
+    if fields.get("product") and fields["product"] != PRODUCT_CODE:
+        return {}
+    if expected_key and fields.get("license_key") and fields["license_key"] != expected_key:
+        logger.warning("AXTO Legal — entitlements bound to a different license, ignoring")
+        return {}
+    return _parse_entitlements(fields.get("entitlements", ""))
+
+
 def _ent_int(ent: dict, feats: dict, key: str, default: int) -> int:
     """Resolve an integer entitlement: SIGNED entitlements first (authoritative),
     then the (transitional) unsigned features object, then the safe default."""
@@ -287,13 +317,12 @@ def _parse_response(data: dict) -> LicenseState:
         valid = False
 
     # ── Entitlements (package + per-tier limits) ──────────────────────────────
-    # AUTHORITATIVE source is the SIGNED entitlements segment appended to the
-    # canonical payload (payload["extra_0"]) — it is covered by the Ed25519
-    # signature, so a client cannot edit its cache to unlock a higher tier.
-    # The unsigned `features`/`package_code` fields are only a transitional
-    # fallback (older issuer responses) and are never trusted over the signed
-    # value; safe defaults apply if neither is present.
-    ent   = _parse_entitlements(payload.get("extra_0", ""))
+    # AUTHORITATIVE source is the SEPARATELY-signed entitlements block, verified
+    # and bound to this license_key — a client cannot edit its cache to unlock a
+    # higher tier. The unsigned `features`/`package_code` fields are only a
+    # transitional fallback (older issuer responses) and are never trusted over
+    # the signed value; safe defaults apply if neither is present.
+    ent   = _verified_entitlements(data, payload.get("license_key", ""))
     feats = data.get("features", {}) if isinstance(data.get("features"), dict) else {}
     package = ent.get("package") or data.get("package_code") or data.get("package") or ""
 

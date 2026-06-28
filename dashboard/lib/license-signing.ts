@@ -116,14 +116,14 @@ export interface SignableLicenseFields {
   status: string;
   expiresAt: string;
   /**
-   * Compact, signed serialization of the license entitlements (package code +
+   * Compact serialization of the license entitlements (package code +
    * per-package feature/limit values), e.g. "package=legal_pro;max_countries=25;
-   * workspaces=12;...". Appended as the final canonical-payload segment so that
-   * a client cannot tamper with its on-disk cache (or a MITM cannot edit the
-   * response) to grant itself a higher tier than it paid for. Empty string for
-   * responses that carry no entitlement claim (invalid/expired/revoked). This
-   * field is appended LAST, so older clients that verify the received payload
-   * string as-is and ignore trailing segments remain fully compatible.
+   * workspaces=12;...". When present it is signed SEPARATELY (see
+   * entitlements_signature below) over a payload bound to this license + machine
+   * + issuance, so a client cannot edit its on-disk cache (or a MITM cannot edit
+   * the response) to grant itself a higher tier than it paid for. It is NOT part
+   * of the 8-field canonical payload, so already-deployed clients that predate
+   * entitlement-signing keep verifying the exact same bytes and are unaffected.
    */
   entitlements?: string;
 }
@@ -147,7 +147,6 @@ export function buildCanonicalPayload(fields: SignableLicenseFields & {
     fields.expiresAt || "",
     fields.issuedAt,
     fields.nonce,
-    fields.entitlements || "",
   ].join("|");
 }
 
@@ -155,6 +154,37 @@ export interface SignedLicenseResponse {
   signed_payload: string;
   signature: string;
   issued_at: string;
+  // Present only when the caller supplied `entitlements`. Carried OUTSIDE the
+  // 8-field canonical payload so legacy clients are unaffected. New clients
+  // verify `entitlements_signature` over `entitlements_payload` (which binds the
+  // entitlements to this license_key + machine_id + issuance) before trusting it.
+  entitlements?: string;
+  entitlements_payload?: string;
+  entitlements_signature?: string;
+}
+
+/**
+ * Canonical, signable binding for entitlements. Pipe-delimited and bound to the
+ * license + machine + issuance so a signed entitlement string cannot be replayed
+ * onto a different license/machine. Must match what each product client
+ * reconstructs/parses during verification.
+ */
+export function buildEntitlementsPayload(fields: {
+  licenseKey: string;
+  machineId: string;
+  product: string;
+  entitlements: string;
+  issuedAt: string;
+  nonce: string;
+}): string {
+  return [
+    fields.licenseKey,
+    fields.machineId || "",
+    fields.product || "",
+    fields.entitlements || "",
+    fields.issuedAt,
+    fields.nonce,
+  ].join("|");
 }
 
 /**
@@ -172,9 +202,27 @@ export async function signLicenseResponse(
   const payload = buildCanonicalPayload({ ...fields, issuedAt, nonce });
   const key = await getSigningKey();
   const sigBuf = await crypto.subtle.sign({ name: "Ed25519" } as any, key, new TextEncoder().encode(payload));
-  return {
+  const res: SignedLicenseResponse = {
     signed_payload: payload,
     signature: bytesToB64(new Uint8Array(sigBuf)),
     issued_at: issuedAt,
   };
+
+  // Separately sign the entitlements (when supplied) over a license-bound
+  // payload. Kept out of the canonical payload so legacy clients are unaffected.
+  if (fields.entitlements != null) {
+    const entPayload = buildEntitlementsPayload({
+      licenseKey: fields.licenseKey,
+      machineId: fields.machineId,
+      product: fields.product,
+      entitlements: fields.entitlements,
+      issuedAt,
+      nonce,
+    });
+    const entSig = await crypto.subtle.sign({ name: "Ed25519" } as any, key, new TextEncoder().encode(entPayload));
+    res.entitlements = fields.entitlements;
+    res.entitlements_payload = entPayload;
+    res.entitlements_signature = bytesToB64(new Uint8Array(entSig));
+  }
+  return res;
 }
