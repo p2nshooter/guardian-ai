@@ -32,6 +32,23 @@ export interface LivePrice {
   source: "db" | "static";
 }
 
+// ── Lifetime (perpetual) pricing ────────────────────────────────────────────
+// Business rule: Lifetime = 10× the annual price. Sales may negotiate down to a
+// floor of 5× annual (handled by manual admin issuance, never below this), so a
+// perpetual license is always worth at least five years of subscription.
+export const LIFETIME_MULTIPLIER = 10;
+export const LIFETIME_MIN_MULTIPLIER = 5;
+
+/** Standard lifetime price for an annual price (10× annual). */
+export function lifetimePrice(annual: number): number {
+  return Math.round(annual * LIFETIME_MULTIPLIER);
+}
+
+/** Clamp a negotiated lifetime price to the allowed floor (>= 5× annual). */
+export function clampLifetimePrice(annual: number, proposed: number): number {
+  return Math.max(Math.round(annual * LIFETIME_MIN_MULTIPLIER), Math.round(proposed));
+}
+
 export interface LivePackageRow {
   code: string;
   price_usd: number;

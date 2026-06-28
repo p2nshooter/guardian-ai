@@ -270,6 +270,10 @@ export async function createLicense(
   const trialDays =
     (params.trialDays && params.trialDays > 0) ? Math.floor(params.trialDays) : 0;
 
+  const isLifetime =
+    params.licenseType === "lifetime" ||
+    (params.billingCycle as string) === "lifetime";
+
   if (isTrial && trialDays > 0) {
     expiresAt.setDate(expiresAt.getDate() + trialDays);
   } else if (params.expiresInDays && params.expiresInDays > 0) {
@@ -277,12 +281,18 @@ export async function createLicense(
   } else if (params.packageCode.startsWith("trial_")) {
     // Legacy `trial_` package with no explicit duration → keep historical 3 days
     expiresAt.setDate(expiresAt.getDate() + 3);
+  } else if (isLifetime) {
+    // Lifetime / perpetual license — expiry is set 100 years out so every
+    // existing date-based check (client offline-grace logic, /api/license-validate
+    // expiry comparison, renewal warnings) keeps working unchanged while the
+    // license never practically expires.
+    expiresAt.setFullYear(expiresAt.getFullYear() + 100);
   } else {
     expiresAt.setMonth(expiresAt.getMonth() + months);
   }
 
   const resolvedLicenseType =
-    params.licenseType ?? (isTrial ? "trial" : (params.billingCycle ?? "yearly"));
+    params.licenseType ?? (isTrial ? "trial" : (isLifetime ? "lifetime" : (params.billingCycle ?? "yearly")));
   const trialDaysStored = isTrial ? (trialDays || params.expiresInDays || 3) : 0;
 
   const { maxNodes } = await resolvePackageLimits(db, params.packageCode, product);

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PACKAGE_INFO, isForSale } from "@/lib/stripe";
-import { getLivePrice } from "@/lib/pricing";
+import { getLivePrice, lifetimePrice } from "@/lib/pricing";
 import { getStripeCredentials, getPayPalCredentials, getXenditCredentials, getMidtransCredentials } from "@/lib/gateways";
 import { createPayPalOrderWithCreds } from "@/lib/paypal";
 import { createXenditInvoiceWithKey } from "@/lib/xendit";
@@ -122,12 +122,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "This product is not yet available for purchase (Coming Soon)" }, { status: 403 });
   }
 
-  const isYearly = billing !== "monthly";
+  const isLifetime = billing === "lifetime";
+  const isYearly   = !isLifetime && billing !== "monthly";
 
   // ── LIVE PRICING: query DB first, fall back to PACKAGE_INFO if unavailable ─
   // This is what makes prices editable from the admin panel without a deploy.
   const livePrice = await getLivePrice(req, pkg);
-  const amountUsd = isYearly ? livePrice.price : livePrice.priceMonthly;
+  const amountUsd = isLifetime ? lifetimePrice(livePrice.price)
+                  : isYearly   ? livePrice.price
+                  :              livePrice.priceMonthly;
 
   const pkgName   = pkgInfo.name;
   const isBundle  = !!pkgInfo.isBundle;
@@ -162,7 +165,7 @@ export async function POST(req: NextRequest) {
       sessionParams.line_items = [{
         price_data: {
           currency: "usd", unit_amount: Math.round(amountUsd * 100),
-          product_data: { name: `AXTO ${pkgName}`, description: `${isYearly ? "Annual" : "Monthly"} license` },
+          product_data: { name: `AXTO ${pkgName}`, description: `${isLifetime ? "Lifetime (perpetual)" : isYearly ? "Annual" : "Monthly"} license` },
         }, quantity: 1,
       }];
     }
