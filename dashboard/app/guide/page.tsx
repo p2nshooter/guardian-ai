@@ -13,7 +13,7 @@ import { useLocale } from "@/lib/locale-provider";
 import { FREE_AI_PROVIDERS } from "@/lib/free-ai-providers";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
-type Section = "start"|"guardian"|"orchestra"|"antivirus"|"api"|"vault"|"edge"|"soc"|"compliance"|"sentinel"|"ai-studio"|"gpu-studio"|"hybrid-studio";
+type Section = "start"|"guardian"|"orchestra"|"antivirus"|"api"|"vault"|"edge"|"soc"|"compliance"|"sentinel"|"legal"|"ai-studio"|"gpu-studio"|"hybrid-studio";
 
 // ─── Setup flow steps ──────────────────────────────────────────────────────
 // Steps are defined as functions to support locale
@@ -1150,6 +1150,58 @@ function ApiAnim() {
         <div style={{fontSize:10,color:"#94a3b8"}}>{f.cost}/1K tokens</div>
 
         {/* ═══════════════════════════════════════════════════════════════
+            AXTO LEGAL GUIDE
+        ═══════════════════════════════════════════════════════════════ */}
+        {section === "legal" && (
+          <div style={{maxWidth:900}}>
+            <div style={{background:"linear-gradient(135deg,#1e1b4b,#312e81)",borderRadius:16,padding:"28px 32px",marginBottom:24,color:"#fff"}}>
+              <h1 style={{fontSize:24,fontWeight:900,margin:"0 0 6px"}}>⚖️ AXTO Legal — Setup &amp; Usage</h1>
+              <p style={{margin:0,fontSize:14,opacity:0.85,lineHeight:1.6}}>
+                Self-hosted AI legal intelligence. Deploy in minutes, connect your own AI key, then research the law, analyze contracts, and build documents across 195+ jurisdictions — all on your infrastructure.
+              </p>
+            </div>
+            {[
+              { step:1, title:"Deploy with Docker", color:"#4338ca",
+                desc:"Download legal-core from your client portal and start it with Docker Compose. Runs fully on your own server — no data leaves your network.",
+                code:"# 1. Download legal-core.tar.gz + legal-compose.yml from the portal\ndocker load -i legal-core.tar.gz\n\n# 2. Start the service\ndocker compose -f legal-compose.yml up -d\n\n# 3. Open the console\n#    http://YOUR_SERVER:8080" },
+              { step:2, title:"Activate Your License", color:"#4338ca",
+                desc:"On first run, paste the license key emailed to you (or shown in your client portal). Activation validates once against axto.io, then works offline.",
+                code:"# Console → Settings → License\n# Paste your key:  AXTO-LEGAL-XXXX-XXXX-XXXX\n# Click Activate. Done." },
+              { step:3, title:"Connect Your AI Key (BYOK)", color:"#0d9488",
+                desc:"AXTO Legal is Bring-Your-Own-Key. Use any free provider from the Setup & Deploy page (Groq, Google AI Studio, OpenRouter…), or run a 100% private local model (Ollama) for privileged matters.",
+                code:"# Console → Settings → AI Provider\nprovider: groq                 # or ollama for offline/private\napi_key:  \"gsk_your_free_key\"   # stays on your server\nmodel:    \"llama-3.3-70b\"\n\n# Sensitive matter? Use Ollama — nothing leaves your machine:\n#   provider: ollama   model: llama3.1" },
+              { step:4, title:"Legal Research", color:"#4338ca",
+                desc:"Ask a legal question in plain language. AXTO Legal searches trusted public sources for your jurisdiction and returns a clear summary with verifiable citations.",
+                code:"# Console → Research\n> \"What are the notice requirements to terminate\n>  a commercial lease in Indonesia?\"\n\n# Returns: plain-language answer + statute/case citations\n# you can open and verify." },
+              { step:5, title:"Contract Intelligence", color:"#4338ca",
+                desc:"Upload a contract (PDF/DOCX). AXTO Legal extracts key clauses, flags risks and missing protections, and explains each point in language anyone can understand.",
+                code:"# Console → Contracts → Upload\n#  - Key terms & obligations\n#  - Risk flags (one-sided clauses, gaps)\n#  - Suggested redlines\n#  - Plain-language summary" },
+              { step:6, title:"Smart Document Builder", color:"#4338ca",
+                desc:"Generate agreements, NDAs, letters and filings from guided templates tailored to your jurisdiction, then export to PDF or Word.",
+                code:"# Console → Documents → New\n#  1. Pick a template (NDA, service agreement, …)\n#  2. Answer the guided questions\n#  3. Review the AI-drafted document\n#  4. Export → PDF / DOCX" },
+              { step:7, title:"Jurisdiction Packs", color:"#4338ca",
+                desc:"Enable the country packs included in your license so research and documents follow local law. Legal source connectors are kept up to date.",
+                code:"# Console → Settings → Jurisdictions\n# Toggle the country packs your license includes\n# (Starter: 3 · Professional: 20 · Enterprise: 195+)" },
+              { step:8, title:"Privacy & Responsible Use", color:"#dc2626",
+                desc:"Everything is self-hosted. For confidential or privileged work, prefer a local model. AXTO Legal is an assistive tool — always have important matters reviewed by a licensed lawyer in your jurisdiction.",
+                code:"# Best practice for privileged matters:\n#  • Use a local model (Ollama / vLLM)\n#  • Keep documents on your own storage\n#  • Treat output as a draft, not legal advice" },
+            ].map((s,i)=>(
+              <div key={i} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden"}}>
+                <div style={{padding:"14px 20px",background:`${s.color}12`,borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:s.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:12}}>{s.step}</div>
+                  <span style={{fontWeight:800,fontSize:14,color:"#0a1628"}}>{s.title}</span>
+                  <span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:600}}>Step {s.step} of 8</span>
+                </div>
+                <div style={{padding:"16px 20px"}}>
+                  <p style={{margin:"0 0 12px",fontSize:13,color:"#64748b",lineHeight:1.7,whiteSpace:"pre-line"}}>{s.desc}</p>
+                  <pre style={{margin:0,padding:"14px 16px",background:"#0a1628",fontSize:11,color:"#fde68a",overflow:"auto",lineHeight:1.8,borderRadius:10,fontFamily:"'JetBrains Mono',monospace"}}>{s.code}</pre>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
             AI STUDIO GUIDE
         ═══════════════════════════════════════════════════════════════ */}
         {section === "ai-studio" && (
@@ -1345,6 +1397,7 @@ export default function GuidePage() {
     { id:"soc" as Section,        icon:"🔴", label:"SOC" },
     { id:"compliance" as Section, icon:"📋", label:"Compliance" },
     { id:"sentinel" as Section,   icon:"📡", label:"Sentinel" },
+    { id:"legal" as Section,      icon:"⚖️", label:"Legal" },
     { id:"api" as Section,        icon:"🤖", label:"API Integration" },
     { id:"ai-studio" as Section,  icon:"🧠", label:"AI Studio" },
     { id:"gpu-studio" as Section, icon:"🎨", label:"GPU Studio" },
