@@ -321,7 +321,26 @@ export async function POST(req: NextRequest) {
   return signedJson(response, {
     licenseKey: cleanKey, machineId: mid, product: lic.product,
     valid: true, status: lic.status, expiresAt: lic.expires_at,
+    // Bind the exact entitlements into the signed payload so a client cannot
+    // edit its cache / a MITM cannot edit the response to unlock a higher tier.
+    entitlements: serializeEntitlements(features, lic.package_code),
   });
+}
+
+// ── Deterministic, signable serialization of a license's entitlements ─────────
+// Format: "package=<code>;<k1>=<v1>;<k2>=<v2>;..." with feature keys sorted so
+// the same bytes are produced for the same license every time. Values are only
+// booleans / numbers / simple identifiers (never contain ';', '=', or '|'), so
+// the string round-trips losslessly and can never break the pipe-delimited
+// canonical license payload it becomes the final segment of.
+function serializeEntitlements(features: Record<string, any>, packageCode: string): string {
+  const parts = [`package=${packageCode || ""}`];
+  for (const k of Object.keys(features).sort()) {
+    const v = features[k];
+    const s = typeof v === "boolean" ? (v ? "true" : "false") : String(v);
+    parts.push(`${k}=${s}`);
+  }
+  return parts.join(";");
 }
 
 // ── Build product-specific features object ───────────────────────────────────
@@ -354,23 +373,31 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
         cost_analytics:    true,
         federation:        ["orchestra_scale","orchestra_unlimited"].includes(packageCode),
       };
-    case "vault":
+    case "vault": {
+      // FAIL-CLOSED tier resolution — an unrecognized package gets the Starter
+      // entitlement (incl. the lowest daily request cap), never unlimited.
+      const pc = (packageCode || "").toLowerCase();
+      const tier = pc.includes("enterprise") ? "ent"
+                 : pc.includes("business")   ? "biz"
+                 : pc.includes("pro")        ? "pro"
+                 : "starter";
       return {
         ...base,
         pii_redaction:     true,
         phi_redaction:     true,
         financial_redaction: true,
         audit_trail:       true,
-        custom_policies:   packageCode !== "vault_starter",
-        soc2_report:       packageCode !== "vault_starter",
-        hipaa_report:      packageCode !== "vault_starter",
-        multi_tenant:      ["vault_business","vault_enterprise"].includes(packageCode),
-        siem_integration:  ["vault_business","vault_enterprise"].includes(packageCode),
-        max_requests_daily: packageCode === "vault_starter"      ? 50_000
-                          : packageCode === "vault_professional" ? 500_000
-                          : packageCode === "vault_business"     ? 5_000_000
+        custom_policies:   tier !== "starter",
+        soc2_report:       tier !== "starter",
+        hipaa_report:      tier !== "starter",
+        multi_tenant:      ["biz","ent"].includes(tier),
+        siem_integration:  ["biz","ent"].includes(tier),
+        max_requests_daily: tier === "starter" ? 50_000
+                          : tier === "pro"     ? 500_000
+                          : tier === "biz"     ? 5_000_000
                           : -1,
       };
+    }
     case "edge":
       return { ...base, rate_limiting: true, token_metering: true, abuse_detection: true };
     case "soc":
@@ -390,10 +417,22 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
         image_generation:  true,
         max_concurrent_jobs: maxNodes,
       };
-    case "legal":
+    case "legal": {
       // AXTO Legal — feature flags consumed by legal/src (workspaces, country
-      // packs, compliance frameworks). Tiered by package_code so Starter <
-      // Professional < Enterprise < Sovereign unlock progressively more.
+      // packs, compliance frameworks). Tier is resolved EXPLICITLY and
+      // FAIL-CLOSED: an unrecognized package code gets the most restrictive
+      // (Starter) entitlement, never full access — so a cheaper or malformed
+      // package can never silently unlock the Enterprise tier.
+      const pc = (packageCode || "").toLowerCase();
+      const tier = (pc.includes("enterprise") || pc.includes("sovereign")) ? "ent"
+                 :  pc.includes("business")                                 ? "biz"
+                 :  pc.includes("pro")                                      ? "pro"
+                 :  "starter";
+      // of 195+ jurisdictions / 18 AI workspaces / 50+ compliance frameworks;
+      // -1 means "all". Starter < Professional < Business < Enterprise/Sovereign.
+      const COUNTRIES:  Record<string, number> = { starter: 3, pro: 25, biz: 75, ent: -1 };
+      const WORKSPACES: Record<string, number> = { starter: 5, pro: 12, biz: 15, ent: 18 };
+      const FRAMEWORKS: Record<string, number> = { starter: 5, pro: 20, biz: 35, ent: -1 };
       return {
         ...base,
         air_gapped:            true,
@@ -401,22 +440,14 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
         document_analysis:     true,
         prompt_library:        true,
         ai_task_advisor:       true,
-        // Country legal packs: Starter 3, Professional 25, Enterprise/Sovereign all 195+
-        max_countries:         packageCode.includes("starter")   ? 3
-                             : packageCode.includes("pro")       ? 25
-                             : -1,
-        // AI workspaces unlocked (of 18): Starter 5, Pro 12, Enterprise+ all
-        workspaces:            packageCode.includes("starter")   ? 5
-                             : packageCode.includes("pro")       ? 12
-                             : 18,
-        // Compliance frameworks (of 50+): Starter 5, Pro 20, Enterprise+ all
-        max_frameworks:        packageCode.includes("starter")   ? 5
-                             : packageCode.includes("pro")       ? 20
-                             : -1,
-        multi_jurisdiction:    !packageCode.includes("starter"),
-        byo_everything:        packageCode.includes("enterprise") || packageCode.includes("sovereign"),
+        max_countries:         COUNTRIES[tier],
+        workspaces:            WORKSPACES[tier],
+        max_frameworks:        FRAMEWORKS[tier],
+        multi_jurisdiction:    tier !== "starter",
+        byo_everything:        tier === "ent",
         offline_storage:       true,
       };
+    }
     default:
       return base;
   }

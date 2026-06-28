@@ -115,6 +115,17 @@ export interface SignableLicenseFields {
   valid: boolean;
   status: string;
   expiresAt: string;
+  /**
+   * Compact, signed serialization of the license entitlements (package code +
+   * per-package feature/limit values), e.g. "package=legal_pro;max_countries=25;
+   * workspaces=12;...". Appended as the final canonical-payload segment so that
+   * a client cannot tamper with its on-disk cache (or a MITM cannot edit the
+   * response) to grant itself a higher tier than it paid for. Empty string for
+   * responses that carry no entitlement claim (invalid/expired/revoked). This
+   * field is appended LAST, so older clients that verify the received payload
+   * string as-is and ignore trailing segments remain fully compatible.
+   */
+  entitlements?: string;
 }
 
 /**
@@ -136,6 +147,7 @@ export function buildCanonicalPayload(fields: SignableLicenseFields & {
     fields.expiresAt || "",
     fields.issuedAt,
     fields.nonce,
+    fields.entitlements || "",
   ].join("|");
 }
 

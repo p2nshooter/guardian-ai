@@ -205,25 +205,56 @@ def _clear_cache() -> None:
 
 # ── Core Validation ───────────────────────────────────────────────────────────
 class LicenseState:
-    __slots__ = ("valid", "status", "plan", "client_name", "expires_at",
-                 "max_users", "max_countries", "edition", "workspaces")
+    __slots__ = ("valid", "status", "plan", "package", "client_name", "expires_at",
+                 "max_users", "max_countries", "max_frameworks", "edition", "workspaces")
 
-    def __init__(self, valid: bool, status: str = "", plan: str = "",
+    def __init__(self, valid: bool, status: str = "", plan: str = "", package: str = "",
                  client_name: str = "", expires_at: str = "",
-                 max_users: int = 0, max_countries: int = 3,
+                 max_users: int = 0, max_countries: int = 3, max_frameworks: int = 5,
                  edition: str = "enterprise", workspaces: int = 5):
-        self.valid         = valid
-        self.status        = status
-        self.plan          = plan
-        self.client_name   = client_name
-        self.expires_at    = expires_at
-        self.max_users     = max_users
-        self.max_countries = max_countries
-        self.edition       = edition
-        self.workspaces    = workspaces
+        self.valid          = valid
+        self.status         = status
+        self.plan           = plan
+        self.package        = package
+        self.client_name    = client_name
+        self.expires_at     = expires_at
+        self.max_users      = max_users
+        self.max_countries  = max_countries
+        self.max_frameworks = max_frameworks
+        self.edition        = edition
+        self.workspaces     = workspaces
 
     def to_dict(self) -> dict:
         return {k: getattr(self, k) for k in self.__slots__}
+
+    # Unlimited sentinel: the server emits -1 for "all" (Enterprise/Sovereign).
+    def countries_allowed(self) -> str:
+        return "all" if self.max_countries == -1 else str(self.max_countries)
+
+
+def _parse_entitlements(s: str) -> dict:
+    """Parse the signed entitlements segment 'package=x;key=val;...' into a dict.
+    Values are kept as strings; callers coerce as needed."""
+    out: dict = {}
+    if not s:
+        return out
+    for kv in s.split(";"):
+        if "=" in kv:
+            k, v = kv.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def _ent_int(ent: dict, feats: dict, key: str, default: int) -> int:
+    """Resolve an integer entitlement: SIGNED entitlements first (authoritative),
+    then the (transitional) unsigned features object, then the safe default."""
+    for src in (ent, feats):
+        if key in src and src[key] not in ("", None):
+            try:
+                return int(src[key])
+            except (TypeError, ValueError):
+                pass
+    return default
 
 
 _state: Optional[LicenseState] = None
@@ -255,19 +286,29 @@ def _parse_response(data: dict) -> LicenseState:
     if status in ("revoked", "suspended", "expired"):
         valid = False
 
-    # Parse plan limits from signed payload extras
-    plan    = data.get("plan", "starter")
-    limits  = data.get("limits", {})
+    # ── Entitlements (package + per-tier limits) ──────────────────────────────
+    # AUTHORITATIVE source is the SIGNED entitlements segment appended to the
+    # canonical payload (payload["extra_0"]) — it is covered by the Ed25519
+    # signature, so a client cannot edit its cache to unlock a higher tier.
+    # The unsigned `features`/`package_code` fields are only a transitional
+    # fallback (older issuer responses) and are never trusted over the signed
+    # value; safe defaults apply if neither is present.
+    ent   = _parse_entitlements(payload.get("extra_0", ""))
+    feats = data.get("features", {}) if isinstance(data.get("features"), dict) else {}
+    package = ent.get("package") or data.get("package_code") or data.get("package") or ""
+
     return LicenseState(
-        valid         = valid,
-        status        = status,
-        plan          = plan,
-        client_name   = data.get("client_name", ""),
-        expires_at    = payload.get("expires_at", ""),
-        max_users     = int(limits.get("max_users", 10)),
-        max_countries = int(limits.get("max_countries", 3)),
-        edition       = limits.get("edition", "enterprise"),
-        workspaces    = int(limits.get("workspaces", 5)),
+        valid          = valid,
+        status         = status,
+        plan           = package or "starter",
+        package        = package,
+        client_name    = data.get("client_name", ""),
+        expires_at     = payload.get("expires_at", ""),
+        max_users      = _ent_int(ent, feats, "max_users", 10),
+        max_countries  = _ent_int(ent, feats, "max_countries", 3),
+        max_frameworks = _ent_int(ent, feats, "max_frameworks", 5),
+        edition        = ent.get("edition") or feats.get("edition") or "enterprise",
+        workspaces     = _ent_int(ent, feats, "workspaces", 5),
     )
 
 
