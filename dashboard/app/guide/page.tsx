@@ -10,6 +10,7 @@ export const runtime = "edge";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-provider";
+import { FREE_AI_PROVIDERS } from "@/lib/free-ai-providers";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 type Section = "start"|"guardian"|"orchestra"|"antivirus"|"api"|"vault"|"edge"|"soc"|"compliance"|"sentinel"|"ai-studio"|"gpu-studio"|"hybrid-studio";
@@ -1450,6 +1451,32 @@ export default function GuidePage() {
                   {s.icon} {s.title.split(". ")[1]}
                 </button>
               ))}
+            </div>
+
+            {/* ── Free AI providers (BYOK) ───────────────────────────────── */}
+            <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 16, padding: "20px 22px", marginBottom: 24 }}>
+              <div style={{ fontWeight: 900, fontSize: 16, color: "#0a1628", marginBottom: 4 }}>🆓 Free AI keys to get started (BYOK)</div>
+              <p style={{ fontSize: 13, color: "#475569", margin: "0 0 16px", lineHeight: 1.6 }}>
+                Every AXTO product is <strong>Bring-Your-Own-Key</strong>. Start at zero cost with any of these free / free-tier providers — or run a fully private, offline model so no data ever leaves your machine.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 10 }}>
+                {FREE_AI_PROVIDERS.map(p => (
+                  <a key={p.name} href={p.signup} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "block", textDecoration: "none", border: `1.5px solid ${p.local ? "rgba(13,148,136,0.35)" : "#e2e8f0"}`, background: p.local ? "rgba(13,148,136,0.04)" : "#f8fafc", borderRadius: 12, padding: "12px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                      <span style={{ fontWeight: 800, fontSize: 13, color: "#0a1628" }}>{p.name}</span>
+                      {p.local
+                        ? <span style={{ fontSize: 9, fontWeight: 800, color: "#0d9488", background: "rgba(13,148,136,0.1)", borderRadius: 5, padding: "1px 6px" }}>PRIVATE</span>
+                        : <span style={{ fontSize: 9, fontWeight: 700, color: "#64748b" }}>{p.region}</span>}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#64748b", margin: "5px 0 8px", lineHeight: 1.5 }}>{p.free}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#0284c7" }}>Get key →</div>
+                  </a>
+                ))}
+              </div>
+              <p style={{ fontSize: 11, color: "#94a3b8", margin: "14px 0 0", lineHeight: 1.6 }}>
+                🔒 For confidential or regulated matters, prefer a <strong>PRIVATE</strong> local model (Ollama / vLLM / llama.cpp). Cloud free tiers may log or train on free traffic — review each provider's terms before sending sensitive data.
+              </p>
             </div>
 
             {/* Active step detail */}
