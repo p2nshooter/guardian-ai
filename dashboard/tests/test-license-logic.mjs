@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* ==============================================================================
  * AXTO Legal — License Logic Test Harness
- * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  *
  * Pure-logic regression tests that mirror, byte-for-byte, the algorithms in:
  *   - dashboard/lib/license.ts            (generateLicenseKey, createLicense expiry)

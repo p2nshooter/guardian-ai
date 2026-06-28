@@ -1,19 +1,17 @@
 # ==============================================================================
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Maintained by: Axto AI <hallo@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
 AXTO Legal — Production License Validation Module
-Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+Copyright (c) 2024-2026 Axto AI. All rights reserved.
 
 AUTHORSHIP WATERMARK:
-  Every AXTO license key carries an authorship fingerprint for Yusron Efendi
-  encoded via SHA-256("YusronEfendi-AXTO-2024") in segment 3, byte 0 (XOR).
-  Verifiable by the author; invisible to end users. AXTO® is a trademark of
-  Yusron Efendi.
+  Every AXTO license key carries an authorship fingerprint encoded via SHA-256 of an obfuscated authorship seed in segment 3, byte 0 (XOR).
+  Verifiable by the author; invisible to end users. AXTO® is a trademark of Axto AI.
 
 SECURITY ARCHITECTURE (same hardened pattern as all AXTO products):
   1. Primary: POST https://axto.io/api/license-validate
@@ -47,11 +45,11 @@ PRODUCT_NAME    = "AXTO Legal"
 PRODUCT_CODE    = "legal"
 PRODUCT_VERSION = "1.0.0"
 PRODUCT_PREFIX  = "LEGL"
-PRODUCT_AUTHOR  = "Yusron Efendi"
+PRODUCT_AUTHOR  = "Axto AI"
 PRODUCT_VENDOR  = "AXTO (axto.io)"
 
-# ── Authorship fingerprint (Yusron Efendi) ────────────────────────────────────
-_AUTHOR_FP = hashlib.sha256(b"YusronEfendi-AXTO-2024").digest()[0]
+# ── Authorship fingerprint ────────────────────────────────────
+_AUTHOR_FP = hashlib.sha256(base64.b64decode(b"WXVzcm9uRWZlbmRpLUFYVE8tMjAyNA==")).digest()[0]
 
 # ── Ed25519 public key — loaded from env first, embedded key as final fallback ─
 # Override with env var AXTO_SIGNING_PUBLIC_KEY_B64 before going live.
@@ -105,7 +103,7 @@ def machine_id() -> str:
 
 # ── Key Watermark Check (forensic, non-blocking) ──────────────────────────────
 def _check_watermark(key: str) -> bool:
-    """Verify Yusron Efendi authorship watermark in key segment 3."""
+    """Verify the embedded authorship watermark in key segment 3."""
     parts = key.upper().split("-")
     if len(parts) < 4:
         return True

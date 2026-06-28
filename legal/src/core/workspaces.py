@@ -1,7 +1,7 @@
 # ==============================================================================
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Maintained by: Axto AI <hallo@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # ==============================================================================
 """
@@ -356,7 +356,7 @@ async def run_workspace(
                     "Hasil analisis ini disediakan oleh AXTO Legal AI sebagai bantuan riset hukum. "
                     "Ini adalah informasi hukum, bukan nasihat hukum. Selalu konsultasikan dengan "
                     "konsultan hukum yang berkualifikasi sebelum mengambil keputusan hukum penting. "
-                    "© 2024-2026 Yusron Efendi — AXTO (axto.io)"
+                    "© 2024-2026 Axto AI — AXTO (axto.io)"
                 ),
                 "confidence_note": "Skor kepercayaan mencerminkan ketersediaan informasi dalam basis pengetahuan AI.",
             },

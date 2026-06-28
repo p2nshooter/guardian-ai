@@ -6,7 +6,7 @@ for(const lang of ["en","id"]){
   const t=renderDisclaimerText(lang);
   ok(`${lang}: assistive-only stated`, /assist|alat bantu/i.test(t));
   ok(`${lang}: decisions rest with user`, /your sole|sole discretion|kewenangan dan risiko|keputusan/i.test(t));
-  ok(`${lang}: no liability for AXTO+Yusron`, /not be liable|tidak bertanggung jawab/i.test(t) && /Yusron Efendi/.test(t) && /axto\.io/.test(t));
+  ok(`${lang}: no liability for AXTO`, /not be liable|tidak bertanggung jawab/i.test(t) && /AXTO/.test(t) && /axto\.io/.test(t));
   ok(`${lang}: as-is`, /as is|sebagaimana adanya/i.test(t));
   ok(`${lang}: must agree clause present`, DISCLAIMER[lang].agree.length>40);
   ok(`${lang}: version embedded`, t.includes(DISCLAIMER_VERSION));

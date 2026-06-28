@@ -1,7 +1,7 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Maintained by: Axto AI <hallo@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -379,7 +379,7 @@ export const PACKAGE_INFO: Record<string, PackageInfo> = {
   },
 
   // ── AXTO Legal — Enterprise AI Legal & Compliance Platform ──────────────
-  // Copyright (c) 2024-2026 Yusron Efendi. All rights reserved. AXTO (axto.io)
+  // Copyright (c) 2024-2026 Axto AI. All rights reserved. AXTO (axto.io)
   // 18 AI Workspaces · 195+ Jurisdictions · 50+ Frameworks · BYOK+BYOD
   legal_starter: {
     name: "AXTO Legal Starter",

@@ -1,16 +1,16 @@
 # ==============================================================================
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Maintained by: Axto AI <hallo@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # ==============================================================================
 FROM python:3.11-slim
 
-LABEL maintainer="Yusron Efendi <hallo@axto.io>"
+LABEL maintainer="Axto AI <hallo@axto.io>"
 LABEL vendor="AXTO (axto.io)"
 LABEL product="AXTO Legal"
 LABEL version="1.0.0"
-LABEL description="Enterprise AI Legal & Compliance Platform. 18 AI Workspaces. 195+ Jurisdictions. Copyright (c) 2024-2026 Yusron Efendi."
+LABEL description="Enterprise AI Legal & Compliance Platform. 18 AI Workspaces. 195+ Jurisdictions. Copyright (c) 2024-2026 Axto AI."
 
 WORKDIR /legal
 
