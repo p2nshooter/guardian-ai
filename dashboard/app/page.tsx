@@ -1614,6 +1614,43 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── AXTO LEGAL ────────────────────────────────────────────── */}
+      <section id="legal" style={{ padding: "100px 24px", background: "#f8fafc", borderTop: "1px solid rgba(67,56,202,0.08)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <span style={{ display: "inline-block", background: "rgba(67,56,202,0.08)", border: "1px solid rgba(67,56,202,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#4338ca", fontWeight: 700, marginBottom: 16 }}>⚖️ AXTO LEGAL — AI LEGAL INTELLIGENCE</span>
+            <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
+              The Smartest Legal AI.<br /><span style={{ background: "linear-gradient(135deg,#4338ca,#0284c7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Private &amp; Self-Hosted.</span>
+            </h2>
+            <p style={{ color: "#334155", fontSize: 17, maxWidth: 700, margin: "0 auto", lineHeight: 1.7 }}>
+              Research the law, understand contracts, and draft documents in minutes — across 195+ jurisdictions. Everything runs on your own infrastructure with your own AI keys, so privileged client matters never leave your control.
+            </p>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
+            <ComingSoonBanner product="legal" color="#4338ca" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 18 }}>
+            {[
+              { icon: "🔎", title: "Global Legal Research", body: "Search statutes, case law and regulations from trusted public sources across 195+ countries — with plain-language summaries and citations you can verify." },
+              { icon: "📑", title: "Contract Intelligence", body: "Upload any contract and instantly surface key clauses, risks, obligations and missing protections — in language a non-lawyer can understand." },
+              { icon: "✍️", title: "Smart Document Builder", body: "Draft agreements, letters, NDAs and filings from guided templates, then export to PDF or Word — tailored to your jurisdiction." },
+              { icon: "🌍", title: "Multi-Jurisdiction", body: "One assistant that adapts to local law wherever your business operates, with country-specific packs and continuously updated legal sources." },
+              { icon: "🆓", title: "Free AI Keys, Worldwide", body: "Bring your own key from a curated catalog of free & free-tier AI providers — or run a fully private local model. Start at zero cost." },
+              { icon: "🔒", title: "Privilege-Grade Privacy", body: "100% self-hosted. No third-party data custody. Ideal for confidential, regulated and attorney-client privileged work." },
+            ].map(c => (
+              <div key={c.title} style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 16, padding: "24px 22px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <div style={{ fontSize: 26, marginBottom: 12 }}>{c.icon}</div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>{c.title}</h3>
+                <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.6 }}>{c.body}</p>
+              </div>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "#94a3b8", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
+            AXTO Legal is an assistive tool, not a substitute for advice from a qualified lawyer. Always have important matters reviewed by licensed counsel in your jurisdiction.
+          </p>
+        </div>
+      </section>
+
       {/* ── ANTIVIRUS PRICING ─────────────────────────────────────── */}
       <section id="antivirus" style={{ padding: "100px 24px", background: "#fff", borderTop: "1px solid rgba(234,88,12,0.08)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
