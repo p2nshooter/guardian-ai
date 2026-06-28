@@ -483,7 +483,7 @@ export default function HomePage() {
             <span style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif", letterSpacing: "-0.5px" }}>AXTO</span>
           </Link>
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {[["#products","Platform"],["#features","Products"],["#pricing","Pricing"],["#vault","Vault"],["#soc","SOC"],["#compliance","Compliance"],["#edge","Edge"],["#sentinel","Sentinel"],["#studio","Studio"],["#byok","BYOK"],["#faq","FAQ"],["/guide","📖 Guide"]].map(([href,label])=>(
+            {[["#products","Platform"],["#features","Products"],["#pricing","Pricing"],["#vault","Vault"],["#soc","SOC"],["#compliance","Compliance"],["#edge","Edge"],["#sentinel","Sentinel"],["#legal","Legal"],["#studio","Studio"],["#byok","BYOK"],["#faq","FAQ"],["/guide","📖 Guide"]].map(([href,label])=>(
               <a key={label} href={href} style={{ color: "#475569", fontSize: 14, fontWeight: 600, padding: "8px 14px", borderRadius: 8, transition: "all 0.15s", textDecoration: "none" }}
                 onMouseOver={e=>{(e.currentTarget as HTMLElement).style.background="rgba(2,132,199,0.08)";(e.currentTarget as HTMLElement).style.color="#0284c7";}}
                 onMouseOut={e=>{(e.currentTarget as HTMLElement).style.background="transparent";(e.currentTarget as HTMLElement).style.color="#475569";}}
@@ -1876,7 +1876,7 @@ export default function HomePage() {
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Products</h4>
-              {["Guardian AI","Orchestra AI","Vault","Edge","SOC","Compliance","Sentinel","Antivirus","Studio"].map(l => <div key={l} style={{ marginBottom: 10 }}><a href={`#${l.toLowerCase().replace(" ai","")}`} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</a></div>)}
+              {["Guardian AI","Orchestra AI","Vault","Edge","SOC","Compliance","Sentinel","Legal","Antivirus","Studio"].map(l => <div key={l} style={{ marginBottom: 10 }}><a href={`#${l.toLowerCase().replace(" ai","")}`} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</a></div>)}
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Resources</h4>
