@@ -1,7 +1,7 @@
 # ==============================================================================
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Maintained by: Axto AI <hallo@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
@@ -137,9 +137,16 @@ def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
     dashboard/lib/license-signing.ts. Returns None if malformed.
     """
     parts = (signed_payload or "").split("|")
-    if len(parts) != len(SIGNED_PAYLOAD_FIELDS):
+    if len(parts) < len(SIGNED_PAYLOAD_FIELDS):
         return None
-    return dict(zip(SIGNED_PAYLOAD_FIELDS, parts))
+    d = dict(zip(SIGNED_PAYLOAD_FIELDS, parts))
+    # Forward-compatible: tolerate extra trailing segments (e.g. the signed
+    # entitlements segment appended by newer issuers). Signature verification
+    # runs over the received payload string as-is, so the original field order
+    # is untouched; the extras are captured as extra_0, extra_1, ...
+    if len(parts) > len(SIGNED_PAYLOAD_FIELDS):
+        d.update({f"extra_{i}": v for i, v in enumerate(parts[len(SIGNED_PAYLOAD_FIELDS):])})
+    return d
 
 
 def _cache_path() -> str:

@@ -1,7 +1,7 @@
 -- ==============================================================================
--- Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+-- Copyright (c) 2024-2026 Axto AI. All rights reserved.
 -- Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
--- Author & Architect: Yusron Efendi <hallo@axto.io>
+-- Maintained by: Axto AI <hallo@axto.io>
 -- Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 -- ==============================================================================
 -- ═══════════════════════════════════════════════════════════════════
@@ -98,7 +98,7 @@ VALUES (
 );
 
 -- AXTO Legal (new product — seeded at launch prices)
--- Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+-- Copyright (c) 2024-2026 Axto AI. All rights reserved.
 INSERT OR IGNORE INTO license_packages
   (id, code, name, product, price_usd, price_monthly, tier, is_active, sort_order, for_sale, created_at, updated_at)
 VALUES

@@ -1,7 +1,7 @@
 # ==============================================================================
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Maintained by: Axto AI <hallo@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # ==============================================================================
 """
@@ -32,7 +32,7 @@ TASK_ROUTING = {
 }
 
 LEGAL_SYSTEM_PROMPT = """You are AXTO Legal AI, an expert enterprise legal and compliance intelligence system.
-Developed by Yusron Efendi as part of the AXTO platform (axto.io).
+Developed as part of the AXTO platform (axto.io).
 
 You operate as a multi-jurisdiction legal research and compliance engine with access to laws from 195+ countries.
 

@@ -1,7 +1,7 @@
 # ==============================================================================
 # AXTO Legal — Master Connector Registry
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
-# Platform: AXTO (axto.io) — Sovereign AI Infrastructure
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform: AXTO (axto.io) — eXecution Tool & Orchestration / Sovereign AI
 # ==============================================================================
 # This file defines ALL legal data source connectors. No URLs are hardcoded
 # in application code — this YAML is the single source of truth for all
@@ -13,8 +13,9 @@
 # verified: true = endpoint confirmed working | false = needs verification
 # ==============================================================================
 
-version: "2.0"
+version: "2.1"
 schema: "axto-legal-source-record-v2"
+updated: "2026-06"
 
 # ── INTL: International Organizations ─────────────────────────────────────────
 intl:
@@ -1041,3 +1042,784 @@ gap_sources:
     links:
       - url: "https://api.opencorporates.com/"
         note: "OpenCorporates API (free + paid tiers)"
+
+# ── NATIONAL LEGISLATION: Official primary-law portals, worldwide ─────────────
+# Government-operated legislation / official-gazette portals — the authoritative
+# primary source for statutes & regulations per jurisdiction. Where a machine
+# API exists it is listed; otherwise the portal is HTML/PDF (auth: open/crawl).
+national_legislation:
+
+  # ── North America ──────────────────────────────────────────────────────────
+  NL-US:
+    id: NL-US
+    name: "United States — govinfo / Congress / eCFR"
+    country: USA
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Federal statutes, the US Code, the Federal Register and the CFR"
+    format: "JSON, XML, HTML, PDF"
+    update: "Daily"
+    website: "https://www.govinfo.gov"
+    links:
+      - url: "https://api.congress.gov/"
+        note: "Congress.gov API — bills, laws, members (free API key)"
+      - url: "https://www.ecfr.gov/developers/documentation/api/v1"
+        note: "eCFR API — Code of Federal Regulations (open REST)"
+      - url: "https://api.govinfo.gov/"
+        note: "GovInfo API — Federal Register, US Code, Statutes (free key)"
+    notes: "All three are open REST APIs; Congress.gov & GovInfo need a free api.data.gov key."
+
+  NL-CA:
+    id: NL-CA
+    name: "Canada — Justice Laws Website"
+    country: Canada
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated federal Acts and regulations of Canada (EN/FR)"
+    format: "XML, HTML, PDF"
+    update: "Weekly"
+    website: "https://laws-lois.justice.gc.ca"
+    links:
+      - url: "https://laws-lois.justice.gc.ca/eng/"
+        note: "Justice Laws — consolidated Acts & Regulations"
+      - url: "https://laws-lois.justice.gc.ca/eng/XML/"
+        note: "Bulk XML of all consolidated legislation"
+    notes: "Bilingual. Bulk XML download available; no rate-limited API."
+
+  NL-MX:
+    id: NL-MX
+    name: "Mexico — Diario Oficial / Leyes Federales"
+    country: Mexico
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Federal laws (Cámara de Diputados) and the official gazette (DOF)"
+    format: "HTML, PDF, DOC"
+    update: "Daily (DOF)"
+    website: "https://www.diputados.gob.mx/LeyesBiblio/"
+    links:
+      - url: "https://www.diputados.gob.mx/LeyesBiblio/index.htm"
+        note: "Leyes Federales vigentes (consolidated federal statutes)"
+      - url: "https://www.dof.gob.mx/"
+        note: "Diario Oficial de la Federación (official gazette)"
+    notes: "Spanish. Portal is HTML/PDF; no public API."
+
+  # ── Latin America ──────────────────────────────────────────────────────────
+  NL-BR:
+    id: NL-BR
+    name: "Brazil — Planalto / LexML"
+    country: Brazil
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Federal Constitution, laws and decrees; LexML legal metadata network"
+    format: "HTML, XML, PDF"
+    update: "On publication"
+    website: "https://www.planalto.gov.br"
+    links:
+      - url: "https://www.planalto.gov.br/ccivil_03/"
+        note: "Casa Civil — consolidated federal legislation"
+      - url: "https://www.lexml.gov.br/"
+        note: "LexML Brasil — federated legal search (SRU/OAI)"
+    notes: "Portuguese. LexML exposes SRU + OAI-PMH harvest interfaces."
+
+  NL-AR:
+    id: NL-AR
+    name: "Argentina — InfoLEG / Boletín Oficial"
+    country: Argentina
+    avail: partial
+    auth: open
+    verified: true
+    desc: "National laws & decrees (InfoLEG) and the official gazette"
+    format: "HTML, PDF"
+    update: "Daily"
+    website: "http://www.infoleg.gob.ar"
+    links:
+      - url: "http://www.infoleg.gob.ar/"
+        note: "InfoLEG — national legislation database"
+      - url: "https://www.boletinoficial.gob.ar/"
+        note: "Boletín Oficial de la República Argentina"
+    notes: "Spanish. HTML/PDF; datos.gob.ar mirrors some datasets."
+
+  NL-CL:
+    id: NL-CL
+    name: "Chile — Ley Chile (BCN)"
+    country: Chile
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated Chilean legislation from the Library of Congress"
+    format: "JSON, XML, HTML"
+    update: "Daily"
+    website: "https://www.bcn.cl/leychile"
+    links:
+      - url: "https://www.bcn.cl/leychile/"
+        note: "Ley Chile — consolidated statutes"
+      - url: "https://www.bcn.cl/leychile/servicios"
+        note: "Ley Chile web services (XML/JSON per-norm)"
+    notes: "Spanish. Per-norm machine endpoints (servicios) are open."
+
+  NL-CO:
+    id: NL-CO
+    name: "Colombia — SUIN-Juriscol"
+    country: Colombia
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Unified national legal information system (statutes & jurisprudence)"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.suin-juriscol.gov.co"
+    links:
+      - url: "https://www.suin-juriscol.gov.co/"
+        note: "SUIN-Juriscol — consolidated national law"
+      - url: "https://www.funcionpublica.gov.co/eva/gestornormativo/"
+        note: "Gestor Normativo (Función Pública)"
+    notes: "Spanish. HTML/PDF; verify availability before relying on it."
+
+  # ── Europe (EU + national) ─────────────────────────────────────────────────
+  NL-EU:
+    id: NL-EU
+    name: "European Union — EUR-Lex"
+    country: EU
+    avail: yes
+    auth: open
+    verified: true
+    desc: "EU treaties, regulations, directives, case-law — 24 languages"
+    format: "XML, RDF, HTML, PDF"
+    update: "Daily (Official Journal)"
+    website: "https://eur-lex.europa.eu"
+    links:
+      - url: "https://eur-lex.europa.eu/content/help/data-reuse/webservice.html"
+        note: "EUR-Lex SOAP web service (registration required)"
+      - url: "https://op.europa.eu/en/web/cellar"
+        note: "CELLAR SPARQL endpoint — semantic legal metadata"
+    notes: "Web service needs free registration; CELLAR SPARQL is open."
+
+  NL-UK:
+    id: NL-UK
+    name: "United Kingdom — legislation.gov.uk"
+    country: UK
+    avail: yes
+    auth: open
+    verified: true
+    desc: "All UK primary & secondary legislation, with revised consolidations"
+    format: "XML (CLML/Akoma Ntoso), RDF, HTML, PDF, Atom"
+    update: "Continuous"
+    website: "https://www.legislation.gov.uk"
+    links:
+      - url: "https://www.legislation.gov.uk/developer"
+        note: "Open API — append /data.xml or /data.akn to any item URL"
+      - url: "https://www.legislation.gov.uk/data.feed"
+        note: "Atom feeds of new legislation"
+    notes: "Excellent fully-open API — best-in-class reference for primary law."
+
+  NL-FR:
+    id: NL-FR
+    name: "France — Légifrance"
+    country: France
+    avail: yes
+    auth: apikey
+    verified: true
+    desc: "French codes, laws, decrees, case-law and the Journal Officiel"
+    format: "JSON, XML, HTML"
+    update: "Daily"
+    website: "https://www.legifrance.gouv.fr"
+    links:
+      - url: "https://piste.gouv.fr/"
+        note: "PISTE — Légifrance API gateway (free OAuth2 key)"
+      - url: "https://www.legifrance.gouv.fr/"
+        note: "Légifrance portal (HTML)"
+    notes: "French. API via PISTE (OAuth2 client credentials, free)."
+
+  NL-DE:
+    id: NL-DE
+    name: "Germany — Gesetze im Internet"
+    country: Germany
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated German federal statutes & ordinances (BMJ/juris)"
+    format: "XML, HTML, PDF, EPUB"
+    update: "On amendment"
+    website: "https://www.gesetze-im-internet.de"
+    links:
+      - url: "https://www.gesetze-im-internet.de/"
+        note: "Gesetze im Internet — federal legislation"
+      - url: "https://www.gesetze-im-internet.de/aktuell.html"
+        note: "Per-law XML download (Akt index)"
+    notes: "German (some EN translations). XML per-law downloads are open."
+
+  NL-IT:
+    id: NL-IT
+    name: "Italy — Normattiva / Gazzetta Ufficiale"
+    country: Italy
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Consolidated Italian statutes and the official gazette"
+    format: "HTML, PDF, XML (Akoma Ntoso)"
+    update: "Daily"
+    website: "https://www.normattiva.it"
+    links:
+      - url: "https://www.normattiva.it/"
+        note: "Normattiva — consolidated national legislation (Akoma Ntoso)"
+      - url: "https://www.gazzettaufficiale.it/"
+        note: "Gazzetta Ufficiale della Repubblica Italiana"
+    notes: "Italian. Akoma Ntoso XML per-norm; no general REST API."
+
+  NL-ES:
+    id: NL-ES
+    name: "Spain — BOE (Boletín Oficial del Estado)"
+    country: Spain
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Spanish official gazette and consolidated legislation"
+    format: "XML, JSON, HTML, PDF"
+    update: "Daily"
+    website: "https://www.boe.es"
+    links:
+      - url: "https://www.boe.es/datosabiertos/"
+        note: "BOE Open Data — consolidated legislation API (XML/JSON)"
+      - url: "https://www.boe.es/"
+        note: "BOE portal"
+    notes: "Spanish. Open-data API exposes consolidated norms as XML/JSON."
+
+  NL-NL:
+    id: NL-NL
+    name: "Netherlands — Wetten.overheid.nl"
+    country: Netherlands
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated Dutch national legislation (KOOP)"
+    format: "XML, HTML"
+    update: "Daily"
+    website: "https://wetten.overheid.nl"
+    links:
+      - url: "https://wetten.overheid.nl/"
+        note: "Wetten.overheid.nl — consolidated legislation"
+      - url: "https://repository.overheid.nl/sru"
+        note: "KOOP SRU API — search/retrieve official publications"
+    notes: "Dutch. SRU API over the official-publications repository is open."
+
+  NL-CH:
+    id: NL-CH
+    name: "Switzerland — Fedlex"
+    country: Switzerland
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Swiss federal law (Classified & Official Compilations), multilingual"
+    format: "XML (Akoma Ntoso), RDF, HTML, PDF"
+    update: "Daily"
+    website: "https://www.fedlex.admin.ch"
+    links:
+      - url: "https://www.fedlex.admin.ch/"
+        note: "Fedlex — Swiss federal legislation portal"
+      - url: "https://fedlex.data.admin.ch/"
+        note: "Fedlex Linked Data — SPARQL endpoint"
+    notes: "DE/FR/IT/RM/EN. SPARQL endpoint over legislation as linked data."
+
+  NL-AT:
+    id: NL-AT
+    name: "Austria — RIS (Rechtsinformationssystem)"
+    country: Austria
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Austrian federal & state law, case-law and official gazette"
+    format: "JSON, XML, HTML, PDF"
+    update: "Daily"
+    website: "https://www.ris.bka.gv.at"
+    links:
+      - url: "https://data.bka.gv.at/ris/api/v2.6/"
+        note: "RIS OGD API v2.6 (open REST, JSON/XML)"
+      - url: "https://www.ris.bka.gv.at/"
+        note: "RIS portal"
+    notes: "German. Fully open OGD REST API."
+
+  NL-IE:
+    id: NL-IE
+    name: "Ireland — Irish Statute Book"
+    country: Ireland
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Acts and statutory instruments of Ireland (eISB)"
+    format: "XML (Akoma Ntoso), HTML, PDF"
+    update: "On publication"
+    website: "https://www.irishstatutebook.ie"
+    links:
+      - url: "https://www.irishstatutebook.ie/"
+        note: "electronic Irish Statute Book"
+      - url: "https://data.oireachtas.ie/akn"
+        note: "Oireachtas Akoma Ntoso open-data API (bills & acts)"
+    notes: "Oireachtas open-data API provides Akoma Ntoso bills/acts."
+
+  NL-PT:
+    id: NL-PT
+    name: "Portugal — Diário da República (DRE)"
+    country: Portugal
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Portuguese official gazette and consolidated legislation"
+    format: "JSON, HTML, PDF"
+    update: "Daily"
+    website: "https://dre.pt"
+    links:
+      - url: "https://dre.pt/dre/en"
+        note: "Diário da República Eletrónico"
+      - url: "https://dre.pt/dre/servicos-rss"
+        note: "DRE feeds / open-data access"
+    notes: "Portuguese. Free access to the official gazette online."
+
+  NL-PL:
+    id: NL-PL
+    name: "Poland — ISAP (Sejm)"
+    country: Poland
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Internet System of Legal Acts — Polish statutes & journals"
+    format: "HTML, PDF, XML"
+    update: "Daily"
+    website: "https://isap.sejm.gov.pl"
+    links:
+      - url: "https://isap.sejm.gov.pl/"
+        note: "ISAP — Internetowy System Aktów Prawnych"
+      - url: "https://api.sejm.gov.pl/"
+        note: "Sejm API — legislative process & acts (open REST)"
+    notes: "Polish. Sejm API is open REST; ISAP serves consolidated texts."
+
+  NL-SE:
+    id: NL-SE
+    name: "Sweden — Riksdagen Open Data"
+    country: Sweden
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Swedish statutes (SFS), bills and parliamentary documents"
+    format: "JSON, XML, CSV, HTML"
+    update: "Daily"
+    website: "https://www.riksdagen.se"
+    links:
+      - url: "https://data.riksdagen.se/"
+        note: "Riksdagen Open Data API (documents, SFS, votes)"
+      - url: "https://www.riksdagen.se/sv/dokument-och-lagar/"
+        note: "Documents & laws portal"
+    notes: "Swedish. Open data API over all parliamentary & legal documents."
+
+  NL-NO:
+    id: NL-NO
+    name: "Norway — Lovdata"
+    country: Norway
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Norwegian laws, regulations and court decisions"
+    format: "HTML, PDF, XML"
+    update: "Daily"
+    website: "https://lovdata.no"
+    links:
+      - url: "https://lovdata.no/"
+        note: "Lovdata — primary legislation (free tier: current law)"
+      - url: "https://data.norge.no/"
+        note: "data.norge.no — Norwegian open government data"
+    notes: "Norwegian. Free public tier covers current law; Pro is subscription."
+
+  NL-FI:
+    id: NL-FI
+    name: "Finland — Finlex"
+    country: Finland
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Finnish statutes, case-law and treaties (FI/SV, some EN)"
+    format: "XML (Akoma Ntoso), HTML, PDF"
+    update: "Daily"
+    website: "https://www.finlex.fi"
+    links:
+      - url: "https://www.finlex.fi/"
+        note: "Finlex — legislative data bank"
+      - url: "https://data.finlex.fi/"
+        note: "Finlex Data — Akoma Ntoso linked open data"
+    notes: "Finlex Data publishes legislation as Akoma Ntoso open data."
+
+  NL-DK:
+    id: NL-DK
+    name: "Denmark — Retsinformation"
+    country: Denmark
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated Danish legislation and administrative rules"
+    format: "HTML, PDF, XML"
+    update: "Daily"
+    website: "https://www.retsinformation.dk"
+    links:
+      - url: "https://www.retsinformation.dk/"
+        note: "Retsinformation — official legal information portal"
+      - url: "https://www.retsinformation.dk/api/documenttypes"
+        note: "Retsinformation document API"
+    notes: "Danish. Public document API over the legal information system."
+
+  NL-TR:
+    id: NL-TR
+    name: "Turkey — Mevzuat Bilgi Sistemi"
+    country: Turkey
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Consolidated Turkish legislation (laws, decrees, regulations)"
+    format: "HTML, PDF, DOC"
+    update: "Daily"
+    website: "https://www.mevzuat.gov.tr"
+    links:
+      - url: "https://www.mevzuat.gov.tr/"
+        note: "Mevzuat Bilgi Sistemi — consolidated legislation"
+      - url: "https://www.resmigazete.gov.tr/"
+        note: "Resmî Gazete — official gazette"
+    notes: "Turkish. HTML/PDF; no public API."
+
+  NL-RU:
+    id: NL-RU
+    name: "Russia — pravo.gov.ru"
+    country: Russia
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Official internet portal of legal information of the Russian Federation"
+    format: "HTML, PDF"
+    update: "Daily"
+    website: "http://pravo.gov.ru"
+    links:
+      - url: "http://pravo.gov.ru/"
+        note: "Official legal information portal"
+    notes: "Russian. Verify accessibility/sanctions posture before enabling."
+
+  # ── Middle East & Africa ───────────────────────────────────────────────────
+  NL-IL:
+    id: NL-IL
+    name: "Israel — Knesset / Reshumot"
+    country: Israel
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Primary legislation and the official gazette (Reshumot)"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.gov.il"
+    links:
+      - url: "https://www.nevo.co.il/"
+        note: "Nevo — legislation & case-law (mostly subscription)"
+      - url: "https://main.knesset.gov.il/Activity/Legislation/"
+        note: "Knesset legislation pages"
+    notes: "Hebrew. Authoritative consolidated texts are largely subscription."
+
+  NL-SA:
+    id: NL-SA
+    name: "Saudi Arabia — BOE / NCAR"
+    country: "Saudi Arabia"
+    avail: partial
+    auth: open
+    verified: true
+    desc: "Saudi laws, regulations and the official gazette (Umm al-Qura)"
+    format: "HTML, PDF"
+    update: "Weekly"
+    website: "https://laws.boe.gov.sa"
+    links:
+      - url: "https://laws.boe.gov.sa/"
+        note: "Bureau of Experts — laws & regulations"
+      - url: "https://ncar.gov.sa/"
+        note: "National Center for Archives & Records"
+    notes: "Arabic (some EN). HTML/PDF."
+
+  NL-AE:
+    id: NL-AE
+    name: "United Arab Emirates — Legislation Portal"
+    country: UAE
+    avail: yes
+    auth: open
+    verified: true
+    desc: "UAE federal legislation, official gazette (EN/AR)"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://uaelegislation.gov.ae"
+    links:
+      - url: "https://uaelegislation.gov.ae/en"
+        note: "UAE Legislation portal (bilingual)"
+      - url: "https://elaws.moj.gov.ae/"
+        note: "Ministry of Justice eLaws"
+    notes: "Bilingual EN/AR — strong English coverage for federal law."
+
+  NL-ZA:
+    id: NL-ZA
+    name: "South Africa — SAFLII / gov.za"
+    country: "South Africa"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "South African legislation, government gazettes and case-law"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.gov.za"
+    links:
+      - url: "https://www.gov.za/documents/acts"
+        note: "gov.za — Acts of Parliament"
+      - url: "https://www.saflii.org/"
+        note: "SAFLII — Southern African Legal Information Institute"
+    notes: "English. SAFLII covers multiple Southern African jurisdictions."
+
+  NL-KE:
+    id: NL-KE
+    name: "Kenya — Kenya Law"
+    country: Kenya
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Laws of Kenya, the Kenya Gazette and case-law (NCLR)"
+    format: "HTML, PDF, XML"
+    update: "On publication"
+    website: "http://kenyalaw.org"
+    links:
+      - url: "http://kenyalaw.org/kl/"
+        note: "Kenya Law — consolidated laws & gazette"
+      - url: "https://new.kenyalaw.org/legislation/"
+        note: "Indigo-based legislation (Akoma Ntoso)"
+    notes: "English. New platform uses Laws.Africa / Akoma Ntoso open data."
+
+  NL-NG:
+    id: NL-NG
+    name: "Nigeria — Laws.Africa / NLIPW"
+    country: Nigeria
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Federal laws of Nigeria and intellectual-property law resources"
+    format: "HTML, PDF"
+    update: "Irregular"
+    website: "https://nigeria.laws.africa"
+    links:
+      - url: "https://nigeria.laws.africa/"
+        note: "Laws.Africa — Nigeria (Akoma Ntoso)"
+      - url: "https://www.nlipw.com/"
+        note: "Nigerian Law Intellectual Property Watch"
+    notes: "English. Coverage improving via Laws.Africa community project."
+
+  NL-MA:
+    id: NL-MA
+    name: "Morocco — SGG (Bulletin Officiel)"
+    country: Morocco
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Moroccan official bulletin and legislative texts"
+    format: "PDF, HTML"
+    update: "Weekly"
+    website: "http://www.sgg.gov.ma"
+    links:
+      - url: "http://www.sgg.gov.ma/"
+        note: "Secrétariat Général du Gouvernement — Bulletin Officiel"
+    notes: "Arabic/French. PDF-centric."
+
+  # ── Asia-Pacific ───────────────────────────────────────────────────────────
+  NL-JP:
+    id: NL-JP
+    name: "Japan — e-Gov Laws"
+    country: Japan
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated Japanese statutes and regulations (e-Gov)"
+    format: "JSON, XML, HTML"
+    update: "Daily"
+    website: "https://elaws.e-gov.go.jp"
+    links:
+      - url: "https://laws.e-gov.go.jp/api/1/"
+        note: "e-Gov Laws API (open REST — XML/JSON)"
+      - url: "https://www.japaneselawtranslation.go.jp/"
+        note: "Japanese Law Translation (official EN translations)"
+    notes: "Japanese (official EN translations for many key laws)."
+
+  NL-IN:
+    id: NL-IN
+    name: "India — India Code"
+    country: India
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Repository of all Central and State Acts of India"
+    format: "HTML, PDF, XML"
+    update: "On publication"
+    website: "https://www.indiacode.nic.in"
+    links:
+      - url: "https://www.indiacode.nic.in/"
+        note: "India Code — central & state legislation"
+      - url: "https://egazette.gov.in/"
+        note: "Gazette of India (e-Gazette)"
+    notes: "English. India Code uses Akoma Ntoso for many Acts."
+
+  NL-AU:
+    id: NL-AU
+    name: "Australia — Federal Register of Legislation"
+    country: Australia
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Authorised Commonwealth Acts, legislative instruments & gazettes"
+    format: "JSON, XML, HTML, PDF, Word"
+    update: "Daily"
+    website: "https://www.legislation.gov.au"
+    links:
+      - url: "https://api.prod.legislation.gov.au/swagger/index.html"
+        note: "Federal Register of Legislation API (open REST)"
+      - url: "https://www.legislation.gov.au/"
+        note: "Federal Register of Legislation portal"
+    notes: "English. Modern open REST API over all Commonwealth law."
+
+  NL-NZ:
+    id: NL-NZ
+    name: "New Zealand — Legislation.govt.nz"
+    country: "New Zealand"
+    avail: yes
+    auth: open
+    verified: true
+    desc: "New Zealand Acts and legislative instruments (PCO)"
+    format: "XML, HTML, PDF, ePub"
+    update: "Continuous"
+    website: "https://www.legislation.govt.nz"
+    links:
+      - url: "https://www.legislation.govt.nz/"
+        note: "NZ Legislation — official consolidated law"
+      - url: "https://legislation.govt.nz/subscribe/"
+        note: "Atom/email feeds of legislative changes"
+    notes: "English. Append /xml or /epub to most item URLs for machine formats."
+
+  NL-MY:
+    id: NL-MY
+    name: "Malaysia — AGC Laws of Malaysia"
+    country: Malaysia
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Federal Acts and subsidiary legislation (Attorney-General's Chambers)"
+    format: "PDF, HTML"
+    update: "On publication"
+    website: "https://lom.agc.gov.my"
+    links:
+      - url: "https://lom.agc.gov.my/"
+        note: "Laws of Malaysia — AGC portal"
+      - url: "https://www.federalgazette.agc.gov.my/"
+        note: "Federal Gazette"
+    notes: "English/Malay. PDF-centric authoritative texts."
+
+  NL-PH:
+    id: NL-PH
+    name: "Philippines — Official Gazette / LawPhil"
+    country: Philippines
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Republic Acts, the Constitution, and jurisprudence"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.officialgazette.gov.ph"
+    links:
+      - url: "https://www.officialgazette.gov.ph/"
+        note: "Official Gazette of the Republic of the Philippines"
+      - url: "https://lawphil.net/"
+        note: "LawPhil — laws & Supreme Court decisions"
+    notes: "English. LawPhil is a comprehensive free reference mirror."
+
+  NL-TH:
+    id: NL-TH
+    name: "Thailand — Council of State (Krisdika)"
+    country: Thailand
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Consolidated Thai legislation (some official English translations)"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "https://www.krisdika.go.th"
+    links:
+      - url: "https://www.krisdika.go.th/"
+        note: "Office of the Council of State — law database"
+      - url: "http://www.ratchakitcha.soc.go.th/"
+        note: "Royal Thai Government Gazette"
+    notes: "Thai (selected EN). PDF/HTML."
+
+  NL-VN:
+    id: NL-VN
+    name: "Vietnam — vbpl.vn"
+    country: Vietnam
+    avail: partial
+    auth: open
+    verified: false
+    desc: "National legal documents database (Ministry of Justice)"
+    format: "HTML, PDF, DOC"
+    update: "Daily"
+    website: "https://vbpl.vn"
+    links:
+      - url: "https://vbpl.vn/"
+        note: "National database of legal documents"
+      - url: "https://vanban.chinhphu.vn/"
+        note: "Government legal documents portal"
+    notes: "Vietnamese (some EN). HTML/PDF."
+
+  NL-TW:
+    id: NL-TW
+    name: "Taiwan — Laws & Regulations Database"
+    country: Taiwan
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated R.O.C. (Taiwan) laws & regulations (MOJ)"
+    format: "HTML, PDF, ODT, XML"
+    update: "Daily"
+    website: "https://law.moj.gov.tw"
+    links:
+      - url: "https://law.moj.gov.tw/ENG/"
+        note: "Laws & Regulations Database (English edition)"
+      - url: "https://data.gov.tw/"
+        note: "Taiwan open data portal"
+    notes: "Chinese with extensive official English translations."
+
+  NL-PK:
+    id: NL-PK
+    name: "Pakistan — Pakistan Code"
+    country: Pakistan
+    avail: partial
+    auth: open
+    verified: false
+    desc: "Federal statutes of Pakistan (Ministry of Law & Justice)"
+    format: "HTML, PDF"
+    update: "Irregular"
+    website: "https://pakistancode.gov.pk"
+    links:
+      - url: "https://pakistancode.gov.pk/"
+        note: "Pakistan Code — federal statutes"
+      - url: "https://www.na.gov.pk/en/acts-tenure.php"
+        note: "National Assembly — Acts"
+    notes: "English. HTML/PDF."
+
+  NL-BD:
+    id: NL-BD
+    name: "Bangladesh — Laws of Bangladesh"
+    country: Bangladesh
+    avail: yes
+    auth: open
+    verified: true
+    desc: "Consolidated laws of Bangladesh (Ministry of Law)"
+    format: "HTML, PDF"
+    update: "On publication"
+    website: "http://bdlaws.minlaw.gov.bd"
+    links:
+      - url: "http://bdlaws.minlaw.gov.bd/"
+        note: "Laws of Bangladesh — consolidated volumes"
+    notes: "English/Bangla. Clean per-section HTML."

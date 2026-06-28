@@ -1,7 +1,7 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Maintained by: Axto AI <hallo@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -159,3 +159,38 @@ input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(2,132,199,0.
   .price-tag   { font-size:32px; }
   .btn-primary, .btn-secondary { padding:12px 20px; font-size:14px; }
 }
+
+/* ── Premium responsive navbar ───────────────────────── */
+.nav-toggle {
+  display:none; align-items:center; justify-content:center;
+  width:44px; height:44px; border-radius:12px; border:1.5px solid rgba(2,132,199,0.18);
+  background:rgba(255,255,255,0.7); cursor:pointer; flex-direction:column; gap:5px;
+  padding:0; transition:.18s;
+}
+.nav-toggle:hover { background:rgba(2,132,199,0.08); }
+.nav-toggle span { display:block; width:20px; height:2px; border-radius:2px; background:#0a1628; transition:.25s; }
+.nav-toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2) { opacity:0; }
+.nav-toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+@media (max-width:1024px) {
+  .nav-desktop { display:none !important; }
+  .nav-toggle  { display:flex !important; }
+}
+.nav-overlay {
+  position:fixed; inset:0; background:rgba(2,18,40,0.45); backdrop-filter:blur(4px);
+  z-index:110; opacity:0; pointer-events:none; transition:opacity .3s;
+}
+.nav-overlay.open { opacity:1; pointer-events:auto; }
+.nav-drawer {
+  position:fixed; top:0; right:0; height:100dvh; width:min(86vw,340px);
+  background:linear-gradient(180deg,#ffffff,#f0f9ff); z-index:120;
+  box-shadow:-24px 0 70px rgba(2,32,71,0.22);
+  transform:translateX(105%); transition:transform .34s cubic-bezier(.4,0,.2,1);
+  display:flex; flex-direction:column; padding:18px 16px calc(20px + env(safe-area-inset-bottom)); overflow-y:auto;
+}
+.nav-drawer.open { transform:translateX(0); }
+.nav-drawer-link {
+  display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px;
+  color:#1e293b; font-size:15.5px; font-weight:600; text-decoration:none; transition:.15s;
+}
+.nav-drawer-link:hover, .nav-drawer-link:active { background:rgba(2,132,199,0.10); color:#0284c7; }

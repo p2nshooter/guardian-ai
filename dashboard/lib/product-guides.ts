@@ -420,8 +420,8 @@ export function renderGuide(product: string, lang: Lang = "en"): string {
   lines.push("");
   lines.push("---");
   lines.push(lang === "id"
-    ? "Penafian: Perangkat Lunak ini hanya alat bantu; semua keputusan dan tanggung jawab ada pada pengguna. Disediakan \u201csebagaimana adanya\u201d tanpa jaminan. Sejauh diizinkan hukum, AXTO (axto.io) dan Yusron Efendi tidak bertanggung jawab atas kerugian apa pun yang timbul dari penggunaannya."
-    : "Disclaimer: This Software is an assistive tool only; all decisions and responsibility rest with the user. It is provided \u201cas is\u201d without warranty. To the maximum extent permitted by law, AXTO (axto.io) and Yusron Efendi accept no liability for any loss arising from its use.");
+    ? "Penafian: Perangkat Lunak ini hanya alat bantu; semua keputusan dan tanggung jawab ada pada pengguna. Disediakan \u201csebagaimana adanya\u201d tanpa jaminan. Sejauh diizinkan hukum, AXTO (axto.io) tidak bertanggung jawab atas kerugian apa pun yang timbul dari penggunaannya."
+    : "Disclaimer: This Software is an assistive tool only; all decisions and responsibility rest with the user. It is provided \u201cas is\u201d without warranty. To the maximum extent permitted by law, AXTO (axto.io) accepts no liability for any loss arising from its use.");
   lines.push("");
   return lines.join("\n");
 }

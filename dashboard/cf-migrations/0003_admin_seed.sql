@@ -1,7 +1,7 @@
 -- ==============================================================================
--- Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+-- Copyright (c) 2024-2026 Axto AI. All rights reserved.
 -- Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
--- Author & Architect: Yusron Efendi <hallo@axto.io>
+-- Maintained by: Axto AI <hallo@axto.io>
 -- Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 -- ==============================================================================
 -- ============================================================
@@ -15,7 +15,7 @@ VALUES (
   lower(hex(randomblob(16))),
   'alghoniy2026@gmail.com',
   'admin',
-  'pbkdf2:100000:72d76ba044b762513e13205333b5a3ca:9711e7898575e61c032f398ac1f88a56715411f265c813cfc528caa9f00ddbee',
+  'SET_VIA_ADMIN_PASSWORD_ENV',
   datetime('now'),
   datetime('now')
 );

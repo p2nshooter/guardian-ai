@@ -1,14 +1,14 @@
 # ==============================================================================
-# Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Author & Architect: Yusron Efendi <hallo@axto.io>
+# Maintained by: Axto AI <hallo@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # ==============================================================================
 """
 AXTO Legal — Production API Server
 18 AI Workspaces · 195+ Jurisdictions · 50+ Compliance Frameworks
 BYOK LLM · BYOD Connectors · Real-time Regulatory Radar
-Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+Copyright (c) 2024-2026 Axto AI. All rights reserved.
 """
 
 import logging
@@ -111,6 +111,36 @@ def _check_limit():
             "message": f"Batas {limit} dokumen/hari telah tercapai. Upgrade plan di axto.io/portal.",
         })
     _counter["count"] += 1
+
+
+def _require_workspace_licensed(workspace_id: str):
+    """Enforce the per-package workspace entitlement. The 18 AI workspaces unlock
+    in registry order — Starter: 5, Professional: 12, Enterprise/Sovereign: 18
+    (a value of 18 or -1 means all are unlocked). The entitlement comes from the
+    Ed25519-SIGNED license payload, so this gate cannot be bypassed by tampering
+    with the local license cache."""
+    from src.core.workspaces import WORKSPACES
+    allowed = getattr(_license_state, "workspaces", 5) or 5
+    total   = len(WORKSPACES)
+    if allowed == -1 or allowed >= total:
+        return
+    order = list(WORKSPACES.keys())
+    try:
+        idx = order.index(workspace_id)
+    except ValueError:
+        return  # unknown id — run_workspace will return its own not-found error
+    if idx >= allowed:
+        ws = WORKSPACES[workspace_id]
+        raise HTTPException(403, {
+            "error":   "Workspace terkunci untuk paket Anda",
+            "message": f"Workspace '{ws['name']}' tidak termasuk dalam paket Anda "
+                       f"({allowed} dari {total} workspace aktif). Upgrade paket di "
+                       f"axto.io/portal untuk membuka seluruh workspace.",
+            "workspace_id":        workspace_id,
+            "licensed_workspaces": allowed,
+            "total_workspaces":    total,
+            "code":                "workspace_locked",
+        })
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -241,7 +271,7 @@ a{color:var(--accent);text-decoration:none;}
   </div>
   <div class="nav-right">
     <span class="badge" id="plan-badge">Loading...</span>
-    <span style="font-size:11px;color:var(--muted);">© Yusron Efendi · AXTO</span>
+    <span style="font-size:11px;color:var(--muted);">© AXTO</span>
   </div>
 </nav>
 
@@ -288,7 +318,7 @@ a{color:var(--accent);text-decoration:none;}
         ⚖️ <strong>Catatan Penting:</strong> AXTO Legal adalah platform riset hukum berbasis AI.
         Hasil analisis bersifat informatif dan tidak menggantikan nasihat hukum profesional.
         Selalu konsultasikan keputusan hukum penting dengan pengacara atau konsultan hukum yang berkualifikasi.
-        © 2024-2026 Yusron Efendi · AXTO (axto.io)
+        © 2024-2026 AXTO (axto.io)
       </div>
       <div id="workspace-grid" class="grid-3"></div>
     </div>
@@ -961,7 +991,7 @@ async function runLegalSearch() {
       html += renderResultObject(data);
     }
 
-    html += `<div class="disclaimer-box">⚖️ Hasil riset ini disediakan sebagai informasi hukum, bukan nasihat hukum. Selalu verifikasi dengan sumber resmi dan konsultasikan dengan pengacara untuk keputusan hukum penting. © 2024-2026 Yusron Efendi · AXTO Legal</div></div>`;
+    html += `<div class="disclaimer-box">⚖️ Hasil riset ini disediakan sebagai informasi hukum, bukan nasihat hukum. Selalu verifikasi dengan sumber resmi dan konsultasikan dengan pengacara untuk keputusan hukum penting. © 2024-2026 AXTO Legal</div></div>`;
     container.innerHTML = html;
   } catch(e) {
     container.innerHTML = `<div class="card"><div class="warning-box">❌ Error: ${e.message}</div></div>`;
@@ -1062,7 +1092,7 @@ async function loadLicenseInfo() {
         <div><div class="form-label">Client</div><div style="color:var(--muted);">${data.client_name || '-'}</div></div>
         <div><div class="form-label">Berlaku hingga</div><div style="color:var(--muted);">${data.expires_at ? data.expires_at.split('T')[0] : '-'}</div></div>
         <div><div class="form-label">Max Dokumen/hari</div><div style="color:var(--muted);">${data.max_documents > 0 ? data.max_documents : 'Unlimited'}</div></div>
-        <div><div class="form-label">Platform</div><div style="color:var(--muted);">AXTO Legal · Yusron Efendi</div></div>
+        <div><div class="form-label">Platform</div><div style="color:var(--muted);">AXTO Legal</div></div>
       </div>
     `;
   } catch(e) {}
@@ -1135,7 +1165,17 @@ async def license_api(_: str = Depends(verify_key)):
 @app.get("/api/v1/workspaces")
 async def list_workspaces(_: str = Depends(verify_key)):
     from src.core.workspaces import WORKSPACES
-    return {"workspaces": WORKSPACES}
+    allowed = getattr(_license_state, "workspaces", 5) or 5
+    total   = len(WORKSPACES)
+    unlocked_all = allowed == -1 or allowed >= total
+    out = {}
+    for i, (wid, ws) in enumerate(WORKSPACES.items()):
+        out[wid] = {**ws, "locked": not (unlocked_all or i < allowed)}
+    return {
+        "workspaces":          out,
+        "licensed_workspaces": total if unlocked_all else allowed,
+        "total_workspaces":    total,
+    }
 
 
 class WorkspaceRunRequest(BaseModel):
@@ -1148,6 +1188,7 @@ class WorkspaceRunRequest(BaseModel):
 
 @app.post("/api/v1/workspace/run")
 async def workspace_run(req: WorkspaceRunRequest, _: str = Depends(verify_key)):
+    _require_workspace_licensed(req.workspace_id)
     _check_limit()
     from src.core.workspaces import run_workspace
     return await run_workspace(
@@ -1165,6 +1206,7 @@ async def workspace_upload(
     jurisdictions: str = Form(""),
     _: str = Depends(verify_key),
 ):
+    _require_workspace_licensed(workspace_id)
     _check_limit()
     content  = await file.read()
     size_mb  = len(content) / 1024 / 1024
@@ -1211,6 +1253,7 @@ async def analyze_document(
         "legal_research":    "legal-research",
     }
     ws_id  = ws_map.get(analysis_type, "legal-research")
+    _require_workspace_licensed(ws_id)
     jurs   = [jurisdiction] if jurisdiction else []
     query  = extra_context or f"Please perform a thorough {analysis_type.replace('_', ' ')} of this document."
 

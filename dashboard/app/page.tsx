@@ -1,7 +1,7 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Yusron Efendi. All rights reserved.
+ * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Author & Architect: Yusron Efendi <hallo@axto.io>
+ * Maintained by: Axto AI <hallo@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -444,6 +444,7 @@ export default function HomePage() {
 
   // ── Live prices from DB (admin-editable, no deploy needed) ─────────────
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  const [navOpen, setNavOpen] = useState(false);
   useEffect(() => {
     fetch("/api/packages")
       .then(r => r.ok ? r.json() : null)
@@ -459,10 +460,24 @@ export default function HomePage() {
       .catch(() => {}); // silently fall back to static prices on error
   }, []);
 
+  // Lock background scroll while the mobile nav drawer is open.
+  useEffect(() => {
+    document.body.style.overflow = navOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [navOpen]);
+
   // Helper: get live price with static fallback
   function lp(code: string, staticPrice: number): number {
     return livePrices[code] && livePrices[code] > 0 ? livePrices[code] : staticPrice;
   }
+
+  // Shared nav links — rendered in both the desktop bar and the mobile drawer.
+  const NAV_LINKS: [string, string][] = [
+    ["#products","Platform"],["#features","Products"],["#pricing","Pricing"],
+    ["#vault","Vault"],["#soc","SOC"],["#compliance","Compliance"],["#edge","Edge"],
+    ["#sentinel","Sentinel"],["#legal","Legal"],["#studio","Studio"],["#byok","BYOK"],
+    ["#faq","FAQ"],["/guide","📖 Guide"],
+  ];
 
 
   return (
@@ -482,8 +497,10 @@ export default function HomePage() {
             <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#0284c7,#0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>🛡</div>
             <span style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif", letterSpacing: "-0.5px" }}>AXTO</span>
           </Link>
-          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            {[["#products","Platform"],["#features","Products"],["#pricing","Pricing"],["#vault","Vault"],["#soc","SOC"],["#compliance","Compliance"],["#edge","Edge"],["#sentinel","Sentinel"],["#legal","Legal"],["#studio","Studio"],["#byok","BYOK"],["#faq","FAQ"],["/guide","📖 Guide"]].map(([href,label])=>(
+
+          {/* Desktop links — collapse into a drawer ≤1024px */}
+          <div className="nav-desktop" style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            {NAV_LINKS.map(([href,label])=>(
               <a key={label} href={href} style={{ color: "#475569", fontSize: 14, fontWeight: 600, padding: "8px 14px", borderRadius: 8, transition: "all 0.15s", textDecoration: "none" }}
                 onMouseOver={e=>{(e.currentTarget as HTMLElement).style.background="rgba(2,132,199,0.08)";(e.currentTarget as HTMLElement).style.color="#0284c7";}}
                 onMouseOut={e=>{(e.currentTarget as HTMLElement).style.background="transparent";(e.currentTarget as HTMLElement).style.color="#475569";}}
@@ -495,10 +512,39 @@ export default function HomePage() {
             <Link href="/auth/login" className="btn-primary" style={{ padding: "9px 22px", fontSize: 14, marginLeft: 4 }}>
               Client Portal →
             </Link>
-
           </div>
+
+          {/* Mobile hamburger — visible ≤1024px */}
+          <button className={`nav-toggle${navOpen ? " open" : ""}`} aria-label="Menu" aria-expanded={navOpen} onClick={()=>setNavOpen(o=>!o)}>
+            <span /><span /><span />
+          </button>
         </div>
       </nav>
+
+      {/* ── MOBILE NAV DRAWER ─────────────────────────────────────── */}
+      <div className={`nav-overlay${navOpen ? " open" : ""}`} onClick={()=>setNavOpen(false)} aria-hidden={!navOpen} />
+      <aside className={`nav-drawer${navOpen ? " open" : ""}`} aria-hidden={!navOpen}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, padding: "4px 6px" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <span style={{ width: 30, height: 30, borderRadius: 9, background: "linear-gradient(135deg,#0284c7,#0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>🛡</span>
+            <span style={{ fontSize: 19, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif", letterSpacing: "-0.5px" }}>AXTO</span>
+          </span>
+          <button aria-label="Close menu" onClick={()=>setNavOpen(false)} style={{ width: 38, height: 38, borderRadius: 10, border: "1px solid rgba(2,132,199,0.18)", background: "#fff", color: "#0a1628", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+        </div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {NAV_LINKS.map(([href,label])=>(
+            <a key={label} href={href} className="nav-drawer-link" onClick={()=>setNavOpen(false)}>{label}</a>
+          ))}
+        </nav>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18, paddingTop: 16, borderTop: "1px solid rgba(2,132,199,0.14)" }}>
+          <Link href="/register" onClick={()=>setNavOpen(false)} style={{ textAlign: "center", padding: "13px 18px", fontSize: 15, fontWeight: 700, color: "#0284c7", textDecoration: "none", borderRadius: 12, border: "1.5px solid #0284c7" }}>
+            Register
+          </Link>
+          <Link href="/auth/login" onClick={()=>setNavOpen(false)} className="btn-primary" style={{ textAlign: "center", padding: "13px 18px", fontSize: 15, justifyContent: "center" }}>
+            Client Portal →
+          </Link>
+        </div>
+      </aside>
 
       {/* ── HERO ──────────────────────────────────────────────────── */}
       <section className="hero-bg mesh-grid" style={{ paddingTop: 100, paddingBottom: 80, paddingLeft: 24, paddingRight: 24, position: "relative", overflow: "hidden" }}>
