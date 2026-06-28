@@ -22,7 +22,7 @@ name: Auto Build All Images
 on:
   push:
     branches: [main]
-    paths: ['engine/**','antivirus/**','orchestra/**','vault/**','edge/**','soc/**','compliance/**','sentinel/**','studio/**','.github/workflows/auto-build-all.yml']
+    paths: ['engine/**','antivirus/**','orchestra/**','vault/**','edge/**','soc/**','compliance/**','sentinel/**','studio/**','ai-studio/**','gpu-studio/**','hybrid-studio/**','legal/**','.github/workflows/auto-build-all.yml']
   workflow_dispatch:
     inputs:
       force_all: { description: 'Force rebuild ALL', required: false, default: 'false' }
