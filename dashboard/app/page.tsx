@@ -580,7 +580,7 @@ export default function HomePage() {
               { value: "100%", label: "BYOK — Your Keys Only", icon: "🔑" },
               { value: "0 bytes", label: "Data Sent to AXTO", icon: "🛡️" },
               { value: "< 30 min", label: "Deployment Time", icon: "⚡" },
-              { value: "9 products", label: "Complete Platform", icon: "📈" },
+              { value: "10 products", label: "Complete Platform", icon: "📈" },
             ].map((s, i) => (
               <div key={s.label} style={{ flex: "1 1 140px", textAlign: "center", padding: "8px 16px", borderRight: i < 3 ? "1px solid rgba(2,132,199,0.1)" : "none" }}>
                 <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>

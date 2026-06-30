@@ -44,10 +44,10 @@ const PACKAGES = [
   { code: "sentinel_professional",name:"Sentinel Professional",   product: "sentinel",    price: "$14,900/yr", limit: "1,000 devices",  color: "#ca8a04" },
   { code: "sentinel_enterprise", name: "Sentinel Enterprise",     product: "sentinel",    price: "$49,900/yr", limit: "Unlimited",      color: "#ca8a04" },
   // AXTO Legal — AI Legal & Compliance Platform
-  { code: "legal_starter",       name: "Legal Starter",           product: "legal",       price: "$14,900/yr", limit: "3 country packs",color: "#0f766e" },
-  { code: "legal_professional",  name: "Legal Professional",      product: "legal",       price: "$49,000/yr", limit: "20 country packs",color: "#0f766e" },
-  { code: "legal_business",      name: "Legal Business",          product: "legal",       price: "$99,000/yr", limit: "Multi-tenant",   color: "#0f766e" },
-  { code: "legal_enterprise",    name: "Legal Enterprise",        product: "legal",       price: "$249,000/yr",limit: "195+ countries", color: "#0f766e" },
+  { code: "legal_starter",       name: "Legal Starter",           product: "legal",       price: "$14,900/yr", limit: "3 workspaces, 30 jurisdictions",  color: "#0f766e" },
+  { code: "legal_professional",  name: "Legal Professional",      product: "legal",       price: "$49,000/yr", limit: "10 workspaces, 100 jurisdictions",color: "#0f766e" },
+  { code: "legal_business",      name: "Legal Business",          product: "legal",       price: "$99,000/yr", limit: "18 workspaces, 195+ jurisdictions",color: "#0f766e" },
+  { code: "legal_enterprise",    name: "Legal Enterprise",        product: "legal",       price: "$249,000/yr",limit: "Unlimited, custom jurisdictions",color: "#0f766e" },
   // AXTO Studio — Central AI & GPU Pool
   { code: "studio_pro",          name: "Studio Professional",     product: "studio",      price: "$9,900/yr",  limit: "Shared GPU pool",color: "#9333ea" },
 ];

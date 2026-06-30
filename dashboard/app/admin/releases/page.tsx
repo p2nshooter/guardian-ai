@@ -30,6 +30,7 @@ const AVAIL_PRODUCTS = [
   { key: "sentinel",   icon: "📡", name: "Sentinel OT",    color: "#f59e0b" },
   { key: "antivirus",  icon: "🦠", name: "Antivirus",      color: "#e879f9" },
   { key: "studio",     icon: "🧠", name: "AXTO Studio",    color: "#f97316" },
+  { key: "legal",      icon: "⚖️", name: "AXTO Legal",     color: "#0f766e" },
 ];
 
 // ── Catalog — mirrors CI output + R2 structure ────────────────────────────────

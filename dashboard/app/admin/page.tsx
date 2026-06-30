@@ -367,7 +367,7 @@ export default function AdminPage() {
               <span style={{ fontSize: 20 }}>📦</span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: "#0a1628" }}>Product Package Downloads</div>
-                <div style={{ color: "#94a3b8", fontSize: 12 }}>All 7 AXTO products — professionally packaged per tier. Admin only. Clients see only what they paid for.</div>
+                <div style={{ color: "#94a3b8", fontSize: 12 }}>All 10 AXTO products — professionally packaged per tier. Admin only. Clients see only what they paid for.</div>
               </div>
             </div>
             <Link href="/admin/releases" style={{ fontSize: 13, color: "#0284c7", textDecoration: "none", fontWeight: 700, padding: "8px 16px", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 8 }}>
