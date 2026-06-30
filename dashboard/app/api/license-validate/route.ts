@@ -428,11 +428,13 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
                  :  pc.includes("business")                                 ? "biz"
                  :  pc.includes("pro")                                      ? "pro"
                  :  "starter";
-      // of 195+ jurisdictions / 18 AI workspaces / 50+ compliance frameworks;
-      // -1 means "all". Starter < Professional < Business < Enterprise/Sovereign.
-      const COUNTRIES:  Record<string, number> = { starter: 3, pro: 25, biz: 75, ent: -1 };
-      const WORKSPACES: Record<string, number> = { starter: 5, pro: 12, biz: 15, ent: 18 };
-      const FRAMEWORKS: Record<string, number> = { starter: 5, pro: 20, biz: 35, ent: -1 };
+      // Must match the entitlements promised in lib/stripe.ts PACKAGE_INFO
+      // (legal_starter/professional/business/enterprise) — these numbers are
+      // what the client paid for, so they must match exactly, not just be
+      // "directionally" tiered. -1 means "all". Starter < Pro < Business < Ent.
+      const COUNTRIES:  Record<string, number> = { starter: 30, pro: 100, biz: 195, ent: -1 };
+      const WORKSPACES: Record<string, number> = { starter: 3,  pro: 10,  biz: 18,  ent: -1 };
+      const FRAMEWORKS: Record<string, number> = { starter: 20, pro: 40,  biz: 50,  ent: -1 };
       return {
         ...base,
         air_gapped:            true,
