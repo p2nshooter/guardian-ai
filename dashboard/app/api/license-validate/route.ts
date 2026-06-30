@@ -408,7 +408,15 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
       return { ...base, iot_monitoring: true, ot_security: true, max_devices: maxNodes };
     case "antivirus":
       return { ...base, clamav: true, yara_rules: true, rest_api: true, guardian_ml: true };
-    case "studio":
+    case "studio": {
+      // One Studio license unlocks the ai-studio / gpu-studio / hybrid-studio
+      // sub-apps according to tier — must match STUDIO_PLANS[].studios in
+      // lib/studio.ts. FAIL-CLOSED: an unrecognized package code gets the
+      // Starter set, never the full set.
+      const pc = (packageCode || "").toLowerCase();
+      const studios = pc.includes("enterprise") || pc.includes("professional")
+        ? ["ai", "gpu", "hybrid"]
+        : ["ai", "gpu"];
       return {
         ...base,
         central_ai_pool:   true,
@@ -416,7 +424,10 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
         byo_gpu:           true,
         image_generation:  true,
         max_concurrent_jobs: maxNodes,
+        studios,
+        hybrid_pool:       studios.includes("hybrid"),
       };
+    }
     case "legal": {
       // AXTO Legal — feature flags consumed by legal/src (workspaces, country
       // packs, compliance frameworks). Tier is resolved EXPLICITLY and
