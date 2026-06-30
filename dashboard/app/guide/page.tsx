@@ -125,7 +125,7 @@ install.bat`,
     color:"#16a34a", bg:"rgba(22,163,74,0.08)",
     desc: t("setup.step6.desc") || "Orchestra AI is a drop-in replacement for the OpenAI API. Simply change base_url in your application to the Orchestra endpoint. Requests are automatically routed to the best provider.",
     detail:[
-      t("setup.step6.d1") || "Orchestra endpoint: http://YOUR_SERVER:8080/v1/chat/completions",
+      t("setup.step6.d1") || "Orchestra endpoint: http://YOUR_SERVER:8088/v1/chat/completions",
       t("setup.step6.d2") || "Change base_url in your app — no other code changes needed",
       t("setup.step6.d3") || "Orchestra automatically routes to the cheapest / fastest available provider",
       t("setup.step6.d4") || "All requests logged in Console: cost, latency, provider used",
@@ -134,7 +134,7 @@ install.bat`,
     code:`# Python — only change base_url
 from openai import OpenAI
 client = OpenAI(
-    base_url="http://YOUR_SERVER:8080/v1",
+    base_url="http://YOUR_SERVER:8088/v1",
     api_key="YOUR_WORKER_TOKEN"   # Console → Settings → Worker Token
 )
 response = client.chat.completions.create(
@@ -756,7 +756,7 @@ MANUAL OVERRIDE:
     short:"OpenAI-compatible endpoint. Drop-in replacement. Streaming, tools, multimodal support",
     detail:`The Orchestra API Endpoint is a drop-in replacement for the OpenAI API.
 
-BASE URL: http://YOUR_SERVER:8080/v1
+BASE URL: http://YOUR_SERVER:8088/v1
 
 ENDPOINTS YANG TERSEDIA:
 • POST /v1/chat/completions (utama)
@@ -768,18 +768,18 @@ CARA INTEGRASI (ganti base_url saja):
 
 Python OpenAI SDK:
   client = OpenAI(
-      base_url="http://YOUR_SERVER:8080/v1",
+      base_url="http://YOUR_SERVER:8088/v1",
       api_key="YOUR_WORKER_TOKEN"
   )
 
 Node.js:
   const openai = new OpenAI({
-      baseURL: "http://YOUR_SERVER:8080/v1",
+      baseURL: "http://YOUR_SERVER:8088/v1",
       apiKey: "YOUR_WORKER_TOKEN"
   });
 
 Curl:
-  curl http://YOUR_SERVER:8080/v1/chat/completions \\
+  curl http://YOUR_SERVER:8088/v1/chat/completions \\
     -H "Authorization: Bearer YOUR_WORKER_TOKEN" \\
     -d '{"model":"auto","messages":[{"role":"user","content":"Hello"}]}'
 
@@ -1797,7 +1797,7 @@ export default function GuidePage() {
 
 # Ganti base_url to Orchestra endpoint
 client = OpenAI(
-    base_url="http://YOUR_SERVER:8080/v1",
+    base_url="http://YOUR_SERVER:8088/v1",
     api_key="YOUR_WORKER_TOKEN"  # from Console → Settings → Worker Token
 )
 
@@ -1816,7 +1816,7 @@ print(response.choices[0].message.content)`},
                 code:`import OpenAI from "openai";
 
 const openai = new OpenAI({
-  baseURL: "http://YOUR_SERVER:8080/v1",
+  baseURL: "http://YOUR_SERVER:8088/v1",
   apiKey: "YOUR_WORKER_TOKEN",
 });
 
@@ -1830,7 +1830,7 @@ for await (const chunk of completion) {
   process.stdout.write(chunk.choices[0]?.delta?.content || "");
 }`},
               {lang:"cURL",color:"#0d9488",icon:"🔧",
-                code:`curl -s http://YOUR_SERVER:8080/v1/chat/completions \\
+                code:`curl -s http://YOUR_SERVER:8088/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_WORKER_TOKEN" \\
   -d '{
@@ -1845,7 +1845,7 @@ from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
     model="auto",
-    openai_api_base="http://YOUR_SERVER:8080/v1",
+    openai_api_base="http://YOUR_SERVER:8088/v1",
     openai_api_key="YOUR_WORKER_TOKEN",
 )
 
@@ -1856,7 +1856,7 @@ from llama_index.llms.openai import OpenAI
 
 llm = OpenAI(
     model="auto",
-    api_base="http://YOUR_SERVER:8080/v1",
+    api_base="http://YOUR_SERVER:8088/v1",
     api_key="YOUR_WORKER_TOKEN",
 )`},
             ].map((ex,i)=>(
@@ -1909,15 +1909,15 @@ llm = OpenAI(
             </div>
             {[
               {step:1,title:"Purchase & Download",desc:"Purchase Vault license at axto.io/buy. Navigate to Portal → Downloads → vault-core. Download the Docker image archive.",code:`# Verify download\nsha256sum vault-core-1.1.0.tar.gz\n# Load image\ndocker load < vault-core-1.1.0.tar.gz`,color:"#6366f1"},
-              {step:2,title:"Server Requirements",desc:"Minimum: 2 CPU cores, 2 GB RAM, 10 GB disk. Docker 24+, Docker Compose v2. Port 8080 open to your app servers. Outbound HTTPS to axto.io for license validation.",code:`# Verify Docker\ndocker --version   # 24.0+\ndocker compose version  # 2.x`,color:"#6366f1"},
+              {step:2,title:"Server Requirements",desc:"Minimum: 2 CPU cores, 2 GB RAM, 10 GB disk. Docker 24+, Docker Compose v2. Port 8081 open to your app servers. Outbound HTTPS to axto.io for license validation.",code:`# Verify Docker\ndocker --version   # 24.0+\ndocker compose version  # 2.x`,color:"#6366f1"},
               {step:3,title:"Configure vault.yml",desc:"Edit vault.yml — set your license key, API key, and optional AI provider for enhanced detection.",code:`vault:\n  license_key: "VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX"\n  api_key: "your-strong-api-key"\n  db_path: "/vault/data/vault.db"\n  log_level: "INFO"\n\nai_pool:\n  vendors:\n    - provider: openai\n      api_key: "sk-..."   # YOUR key — never sent to AXTO\n      model: "gpt-4o-mini"`,color:"#6366f1"},
               {step:4,title:"First Start",desc:"Launch Vault with Docker Compose. The service validates your license on startup and begins listening for redaction requests.",code:`docker compose -f vault-compose.yml up -d\ndocker compose -f vault-compose.yml logs -f vault`,color:"#6366f1"},
-              {step:5,title:"Verify — /health",desc:"Confirm the service is running and license is active.",code:`curl http://localhost:8080/health | jq .\n# Expected: status: "ok", license.valid: true`,color:"#6366f1"},
-              {step:6,title:"First Redaction",desc:"Send a text payload to Vault and observe PII being redacted before it would reach any AI provider.",code:`curl -X POST http://localhost:8080/v1/redact \\\n  -H "X-Vault-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"text":"Contact John Doe at john@example.com or +1-555-0100"}'\n# Returns: {"redacted":"Contact [PERSON] at [EMAIL] or [PHONE]"}`,color:"#6366f1"},
-              {step:7,title:"Dashboard Walkthrough",desc:"In AXTO dashboard → Vault: Redaction Log shows every event with entity types detected. Settings tab controls detection sensitivity per entity type. Statistics shows redaction rate, most common PII types, and throughput.",code:`# All redaction events\ncurl http://localhost:8080/v1/log \\\n  -H "X-Vault-Key: your-api-key" | jq .`,color:"#6366f1"},
+              {step:5,title:"Verify — /health",desc:"Confirm the service is running and license is active.",code:`curl http://localhost:8081/health | jq .\n# Expected: status: "ok", license.valid: true`,color:"#6366f1"},
+              {step:6,title:"First Redaction",desc:"Send a text payload to Vault and observe PII being redacted before it would reach any AI provider.",code:`curl -X POST http://localhost:8081/v1/redact \\\n  -H "X-Vault-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"text":"Contact John Doe at john@example.com or +1-555-0100"}'\n# Returns: {"redacted":"Contact [PERSON] at [EMAIL] or [PHONE]"}`,color:"#6366f1"},
+              {step:7,title:"Dashboard Walkthrough",desc:"In AXTO dashboard → Vault: Redaction Log shows every event with entity types detected. Settings tab controls detection sensitivity per entity type. Statistics shows redaction rate, most common PII types, and throughput.",code:`# All redaction events\ncurl http://localhost:8081/v1/log \\\n  -H "X-Vault-Key: your-api-key" | jq .`,color:"#6366f1"},
               {step:8,title:"API Usage",desc:"Three most common patterns: text redaction, batch processing, and reverse lookup (restore redacted values using session token).",code:`# Redact\ncurl -X POST .../v1/redact -d '{"text":"..."}'\n\n# Batch (up to 100 texts)\ncurl -X POST .../v1/redact/batch -d '{"texts":[...]}'\n\n# Stats\ncurl .../v1/stats`,color:"#6366f1"},
               {step:9,title:"Integration",desc:"Point your AI provider client at Vault instead of the AI provider directly. Vault redacts, forwards the clean text, and returns the response. Drop-in for OpenAI-compatible APIs.",code:`# Before (direct to OpenAI)\nclient = OpenAI(base_url="https://api.openai.com/v1")\n\n# After (through Vault — PII auto-redacted)\nclient = OpenAI(base_url="http://vault:8080/v1/proxy")`,color:"#6366f1"},
-              {step:10,title:"License Status",desc:"Check license status. Vault enters 4-hour grace period on validation failure. After grace expiry all endpoints return 503.",code:`curl http://localhost:8080/health | jq .license\n# Renew: https://axto.io/renew`,color:"#6366f1"},
+              {step:10,title:"License Status",desc:"Check license status. Vault enters 4-hour grace period on validation failure. After grace expiry all endpoints return 503.",code:`curl http://localhost:8081/health | jq .license\n# Renew: https://axto.io/renew`,color:"#6366f1"},
               {step:11,title:"Troubleshooting",desc:"Common issues and resolutions for Vault deployments.",code:`# License not valid → check key prefix is VAULT-\n# 503 on endpoints → grace expired, renew at axto.io/renew\n# High latency → check AI provider connectivity\n# False positives → adjust entity_types in vault.yml\n# Logs\ndocker compose -f vault-compose.yml logs vault`,color:"#6366f1"},
             ].map((s,i)=>(<div key={i} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden",transition:"all 0.3s ease"}}><div style={{padding:"14px 20px",background:`${s.color}10`,borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:8,background:s.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:12}}>{s.step}</div><span style={{fontWeight:800,fontSize:14,color:"#0a1628"}}>{s.title}</span><span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:600}}>Step {s.step} of 11</span></div><div style={{padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontSize:13,color:"#64748b",lineHeight:1.7}}>{s.desc}</p><pre style={{margin:0,padding:"14px 16px",background:"#0a1628",fontSize:11,color:"#86efac",overflow:"auto",lineHeight:1.8,borderRadius:10,fontFamily:"'JetBrains Mono',monospace"}}>{s.code}</pre></div></div>))}
           </div>
@@ -1935,15 +1935,15 @@ llm = OpenAI(
             </div>
             {[
               {step:1,title:"Purchase & Download",desc:"Purchase Edge license at axto.io/buy. Navigate to Portal → Downloads → edge-core.",code:`docker load < edge-core-1.1.0.tar.gz`,color:"#0891b2"},
-              {step:2,title:"Server Requirements",desc:"Minimum: 2 CPU cores, 2 GB RAM, 20 GB disk (for cache). Docker 24+. Port 8094 open to app servers.",code:`docker --version && docker compose version`,color:"#0891b2"},
-              {step:3,title:"Configure edge.yml",desc:"Set license key, API auth, and your AI provider pool. Edge routes requests across providers automatically.",code:`edge:\n  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"\n  api_key: "your-strong-api-key"\n  port: 8094\n  cache_enabled: true\n  cache_ttl_seconds: 3600\n\nai_pool:\n  vendors:\n    - provider: openai\n      api_key: "sk-..."     # YOUR key\n      model: "gpt-4o-mini"\n      weight: 70\n    - provider: anthropic\n      api_key: "sk-ant-..." # YOUR key\n      model: "claude-3-5-haiku-20241022"\n      weight: 30`,color:"#0891b2"},
-              {step:4,title:"First Start",desc:"Launch Edge. License validation runs at startup. The gateway begins accepting requests once health check passes.",code:`docker compose -f edge-compose.yml up -d\ncurl http://localhost:8094/health`,color:"#0891b2"},
-              {step:5,title:"Verify — /health",desc:"Confirm service is running, license valid, and providers reachable.",code:`curl http://localhost:8094/health | jq .\n# status: "ok", license.valid: true`,color:"#0891b2"},
-              {step:6,title:"First Routed Request",desc:"Send an OpenAI-compatible request to Edge. It routes to the optimal provider based on your configuration.",code:`curl -X POST http://localhost:8094/v1/chat/completions \\\n  -H "X-Edge-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"auto","messages":[{"role":"user","content":"Hello"}]}'`,color:"#0891b2"},
-              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → Edge: Requests tab shows per-request cost, latency, provider used, cache hit/miss. Cost tab shows daily spend by team/user. Cache tab shows hit rate and top cached prompts. Rules tab configures rate limits per API key.",code:`curl http://localhost:8094/v1/stats \\\n  -H "X-Edge-Key: your-api-key" | jq .`,color:"#0891b2"},
-              {step:8,title:"API Usage",desc:"Edge is OpenAI API-compatible. Change your base_url to Edge endpoint — no other code changes needed.",code:`# Python\nfrom openai import OpenAI\nclient = OpenAI(base_url="http://edge:8094/v1", api_key="your-edge-key")\nresp = client.chat.completions.create(model="auto", messages=[...])\n\n# Force specific provider\nresp = client.chat.completions.create(model="anthropic/claude-3-5-haiku", messages=[...])`,color:"#0891b2"},
-              {step:9,title:"Integration",desc:"Connect Edge to Vault for automatic PII redaction on every routed request. Export metrics to Grafana or your SIEM.",code:`# With Vault in front (PII redact → Edge → AI provider)\nVAULT_URL=http://vault:8080/v1/proxy\nEDGE_URL=http://edge:8094/v1\n\n# Metrics export (Prometheus format)\ncurl http://localhost:8094/metrics`,color:"#0891b2"},
-              {step:10,title:"License Status",desc:"Monitor license and trigger manual renewal.",code:`curl http://localhost:8094/health | jq .license\n# Renew: https://axto.io/renew`,color:"#0891b2"},
+              {step:2,title:"Server Requirements",desc:"Minimum: 2 CPU cores, 2 GB RAM, 20 GB disk (for cache). Docker 24+. Port 8082 open to app servers.",code:`docker --version && docker compose version`,color:"#0891b2"},
+              {step:3,title:"Configure edge.yml",desc:"Set license key, API auth, and your AI provider pool. Edge routes requests across providers automatically.",code:`edge:\n  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"\n  api_key: "your-strong-api-key"\n  port: 8080\n  cache_enabled: true\n  cache_ttl_seconds: 3600\n\nai_pool:\n  vendors:\n    - provider: openai\n      api_key: "sk-..."     # YOUR key\n      model: "gpt-4o-mini"\n      weight: 70\n    - provider: anthropic\n      api_key: "sk-ant-..." # YOUR key\n      model: "claude-3-5-haiku-20241022"\n      weight: 30`,color:"#0891b2"},
+              {step:4,title:"First Start",desc:"Launch Edge. License validation runs at startup. The gateway begins accepting requests once health check passes.",code:`docker compose -f edge-compose.yml up -d\ncurl http://localhost:8082/health`,color:"#0891b2"},
+              {step:5,title:"Verify — /health",desc:"Confirm service is running, license valid, and providers reachable.",code:`curl http://localhost:8082/health | jq .\n# status: "ok", license.valid: true`,color:"#0891b2"},
+              {step:6,title:"First Routed Request",desc:"Send an OpenAI-compatible request to Edge. It routes to the optimal provider based on your configuration.",code:`curl -X POST http://localhost:8082/v1/chat/completions \\\n  -H "X-Edge-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"auto","messages":[{"role":"user","content":"Hello"}]}'`,color:"#0891b2"},
+              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → Edge: Requests tab shows per-request cost, latency, provider used, cache hit/miss. Cost tab shows daily spend by team/user. Cache tab shows hit rate and top cached prompts. Rules tab configures rate limits per API key.",code:`curl http://localhost:8082/v1/stats \\\n  -H "X-Edge-Key: your-api-key" | jq .`,color:"#0891b2"},
+              {step:8,title:"API Usage",desc:"Edge is OpenAI API-compatible. Change your base_url to Edge endpoint — no other code changes needed.",code:`# Python\nfrom openai import OpenAI\nclient = OpenAI(base_url="http://edge:8080/v1", api_key="your-edge-key")\nresp = client.chat.completions.create(model="auto", messages=[...])\n\n# Force specific provider\nresp = client.chat.completions.create(model="anthropic/claude-3-5-haiku", messages=[...])`,color:"#0891b2"},
+              {step:9,title:"Integration",desc:"Connect Edge to Vault for automatic PII redaction on every routed request. Export metrics to Grafana or your SIEM.",code:`# With Vault in front (PII redact → Edge → AI provider)\nVAULT_URL=http://vault:8080/v1/proxy\nEDGE_URL=http://edge:8080/v1\n\n# Metrics export (Prometheus format)\ncurl http://localhost:8082/metrics`,color:"#0891b2"},
+              {step:10,title:"License Status",desc:"Monitor license and trigger manual renewal.",code:`curl http://localhost:8082/health | jq .license\n# Renew: https://axto.io/renew`,color:"#0891b2"},
               {step:11,title:"Troubleshooting",desc:"Common Edge issues and resolutions.",code:`# Provider unreachable → check ai_pool.vendors[].api_key in edge.yml\n# High latency → enable cache_enabled: true\n# 503 on endpoints → license expired, renew at axto.io/renew\n# 401 errors → check X-Edge-Key header matches api_key in edge.yml\ndocker compose -f edge-compose.yml logs edge`,color:"#0891b2"},
             ].map((s,i)=>(<div key={i} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden",transition:"all 0.3s ease"}}><div style={{padding:"14px 20px",background:`${s.color}10`,borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:8,background:s.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:12}}>{s.step}</div><span style={{fontWeight:800,fontSize:14,color:"#0a1628"}}>{s.title}</span><span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:600}}>Step {s.step} of 11</span></div><div style={{padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontSize:13,color:"#64748b",lineHeight:1.7}}>{s.desc}</p><pre style={{margin:0,padding:"14px 16px",background:"#0a1628",fontSize:11,color:"#7dd3fc",overflow:"auto",lineHeight:1.8,borderRadius:10,fontFamily:"'JetBrains Mono',monospace"}}>{s.code}</pre></div></div>))}
           </div>
@@ -1961,15 +1961,15 @@ llm = OpenAI(
             </div>
             {[
               {step:1,title:"Purchase & Download",desc:"Purchase SOC license at axto.io/buy. Navigate to Portal → Downloads → soc-core.",code:`docker load < soc-core-1.1.0.tar.gz`,color:"#dc2626"},
-              {step:2,title:"Server Requirements",desc:"Minimum: 4 CPU cores, 8 GB RAM, 100 GB disk (log storage). Docker 24+. Port 8092 open to log sources. Outbound HTTPS to threat intel feeds.",code:`# Verify resources\nfree -h     # 8 GB+ RAM\ndf -h /     # 100 GB+ disk\ndocker --version`,color:"#dc2626"},
+              {step:2,title:"Server Requirements",desc:"Minimum: 4 CPU cores, 8 GB RAM, 100 GB disk (log storage). Docker 24+. Port 8083 open to log sources. Outbound HTTPS to threat intel feeds.",code:`# Verify resources\nfree -h     # 8 GB+ RAM\ndf -h /     # 100 GB+ disk\ndocker --version`,color:"#dc2626"},
               {step:3,title:"Configure soc.yml",desc:"Set license key, API key, log retention, and BYOK AI provider for behavioral analysis.",code:`soc:\n  license_key: "SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX"\n  api_key: "your-strong-api-key"\n  db_path: "/soc/data/soc.db"\n  log_retention_days: 90\n  ueba_enabled: true\n  ti_enrichment_enabled: true\n\nai_pool:\n  vendors:\n    - provider: openai\n      api_key: "sk-..."   # YOUR key\n      model: "gpt-4o-mini"`,color:"#dc2626"},
               {step:4,title:"First Start",desc:"Launch SOC. License validation runs at startup. UEBA baseline building begins automatically.",code:`docker compose -f soc-compose.yml up -d\ndocker compose -f soc-compose.yml logs -f soc`,color:"#dc2626"},
-              {step:5,title:"Verify — /health",desc:"Confirm service health, license status, and engine readiness.",code:`curl http://localhost:8092/health | jq .\n# status: "ok", license.valid: true, engine_ready: true`,color:"#dc2626"},
-              {step:6,title:"First Log Ingestion",desc:"Send a batch of log lines to SOC. The engine parses, enriches with threat intel, runs UEBA, and generates alerts.",code:`curl -X POST http://localhost:8092/v1/ingest \\\n  -H "X-SOC-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"logs":["Failed login for root from 185.220.101.5","sudo: 3 incorrect password attempts"],"source":"syslog"}'\n# Returns: alerts_created, alert_ids`,color:"#dc2626"},
-              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → SOC: Alerts tab lists all detections with severity, MITRE ATT&CK mapping, and TI enrichment. Incidents tab tracks open cases with MTTD/MTTR. UEBA tab shows behavioral anomalies by user/host. Rules tab manages custom detection rules.",code:`# Dashboard stats\ncurl http://localhost:8092/v1/dashboard \\\n  -H "X-SOC-Key: your-api-key" | jq .`,color:"#dc2626"},
+              {step:5,title:"Verify — /health",desc:"Confirm service health, license status, and engine readiness.",code:`curl http://localhost:8083/health | jq .\n# status: "ok", license.valid: true, engine_ready: true`,color:"#dc2626"},
+              {step:6,title:"First Log Ingestion",desc:"Send a batch of log lines to SOC. The engine parses, enriches with threat intel, runs UEBA, and generates alerts.",code:`curl -X POST http://localhost:8083/v1/ingest \\\n  -H "X-SOC-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"logs":["Failed login for root from 185.220.101.5","sudo: 3 incorrect password attempts"],"source":"syslog"}'\n# Returns: alerts_created, alert_ids`,color:"#dc2626"},
+              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → SOC: Alerts tab lists all detections with severity, MITRE ATT&CK mapping, and TI enrichment. Incidents tab tracks open cases with MTTD/MTTR. UEBA tab shows behavioral anomalies by user/host. Rules tab manages custom detection rules.",code:`# Dashboard stats\ncurl http://localhost:8083/v1/dashboard \\\n  -H "X-SOC-Key: your-api-key" | jq .`,color:"#dc2626"},
               {step:8,title:"API Usage",desc:"Key endpoints for alert management, log ingestion, and incident tracking.",code:`# Query alerts (high severity, unresolved)\ncurl ".../v1/alerts?severity=high&false_positive=false"\n\n# List open incidents\ncurl ".../v1/incidents?status=open"\n\n# Run SOAR playbook action\ncurl -X POST .../v1/playbook/run \\\n  -d '{"incident_id":"...","action":"block_ip","target":"1.2.3.4"}'`,color:"#dc2626"},
-              {step:9,title:"Integration",desc:"Forward logs via syslog, connect to AXTO Sentinel for OT events, or integrate with Slack for alert notifications.",code:`# Syslog forwarding (rsyslog)\n# /etc/rsyslog.d/axto-soc.conf\n*.* @@soc-server:514;RSYSLOG_SyslogProtocol23Format\n\n# Slack webhook\ncurl -X POST http://localhost:8092/v1/config \\\n  -d '{"notification_webhook":"https://hooks.slack.com/..."}'`,color:"#dc2626"},
-              {step:10,title:"License Status",desc:"Monitor license. SOC enters 4-hour grace on validation failure.",code:`curl http://localhost:8092/health | jq .license\n# Renew: https://axto.io/renew`,color:"#dc2626"},
+              {step:9,title:"Integration",desc:"Forward logs via syslog, connect to AXTO Sentinel for OT events, or integrate with Slack for alert notifications.",code:`# Syslog forwarding (rsyslog)\n# /etc/rsyslog.d/axto-soc.conf\n*.* @@soc-server:514;RSYSLOG_SyslogProtocol23Format\n\n# Slack webhook\ncurl -X POST http://localhost:8083/v1/config \\\n  -d '{"notification_webhook":"https://hooks.slack.com/..."}'`,color:"#dc2626"},
+              {step:10,title:"License Status",desc:"Monitor license. SOC enters 4-hour grace on validation failure.",code:`curl http://localhost:8083/health | jq .license\n# Renew: https://axto.io/renew`,color:"#dc2626"},
               {step:11,title:"Troubleshooting",desc:"Common SOC deployment issues.",code:`# High memory → reduce log_retention_days in soc.yml\n# No alerts → verify log source format matches source parameter\n# 503 on endpoints → license expired\n# TI enrichment slow → check outbound connectivity\ndocker compose -f soc-compose.yml logs soc`,color:"#dc2626"},
             ].map((s,i)=>(<div key={i} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden",transition:"all 0.3s ease"}}><div style={{padding:"14px 20px",background:`${s.color}10`,borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:8,background:s.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:12}}>{s.step}</div><span style={{fontWeight:800,fontSize:14,color:"#0a1628"}}>{s.title}</span><span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:600}}>Step {s.step} of 11</span></div><div style={{padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontSize:13,color:"#64748b",lineHeight:1.7}}>{s.desc}</p><pre style={{margin:0,padding:"14px 16px",background:"#0a1628",fontSize:11,color:"#fca5a5",overflow:"auto",lineHeight:1.8,borderRadius:10,fontFamily:"'JetBrains Mono',monospace"}}>{s.code}</pre></div></div>))}
           </div>
@@ -1987,15 +1987,15 @@ llm = OpenAI(
             </div>
             {[
               {step:1,title:"Purchase & Download",desc:"Purchase Compliance license at axto.io/buy. Navigate to Portal → Downloads → compliance-core.",code:`docker load < compliance-core-1.1.0.tar.gz`,color:"#16a34a"},
-              {step:2,title:"Server Requirements",desc:"Minimum: 2 CPU cores, 4 GB RAM, 50 GB disk. Docker 24+. Port 8093 open to dashboard. Outbound HTTPS for cloud provider integrations.",code:`docker --version && docker compose version`,color:"#16a34a"},
+              {step:2,title:"Server Requirements",desc:"Minimum: 2 CPU cores, 4 GB RAM, 50 GB disk. Docker 24+. Port 8084 open to dashboard. Outbound HTTPS for cloud provider integrations.",code:`docker --version && docker compose version`,color:"#16a34a"},
               {step:3,title:"Configure compliance.yml",desc:"Set license key, select frameworks to monitor, and configure cloud provider integrations.",code:`compliance:\n  license_key: "CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"\n  api_key: "your-strong-api-key"\n  db_path: "/compliance/data/compliance.db"\n  frameworks: ["soc2", "iso27001", "hipaa"]\n  evidence_auto_collect: true\n  audit_retention_days: 365\n\n# Optional: cloud provider integration\naws:\n  access_key_id: ""     # Read-only IAM key\n  secret_access_key: ""\n  region: "us-east-1"`,color:"#16a34a"},
               {step:4,title:"First Start",desc:"Launch Compliance. Initial gap analysis runs automatically on startup.",code:`docker compose -f compliance-compose.yml up -d\ndocker compose -f compliance-compose.yml logs -f compliance`,color:"#16a34a"},
-              {step:5,title:"Verify — /health",desc:"Confirm service health and license status.",code:`curl http://localhost:8093/health | jq .\n# status: "ok", license.valid: true`,color:"#16a34a"},
-              {step:6,title:"First Gap Analysis",desc:"Run a framework gap analysis to see your current compliance posture and prioritized remediation list.",code:`curl -X POST http://localhost:8093/v1/gap-analysis \\\n  -H "X-Compliance-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"framework":"soc2"}'\n# Returns: control_gaps[], coverage_percent, priority_items[]`,color:"#16a34a"},
-              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → Compliance: Overview shows coverage % per framework with traffic-light status. Controls tab lists all controls with pass/fail/partial status. Evidence tab shows collected evidence by control. Policies tab manages policy documents with version history. Reports tab generates audit-ready exports.",code:`curl http://localhost:8093/v1/dashboard \\\n  -H "X-Compliance-Key: your-api-key" | jq .`,color:"#16a34a"},
+              {step:5,title:"Verify — /health",desc:"Confirm service health and license status.",code:`curl http://localhost:8084/health | jq .\n# status: "ok", license.valid: true`,color:"#16a34a"},
+              {step:6,title:"First Gap Analysis",desc:"Run a framework gap analysis to see your current compliance posture and prioritized remediation list.",code:`curl -X POST http://localhost:8084/v1/gap-analysis \\\n  -H "X-Compliance-Key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"framework":"soc2"}'\n# Returns: control_gaps[], coverage_percent, priority_items[]`,color:"#16a34a"},
+              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → Compliance: Overview shows coverage % per framework with traffic-light status. Controls tab lists all controls with pass/fail/partial status. Evidence tab shows collected evidence by control. Policies tab manages policy documents with version history. Reports tab generates audit-ready exports.",code:`curl http://localhost:8084/v1/dashboard \\\n  -H "X-Compliance-Key: your-api-key" | jq .`,color:"#16a34a"},
               {step:8,title:"API Usage",desc:"Key endpoints for control status, evidence collection, and report generation.",code:`# Control status\ncurl ".../v1/controls?framework=soc2&status=failing"\n\n# Trigger evidence collection\ncurl -X POST ".../v1/evidence/collect" \\\n  -d '{"framework":"soc2","control_id":"CC6.1"}'\n\n# Generate audit report (PDF)\ncurl ".../v1/reports/generate?framework=soc2&format=pdf"`,color:"#16a34a"},
               {step:9,title:"Integration",desc:"Connect to AWS/GCP/Azure for automated control evidence. Link GitHub/GitLab for change management evidence.",code:`# AWS integration (read-only)\ncurl -X POST .../v1/integrations/aws \\\n  -d '{"access_key_id":"...","secret_access_key":"...","region":"us-east-1"}'\n\n# GitHub integration\ncurl -X POST .../v1/integrations/github \\\n  -d '{"token":"ghp_...","org":"your-org"}'`,color:"#16a34a"},
-              {step:10,title:"License Status",desc:"Monitor license expiry. Compliance enters 4-hour grace on validation failure.",code:`curl http://localhost:8093/health | jq .license\n# Renew: https://axto.io/renew`,color:"#16a34a"},
+              {step:10,title:"License Status",desc:"Monitor license expiry. Compliance enters 4-hour grace on validation failure.",code:`curl http://localhost:8084/health | jq .license\n# Renew: https://axto.io/renew`,color:"#16a34a"},
               {step:11,title:"Troubleshooting",desc:"Common Compliance deployment issues.",code:`# Evidence not collecting → check cloud integration credentials\n# Gap analysis timeout → reduce framework scope initially\n# 503 on endpoints → license expired, renew\n# Missing controls → verify framework list in compliance.yml\ndocker compose -f compliance-compose.yml logs compliance`,color:"#16a34a"},
             ].map((s,i)=>(<div key={i} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden",transition:"all 0.3s ease"}}><div style={{padding:"14px 20px",background:`${s.color}10`,borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:8,background:s.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:12}}>{s.step}</div><span style={{fontWeight:800,fontSize:14,color:"#0a1628"}}>{s.title}</span><span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:600}}>Step {s.step} of 11</span></div><div style={{padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontSize:13,color:"#64748b",lineHeight:1.7}}>{s.desc}</p><pre style={{margin:0,padding:"14px 16px",background:"#0a1628",fontSize:11,color:"#86efac",overflow:"auto",lineHeight:1.8,borderRadius:10,fontFamily:"'JetBrains Mono',monospace"}}>{s.code}</pre></div></div>))}
           </div>
@@ -2013,15 +2013,15 @@ llm = OpenAI(
             </div>
             {[
               {step:1,title:"Purchase & Download",desc:"Purchase Sentinel license at axto.io/buy. Navigate to Portal → Downloads → sentinel-core.",code:`docker load < sentinel-core-1.1.0.tar.gz`,color:"#ca8a04"},
-              {step:2,title:"Server Requirements",desc:"Minimum: 4 CPU cores, 8 GB RAM, 100 GB disk. Docker 24+. Port 8095. Network interface with access to OT network segment (mirrored port or TAP).",code:`# Verify network interface visibility\nip link show\n# Identify interface connected to OT network mirror port`,color:"#ca8a04"},
+              {step:2,title:"Server Requirements",desc:"Minimum: 4 CPU cores, 8 GB RAM, 100 GB disk. Docker 24+. Port 8085. Network interface with access to OT network segment (mirrored port or TAP).",code:`# Verify network interface visibility\nip link show\n# Identify interface connected to OT network mirror port`,color:"#ca8a04"},
               {step:3,title:"Configure sentinel.yml",desc:"Set license key, network interface for passive monitoring, and industrial protocol settings.",code:`sentinel:\n  license_key: "SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"\n  api_key: "your-strong-api-key"\n  db_path: "/sentinel/data/sentinel.db"\n  monitor_interface: "eth1"  # Mirror/TAP interface\n  protocols: ["modbus","dnp3","ethernet_ip","profinet","bacnet"]\n  asset_discovery: true\n  alert_retention_days: 90\n\nai_pool:\n  vendors:\n    - provider: openai\n      api_key: "sk-..."   # YOUR key\n      model: "gpt-4o-mini"`,color:"#ca8a04"},
               {step:4,title:"First Start",desc:"Launch Sentinel. Asset discovery begins passively on startup — no traffic generated into OT network.",code:`docker compose -f sentinel-compose.yml up -d\ndocker compose -f sentinel-compose.yml logs -f sentinel`,color:"#ca8a04"},
-              {step:5,title:"Verify — /health",desc:"Confirm service health, license, and interface capture active.",code:`curl http://localhost:8095/health | jq .\n# status: "ok", license.valid: true, capture_active: true`,color:"#ca8a04"},
-              {step:6,title:"First Asset Discovery",desc:"Check automatically discovered OT assets after 5–10 minutes of passive monitoring.",code:`curl http://localhost:8095/v1/assets \\\n  -H "X-Sentinel-Key: your-api-key" | jq .\n# Returns: [{device_type, vendor, model, firmware, ip, last_seen}]`,color:"#ca8a04"},
-              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → Sentinel: Network Map shows visual topology of all discovered OT assets grouped by Purdue level. Assets tab lists all devices with CVE exposure. Alerts tab shows protocol anomalies and threat detections. Vulnerabilities tab shows CVEs by device with severity.",code:`curl http://localhost:8095/v1/dashboard \\\n  -H "X-Sentinel-Key: your-api-key" | jq .`,color:"#ca8a04"},
+              {step:5,title:"Verify — /health",desc:"Confirm service health, license, and interface capture active.",code:`curl http://localhost:8085/health | jq .\n# status: "ok", license.valid: true, capture_active: true`,color:"#ca8a04"},
+              {step:6,title:"First Asset Discovery",desc:"Check automatically discovered OT assets after 5–10 minutes of passive monitoring.",code:`curl http://localhost:8085/v1/assets \\\n  -H "X-Sentinel-Key: your-api-key" | jq .\n# Returns: [{device_type, vendor, model, firmware, ip, last_seen}]`,color:"#ca8a04"},
+              {step:7,title:"Dashboard Walkthrough",desc:"Dashboard → Sentinel: Network Map shows visual topology of all discovered OT assets grouped by Purdue level. Assets tab lists all devices with CVE exposure. Alerts tab shows protocol anomalies and threat detections. Vulnerabilities tab shows CVEs by device with severity.",code:`curl http://localhost:8085/v1/dashboard \\\n  -H "X-Sentinel-Key: your-api-key" | jq .`,color:"#ca8a04"},
               {step:8,title:"API Usage",desc:"Key endpoints for asset management, alerts, and vulnerability tracking.",code:`# List assets with CVE count\ncurl ".../v1/assets?has_cves=true"\n\n# Protocol anomaly alerts\ncurl ".../v1/alerts?type=protocol_anomaly"\n\n# Purdue model violations\ncurl ".../v1/topology/violations"`,color:"#ca8a04"},
               {step:9,title:"Integration",desc:"Forward Sentinel alerts to AXTO SOC for unified IT/OT visibility. Export to SIEM via syslog or REST.",code:`# Forward to AXTO SOC\nsentinel:\n  siem_forward_url: "http://soc:8092/v1/ingest"\n  siem_format: "json_api"\n\n# Syslog forward\nsentinel:\n  syslog_host: "siem.internal"\n  syslog_port: 514`,color:"#ca8a04"},
-              {step:10,title:"License Status",desc:"Monitor license. Sentinel enters 4-hour grace on validation failure.",code:`curl http://localhost:8095/health | jq .license\n# Renew: https://axto.io/renew`,color:"#ca8a04"},
+              {step:10,title:"License Status",desc:"Monitor license. Sentinel enters 4-hour grace on validation failure.",code:`curl http://localhost:8085/health | jq .license\n# Renew: https://axto.io/renew`,color:"#ca8a04"},
               {step:11,title:"Troubleshooting",desc:"Common Sentinel deployment issues.",code:`# No assets discovered → verify monitor_interface in sentinel.yml\n# Check mirror port is configured on your managed switch\n# Capture not active → run container with --network host or --cap-add NET_RAW\n# Protocol not parsed → add to protocols list in sentinel.yml\n# 503 on endpoints → license expired\ndocker compose -f sentinel-compose.yml logs sentinel`,color:"#ca8a04"},
             ].map((s,i)=>(<div key={i} style={{background:"#fff",borderRadius:14,border:"1.5px solid #e2e8f0",marginBottom:16,overflow:"hidden",transition:"all 0.3s ease"}}><div style={{padding:"14px 20px",background:`${s.color}10`,borderBottom:"1px solid #f1f5f9",display:"flex",gap:12,alignItems:"center"}}><div style={{width:28,height:28,borderRadius:8,background:s.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:900,fontSize:12}}>{s.step}</div><span style={{fontWeight:800,fontSize:14,color:"#0a1628"}}>{s.title}</span><span style={{marginLeft:"auto",fontSize:11,color:"#94a3b8",fontWeight:600}}>Step {s.step} of 11</span></div><div style={{padding:"16px 20px"}}><p style={{margin:"0 0 12px",fontSize:13,color:"#64748b",lineHeight:1.7}}>{s.desc}</p><pre style={{margin:0,padding:"14px 16px",background:"#0a1628",fontSize:11,color:"#fde68a",overflow:"auto",lineHeight:1.8,borderRadius:10,fontFamily:"'JetBrains Mono',monospace"}}>{s.code}</pre></div></div>))}
           </div>

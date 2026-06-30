@@ -10,13 +10,13 @@
 # HOW TO USE:
 #   1. Get license: https://axto.io/portal (keys start with CMPL-)
 #   2. docker compose -f compliance-compose.yml up -d
-#   3. Dashboard: http://YOUR_SERVER:8086
+#   3. Dashboard: http://YOUR_SERVER:8084
 # ============================================================
 compliance:
   license_key: "CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
-  port: 8086
+  port: 8093
   data_dir: /compliance/data
   # Frameworks to monitor (all enabled by default)
   frameworks:

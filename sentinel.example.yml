@@ -10,13 +10,13 @@
 # HOW TO USE:
 #   1. Get license: https://axto.io/portal (keys start with SNTL-)
 #   2. docker compose -f sentinel-compose.yml up -d
-#   3. Dashboard: http://YOUR_SERVER:8087
+#   3. Dashboard: http://YOUR_SERVER:8085
 # ============================================================
 sentinel:
   license_key: "SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
-  port: 8087
+  port: 8095
   data_dir: /sentinel/data
   # Networks to scan (CIDR notation)
   scan_networks:

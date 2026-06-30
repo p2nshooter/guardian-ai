@@ -15,7 +15,7 @@ services:
     image: registry.gitlab.com/axto-platform/vault/vault-engine:latest
     container_name: axto-vault
     restart: unless-stopped
-    ports: ["8091:8091"]
+    ports: ["8081:8091"]
     volumes:
       - ./vault.yml:/vault/config/vault.yml:ro
       - vault-data:/vault/data
