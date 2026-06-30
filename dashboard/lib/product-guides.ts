@@ -339,7 +339,13 @@ export const PRODUCT_GUIDES: Record<string, GuideData> = {
 };
 
 // ── Localized section labels ──────────────────────────────────────────────────
-const L: Record<Lang, Record<string, string>> = {
+interface LocalizedLabels {
+  prereq: string; getlic: string; config: string; start: string; menus: string;
+  feats: string; enforce: string; trouble: string; support: string;
+  docker: string; cpu: string; lickey: string; llm: string; buy: string;
+  open: string; appears: string; enf: string[]; resp: string;
+}
+const L: Record<Lang, LocalizedLabels> = {
   en: { prereq: "Prerequisites", getlic: "1. Get your license", config: "2. Configure",
         start: "3. Start", menus: "4. Dashboard menus & usage", feats: "Key features",
         enforce: "License enforcement", trouble: "Troubleshooting", support: "Support",

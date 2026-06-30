@@ -172,50 +172,6 @@ const GUIDES: Record<LangCode, FullGuide> = {
       { label: "Response Time", value: "24h (Standard), 4h (Enterprise)" },
     ],
     pdfFooter: "© AXTO Platform. All rights reserved. https://axto.io",
-    vault: {
-      productName: "Vault AI",
-      overview: "AI Data Privacy Proxy that intercepts all AI API calls, automatically detects and redacts PII/PHI/financial data before forwarding to providers, and re-injects original data in responses. Includes prompt injection firewall, audit logging, and compliance reporting. Self-hosted, BYOK, ~25MB image.",
-      architecture: [
-        { component: "Vault Core", role: "Privacy proxy server. Intercepts AI requests, applies redaction rules, forwards to upstream providers, re-injects data in responses. Single container, ~25MB." },
-      ],
-      features: [
-        { name: "Dashboard", description: "Real-time privacy stats: total requests, PII redacted, requests blocked, detections by category (PII/PHI/Financial/Secrets), average latency." },
-        { name: "PII Redaction", description: "Detects and redacts: email addresses, phone numbers, SSN, passport numbers, names, physical addresses, dates of birth, IP addresses." },
-        { name: "PHI Redaction", description: "HIPAA-compliant detection: medical record numbers, ICD codes, medications with dosages, lab values. Mode: redact, hash, or mask." },
-        { name: "Financial Redaction", description: "PCI-DSS ready: credit card numbers (Visa/MC/Amex/Discover), bank accounts, IBAN, routing numbers, tax IDs." },
-        { name: "Secret Detection", description: "Prevents accidental key leakage: OpenAI/AWS/Anthropic API keys, JWT tokens, private keys, database connection strings." },
-        { name: "Prompt Injection Firewall", description: "Blocks injection attempts: 'ignore previous instructions', jailbreak patterns, DAN mode, custom block patterns. Alert on block." },
-        { name: "Audit Logs", description: "Every request logged in JSONL: timestamp, action, detection count, types found, client IP, provider. Queryable via REST API." },
-        { name: "Custom Rules", description: "Add company-specific regex patterns: employee IDs, internal project codes, customer reference numbers." },
-        { name: "Re-Injection", description: "Original data automatically restored in AI responses. Your application receives real data — the AI provider only ever sees redacted placeholders." },
-        { name: "API Endpoint", description: "OpenAI-compatible proxy at port 8443. Drop-in replacement — change only base_url in your application code." },
-        { name: "Settings", description: "License key, provider keys (BYOK), redaction mode, rate limits, alert channels (Slack/Discord/email/webhook), content filtering." },
-      ],
-      setupSteps: [
-        "Edit vault.yml — enter license key + AI provider API keys + redaction preferences",
-        "Start: docker compose -f vault-compose.yml up -d",
-        "Dashboard: http://YOUR_SERVER:8443/dashboard",
-        "API endpoint: http://YOUR_SERVER:8443/v1/chat/completions",
-        "In your app: replace OpenAI base_url with Vault endpoint",
-        "Verify: curl http://localhost:8443/health",
-      ],
-      configExample: `vault:
-  license_key: "VAULT-XXXX-XXXX-XXXX-XXXX"
-  providers:
-    - name: openai
-      base_url: "https://api.openai.com"
-      api_key: "sk-YOUR-KEY"
-  redaction:
-    enabled: true
-    mode: "redact"
-    builtin_pii: true
-    builtin_phi: true
-    builtin_financial: true
-    builtin_secrets: true
-    re_inject_response: true`,
-      verifyCommand: 'curl http://localhost:8443/health',
-      verifyExpected: '{"status":"ok","license":"valid"}',
-    },
   },
 
   // ── Indonesian ──────────────────────────────────────────

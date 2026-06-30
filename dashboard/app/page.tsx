@@ -1046,7 +1046,7 @@ export default function HomePage() {
                 <h4 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{p.name}</h4>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · PDF download · Works with ChatGPT, Claude, Gemini</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${lp(p.code, p.price)}</span>
+                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${p.price}</span>
                   <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${p.original}</span>
                 </div>
                 <Link href="/playbooks" style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>

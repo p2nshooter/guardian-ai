@@ -164,7 +164,7 @@ export async function getAllPackagesWithLivePrices(req: NextRequest): Promise<{
     priceMonthly: pkg.priceMonthly ?? 0,
     staticPrice: pkg.price ?? 0,
     staticPriceMonthly: pkg.priceMonthly ?? 0,
-    source: "static" as const,
+    source: "static" as "static" | "db",
   }));
 
   try {

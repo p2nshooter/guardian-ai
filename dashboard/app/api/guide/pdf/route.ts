@@ -20,7 +20,7 @@ function escPdf(s: string): string {
   return s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
-function buildPdfBytes(lang: LangCode): Uint8Array {
+function buildPdfBytes(lang: LangCode): Uint8Array<ArrayBuffer> {
   const guide = getGuide(lang);
   const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === lang);
 

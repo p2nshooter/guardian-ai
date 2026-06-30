@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
       package_code: lic.package_code,
       bundle_label: bundleLabel,
       type,
-      total_products: allowedProducts.length,
+      total_products: allowedFiles.length,
       ready_products: files.length,
       missing_products: missing,
       files: files.map(f => ({ 
