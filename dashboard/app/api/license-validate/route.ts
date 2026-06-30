@@ -408,7 +408,15 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
       return { ...base, iot_monitoring: true, ot_security: true, max_devices: maxNodes };
     case "antivirus":
       return { ...base, clamav: true, yara_rules: true, rest_api: true, guardian_ml: true };
-    case "studio":
+    case "studio": {
+      // One Studio license unlocks the ai-studio / gpu-studio / hybrid-studio
+      // sub-apps according to tier — must match STUDIO_PLANS[].studios in
+      // lib/studio.ts. FAIL-CLOSED: an unrecognized package code gets the
+      // Starter set, never the full set.
+      const pc = (packageCode || "").toLowerCase();
+      const studios = pc.includes("enterprise") || pc.includes("professional")
+        ? ["ai", "gpu", "hybrid"]
+        : ["ai", "gpu"];
       return {
         ...base,
         central_ai_pool:   true,
@@ -416,7 +424,10 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
         byo_gpu:           true,
         image_generation:  true,
         max_concurrent_jobs: maxNodes,
+        studios,
+        hybrid_pool:       studios.includes("hybrid"),
       };
+    }
     case "legal": {
       // AXTO Legal — feature flags consumed by legal/src (workspaces, country
       // packs, compliance frameworks). Tier is resolved EXPLICITLY and
@@ -428,11 +439,13 @@ function buildFeatures(product: string, packageCode: string, maxNodes: number): 
                  :  pc.includes("business")                                 ? "biz"
                  :  pc.includes("pro")                                      ? "pro"
                  :  "starter";
-      // of 195+ jurisdictions / 18 AI workspaces / 50+ compliance frameworks;
-      // -1 means "all". Starter < Professional < Business < Enterprise/Sovereign.
-      const COUNTRIES:  Record<string, number> = { starter: 3, pro: 25, biz: 75, ent: -1 };
-      const WORKSPACES: Record<string, number> = { starter: 5, pro: 12, biz: 15, ent: 18 };
-      const FRAMEWORKS: Record<string, number> = { starter: 5, pro: 20, biz: 35, ent: -1 };
+      // Must match the entitlements promised in lib/stripe.ts PACKAGE_INFO
+      // (legal_starter/professional/business/enterprise) — these numbers are
+      // what the client paid for, so they must match exactly, not just be
+      // "directionally" tiered. -1 means "all". Starter < Pro < Business < Ent.
+      const COUNTRIES:  Record<string, number> = { starter: 30, pro: 100, biz: 195, ent: -1 };
+      const WORKSPACES: Record<string, number> = { starter: 3,  pro: 10,  biz: 18,  ent: -1 };
+      const FRAMEWORKS: Record<string, number> = { starter: 20, pro: 40,  biz: 50,  ent: -1 };
       return {
         ...base,
         air_gapped:            true,

@@ -173,7 +173,7 @@ const T = {
 
   // ── Bundle ───────────────────────────────────────────────────────────────
   bundle_name:   { id: "Bundle Hemat", en: "Bundle & Save", zh: "套餐优惠", ar: "حزمة الادخار" },
-  bundle_desc:   { id: "Guardian + Orchestra dengan diskon 10%", en: "Guardian + Orchestra with 10% discount", zh: "Guardian + Orchestra，享9折优惠", ar: "Guardian + Orchestra بخصم 10٪" },
+  bundle_desc:   { id: "Guardian + Orchestra dengan diskon 15%", en: "Guardian + Orchestra with 15% discount", zh: "Guardian + Orchestra，享85折优惠", ar: "Guardian + Orchestra بخصم 15٪" },
 
   // ── FAQ ──────────────────────────────────────────────────────────────────
   faq_title:     { id: "Pertanyaan Umum", en: "FAQ", zh: "常见问题", ar: "الأسئلة الشائعة" },
@@ -279,13 +279,13 @@ export const FAQS: Record<Locale, { q: string; a: string }[]> = {
     { q: "AXTO会存储我的服务器数据吗？", a: "绝对不会。Guardian AI和Orchestra AI 100%运行在您自己的服务器上。AXTO只验证您的许可证——我们从不查看、触碰或存储您的数据。" },
     { q: "什么是BYOK？", a: "自带密钥——您使用自己的AI提供商API密钥（OpenAI、Anthropic等）。密钥存储在您的服务器上，而不是AXTO。" },
     { q: "设置需要多长时间？", a: "平均15-30分钟。使用我们的配置文件运行docker compose up。" },
-    { q: "有免费试用吗？", a: "目前没有，但您可以联系我们的团队进行现场演示。30天满意保证。" },
+    { q: "有免费试用吗？", a: "有！Guardian AI 和 Orchestra AI 均提供 1–7 天试用许可证，可直接从管理面板激活。所有付费方案均享有 30 天满意保证。" },
   ],
   ar: [
     { q: "هل تخزن AXTO بيانات خادمي؟", a: "لا على الإطلاق. يعمل Guardian AI وOrchestra AI بنسبة 100٪ على خوادمك الخاصة. تتحقق AXTO فقط من ترخيصك - نحن لا نرى بياناتك أو نلمسها أو نخزنها." },
     { q: "ما هو BYOK؟", a: "أحضر مفاتيحك الخاصة — تستخدم مفاتيح API الخاصة بمزود الذكاء الاصطناعي (OpenAI وAnthropic وما إلى ذلك). يتم تخزين المفاتيح على خادمك وليس في AXTO." },
     { q: "كم يستغرق الإعداد؟", a: "حوالي 15-30 دقيقة في المتوسط. قم بتشغيل docker compose up مع ملفات التكوين الخاصة بنا." },
-    { q: "هل هناك تجربة مجانية؟", a: "ليس حاليًا، لكن يمكنك الاتصال بفريقنا للحصول على عرض توضيحي مباشر. ضمان الرضا لمدة 30 يومًا." },
+    { q: "هل هناك تجربة مجانية؟", a: "نعم! يتوفر Guardian AI وOrchestra AI كتراخيص تجريبية لمدة 1–7 أيام، يمكن تفعيلها مباشرة من لوحة الإدارة. ضمان الرضا لمدة 30 يومًا على جميع الخطط المدفوعة." },
   ],
 };
 

@@ -264,7 +264,7 @@ export async function createLicense(
   }
 
   // ── Expiry calculation ───────────────────────────────────────────────────
-  // Priority: explicit trialDays → explicit expiresInDays → legacy trial_ (3d)
+  // Priority: explicit trialDays → explicit expiresInDays → legacy trial_ (7d)
   //           → month-based. trialDays supports 1–4 week trials (7/14/21/28).
   const expiresAt = new Date();
   const trialDays =
@@ -279,8 +279,8 @@ export async function createLicense(
   } else if (params.expiresInDays && params.expiresInDays > 0) {
     expiresAt.setDate(expiresAt.getDate() + Math.floor(params.expiresInDays));
   } else if (params.packageCode.startsWith("trial_")) {
-    // Legacy `trial_` package with no explicit duration → keep historical 3 days
-    expiresAt.setDate(expiresAt.getDate() + 3);
+    // Legacy `trial_` package with no explicit duration → standard 7-day trial
+    expiresAt.setDate(expiresAt.getDate() + 7);
   } else if (isLifetime) {
     // Lifetime / perpetual license — expiry is set 100 years out so every
     // existing date-based check (client offline-grace logic, /api/license-validate
@@ -293,7 +293,7 @@ export async function createLicense(
 
   const resolvedLicenseType =
     params.licenseType ?? (isTrial ? "trial" : (isLifetime ? "lifetime" : (params.billingCycle ?? "yearly")));
-  const trialDaysStored = isTrial ? (trialDays || params.expiresInDays || 3) : 0;
+  const trialDaysStored = isTrial ? (trialDays || params.expiresInDays || 7) : 0;
 
   const { maxNodes } = await resolvePackageLimits(db, params.packageCode, product);
 

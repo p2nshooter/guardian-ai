@@ -16,7 +16,7 @@
 // • 100% self-service. No managed-service agreements. No dedicated support engineers.
 // • All guidance provided via interactive multi-language Setup Guide (10 languages, PDF download).
 // • Community contact via email (hallo@axto.io) — best-effort response.
-// • 3-day free trial available for every product (1 server/instance, single IP).
+// • 7-day free trial available for every product (1 server/instance, single IP).
 // • License locked to: 1 machine-id + 1 IP + 1 instance. No sharing.
 
 export interface PackageInfo {

@@ -580,7 +580,7 @@ export default function HomePage() {
               { value: "100%", label: "BYOK — Your Keys Only", icon: "🔑" },
               { value: "0 bytes", label: "Data Sent to AXTO", icon: "🛡️" },
               { value: "< 30 min", label: "Deployment Time", icon: "⚡" },
-              { value: "9 products", label: "Complete Platform", icon: "📈" },
+              { value: "10 products", label: "Complete Platform", icon: "📈" },
             ].map((s, i) => (
               <div key={s.label} style={{ flex: "1 1 140px", textAlign: "center", padding: "8px 16px", borderRight: i < 3 ? "1px solid rgba(2,132,199,0.1)" : "none" }}>
                 <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
@@ -1046,7 +1046,7 @@ export default function HomePage() {
                 <h4 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{p.name}</h4>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · PDF download · Works with ChatGPT, Claude, Gemini</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${lp(p.code, p.price)}</span>
+                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${p.price}</span>
                   <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${p.original}</span>
                 </div>
                 <Link href="/playbooks" style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
@@ -1094,7 +1094,7 @@ export default function HomePage() {
               { q:"What does BYOK (Bring Your Own Keys) mean?", a:"Your AI provider credentials (OpenAI, Anthropic, etc.) are stored on your server. Orchestra reads them locally. AXTO has no copy of your keys." },
               { q:"How long does initial setup take?", a:"Under 30 minutes. Download ZIP from portal → run install.sh → open browser → enter license key. Admin dashboard is live immediately." },
               { q:"Can I run Guardian and Orchestra on the same server?", a:"Yes. Both products run as separate Docker Compose stacks on the same host. For large deployments, separate hosts are recommended." },
-              { q:"Is there a free trial?", a:"Yes. Every product offers a free 3-day trial — full features, limited capacity, locked to one server/IP. Register at axto.io, select any Trial plan, and your license key is delivered instantly. One trial per product per email. No credit card required." },
+              { q:"Is there a free trial?", a:"Yes. Every product offers a free 7-day trial — core features, capability-limited (no API, watermarked exports), locked to one server/IP. Register at axto.io, select any Trial plan, and your license key is delivered instantly. One trial per product per email. No credit card required." },
               { q:"What happens if my license expires?", a:"Products continue in read-only mode for a 7-day grace period. Automated renewal reminders sent at 30, 14, and 3 days before expiry." },
             ],
             id:[
@@ -1224,7 +1224,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers include: Self-hosted. No cloud dependency. 3-day free trial available. · <a href="mailto:hallo@axto.io" style={{ color: "#6366f1", textDecoration: "none", fontWeight: 600 }}>Contact us for volume pricing</a></p>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers include: Self-hosted. No cloud dependency. 7-day free trial available. · <a href="mailto:hallo@axto.io" style={{ color: "#6366f1", textDecoration: "none", fontWeight: 600 }}>Contact us for volume pricing</a></p>
         </div>
       </section>
 
@@ -1333,7 +1333,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers: self-hosted, your logs never leave your network, 3-day free trial available · <a href="mailto:hallo@axto.io" style={{ color: "#dc2626", textDecoration: "none", fontWeight: 600 }}>Get SOC Started</a></p>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers: self-hosted, your logs never leave your network, 7-day free trial available · <a href="mailto:hallo@axto.io" style={{ color: "#dc2626", textDecoration: "none", fontWeight: 600 }}>Get SOC Started</a></p>
         </div>
       </section>
 
@@ -1440,7 +1440,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers: Self-hosted. Evidence never leaves your network. 3-day free trial available. · <a href="mailto:hallo@axto.io" style={{ color: "#16a34a", textDecoration: "none", fontWeight: 600 }}>Get Compliance Started</a></p>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>All tiers: Self-hosted. Evidence never leaves your network. 7-day free trial available. · <a href="mailto:hallo@axto.io" style={{ color: "#16a34a", textDecoration: "none", fontWeight: 600 }}>Get Compliance Started</a></p>
         </div>
       </section>
 
@@ -1548,7 +1548,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>3-day free trial available for all tiers · <a href="mailto:hallo@axto.io" style={{ color: "#7c3aed", textDecoration: "none", fontWeight: 600 }}>Get Sentinel Started</a></p>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>7-day free trial available for all tiers · <a href="mailto:hallo@axto.io" style={{ color: "#7c3aed", textDecoration: "none", fontWeight: 600 }}>Get Sentinel Started</a></p>
         </div>
       </section>
 
@@ -1656,7 +1656,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>3-day free trial available · No credit card required · <a href="mailto:hallo@axto.io" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 600 }}>Get Edge Started</a></p>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#94a3b8" }}>7-day free trial available · No credit card required · <a href="mailto:hallo@axto.io" style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 600 }}>Get Edge Started</a></p>
         </div>
       </section>
 
@@ -1675,7 +1675,7 @@ export default function HomePage() {
           <div style={{ textAlign: "center", marginBottom: 24 }}>
             <ComingSoonBanner product="legal" color="#4338ca" />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 18, marginBottom: 56 }}>
             {[
               { icon: "🔎", title: "Global Legal Research", body: "Search statutes, case law and regulations from trusted public sources across 195+ countries — with plain-language summaries and citations you can verify." },
               { icon: "📑", title: "Contract Intelligence", body: "Upload any contract and instantly surface key clauses, risks, obligations and missing protections — in language a non-lawyer can understand." },
@@ -1691,6 +1691,29 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+            {[
+              { name: "Starter", code: "legal_starter", price: 14900, limit: "3 workspaces · 30 jurisdictions · 100 docs/day", features: ["3 AI Workspaces (Research, Contract Intelligence, Compliance)", "30 jurisdictions — ASEAN, EU, US focus", "20 compliance frameworks (GDPR, ISO 27001, PDPA, OJK)", "5 BYOK LLM connections", "English + Bahasa Indonesia UI"] },
+              { name: "Professional", code: "legal_professional", price: 49000, limit: "10 workspaces · 100 jurisdictions · unlimited docs", popular: true, features: ["10 AI Workspaces incl. AML/KYC, Due Diligence, ESG", "100 jurisdictions — global coverage", "40+ compliance frameworks", "All BYOK LLM providers + local Ollama", "10 languages, daily regulatory alerts"] },
+              { name: "Business", code: "legal_business", price: 99000, limit: "18 workspaces · 195+ jurisdictions · multi-user", features: ["All 18 AI Workspaces", "195+ jurisdictions — full global coverage", "50+ compliance frameworks", "Multi-user (up to 25 users)", "LexisNexis / Westlaw / Hukumonline connectors"] },
+              { name: "Enterprise", code: "legal_enterprise", price: 249000, limit: "Unlimited users · custom jurisdictions · white-label", features: ["All Business features", "Unlimited users & multi-tenant", "Custom jurisdiction database import", "White-label branding & custom domain", "100% air-gapped deployment option"] },
+            ].map(p => (
+              <div key={p.name} className="card" style={{ padding: 32, position: "relative", border: p.popular ? "2px solid #4338ca" : "1px solid rgba(67,56,202,0.12)", background: p.popular ? "linear-gradient(160deg,#eef2ff,#e0e7ff)" : "#fff" }}>
+                {p.popular && <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", background: "linear-gradient(135deg,#4338ca,#0284c7)", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 18px", borderRadius: 20, whiteSpace: "nowrap" }}>MOST POPULAR</div>}
+                <span style={{ background: "rgba(67,56,202,0.08)", color: "#4338ca", borderRadius: 6, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>LEGAL</span>
+                <h4 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 2, marginTop: 8 }}>{p.name}</h4>
+                <p style={{ fontSize: 12, color: "#4338ca", fontWeight: 600, marginBottom: 18 }}>{p.limit}</p>
+                <div className="price-tag" style={{ marginBottom: 4, color: "#0a1628" }}><sup>$</sup>{lp(p.code, p.price).toLocaleString("en-US")}</div>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 22 }}>per year · self-hosted</p>
+                <div style={{ borderTop: "1px solid rgba(67,56,202,0.08)", paddingTop: 18, marginBottom: 22 }}>
+                  {p.features.map(f => <div key={f} className="check-item" style={{ marginBottom: 8 }}><div className="check-icon" style={{ background: "rgba(67,56,202,0.08)", color: "#4338ca", flexShrink: 0 }}>✓</div><span style={{ fontSize: 13, lineHeight: 1.5 }}>{f}</span></div>)}
+                </div>
+                <ProductBuyButton code={p.code} popular={p.popular} color="#4338ca" />
+              </div>
+            ))}
+          </div>
+
           <p style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "#94a3b8", maxWidth: 720, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
             AXTO Legal is an assistive tool, not a substitute for advice from a qualified lawyer. Always have important matters reviewed by licensed counsel in your jurisdiction.
           </p>
@@ -1814,7 +1837,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#475569" }}>3-day free trial · No credit card required · <a href="mailto:hallo@axto.io" style={{ color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>Contact us</a></p>
+          <p style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "#475569" }}>7-day free trial · No credit card required · <a href="mailto:hallo@axto.io" style={{ color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>Contact us</a></p>
         </div>
       </section>
 
@@ -1836,7 +1859,7 @@ export default function HomePage() {
               { icon: "💻", title: "Windows EXE (Portable)", desc: "Single-file PyInstaller executable. No Python installation required. Double-click to run. Ideal for Windows Server environments, air-gapped networks, and quick evaluation.", tag: "axto-vault.exe --port 8080" },
               { icon: "📖", title: "Interactive Setup Guide", desc: "Step-by-step guide in 10 languages (EN, ID, AR, ZH, FR, DE, ES, PT, RU, JA). Covers installation, configuration, AI provider setup, and production hardening. Downloadable as PDF.", tag: "axto.io/guide → Download PDF" },
               { icon: "🔑", title: "License Key (Instant)", desc: "Delivered to your email within 60 seconds of purchase. Locked to 1 server (machine-id + IP). Enter in YAML config, restart, and your product activates immediately.", tag: "VAULT-A1B2-C3D4-E5F6-G7H8..." },
-              { icon: "🆓", title: "3-Day Free Trial", desc: "Every product offers a free 3-day trial — full features, limited capacity, locked to one server. No credit card required. One trial per product per email address.", tag: "Register → Select Trial → Instant activation" },
+              { icon: "🆓", title: "7-Day Free Trial", desc: "Every product offers a free 7-day trial — core features, capability-limited (no API, watermarked exports), locked to one server. No credit card required. One trial per product per email address.", tag: "Register → Select Trial → Instant activation" },
               { icon: "🔄", title: "All Updates Included", desc: "Your annual license includes every update released during the license period. New features, security patches, and performance improvements — all included at no extra cost.", tag: "docker pull :latest → restart" },
             ].map(item => (
               <div key={item.title} className="card" style={{ padding: 28 }}>
@@ -1865,10 +1888,10 @@ export default function HomePage() {
       <section style={{ padding: "60px 24px", background: "linear-gradient(135deg,#0284c7,#0d9488)", textAlign: "center" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
           <h2 style={{ fontSize: "clamp(24px, 3.5vw, 38px)", fontWeight: 800, color: "#fff", marginBottom: 14, letterSpacing: "-0.5px" }}>
-            Try Any Product Free for 3 Days
+            Try Any Product Free for 7 Days
           </h2>
           <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 1.7, marginBottom: 28, maxWidth: 560, margin: "0 auto 28px" }}>
-            Full features. No credit card. One click to activate. Experience the complete AXTO platform on your own infrastructure before you commit.
+            Core features. No credit card. One click to activate. Experience the AXTO platform on your own infrastructure before you commit.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {["Guardian","Orchestra","Vault","Edge","SOC","Compliance","Sentinel","Antivirus"].map(p => {

@@ -40,9 +40,10 @@ const PRODUCT_META: Record<string, { icon: string; label: string; color: string 
   sentinel:   { icon: "🏭",  label: "Sentinel OT",      color: "#4d7c0f" },
   antivirus:  { icon: "🦠",  label: "Antivirus",        color: "#7c3aed" },
   studio:     { icon: "🧠",  label: "AXTO Studio",      color: "#0f766e" },
+  legal:      { icon: "⚖️",  label: "Legal AI",         color: "#4338ca" },
 };
 
-const PRODUCT_ORDER = ["guardian","orchestra","bundle","vault","edge","soc","compliance","sentinel","antivirus","studio"];
+const PRODUCT_ORDER = ["guardian","orchestra","bundle","vault","edge","soc","compliance","sentinel","antivirus","studio","legal"];
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });

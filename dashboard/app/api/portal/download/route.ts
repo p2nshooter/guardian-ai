@@ -13,13 +13,15 @@ import { requireUser } from "@/lib/auth";
 import { DISCLAIMER_VERSION } from "@/lib/disclaimer";
 
 // ── Product → R2 key mapping ────────────────────────────────────────────────
-function r2Key(product: string, type: "docker" | "exe") {
-  return type === "exe"
-    ? `builds/latest/exe/${product}-windows.exe`
-    : `builds/latest/raw/${product}.tar.gz`;
+function r2Key(product: string, type: "docker" | "exe" | "exe-linux") {
+  if (type === "exe") return `builds/latest/exe/${product}-windows.exe`;
+  if (type === "exe-linux") return `builds/latest/exe/${product}-linux`;
+  return `builds/latest/raw/${product}.tar.gz`;
 }
-function filename(product: string, type: "docker" | "exe") {
-  return type === "exe" ? `axto-${product}-windows.exe` : `axto-${product}.tar.gz`;
+function filename(product: string, type: "docker" | "exe" | "exe-linux") {
+  if (type === "exe") return `axto-${product}-windows.exe`;
+  if (type === "exe-linux") return `axto-${product}-linux`;
+  return `axto-${product}.tar.gz`;
 }
 
 // ── Product groups ───────────────────────────────────────────────────────────
@@ -81,7 +83,7 @@ export async function GET(req: NextRequest) {
   const url       = new URL(req.url);
   const licenseId = url.searchParams.get("license_id") || "";
   const product   = url.searchParams.get("product")    || "";
-  const type      = (url.searchParams.get("type") || "docker") as "docker" | "exe";
+  const type      = (url.searchParams.get("type") || "docker") as "docker" | "exe" | "exe-linux";
   const action    = url.searchParams.get("action") || "download";
   const lang      = url.searchParams.get("lang")   || "en";
 
@@ -151,6 +153,9 @@ export async function GET(req: NextRequest) {
       soc:        "SOC AI — AI-Powered Security Operations Center",
       compliance: "Compliance AI — Automated Audit & Compliance Platform",
       sentinel:   "Sentinel AI — IoT/OT Security Platform",
+      antivirus:  "Antivirus — ClamAV + AI Learning Threat Detection",
+      studio:     "AXTO Studio — AI & GPU Pool Platform",
+      legal:      "AXTO Legal — AI Legal Research & Document Intelligence",
     };
 
     const invoiceText = buildInvoiceText({
@@ -2016,7 +2021,7 @@ Support: hallo@axto.io
 // ═══════════════════════════════════════════════════════════════════════════
 // PDF Builder (edge-compatible, valid PDF 1.4)
 // ═══════════════════════════════════════════════════════════════════════════
-function buildGuidePDF(markdownContent: string, lang: string): Uint8Array {
+function buildGuidePDF(markdownContent: string, lang: string): Uint8Array<ArrayBuffer> {
   const lines      = markdownContent.replace(/```[\s\S]*?```/g, (m) => m.replace(/[()\\]/g, " ")).split("\n");
   const linesPerPage = 55;
   const pages: string[][] = [];

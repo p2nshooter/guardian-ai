@@ -18,6 +18,25 @@ export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req);
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getDB(req);
+  try {
+    const existing: any = await db.prepare("SELECT COUNT(*) as n FROM payment_methods").first();
+    if ((existing?.n ?? 0) === 0) {
+      await db.prepare(`
+        INSERT OR IGNORE INTO payment_methods
+          (id, symbol, name, category, network, kind, address, contract, decimals, confirmations, enabled, sort_order)
+        VALUES
+          ('usdt_trc20','USDT','Tether USD (TRC20)','crypto','TRC20','trc20','','TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',6,20,0,10),
+          ('bnb','BNB','BNB (BEP20)','crypto','BEP20','native','','',18,12,0,20),
+          ('eth','ETH','Ethereum (ERC20)','crypto','Ethereum','native','','',18,50,0,30),
+          ('btc','BTC','Bitcoin','crypto','Bitcoin','native','','',8,1,0,40),
+          ('stripe','USD','Card (Stripe)','fiat','','native','',2,0,0,100),
+          ('paypal','USD','PayPal','fiat','','native','',2,0,0,110),
+          ('xendit','IDR','Xendit (Indonesia)','fiat','','native','',2,0,0,120),
+          ('midtrans','IDR','Midtrans (Indonesia)','fiat','','native','',2,0,0,130)
+      `).run();
+    }
+  } catch { /* table might not exist yet — migration will handle it */ }
+
   const rows = await db.prepare("SELECT * FROM payment_methods ORDER BY category, sort_order ASC").all();
   return NextResponse.json({ methods: rows?.results || [] });
 }

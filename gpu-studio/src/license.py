@@ -34,8 +34,10 @@ from cryptography.exceptions import InvalidSignature as _InvalidSignature
 
 log = logging.getLogger("gpu_studio.license")
 
-PRODUCT         = "gpu-studio"
-PRODUCT_PREFIX  = "GPUS"
+PRODUCT          = "gpu-studio"         # this app's own identity (cache file, logs)
+STUDIO_MODULE    = "gpu"                # this app's entry in STUDIO_PLANS[].studios (lib/studio.ts)
+LICENSE_PRODUCT  = "studio"             # AXTO Studio — ONE shared license unlocks ai/gpu/hybrid studio
+PRODUCT_PREFIX   = "STUD"
 VERSION         = "1.1.0"
 VALIDATE_URL    = "https://axto.io/api/license-validate"
 GRACE_SECONDS   = 14400
@@ -114,6 +116,40 @@ def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
     if len(parts) > len(SIGNED_PAYLOAD_FIELDS):
         d.update({f"extra_{i}": v for i, v in enumerate(parts[len(SIGNED_PAYLOAD_FIELDS):])})
     return d
+
+
+# ── Separately-signed entitlements (which studios this license unlocks) ──────
+# Field order must match buildEntitlementsPayload() in
+# dashboard/lib/license-signing.ts byte-for-byte.
+ENTITLEMENTS_FIELDS = ["license_key", "machine_id", "product", "entitlements", "issued_at", "nonce"]
+
+
+def _parse_entitlements(s: str) -> dict:
+    out: dict = {}
+    for kv in (s or "").split(";"):
+        if "=" in kv:
+            k, v = kv.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
+
+
+def _verified_studios(data: dict, expected_key: str) -> list:
+    """Verifies the SEPARATELY-signed entitlements block and returns the list
+    of studio sub-apps (ai/gpu/hybrid) this license actually unlocks. Returns
+    [] (deny) on ANY verification failure, mismatch, or absence — a client
+    must never grant itself a module from an unsigned or mismatched block."""
+    ep = data.get("entitlements_payload", "")
+    es = data.get("entitlements_signature", "")
+    if not ep or not es or not _verify_signature(ep, es):
+        return []
+    parts = ep.split("|")
+    if len(parts) < len(ENTITLEMENTS_FIELDS):
+        return []
+    fields = dict(zip(ENTITLEMENTS_FIELDS, parts))
+    if fields.get("product") != LICENSE_PRODUCT or fields.get("license_key") != expected_key:
+        return []
+    raw = _parse_entitlements(fields.get("entitlements", "")).get("studios", "")
+    return [s.strip() for s in raw.split(",") if s.strip()]
 
 
 def _cache_path() -> str:
@@ -223,7 +259,11 @@ async def validate_license(license_key: str) -> LicenseState:
 
         if not _state.key.startswith(PRODUCT_PREFIX + "-"):
             _state.valid = False
-            _state.error = f"Invalid license key prefix. Expected {PRODUCT_PREFIX}-XXXX-... for AXTO STUDIO GPU."
+            _state.error = (
+                f"Invalid license key prefix. Expected {PRODUCT_PREFIX}-XXXX-... "
+                f"— this is your AXTO Studio license (GPU Studio is one of the "
+                f"sub-apps it unlocks, alongside AI Studio and Hybrid Studio)."
+            )
             log.error(f"License rejected: wrong prefix. Got '{_state.key[:10]}...', expected '{PRODUCT_PREFIX}-'")
             return _state
 
@@ -232,7 +272,7 @@ async def validate_license(license_key: str) -> LicenseState:
             async with httpx.AsyncClient(timeout=15) as client:
                 resp = await client.post(VALIDATE_URL, json={
                     "license_key": _state.key,
-                    "product": PRODUCT,
+                    "product": LICENSE_PRODUCT,
                     "machine_id": mid,
                     "version": VERSION,
                     "hostname": socket.gethostname(),
@@ -272,17 +312,27 @@ async def validate_license(license_key: str) -> LicenseState:
                 data["product"] = signed_fields["product"]
 
             if resp.status_code == 200 and data.get("valid"):
-                _state.valid = True
-                _state.product = data.get("product", PRODUCT)
-                _state.plan = data.get("plan", data.get("package_code", "starter"))
-                _state.max_nodes = data.get("max_nodes", 1)
-                _state.expires_at = data.get("expires_at", "")
-                _state.machine_bound = True
-                _state.last_success = time.time()
-                _state.grace_active = False
-                _state.error = ""
-                _save_cache(sig_payload, sig)
-                log.info(f"✅ License validated: {_state.plan} | Expires: {_state.expires_at}")
+                studios = _verified_studios(data, _state.key)
+                if STUDIO_MODULE not in studios:
+                    _state.valid = False
+                    _state.error = (
+                        "Your AXTO Studio plan does not include GPU Studio. "
+                        "Upgrade your plan at axto.io/portal to unlock it."
+                    )
+                    _clear_cache()
+                    log.warning(f"❌ License valid but plan does not include '{STUDIO_MODULE}' studio: {_state.error}")
+                else:
+                    _state.valid = True
+                    _state.product = data.get("product", LICENSE_PRODUCT)
+                    _state.plan = data.get("plan", data.get("package_code", "starter"))
+                    _state.max_nodes = data.get("max_nodes", 1)
+                    _state.expires_at = data.get("expires_at", "")
+                    _state.machine_bound = True
+                    _state.last_success = time.time()
+                    _state.grace_active = False
+                    _state.error = ""
+                    _save_cache(sig_payload, sig)
+                    log.info(f"✅ License validated: {_state.plan} | Expires: {_state.expires_at}")
             else:
                 _state.valid = False
                 _state.error = data.get("error", "Validation failed")
