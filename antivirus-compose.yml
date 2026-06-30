@@ -42,7 +42,7 @@ services:
       clamav:
         condition: service_healthy
     ports:
-      - "8097:8097"
+      - "8086:8097"
     volumes:
       - ./antivirus.yml:/guardian/config/guardian.yml:ro
       - antivirus_data:/guardian/data

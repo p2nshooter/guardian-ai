@@ -17,7 +17,7 @@ services:
     container_name: compliance-core
     restart: unless-stopped
     ports:
-      - "8093:8093"
+      - "8084:8093"
     volumes:
       - ./compliance.yml:/compliance/config/compliance.yml:ro
       - compliance-data:/compliance/data

@@ -17,7 +17,7 @@ services:
     container_name: sentinel-core
     restart: unless-stopped
     ports:
-      - "8095:8095"
+      - "8085:8095"
     volumes:
       - ./sentinel.yml:/sentinel/config/sentinel.yml:ro
       - sentinel-data:/sentinel/data

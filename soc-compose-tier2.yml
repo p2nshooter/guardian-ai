@@ -15,7 +15,7 @@ services:
     image: registry.gitlab.com/axto-platform/soc-engine/soc-engine:latest
     container_name: axto-soc
     restart: unless-stopped
-    ports: ["8092:8092"]
+    ports: ["8083:8092"]
     volumes:
       - ./soc.yml:/soc/config/soc.yml:ro
       - soc-data:/soc/data

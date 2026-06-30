@@ -11,12 +11,12 @@ version: "3.9"
 #
 # Quick Start:
 #   docker compose up -d
-#   Dashboard: http://localhost:8080
-#   Health:    http://localhost:8080/health
+#   Dashboard: http://localhost:8081
+#   Health:    http://localhost:8081/health
 #
 # Integrate with your app:
 #   Replace: https://api.openai.com
-#   With:    http://YOUR_SERVER:8080
+#   With:    http://YOUR_SERVER:8081
 #   (Vault handles the rest — redacts PII, forwards, re-injects)
 # ============================================================
 
@@ -27,7 +27,7 @@ services:
     container_name: vault-core
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8081:8080"
     volumes:
       - ./vault.yml:/vault/config/vault.yml:ro
       - vault-data:/vault/data

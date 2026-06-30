@@ -17,7 +17,7 @@ services:
     container_name: soc-core
     restart: unless-stopped
     ports:
-      - "8092:8092"
+      - "8083:8092"
     volumes:
       - ./soc.yml:/soc/config/soc.yml:ro
       - soc-data:/soc/data

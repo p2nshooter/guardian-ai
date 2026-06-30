@@ -11,7 +11,7 @@
 #   1. Isi license_key dari / Get license_key from: https://axto.io/portal
 #   2. Isi minimal 1 AI vendor key / Add at least 1 AI vendor key
 #   3. docker compose -f vault-compose.yml up -d
-#   4. Buka / Open: http://YOUR_SERVER:8080
+#   4. Buka / Open: http://YOUR_SERVER:8081
 #      → Akan redirect ke dashboard otomatis setelah aktivasi
 #      → Auto-redirects to dashboard after activation
 #

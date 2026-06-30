@@ -12,7 +12,7 @@
 #   2. Set license_key below (starts with SOC-)
 #   3. Configure syslog sources and alerting
 #   4. docker compose -f soc-compose.yml up -d
-#   5. Dashboard: http://YOUR_SERVER:8085
+#   5. Dashboard: http://YOUR_SERVER:8083
 #
 # Pull image: docker pull registry.gitlab.com/axto-platform/soc/soc-engine:latest
 # Portal:     https://axto.io/portal
@@ -27,7 +27,7 @@ soc:
 
   # ── API Server ───────────────────────────────────────────
   host: "0.0.0.0"
-  port: 8085
+  port: 8092
 
   # ── Storage ──────────────────────────────────────────────
   data_dir: /soc/data

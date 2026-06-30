@@ -180,12 +180,18 @@ console.log("\n═════════════════════�
 console.log(` RESULT: ${PASS} passed, ${FAIL} failed, ${PASS+FAIL} total`);
 console.log("══════════════════════════════════════════════════════════════");
 
-// Emit machine-readable summary for the report generator
-import("fs").then(fs => {
-  fs.writeFileSync("/home/claude/work/test-results.json", JSON.stringify({
-    suite: "license-logic", passed: PASS, failed: FAIL, total: PASS+FAIL,
-    timestamp: new Date().toISOString(), results,
-  }, null, 2));
+// Emit machine-readable summary for the report generator.
+// Write next to this test file (portable across local + CI runners). A write
+// failure must never fail the suite, so it is best-effort only.
+Promise.all([import("fs"), import("path"), import("url")]).then(([fs, path, url]) => {
+  try {
+    const outDir = process.env.TEST_RESULTS_DIR
+      || path.dirname(url.fileURLToPath(import.meta.url));
+    fs.writeFileSync(path.join(outDir, "test-results.json"), JSON.stringify({
+      suite: "license-logic", passed: PASS, failed: FAIL, total: PASS+FAIL,
+      timestamp: new Date().toISOString(), results,
+    }, null, 2));
+  } catch { /* non-fatal: results file is optional */ }
 });
 
 process.exitCode = FAIL === 0 ? 0 : 1;

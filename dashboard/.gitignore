@@ -23,3 +23,5 @@ yarn-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+tests/test-results.json
+tests/lifecycle-results.json
