@@ -59,14 +59,33 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          CF_R2_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
+          # Public R2 account id = the endpoint host (not a secret; already
+          # hardcoded in auto-build-exe.yml / _build-image.yml, which upload
+          # successfully). The CF_R2_ACCOUNT_ID secret was holding a malformed
+          # value, producing an invalid endpoint host and SSL handshake errors,
+          # so we pin the known-good id and only fall back to the secret form.
+          CF_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
         run: |
-          if [ -z "$CF_R2_ACCOUNT_ID" ]; then echo "R2 not configured — skipping upload."; exit 0; fi
-          ENDPOINT="https://${CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then echo "R2 not configured — skipping upload."; exit 0; fi
+          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          # The render+build steps above already validated the guides and the PDFs
+          # are also kept as a durable build artifact, so a transient CDN-publish
+          # blip must not red the whole pipeline. Retry, then warn (non-fatal).
+          fail=0
           for f in dist/guides/*.pdf; do
-            aws s3 cp "$f" "s3://axto-builds/builds/latest/guides/$(basename "$f")" \
-              --endpoint-url "$ENDPOINT" --content-type application/pdf --only-show-errors
+            ok=0
+            for attempt in 1 2 3; do
+              if aws s3 cp "$f" "s3://axto-builds/builds/latest/guides/$(basename "$f")" \
+                   --endpoint-url "$ENDPOINT" --content-type application/pdf --only-show-errors; then
+                ok=1; break
+              fi
+              echo "::warning::R2 upload attempt $attempt failed for $(basename "$f"); retrying…"
+              sleep $((attempt * 3))
+            done
+            [ "$ok" = 1 ] || { fail=1; echo "::warning::R2 upload ultimately failed for $(basename "$f")"; }
           done
+          [ "$fail" = 0 ] && echo "✅ All guide PDFs published to R2." \
+            || echo "::warning::Some guide PDFs were not published to R2 (kept as build artifact)."
       - uses: actions/upload-artifact@v4
         with: { name: guide-pdfs, path: dist/guides/*.pdf }
 

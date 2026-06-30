@@ -54,8 +54,11 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          CF_ACCOUNT_ID:         ${{ secrets.CF_R2_ACCOUNT_ID }}
-          R2_BUCKET:             ${{ secrets.CF_R2_BUCKET }}
+          # Pinned to the known-good public R2 account id + bucket used by the
+          # workflows that upload successfully (auto-build-exe / _build-image).
+          # The CF_R2_ACCOUNT_ID / CF_R2_BUCKET secrets held bad values → SSL errors.
+          CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
+          R2_BUCKET:             axto-builds
         run: |
           echo "💾 Saving edge-core..."
           docker save axto/edge-core:latest | gzip -9 > edge-core.tar.gz

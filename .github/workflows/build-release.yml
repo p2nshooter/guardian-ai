@@ -191,8 +191,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          CF_ACCOUNT_ID:         ${{ secrets.CF_R2_ACCOUNT_ID }}
-          R2_BUCKET:             ${{ secrets.CF_R2_BUCKET }}
+          CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
+          R2_BUCKET:             axto-builds
           BUILD_ID:              ${{ inputs.build_id }}
           PRODUCT:               ${{ inputs.product }}
           TAG:                   ${{ steps.meta.outputs.tag }}
@@ -334,8 +334,8 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          CF_ACCOUNT_ID:         ${{ secrets.CF_R2_ACCOUNT_ID }}
-          R2_BUCKET:             ${{ secrets.CF_R2_BUCKET }}
+          CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
+          R2_BUCKET:             axto-builds
           BUILD_ID:              ${{ inputs.build_id }}
           PRODUCT:               ${{ inputs.product }}
         run: |
