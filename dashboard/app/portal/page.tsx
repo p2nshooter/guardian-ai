@@ -11,6 +11,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PRODUCT_ICONS } from "@/lib/stripe";
+import { useLocale } from "@/lib/locale-provider";
 
 // ── Product definitions ───────────────────────────────────────────────────────
 const GUARDIAN_PRODUCTS = [
@@ -80,6 +81,7 @@ type Tab = "overview" | "licenses" | "playbooks" | "shop" | "docs" | "invoices";
 
 export default function PortalPage() {
   const router = useRouter();
+  const { t } = useLocale();
   const [data,        setData]        = useState<any>(null);
   const [loading,     setLoading]     = useState(true);
   const [tab,         setTab]         = useState<Tab>("overview");
@@ -338,6 +340,9 @@ export default function PortalPage() {
                   compliance: {accent:"#16a34a",grad:"linear-gradient(135deg,#16a34a,#0d9488)"},
                   edge:       {accent:"#3b82f6",grad:"linear-gradient(135deg,#3b82f6,#8b5cf6)"},
                   sentinel:   {accent:"#f59e0b",grad:"linear-gradient(135deg,#f59e0b,#ef4444)"},
+                  antivirus:  {accent:"#e879f9",grad:"linear-gradient(135deg,#e879f9,#a855f7)"},
+                  studio:     {accent:"#f97316",grad:"linear-gradient(135deg,#f97316,#f59e0b)"},
+                  legal:      {accent:"#0f766e",grad:"linear-gradient(135deg,#0f766e,#14b8a6)"},
                   bundle:     {accent:"#0284c7",grad:"linear-gradient(135deg,#0284c7,#7c3aed)"},
                 };
                 const pc = productColors[lic.product] || productColors.guardian;
@@ -352,6 +357,9 @@ export default function PortalPage() {
                   compliance: [{id:"compliance-core",  icon:"📋",name:"Compliance Core",      desc:"Automated audit platform. SOC2, ISO27001, HIPAA, GDPR."}],
                   edge:       [{id:"edge-core",        icon:"🌐",name:"Edge Core",            desc:"AI API Gateway. Rate limiting, billing, prompt firewall."}],
                   sentinel:   [{id:"sentinel-core",    icon:"📡",name:"Sentinel Core",        desc:"IoT/OT Security. Device fingerprinting, anomaly detection."}],
+                  antivirus:  [{id:"guardian-antivirus",icon:"🦠",name:"Guardian Antivirus",   desc:"ClamAV + AI learning antivirus engine. File scanning + automatic quarantine."}],
+                  studio:     [{id:"studio-core",       icon:"🧠",name:"Studio Core",          desc:"AI & GPU Pool Platform. AI Studio + GPU Studio + Hybrid Studio."}],
+                  legal:      [{id:"legal-core",        icon:"⚖️",name:"AXTO Legal Core",      desc:"AI legal research, contract intelligence & document builder."}],
                   bundle:     [...GUARDIAN_PRODUCTS, ...ORCHESTRA_PRODUCTS,
                     {id:"vault-core",icon:"🔐",name:"Vault Core",desc:"AI Data Privacy Proxy."},
                     {id:"soc-core",icon:"🔴",name:"SOC Core",desc:"AI Security Operations Center."},
@@ -364,8 +372,8 @@ export default function PortalPage() {
 
                 // Trigger availability check for all products on mount
                 products.forEach(p => {
-                  checkAvail(lic.id, p.id, "docker");
-                  checkAvail(lic.id, p.id, "exe");
+                  checkAvail(lic.id, p.id, "docker", lic.product);
+                  checkAvail(lic.id, p.id, "exe", lic.product);
                 });
 
                 return (

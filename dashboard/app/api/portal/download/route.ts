@@ -151,6 +151,9 @@ export async function GET(req: NextRequest) {
       soc:        "SOC AI — AI-Powered Security Operations Center",
       compliance: "Compliance AI — Automated Audit & Compliance Platform",
       sentinel:   "Sentinel AI — IoT/OT Security Platform",
+      antivirus:  "Antivirus — ClamAV + AI Learning Threat Detection",
+      studio:     "AXTO Studio — AI & GPU Pool Platform",
+      legal:      "AXTO Legal — AI Legal Research & Document Intelligence",
     };
 
     const invoiceText = buildInvoiceText({
