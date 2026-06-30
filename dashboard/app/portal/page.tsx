@@ -10,7 +10,7 @@ export const runtime = "edge";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PACKAGE_INFO, PRODUCT_ICONS, PRODUCT_NAMES, isForSale, isProductForSale } from "@/lib/stripe";
+import { PRODUCT_ICONS } from "@/lib/stripe";
 
 // ── Product definitions ───────────────────────────────────────────────────────
 const GUARDIAN_PRODUCTS = [
@@ -92,6 +92,18 @@ export default function PortalPage() {
   // buildFmtAvail: admin-controlled toggle. key = "product:docker" | "product:exe-linux" | "product:exe-windows"
   const [buildFmtAvail, setBuildFmtAvail] = useState<Record<string, boolean>>({});
   const [buildFmtLoaded, setBuildFmtLoaded] = useState(false);
+  const [shopProducts, setShopProducts] = useState<any[]|null>(null);
+  const [shopError,    setShopError]    = useState<string|null>(null);
+
+  const loadShop = useCallback(async () => {
+    setShopError(null);
+    try {
+      const r = await fetch("/api/portal/shop", { credentials: "include" });
+      if (!r.ok) { setShopError("Could not load current prices. Please refresh."); return; }
+      const d = await r.json();
+      setShopProducts(d.products || []);
+    } catch { setShopError("Network error loading prices. Please refresh."); }
+  }, []);
 
   const loadBuildAvail = useCallback(async () => {
     try {
@@ -110,7 +122,7 @@ export default function PortalPage() {
     } catch {} finally { setLoading(false); }
   }, [router]);
 
-  useEffect(() => { load(); loadBuildAvail(); }, [load, loadBuildAvail]);
+  useEffect(() => { load(); loadBuildAvail(); loadShop(); }, [load, loadBuildAvail, loadShop]);
 
   function copyKey(k: string) {
     navigator.clipboard.writeText(k).then(() => {
@@ -623,67 +635,25 @@ export default function PortalPage() {
           <div>
             <h3 style={{fontSize:15,fontWeight:800,color:"#0a1628",margin:"0 0 16px"}}>Purchase Products</h3>
 
-            {/* All 8 products dynamically */}
-            {[
-              { product: "guardian", color: "#0284c7", desc: "Self-hosted cybersecurity — 7-layer AI detection, antivirus, compliance. BYOK.", items: [
-                {p:"lite",n:"Sentinel",s:"1 server",pr:"$490",b:""},
-                {p:"pro",n:"Professional",s:"25 servers",pr:"$1,990",b:"POPULAR"},
-                {p:"shield",n:"Business",s:"100 servers",pr:"$7,990",b:""},
-                {p:"aegis",n:"Enterprise",s:"1,000 servers",pr:"$29,900",b:""},
-              ]},
-              { product: "orchestra", color: "#7c3aed", desc: "Self-hosted AI orchestration — route 15+ providers, GPU auto-detect, autoscale. BYOK.", items: [
-                {p:"orchestra_core",n:"Starter",s:"10 workers",pr:"$14,900",b:""},
-                {p:"orchestra_scale",n:"Professional",s:"50 workers",pr:"$39,900",b:"POPULAR"},
-                {p:"orchestra_unlimited",n:"Enterprise",s:"∞ workers",pr:"$89,900",b:""},
-              ]},
-              { product: "vault", color: "#6366f1", desc: "AI data privacy — PII/PHI/financial redaction before AI API calls.", items: [
-                {p:"vault_starter",n:"Starter",s:"50K req/day",pr:"$9,900",b:""},
-                {p:"vault_professional",n:"Professional",s:"500K req/day",pr:"$24,900",b:"POPULAR"},
-                {p:"vault_business",n:"Business",s:"5M req/day",pr:"$74,900",b:""},
-                {p:"vault_enterprise",n:"Enterprise",s:"Unlimited",pr:"$199,000",b:""},
-              ]},
-              { product: "edge", color: "#3b82f6", desc: "AI API gateway — token metering, rate limiting, prompt firewall.", items: [
-                {p:"edge_starter",n:"Starter",s:"100K req/day",pr:"$4,900",b:""},
-                {p:"edge_professional",n:"Professional",s:"1M req/day",pr:"$9,900",b:"POPULAR"},
-                {p:"edge_business",n:"Business",s:"10M req/day",pr:"$29,900",b:""},
-                {p:"edge_enterprise",n:"Enterprise",s:"Unlimited",pr:"$99,000",b:""},
-              ]},
-              { product: "soc", color: "#dc2626", desc: "AI Security Operations Center — SIEM, SOAR, threat intelligence.", items: [
-                {p:"soc_starter",n:"Starter",s:"5 sources",pr:"$19,900",b:""},
-                {p:"soc_professional",n:"Professional",s:"25 sources",pr:"$49,900",b:"POPULAR"},
-                {p:"soc_business",n:"Business",s:"100 sources",pr:"$149,900",b:""},
-                {p:"soc_enterprise",n:"Enterprise",s:"Unlimited",pr:"$499,000",b:""},
-              ]},
-              { product: "compliance", color: "#16a34a", desc: "Automated audit — SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR.", items: [
-                {p:"compliance_starter",n:"Starter",s:"2 frameworks",pr:"$14,900",b:""},
-                {p:"compliance_professional",n:"Professional",s:"6 frameworks",pr:"$49,900",b:"POPULAR"},
-                {p:"compliance_business",n:"Business",s:"7 frameworks",pr:"$99,000",b:""},
-                {p:"compliance_enterprise",n:"Enterprise",s:"Custom",pr:"$199,000",b:""},
-              ]},
-              { product: "sentinel", color: "#7c3aed", desc: "IoT/OT security — device discovery, protocol detection, IEC 62443.", items: [
-                {p:"sentinel_starter",n:"Starter",s:"50 devices",pr:"$9,900",b:""},
-                {p:"sentinel_professional",n:"Professional",s:"500 devices",pr:"$29,900",b:"POPULAR"},
-                {p:"sentinel_business",n:"Business",s:"5,000 devices",pr:"$79,900",b:""},
-                {p:"sentinel_enterprise",n:"Enterprise",s:"Unlimited",pr:"$249,000",b:""},
-              ]},
-              { product: "antivirus", color: "#ea580c", desc: "ClamAV + ML behavioral detection — self-hosted endpoint protection.", items: [
-                {p:"antivirus_starter",n:"Starter",s:"10 endpoints",pr:"$2,900",b:""},
-                {p:"antivirus_professional",n:"Professional",s:"100 endpoints",pr:"$9,900",b:"POPULAR"},
-                {p:"antivirus_enterprise",n:"Enterprise",s:"Unlimited",pr:"$29,900",b:""},
-              ]},
-              { product: "studio", color: "#8b5cf6", desc: "Central AI & GPU Pool — bring your own API keys, use our professional studio.", items: [
-                {p:"studio_starter",n:"Starter",s:"500 req/day, 1 GPU",pr:"$49/mo",b:""},
-                {p:"studio_professional",n:"Professional",s:"5K req/day, 5 GPUs",pr:"$199/mo",b:"POPULAR"},
-                {p:"studio_enterprise",n:"Enterprise",s:"Unlimited",pr:"$799/mo",b:""},
-              ]},
-            ].map(section => {
-              const productForSale = isProductForSale(section.product);
+            {shopError && (
+              <div style={{...S.card,borderLeft:"4px solid #ef4444",color:"#ef4444",fontSize:13}}>
+                {shopError} <button onClick={loadShop} style={{marginLeft:8,fontSize:12,fontWeight:700,color:"#0284c7",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>Retry</button>
+              </div>
+            )}
+
+            {!shopProducts && !shopError && (
+              <div style={{...S.card,textAlign:"center",color:"#64748b",fontSize:13}}>Loading current prices…</div>
+            )}
+
+            {/* All 10 products — prices & for-sale status come live from the admin panel */}
+            {(shopProducts || []).map((section: any) => {
+              const productForSale = section.forSale;
               return (
                 <div key={section.product} style={{...S.card,borderLeft:`4px solid ${productForSale ? section.color : "#94a3b8"}`, opacity: productForSale ? 1 : 0.85}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                    <span style={{fontSize:24}}>{PRODUCT_ICONS[section.product]}</span>
+                    <span style={{fontSize:24}}>{section.icon}</span>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:16,fontWeight:800,color:"#0a1628"}}>{PRODUCT_NAMES[section.product]}</div>
+                      <div style={{fontSize:16,fontWeight:800,color:"#0a1628"}}>{section.name}</div>
                       <div style={{fontSize:12,color:"#64748b"}}>{section.desc}</div>
                     </div>
                     {!productForSale && (
@@ -691,20 +661,25 @@ export default function PortalPage() {
                     )}
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}>
-                    {section.items.map(x=>(
-                      <div key={x.p} style={{background: productForSale ? "#f8fafc" : "#f8fafc", borderRadius:10,padding:16,border:"1px solid #e2e8f0",position:"relative"}}>
-                        {x.b&&productForSale&&<div style={{position:"absolute",top:8,right:8,fontSize:9,padding:"2px 6px",borderRadius:4,background:`${section.color}15`,color:section.color,fontWeight:700}}>{x.b}</div>}
-                        {!productForSale&&<div style={{position:"absolute",top:8,right:8,fontSize:9,padding:"2px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#f59e0b",fontWeight:700}}>Coming Soon</div>}
-                        <div style={{fontSize:14,fontWeight:800,color:"#0a1628"}}>{x.n}</div>
-                        <div style={{fontSize:11,color:"#64748b",marginBottom:8}}>{x.s}</div>
-                        <div style={{fontSize:22,fontWeight:900,color: productForSale ? section.color : "#94a3b8",marginBottom:10}}>{x.pr}<span style={{fontSize:12,color:"#94a3b8"}}>/yr</span></div>
-                        {productForSale ? (
-                          <Link href={`/register?pkg=${x.p}`} style={{display:"block",textAlign:"center",padding:"8px",borderRadius:8,background:`linear-gradient(135deg,${section.color},${section.color}cc)`,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none"}}>Purchase →</Link>
-                        ) : (
-                          <div style={{display:"block",textAlign:"center",padding:"8px",borderRadius:8,background:"rgba(148,163,184,0.12)",color:"#94a3b8",fontSize:12,fontWeight:700,cursor:"not-allowed"}}>🔜 Coming Soon</div>
-                        )}
-                      </div>
-                    ))}
+                    {section.packages.map((x: any) => {
+                      const tierForSale = productForSale && x.forSale;
+                      return (
+                        <div key={x.code} style={{background:"#f8fafc", borderRadius:10,padding:16,border:"1px solid #e2e8f0",position:"relative"}}>
+                          {x.popular && tierForSale && <div style={{position:"absolute",top:8,right:8,fontSize:9,padding:"2px 6px",borderRadius:4,background:`${section.color}15`,color:section.color,fontWeight:700}}>POPULAR</div>}
+                          {!tierForSale && <div style={{position:"absolute",top:8,right:8,fontSize:9,padding:"2px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#f59e0b",fontWeight:700}}>Coming Soon</div>}
+                          <div style={{fontSize:14,fontWeight:800,color:"#0a1628"}}>{x.name}</div>
+                          <div style={{fontSize:11,color:"#64748b",marginBottom:8}}>{x.limit}</div>
+                          <div style={{fontSize:22,fontWeight:900,color: tierForSale ? section.color : "#94a3b8",marginBottom:10}}>
+                            ${x.priceDisplay}<span style={{fontSize:12,color:"#94a3b8"}}>{x.priceSuffix}</span>
+                          </div>
+                          {tierForSale ? (
+                            <Link href={`/register?pkg=${x.code}`} style={{display:"block",textAlign:"center",padding:"8px",borderRadius:8,background:`linear-gradient(135deg,${section.color},${section.color}cc)`,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none"}}>Purchase →</Link>
+                          ) : (
+                            <div style={{display:"block",textAlign:"center",padding:"8px",borderRadius:8,background:"rgba(148,163,184,0.12)",color:"#94a3b8",fontSize:12,fontWeight:700,cursor:"not-allowed"}}>🔜 Coming Soon</div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );

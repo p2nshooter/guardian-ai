@@ -13,6 +13,7 @@ import { getDB } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { PACKAGE_INFO, isProductForSale } from "@/lib/stripe";
 import { createPaymentIntent } from "@/lib/payments/usdt-trc20";
+import { getLivePrice } from "@/lib/pricing";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   const user = await requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { product, packageCode } = await req.json().catch(() => ({}));
+  const { product, packageCode, billing = "yearly" } = await req.json().catch(() => ({}));
   const pkg = PACKAGE_INFO[packageCode];
   if (!pkg) return NextResponse.json({ error: "unknown package" }, { status: 400 });
   if (!isProductForSale(pkg.product)) return NextResponse.json({ error: "product not for sale yet" }, { status: 403 });
@@ -29,25 +30,34 @@ export async function POST(req: NextRequest) {
   const depositAddress = (process.env as any).USDT_TRC20_ADDRESS || (req as any).env?.USDT_TRC20_ADDRESS;
   if (!depositAddress) return NextResponse.json({ error: "USDT not configured" }, { status: 503 });
 
+  // Live price from the admin panel (DB-first, stripe.ts fallback) — never stale.
+  const livePrice = await getLivePrice(req, packageCode);
+  const basePriceUsdt = billing === "monthly"
+    ? (livePrice.priceMonthly > 0 ? livePrice.priceMonthly : Math.round(livePrice.price / 10))
+    : livePrice.price;
+  if (basePriceUsdt <= 0) return NextResponse.json({ error: "price unavailable" }, { status: 503 });
+
   const orderId = uid("usdt");
   const intent = createPaymentIntent({
     orderId, userEmail: (user as any).email, product: pkg.product,
-    packageCode, basePriceUsdt: pkg.price, depositAddress,
+    packageCode, basePriceUsdt, depositAddress,
   });
 
   const db = getDB(req);
   await db.prepare(
-    `INSERT INTO usdt_payments (id, order_id, user_email, product, package_code, amount_usdt, deposit_address, status, created_at, expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+    `INSERT INTO usdt_payments (id, order_id, user_email, product, package_code, amount_usdt, deposit_address, status, created_at, expires_at, meta)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
   ).bind(uid("pay"), orderId, (user as any).email, pkg.product, packageCode,
          intent.amountUsdt, depositAddress, new Date(intent.createdAt).toISOString(),
-         new Date(intent.expiresAt).toISOString()).run();
+         new Date(intent.expiresAt).toISOString(),
+         JSON.stringify({ billing, priceSource: livePrice.source })).run();
 
   // TRON URI for wallet QR codes.
   const qr = `tron:${depositAddress}?amount=${intent.amountUsdt}&token=USDT`;
   return NextResponse.json({
     ok: true, orderId, network: "TRC20 (TRON)", token: "USDT",
-    depositAddress, amountUsdt: intent.amountUsdt, qr,
+    depositAddress, amountUsdt: intent.amountUsdt, amountUsd: basePriceUsdt, billing,
+    priceSource: livePrice.source, qr,
     expiresAt: new Date(intent.expiresAt).toISOString(),
     note: "Send the EXACT amount shown. The license is issued automatically once the payment confirms on-chain.",
   });

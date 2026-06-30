@@ -13,6 +13,7 @@ import { requireUser } from "@/lib/auth";
 import { PACKAGE_INFO, isProductForSale } from "@/lib/stripe";
 import { getEnabledMethod, getPublicMethods } from "@/lib/payments/methods";
 import { createCryptoIntent } from "@/lib/payments/crypto";
+import { getLivePrice } from "@/lib/pricing";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   const user = await requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { product, packageCode, methodId } = await req.json().catch(() => ({}));
+  const { product, packageCode, methodId, billing = "yearly" } = await req.json().catch(() => ({}));
   const pkg = PACKAGE_INFO[packageCode];
   if (!pkg) return NextResponse.json({ error: "unknown package" }, { status: 400 });
   if (!isProductForSale(pkg.product)) return NextResponse.json({ error: "product not for sale yet" }, { status: 403 });
@@ -52,22 +53,30 @@ export async function POST(req: NextRequest) {
   if (!method) return NextResponse.json({ error: "payment method unavailable" }, { status: 400 });
   if (!method.address) return NextResponse.json({ error: "method not configured" }, { status: 503 });
 
+  // Live price from the admin panel (DB-first, stripe.ts fallback) — never stale.
+  const livePrice = await getLivePrice(req, packageCode);
+  const amountUsd = billing === "monthly"
+    ? (livePrice.priceMonthly > 0 ? livePrice.priceMonthly : Math.round(livePrice.price / 10))
+    : livePrice.price;
+  if (amountUsd <= 0) return NextResponse.json({ error: "price unavailable" }, { status: 503 });
+
   const rate = await rateUsdPerCoin(method.symbol);
   if (rate <= 0) return NextResponse.json({ error: "rate unavailable, try again" }, { status: 503 });
 
   const orderId = uid("cpay");
   const intent = createCryptoIntent({
     method, orderId, userEmail: (user as any).email, product: pkg.product,
-    packageCode, amountUsd: pkg.price, rateUsdPerCoin: rate,
+    packageCode, amountUsd, rateUsdPerCoin: rate,
   });
 
   await db.prepare(
-    `INSERT INTO crypto_payments (id, order_id, method_id, user_email, product, package_code, amount_usd, amount_crypto, symbol, network, deposit_address, status, created_at, expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+    `INSERT INTO crypto_payments (id, order_id, method_id, user_email, product, package_code, amount_usd, amount_crypto, symbol, network, deposit_address, status, created_at, expires_at, meta)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
   ).bind(
     uid("cp"), orderId, method.id, (user as any).email, pkg.product, packageCode,
-    pkg.price, intent.amountCrypto, method.symbol, method.network, method.address,
+    amountUsd, intent.amountCrypto, method.symbol, method.network, method.address,
     new Date(intent.createdAt).toISOString(), new Date(intent.expiresAt).toISOString(),
+    JSON.stringify({ billing, priceSource: livePrice.source }),
   ).run();
 
   const qr = method.kind === "trc20"
@@ -78,7 +87,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true, orderId, method: method.id, symbol: method.symbol, network: method.network,
-    depositAddress: method.address, amountCrypto: intent.amountCrypto, amountUsd: pkg.price,
+    depositAddress: method.address, amountCrypto: intent.amountCrypto, amountUsd, billing,
+    priceSource: livePrice.source, // "db" = admin panel price, "static" = fallback
     confirmations: method.confirmations, qr, expiresAt: new Date(intent.expiresAt).toISOString(),
     note: "Send the EXACT amount on the EXACT network. The license is issued automatically once the payment confirms on-chain. An invoice is always generated.",
   });
