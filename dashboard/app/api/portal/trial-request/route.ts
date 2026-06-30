@@ -1,6 +1,6 @@
 /* ==============================================================================
  * Trial request flow
- *   POST /api/portal/trial-request        (client) — submit a 2-week trial request
+ *   POST /api/portal/trial-request        (client) — submit a 7-day trial request
  *   GET  /api/admin/trial-requests        (admin)  — list pending/all requests
  *   POST /api/admin/trial-requests        (admin)  — { id, action: approve|reject, auto }
  *                                                     approve → issues trial license + invoice
@@ -13,7 +13,7 @@ import { getDB } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { createLicense } from "@/lib/license";
 
-const TRIAL_DAYS = 14; // 2 weeks
+const TRIAL_DAYS = 7; // standard trial length across all products (see lib/stripe.ts TRIAL_DURATION_DAYS)
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 // ── Client submits a trial request ───────────────────────────────────────────

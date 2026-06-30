@@ -2,7 +2,7 @@
  * Admin trial-requests management
  *   GET  /api/admin/trial-requests?status=pending   — list requests
  *   POST /api/admin/trial-requests                   — { id, action, auto }
- *        action = "approve" → issue 2-week trial license + free invoice, notify client
+ *        action = "approve" → issue 7-day trial license + free invoice, notify client
  *        action = "reject"  → mark rejected
  * Copyright (c) 2024-2026 AXTO (axto.io). Proprietary and Confidential.
  * ============================================================================ */
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       packageCode: tr.package_code || `trial_${tr.product}`,
       licenseType: "trial",
       isTrial: true,
-      trialDays: tr.trial_days || 14,
+      trialDays: tr.trial_days || 7,
       manualActivation: true,   // admin-approved, no separate user signup needed
       skipUser: false,
     } as any, req);

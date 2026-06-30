@@ -77,7 +77,7 @@ AXTO Vault membantu bisnis Anda comply dalam hitungan jam:
 
 Jangan tunggu sampai kena denda. {{cta}}`,
     hashtags: ["#UUPDP","#PDPA","#PerlindunganData","#AXTO","#Compliance","#PrivasiData","#Indonesia"],
-    cta_text: "🔗 Coba gratis 14 hari: axto.io/vault",
+    cta_text: "🔗 Coba gratis 7 hari: axto.io/vault",
     language: "id",
   },
   {

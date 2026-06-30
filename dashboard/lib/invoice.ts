@@ -97,7 +97,7 @@ td{padding:16px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:
       <tbody>
         <tr>
           <td><strong>AXTO ${esc((inv.product || "").charAt(0).toUpperCase() + (inv.product || "").slice(1))}</strong><br>
-            <span style="color:#94a3b8;font-size:12.5px">${isTrial ? "Complimentary 14-day evaluation license" : "Software license"}</span><br>
+            <span style="color:#94a3b8;font-size:12.5px">${isTrial ? "Complimentary 7-day evaluation license" : "Software license"}</span><br>
             <span style="color:#94a3b8;font-size:12px">Payment method: ${methodLine}</span>
             ${isCrypto && inv.tx_hash ? `<br><span style="color:#94a3b8;font-size:11px;word-break:break-all">Tx: ${esc(inv.tx_hash)}</span>` : ""}
           </td>

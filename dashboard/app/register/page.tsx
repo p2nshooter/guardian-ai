@@ -65,16 +65,22 @@ const PACKAGES = [
   { code: "studio_starter",       label: "Studio Starter",        sub: "500 req/day, 1 GPU",     price: 490,  product: "studio" },
   { code: "studio_professional",  label: "Studio Professional",   sub: "5K req/day, 5 GPUs, API",price: 1990, product: "studio" },
   { code: "studio_enterprise",    label: "Studio Enterprise",     sub: "Unlimited",               price: 7990, product: "studio" },
-  // ── 3-Day Free Trials ──
-  { code: "trial_guardian",   label: "Guardian Trial (3 days)",   sub: "1 server, full features",      price: 0, product: "guardian" },
-  { code: "trial_orchestra",  label: "Orchestra Trial (3 days)",  sub: "2 workers, full features",     price: 0, product: "orchestra" },
-  { code: "trial_vault",      label: "Vault Trial (3 days)",      sub: "5K req/day, full features",    price: 0, product: "vault" },
-  { code: "trial_edge",       label: "Edge Trial (3 days)",       sub: "10K req/day, full features",   price: 0, product: "edge" },
-  { code: "trial_soc",        label: "SOC Trial (3 days)",        sub: "5 sources, full features",     price: 0, product: "soc" },
-  { code: "trial_compliance", label: "Compliance Trial (3 days)", sub: "2 frameworks, full features",  price: 0, product: "compliance" },
-  { code: "trial_sentinel",   label: "Sentinel Trial (3 days)",   sub: "10 devices, full features",    price: 0, product: "sentinel" },
-  { code: "trial_antivirus",  label: "Antivirus Trial (3 days)",  sub: "3 endpoints, full features",   price: 0, product: "antivirus" },
-  { code: "trial_studio",     label: "Studio Trial (3 days)",     sub: "AI + GPU Studio, 100 req/day", price: 0, product: "studio" },
+  // AXTO Legal
+  { code: "legal_starter",      label: "Legal Starter",       sub: "3 workspaces, 30 jurisdictions",   price: 14900,  product: "legal" },
+  { code: "legal_professional", label: "Legal Professional",  sub: "10 workspaces, 100 jurisdictions", price: 49000,  product: "legal" },
+  { code: "legal_business",     label: "Legal Business",      sub: "18 workspaces, 195+ jurisdictions",price: 99000,  product: "legal" },
+  { code: "legal_enterprise",   label: "Legal Enterprise",    sub: "Unlimited users, white-label",     price: 249000, product: "legal" },
+  // ── 7-Day Free Trials (capability-limited: no API, watermarked exports) ──
+  { code: "trial_guardian",   label: "Guardian Trial (7 days)",   sub: "1 server, limited features",        price: 0, product: "guardian" },
+  { code: "trial_orchestra",  label: "Orchestra Trial (7 days)",  sub: "2 workers, limited features",       price: 0, product: "orchestra" },
+  { code: "trial_vault",      label: "Vault Trial (7 days)",      sub: "2K req/day, limited features",      price: 0, product: "vault" },
+  { code: "trial_edge",       label: "Edge Trial (7 days)",       sub: "2K req/day, limited features",      price: 0, product: "edge" },
+  { code: "trial_soc",        label: "SOC Trial (7 days)",        sub: "3 sources, limited features",       price: 0, product: "soc" },
+  { code: "trial_compliance", label: "Compliance Trial (7 days)", sub: "1 framework (SOC 2), limited features", price: 0, product: "compliance" },
+  { code: "trial_sentinel",   label: "Sentinel Trial (7 days)",   sub: "5 devices, limited features",       price: 0, product: "sentinel" },
+  { code: "trial_antivirus",  label: "Antivirus Trial (7 days)",  sub: "2 endpoints, limited features",     price: 0, product: "antivirus" },
+  { code: "trial_studio",     label: "Studio Trial (7 days)",     sub: "1 pipeline, cloud providers only",  price: 0, product: "studio" },
+  { code: "trial_legal",      label: "Legal Trial (7 days)",      sub: "3 workspaces, 10 docs/day",         price: 0, product: "legal" },
 ];
 
 const ALL_GATEWAYS = [
@@ -306,6 +312,8 @@ function RegisterInner() {
                   { product: "soc",        icon: "🎯", color: "#dc2626" },
                   { product: "compliance", icon: "📋", color: "#16a34a" },
                   { product: "sentinel",   icon: "🏭", color: "#7c3aed" },
+                  { product: "studio",     icon: "🧠", color: "#0891b2" },
+                  { product: "legal",      icon: "⚖️", color: "#4338ca" },
                   { product: "bundle",     icon: "🎁", color: "#7c3aed" },
                 ].map(grp => {
                   const pkgs = PACKAGES.filter(p => p.product === grp.product);

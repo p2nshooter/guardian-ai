@@ -123,6 +123,7 @@ export async function processPayment(req: NextRequest, params: {
   } else {
     const { licenseKey, license, product } = await createLicense({
       ...base, packageCode: pkg, paymentRef, amountUsd,
+      trialDays: PACKAGE_INFO[pkg]?.trialDays,
     }, req);
     try {
       await sendWelcomeEmail({
