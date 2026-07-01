@@ -39,12 +39,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { product: guardian-core,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "" }
-          - { product: guardian-node,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "" }
-          - { product: guardian-antivirus,   reqdir: antivirus, entry: "antivirus/src/__main__.py", addsrc: "antivirus/src", paths: "" }
-          - { product: orchestra-core,       reqdir: orchestra/orchestra_core,   entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra orchestra/orchestra_core",  collect: "orchestra_core",   collectall: "sklearn numpy pandas" }
-          - { product: orchestra-worker-cpu, reqdir: orchestra/orchestra_worker, entry: "orchestra/orchestra_worker/worker_cpu.py",            addsrc: "", paths: "orchestra/orchestra_worker", collect: "",               collectall: "" }
-          - { product: vault-core,           reqdir: vault,     entry: "vault/src/__main__.py",     addsrc: "vault/src",     paths: "" }
+          - { product: guardian-core,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "", collect: "", collectall: "sklearn numpy pandas scipy" }
+          - { product: guardian-node,        reqdir: engine,    entry: "engine/src/__main__.py",    addsrc: "engine/src",    paths: "", collect: "", collectall: "sklearn numpy pandas scipy" }
+          - { product: guardian-antivirus,   reqdir: antivirus, entry: "antivirus/src/__main__.py", addsrc: "antivirus/src", paths: "", collect: "", collectall: "sklearn numpy scipy" }
+          - { product: orchestra-core,       reqdir: orchestra/orchestra_core,   entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra orchestra/orchestra_core",  collect: "orchestra_core",   collectall: "sklearn numpy pandas scipy" }
+          - { product: orchestra-worker-cpu, reqdir: orchestra/orchestra_worker, entry: "orchestra/orchestra_worker/worker_cpu.py",            addsrc: "", paths: "orchestra/orchestra_worker", collect: "",               collectall: "numpy" }
+          - { product: vault-core,           reqdir: vault,     entry: "vault/src/__main__.py",     addsrc: "vault/src",     paths: "", collect: "", collectall: "" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -58,7 +58,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install "pyinstaller==6.3.0" "awscli>=1.32"
           if [ -f "${{ matrix.reqdir }}/requirements.txt" ]; then
-            pip install -r "${{ matrix.reqdir }}/requirements.txt" || echo "⚠️ some deps skipped"
+            # Hard-fail on install errors — this used to be `|| echo "skipped"`,
+            # which let PyInstaller silently bundle a broken exe (missing
+            # modules) whenever a dependency failed to install, with the
+            # build reporting green the whole time.
+            pip install -r "${{ matrix.reqdir }}/requirements.txt"
           fi
 
       - name: Build EXE (PyInstaller)
@@ -96,6 +100,20 @@ jobs:
           fi
           pyinstaller "${ARGS[@]}" "$ENTRY"
           ls -lh "dist/${EXE_NAME}.exe"
+
+          # Sanity guard: PyInstaller can exit 0 and log "completed successfully"
+          # at every stage while still silently omitting modules it failed to
+          # detect (this is exactly what happened to guardian-antivirus before
+          # --collect-all sklearn/scipy was added — a real 15MB stub instead of
+          # the ~100MB+ real bundle, that built in under 30s and crashed on
+          # launch on a real Windows machine). Fail loudly instead of shipping
+          # a broken artifact to a paying client.
+          SIZE_BYTES=$(stat -c%s "dist/${EXE_NAME}.exe" 2>/dev/null || stat -f%z "dist/${EXE_NAME}.exe")
+          MIN_BYTES=$((8 * 1024 * 1024))
+          if [ "$SIZE_BYTES" -lt "$MIN_BYTES" ]; then
+            echo "::error::${EXE_NAME}.exe is only ${SIZE_BYTES} bytes — suspiciously small for a bundle that includes fastapi/pydantic/uvicorn. This usually means PyInstaller silently failed to bundle a real dependency. Failing the build instead of uploading a broken exe."
+            exit 1
+          fi
 
       - name: Upload EXE to R2
         shell: bash
