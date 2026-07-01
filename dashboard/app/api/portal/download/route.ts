@@ -29,9 +29,13 @@ const GUARDIAN_PRODUCTS   = ["guardian-core", "guardian-node", "guardian-antivir
 const ORCHESTRA_PRODUCTS  = ["orchestra-core", "orchestra-worker-cpu", "orchestra-worker-gpu"];
 const VAULT_PRODUCTS      = ["vault-core"];
 const EDGE_PRODUCTS       = ["edge-core"];
-const SOC_PRODUCTS        = ["soc-core", "soc-worker"];
+// NOTE: soc-worker / sentinel-agent are intentionally NOT listed here — neither
+// has any source directory, entry point, or build target anywhere in the repo,
+// so a real license would show a download button that 404s forever. Only list
+// a product here once it actually builds (Docker and/or EXE) and ships to R2.
+const SOC_PRODUCTS        = ["soc-core"];
 const COMPLIANCE_PRODUCTS = ["compliance-core"];
-const SENTINEL_PRODUCTS   = ["sentinel-core", "sentinel-agent"];
+const SENTINEL_PRODUCTS   = ["sentinel-core"];
 const ANTIVIRUS_PRODUCTS  = ["guardian-antivirus"];
 const STUDIO_PRODUCTS     = ["studio-core"];
 const LEGAL_PRODUCTS      = ["legal-core"];
@@ -52,10 +56,8 @@ const PRODUCT_LABELS: Record<string, string> = {
   "vault-core":         "Vault Core — AI Privacy Layer (PII/PHI/Financial Redaction)",
   "edge-core":          "Edge Core — AI API Gateway & Billing",
   "soc-core":           "SOC Core — Security Operations Center",
-  "soc-worker":         "SOC Worker — Distributed Threat Analysis",
   "compliance-core":    "Compliance Core — Automated Audit Platform",
   "sentinel-core":      "Sentinel Core — IoT/OT Security",
-  "sentinel-agent":     "Sentinel Agent — IoT Edge Agent",
   "studio-core":        "Studio Core — AI & GPU Pool Platform (AI Studio + GPU Studio + Hybrid Studio)",
   "legal-core":         "AXTO Legal Core — AI Legal Research, Contract Intelligence & Document Builder",
 };
