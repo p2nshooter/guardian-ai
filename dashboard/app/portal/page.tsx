@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PRODUCT_ICONS } from "@/lib/stripe";
 import { useLocale } from "@/lib/locale-provider";
+import TrialPromo from "@/components/TrialPromo";
 
 // ── Product definitions ───────────────────────────────────────────────────────
 const GUARDIAN_PRODUCTS = [
@@ -259,7 +260,7 @@ const PORTAL_DOC_PRODUCTS: { key: string; color: string }[] = [
   { key: "studio", color: "#0f766e" }, { key: "legal", color: "#4338ca" },
 ];
 
-type Tab = "overview" | "licenses" | "playbooks" | "shop" | "docs" | "invoices";
+type Tab = "overview" | "licenses" | "trial" | "playbooks" | "shop" | "docs" | "invoices";
 
 export default function PortalPage() {
   const router = useRouter();
@@ -431,6 +432,7 @@ export default function PortalPage() {
           {([
             { id:"overview"  as Tab, l:`🏠 Overview` },
             { id:"licenses"  as Tab, l:`🔑 Licenses (${licenses.length})` },
+            { id:"trial"     as Tab, l:`🎁 Trial Promo` },
             { id:"playbooks" as Tab, l:`📦 Playbooks (${playbooks.filter((p:any)=>p.playbook_id).length})` },
             { id:"shop"      as Tab, l:`🛒 Buy Products` },
             { id:"docs"      as Tab, l:`📖 Docs & Guide` },
@@ -783,6 +785,9 @@ export default function PortalPage() {
             )}
           </div>
         )}
+
+        {/* ══════════════════ TRIAL PROMO ══════════════════ */}
+        {tab==="trial" && <TrialPromo />}
 
         {/* ══════════════════ PLAYBOOKS ══════════════════ */}
         {tab==="playbooks" && (
