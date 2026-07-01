@@ -21,7 +21,10 @@ import { getAllLivePrices } from "@/lib/pricing";
  * Response shape:
  *   {
  *     prices: {
- *       [code: string]: { price: number; priceMonthly: number; source: "db"|"static" }
+ *       [code: string]: {
+ *         price: number; priceMonthly: number; source: "db"|"static";
+ *         promo?: { label, endsAt, originalPrice, originalPriceMonthly }
+ *       }
  *     }
  *   }
  *
@@ -32,12 +35,13 @@ export async function GET(req: NextRequest) {
     const livePrices = await getAllLivePrices(req);
 
     // Build a clean public response (no internal fields)
-    const prices: Record<string, { price: number; priceMonthly: number; source: string }> = {};
-    for (const [code, lp] of Object.entries(livePrices) as [string, { price: number; priceMonthly: number; source: string }][]) {
+    const prices: Record<string, { price: number; priceMonthly: number; source: string; promo?: any }> = {};
+    for (const [code, lp] of Object.entries(livePrices) as [string, any][]) {
       prices[code] = {
         price: lp.price,
         priceMonthly: lp.priceMonthly,
         source: lp.source,
+        ...(lp.promo ? { promo: lp.promo } : {}),
       };
     }
 

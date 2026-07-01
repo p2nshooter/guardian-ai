@@ -125,16 +125,20 @@ function RegisterInner() {
 
   // ── Live prices from admin panel (no deploy needed) ─────────────────────
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  const [promos, setPromos] = useState<Record<string, { label: string; originalPrice: number }>>({});
   useEffect(() => {
     fetch("/api/packages")
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.prices) {
           const m: Record<string, number> = {};
+          const pr: Record<string, { label: string; originalPrice: number }> = {};
           for (const [code, v] of Object.entries(d.prices as Record<string, any>)) {
             m[code] = v.price ?? 0;
+            if (v.promo) pr[code] = { label: v.promo.label, originalPrice: v.promo.originalPrice };
           }
           setLivePrices(m);
+          setPromos(pr);
         }
       })
       .catch(() => {});
@@ -381,9 +385,17 @@ function RegisterInner() {
                 <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 12, border: "1.5px solid #0284c7", background: "rgba(2,132,199,0.04)" }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 800, color: "#0a1628", fontSize: 15 }}>{selectedPkg.label}</div>
-                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>{selectedPkg.sub} · Annual license</div>
+                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>
+                      {selectedPkg.sub} · Annual license
+                      {promos[selectedPkg.code] && <span style={{ marginLeft: 6, color: "#16a34a", fontWeight: 700 }}>🎉 {promos[selectedPkg.code].label || "Promo"}</span>}
+                    </div>
                   </div>
-                  <span style={{ fontWeight: 800, color: "#0284c7", fontSize: 16, fontFamily: "Sora, sans-serif" }}>
+                  <span style={{ fontWeight: 800, color: "#0284c7", fontSize: 16, fontFamily: "Sora, sans-serif", textAlign: "right" }}>
+                    {promos[selectedPkg.code] && (
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textDecoration: "line-through" }}>
+                        ${promos[selectedPkg.code].originalPrice.toLocaleString()}
+                      </div>
+                    )}
                     {getPrice(selectedPkg.code, selectedPkg.price) === 0 ? "Free" : `$${getPrice(selectedPkg.code, selectedPkg.price).toLocaleString()}`}
                     {getPrice(selectedPkg.code, selectedPkg.price) > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: "#94a3b8" }}>/yr</span>}
                   </span>
@@ -425,8 +437,18 @@ function RegisterInner() {
                               <span style={{ fontWeight: 700, color: "#0a1628", fontSize: 14 }}>{p.label}</span>
                               {!forSale && <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontWeight: 700, marginLeft: 6 }}>Coming Soon</span>}
                               <span style={{ color: "#64748b", fontSize: 12, marginLeft: 8 }}>{p.sub}</span>
+                              {promos[p.code] && (
+                                <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(34,197,94,0.12)", color: "#16a34a", fontWeight: 800, marginLeft: 8 }}>
+                                  🎉 {promos[p.code].label || "Promo"}
+                                </span>
+                              )}
                             </div>
-                            <span style={{ fontWeight: 800, color: forSale ? grp.color : "#94a3b8", fontSize: 14, fontFamily: "Sora, sans-serif" }}>
+                            <span style={{ fontWeight: 800, color: forSale ? grp.color : "#94a3b8", fontSize: 14, fontFamily: "Sora, sans-serif", textAlign: "right" }}>
+                              {promos[p.code] && (
+                                <div style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", textDecoration: "line-through" }}>
+                                  ${promos[p.code].originalPrice.toLocaleString()}
+                                </div>
+                              )}
                               {getPrice(p.code, p.price) === 0 ? "Free" : `$${getPrice(p.code, p.price).toLocaleString()}`}
                               {getPrice(p.code, p.price) > 0 && <span style={{ fontSize: 11, fontWeight: 400, color: "#94a3b8" }}>/yr</span>}
                             </span>
