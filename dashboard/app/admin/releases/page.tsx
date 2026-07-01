@@ -241,8 +241,8 @@ export default function AdminReleasesPage() {
                 <div style={{ fontSize: 10, color: "#475569" }}>EXE</div>
               </div>
             </div>
-            <Link href="/admin/engine-builder" style={{ padding: "8px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#94a3b8", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
-              🔧 Engine Builder
+            <Link href="/admin/trial-batch" style={{ padding: "8px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#94a3b8", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
+              🎟️ Trial Batch
             </Link>
             <button onClick={load} style={{ padding: "8px 14px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, color: "#64748b", fontSize: 12, cursor: "pointer" }}>
               {loading ? <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid #1e293b", borderTopColor: "#475569", borderRadius: "50%", animation: "spin 0.7s linear infinite" }}/> : "↻"}
@@ -264,8 +264,8 @@ export default function AdminReleasesPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/admin/engine-builder" style={{ padding: "7px 14px", background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.18)", borderRadius: 8, color: "#38bdf8", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
-              Trigger Build →
+            <Link href="/admin/trial-batch" style={{ padding: "7px 14px", background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.18)", borderRadius: 8, color: "#38bdf8", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
+              🎟️ Trial Batch →
             </Link>
           </div>
         </div>
@@ -499,7 +499,7 @@ export default function AdminReleasesPage() {
                                 </>
                               )}
                               {!imgFile && !exeFile && (
-                                <Link href="/admin/engine-builder" style={{ padding: "5px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 7, color: "#334155", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>
+                                <Link href="/admin/trial-batch" style={{ padding: "5px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 7, color: "#334155", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>
                                   Build →
                                 </Link>
                               )}
