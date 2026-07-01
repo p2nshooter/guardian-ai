@@ -592,6 +592,65 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── PRODUCT SHOWCASE — all 10, prominent, priced, clickable ── */}
+      <section id="products" style={{ padding: "88px 24px 96px", background: "linear-gradient(180deg,#ffffff,#f6fafe)", borderTop: "1px solid #e8eef5", position: "relative" }}>
+        <div className="mesh-grid" style={{ position: "absolute", inset: 0, opacity: 0.5, pointerEvents: "none" }} />
+        <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
+          <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 48px" }}>
+            <div style={{ display: "inline-block", fontSize: 12.5, fontWeight: 800, letterSpacing: 1.5, color: "#0284c7", textTransform: "uppercase", marginBottom: 14 }}>The Products</div>
+            <h2 style={{ fontSize: 40, fontWeight: 900, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 16, fontFamily: "Sora, sans-serif", lineHeight: 1.1 }}>
+              Ten AI products. <span className="gradient-text">One sovereign platform.</span>
+            </h2>
+            <p style={{ fontSize: 16.5, color: "#475569", lineHeight: 1.65 }}>
+              Every product is self-hosted via Docker and bring-your-own-key. Your servers, your keys, your data — nothing leaves your network. <strong>Click any product</strong> to see plans.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))", gap: 18 }}>
+            {[
+              { product: "guardian",   anchor: "pricing",    icon: "🛡️", name: "Guardian AI",     badge: "SECURITY",       color: "#0284c7", tag: "7-layer AI threat detection & sub-30s auto-response, entirely on your servers." },
+              { product: "orchestra",  anchor: "pricing",    icon: "🎼", name: "Orchestra AI",    badge: "ORCHESTRATION",  color: "#7c3aed", tag: "One endpoint, 15+ AI providers. Smart routing picks cheapest/fastest/best." },
+              { product: "legal",      anchor: "legal",      icon: "⚖️", name: "AXTO Legal",      badge: "LEGAL",          color: "#4338ca", tag: "Private AI for research, contract intelligence & document drafting." },
+              { product: "studio",     anchor: "studio",     icon: "🧠", name: "AXTO Studio",     badge: "AI STUDIO",      color: "#0f766e", tag: "Self-hosted AI + GPU workspace — chat, image/video, pipelines, APIs." },
+              { product: "antivirus",  anchor: "antivirus",  icon: "🦠", name: "AXTO Antivirus",  badge: "ENDPOINT",       color: "#ea580c", tag: "ClamAV plus machine-learning endpoint protection with auto-quarantine." },
+              { product: "vault",      anchor: "vault",      icon: "🔒", name: "AXTO Vault",      badge: "PRIVACY",        color: "#6366f1", tag: "Redact PII/PHI/financial data before it ever reaches a model." },
+              { product: "edge",       anchor: "edge",       icon: "🌐", name: "AXTO Edge",       badge: "GATEWAY",        color: "#0891b2", tag: "AI API gateway — customer keys, cost routing, metering & billing." },
+              { product: "soc",        anchor: "soc",        icon: "🎯", name: "AXTO SOC",        badge: "OPERATIONS",     color: "#dc2626", tag: "AI-assisted SIEM + SOAR — correlation, threat intel, auto-response." },
+              { product: "compliance", anchor: "compliance", icon: "📋", name: "AXTO Compliance", badge: "COMPLIANCE",     color: "#16a34a", tag: "Continuous audit monitoring across 7 frameworks with evidence collection." },
+              { product: "sentinel",   anchor: "sentinel",   icon: "🏭", name: "AXTO Sentinel",   badge: "INDUSTRIAL",     color: "#ca8a04", tag: "Passive security for industrial IoT & OT — asset discovery, IEC 62443." },
+            ].map((p) => {
+              const available = isProductForSale(p.product);
+              const prices = Object.values(PACKAGE_INFO).filter((pk: any) => pk.product === p.product && !pk.isTrial && pk.price > 0).map((pk: any) => pk.price);
+              const from = prices.length ? Math.min(...prices) : 0;
+              return (
+                <Link key={p.product} href={`#${p.anchor}`} className="card" style={{ position: "relative", padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, textDecoration: "none", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${p.color}, ${p.color}55)` }} />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 13, background: `linear-gradient(135deg, ${p.color}18, ${p.color}0a)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{p.icon}</div>
+                    <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: p.color, background: `${p.color}12`, padding: "4px 10px", borderRadius: 999 }}>{p.badge}</span>
+                  </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.4px", margin: 0, fontFamily: "Sora, sans-serif" }}>{p.name}</h3>
+                  <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+                    {available ? (
+                      <span style={{ fontSize: 13, color: "#0a1628", fontWeight: 700 }}>from <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16, fontWeight: 900 }}>${from.toLocaleString()}</span><span style={{ color: "#94a3b8", fontWeight: 500 }}>/yr</span></span>
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#b45309", background: "rgba(245,158,11,0.1)", padding: "4px 10px", borderRadius: 999 }}>🔜 Coming soon</span>
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 800, color: p.color }}>{available ? "View plans →" : "Notify me →"}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 40 }}>
+            <Link href="/register" className="btn-primary">▶ Start Free Trial — 7 Days</Link>
+            <a href="#pricing" className="btn-secondary">Compare all pricing ↓</a>
+          </div>
+        </div>
+      </section>
+
       {/* ── GUARDIAN FEATURES ─────────────────────────────────────── */}
       <section id="features" style={{ padding: "100px 24px", maxWidth: 1200, margin: "0 auto" }}>
         {/* Guardian header */}
@@ -659,53 +718,6 @@ export default function HomePage() {
               <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.7 }}>{f.desc}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ── PLATFORM OVERVIEW — compact, elegant product grid (code-driven availability) ── */}
-      <section id="products" style={{ padding: "96px 24px", background: "linear-gradient(180deg,#ffffff,#f8fafc)", borderTop: "1px solid #e2e8f0" }}>
-        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", maxWidth: 680, margin: "0 auto 8px" }}>
-            <div style={{ display: "inline-block", fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "#0284c7", textTransform: "uppercase", marginBottom: 12 }}>The AXTO Platform</div>
-            <h2 style={{ fontSize: 36, fontWeight: 900, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14, fontFamily: "Sora, sans-serif" }}>Ten focused products, one platform</h2>
-            <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.65 }}>
-              Self-hosted, bring-your-own-key. Your servers, your keys, your data — nothing leaves your network.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(248px, 1fr))", gap: 16, marginTop: 44 }}>
-            {[
-              { product: "guardian", icon: "🛡️", name: "Guardian AI", tag: "Self-hosted AI cybersecurity for your servers." },
-              { product: "orchestra", icon: "🎼", name: "Orchestra AI", tag: "Smart AI routing across 15+ model providers." },
-              { product: "legal", icon: "⚖️", name: "AXTO Legal", tag: "Private AI for legal research & compliance." },
-              { product: "studio", icon: "🧠", name: "AXTO Studio", tag: "AI & GPU workspace — chat, pipelines, APIs." },
-              { product: "antivirus", icon: "🦠", name: "AXTO Antivirus", tag: "ClamAV + ML endpoint protection." },
-              { product: "vault", icon: "🔒", name: "AXTO Vault", tag: "Redact PII before it reaches any model." },
-              { product: "edge", icon: "🌐", name: "AXTO Edge", tag: "AI gateway & API management for customers." },
-              { product: "soc", icon: "🎯", name: "AXTO SOC", tag: "AI-assisted SIEM + SOAR operations." },
-              { product: "compliance", icon: "📋", name: "AXTO Compliance", tag: "Automated, continuous audit monitoring." },
-              { product: "sentinel", icon: "🏭", name: "AXTO Sentinel", tag: "Security for industrial IoT & OT." },
-            ].map((p) => {
-              const available = isProductForSale(p.product);
-              return (
-                <div key={p.product} style={{ position: "relative", background: "#fff", border: "1px solid #e8edf3", borderRadius: 16, padding: "22px 20px", display: "flex", flexDirection: "column", gap: 10, transition: "transform .15s, box-shadow .15s", boxShadow: "0 1px 2px rgba(10,22,40,0.04)" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg, rgba(2,132,199,0.10), rgba(13,148,136,0.10))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{p.icon}</div>
-                    <span title={available ? "Available now" : "Coming soon"} style={{ width: 9, height: 9, borderRadius: 999, background: available ? "#10b981" : "#f59e0b", boxShadow: `0 0 0 3px ${available ? "rgba(16,185,129,0.15)" : "rgba(245,158,11,0.15)"}` }} />
-                  </div>
-                  <h3 style={{ fontSize: 16.5, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.3px", margin: 0 }}>{p.name}</h3>
-                  <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: available ? "#047857" : "#b45309", letterSpacing: 0.3 }}>
-                    {available ? "Available now" : "Coming soon"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <p style={{ textAlign: "center", fontSize: 13, color: "#94a3b8", marginTop: 32, maxWidth: 640, marginLeft: "auto", marginRight: "auto", lineHeight: 1.65 }}>
-            Availability reflects our live catalog. Every plan is self-hosted and bring-your-own-key.
-          </p>
         </div>
       </section>
 
