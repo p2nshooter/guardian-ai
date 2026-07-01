@@ -608,22 +608,22 @@ export default function HomePage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))", gap: 18 }}>
             {[
-              { product: "guardian",   anchor: "pricing",    icon: "🛡️", name: "Guardian AI",     badge: "SECURITY",       color: "#0284c7", tag: "7-layer AI threat detection & sub-30s auto-response, entirely on your servers." },
-              { product: "orchestra",  anchor: "pricing",    icon: "🎼", name: "Orchestra AI",    badge: "ORCHESTRATION",  color: "#7c3aed", tag: "One endpoint, 15+ AI providers. Smart routing picks cheapest/fastest/best." },
-              { product: "legal",      anchor: "legal",      icon: "⚖️", name: "AXTO Legal",      badge: "LEGAL",          color: "#4338ca", tag: "Private AI for research, contract intelligence & document drafting." },
-              { product: "studio",     anchor: "studio",     icon: "🧠", name: "AXTO Studio",     badge: "AI STUDIO",      color: "#0f766e", tag: "Self-hosted AI + GPU workspace — chat, image/video, pipelines, APIs." },
-              { product: "antivirus",  anchor: "antivirus",  icon: "🦠", name: "AXTO Antivirus",  badge: "ENDPOINT",       color: "#ea580c", tag: "ClamAV plus machine-learning endpoint protection with auto-quarantine." },
-              { product: "vault",      anchor: "vault",      icon: "🔒", name: "AXTO Vault",      badge: "PRIVACY",        color: "#6366f1", tag: "Redact PII/PHI/financial data before it ever reaches a model." },
-              { product: "edge",       anchor: "edge",       icon: "🌐", name: "AXTO Edge",       badge: "GATEWAY",        color: "#0891b2", tag: "AI API gateway — customer keys, cost routing, metering & billing." },
-              { product: "soc",        anchor: "soc",        icon: "🎯", name: "AXTO SOC",        badge: "OPERATIONS",     color: "#dc2626", tag: "AI-assisted SIEM + SOAR — correlation, threat intel, auto-response." },
-              { product: "compliance", anchor: "compliance", icon: "📋", name: "AXTO Compliance", badge: "COMPLIANCE",     color: "#16a34a", tag: "Continuous audit monitoring across 7 frameworks with evidence collection." },
-              { product: "sentinel",   anchor: "sentinel",   icon: "🏭", name: "AXTO Sentinel",   badge: "INDUSTRIAL",     color: "#ca8a04", tag: "Passive security for industrial IoT & OT — asset discovery, IEC 62443." },
+              { product: "guardian",   icon: "🛡️", name: "Guardian AI",     badge: "SECURITY",       color: "#0284c7", tag: "7-layer AI threat detection & sub-30s auto-response, entirely on your servers." },
+              { product: "orchestra",  icon: "🎼", name: "Orchestra AI",    badge: "ORCHESTRATION",  color: "#7c3aed", tag: "One endpoint, 15+ AI providers. Smart routing picks cheapest/fastest/best." },
+              { product: "legal",      icon: "⚖️", name: "AXTO Legal",      badge: "LEGAL",          color: "#4338ca", tag: "Private AI for research, contract intelligence & document drafting." },
+              { product: "studio",     icon: "🧠", name: "AXTO Studio",     badge: "AI STUDIO",      color: "#0f766e", tag: "Self-hosted AI + GPU workspace — chat, image/video, pipelines, APIs." },
+              { product: "antivirus",  icon: "🦠", name: "AXTO Antivirus",  badge: "ENDPOINT",       color: "#ea580c", tag: "ClamAV plus machine-learning endpoint protection with auto-quarantine." },
+              { product: "vault",      icon: "🔒", name: "AXTO Vault",      badge: "PRIVACY",        color: "#6366f1", tag: "Redact PII/PHI/financial data before it ever reaches a model." },
+              { product: "edge",       icon: "🌐", name: "AXTO Edge",       badge: "GATEWAY",        color: "#0891b2", tag: "AI API gateway — customer keys, cost routing, metering & billing." },
+              { product: "soc",        icon: "🎯", name: "AXTO SOC",        badge: "OPERATIONS",     color: "#dc2626", tag: "AI-assisted SIEM + SOAR — correlation, threat intel, auto-response." },
+              { product: "compliance", icon: "📋", name: "AXTO Compliance", badge: "COMPLIANCE",     color: "#16a34a", tag: "Continuous audit monitoring across 7 frameworks with evidence collection." },
+              { product: "sentinel",   icon: "🏭", name: "AXTO Sentinel",   badge: "INDUSTRIAL",     color: "#ca8a04", tag: "Passive security for industrial IoT & OT — asset discovery, IEC 62443." },
             ].map((p) => {
               const available = isProductForSale(p.product);
               const prices = Object.values(PACKAGE_INFO).filter((pk: any) => pk.product === p.product && !pk.isTrial && pk.price > 0).map((pk: any) => pk.price);
               const from = prices.length ? Math.min(...prices) : 0;
               return (
-                <Link key={p.product} href={`#${p.anchor}`} className="card" style={{ position: "relative", padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, textDecoration: "none", overflow: "hidden" }}>
+                <Link key={p.product} href={`/products/${p.product}`} className="card" style={{ position: "relative", padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, textDecoration: "none", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${p.color}, ${p.color}55)` }} />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ width: 48, height: 48, borderRadius: 13, background: `linear-gradient(135deg, ${p.color}18, ${p.color}0a)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{p.icon}</div>
