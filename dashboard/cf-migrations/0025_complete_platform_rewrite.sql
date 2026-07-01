@@ -125,7 +125,18 @@ CREATE INDEX IF NOT EXISTS idx_reg_verify  ON registrations(verify_token);
 -- SECTION 3 — LICENSE PACKAGES (Authoritative — replaces all prior seeds)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-CREATE TABLE IF NOT EXISTS license_packages (
+-- license_packages was created by 0001/0006 with an older, narrower column set
+-- (no price_monthly, max_devices, max_req_day, max_sources, max_ingestion_gb,
+-- max_frameworks, tier, is_bundle, bundle_products, updated_at). The
+-- `CREATE TABLE IF NOT EXISTS` below is a no-op against that already-existing
+-- table, so every downstream reference to the new columns (e.g. the idx_lp_tier
+-- index right after this block) fails. Rebuild it here, preserving any existing
+-- rows (including admin-entered custom prices from the Live Pricing Manager)
+-- — the DELETE + INSERT that follow this block only touch known stale codes,
+-- so anything else carries forward safely with the new columns defaulted.
+ALTER TABLE license_packages RENAME TO license_packages_pre0025;
+
+CREATE TABLE license_packages (
   id              TEXT PRIMARY KEY,
   code            TEXT NOT NULL UNIQUE,
   name            TEXT NOT NULL,
@@ -151,6 +162,12 @@ CREATE TABLE IF NOT EXISTS license_packages (
 CREATE INDEX IF NOT EXISTS idx_lp_code    ON license_packages(code);
 CREATE INDEX IF NOT EXISTS idx_lp_product ON license_packages(product, is_active);
 CREATE INDEX IF NOT EXISTS idx_lp_tier    ON license_packages(tier);
+
+INSERT INTO license_packages (id, code, name, product, price_usd, max_nodes, max_workers, features, is_active, sort_order, created_at)
+SELECT id, code, name, product, price_usd, max_nodes, max_workers, features, is_active, sort_order, created_at
+FROM license_packages_pre0025;
+
+DROP TABLE license_packages_pre0025;
 
 -- ── Delete stale package rows (old pricing, wrong codes) ─────────────────────
 DELETE FROM license_packages WHERE code IN (
@@ -415,7 +432,13 @@ CREATE INDEX IF NOT EXISTS idx_hb_created ON license_heartbeats(created_at);
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- Invoices
-CREATE TABLE IF NOT EXISTS invoices (
+-- Same drift issue as license_packages above: 0006 created this table with a
+-- narrower column set (no client_name, organization, fx_rate, invoice_number,
+-- package_code, period_start/end, line_items, notes, pdf_url). Rebuild it,
+-- preserving every existing invoice row — this is real financial history.
+ALTER TABLE invoices RENAME TO invoices_pre0025;
+
+CREATE TABLE invoices (
   id            TEXT PRIMARY KEY,
   client_id     TEXT NOT NULL,
   license_id    TEXT,
@@ -445,8 +468,19 @@ CREATE INDEX IF NOT EXISTS idx_inv_email   ON invoices(client_email);
 CREATE INDEX IF NOT EXISTS idx_inv_status  ON invoices(status);
 CREATE INDEX IF NOT EXISTS idx_inv_number  ON invoices(invoice_number);
 
+INSERT INTO invoices (id, client_id, license_id, client_email, amount_usd, currency, amount_local, gateway, payment_ref, status, created_at)
+SELECT id, client_id, license_id, client_email, amount_usd, currency, amount_local, gateway, payment_ref, status, created_at
+FROM invoices_pre0025;
+
+DROP TABLE invoices_pre0025;
+
 -- Payment gateways
-CREATE TABLE IF NOT EXISTS payment_gateways (
+-- Same drift issue: 0006 created this with only (id, gateway, credentials_enc,
+-- meta, is_active, updated_at). Rebuild it, preserving any already-configured
+-- gateway credentials.
+ALTER TABLE payment_gateways RENAME TO payment_gateways_pre0025;
+
+CREATE TABLE payment_gateways (
   id               TEXT PRIMARY KEY,
   gateway          TEXT NOT NULL UNIQUE,
   display_name     TEXT NOT NULL DEFAULT '',
@@ -458,6 +492,12 @@ CREATE TABLE IF NOT EXISTS payment_gateways (
   is_test_mode     INTEGER NOT NULL DEFAULT 1,
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+INSERT INTO payment_gateways (id, gateway, credentials_enc, meta, is_active, updated_at)
+SELECT id, gateway, credentials_enc, meta, is_active, updated_at
+FROM payment_gateways_pre0025;
+
+DROP TABLE payment_gateways_pre0025;
 
 INSERT OR IGNORE INTO payment_gateways (id, gateway, display_name, supported_currencies) VALUES
   ('gw01', 'stripe',    'Stripe',    '["USD","EUR","GBP","SGD","AUD","CAD","JPY"]'),
@@ -497,7 +537,11 @@ INSERT OR IGNORE INTO fx_rates (id, from_ccy, to_ccy, rate) VALUES
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- Product builds (CI/CD artifacts per product per platform)
-CREATE TABLE IF NOT EXISTS product_builds (
+-- Same drift issue: 0020 (+0022's ci_provider/commit_hash) created this with a
+-- narrower column set. Rebuild it, preserving existing build records.
+ALTER TABLE product_builds RENAME TO product_builds_pre0025;
+
+CREATE TABLE product_builds (
   id            TEXT PRIMARY KEY,
   product       TEXT NOT NULL,        -- 'guardian-bundle', 'orchestra-starter-bundle', etc.
   package_code  TEXT NOT NULL DEFAULT '', -- 'pro', 'orchestra_scale', etc.
@@ -523,6 +567,12 @@ CREATE INDEX IF NOT EXISTS idx_pb_product  ON product_builds(product, build_type
 CREATE INDEX IF NOT EXISTS idx_pb_status   ON product_builds(status);
 CREATE INDEX IF NOT EXISTS idx_pb_pkg      ON product_builds(package_code);
 CREATE INDEX IF NOT EXISTS idx_pb_ci       ON product_builds(ci_provider, status);
+
+INSERT INTO product_builds (id, product, build_type, status, pipeline_id, pipeline_url, ci_provider, commit_hash, progress, created_at, updated_at)
+SELECT id, product, build_type, status, pipeline_id, pipeline_url, ci_provider, commit_hash, progress, created_at, updated_at
+FROM product_builds_pre0025;
+
+DROP TABLE product_builds_pre0025;
 
 -- Seed initial build records for all 7 products × all package tiers × Docker+EXE
 INSERT OR IGNORE INTO product_builds (id, product, package_code, build_type, arch, status) VALUES
