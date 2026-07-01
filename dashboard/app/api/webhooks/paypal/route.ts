@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         amountUsd: amount || Number(meta.originalPriceUsd || meta.amount_usd) || 0,
         paymentRef, gateway: "paypal",
         source: meta.source || "", playbookId: meta.playbook_id || "", bundleId: meta.bundle_id || "",
+        referralCode: meta.referralCode || "",
       });
     }
   }

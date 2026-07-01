@@ -105,6 +105,7 @@ function RegisterInner() {
   const params = useSearchParams();
   const urlPkg = params.get("pkg");
   const defaultPkg = PACKAGES.find(p => p.code === urlPkg) ? urlPkg! : "pro";
+  const referralCode = params.get("ref") || "";
 
   const [form, setForm] = useState({
     email: "", name: "", organization: "", password: "",
@@ -247,7 +248,7 @@ function RegisterInner() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form, source: "register",
+          ...form, source: "register", referralCode,
           ...(form.gateway === "crypto" ? { methodId: selectedCoin } : {}),
         }),
       });

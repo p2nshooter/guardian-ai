@@ -14,6 +14,7 @@ import { createLicense } from "@/lib/license";
 import { getEnabledMethod } from "@/lib/payments/methods";
 import { settleCryptoPayment, type CryptoIntent, type PaymentMethod } from "@/lib/payments/crypto";
 import { writeInvoice } from "@/lib/invoice";
+import { recordResellerSale } from "@/lib/reseller";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -54,7 +55,11 @@ export async function GET(req: NextRequest) {
             clientName: a.email, clientEmail: a.email, product: a.product,
             packageCode: a.packageCode, licenseType: "paid", paymentRef: `${a.symbol}:${a.txHash}`,
           } as any, req);
-          return { licenseId: issued?.licenseId || issued?.id || "" };
+          const licenseId = issued?.licenseId || issued?.id || "";
+          let referralCode = "";
+          try { referralCode = JSON.parse(p.meta || "{}").referralCode || ""; } catch {}
+          await recordResellerSale(db, { referralCode, amountUsd: p.amount_usd, licenseId, clientEmail: a.email });
+          return { licenseId };
         },
         writeInvoice: async (a) => {
           const invoiceId = await writeInvoice(db, {

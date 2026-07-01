@@ -13,6 +13,7 @@ import { requireAdmin } from "@/lib/auth";
 import { sendWelcomeEmail, sendBundleEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
 import { createLicense, createBundleLicenses } from "@/lib/license";
+import { recordResellerSale } from "@/lib/reseller";
 
 // ── Append-only audit helper ─────────────────────────────────────────────────
 // Records every admin action against a license into license_audit (migration
@@ -329,6 +330,14 @@ export async function POST(req: NextRequest) {
         });
       } catch {}
     }
+
+    if (body.referralCode && !wantTrial) {
+      await recordResellerSale(db, {
+        referralCode: body.referralCode, amountUsd: pkgPrice,
+        licenseId: (result.license as any).id, clientEmail,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       licenseKey: result.licenseKey,

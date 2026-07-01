@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       amountUsd: Number(m.originalPriceUsd || m.amount_usd) || (session.amount_total || 0) / 100,
       paymentRef, gateway: "stripe",
       source: m.source || "", playbookId: m.playbook_id || "", bundleId: m.bundle_id || "",
+      referralCode: m.referralCode || "",
     });
   }
   return NextResponse.json({ received: true });
