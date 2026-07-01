@@ -88,8 +88,11 @@ const GROUPS: {
   },
 ];
 
-function r2ImageKey(ciName: string) { return `builds/latest/images/${ciName}.tar.gz`; }
-function r2ExeKey(exeId: string)    { return `builds/latest/exe/${exeId}.zip`; }
+// R2 keys must match exactly what CI writes and what the portal reads:
+//   docker → builds/latest/raw/<name>.tar.gz   (auto-build-* / _build-image / build-release)
+//   exe    → builds/latest/exe/<name>-windows.exe   (auto-build-exe)
+function r2ImageKey(ciName: string) { return `builds/latest/raw/${ciName}.tar.gz`; }
+function r2ExeKey(exeId: string)    { return `builds/latest/exe/${exeId}-windows.exe`; }
 
 function fmtSize(bytes: number | null) {
   if (!bytes) return null;
@@ -264,18 +267,6 @@ export default function AdminReleasesPage() {
             <Link href="/admin/engine-builder" style={{ padding: "7px 14px", background: "rgba(14,165,233,0.1)", border: "1px solid rgba(14,165,233,0.18)", borderRadius: 8, color: "#38bdf8", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
               Trigger Build →
             </Link>
-          </div>
-        </div>
-
-        {/* R2 path mismatch warning */}
-        <div style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.15)", borderRadius: 12, padding: "12px 18px", marginBottom: 20 }}>
-          <div style={{ fontWeight: 700, fontSize: 12, color: "#fbbf24", marginBottom: 6 }}>🔧 ACTION REQUIRED — R2 Path Mismatch</div>
-          <div style={{ fontSize: 11, color: "#78350f", fontFamily: "'DM Mono', monospace", lineHeight: 1.9 }}>
-            CI uploads  → <span style={{ color: "#fde68a" }}>builds/latest/images/&#123;name&#125;.tar.gz</span> &amp; <span style={{ color: "#fde68a" }}>builds/latest/exe/axto-&#123;name&#125;.zip</span><br/>
-            Portal reads→ <span style={{ color: "#fed7aa" }}>builds/latest/raw/&#123;product&#125;.tar.gz</span> &amp; <span style={{ color: "#fed7aa" }}>&#123;product&#125;-windows.exe</span>
-          </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: "#b45309", fontWeight: 600 }}>
-            Fix: Update r2Key() di <code style={{ fontFamily: "'DM Mono', monospace", background: "rgba(0,0,0,0.15)", padding: "0 4px", borderRadius: 3 }}>dashboard/app/api/portal/download/route.ts</code> ke path CI yang benar.
           </div>
         </div>
 

@@ -19,6 +19,26 @@ export async function GET(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getDB(req);
   try {
+    // Self-healing: ensure the table exists before we read/seed it. There is no
+    // dedicated migration for this table, and fresh D1 databases (new deploys)
+    // would otherwise render an empty page. Idempotent — safe on every request.
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS payment_methods (
+        id TEXT PRIMARY KEY,
+        symbol TEXT NOT NULL DEFAULT '',
+        name TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL DEFAULT 'crypto',
+        network TEXT NOT NULL DEFAULT '',
+        kind TEXT NOT NULL DEFAULT 'native',
+        address TEXT NOT NULL DEFAULT '',
+        contract TEXT NOT NULL DEFAULT '',
+        decimals INTEGER NOT NULL DEFAULT 0,
+        confirmations INTEGER NOT NULL DEFAULT 0,
+        enabled INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `).run();
     const existing: any = await db.prepare("SELECT COUNT(*) as n FROM payment_methods").first();
     if ((existing?.n ?? 0) === 0) {
       await db.prepare(`
@@ -29,10 +49,10 @@ export async function GET(req: NextRequest) {
           ('bnb','BNB','BNB (BEP20)','crypto','BEP20','native','','',18,12,0,20),
           ('eth','ETH','Ethereum (ERC20)','crypto','Ethereum','native','','',18,50,0,30),
           ('btc','BTC','Bitcoin','crypto','Bitcoin','native','','',8,1,0,40),
-          ('stripe','USD','Card (Stripe)','fiat','','native','',2,0,0,100),
-          ('paypal','USD','PayPal','fiat','','native','',2,0,0,110),
-          ('xendit','IDR','Xendit (Indonesia)','fiat','','native','',2,0,0,120),
-          ('midtrans','IDR','Midtrans (Indonesia)','fiat','','native','',2,0,0,130)
+          ('stripe','USD','Card (Stripe)','fiat','','native','','',2,0,0,100),
+          ('paypal','USD','PayPal','fiat','','native','','',2,0,0,110),
+          ('xendit','IDR','Xendit (Indonesia)','fiat','','native','','',2,0,0,120),
+          ('midtrans','IDR','Midtrans (Indonesia)','fiat','','native','','',2,0,0,130)
       `).run();
     }
   } catch { /* table might not exist yet — migration will handle it */ }
