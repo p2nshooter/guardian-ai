@@ -11,11 +11,11 @@ import { getDB } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { renderInvoiceHTML } from "@/lib/invoice";
 
-export async function GET(req: NextRequest, ctx: { params: { id: string } }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const user = await requireUser(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const db = getDB(req);
-  const id = ctx.params.id;
+  const id = (await ctx.params).id;
   const inv: any = await db.prepare("SELECT * FROM invoices WHERE id = ?").bind(id).first();
   if (!inv) return NextResponse.json({ error: "invoice not found" }, { status: 404 });
 
