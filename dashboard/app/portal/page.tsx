@@ -92,6 +92,172 @@ const ORCHESTRA_DOCS = {
     "6. In your app: replace OpenAI base_url with the Orchestra endpoint",
   ],
 };
+const VAULT_DOCS = {
+  name: "AXTO Vault", icon: "🔒",
+  overview: "Transparent privacy proxy that strips PII, PHI and financial data out of every AI request in milliseconds, then re-injects the real values into the response — the model never sees real data.",
+  menus: [
+    { title: "PII/PHI/Financial Redaction", desc: "15+ PII entity types detected and masked automatically (SSN, cards, emails, health data, and more) using 7 masking strategies." },
+    { title: "Session Re-injection",         desc: "Original values are re-injected on the way back to your app — your users see full data, the model never does." },
+    { title: "Per-Project Policies",         desc: "Configure exactly what gets redacted per application or team." },
+    { title: "Encryption & Tokenization",    desc: "AES-256-GCM encryption with a secure tokenization vault for reversible redaction." },
+    { title: "Audit Log",                    desc: "Every redaction is logged; original values are never stored in plaintext." },
+    { title: "OpenAI/Anthropic-Compatible Proxy", desc: "Drop-in replacement — point your existing integration at Vault instead of the provider directly." },
+    { title: "SIEM Forwarding",              desc: "Forward privacy events to Splunk, Elastic, Datadog or QRadar." },
+  ],
+  setup: [
+    "1. Download vault-compose.yml + vault.yml from this portal",
+    "2. Edit vault.yml — enter your license key + at least 1 AI vendor key",
+    "3. Run: docker compose -f vault-compose.yml up -d",
+    "4. Open: http://YOUR_SERVER:8081",
+    "5. Point your app's AI base_url at Vault instead of the provider directly",
+  ],
+};
+const EDGE_DOCS = {
+  name: "AXTO Edge", icon: "🌐",
+  overview: "AI gateway and API management layer. Issue per-customer API keys, meter usage, bill automatically, and block prompt-injection abuse — all before requests reach a model.",
+  menus: [
+    { title: "Customer API Keys",       desc: "Issue, rotate and revoke keys with per-customer limits and plans." },
+    { title: "Metering & Billing",      desc: "Token metering, tiered plans, custom markup and automatic invoice generation." },
+    { title: "Prompt-Injection Firewall", desc: "Blocks abuse and injection attempts before they reach a model." },
+    { title: "Cost-Aware Routing",      desc: "Sends each request to the most economical capable model." },
+    { title: "Response Caching",        desc: "Caches repeat requests and circuit-breaks failing providers." },
+    { title: "Stripe Sync",             desc: "Syncs customer plans and usage to Stripe for automatic invoicing." },
+    { title: "Usage Analytics",         desc: "Per-customer, per-model usage and revenue analytics." },
+  ],
+  setup: [
+    "1. Download edge-compose.yml + edge.yml from this portal",
+    "2. Edit edge.yml — enter your license key + upstream AI provider key(s)",
+    "3. Run: docker compose -f edge-compose.yml up -d",
+    "4. Open: http://YOUR_SERVER:8082",
+    "5. Issue your first customer API key from the dashboard",
+  ],
+};
+const SOC_DOCS = {
+  name: "AXTO SOC", icon: "🎯",
+  overview: "Self-hosted security operations center. Collects logs, correlates against millions of threat indicators, maps to MITRE ATT&CK, and responds automatically — with AI triage on your own keys.",
+  menus: [
+    { title: "SIEM Log Collection",     desc: "Collects and correlates logs across many sources into ranked, actionable incidents." },
+    { title: "Threat Intelligence",     desc: "Millions of IOCs, updated continuously." },
+    { title: "MITRE ATT&CK Mapping",    desc: "See exactly which tactics and techniques you're seeing in the wild." },
+    { title: "SOAR Automation",         desc: "Block, isolate and alert with custom playbooks — no manual toil." },
+    { title: "AI Triage (BYOK)",        desc: "Summarize and prioritize incidents automatically using your own AI key." },
+    { title: "Incident Management",     desc: "Track incidents from detection through resolution." },
+    { title: "Executive Reporting",     desc: "One-click summaries for leadership and auditors." },
+  ],
+  setup: [
+    "1. Download soc-compose.yml + soc.yml from this portal",
+    "2. Edit soc.yml — enter your license key + syslog sources",
+    "3. Run: docker compose -f soc-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8083",
+    "5. Configure syslog sources and alerting rules",
+  ],
+};
+const COMPLIANCE_DOCS = {
+  name: "AXTO Compliance", icon: "📋",
+  overview: "Continuous, automated audit monitoring across up to seven frameworks. Compliance checks your controls, collects evidence for you, and turns it into audit-ready reports.",
+  menus: [
+    { title: "Continuous Control Monitoring", desc: "Checks controls continuously instead of a once-a-year fire drill." },
+    { title: "Automated Evidence Collection", desc: "Gathers evidence across your stack automatically." },
+    { title: "Gap Analysis",             desc: "Shows exactly which controls need attention, ranked by priority." },
+    { title: "Seven Frameworks",         desc: "SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA and NIST CSF." },
+    { title: "Vendor Risk Assessment",   desc: "Assess and track third-party vendor risk." },
+    { title: "Policy Library & Risk Register", desc: "Central store for policies and identified risks." },
+    { title: "Audit-Ready Reports",      desc: "One-click PDF reports with collected evidence attached." },
+  ],
+  setup: [
+    "1. Download compliance-compose.yml + compliance.yml from this portal",
+    "2. Edit compliance.yml — enter your license key",
+    "3. Run: docker compose -f compliance-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8084",
+    "5. Select your framework(s) and connect evidence sources",
+  ],
+};
+const SENTINEL_DOCS = {
+  name: "AXTO Sentinel", icon: "🏭",
+  overview: "Passive, safe security for operational technology. Sentinel discovers every device on your industrial network, watches protocol behaviour for anomalies, and maps everything to the Purdue model — without disrupting a process.",
+  menus: [
+    { title: "Passive Asset Discovery",  desc: "Sees every device — type, vendor, firmware — without active scanning that could disrupt OT processes." },
+    { title: "Protocol Anomaly Detection", desc: "Spots abnormal OT/ICS behaviour before it becomes an incident." },
+    { title: "CVE Exposure per Device",  desc: "Matches discovered firmware/versions against known CVEs." },
+    { title: "Purdue-Model Mapping",     desc: "Visualizes your network by zone and flags level-boundary violations." },
+    { title: "IEC 62443 Reporting",      desc: "Standards-aligned reporting for industrial environments." },
+    { title: "Safe, Non-Disruptive Monitoring", desc: "100% passive — never sends packets that could interfere with a live process." },
+  ],
+  setup: [
+    "1. Download sentinel-compose.yml + sentinel.yml from this portal",
+    "2. Edit sentinel.yml — enter your license key + network taps/span ports",
+    "3. Run: docker compose -f sentinel-compose.yml up -d",
+    "4. Dashboard: http://YOUR_SERVER:8085",
+    "5. Review discovered assets and configure zone mapping",
+  ],
+};
+const ANTIVIRUS_DOCS = {
+  name: "Guardian Antivirus", icon: "🦠",
+  overview: "Proven ClamAV signatures combined with machine-learning detection and automatic quarantine — a lightweight, self-hosted endpoint shield that keeps getting smarter.",
+  menus: [
+    { title: "ClamAV Engine",            desc: "Continuously updated signature database for known malware." },
+    { title: "Machine-Learning Detection", desc: "Behavioural ML detection catches threats signatures alone would miss." },
+    { title: "Automatic Quarantine",     desc: "Isolates threats the moment they're found; restore false positives with one click." },
+    { title: "Real-Time & Scheduled Scanning", desc: "Watch folders in real time, or run scheduled full-system scans." },
+    { title: "REST API",                 desc: "Wire scanning into your own pipelines and workflows." },
+  ],
+  setup: [
+    "1. Download antivirus-compose.yml + antivirus.yml from this portal",
+    "2. Edit antivirus.yml — enter your license key",
+    "3. Run: docker compose -f antivirus-compose.yml up -d",
+    "4. Open: http://YOUR_SERVER:8086",
+    "5. (Optional) add an AI vendor key in antivirus.yml for AI-assisted analysis of unknown files",
+  ],
+};
+const STUDIO_DOCS = {
+  name: "AXTO Studio", icon: "🧠",
+  overview: "A professional workspace for AI and GPU work — chat, image and video generation, and visual pipelines — all powered by your own API keys and GPU endpoints.",
+  menus: [
+    { title: "Multi-Provider AI Chat",   desc: "Chat across 10+ providers using your own keys, with saved history." },
+    { title: "Image & Video Generation", desc: "Generate and animate using your connected GPU endpoints." },
+    { title: "Visual Pipeline Builder",  desc: "Chain AI and GPU steps with conditional routing — e.g. local first, cloud on overflow." },
+    { title: "Credential Manager",       desc: "All keys encrypted at rest on your own disk, with per-provider usage tracking." },
+    { title: "REST & WebSocket APIs",    desc: "Automate Studio from your own scripts and services." },
+  ],
+  setup: [
+    "1. Download studio-compose.yml + studio.yml from this portal",
+    "2. Edit studio.yml — enter your license key + AI provider / GPU endpoint keys",
+    "3. Run: docker compose -f studio-compose.yml up -d",
+    "4. Open: http://YOUR_SERVER:8090",
+    "5. Connect a GPU endpoint (optional) for image/video generation",
+  ],
+};
+const LEGAL_DOCS = {
+  name: "AXTO Legal", icon: "⚖️",
+  overview: "AI-assisted legal research, contract intelligence and document drafting that runs on your own infrastructure — privileged and confidential material never leaves your control.",
+  menus: [
+    { title: "AI Legal Research",        desc: "Ask questions across jurisdictions and get sourced answers." },
+    { title: "Contract Intelligence",    desc: "Surfaces risks, obligations and unusual clauses automatically." },
+    { title: "Document Builder",         desc: "Generates and refines documents from your own templates." },
+    { title: "Bring-Your-Own Data Connectors", desc: "Connect internal documents or providers like LexisNexis, Westlaw and Hukumonline." },
+    { title: "Confidential by Design",   desc: "Fully self-hosted — nothing is sent to a third-party vendor." },
+  ],
+  setup: [
+    "1. Download legal-compose.yml + legal.env from this portal",
+    "2. Copy legal.env.example → legal.env, then set LEGL_LICENSE_KEY + an LLM provider (BYOK)",
+    "3. Run: docker compose -f legal-compose.yml up -d",
+    "4. Open: http://YOUR_SERVER:8096",
+    "5. Upload your first document or connect a data source",
+  ],
+};
+
+const PORTAL_DOCS: Record<string, typeof GUARDIAN_DOCS> = {
+  guardian: GUARDIAN_DOCS, orchestra: ORCHESTRA_DOCS, vault: VAULT_DOCS, edge: EDGE_DOCS,
+  soc: SOC_DOCS, compliance: COMPLIANCE_DOCS, sentinel: SENTINEL_DOCS, antivirus: ANTIVIRUS_DOCS,
+  studio: STUDIO_DOCS, legal: LEGAL_DOCS,
+};
+const PORTAL_DOC_PRODUCTS: { key: string; color: string }[] = [
+  { key: "guardian", color: "#0284c7" }, { key: "orchestra", color: "#7c3aed" },
+  { key: "vault", color: "#6366f1" }, { key: "edge", color: "#0891b2" },
+  { key: "soc", color: "#dc2626" }, { key: "compliance", color: "#16a34a" },
+  { key: "sentinel", color: "#ca8a04" }, { key: "antivirus", color: "#ea580c" },
+  { key: "studio", color: "#0f766e" }, { key: "legal", color: "#4338ca" },
+];
 
 type Tab = "overview" | "licenses" | "playbooks" | "shop" | "docs" | "invoices";
 
@@ -102,7 +268,7 @@ export default function PortalPage() {
   const [loading,     setLoading]     = useState(true);
   const [tab,         setTab]         = useState<Tab>("overview");
   const [copied,      setCopied]      = useState<string|null>(null);
-  const [docProduct,  setDocProduct]  = useState<"guardian"|"orchestra">("guardian");
+  const [docProduct,  setDocProduct]  = useState<string>("guardian");
   const [expandedDoc, setExpandedDoc] = useState<string|null>(null);
   const [dlStatus,    setDlStatus]    = useState<Record<string, "idle"|"loading"|"error">>({});
   const [dlError,     setDlError]     = useState<string|null>(null);
@@ -223,7 +389,7 @@ export default function PortalPage() {
   const playbooks = data?.playbook_purchases || [];
   const invoices  = data?.invoices || [];
   const client    = data?.client || {};
-  const docs      = docProduct === "guardian" ? GUARDIAN_DOCS : ORCHESTRA_DOCS;
+  const docs      = PORTAL_DOCS[docProduct] || GUARDIAN_DOCS;
 
   const S = {
     card: { background:"#fff", borderRadius:14, border:"1px solid #e2e8f0", padding:"20px 24px", marginBottom:16 } as React.CSSProperties,
@@ -725,15 +891,17 @@ export default function PortalPage() {
         {/* ══════════════════ DOCS ══════════════════ */}
         {tab==="docs" && (
           <div>
-            <div style={{display:"flex",gap:8,marginBottom:20}}>
-              <button onClick={()=>{setDocProduct("guardian");setExpandedDoc(null);}}
-                style={{padding:"10px 20px",borderRadius:10,border:"1.5px solid",borderColor:docProduct==="guardian"?"#0284c7":"#e2e8f0",background:docProduct==="guardian"?"rgba(2,132,199,0.06)":"#fff",color:docProduct==="guardian"?"#0284c7":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                🛡️ Guardian AI
-              </button>
-              <button onClick={()=>{setDocProduct("orchestra");setExpandedDoc(null);}}
-                style={{padding:"10px 20px",borderRadius:10,border:"1.5px solid",borderColor:docProduct==="orchestra"?"#7c3aed":"#e2e8f0",background:docProduct==="orchestra"?"rgba(124,58,237,0.06)":"#fff",color:docProduct==="orchestra"?"#7c3aed":"#64748b",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                ⚡ Orchestra AI
-              </button>
+            <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+              {PORTAL_DOC_PRODUCTS.map(p => {
+                const active = docProduct === p.key;
+                const d = PORTAL_DOCS[p.key];
+                return (
+                  <button key={p.key} onClick={()=>{setDocProduct(p.key);setExpandedDoc(null);}}
+                    style={{padding:"10px 20px",borderRadius:10,border:"1.5px solid",borderColor:active?p.color:"#e2e8f0",background:active?`${p.color}0f`:"#fff",color:active?p.color:"#64748b",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    {d.icon} {d.name}
+                  </button>
+                );
+              })}
             </div>
 
             <div style={S.card}>
@@ -770,7 +938,7 @@ export default function PortalPage() {
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {docs.menus.map((m,i) => {
                 const open = expandedDoc === m.title;
-                const c    = docProduct === "guardian" ? "#0284c7" : "#7c3aed";
+                const c    = PORTAL_DOC_PRODUCTS.find(p => p.key === docProduct)?.color || "#0284c7";
                 return (
                   <div key={i} style={{...S.card,padding:0,marginBottom:0,overflow:"hidden"}}>
                     <button onClick={()=>setExpandedDoc(open?null:m.title)}
