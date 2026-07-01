@@ -10,28 +10,8 @@ export const runtime = "edge";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useLocale } from "@/lib/locale-provider";
-import { getSessionUser, signOut } from "@/lib/client-auth";
+import { getSessionUser } from "@/lib/client-auth";
 import { PRODUCT_ICONS, PRODUCT_NAMES } from "@/lib/stripe";
-
-const NAV_STATIC: {href:string;icon:string;tKey:string;fallback:string}[] = [
-  { href: "/admin",                icon: "📊", tKey: "admin.title",    fallback: "Dashboard" },
-  { href: "/admin/releases",       icon: "☁️", tKey: "admin.releases", fallback: "Releases" },
-  { href: "/admin/pricing",        icon: "💰", tKey: "",              fallback: "💰 Pricing" },
-  { href: "/admin/promo-pricing",  icon: "🎉", tKey: "",              fallback: "🎉 Promo Pricing" },
-  { href: "/admin/resellers",      icon: "🤝", tKey: "",              fallback: "🤝 Resellers" },
-  { href: "/admin/playbooks",     icon: "📦", tKey: "",             fallback: "📦 Playbooks" },
-  { href: "/admin/trial-batch",    icon: "🎟️", tKey: "",             fallback: "🎟️ Trial Batch" },
-  { href: "/guide",                icon: "📖", tKey: "nav.guide",    fallback: "📖 Guide" },
-  { href: "/admin/licenses",       icon: "🔑", tKey: "admin.licenses", fallback: "Licenses" },
-  { href: "/admin/clients",        icon: "👥", tKey: "admin.clients",  fallback: "Clients" },
-  { href: "/admin/gateways",       icon: "💳", tKey: "admin.gateways", fallback: "Gateways" },
-  { href: "/admin/payment-methods", icon: "🪙", tKey: "",            fallback: "🪙 Payment Methods" },
-  { href: "/admin/revenue",        icon: "💰", tKey: "admin.revenue",  fallback: "Revenue" },
-  { href: "/admin/analytics",      icon: "🌍", tKey: "",             fallback: "🌍 Analytics" },
-  { href: "/admin/content",        icon: "📝", tKey: "",             fallback: "Content" },
-  { href: "/admin/autopost",       icon: "📢", tKey: "",             fallback: "AutoPost" },
-];
 
 const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
   active:    { color: "#22c55e", bg: "rgba(34,197,94,0.1)"  },
@@ -133,8 +113,6 @@ function ProductSalePanel() {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { t } = useLocale();
-  const navItems = NAV_STATIC.map(n => ({ ...n, label: n.tKey ? (t(n.tKey) || n.fallback) : n.fallback }));
   const [stats,    setStats]    = useState<any>(null);
   const [licenses, setLicenses] = useState<any[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -202,33 +180,9 @@ export default function AdminPage() {
     l.package_code?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const Sidebar = () => (
-    <nav style={{ width: 220, background: "#ffffff", borderRight: "1px solid #e2e8f0", padding: "20px 12px", display: "flex", flexDirection: "column", gap: 2, position: "sticky", top: 0, height: "100vh", overflowY: "auto", flexShrink: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 8px", marginBottom: 24 }}>
-        <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#0284c7,#0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🛡</div>
-        <span style={{ fontSize: 18, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>AXTO</span>
-      </div>
-      {navItems.map(n => (
-        <Link key={n.href} href={n.href} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 9, textDecoration: "none", fontSize: 13, fontWeight: 600, color: "#475569", transition: "all 0.15s" }}>
-          <span style={{ fontSize: 16 }}>{n.icon}</span>{n.label}
-        </Link>
-      ))}
-      <Link href="/admin/trial-batch" style={{ padding: "9px 18px", borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>🎟️ Trial Batch</Link>
-          <Link href="/admin/create-license" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 10, textDecoration: "none", background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", fontWeight: 700, fontSize: 13, marginTop: 16, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>
-        + New License
-      </Link>
-      <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid #e2e8f0" }}>
-        <button onClick={() => signOut()} style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1px solid #e2e8f0", background: "transparent", color: "#64748b", fontSize: 12, cursor: "pointer" }}>
-          Sign Out
-        </button>
-      </div>
-    </nav>
-  );
-
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f9ff", display: "flex" }}>
-      <Sidebar />
-      <main style={{ flex: 1, padding: "28px 32px", overflowY: "auto", minWidth: 0 }}>
+    <div style={{ minHeight: "100vh", background: "#f0f9ff" }}>
+      <main style={{ padding: "28px 32px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", margin: 0, fontFamily: "Sora, sans-serif" }}>Admin Dashboard</h1>
