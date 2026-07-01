@@ -15,7 +15,7 @@
 #   5. Create customers + issue API keys
 #   6. Customers call YOUR Edge endpoint instead of OpenAI
 #
-# Pull: docker pull registry.gitlab.com/axto-platform/edge/edge-engine:latest
+# Pull: docker pull axto/edge-core:latest
 # ============================================================
 
 edge:

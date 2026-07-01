@@ -12,7 +12,7 @@ version: "3.9"
 # ============================================================
 services:
   vault-core:
-    image: registry.gitlab.com/axto-platform/vault/vault-engine:latest
+    image: axto/vault-core:latest
     container_name: axto-vault
     restart: unless-stopped
     ports: ["8081:8091"]

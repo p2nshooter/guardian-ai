@@ -25,6 +25,22 @@ const ORCHESTRA_PRODUCTS = [
   { id: "orchestra-worker-gpu",  icon: "🎮", name: "Orchestra Worker GPU",  desc: "Local GPU inference. Requires NVIDIA GPU + nvidia-docker runtime." },
 ];
 
+// Per-product Docker Compose + config-file names, served statically from /configs/*
+// (mirrors the repo-root *-compose.yml / *.example.yml files — see dashboard/public/configs/).
+const CONFIG_FILES: Record<string, { compose: string; config: string; configLabel: string }> = {
+  guardian:   { compose: "docker-compose.yml",       config: "guardian.example.yml",     configLabel: "guardian.yml" },
+  orchestra:  { compose: "orchestra-compose.yml",    config: "orchestra.example.yml",    configLabel: "orchestra.yml" },
+  vault:      { compose: "vault-compose.yml",        config: "vault.example.yml",        configLabel: "vault.yml" },
+  soc:        { compose: "soc-compose.yml",          config: "soc.example.yml",          configLabel: "soc.yml" },
+  compliance: { compose: "compliance-compose.yml",   config: "compliance.example.yml",   configLabel: "compliance.yml" },
+  edge:       { compose: "edge-compose.yml",         config: "edge.example.yml",         configLabel: "edge.yml" },
+  sentinel:   { compose: "sentinel-compose.yml",      config: "sentinel.example.yml",     configLabel: "sentinel.yml" },
+  antivirus:  { compose: "antivirus-compose.yml",     config: "antivirus.example.yml",    configLabel: "antivirus.yml" },
+  studio:     { compose: "studio-compose.yml",        config: "studio.example.yml",       configLabel: "studio.yml" },
+  legal:      { compose: "legal-compose.yml",         config: "legal.env.example",        configLabel: "legal.env" },
+  bundle:     { compose: "docker-compose.yml",        config: "guardian.example.yml",     configLabel: "guardian.yml" },
+};
+
 const GUARDIAN_DOCS = {
   name: "Guardian AI", icon: "🛡️",
   overview: "Self-hosted AI cybersecurity engine. 7-layer threat detection, automated incident response, compliance reporting. Deploy via Docker.",
@@ -458,10 +474,8 @@ export default function PortalPage() {
                                 {/* ── Download buttons — respect admin build-format toggle ── */}
                                 {(() => {
                                   const dockerOn    = isFormatAdminEnabled(lic.product, "docker");
-                                  // EXE binaries are temporarily in active development — disabled
-                                  // platform-wide so clients only get the production-ready Docker build.
-                                  const exeLinuxOn  = false;
-                                  const exeWinOn    = false;
+                                  const exeLinuxOn  = isFormatAdminEnabled(lic.product, "exe-linux");
+                                  const exeWinOn    = isFormatAdminEnabled(lic.product, "exe");
 
                                   return (<>
                                     {/* 🐳 Docker */}
@@ -551,13 +565,13 @@ export default function PortalPage() {
                           📋 Config Files (required before deployment)
                         </div>
                         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                          <a href={`/api/downloads?file=${isG?"guardian":"orchestra"}-compose.yml`}
+                          <a href={`/configs/${(CONFIG_FILES[lic.product] || CONFIG_FILES.guardian).compose}`} download
                             style={{padding:"8px 16px",borderRadius:8,background:grad,color:"#fff",fontSize:12,fontWeight:700,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
-                            🐳 docker-compose.yml
+                            🐳 {(CONFIG_FILES[lic.product] || CONFIG_FILES.guardian).compose}
                           </a>
-                          <a href={`/api/downloads?file=${isG?"guardian":"orchestra"}.example.yml`}
+                          <a href={`/configs/${(CONFIG_FILES[lic.product] || CONFIG_FILES.guardian).config}`} download
                             style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",fontSize:12,fontWeight:700,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
-                            ⚙️ {isG?"guardian":"orchestra"}.yml
+                            ⚙️ {(CONFIG_FILES[lic.product] || CONFIG_FILES.guardian).configLabel}
                           </a>
                         </div>
                       </div>
@@ -736,11 +750,11 @@ export default function PortalPage() {
               <h3 style={{fontSize:14,fontWeight:800,color:"#22d3ee",margin:"0 0 12px"}}>🚀 Quick Setup</h3>
               {docs.setup.map((s,i) => <div key={i} style={{fontSize:13,color:"#cbd5e1",lineHeight:1.8,fontFamily:"monospace"}}>{s}</div>)}
               <div style={{display:"flex",gap:8,marginTop:16}}>
-                <a href={`/api/downloads?file=${docProduct}-compose.yml`}
+                <a href={`/configs/${CONFIG_FILES[docProduct].compose}`} download
                   style={{padding:"8px 16px",borderRadius:8,background:"#22d3ee",color:"#0f172a",fontSize:12,fontWeight:700,textDecoration:"none"}}>
-                  ⬇ docker-compose.yml
+                  ⬇ {CONFIG_FILES[docProduct].compose}
                 </a>
-                <a href={`/api/downloads?file=${docProduct}.example.yml`}
+                <a href={`/configs/${CONFIG_FILES[docProduct].config}`} download
                   style={{padding:"8px 16px",borderRadius:8,border:"1px solid #334155",color:"#94a3b8",fontSize:12,fontWeight:700,textDecoration:"none"}}>
                   ⬇ Config Template
                 </a>

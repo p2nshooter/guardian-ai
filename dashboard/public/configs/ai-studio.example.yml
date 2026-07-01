@@ -1,0 +1,22 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO AI Studio — Configuration
+# Rename to ai-studio.yml and fill in your license key
+# ============================================================
+
+ai_studio:
+  # Your license key from axto.io/portal
+  license_key: "AIST-XXXX-XXXX-XXXX-XXXX"
+
+  # Server settings (when running as exe/standalone)
+  host: "0.0.0.0"
+  port: 8091
+
+  # Data retention (days)
+  session_retention_days: 30
+  log_retention_days: 90

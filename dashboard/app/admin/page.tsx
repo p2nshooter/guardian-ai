@@ -48,6 +48,7 @@ const SALE_PRODUCTS = [
   { key: "sentinel",   icon: "🏭", name: "Sentinel OT" },
   { key: "antivirus",  icon: "🦠", name: "Antivirus" },
   { key: "studio",     icon: "🧠", name: "AXTO Studio" },
+  { key: "legal",      icon: "⚖️", name: "AXTO Legal" },
 ];
 
 function ProductSalePanel() {
@@ -381,8 +382,8 @@ export default function AdminPage() {
                 { name: "Professional (25 servers)", file: "guardian-professional-bundle" },
                 { name: "Business (100 servers)", file: "guardian-business-bundle" },
                 { name: "Enterprise (1,000 servers)", file: "guardian-enterprise-bundle" },
-              ], composeFile: "guardian-compose.yml", configFile: "guardian.example.yml",
-              registry: "registry.gitlab.com/axto-platform/guardian-ai/guardian-engine:latest",
+              ], composeFile: "docker-compose.yml", configFile: "guardian.example.yml",
+              registry: "axto/guardian-core:latest",
             },
             { key: "orchestra", icon: "⚡", name: "Orchestra AI", sub: "AI Orchestration", color: "#7c3aed", bg: "rgba(124,58,237,0.04)", border: "rgba(124,58,237,0.15)",
               packages: [
@@ -390,7 +391,7 @@ export default function AdminPage() {
                 { name: "Professional (50 workers)", file: "orchestra-professional-bundle" },
                 { name: "Enterprise (unlimited)", file: "orchestra-enterprise-bundle" },
               ], composeFile: "orchestra-compose.yml", configFile: "orchestra.example.yml",
-              registry: "registry.gitlab.com/axto-platform/guardian-ai/orchestra-core:latest",
+              registry: "axto/orchestra-core:latest",
             },
             { key: "vault", icon: "🔒", name: "Vault AI", sub: "Data Privacy & PII Redaction", color: "#0d9488", bg: "rgba(13,148,136,0.04)", border: "rgba(13,148,136,0.15)",
               packages: [
@@ -399,7 +400,7 @@ export default function AdminPage() {
                 { name: "Enterprise (multi-tenant)", file: "vault-enterprise-bundle" },
                 { name: "Sovereign (air-gap)", file: "vault-sovereign-bundle" },
               ], composeFile: "vault-compose.yml", configFile: "vault.example.yml",
-              registry: "registry.gitlab.com/axto-platform/vault-ai/vault-engine:latest",
+              registry: "axto/vault-core:latest",
             },
             { key: "edge", icon: "🌐", name: "Edge AI", sub: "AI API Gateway", color: "#f59e0b", bg: "rgba(245,158,11,0.04)", border: "rgba(245,158,11,0.15)",
               packages: [
@@ -408,7 +409,7 @@ export default function AdminPage() {
                 { name: "Enterprise (white-label)", file: "edge-enterprise-bundle" },
                 { name: "Platform (multi-region HA)", file: "edge-platform-bundle" },
               ], composeFile: "edge-compose.yml", configFile: "edge.example.yml",
-              registry: "registry.gitlab.com/axto-platform/edge-ai/edge-engine:latest",
+              registry: "axto/edge-core:latest",
             },
             { key: "soc", icon: "🎯", name: "SOC AI", sub: "Security Operations Center", color: "#ef4444", bg: "rgba(239,68,68,0.04)", border: "rgba(239,68,68,0.15)",
               packages: [
@@ -417,7 +418,7 @@ export default function AdminPage() {
                 { name: "Enterprise (500 sources)", file: "soc-enterprise-bundle" },
                 { name: "Platform (unlimited + team)", file: "soc-platform-bundle" },
               ], composeFile: "soc-compose.yml", configFile: "soc.example.yml",
-              registry: "registry.gitlab.com/axto-platform/soc-ai/soc-engine:latest",
+              registry: "axto/soc-core:latest",
             },
             { key: "compliance", icon: "📋", name: "Compliance AI", sub: "Compliance Automation", color: "#6366f1", bg: "rgba(99,102,241,0.04)", border: "rgba(99,102,241,0.15)",
               packages: [
@@ -426,7 +427,7 @@ export default function AdminPage() {
                 { name: "Enterprise (all frameworks)", file: "compliance-enterprise-bundle" },
                 { name: "Sovereign (white-label+FedRAMP)", file: "compliance-sovereign-bundle" },
               ], composeFile: "compliance-compose.yml", configFile: "compliance.example.yml",
-              registry: "registry.gitlab.com/axto-platform/compliance-ai/compliance-engine:latest",
+              registry: "axto/compliance-core:latest",
             },
             { key: "sentinel", icon: "🏭", name: "Sentinel OT", sub: "OT/ICS Industrial Security", color: "#ea580c", bg: "rgba(234,88,12,0.04)", border: "rgba(234,88,12,0.15)",
               packages: [
@@ -435,7 +436,7 @@ export default function AdminPage() {
                 { name: "Enterprise (25,000 devices)", file: "sentinel-enterprise-bundle" },
                 { name: "Critical (unlimited + air-gap)", file: "sentinel-critical-bundle" },
               ], composeFile: "sentinel-compose.yml", configFile: "sentinel.example.yml",
-              registry: "registry.gitlab.com/axto-platform/sentinel-ot/sentinel-engine:latest",
+              registry: "axto/sentinel-core:latest",
             },
             { key: "studio", icon: "🧠", name: "AXTO Studio", sub: "Self-Hosted AI & GPU Pool Platform", color: "#8b5cf6", bg: "rgba(139,92,246,0.04)", border: "rgba(139,92,246,0.15)",
               packages: [
@@ -443,7 +444,25 @@ export default function AdminPage() {
                 { name: "Professional ($199/mo)", file: "studio-professional-bundle" },
                 { name: "Enterprise ($799/mo)", file: "studio-enterprise-bundle" },
               ], composeFile: "studio-compose.yml", configFile: "studio.example.yml",
-              registry: "registry.gitlab.com/axto-platform/studio/studio-engine:latest",
+              registry: "axto/studio-core:latest",
+            },
+            { key: "antivirus", icon: "🦠", name: "Guardian Antivirus", sub: "ClamAV + AI File Scanning", color: "#e879f9", bg: "rgba(232,121,249,0.04)", border: "rgba(232,121,249,0.15)",
+              packages: [
+                { name: "Sentinel (1 server)", file: "antivirus-sentinel-bundle" },
+                { name: "Professional (25 servers)", file: "antivirus-professional-bundle" },
+                { name: "Business (100 servers)", file: "antivirus-business-bundle" },
+                { name: "Enterprise (1,000 servers)", file: "antivirus-enterprise-bundle" },
+              ], composeFile: "antivirus-compose.yml", configFile: "antivirus.example.yml",
+              registry: "axto/guardian-antivirus:latest",
+            },
+            { key: "legal", icon: "⚖️", name: "AXTO Legal", sub: "AI Legal & Compliance Platform", color: "#0f766e", bg: "rgba(15,118,110,0.04)", border: "rgba(15,118,110,0.15)",
+              packages: [
+                { name: "Growth", file: "legal-growth-bundle" },
+                { name: "Professional", file: "legal-professional-bundle" },
+                { name: "Enterprise", file: "legal-enterprise-bundle" },
+                { name: "Sovereign (air-gap)", file: "legal-sovereign-bundle" },
+              ], composeFile: "legal-compose.yml", configFile: "legal.env.example",
+              registry: "axto/legal-core:latest",
             },
           ].map((prod: any) => (
             <div key={prod.key} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -473,11 +492,11 @@ export default function AdminPage() {
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>⚙️ Config Files</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    <a href={`/api/downloads?file=${prod.composeFile}`}
+                    <a href={`/configs/${prod.composeFile}`} download
                       style={{ padding: "8px 12px", borderRadius: 7, background: `${prod.color}`, color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 700 }}>
                       ⬇ {prod.composeFile}
                     </a>
-                    <a href={`/api/downloads?file=${prod.configFile}`}
+                    <a href={`/configs/${prod.configFile}`} download
                       style={{ padding: "8px 12px", borderRadius: 7, border: `1.5px solid ${prod.color}`, color: prod.color, textDecoration: "none", fontSize: 12, fontWeight: 700, background: "transparent" }}>
                       ⬇ {prod.configFile}
                     </a>

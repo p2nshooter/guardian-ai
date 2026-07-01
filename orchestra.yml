@@ -12,7 +12,7 @@
 #   2. Isi minimal 1 AI vendor key
 #   3. docker compose -f orchestra-compose.yml up -d
 #
-# Pull image: docker pull registry.gitlab.com/axto-platform/guardian-ai/orchestra-engine:latest
+# Pull image: docker pull axto/orchestra-core:latest
 # ============================================================
 
 orchestra:
