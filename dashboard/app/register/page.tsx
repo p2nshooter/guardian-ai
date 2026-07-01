@@ -88,7 +88,11 @@ const ALL_GATEWAYS = [
   { value: "paypal",   label: "PayPal",                logo: `<svg viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="25" rx="4" fill="#003087"/><text x="30" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="700" font-family="sans-serif">PayPal</text></svg>`, desc: "PayPal balance or card" },
   { value: "xendit",   label: "Xendit",                logo: `<svg viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="25" rx="4" fill="#0D47A1"/><text x="30" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="700" font-family="sans-serif">xendit</text></svg>`, desc: "Bank Transfer, e-Wallet (ID)" },
   { value: "midtrans", label: "Midtrans",              logo: `<svg viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="25" rx="4" fill="#00AA13"/><text x="30" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="700" font-family="sans-serif">midtrans</text></svg>`, desc: "GoPay, OVO, BCA, Mandiri" },
+  { value: "crypto",   label: "Cryptocurrency",        logo: `<svg viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="25" rx="4" fill="#0A1628"/><text x="30" y="16" text-anchor="middle" fill="#34D399" font-size="10" font-weight="700" font-family="sans-serif">crypto</text></svg>`, desc: "USDT, BTC, ETH, BNB" },
 ];
+
+interface CryptoMethod { id: string; symbol: string; name: string; network: string; category: "crypto" | "fiat"; confirmations: number }
+interface CryptoIntent { orderId: string; symbol: string; network: string; depositAddress: string; amountCrypto: number; amountUsd: number; expiresAt: number; minConfirmations: number }
 
 const inputStyle = {
   width: "100%", padding: "11px 14px", borderRadius: 10,
@@ -114,6 +118,10 @@ function RegisterInner() {
   const cameWithPkg = !!(urlPkg && PACKAGES.find(p => p.code === urlPkg));
   const [showAllPkgs, setShowAllPkgs] = useState(false);
   const [availableGateways, setAvailableGateways] = useState<string[]>(["stripe"]); // default fallback
+  const [cryptoMethods, setCryptoMethods]   = useState<CryptoMethod[]>([]);
+  const [selectedCoin,  setSelectedCoin]    = useState<string>("");
+  const [cryptoIntent,  setCryptoIntent]    = useState<CryptoIntent | null>(null);
+  const [cryptoStatus,  setCryptoStatus]    = useState<"pending" | "confirmed" | "expired">("pending");
 
   // ── Live prices from admin panel (no deploy needed) ─────────────────────
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
@@ -151,6 +159,31 @@ function RegisterInner() {
 
   const GATEWAYS = ALL_GATEWAYS.filter(gw => availableGateways.includes(gw.value));
 
+  // Load enabled crypto coins (public, no auth — mirrors the other gateway fetch)
+  useEffect(() => {
+    if (!availableGateways.includes("crypto")) return;
+    fetch("/api/checkout?crypto_methods=1").then(r => r.json()).then(d => {
+      const methods: CryptoMethod[] = (d.methods || []).filter((m: CryptoMethod) => m.category === "crypto");
+      setCryptoMethods(methods);
+      if (methods.length > 0) setSelectedCoin(c => c || methods[0].id);
+    }).catch(() => {});
+  }, [availableGateways]);
+
+  // Poll payment status while a crypto intent is awaiting on-chain confirmation.
+  useEffect(() => {
+    if (!cryptoIntent || cryptoStatus !== "pending") return;
+    const iv = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/checkout?order_id=${encodeURIComponent(cryptoIntent.orderId)}`);
+        const d = await r.json();
+        if (d.status === "confirmed") setCryptoStatus("confirmed");
+        else if (d.status === "expired") setCryptoStatus("expired");
+        else if (Date.now() > cryptoIntent.expiresAt) setCryptoStatus("expired");
+      } catch { /* transient — keep polling */ }
+    }, 6000);
+    return () => clearInterval(iv);
+  }, [cryptoIntent, cryptoStatus]);
+
   // Sync if URL param changes
   useEffect(() => {
     if (urlPkg && PACKAGES.find(p => p.code === urlPkg)) {
@@ -168,6 +201,7 @@ function RegisterInner() {
     if (!form.email.trim()) { setInlineError("Email address is required"); return; }
     if (!form.name.trim())  { setInlineError("Full name is required");     return; }
     if (!form.pkg)          { setInlineError("Please select a package");    return; }
+    if (form.gateway === "crypto" && !selectedCoin) { setInlineError("Select a cryptocurrency"); return; }
 
     // Block checkout for Coming Soon products
     if (!checkForSale(form.pkg)) {
@@ -208,11 +242,19 @@ function RegisterInner() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, source: "register" }),
+        body: JSON.stringify({
+          ...form, source: "register",
+          ...(form.gateway === "crypto" ? { methodId: selectedCoin } : {}),
+        }),
       });
       const d = await res.json();
       if (d.url) {
         window.location.href = d.url;
+      } else if (d.intent) {
+        // Crypto has no hosted redirect — show the deposit box inline and poll.
+        setCryptoIntent(d.intent);
+        setCryptoStatus("pending");
+        setLoading(false);
       } else {
         setInlineError(d.error || "Checkout failed — please try again or contact hallo@axto.io");
         setLoading(false);
@@ -221,6 +263,10 @@ function RegisterInner() {
       setInlineError("Network error — please retry");
       setLoading(false);
     }
+  }
+
+  function copyText(text: string) {
+    if (typeof navigator !== "undefined" && navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
   }
 
   return (
@@ -243,6 +289,49 @@ function RegisterInner() {
             </div>
           )}
 
+          {cryptoIntent ? (
+            <div>
+              {cryptoStatus === "confirmed" ? (
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 44, marginBottom: 12 }}>🎉</div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0a1628", marginBottom: 8, fontFamily: "Sora, sans-serif" }}>Payment confirmed!</h2>
+                  <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20, lineHeight: 1.6 }}>Your license has been issued. Check your email, or open the Client Portal to see your license key and downloads.</p>
+                  <Link href="/portal" style={{ display: "inline-block", padding: "12px 28px", borderRadius: 12, background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none" }}>Open Client Portal →</Link>
+                </div>
+              ) : cryptoStatus === "expired" ? (
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontSize: 44, marginBottom: 12 }}>⏱️</div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0a1628", marginBottom: 8, fontFamily: "Sora, sans-serif" }}>Payment window expired</h2>
+                  <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>No payment was detected in time. You can start a new one below.</p>
+                  <button onClick={() => setCryptoIntent(null)} style={{ padding: "12px 28px", borderRadius: 12, border: "1.5px solid #0284c7", background: "#fff", color: "#0284c7", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Try Again</button>
+                </div>
+              ) : (
+                <div style={{ background: "#0a1628", borderRadius: 16, padding: 22 }}>
+                  <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#fca5a5", fontWeight: 700, textAlign: "center", marginBottom: 16 }}>
+                    ⚠️ Send ONLY on the {cryptoIntent.network} network. Sending on the wrong network permanently loses funds.
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 4 }}>SEND EXACT AMOUNT</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 20, color: "#34d399", fontWeight: 700 }}>{cryptoIntent.amountCrypto} {cryptoIntent.symbol}</span>
+                    <button onClick={() => copyText(String(cryptoIntent.amountCrypto))} style={{ padding: "4px 10px", borderRadius: 7, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Copy</button>
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 16 }}>≈ ${cryptoIntent.amountUsd.toLocaleString()} · unique amount identifies your order</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 4 }}>DESTINATION ADDRESS ({cryptoIntent.network})</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 12, color: "#60c1f5", background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "10px 14px", wordBreak: "break-all", display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", marginBottom: 14 }}>
+                    <span>{cryptoIntent.depositAddress}</span>
+                    <button onClick={() => copyText(cryptoIntent.depositAddress)} style={{ padding: "4px 10px", borderRadius: 7, background: "rgba(96,193,245,0.15)", border: "1px solid rgba(96,193,245,0.3)", color: "#60c1f5", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Copy</button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "10px 0", color: "rgba(255,255,255,0.55)", fontSize: 12.5 }}>
+                    <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.25)", borderTopColor: "#34d399", borderRadius: "50%", animation: "spin 1s linear infinite", display: "inline-block" }} />
+                    Waiting for on-chain confirmation — this page updates automatically.
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.55 }}>
+                    Requires {cryptoIntent.minConfirmations} confirmation{cryptoIntent.minConfirmations === 1 ? "" : "s"}. Your license appears automatically in your email and Client Portal — you can close this page.
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
           <form onSubmit={handleCheckout} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             {/* Contact info */}
             <div>
@@ -365,6 +454,21 @@ function RegisterInner() {
                   </label>
                 ))}
               </div>
+              {form.gateway === "crypto" && (
+                cryptoMethods.length > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))", gap: 8, marginTop: 10 }}>
+                    {cryptoMethods.map(m => (
+                      <label key={m.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${selectedCoin === m.id ? "#0284c7" : "#e2e8f0"}`, background: selectedCoin === m.id ? "rgba(2,132,199,0.04)" : "#fff", cursor: "pointer" }}>
+                        <input type="radio" name="coin" value={m.id} checked={selectedCoin === m.id} onChange={() => setSelectedCoin(m.id)} style={{ display: "none" }} />
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "#0a1628" }}>{m.symbol}</span>
+                        <span style={{ fontSize: 10, color: "#94a3b8" }}>{m.network}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>No cryptocurrency is currently enabled.</div>
+                )
+              )}
             </div>
 
             {/* Price summary */}
@@ -386,10 +490,11 @@ function RegisterInner() {
               style={{ width: "100%", padding: "14px 20px", borderRadius: 12, border: "none", background: loading ? "#0369a1" : "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", fontWeight: 700, fontSize: 15, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: loading ? "none" : "0 4px 16px rgba(2,132,199,0.35)" }}
             >
               {loading ? (
-                <><span style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite", display: "inline-block" }} /> Redirecting to payment...</>
+                <><span style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite", display: "inline-block" }} /> {form.gateway === "crypto" ? "Preparing payment..." : "Redirecting to payment..."}</>
               ) : "Proceed to Secure Payment →"}
             </button>
           </form>
+          )}
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 20, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
             {["🔒 Encrypted","🛡 100% BYOK","📋 Annual license"].map(t => (

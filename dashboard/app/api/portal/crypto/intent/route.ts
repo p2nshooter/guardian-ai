@@ -12,25 +12,10 @@ import { getDB } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { PACKAGE_INFO, isProductForSale } from "@/lib/stripe";
 import { getEnabledMethod, getPublicMethods } from "@/lib/payments/methods";
-import { createCryptoIntent } from "@/lib/payments/crypto";
+import { createCryptoIntent, rateUsdPerCoin } from "@/lib/payments/crypto";
 import { getLivePrice } from "@/lib/pricing";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-
-// Live USD→coin rate. Stablecoins return 1. The only network dependency here.
-async function rateUsdPerCoin(symbol: string): Promise<number> {
-  if (symbol === "USDT") return 1;
-  const ids: Record<string, string> = { BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin" };
-  const id = ids[symbol];
-  if (!id) return 0;
-  try {
-    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
-    const j: any = await r.json();
-    return Number(j?.[id]?.usd) || 0;
-  } catch {
-    return 0;
-  }
-}
 
 export async function GET(req: NextRequest) {
   const user = await requireUser(req);

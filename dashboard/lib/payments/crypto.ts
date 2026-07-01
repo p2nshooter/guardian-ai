@@ -184,6 +184,21 @@ export async function settleCryptoPayment(
   return { settled: true, reason: "ok", licenseId, invoiceId, txHash: m.transfer!.txHash };
 }
 
+// Live USD→coin rate. Stablecoins return 1. The only network dependency for pricing.
+export async function rateUsdPerCoin(symbol: string): Promise<number> {
+  if (symbol === "USDT") return 1;
+  const ids: Record<string, string> = { BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin" };
+  const id = ids[symbol];
+  if (!id) return 0;
+  try {
+    const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`);
+    const j: any = await r.json();
+    return Number(j?.[id]?.usd) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function defaultFetcher(method: PaymentMethod, address: string): Promise<Transfer[]> {
   const env: any = (globalThis as any).process?.env ?? {};
   if (method.kind === "trc20") return fetchTronTransfers(address, method.contract, env.TRON_API_KEY);

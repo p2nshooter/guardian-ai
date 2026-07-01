@@ -15,7 +15,38 @@ import { getStripeCredentials, getPayPalCredentials, getXenditCredentials, getMi
 import { createPayPalOrderWithCreds } from "@/lib/paypal";
 import { createXenditInvoiceWithKey } from "@/lib/xendit";
 import { usdToLocal } from "@/lib/fx";
+import { getDB } from "@/lib/db";
+import { getEnabledMethod, getPublicMethods } from "@/lib/payments/methods";
+import { createCryptoIntent, rateUsdPerCoin } from "@/lib/payments/crypto";
 
+const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+// Anonymous, checkout-scoped crypto helpers. Deliberately minimal — never leak
+// anything beyond what an unauthenticated payer/watcher needs.
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  let db: any;
+  try { db = getDB(req); } catch {
+    return NextResponse.json({ error: "Database not available" }, { status: 503 });
+  }
+
+  if (url.searchParams.get("crypto_methods") === "1") {
+    const methods = await getPublicMethods(db);
+    return NextResponse.json({ methods });
+  }
+
+  const orderId = url.searchParams.get("order_id");
+  if (orderId) {
+    const row: any = await db.prepare(
+      `SELECT status, license_id FROM crypto_payments WHERE order_id = ?`,
+    ).bind(orderId).first();
+    if (!row) return NextResponse.json({ error: "not found" }, { status: 404 });
+    // Only ever expose status — never the license key over an unauthenticated endpoint.
+    return NextResponse.json({ status: row.status, hasLicense: !!row.license_id });
+  }
+
+  return NextResponse.json({ error: "Specify crypto_methods=1 or order_id" }, { status: 400 });
+}
 
 export async function POST(req: NextRequest) {
   let body: any = {};
@@ -220,6 +251,51 @@ export async function POST(req: NextRequest) {
     const snap = await resp.json();
     if (!resp.ok) return NextResponse.json({ error: snap.error_messages?.[0] || "Midtrans error" }, { status: 502 });
     return NextResponse.json({ url: snap.redirect_url });
+  }
+
+  // ── Cryptocurrency — same anonymous contract as the gateways above, but there
+  // is no hosted redirect page: the response carries a payment intent that the
+  // frontend renders inline (deposit address, exact amount, expiry). The
+  // on-chain watcher cron (api/cron/crypto-watch) settles it and issues the
+  // license automatically once a matching transfer is confirmed. ──────────────
+  if (gateway === "crypto") {
+    const methodId = String(body.methodId || "");
+    if (!methodId) return NextResponse.json({ error: "Select a cryptocurrency" }, { status: 400 });
+
+    let db: any;
+    try { db = getDB(req); } catch {
+      return NextResponse.json({ error: "Database not available" }, { status: 503 });
+    }
+    const method = await getEnabledMethod(db, methodId);
+    if (!method) return NextResponse.json({ error: "Payment method unavailable" }, { status: 400 });
+    if (!method.address) return NextResponse.json({ error: "Payment method not configured" }, { status: 503 });
+
+    const rate = await rateUsdPerCoin(method.symbol);
+    if (rate <= 0) return NextResponse.json({ error: "Exchange rate unavailable — try again shortly" }, { status: 503 });
+
+    const orderId = uid("cpay");
+    const intent = createCryptoIntent({
+      method, orderId, userEmail: email, product: pkgInfo.product,
+      packageCode: pkg, amountUsd, rateUsdPerCoin: rate,
+    });
+
+    await db.prepare(
+      `INSERT INTO crypto_payments (id, order_id, method_id, user_email, product, package_code, amount_usd, amount_crypto, symbol, network, deposit_address, status, created_at, expires_at, meta)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+    ).bind(
+      uid("cp"), orderId, method.id, email, pkgInfo.product, pkg,
+      amountUsd, intent.amountCrypto, method.symbol, method.network, method.address,
+      new Date(intent.createdAt).toISOString(), new Date(intent.expiresAt).toISOString(),
+      JSON.stringify({ billing: billing || "yearly", name: name || email, organization: organization || "", source: source || "checkout" }),
+    ).run();
+
+    return NextResponse.json({
+      intent: {
+        orderId, symbol: method.symbol, network: method.network,
+        depositAddress: method.address, amountCrypto: intent.amountCrypto,
+        amountUsd, expiresAt: intent.expiresAt, minConfirmations: method.confirmations,
+      },
+    });
   }
 
   return NextResponse.json({ error: "Unknown gateway" }, { status: 400 });
