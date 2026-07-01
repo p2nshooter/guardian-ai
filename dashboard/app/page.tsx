@@ -209,7 +209,7 @@ function ComingSoonBanner({ product, color }: { product: string; color: string }
 // ── Inline SVG animations ───────────────────────────────────────────────
 
 export default function HomePage() {
-  const { t, fmtPrice, locale, setLocale, currency, fxRate, fxSymbol } = useLocale();
+  const { t, fmtPrice } = useLocale();
 
   // Legacy compat - same function name, uses context
   const fmtUSD = fmtPrice;
@@ -224,7 +224,8 @@ export default function HomePage() {
 
   // Shared nav links — rendered in both the desktop bar and the mobile drawer.
   const NAV_LINKS: [string, string][] = [
-    ["#products","Products"],["#pricing","Bundles"],["#playbooks","Playbooks"],["#byok","BYOK"],["#faq","FAQ"],["/guide","📖 Guide"],
+    ["#products",t("landing.nav.products")],["#pricing",t("landing.nav.bundles")],["#playbooks",t("landing.nav.playbooks")],
+    ["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],
   ];
 
 
@@ -255,10 +256,10 @@ export default function HomePage() {
               >{label}</a>
             ))}
             <Link href="/register" style={{ padding: "9px 18px", fontSize: 14, fontWeight: 600, color: "#0284c7", textDecoration: "none", borderRadius: 8, border: "1.5px solid #0284c7", marginLeft: 4 }}>
-              Register
+              {t("nav.register")}
             </Link>
             <Link href="/auth/login" className="btn-primary" style={{ padding: "9px 22px", fontSize: 14, marginLeft: 4 }}>
-              Client Portal →
+              {t("nav.portal")}
             </Link>
           </div>
 
@@ -286,10 +287,10 @@ export default function HomePage() {
         </nav>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 18, paddingTop: 16, borderTop: "1px solid rgba(2,132,199,0.14)" }}>
           <Link href="/register" onClick={()=>setNavOpen(false)} style={{ textAlign: "center", padding: "13px 18px", fontSize: 15, fontWeight: 700, color: "#0284c7", textDecoration: "none", borderRadius: 12, border: "1.5px solid #0284c7" }}>
-            Register
+            {t("nav.register")}
           </Link>
           <Link href="/auth/login" onClick={()=>setNavOpen(false)} className="btn-primary" style={{ textAlign: "center", padding: "13px 18px", fontSize: 15, justifyContent: "center" }}>
-            Client Portal →
+            {t("nav.portal")}
           </Link>
         </div>
       </aside>
@@ -308,27 +309,26 @@ export default function HomePage() {
           </div>
 
           <h1 className="font-display animate-fade-up delay-100" style={{ fontSize: "clamp(36px, 5.5vw, 64px)", fontWeight: 800, lineHeight: 1.08, marginBottom: 24, color: "#0a1628", letterSpacing: "-1.5px" }}>
-            AI eXecution & Tools Orchestration<br />
-            <span className="gradient-text">You Own & Control</span>
+            {t("landing.hero.title1")}<br />
+            <span className="gradient-text">{t("landing.hero.title2")}</span>
           </h1>
 
           <p className="animate-fade-up delay-200" style={{ fontSize: "clamp(16px, 2vw, 19px)", color: "#334155", lineHeight: 1.7, maxWidth: 700, margin: "0 auto 40px" }}>
-            Secure your servers and run every AI model in one place — fully self-hosted, so your
-            keys and data <strong style={{ color: "#0284c7" }}>never leave your own infrastructure.</strong>
+            {t("landing.hero.subtitle")}
           </p>
 
           <div className="animate-fade-up delay-300" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 64 }}>
-            <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>Explore Plans →</a>
-            <a href="#products" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>See How It Works</a>
+            <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.hero.cta1")}</a>
+            <a href="#products" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.hero.cta2")}</a>
           </div>
 
           {/* Stats row */}
           <div className="animate-fade-up delay-400" style={{ display: "flex", gap: 0, justifyContent: "center", flexWrap: "wrap", background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(2,132,199,0.12)", borderRadius: 20, padding: "24px 8px", maxWidth: 720, margin: "0 auto", boxShadow: "0 4px 24px rgba(2,132,199,0.08)" }}>
             {[
-              { value: "100%", label: "BYOK — Your Keys Only", icon: "🔑" },
-              { value: "0 bytes", label: "Data Sent to AXTO", icon: "🛡️" },
-              { value: "< 30 min", label: "Deployment Time", icon: "⚡" },
-              { value: "10 products", label: "Complete Platform", icon: "📈" },
+              { value: "100%", label: t("landing.hero.stat1"), icon: "🔑" },
+              { value: "0 bytes", label: t("landing.hero.stat2"), icon: "🛡️" },
+              { value: "< 30 min", label: t("landing.hero.stat3"), icon: "⚡" },
+              { value: t("landing.hero.stat4val"), label: t("landing.hero.stat4"), icon: "📈" },
             ].map((s, i) => (
               <div key={s.label} style={{ flex: "1 1 140px", textAlign: "center", padding: "8px 16px", borderRight: i < 3 ? "1px solid rgba(2,132,199,0.1)" : "none" }}>
                 <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
@@ -345,12 +345,12 @@ export default function HomePage() {
         <div className="mesh-grid" style={{ position: "absolute", inset: 0, opacity: 0.5, pointerEvents: "none" }} />
         <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
           <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 48px" }}>
-            <div style={{ display: "inline-block", fontSize: 12.5, fontWeight: 800, letterSpacing: 1.5, color: "#0284c7", textTransform: "uppercase", marginBottom: 14 }}>The Products</div>
+            <div style={{ display: "inline-block", fontSize: 12.5, fontWeight: 800, letterSpacing: 1.5, color: "#0284c7", textTransform: "uppercase", marginBottom: 14 }}>{t("landing.products.eyebrow")}</div>
             <h2 style={{ fontSize: 40, fontWeight: 900, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 16, fontFamily: "Sora, sans-serif", lineHeight: 1.1 }}>
-              Ten AI products. <span className="gradient-text">One sovereign platform.</span>
+              {t("landing.products.title1")} <span className="gradient-text">{t("landing.products.title2")}</span>
             </h2>
             <p style={{ fontSize: 16.5, color: "#475569", lineHeight: 1.65 }}>
-              Every product is self-hosted via Docker and bring-your-own-key. Your servers, your keys, your data — nothing leaves your network. <strong>Click any product</strong> to see plans.
+              {t("landing.products.subtitle")}
             </p>
           </div>
 
@@ -381,11 +381,11 @@ export default function HomePage() {
                   <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
                     {available ? (
-                      <span style={{ fontSize: 13, color: "#0a1628", fontWeight: 700 }}>from <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16, fontWeight: 900 }}>${from.toLocaleString()}</span><span style={{ color: "#94a3b8", fontWeight: 500 }}>/yr</span></span>
+                      <span style={{ fontSize: 13, color: "#0a1628", fontWeight: 700 }}>{t("landing.products.available")} <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16, fontWeight: 900 }}>${from.toLocaleString()}</span><span style={{ color: "#94a3b8", fontWeight: 500 }}>/yr</span></span>
                     ) : (
-                      <span style={{ fontSize: 12, fontWeight: 800, color: "#b45309", background: "rgba(245,158,11,0.1)", padding: "4px 10px", borderRadius: 999 }}>🔜 Coming soon</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: "#b45309", background: "rgba(245,158,11,0.1)", padding: "4px 10px", borderRadius: 999 }}>{t("landing.products.comingsoon")}</span>
                     )}
-                    <span style={{ fontSize: 13, fontWeight: 800, color: p.color }}>{available ? "View plans →" : "Notify me →"}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: p.color }}>{available ? t("landing.products.viewplans") : t("landing.products.notifyme")}</span>
                   </div>
                 </Link>
               );
@@ -393,8 +393,8 @@ export default function HomePage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 40 }}>
-            <Link href="/register" className="btn-primary">▶ Start Free Trial — 7 Days</Link>
-            <a href="#pricing" className="btn-secondary">Compare all pricing ↓</a>
+            <Link href="/register" className="btn-primary">{t("landing.products.trialcta")}</Link>
+            <a href="#pricing" className="btn-secondary">{t("landing.products.comparecta")}</a>
           </div>
         </div>
       </section>
@@ -406,12 +406,12 @@ export default function HomePage() {
       <section style={{ background: "#0a1628", padding: "44px 24px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 32, textAlign: "center" }}>
           {[
-            { stat: "12", label: "Security Products", icon: "🛡️" },
-            { stat: "40+", label: "Pricing Tiers", icon: "💰" },
-            { stat: "100%", label: "Self-Hosted", icon: "🏠" },
-            { stat: "0 bytes", label: "Data to AXTO", icon: "🔒" },
-            { stat: "10", label: "Guide Languages", icon: "🌍" },
-            { stat: "$0", label: "Cloud AI Fees", icon: "⚡" },
+            { stat: "12", label: t("landing.statsbar.s1"), icon: "🛡️" },
+            { stat: "40+", label: t("landing.statsbar.s2"), icon: "💰" },
+            { stat: "100%", label: t("landing.statsbar.s3"), icon: "🏠" },
+            { stat: "0 bytes", label: t("landing.statsbar.s4"), icon: "🔒" },
+            { stat: "10", label: t("landing.statsbar.s5"), icon: "🌍" },
+            { stat: "$0", label: t("landing.statsbar.s6"), icon: "⚡" },
           ].map(({ stat, label, icon }) => (
             <div key={label}>
               <div style={{ fontSize: 13, marginBottom: 4 }}>{icon}</div>
@@ -426,20 +426,20 @@ export default function HomePage() {
       <section style={{ background: "#f8fafc", padding: "100px 24px", borderTop: "1px solid #e2e8f0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>WHY AXTO</span>
+            <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>{t("landing.why.eyebrow")}</span>
             <h2 className="font-display" style={{ fontSize: "clamp(26px,3.5vw,42px)", fontWeight: 900, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14 }}>
-              One Platform. Fully Yours.
+              {t("landing.why.title")}
             </h2>
             <p style={{ color: "#475569", fontSize: 16, maxWidth: 620, margin: "0 auto" }}>
-              Replace a stack of disconnected tools with a single self-hosted platform — clear, predictable pricing and complete ownership of your data.
+              {t("landing.why.subtitle")}
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 20 }}>
             {[
-              { icon: "🏠", title: "100% Self-Hosted", body: "Runs entirely on your own servers. Your data never leaves your infrastructure — no third-party custody." },
-              { icon: "🧩", title: "One Unified Platform", body: "Endpoint security, AI orchestration, privacy and compliance — consolidated into a single platform instead of a dozen separate tools." },
-              { icon: "💎", title: "Transparent Pricing", body: "Straightforward annual or lifetime licenses. No per-request cloud fees, no hidden usage bills, no surprises." },
-              { icon: "🔓", title: "No Lock-In", body: "Open standards and OpenAI-compatible APIs. Keep full ownership of your data and leave whenever you choose." },
+              { icon: "🏠", title: t("landing.why.c1t"), body: t("landing.why.c1b") },
+              { icon: "🧩", title: t("landing.why.c2t"), body: t("landing.why.c2b") },
+              { icon: "💎", title: t("landing.why.c3t"), body: t("landing.why.c3b") },
+              { icon: "🔓", title: t("landing.why.c4t"), body: t("landing.why.c4b") },
             ].map((c) => (
               <div key={c.title} style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 16, padding: "28px 24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
                 <div style={{ fontSize: 28, marginBottom: 14 }}>{c.icon}</div>
@@ -449,8 +449,8 @@ export default function HomePage() {
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: 28, fontSize: 13, color: "#64748b" }}>
-            Self-hosted by design — zero per-request cloud fees, zero data custody, zero lock-in.{" "}
-            <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>Talk to us about enterprise plans →</a>
+            {t("landing.why.footer")}{" "}
+            <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>{t("landing.why.footercta")}</a>
           </p>
         </div>
       </section>
@@ -460,22 +460,22 @@ export default function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
             <div>
               <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 20 }}>
-                🔑 BYOK — BRING YOUR OWN KEYS
+                {t("landing.byok.eyebrow")}
               </span>
               <h2 className="font-display" style={{ fontSize: "clamp(26px, 3.5vw, 42px)", fontWeight: 800, color: "#0a1628", lineHeight: 1.15, letterSpacing: "-1px", marginBottom: 20 }}>
-                Your Credentials.<br />
-                <span className="gradient-text">Never Leave Your Server.</span>
+                {t("landing.byok.title1")}<br />
+                <span className="gradient-text">{t("landing.byok.title2")}</span>
               </h2>
               <p style={{ color: "#475569", fontSize: 16, lineHeight: 1.75, marginBottom: 32 }}>
-                AXTO operates on a strict architectural principle: <strong style={{ color: "#0a1628" }}>zero data custody.</strong> Your AI provider API keys, server telemetry, and operational data are stored exclusively within your own infrastructure. AXTO's only contact with your environment is a lightweight, periodic license heartbeat — nothing more.
+                {t("landing.byok.paragraph")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {[
-                  { icon: "🔐", text: "API keys stored in your config file — never transmitted" },
-                  { icon: "🏗️", text: "Deploy on your VPS, bare metal, or private cloud" },
-                  { icon: "📡", text: "License validation sends only a machine fingerprint hash" },
-                  { icon: "🕵️", text: "AXTO has zero visibility into your AI queries or responses" },
-                  { icon: "✅", text: "Fully auditable — open architecture, no hidden callbacks" },
+                  { icon: "🔐", text: t("landing.byok.b1") },
+                  { icon: "🏗️", text: t("landing.byok.b2") },
+                  { icon: "📡", text: t("landing.byok.b3") },
+                  { icon: "🕵️", text: t("landing.byok.b4") },
+                  { icon: "✅", text: t("landing.byok.b5") },
                 ].map(item => (
                   <div key={item.icon} style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 15, color: "#334155" }}>
                     <span style={{ fontSize: 20 }}>{item.icon}</span>
@@ -514,16 +514,16 @@ export default function HomePage() {
               {/* Trust indicators */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
                 {[
-                  { icon: "🔒", label: "E2E Encrypted", sub: "All comms over TLS 1.3" },
-                  { icon: "🏠", label: "Self-Hosted", sub: "Your server, your rules" },
-                  { icon: "📋", label: "Auditable", sub: "Open architecture" },
-                  { icon: "🚫", label: "No Tracking", sub: "Zero telemetry to AXTO" },
-                ].map(t => (
-                  <div key={t.label} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: "1px solid rgba(2,132,199,0.1)", display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 20 }}>{t.icon}</span>
+                  { icon: "🔒", label: t("landing.byok.t1l"), sub: t("landing.byok.t1s") },
+                  { icon: "🏠", label: t("landing.byok.t2l"), sub: t("landing.byok.t2s") },
+                  { icon: "📋", label: t("landing.byok.t3l"), sub: t("landing.byok.t3s") },
+                  { icon: "🚫", label: t("landing.byok.t4l"), sub: t("landing.byok.t4s") },
+                ].map(tr => (
+                  <div key={tr.label} style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: "1px solid rgba(2,132,199,0.1)", display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ fontSize: 20 }}>{tr.icon}</span>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0a1628" }}>{t.label}</div>
-                      <div style={{ fontSize: 11, color: "#64748b" }}>{t.sub}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0a1628" }}>{tr.label}</div>
+                      <div style={{ fontSize: 11, color: "#64748b" }}>{tr.sub}</div>
                     </div>
                   </div>
                 ))}
@@ -536,12 +536,12 @@ export default function HomePage() {
       {/* ── PRICING ───────────────────────────────────────────────── */}
       <section id="pricing" style={{ padding: "100px 24px", maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>BUNDLES · USD</span>
+          <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>{t("landing.bundle.eyebrow")}</span>
           <h2 className="font-display" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
-            Bundle & Save
+            {t("landing.bundle.title")}
           </h2>
           <p style={{ color: "#475569", fontSize: 17, maxWidth: 560, margin: "0 auto" }}>
-            Deploy Guardian and Orchestra together at a significant discount over buying separately.
+            {t("landing.bundle.subtitle")}
           </p>
         </div>
 
@@ -550,9 +550,9 @@ export default function HomePage() {
         {/* Bundle Pricing */}
         <div style={{ background: "linear-gradient(135deg, #f8faff, #f0fdfa)", borderRadius: 24, padding: "48px 40px", border: "1px solid rgba(2,132,199,0.12)" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <span style={{ display: "inline-block", background: "linear-gradient(135deg,rgba(2,132,199,0.1),rgba(13,148,136,0.1))", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 14 }}>🎁 BUNDLE & SAVE</span>
-            <h3 className="font-display" style={{ fontSize: 30, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.7px", marginBottom: 10 }}>Guardian + Orchestra Combined</h3>
-            <p style={{ color: "#475569", fontSize: 15 }}>Deploy both products together at a significant discount.</p>
+            <span style={{ display: "inline-block", background: "linear-gradient(135deg,rgba(2,132,199,0.1),rgba(13,148,136,0.1))", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 14 }}>{t("landing.bundle.innereyebrow")}</span>
+            <h3 className="font-display" style={{ fontSize: 30, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.7px", marginBottom: 10 }}>{t("landing.bundle.innertitle")}</h3>
+            <p style={{ color: "#475569", fontSize: 15 }}>{t("landing.bundle.innersub")}</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {BUNDLE_PRICING.map((b) => (
@@ -561,7 +561,7 @@ export default function HomePage() {
                 border: b.highlight ? `2px solid ${b.color}` : "1px solid rgba(2,132,199,0.12)",
                 background: b.highlight ? `linear-gradient(160deg, ${b.color}08, ${b.color}04)` : "#fff",
               }}>
-                {b.highlight && <div style={{ position: "absolute", top: 0, right: 0, background: `linear-gradient(135deg,${b.color},#0284c7)`, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: "0 0 0 12px", letterSpacing: "0.5px" }}>BEST VALUE</div>}
+                {b.highlight && <div style={{ position: "absolute", top: 0, right: 0, background: `linear-gradient(135deg,${b.color},#0284c7)`, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: "0 0 0 12px", letterSpacing: "0.5px" }}>{t("landing.bundle.bestvalue")}</div>}
                 <h4 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>{b.name}</h4>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <span style={{ background: "rgba(2,132,199,0.08)", color: "#0284c7", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>🛡 {b.guardian}</span>
@@ -573,9 +573,9 @@ export default function HomePage() {
                   <div className="price-tag" style={{ color: "#0a1628" }}><sup>$</sup>{b.bundlePrice.toLocaleString("en-US")}</div>
                   <span style={{ fontSize: 13, color: "#94a3b8", textDecoration: "line-through" }}>{fmtUSD(b.originalPrice)}</span>
                 </div>
-                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 12 }}>per year · billed annually</p>
+                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 12 }}>{t("landing.bundle.billed")}</p>
                 <div style={{ background: `${b.color}10`, border: `1px solid ${b.color}25`, borderRadius: 8, padding: "8px 12px", marginBottom: 20 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: b.color }}>Save {fmtUSD(b.savings)}/year</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: b.color }}>{t("pricing.save")} {fmtUSD(b.savings)}{t("common.per_year")}</span>
                 </div>
                 <Link href={`/register?pkg=${b.code}`} style={{
                   display: "block", textAlign: "center", padding: "12px 16px", borderRadius: 10,
@@ -585,7 +585,7 @@ export default function HomePage() {
                   border: b.highlight ? "none" : `1.5px solid ${b.color}`,
                   boxShadow: b.highlight ? `0 4px 16px ${b.color}40` : "none",
                 }}>
-                  Get Bundle
+                  {t("landing.bundle.getbundle")}
                 </Link>
               </div>
             ))}
@@ -597,13 +597,12 @@ export default function HomePage() {
       <section id="playbooks" style={{ padding: "100px 24px", background: "#fff", borderTop: "1px solid rgba(2,132,199,0.08)" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ display: "inline-block", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#7c3aed", fontWeight: 700, marginBottom: 16 }}>📦 NEW — AXTO PLAYBOOKS</span>
+            <span style={{ display: "inline-block", background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#7c3aed", fontWeight: 700, marginBottom: 16 }}>{t("landing.playbooks.eyebrow")}</span>
             <h2 className="font-display" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
-              AI Prompt Playbooks
+              {t("landing.playbooks.title")}
             </h2>
             <p style={{ color: "#475569", fontSize: 17, maxWidth: 620, margin: "0 auto", lineHeight: 1.7 }}>
-              Ready-to-use prompt collections for ChatGPT, Claude, and Gemini.
-              Crafted by professionals, tested across 100+ real projects. Download and use instantly.
+              {t("landing.playbooks.subtitle")}
             </p>
           </div>
 
@@ -658,10 +657,10 @@ export default function HomePage() {
           <div style={{ background: "linear-gradient(135deg,#7c3aed08,#0284c708)", borderRadius: 20, padding: "40px 48px", border: "2px solid rgba(124,58,237,0.15)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 24 }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6 }}>BEST VALUE</span>
+                <span style={{ background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6 }}>{t("landing.bundle.bestvalue")}</span>
               </div>
-              <h3 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>Mega Bundle — All Access</h3>
-              <p style={{ color: "#475569", fontSize: 15 }}>Every playbook in our catalog. 400+ prompts. Lifetime access.</p>
+              <h3 style={{ fontSize: 24, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{t("landing.playbooks.megatitle")}</h3>
+              <p style={{ color: "#475569", fontSize: 15 }}>{t("landing.playbooks.megasubtitle")}</p>
             </div>
             <div style={{ textAlign: "center" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, justifyContent: "center", marginBottom: 8 }}>
@@ -669,7 +668,7 @@ export default function HomePage() {
                 <span style={{ fontSize: 16, color: "#94a3b8", textDecoration: "line-through" }}>$290</span>
               </div>
               <Link href="/playbooks" style={{ display: "inline-block", padding: "13px 32px", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 16px rgba(124,58,237,0.3)" }}>
-                Get All Playbooks →
+                {t("landing.playbooks.megacta")}
               </Link>
             </div>
           </div>
@@ -684,43 +683,9 @@ export default function HomePage() {
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
             <h2 className="font-display" style={{ fontSize: 38, fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 12 }}>{t("faq.title")}</h2>
-            <p style={{ color: "#64748b", fontSize: 16 }}>Everything you need to know before you deploy</p>
+            <p style={{ color: "#64748b", fontSize: 16 }}>{t("landing.faq.subtitle")}</p>
           </div>
-          {(({
-            en:[
-              { q:"Does AXTO have access to my server data or AI responses?", a:"Absolutely not. Guardian and Orchestra are fully self-hosted on your infrastructure. AXTO only validates your license — we never see or store your data, API keys, or AI responses." },
-              { q:"What does BYOK (Bring Your Own Keys) mean?", a:"Your AI provider credentials (OpenAI, Anthropic, etc.) are stored on your server. Orchestra reads them locally. AXTO has no copy of your keys." },
-              { q:"How long does initial setup take?", a:"Under 30 minutes. Download ZIP from portal → run install.sh → open browser → enter license key. Admin dashboard is live immediately." },
-              { q:"Can I run Guardian and Orchestra on the same server?", a:"Yes. Both products run as separate Docker Compose stacks on the same host. For large deployments, separate hosts are recommended." },
-              { q:"Is there a free trial?", a:"Yes. Every product offers a free 7-day trial — core features, capability-limited (no API, watermarked exports), locked to one server/IP. Register at axto.io, select any Trial plan, and your license key is delivered instantly. One trial per product per email. No credit card required." },
-              { q:"What happens if my license expires?", a:"Products continue in read-only mode for a 7-day grace period. Automated renewal reminders sent at 30, 14, and 3 days before expiry." },
-            ],
-            id:[
-              { q:"Apakah AXTO bisa mengakses data server saya?", a:"Tidak sama sekali. Guardian dan Orchestra berjalan 100% di server Anda. AXTO hanya memvalidasi lisensi — kami tidak pernah melihat atau menyimpan data, API key, atau respons AI Anda." },
-              { q:"Apa itu BYOK?", a:"Bring Your Own Keys — API key AI Anda (OpenAI, Anthropic, dll) disimpan di server Anda sendiri. Orchestra membacanya secara lokal. AXTO tidak punya salinan key Anda." },
-              { q:"Berapa lama setup awal?", a:"Di bawah 30 menit. Download ZIP dari portal → jalankan install.sh → buka browser → masukkan license key. Dashboard admin langsung aktif." },
-              { q:"Bisakah Guardian dan Orchestra di server yang sama?", a:"Ya. Keduanya berjalan sebagai Docker Compose stack terpisah di host yang sama. Untuk deployment skala besar, server terpisah lebih disarankan." },
-              { q:"Apakah ada trial gratis?", a:"Ya. Setiap produk menawarkan trial gratis 3 hari — fitur lengkap, kapasitas terbatas, terkunci ke 1 server/IP. Daftar di axto.io, pilih paket Trial, dan license key langsung dikirim. Satu trial per produk per email. Tanpa kartu kredit." },
-              { q:"Apa yang terjadi jika lisensi kedaluwarsa?", a:"Produk terus beroperasi dalam mode read-only selama 7 hari. Pengingat pembaruan dikirim 30, 14, dan 3 hari sebelum kedaluwarsa." },
-            ],
-            zh:[
-              { q:"AXTO能访问我的服务器数据吗？", a:"绝对不会。Guardian和Orchestra完全在您的服务器上运行。AXTO只验证您的许可证——我们从不查看或存储您的数据。" },
-              { q:"BYOK是什么意思？", a:"自带密钥——您的AI提供商凭证存储在您的服务器上。AXTO无法访问您的密钥。" },
-              { q:"初始设置需要多长时间？", a:"30分钟以内。从门户下载ZIP → 运行install.sh → 打开浏览器 → 输入许可证密钥。" },
-              { q:"有免费试用吗？", a:"有！可直接从管理面板申请1-7天试用许可证。所有付费计划享有30天满意保证。" },
-              { q:"许可证到期后会怎样？", a:"产品在7天宽限期内以只读模式运行。到期前30、14和3天发送续期提醒。" },
-            ],
-            ar:[
-              { q:"هل تصل AXTO إلى بيانات خادمي؟", a:"لا على الإطلاق. يعمل Guardian وOrchestra بنسبة 100٪ على خوادمك. AXTO تتحقق فقط من الترخيص — نحن لا نرى بياناتك أبدًا." },
-              { q:"ما معنى BYOK؟", a:"أحضر مفاتيحك الخاصة — يتم تخزين بيانات اعتماد AI الخاصة بك على خادمك. لا تملك AXTO نسخة من مفاتيحك." },
-              { q:"كم يستغرق الإعداد الأولي؟", a:"أقل من 30 دقيقة. قم بتنزيل ZIP من البوابة ← شغّل install.sh ← افتح المتصفح ← أدخل مفتاح الترخيص." },
-              { q:"هل هناك تجربة مجانية؟", a:"نعم! تتوفر تراخيص تجريبية لمدة 1-7 أيام مباشرةً من لوحة المشرف. ضمان الرضا 30 يومًا." },
-            ],
-          } as Record<string,{q:string;a:string}[]>)[locale as string] || [
-              { q:"Does AXTO have access to my server data or AI responses?", a:"Absolutely not. AXTO only validates your license." },
-              { q:"What does BYOK mean?", a:"Your AI keys stay on your server. AXTO never has access to them." },
-              { q:"How long does setup take?", a:"Under 30 minutes. Download ZIP → install.sh → enter license key in browser." },
-            ]).map((item: {q:string;a:string}, i: number) => (
+          {[1, 2, 3, 4, 5, 6].map(n => ({ q: t(`landing.faq.q${n}`), a: t(`landing.faq.a${n}`) })).map((item, i: number) => (
             <div key={i} style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", marginBottom: 14, border: "1px solid rgba(2,132,199,0.1)", boxShadow: "0 2px 8px rgba(2,132,199,0.06)" }}>
               <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0a1628", marginBottom: 10 }}>{item.q}</h4>
               <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.75 }}>{item.a}</p>
@@ -734,22 +699,22 @@ export default function HomePage() {
       <section id="delivery" style={{ padding: "100px 24px", background: "linear-gradient(160deg,#f8fafc,#f1f5f9)", borderTop: "1px solid rgba(2,132,199,0.08)" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>📦 WHAT YOU GET</span>
+            <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>{t("landing.delivery.eyebrow")}</span>
             <h2 className="font-display" style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 14 }}>
-              Every License Includes<br /><span className="gradient-text">Docker Image + Windows EXE</span>
+              {t("landing.delivery.title1")}<br /><span className="gradient-text">{t("landing.delivery.title2")}</span>
             </h2>
             <p style={{ color: "#475569", fontSize: 17, maxWidth: 640, margin: "0 auto", lineHeight: 1.7 }}>
-              Purchase any plan — from Starter to Enterprise — and receive the complete product package. No feature gates hidden behind upsells. What your tier includes is exactly what you get.
+              {t("landing.delivery.subtitle")}
             </p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24, marginBottom: 48 }}>
             {[
-              { icon: "🐳", title: "Docker Image (Linux)", desc: "Production-ready Docker Compose stack. Pull from your private registry, run `docker compose up -d`, and your product is live in under 5 minutes. Includes health checks, auto-restart, and log rotation.", tag: "docker compose up -d" },
-              { icon: "💻", title: "Windows EXE (Portable)", desc: "Single-file PyInstaller executable. No Python installation required. Double-click to run. Ideal for Windows Server environments, air-gapped networks, and quick evaluation.", tag: "axto-vault.exe --port 8080" },
-              { icon: "📖", title: "Interactive Setup Guide", desc: "Step-by-step guide in 10 languages (EN, ID, AR, ZH, FR, DE, ES, PT, RU, JA). Covers installation, configuration, AI provider setup, and production hardening. Downloadable as PDF.", tag: "axto.io/guide → Download PDF" },
-              { icon: "🔑", title: "License Key (Instant)", desc: "Delivered to your email within 60 seconds of purchase. Locked to 1 server (machine-id + IP). Enter in YAML config, restart, and your product activates immediately.", tag: "VAULT-A1B2-C3D4-E5F6-G7H8..." },
-              { icon: "🆓", title: "7-Day Free Trial", desc: "Every product offers a free 7-day trial — core features, capability-limited (no API, watermarked exports), locked to one server. No credit card required. One trial per product per email address.", tag: "Register → Select Trial → Instant activation" },
-              { icon: "🔄", title: "All Updates Included", desc: "Your annual license includes every update released during the license period. New features, security patches, and performance improvements — all included at no extra cost.", tag: "docker pull :latest → restart" },
+              { icon: "🐳", title: t("landing.delivery.c1t"), desc: t("landing.delivery.c1d"), tag: "docker compose up -d" },
+              { icon: "💻", title: t("landing.delivery.c2t"), desc: t("landing.delivery.c2d"), tag: "axto-vault.exe --port 8080" },
+              { icon: "📖", title: t("landing.delivery.c3t"), desc: t("landing.delivery.c3d"), tag: "axto.io/guide → Download PDF" },
+              { icon: "🔑", title: t("landing.delivery.c4t"), desc: t("landing.delivery.c4d"), tag: "VAULT-A1B2-C3D4-E5F6-G7H8..." },
+              { icon: "🆓", title: t("landing.delivery.c5t"), desc: t("landing.delivery.c5d"), tag: "Register → Select Trial → Instant activation" },
+              { icon: "🔄", title: t("landing.delivery.c6t"), desc: t("landing.delivery.c6d"), tag: "docker pull :latest → restart" },
             ].map(item => (
               <div key={item.title} className="card" style={{ padding: 28 }}>
                 <div style={{ fontSize: 32, marginBottom: 14 }}>{item.icon}</div>
@@ -764,9 +729,9 @@ export default function HomePage() {
           <div style={{ background: "#fff", borderRadius: 16, padding: "32px 40px", border: "1px solid rgba(2,132,199,0.12)", display: "flex", gap: 24, alignItems: "flex-start", flexWrap: "wrap" }}>
             <div style={{ fontSize: 36 }}>🔒</div>
             <div style={{ flex: 1, minWidth: 280 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>License Enforcement</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>{t("landing.delivery.enforce_title")}</h3>
               <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.7 }}>
-                Each license key is cryptographically bound to a single machine (machine-id + IP address + instance). License validation occurs every 30 minutes with a 4-hour offline grace period. Attempting to run on multiple servers or share keys will result in automatic suspension. This ensures every client receives the full value of their investment without unfair usage.
+                {t("landing.delivery.enforce_body")}
               </p>
             </div>
           </div>
@@ -777,10 +742,10 @@ export default function HomePage() {
       <section style={{ padding: "60px 24px", background: "linear-gradient(135deg,#0284c7,#0d9488)", textAlign: "center" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
           <h2 style={{ fontSize: "clamp(24px, 3.5vw, 38px)", fontWeight: 800, color: "#fff", marginBottom: 14, letterSpacing: "-0.5px" }}>
-            Try Any Product Free for 7 Days
+            {t("landing.trial.title")}
           </h2>
           <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 1.7, marginBottom: 28, maxWidth: 560, margin: "0 auto 28px" }}>
-            Core features. No credit card. One click to activate. Experience the AXTO platform on your own infrastructure before you commit.
+            {t("landing.trial.subtitle")}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {["Guardian","Orchestra","Vault","Edge","SOC","Compliance","Sentinel","Antivirus"].map(p => {
@@ -789,13 +754,13 @@ export default function HomePage() {
               if (!forSale) {
                 return (
                   <span key={p} style={{ padding: "10px 20px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.45)", fontSize: 13, fontWeight: 700 }}>
-                    {p} — Coming Soon
+                    {p} — {t("landing.trial.comingsoon")}
                   </span>
                 );
               }
               return (
                 <Link key={p} href={`/register?pkg=trial_${product}`} style={{ padding: "10px 20px", borderRadius: 10, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.15s", backdropFilter: "blur(4px)" }}>
-                  {p} Trial →
+                  {p} {t("landing.trial.ctasuffix")}
                 </Link>
               );
             })}
@@ -807,15 +772,15 @@ export default function HomePage() {
       <section style={{ padding: "100px 24px", textAlign: "center" }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
           <h2 className="font-display" style={{ fontSize: "clamp(28px, 4vw, 46px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 18 }}>
-            Ready to Take Control of<br />
-            <span className="gradient-text">Your AI Infrastructure?</span>
+            {t("landing.cta.title1")}<br />
+            <span className="gradient-text">{t("landing.cta.title2")}</span>
           </h2>
           <p style={{ color: "#475569", fontSize: 17, lineHeight: 1.7, marginBottom: 40 }}>
-            Deploy in under 30 minutes. No vendor lock-in. No data sharing. Just powerful, enterprise-grade AI infrastructure — fully under your control.
+            {t("landing.cta.subtitle")}
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("hero.cta")}</a>
-            <a href="mailto:hallo@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>Contact Us</a>
+            <a href="mailto:hallo@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.cta.contact")}</a>
           </div>
         </div>
       </section>
@@ -829,25 +794,25 @@ export default function HomePage() {
                 <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#0284c7,#0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🛡</div>
                 <span style={{ fontSize: 20, fontWeight: 900, color: "#fff", fontFamily: "Sora, sans-serif" }}>AXTO</span>
               </div>
-              <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 280 }}>AI eXecution & Tools Orchestration that you own, control, and deploy on your own servers. Zero data custody. 100% BYOK.</p>
+              <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 280 }}>{t("landing.footer.tagline")}</p>
               <p style={{ fontSize: 13, marginTop: 16 }}>✉ hallo@axto.io</p>
             </div>
             <div>
-              <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Products</h4>
+              <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>{t("landing.footer.products")}</h4>
               {[["Guardian AI","guardian"],["Orchestra AI","orchestra"],["Vault","vault"],["Edge","edge"],["SOC","soc"],["Compliance","compliance"],["Sentinel","sentinel"],["Legal","legal"],["Antivirus","antivirus"],["Studio","studio"]].map(([l,slug]) => <div key={l} style={{ marginBottom: 10 }}><Link href={`/products/${slug}`} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
             </div>
             <div>
-              <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Resources</h4>
-              {[["Setup Guide","/guide"],["Playbooks","/playbooks"],["Terms of Service","/terms"],["Privacy Policy","/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
+              <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>{t("landing.footer.resources")}</h4>
+              {[[t("landing.footer.setupguide"),"/guide"],[t("landing.footer.playbooks"),"/playbooks"],[t("landing.footer.tos"),"/terms"],[t("landing.footer.privacy"),"/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
             </div>
             <div>
-              <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Legal</h4>
-              {[["Terms of Service","/terms"],["Privacy Policy","/privacy"],["Security","/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
+              <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>{t("landing.footer.legal")}</h4>
+              {[[t("landing.footer.tos"),"/terms"],[t("landing.footer.privacy"),"/privacy"],[t("landing.footer.security"),"/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
             </div>
           </div>
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 24, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 13, color: "#334155" }}>
-            <span>© {new Date().getFullYear()} AXTO. All rights reserved. Prices in USD.</span>
-            <span style={{ color: "#0284c7" }}>100% BYOK — Your keys never leave your server</span>
+            <span>© {new Date().getFullYear()} {t("landing.footer.copyright")}</span>
+            <span style={{ color: "#0284c7" }}>{t("landing.footer.byoktag")}</span>
           </div>
         </div>
       </footer>
