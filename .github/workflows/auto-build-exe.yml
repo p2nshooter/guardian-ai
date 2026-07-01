@@ -7,9 +7,16 @@
 # which is exactly where the client portal downloads them from.
 #
 # Entry points differ per product:
-#   guardian/antivirus/vault → <dir>/src/__main__.py
+#   guardian/antivirus/vault/edge/soc/compliance/sentinel/studio/legal
+#                             → <dir>/src/__main__.py
 #   orchestra                → build-scripts/exe-entrypoints/orchestra_entry.py
 #                              (imports orchestra_core.main; needs --paths orchestra)
+#
+# collectall: only set for products depending on scikit-learn/scipy (guardian
+# core/node/antivirus, orchestra-core) — their compiled, dynamically-imported
+# submodules are notorious for being silently missed by PyInstaller's default
+# static analysis (confirmed root cause of a real broken-exe incident: the
+# build reported "success" and exited 0 while quietly shipping a stub).
 #
 # Trigger: manual (workflow_dispatch) or when their source changes.
 # Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY  (R2 S3 keys)
@@ -24,6 +31,12 @@ on:
       - "orchestra/**"
       - "antivirus/**"
       - "vault/**"
+      - "edge/**"
+      - "soc/**"
+      - "compliance/**"
+      - "sentinel/**"
+      - "studio/**"
+      - "legal/**"
       - "build-scripts/exe-entrypoints/**"
       - ".github/workflows/auto-build-exe.yml"
 
@@ -45,6 +58,12 @@ jobs:
           - { product: orchestra-core,       reqdir: orchestra/orchestra_core,   entry: "build-scripts/exe-entrypoints/orchestra_entry.py", addsrc: "", paths: "orchestra orchestra/orchestra_core",  collect: "orchestra_core",   collectall: "sklearn numpy pandas scipy" }
           - { product: orchestra-worker-cpu, reqdir: orchestra/orchestra_worker, entry: "orchestra/orchestra_worker/worker_cpu.py",            addsrc: "", paths: "orchestra/orchestra_worker", collect: "",               collectall: "numpy" }
           - { product: vault-core,           reqdir: vault,     entry: "vault/src/__main__.py",     addsrc: "vault/src",     paths: "", collect: "", collectall: "" }
+          - { product: edge-core,            reqdir: edge,       entry: "edge/src/__main__.py",       addsrc: "edge/src",       paths: "", collect: "", collectall: "" }
+          - { product: soc-core,             reqdir: soc,        entry: "soc/src/__main__.py",        addsrc: "soc/src",        paths: "", collect: "", collectall: "" }
+          - { product: compliance-core,      reqdir: compliance, entry: "compliance/src/__main__.py", addsrc: "compliance/src", paths: "", collect: "", collectall: "" }
+          - { product: sentinel-core,        reqdir: sentinel,   entry: "sentinel/src/__main__.py",   addsrc: "sentinel/src",   paths: "", collect: "", collectall: "" }
+          - { product: studio-core,          reqdir: studio,     entry: "studio/src/__main__.py",     addsrc: "studio/src",     paths: "", collect: "", collectall: "" }
+          - { product: legal-core,           reqdir: legal,      entry: "legal/src/__main__.py",      addsrc: "legal/src",      paths: "", collect: "", collectall: "" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
