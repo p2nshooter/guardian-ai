@@ -30,6 +30,53 @@ export interface LivePrice {
   price: number;        // annual USD
   priceMonthly: number; // monthly USD
   source: "db" | "static";
+  promo?: { label: string; endsAt: string; originalPrice: number; originalPriceMonthly: number };
+}
+
+interface PromoRow {
+  package_code: string;
+  label: string;
+  promo_price: number;
+  promo_price_monthly: number;
+  ends_at: string;
+}
+
+/**
+ * Fetch all currently-active promo rows (enabled + within [starts_at, ends_at])
+ * in one query. Best-effort — returns {} if the DB/table is unavailable so
+ * pricing never breaks because a promo lookup failed.
+ */
+async function getActivePromos(req: NextRequest): Promise<Record<string, PromoRow>> {
+  const out: Record<string, PromoRow> = {};
+  try {
+    const db = getDB(req);
+    const rows = await dbQuery<PromoRow>(
+      db,
+      `SELECT package_code, label, promo_price, promo_price_monthly, ends_at
+       FROM promo_pricing
+       WHERE enabled = 1 AND datetime('now') >= datetime(starts_at) AND datetime('now') <= datetime(ends_at)`
+    );
+    for (const r of rows) out[r.package_code] = r;
+  } catch {
+    // table missing or DB unavailable — no promos active
+  }
+  return out;
+}
+
+/** Apply an active promo row on top of a resolved base price, if one exists. */
+function applyPromo(base: LivePrice, promo: PromoRow | undefined): LivePrice {
+  if (!promo || promo.promo_price <= 0) return base;
+  return {
+    ...base,
+    price: promo.promo_price,
+    priceMonthly: promo.promo_price_monthly > 0 ? promo.promo_price_monthly : base.priceMonthly,
+    promo: {
+      label: promo.label,
+      endsAt: promo.ends_at,
+      originalPrice: base.price,
+      originalPriceMonthly: base.priceMonthly,
+    },
+  };
 }
 
 // ── Lifetime (perpetual) pricing ────────────────────────────────────────────
@@ -78,18 +125,22 @@ export async function getLivePrice(
       [code]
     );
     if (row && row.price_usd > 0) {
-      return {
+      const base: LivePrice = {
         code,
         price: row.price_usd,
         priceMonthly: row.price_monthly > 0 ? row.price_monthly : Math.round(row.price_usd / 10),
         source: "db",
       };
+      const promos = await getActivePromos(req);
+      return applyPromo(base, promos[code]);
     }
   } catch {
     // DB unavailable — use static fallback silently
   }
 
-  return { code, price: staticPrice, priceMonthly: staticMonthly, source: "static" };
+  const base: LivePrice = { code, price: staticPrice, priceMonthly: staticMonthly, source: "static" };
+  const promos = await getActivePromos(req);
+  return applyPromo(base, promos[code]);
 }
 
 /**
@@ -130,6 +181,11 @@ export async function getAllLivePrices(
     // DB unavailable — all entries stay as "static"
   }
 
+  const promos = await getActivePromos(req);
+  for (const [code, promo] of Object.entries(promos)) {
+    if (result[code]) result[code] = applyPromo(result[code], promo);
+  }
+
   return result;
 }
 
@@ -149,6 +205,7 @@ export async function getAllPackagesWithLivePrices(req: NextRequest): Promise<{
   staticPrice: number;
   staticPriceMonthly: number;
   source: "db" | "static";
+  promo?: { label: string; endsAt: string; originalPrice: number; originalPriceMonthly: number };
 }[]> {
   const pkgInfo = PACKAGE_INFO as Record<string, any>;
 
@@ -190,6 +247,20 @@ export async function getAllPackagesWithLivePrices(req: NextRequest): Promise<{
     }
   } catch {
     // DB unavailable — return static data
+  }
+
+  const promos = await getActivePromos(req);
+  for (const pkg of packages) {
+    const promo = promos[pkg.code];
+    if (!promo || promo.promo_price <= 0) continue;
+    (pkg as any).promo = {
+      label: promo.label,
+      endsAt: promo.ends_at,
+      originalPrice: pkg.price,
+      originalPriceMonthly: pkg.priceMonthly,
+    };
+    pkg.price = promo.promo_price;
+    pkg.priceMonthly = promo.promo_price_monthly > 0 ? promo.promo_price_monthly : pkg.priceMonthly;
   }
 
   return packages;

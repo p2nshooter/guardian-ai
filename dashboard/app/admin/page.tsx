@@ -18,6 +18,7 @@ const NAV_STATIC: {href:string;icon:string;tKey:string;fallback:string}[] = [
   { href: "/admin",                icon: "📊", tKey: "admin.title",    fallback: "Dashboard" },
   { href: "/admin/releases",       icon: "☁️", tKey: "admin.releases", fallback: "Releases" },
   { href: "/admin/pricing",        icon: "💰", tKey: "",              fallback: "💰 Pricing" },
+  { href: "/admin/promo-pricing",  icon: "🎉", tKey: "",              fallback: "🎉 Promo Pricing" },
   { href: "/admin/playbooks",     icon: "📦", tKey: "",             fallback: "📦 Playbooks" },
   { href: "/admin/engine-builder", icon: "🔧", tKey: "",             fallback: "🔧 Engine Builder" },
   { href: "/guide",                icon: "📖", tKey: "nav.guide",    fallback: "📖 Guide" },
