@@ -7,22 +7,20 @@
 -- ═══════════════════════════════════════════════════════════════════
 -- Migration 0030: Fix autopost_posts missing columns
 -- ═══════════════════════════════════════════════════════════════════
--- Purpose: Migration 0025 re-created autopost_posts with reduced schema
--- missing critical columns that the publisher code expects.
--- This migration adds them back safely (ALTER TABLE ... ADD COLUMN
--- with OR IGNORE-like safety via try/catch in D1).
+-- Purpose: this migration originally assumed 0025 had re-created autopost_posts
+-- with a reduced schema and tried to ALTER the missing columns back in. In
+-- fact 0006_fix_missing_columns.sql's "nuclear reset" already gave
+-- autopost_posts platform_config_id, platform_post_id, platform_url,
+-- metadata, error_message and updated_at (0025's CREATE TABLE IF NOT EXISTS
+-- is a no-op against that already-existing table, so those columns were
+-- never actually missing). SQLite's ALTER TABLE ADD COLUMN has no
+-- IF NOT EXISTS / silent-skip form — it hard-errors on a duplicate column —
+-- so re-adding them here would abort this migration. Nothing to do for
+-- autopost_posts.
 
--- Add missing columns (each ALTER TABLE will silently fail if column already exists in D1)
-ALTER TABLE autopost_posts ADD COLUMN platform_config_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE autopost_posts ADD COLUMN platform_post_id   TEXT NOT NULL DEFAULT '';
-ALTER TABLE autopost_posts ADD COLUMN platform_url       TEXT NOT NULL DEFAULT '';
-ALTER TABLE autopost_posts ADD COLUMN metadata           TEXT NOT NULL DEFAULT '{}';
-ALTER TABLE autopost_posts ADD COLUMN error_message      TEXT NOT NULL DEFAULT '';
-ALTER TABLE autopost_posts ADD COLUMN updated_at         TEXT NOT NULL DEFAULT (datetime('now'));
-
--- Also fix the playbook_purchases table — missing columns that shared.ts webhook expects
-ALTER TABLE playbook_purchases ADD COLUMN client_email TEXT NOT NULL DEFAULT '';
-ALTER TABLE playbook_purchases ADD COLUMN bundle_id TEXT NOT NULL DEFAULT '';
+-- playbook_purchases: same story — 0009_playbooks.sql already created this
+-- table with client_email and bundle_id, so 0025's CREATE TABLE IF NOT EXISTS
+-- was a no-op here too and there is nothing missing to add.
 
 -- Audit log
 INSERT OR IGNORE INTO audit_log (id, action, entity_type, entity_id, actor_email, metadata, created_at)

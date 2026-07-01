@@ -12,8 +12,9 @@
 -- Add ci_provider column (which CI system built this artifact)
 ALTER TABLE product_builds ADD COLUMN ci_provider TEXT DEFAULT '' ;
 
--- Add pipeline_id column (GitLab pipeline ID or GitHub run ID)
-ALTER TABLE product_builds ADD COLUMN pipeline_id TEXT DEFAULT '' ;
+-- pipeline_id already exists (added directly in 0020_product_builds.sql's
+-- CREATE TABLE) — no ALTER needed here; re-adding it would error as a
+-- duplicate column.
 
 -- Add commit hash for traceability
 ALTER TABLE product_builds ADD COLUMN commit_hash TEXT DEFAULT '' ;
