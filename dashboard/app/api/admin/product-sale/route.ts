@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-const ALL_PRODUCTS = ["guardian", "orchestra", "vault", "edge", "soc", "compliance", "sentinel", "antivirus"];
+const ALL_PRODUCTS = ["guardian", "orchestra", "vault", "edge", "soc", "compliance", "sentinel", "antivirus", "studio", "legal"];
 
 export async function GET(req: NextRequest) {
   const user = await requireAdmin(req);

@@ -542,6 +542,20 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Playbooks — quick link to the full download-manager page */}
+        <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", overflow: "hidden", marginTop: 28, marginBottom: 28 }}>
+          <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>📦</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 15, color: "#0a1628" }}>Playbooks</div>
+              <div style={{ color: "#94a3b8", fontSize: 12 }}>Every sold playbook is downloadable — manage uploads, prices and download every file from the dedicated Playbooks page.</div>
+            </div>
+            <Link href="/admin/playbooks" style={{ fontSize: 13, color: "#0284c7", textDecoration: "none", fontWeight: 700, padding: "8px 16px", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 8, whiteSpace: "nowrap" }}>
+              📦 Open Playbooks →
+            </Link>
+          </div>
+        </div>
+
       </main>
     </div>
   );
