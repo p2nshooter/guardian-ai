@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const { pkg, gateway, email, name, organization, billing, source, playbook_meta } = body;
+  const { pkg, gateway, email, name, organization, billing, source, playbook_meta, referralCode } = body;
   if (!pkg || !gateway || !email) {
     return NextResponse.json({ error: "Missing required fields: pkg, gateway, email" }, { status: 400 });
   }
@@ -171,6 +171,7 @@ export async function POST(req: NextRequest) {
     billing: billing || "yearly", isBundle: String(isBundle),
     guardianPackage: pkgInfo.guardianPackage || "", orchestraPackage: pkgInfo.orchestraPackage || "",
     originalPriceUsd: String(amountUsd), source: source || "checkout",
+    referralCode: referralCode || "",
   };
 
   if (gateway === "stripe") {
@@ -286,7 +287,7 @@ export async function POST(req: NextRequest) {
       uid("cp"), orderId, method.id, email, pkgInfo.product, pkg,
       amountUsd, intent.amountCrypto, method.symbol, method.network, method.address,
       new Date(intent.createdAt).toISOString(), new Date(intent.expiresAt).toISOString(),
-      JSON.stringify({ billing: billing || "yearly", name: name || email, organization: organization || "", source: source || "checkout" }),
+      JSON.stringify({ billing: billing || "yearly", name: name || email, organization: organization || "", source: source || "checkout", referralCode: referralCode || "" }),
     ).run();
 
     return NextResponse.json({

@@ -95,7 +95,7 @@ export default function CreateLicensePage() {
     clientName: "", clientEmail: "", organization: "",
     packageCode: "pro", licenseType: "yearly",
     trialDays: "7", trialWeeks: "1", expiresMonths: "12",
-    notes: "", sendEmailFlag: true, skipUser: false,
+    notes: "", sendEmailFlag: true, skipUser: false, referralCode: "",
   });
   const [loading, setLoading]   = useState(false);
   const [result,  setResult]    = useState<string|null>(null);
@@ -142,6 +142,7 @@ export default function CreateLicensePage() {
           notes:         form.notes,
           sendEmail:     form.sendEmailFlag,
           skipUser:      form.skipUser,
+          referralCode:  form.referralCode,
           gateway:       "manual",
           source:        "admin",
         }),
@@ -314,6 +315,12 @@ export default function CreateLicensePage() {
                     <label style={lbl}>Organization / Company</label>
                     <input placeholder="Acme Corporation" value={form.organization}
                       onChange={e=>set("organization",e.target.value)} style={inp}/>
+                  </div>
+                  <div>
+                    <label style={lbl}>Reseller Referral Code (optional)</label>
+                    <input placeholder="e.g. AB3XQ9KL" value={form.referralCode}
+                      onChange={e=>set("referralCode",e.target.value.toUpperCase())} style={inp}/>
+                    <p style={{fontSize:11,color:"#94a3b8",marginTop:4}}>Credits this sale&apos;s commission to a reseller. Ignored for trial licenses.</p>
                   </div>
                   <div>
                     <label style={lbl}>Internal Notes (admin only)</label>

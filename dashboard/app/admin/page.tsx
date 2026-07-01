@@ -19,8 +19,9 @@ const NAV_STATIC: {href:string;icon:string;tKey:string;fallback:string}[] = [
   { href: "/admin/releases",       icon: "☁️", tKey: "admin.releases", fallback: "Releases" },
   { href: "/admin/pricing",        icon: "💰", tKey: "",              fallback: "💰 Pricing" },
   { href: "/admin/promo-pricing",  icon: "🎉", tKey: "",              fallback: "🎉 Promo Pricing" },
+  { href: "/admin/resellers",      icon: "🤝", tKey: "",              fallback: "🤝 Resellers" },
   { href: "/admin/playbooks",     icon: "📦", tKey: "",             fallback: "📦 Playbooks" },
-  { href: "/admin/engine-builder", icon: "🔧", tKey: "",             fallback: "🔧 Engine Builder" },
+  { href: "/admin/trial-batch",    icon: "🎟️", tKey: "",             fallback: "🎟️ Trial Batch" },
   { href: "/guide",                icon: "📖", tKey: "nav.guide",    fallback: "📖 Guide" },
   { href: "/admin/licenses",       icon: "🔑", tKey: "admin.licenses", fallback: "Licenses" },
   { href: "/admin/clients",        icon: "👥", tKey: "admin.clients",  fallback: "Clients" },
@@ -212,7 +213,7 @@ export default function AdminPage() {
           <span style={{ fontSize: 16 }}>{n.icon}</span>{n.label}
         </Link>
       ))}
-      <Link href="/admin/engine-builder" style={{ padding: "9px 18px", borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>🔧 Engine Builder</Link>
+      <Link href="/admin/trial-batch" style={{ padding: "9px 18px", borderRadius: 9, background: "linear-gradient(135deg,#7c3aed,#a855f7)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>🎟️ Trial Batch</Link>
           <Link href="/admin/create-license" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 10, textDecoration: "none", background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", fontWeight: 700, fontSize: 13, marginTop: 16, boxShadow: "0 4px 12px rgba(2,132,199,0.3)" }}>
         + New License
       </Link>

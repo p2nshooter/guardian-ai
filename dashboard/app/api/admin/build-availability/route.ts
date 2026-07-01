@@ -31,22 +31,17 @@ import { requireAdmin } from "@/lib/auth";
 // All products that have downloadable builds
 const ALL_PRODUCTS = [
   "guardian", "orchestra", "vault", "edge",
-  "soc", "compliance", "sentinel", "antivirus", "studio",
+  "soc", "compliance", "sentinel", "antivirus", "studio", "legal",
 ];
 const ALL_FORMATS = ["docker", "exe-linux", "exe-windows"] as const;
 type Format = typeof ALL_FORMATS[number];
 
-// Products enabled by default (builds already shipped)
-const DEFAULT_ENABLED: Record<string, Format[]> = {
-  guardian:   ["docker", "exe-linux", "exe-windows"],
-  orchestra:  ["docker"],
-  antivirus:  ["docker"],
-  studio:     ["docker"],
-  // everything else: all formats disabled (Coming Soon)
-};
-
-function defaultEnabled(product: string, format: Format): boolean {
-  return (DEFAULT_ENABLED[product] ?? []).includes(format);
+// Honest defaults when no admin row exists:
+//   docker      → ON  (CI builds a Docker image for every product)
+//   exe-linux   → OFF (no workflow builds a standalone Linux binary — ever)
+//   exe-windows → OFF (must be verified running & production-ready before ON)
+function defaultEnabled(_product: string, format: Format): boolean {
+  return format === "docker";
 }
 
 /** Ensure the table exists — runs once per cold start, idempotent */

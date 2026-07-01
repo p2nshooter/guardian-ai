@@ -234,9 +234,10 @@ export async function GET(req: NextRequest) {
       `SELECT enabled FROM build_formats WHERE product = ? AND format = ?`,
       [licProduct2, fmtKey]
     );
-    // Default: guardian + antivirus + studio → enabled; everything else → disabled
-    const defaultOn = ["guardian", "antivirus", "studio"].includes(licProduct2)
-      || (licProduct2 === "orchestra" && fmtKey === "docker");
+    // Honest default when no admin row exists: only Docker is ever auto-on
+    // (CI builds a Docker image for every product). EXE formats stay Coming
+    // Soon until an admin verifies the binary and enables it explicitly.
+    const defaultOn = fmtKey === "docker";
 
     if (bfRow !== null && bfRow !== undefined) {
       if (bfRow.enabled === 0) {

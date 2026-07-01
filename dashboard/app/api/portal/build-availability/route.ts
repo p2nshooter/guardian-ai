@@ -23,20 +23,19 @@ import { requireUser } from "@/lib/auth";
 
 const ALL_PRODUCTS = [
   "guardian", "orchestra", "vault", "edge",
-  "soc", "compliance", "sentinel", "antivirus", "studio",
+  "soc", "compliance", "sentinel", "antivirus", "studio", "legal",
 ];
 const ALL_FORMATS = ["docker", "exe-linux", "exe-windows"] as const;
 type Format = typeof ALL_FORMATS[number];
 
-const DEFAULT_ENABLED: Record<string, Format[]> = {
-  guardian:   ["docker", "exe-linux", "exe-windows"],
-  orchestra:  ["docker"],
-  antivirus:  ["docker"],
-  studio:     ["docker"],
-};
-
-function defaultEnabled(product: string, format: Format): boolean {
-  return (DEFAULT_ENABLED[product] ?? []).includes(format);
+// Honest defaults when no admin row exists:
+//   docker      → ON  (CI builds a Docker image for every product)
+//   exe-linux   → OFF (no workflow builds a standalone Linux binary — ever)
+//   exe-windows → OFF (a Windows .exe must be verified running & production-
+//                      ready before an admin flips it ON; never auto-ON)
+// This guarantees a client is never shown a download that doesn't exist.
+function defaultEnabled(_product: string, format: Format): boolean {
+  return format === "docker";
 }
 
 async function readAvailability(db: any, filterProduct?: string): Promise<Record<string, boolean>> {

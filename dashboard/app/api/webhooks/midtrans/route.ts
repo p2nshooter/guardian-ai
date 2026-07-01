@@ -84,5 +84,6 @@ export async function POST(req: NextRequest) {
     source: meta.source || "",
     playbookId: meta.playbook_id || "",
     bundleId: meta.bundle_id || "",
+    referralCode: meta.referralCode || "",
   });
 }

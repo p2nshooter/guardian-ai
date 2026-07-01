@@ -10,6 +10,7 @@ import { getDB, dbFirst, dbRun, dbQuery, newId, now } from "@/lib/db";
 import { createLicense, createBundleLicenses } from "@/lib/license";
 import { sendWelcomeEmail, sendBundleEmail, sendEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
+import { recordResellerSale } from "@/lib/reseller";
 
 export async function processPlaybookPurchase(req: NextRequest, params: {
   email: string; name: string; amountUsd: number; paymentRef: string;
@@ -85,9 +86,9 @@ export async function processPayment(req: NextRequest, params: {
   billing: string; isBundle: boolean; guardianPackage: string;
   orchestraPackage: string; amountUsd: number; paymentRef: string;
   gateway: "stripe" | "paypal" | "xendit" | "midtrans";
-  source?: string; playbookId?: string; bundleId?: string;
+  source?: string; playbookId?: string; bundleId?: string; referralCode?: string;
 }) {
-  const { pkg, email, name, organization, billing, isBundle, guardianPackage, orchestraPackage, amountUsd, paymentRef, gateway, source, playbookId, bundleId } = params;
+  const { pkg, email, name, organization, billing, isBundle, guardianPackage, orchestraPackage, amountUsd, paymentRef, gateway, source, playbookId, bundleId, referralCode } = params;
 
   // ── Playbook purchase ──────────────────────────────────────────────────
   if (source === "playbook") {
@@ -120,6 +121,7 @@ export async function processPayment(req: NextRequest, params: {
         orchestraExpiry: (o.license as any).expires_at,
       });
     } catch {}
+    await recordResellerSale(db, { referralCode, amountUsd, licenseId: (g.license as any).id, clientEmail: email });
   } else {
     const { licenseKey, license, product } = await createLicense({
       ...base, packageCode: pkg, paymentRef, amountUsd,
@@ -132,6 +134,7 @@ export async function processPayment(req: NextRequest, params: {
         expiresAt: (license as any).expires_at, product,
       });
     } catch {}
+    await recordResellerSale(db, { referralCode, amountUsd, licenseId: (license as any).id, clientEmail: email });
   }
 
   return NextResponse.json({ ok: true });
