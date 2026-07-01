@@ -181,13 +181,20 @@ export default function AdminPage() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f9ff" }}>
-      <main style={{ padding: "28px 32px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", margin: 0, fontFamily: "Sora, sans-serif" }}>Admin Dashboard</h1>
-            <p style={{ color: "#475569", fontSize: 13, margin: "4px 0 0" }}>Manage licenses, clients, and revenue</p>
-          </div>
+    <div style={{ minHeight: "100vh", background: "#f1f5f9" }}>
+      <main>
+        {/* Header bar — matches the dark top-bar pattern used on Pricing/Promo/Resellers */}
+        <div style={{ background: "#0a1628", padding: "0 32px", display: "flex", alignItems: "center", gap: 16, height: 56 }}>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>📊 Admin Dashboard</span>
+          <div style={{ flex: 1 }} />
+          <Link href="/admin/create-license" style={{ fontSize: 12, color: "#fff", textDecoration: "none", fontWeight: 700, padding: "7px 14px", background: "linear-gradient(135deg,#0284c7,#0d9488)", borderRadius: 8 }}>
+            ✨ New License
+          </Link>
+        </div>
+
+        <div style={{ padding: "28px 32px" }}>
+        <div style={{ marginBottom: 24 }}>
+          <p style={{ color: "#475569", fontSize: 13, margin: 0 }}>Manage licenses, clients, and revenue across every AXTO product.</p>
         </div>
 
         {/* Error banner */}
@@ -200,18 +207,18 @@ export default function AdminPage() {
 
         {/* Stats */}
         {stats && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 28 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14, marginBottom: 28 }}>
             {[
-              { icon: "📋", label: "Total Licenses", value: stats.total,   color: "#0a1628"  },
-              { icon: "✅", label: "Active",          value: stats.active,  color: "#22c55e"  },
-              { icon: "⏰", label: "Expired",         value: stats.expired, color: "#ef4444"  },
-              { icon: "👥", label: "Clients",         value: stats.clients, color: "#0a1628"  },
-              { icon: "💰", label: "Revenue",         value: `$${Number(stats.revenue ?? 0).toLocaleString()}`, color: "#22c55e" },
+              { icon: "📋", label: "Total Licenses", value: stats.total,   color: "#0284c7", bg: "rgba(2,132,199,0.06)"  },
+              { icon: "✅", label: "Active",          value: stats.active,  color: "#16a34a", bg: "rgba(34,197,94,0.06)"  },
+              { icon: "⏰", label: "Expired",         value: stats.expired, color: "#dc2626", bg: "rgba(239,68,68,0.06)" },
+              { icon: "👥", label: "Clients",         value: stats.clients, color: "#7c3aed", bg: "rgba(124,58,237,0.06)"  },
+              { icon: "💰", label: "Revenue",         value: `$${Number(stats.revenue ?? 0).toLocaleString()}`, color: "#0d9488", bg: "rgba(13,148,136,0.06)" },
             ].map(s => (
-              <div key={s.label} style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                <div style={{ fontSize: 20, marginBottom: 10 }}>{s.icon}</div>
+              <div key={s.label} style={{ background: "#ffffff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "18px 16px", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, marginBottom: 12 }}>{s.icon}</div>
                 <div style={{ fontSize: 26, fontWeight: 900, color: s.color, fontFamily: "Sora, sans-serif" }}>{s.value}</div>
-                <div style={{ fontSize: 11, color: "#475569", marginTop: 4, fontWeight: 600 }}>{s.label}</div>
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.3px" }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -222,12 +229,12 @@ export default function AdminPage() {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="🔍  Search by name, email, or license key..."
-            style={{ width: "100%", maxWidth: 480, padding: "10px 16px", borderRadius: 10, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0a1628", fontSize: 13, outline: "none" }}
+            style={{ width: "100%", maxWidth: 480, padding: "10px 16px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#f8fafc", color: "#0a1628", fontSize: 13, outline: "none" }}
           />
         </div>
 
         {/* License table */}
-        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ background: "#ffffff", border: "1.5px solid #e2e8f0", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
@@ -508,6 +515,7 @@ export default function AdminPage() {
               📦 Open Playbooks →
             </Link>
           </div>
+        </div>
         </div>
 
       </main>
