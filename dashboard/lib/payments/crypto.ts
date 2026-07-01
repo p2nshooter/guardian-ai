@@ -1,8 +1,8 @@
 /* ==============================================================================
  * AXTO — Multi-chain crypto payments ↔ smart license
  * ------------------------------------------------------------------------------
- * Supports the four enabled methods (USDT-TRC20, BNB, ETH, BTC). Flow is identical
- * for all 10 products:
+ * Supports the six enabled methods (USDT-TRC20, BNB, ETH, BTC, SOL, DOGE). Flow
+ * is identical for all 10 products:
  *   intent (exact amount + unique tag) → on-chain watcher matches the deposit
  *   → license issued + invoice written → appears in client dashboard.
  *
@@ -135,6 +135,66 @@ export async function fetchEvmNativeTransfers(apiBase: string, address: string, 
     }));
 }
 
+// Solana via the public JSON-RPC (no API key). Native SOL transfers only —
+// detected as a positive balance delta for our address's account index in
+// each recent transaction (getSignaturesForAddress + getTransaction).
+export async function fetchSolanaTransfers(address: string): Promise<Transfer[]> {
+  const rpc = "https://api.mainnet-beta.solana.com";
+  const call = async (method: string, params: any[]) => {
+    const res = await fetch(rpc, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+    });
+    if (!res.ok) throw new Error(`Solana RPC ${method} ${res.status}`);
+    const j: any = await res.json();
+    if (j.error) throw new Error(`Solana RPC ${method}: ${j.error.message || "error"}`);
+    return j.result;
+  };
+
+  const sigs: any[] = (await call("getSignaturesForAddress", [address, { limit: 20 }])) ?? [];
+  const out: Transfer[] = [];
+  for (const s of sigs) {
+    if (s.err) continue; // failed transaction, no funds moved
+    const tx = await call("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]);
+    if (!tx) continue;
+    const keys: string[] = (tx.transaction?.message?.accountKeys ?? []).map((k: any) => (typeof k === "string" ? k : k.pubkey));
+    const idx = keys.indexOf(address);
+    if (idx === -1) continue;
+    const pre = Number(tx.meta?.preBalances?.[idx] ?? 0);
+    const post = Number(tx.meta?.postBalances?.[idx] ?? 0);
+    const delta = post - pre; // lamports; positive = incoming
+    if (delta <= 0) continue;
+    const confStatus = s.confirmationStatus || "processed";
+    out.push({
+      txHash: s.signature, to: address, from: keys[0] ?? "",
+      contract: "", valueUnits: String(delta),
+      timestampMs: (s.blockTime ?? Math.floor(Date.now() / 1000)) * 1000,
+      // Solana has no linear confirmation count — map its finality states onto
+      // a number so the existing `confirmations >= minConfirmations` check works.
+      confirmations: confStatus === "finalized" ? 999 : confStatus === "confirmed" ? 32 : 0,
+    });
+  }
+  return out;
+}
+
+// Dogecoin via Blockchair's address dashboard (free tier, no API key). Reads
+// the address's current UTXO set — each unspent output sent to our deposit
+// address is, by definition, an incoming payment.
+export async function fetchDogeTransfers(address: string): Promise<Transfer[]> {
+  const res = await fetch(`https://api.blockchair.com/dogecoin/dashboards/address/${address}?limit=50`);
+  if (!res.ok) throw new Error(`Blockchair ${res.status}`);
+  const j: any = await res.json();
+  const entry = j?.data?.[address];
+  const tipHeight = Number(j?.context?.state ?? 0);
+  const utxos: any[] = entry?.utxo ?? [];
+  return utxos.map((u: any) => ({
+    txHash: u.transaction_hash, to: address, from: "",
+    contract: "", valueUnits: String(u.value ?? 0),
+    timestampMs: Date.now(), // Blockchair's UTXO entries don't carry a timestamp; only used for display/logging.
+    confirmations: u.block_id > 0 && tipHeight > 0 ? Math.max(0, tipHeight - u.block_id + 1) : 0,
+  }));
+}
+
 // BTC via a public explorer (blockstream-style). Returns confirmed incoming outputs.
 export async function fetchBtcTransfers(address: string, tipHeight?: number): Promise<Transfer[]> {
   const res = await fetch(`https://blockstream.info/api/address/${address}/txs`);
@@ -187,7 +247,7 @@ export async function settleCryptoPayment(
 // Live USD→coin rate. Stablecoins return 1. The only network dependency for pricing.
 export async function rateUsdPerCoin(symbol: string): Promise<number> {
   if (symbol === "USDT") return 1;
-  const ids: Record<string, string> = { BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin" };
+  const ids: Record<string, string> = { BTC: "bitcoin", ETH: "ethereum", BNB: "binancecoin", SOL: "solana", DOGE: "dogecoin" };
   const id = ids[symbol];
   if (!id) return 0;
   try {
@@ -205,5 +265,7 @@ async function defaultFetcher(method: PaymentMethod, address: string): Promise<T
   if (method.network === "Ethereum") return fetchEvmNativeTransfers("api.etherscan.io", address, env.ETHERSCAN_API_KEY || "");
   if (method.network === "BEP20") return fetchEvmNativeTransfers("api.bscscan.com", address, env.BSCSCAN_API_KEY || "");
   if (method.network === "Bitcoin") return fetchBtcTransfers(address);
+  if (method.network === "Solana") return fetchSolanaTransfers(address);
+  if (method.network === "Dogecoin") return fetchDogeTransfers(address);
   return [];
 }

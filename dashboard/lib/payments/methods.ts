@@ -2,7 +2,7 @@
  * Payment-methods registry (admin-editable, DB-backed).
  * Everything is OFF by default; only methods with enabled=1 are ever returned,
  * so disabled methods are hidden in the client checkout AND the admin UI AND the
- * API. The owner enabled exactly: USDT (TRC20), BNB, ETH, BTC.
+ * API. The owner enabled exactly: USDT (TRC20), BNB, ETH, BTC, SOL, DOGE.
  * Copyright (c) 2024-2026 AXTO (axto.io). Proprietary and Confidential.
  * ============================================================================ */
 import type { PaymentMethod } from "@/lib/payments/crypto";

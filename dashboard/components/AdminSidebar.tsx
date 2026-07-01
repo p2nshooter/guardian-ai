@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { href: "/admin/autopost",       icon: "📢", label: "AutoPost",        group: "Marketing" },
 
   { href: "/guide",                icon: "📖", label: "Guide",           group: "More" },
+  { href: "/admin/account",        icon: "⚙️", label: "Account Settings",group: "More" },
 ];
 
 const GROUPS = ["Overview", "Sales", "Delivery", "Payments", "Marketing", "More"];
