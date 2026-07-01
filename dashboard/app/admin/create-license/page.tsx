@@ -27,22 +27,26 @@ const PACKAGES = [
   { code: "vault_professional",  name: "Vault Professional",      product: "vault",       price: "$5,990/yr",  limit: "Unlimited",      color: "#6366f1" },
   { code: "vault_business",      name: "Vault Business",          product: "vault",       price: "$14,900/yr", limit: "Multi-tenant",   color: "#6366f1" },
   { code: "vault_enterprise",    name: "Vault Enterprise",        product: "vault",       price: "$49,900/yr", limit: "Unlimited req",  color: "#6366f1" },
-  // AXTO Edge (coming soon)
+  // AXTO Edge
   { code: "edge_starter",        name: "Edge Starter",            product: "edge",        price: "$2,990/yr",  limit: "1M req/day",     color: "#0891b2" },
   { code: "edge_professional",   name: "Edge Professional",       product: "edge",        price: "$7,990/yr",  limit: "10M req/day",    color: "#0891b2" },
   { code: "edge_enterprise",     name: "Edge Enterprise",         product: "edge",        price: "$24,900/yr", limit: "Unlimited",      color: "#0891b2" },
-  // AXTO SOC (coming soon)
+  // AXTO SOC
   { code: "soc_starter",         name: "SOC Starter",             product: "soc",         price: "$9,990/yr",  limit: "10 sources",     color: "#dc2626" },
   { code: "soc_professional",    name: "SOC Professional",        product: "soc",         price: "$29,900/yr", limit: "100 sources",    color: "#dc2626" },
   { code: "soc_enterprise",      name: "SOC Enterprise",          product: "soc",         price: "$99,900/yr", limit: "Unlimited",      color: "#dc2626" },
-  // AXTO Compliance (coming soon)
+  // AXTO Compliance
   { code: "compliance_starter",  name: "Compliance Starter",      product: "compliance",  price: "$2,990/yr",  limit: "3 frameworks",   color: "#16a34a" },
   { code: "compliance_pro",      name: "Compliance Professional", product: "compliance",  price: "$7,990/yr",  limit: "All frameworks", color: "#16a34a" },
   { code: "compliance_enterprise",name:"Compliance Enterprise",   product: "compliance",  price: "$19,900/yr", limit: "Multi-tenant",   color: "#16a34a" },
-  // AXTO Sentinel (coming soon)
+  // AXTO Sentinel
   { code: "sentinel_starter",    name: "Sentinel Starter",        product: "sentinel",    price: "$4,990/yr",  limit: "100 devices",    color: "#ca8a04" },
   { code: "sentinel_professional",name:"Sentinel Professional",   product: "sentinel",    price: "$14,900/yr", limit: "1,000 devices",  color: "#ca8a04" },
   { code: "sentinel_enterprise", name: "Sentinel Enterprise",     product: "sentinel",    price: "$49,900/yr", limit: "Unlimited",      color: "#ca8a04" },
+  // Guardian Antivirus
+  { code: "antivirus_starter",       name: "Antivirus Starter",       product: "antivirus",  price: "$2,900/yr",  limit: "10 endpoints",   color: "#e879f9" },
+  { code: "antivirus_professional",  name: "Antivirus Professional",  product: "antivirus",  price: "$9,900/yr",  limit: "100 endpoints",  color: "#e879f9" },
+  { code: "antivirus_enterprise",    name: "Antivirus Enterprise",    product: "antivirus",  price: "$29,900/yr", limit: "Unlimited",      color: "#e879f9" },
   // AXTO Legal — AI Legal & Compliance Platform
   { code: "legal_starter",       name: "Legal Starter",           product: "legal",       price: "$14,900/yr", limit: "3 workspaces, 30 jurisdictions",  color: "#0f766e" },
   { code: "legal_professional",  name: "Legal Professional",      product: "legal",       price: "$49,000/yr", limit: "10 workspaces, 100 jurisdictions",color: "#0f766e" },
@@ -69,6 +73,7 @@ const PRODUCT_GROUPS = [
   { id: "soc",        label: "AXTO SOC",           icon: "🔴" },
   { id: "compliance", label: "AXTO Compliance",    icon: "📋" },
   { id: "sentinel",   label: "AXTO Sentinel",      icon: "📡" },
+  { id: "antivirus",  label: "Guardian Antivirus", icon: "🦠" },
   { id: "legal",      label: "AXTO Legal",         icon: "⚖️" },
   { id: "studio",     label: "AXTO Studio",        icon: "🎨" },
 ];
@@ -121,7 +126,7 @@ export default function CreateLicensePage() {
     }
     setLoading(true);
     try {
-      const r = await fetch("/api/admin/licenses", {
+      const r = await fetch("/api/admin", {
         method:"POST", credentials:"include",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
