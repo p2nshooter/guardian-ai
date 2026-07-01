@@ -1,0 +1,37 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Compliance — Automated Audit Platform | Configuration
+#
+# HOW TO USE:
+#   1. Get license: https://axto.io/portal (keys start with CMPL-)
+#   2. docker compose -f compliance-compose.yml up -d
+#   3. Dashboard: http://YOUR_SERVER:8084
+# ============================================================
+compliance:
+  license_key: "CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  host: "0.0.0.0"
+  port: 8093
+  data_dir: /compliance/data
+  # Frameworks to monitor (all enabled by default)
+  frameworks:
+    - soc2
+    - iso27001
+    - hipaa
+    - pci_dss
+    - gdpr
+    - pdpa
+    - nist_csf
+  scan_interval_hours: 24
+  # Optional: Guardian integration for richer data
+  # guardian_api_url: "http://guardian:8080"
+  # guardian_api_key: "YOUR_KEY"
+  alerting:
+    # slack_webhook: "https://hooks.slack.com/..."
+    # smtp_host: "smtp.example.com"
+    # alert_email_to: "compliance@example.com"

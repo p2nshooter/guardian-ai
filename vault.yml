@@ -15,7 +15,7 @@
 #      → Akan redirect ke dashboard otomatis setelah aktivasi
 #      → Auto-redirects to dashboard after activation
 #
-# Pull image: docker pull registry.gitlab.com/axto-platform/vault/vault-engine:latest
+# Pull image: docker pull axto/vault-core:latest
 # Portal:     https://axto.io/portal
 # Docs:       https://axto.io/guide
 # ============================================================

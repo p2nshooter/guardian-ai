@@ -1,0 +1,29 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# AXTO Edge — AI API Gateway & Billing | Example Configuration
+# Copy to edge.yml and fill in your values.
+
+edge:
+  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+  ai_pool:
+    vendors:
+      - provider: openai
+        api_key: "sk-REPLACE-WITH-YOUR-KEY"
+        default_model: "gpt-4o-mini"
+      # - provider: anthropic
+      #   api_key: "sk-ant-REPLACE-WITH-YOUR-KEY"
+      #   default_model: "claude-haiku-4-5-20251001"
+      # - provider: groq
+      #   api_key: "gsk_REPLACE-WITH-YOUR-KEY"
+      #   default_model: "llama-3.1-8b-instant"
+  firewall:
+    prompt_injection: true
+    content_filter:   true
+    abuse_detection:  true
+  data_dir: /edge/data
+  log_dir:  /edge/logs

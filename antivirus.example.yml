@@ -1,0 +1,54 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Guardian Antivirus — Client Configuration
+#
+# CARA PAKAI / HOW TO USE:
+#   1. Isi license_key dari / Get license_key from: https://axto.io/portal
+#   2. (Opsional) Isi 1 AI vendor key untuk analisa file mencurigakan berbasis AI
+#      (Optional) Add 1 AI vendor key for AI-assisted suspicious-file analysis
+#   3. docker compose -f antivirus-compose.yml up -d
+#   4. Buka / Open: http://YOUR_SERVER:8086
+#
+# Pull image: docker pull axto/guardian-antivirus:latest
+# Portal:     https://axto.io/portal
+# Docs:       https://axto.io/guide
+# ============================================================
+
+antivirus:
+
+  # ── License ──────────────────────────────────────────────
+  license_key: "AV-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  # ── ClamAV Engine ────────────────────────────────────────
+  clamd_host: "clamav"
+  clamd_port: 3310
+
+  # ── Storage ───────────────────────────────────────────────
+  data_dir: /guardian/data
+  db_path: /guardian/data/antivirus.db
+  quarantine_dir: /guardian/data/quarantine
+  max_file_size_mb: 500
+
+  # ── Webhook (Optional) ───────────────────────────────────
+  # Kirim notifikasi saat file berbahaya terdeteksi
+  # Send notification when a malicious file is detected
+  # webhook_url: "https://your-server.com/webhook/av-alerts"
+
+  # ── AI Pool (BYOK — Optional AI-assisted analysis) ────────
+  ai_pool:
+    vendors: []
+    # Uncomment 1 provider to enable AI-assisted analysis of unknown/suspicious files:
+    #
+    # - provider: openai
+    #   api_key: "sk-GANTI-INI"
+    #   model: "gpt-4o-mini"
+    #
+    # - provider: anthropic
+    #   api_key: "sk-ant-GANTI-INI"
+    #   model: "claude-haiku-4-5-20251001"

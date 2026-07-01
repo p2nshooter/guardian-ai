@@ -5,42 +5,50 @@
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 version: "3.9"
+
 # ============================================================
-# AXTO Edge — AI API Gateway & Billing
+# AXTO Legal — Enterprise AI Legal & Compliance Platform
 #
-# Start: docker compose -f edge-compose.yml up -d
-# Dashboard: http://localhost:8082
-# Customer API base_url: http://YOUR_SERVER:8082/v1
+# Quick Start:
+#   1. cp legal.env.example legal.env
+#   2. Isi LEGL_LICENSE_KEY dari Client Portal / Fill LEGL_LICENSE_KEY from Client Portal
+#   3. Isi minimal 1 LLM provider key (BYOK) / Add at least 1 LLM provider key (BYOK)
+#   4. docker compose -f legal-compose.yml up -d
+#   5. Dashboard: http://YOUR_SERVER:8096
+#
+# Pull image: docker pull axto/legal-core:latest
+# Portal:     https://axto.io/portal
+# Docs:       https://axto.io/guide
 # ============================================================
+
 services:
-  edge-core:
-    image: axto/edge-core:latest
-    container_name: edge-core
+  legal-core:
+    image: axto/legal-core:latest
+    container_name: legal-core
     restart: unless-stopped
+    env_file:
+      - ./legal.env
     ports:
-      - "8082:8080"
+      - "8096:8096"
     volumes:
-      - ./edge.yml:/edge/config/edge.yml:ro
-      - edge-data:/edge/data
-      - edge-logs:/edge/logs
-    environment:
-      - EDGE_CONFIG=/edge/config/edge.yml
+      - legal-data:/legal/data
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8096/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
     networks:
-      - edge-net
+      - legal-net
     logging:
       driver: "json-file"
       options:
-        max-size: "100m"
+        max-size: "50m"
         max-file: "5"
+
 volumes:
-  edge-data:
-  edge-logs:
+  legal-data:
+
 networks:
-  edge-net:
+  legal-net:
     driver: bridge
