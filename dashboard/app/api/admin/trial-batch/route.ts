@@ -14,7 +14,7 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbQuery, dbRun } from "@/lib/db";
+import { getDB, dbQuery, dbFirst, dbRun } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { PACKAGE_INFO } from "@/lib/stripe";
 
@@ -56,7 +56,10 @@ export async function GET(req: NextRequest) {
               SUM(CASE WHEN status='available' THEN 1 ELSE 0 END) AS available
        FROM trial_batch_codes GROUP BY batch_id ORDER BY created_at DESC LIMIT 60`
     );
-    return NextResponse.json({ summary: rows, batches });
+    const win = await dbFirst<any>(
+      db, `SELECT id, starts_at, ends_at, enabled FROM trial_promo_config WHERE id = 'axto_launch'`
+    );
+    return NextResponse.json({ summary: rows, batches, window: win });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed to load" }, { status: 500 });
   }
@@ -144,6 +147,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "codeId and valid status required" }, { status: 400 });
       }
       await dbRun(db, `UPDATE trial_batch_codes SET status = ? WHERE id = ? AND status != 'claimed'`, [status, codeId]);
+      return NextResponse.json({ success: true });
+    }
+
+    // Open/close the claim window, or move its start/end dates, without a DB console.
+    if (action === "set_window") {
+      const { enabled, startsAt, endsAt } = body;
+      const dateRe = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+      if (startsAt && !dateRe.test(startsAt)) return NextResponse.json({ error: "startsAt must be 'YYYY-MM-DD HH:MM:SS'" }, { status: 400 });
+      if (endsAt && !dateRe.test(endsAt)) return NextResponse.json({ error: "endsAt must be 'YYYY-MM-DD HH:MM:SS'" }, { status: 400 });
+      if (startsAt && endsAt && startsAt >= endsAt) return NextResponse.json({ error: "endsAt must be after startsAt" }, { status: 400 });
+
+      const existing = await dbFirst<any>(db, `SELECT starts_at, ends_at FROM trial_promo_config WHERE id = 'axto_launch'`);
+      if (!existing) return NextResponse.json({ error: "Promo window config not found" }, { status: 404 });
+      await dbRun(
+        db,
+        `UPDATE trial_promo_config SET enabled = ?, starts_at = ?, ends_at = ? WHERE id = 'axto_launch'`,
+        [enabled ? 1 : 0, startsAt || existing.starts_at, endsAt || existing.ends_at]
+      );
       return NextResponse.json({ success: true });
     }
 
