@@ -31,7 +31,7 @@ export interface Transfer {
   valueUnits: string; timestampMs: number; confirmations: number;
 }
 
-const DEFAULT_WINDOW_MIN = 60;
+const DEFAULT_WINDOW_MIN = 30;
 
 export function toUnits(amount: number, decimals: number): bigint {
   // Avoid float error: split integer/fraction.

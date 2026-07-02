@@ -15,7 +15,7 @@ import { getStripeCredentials, getPayPalCredentials, getXenditCredentials, getMi
 import { createPayPalOrderWithCreds } from "@/lib/paypal";
 import { createXenditInvoiceWithKey } from "@/lib/xendit";
 import { usdToLocal } from "@/lib/fx";
-import { getDB } from "@/lib/db";
+import { getDB, dbRun, newId, now } from "@/lib/db";
 import { getEnabledMethod, getPublicMethods } from "@/lib/payments/methods";
 import { createCryptoIntent, rateUsdPerCoin } from "@/lib/payments/crypto";
 
@@ -114,6 +114,46 @@ export async function POST(req: NextRequest) {
         description: `AXTO Playbook: ${itemName}`, metadata: meta, appUrl,
       });
       return NextResponse.json({ url: invoice.invoice_url });
+    }
+
+    if (gateway === "crypto") {
+      const { methodId } = body;
+      let db: any;
+      try { db = getDB(req); } catch {
+        return NextResponse.json({ error: "Database not available" }, { status: 503 });
+      }
+      const method = await getEnabledMethod(db, String(methodId || ""));
+      if (!method) return NextResponse.json({ error: "Payment method unavailable" }, { status: 400 });
+      if (!method.address) return NextResponse.json({ error: "Method not configured" }, { status: 503 });
+
+      const rate = await rateUsdPerCoin(method.symbol);
+      if (rate <= 0) return NextResponse.json({ error: "Rate unavailable, try again" }, { status: 503 });
+
+      const orderId = uid("cpay");
+      // product='playbook' is a sentinel the settlement watcher branches on --
+      // this purchase has no license to issue, only a playbook_purchases row.
+      const intent = createCryptoIntent({
+        method, orderId, userEmail: email, product: "playbook",
+        packageCode: pkg, amountUsd, rateUsdPerCoin: rate,
+      });
+
+      await dbRun(db,
+        `INSERT INTO crypto_payments (id, order_id, method_id, user_email, product, package_code, amount_usd, amount_crypto, symbol, network, deposit_address, status, created_at, expires_at, meta)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+        [
+          newId(), orderId, method.id, email, "playbook", pkg,
+          amountUsd, intent.amountCrypto, method.symbol, method.network, method.address,
+          new Date(intent.createdAt).toISOString(), new Date(intent.expiresAt).toISOString(),
+          JSON.stringify(meta),
+        ]
+      );
+
+      return NextResponse.json({
+        ok: true, orderId, method: method.id, symbol: method.symbol, network: method.network,
+        depositAddress: method.address, amountCrypto: intent.amountCrypto, amountUsd,
+        confirmations: method.confirmations, expiresAt: new Date(intent.expiresAt).toISOString(),
+        note: "Send the EXACT amount on the EXACT network. Your purchase unlocks automatically once the payment confirms on-chain.",
+      });
     }
 
     if (gateway === "midtrans") {
