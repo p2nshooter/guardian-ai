@@ -2005,7 +2005,11 @@ Workers self-register with the Core and appear in Dashboard → Orchestra → Wo
   };
 
   const generator = GUIDES[product];
-  if (generator) return generator(licenseKey, maxNodes);
+  if (generator) {
+    const body = generator(licenseKey, maxNodes);
+    const notice = lang !== "en" ? _untranslatedNotice(lang) : "";
+    return notice ? `${notice}\n\n${body}` : body;
+  }
 
   // Ultimate fallback (should not normally be reached)
   return `# AXTO ${product.charAt(0).toUpperCase() + product.slice(1)} — Setup Guide
@@ -2131,4 +2135,25 @@ function _langLabel(lang: string): string {
     ja:"Japanese", ko:"Korean",
   };
   return map[lang] || lang.toUpperCase();
+}
+
+// Honest fallback notice for products whose setup guide isn't translated
+// into the requested language yet (only vault/studio have full 10-language
+// guides today) — shown in the CLIENT's own requested language, so a
+// non-English speaker knows immediately why the rest of the document is in
+// English, instead of silently receiving English content under a filename
+// that claims their language.
+function _untranslatedNotice(lang: string): string {
+  const notices: Record<string, string> = {
+    id: "> ⚠️ **Catatan:** Panduan produk ini belum tersedia dalam Bahasa Indonesia. Konten di bawah ini dalam Bahasa Inggris. Kami sedang menerjemahkannya.",
+    zh: "> ⚠️ **注意：** 此产品指南尚未翻译为中文。以下内容为英文。我们正在进行翻译。",
+    ar: "> ⚠️ **ملاحظة:** دليل هذا المنتج غير متوفر بعد باللغة العربية. المحتوى أدناه باللغة الإنجليزية. نحن نعمل على ترجمته.",
+    es: "> ⚠️ **Nota:** Esta guía aún no está traducida al español. El contenido a continuación está en inglés. Estamos trabajando en la traducción.",
+    fr: "> ⚠️ **Remarque :** Ce guide n'est pas encore traduit en français. Le contenu ci-dessous est en anglais. La traduction est en cours.",
+    de: "> ⚠️ **Hinweis:** Diese Anleitung ist noch nicht auf Deutsch verfügbar. Der folgende Inhalt ist auf Englisch. Wir arbeiten an der Übersetzung.",
+    pt: "> ⚠️ **Nota:** Este guia ainda não foi traduzido para o português. O conteúdo abaixo está em inglês. Estamos trabalhando na tradução.",
+    ja: "> ⚠️ **注記：** このガイドはまだ日本語に翻訳されていません。以下の内容は英語です。翻訳作業中です。",
+    ko: "> ⚠️ **참고:** 이 가이드는 아직 한국어로 번역되지 않았습니다. 아래 내용은 영어입니다. 번역 작업 중입니다.",
+  };
+  return notices[lang] || "";
 }
