@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbFirst, dbRun } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { MAX_COMMISSION_PCT } from "@/lib/reseller";
+import { sendResellerStatusEmail } from "@/lib/email";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -87,6 +88,14 @@ export async function POST(req: NextRequest) {
   if (action === "update_reseller") {
     const { id, status, name, company, notes } = body;
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+    // Registration promises "you'll hear from us once it's approved" — fetch
+    // the prior state so we only email on an actual pending -> active/rejected
+    // transition, not on every unrelated edit (e.g. fixing a typo'd company name).
+    const before = (status === "active" || status === "rejected")
+      ? await dbFirst<any>(db, `SELECT email, name, status, referral_code FROM resellers WHERE id = ?`, [id])
+      : null;
+
     const fields: string[] = [];
     const values: any[] = [];
     if (typeof status === "string")  { fields.push("status = ?");  values.push(status); }
@@ -97,6 +106,18 @@ export async function POST(req: NextRequest) {
     fields.push("updated_at = datetime('now')");
     values.push(id);
     await dbRun(db, `UPDATE resellers SET ${fields.join(", ")} WHERE id = ?`, values);
+
+    if (before && before.status !== status && before.email) {
+      try {
+        await sendResellerStatusEmail({
+          to: before.email, name: before.name || "there",
+          status: status as "active" | "rejected", referralCode: before.referral_code,
+        });
+      } catch (e: any) {
+        console.error("[resellers] status-change email failed:", e.message);
+      }
+    }
+
     return NextResponse.json({ success: true });
   }
 
