@@ -1,0 +1,22 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# Yusron Power (YP) — Super-Enterprise Unified AI Platform.
+# Deliberately kept to a lean, self-contained dependency set: YP is one
+# coherent application, not a bundle of other services, so it does not pull
+# in scikit-learn/scipy/pandas the way Guardian/Orchestra do. Everything
+# heavy (models, GPUs, provider SDKs) is BYO — reached over HTTP with httpx.
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.8.2
+pydantic-settings==2.4.0
+httpx[http2]==0.27.2
+aiosqlite==0.20.0
+structlog==24.4.0
+pyyaml==6.0.2
+python-multipart==0.0.9
+websockets==13.0.1
+cryptography>=42.0.0,<44.0.0

@@ -1,0 +1,50 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Yusron Power (YP) — example configuration.
+# Copy to yp.yml and fill in YOUR OWN keys/endpoints. YP ships no keys and
+# operates no shared infrastructure — 100% BYOK/BYOI/BYOD/BYOM/BYOX.
+# ==============================================================================
+yp:
+  # Invite-only license key (starts with YP-). Contact hallo@axto.io.
+  license_key: "YP-XXXX-XXXX-XXXX-XXXX"
+  license_validate_url: "https://axto.io/api/license-validate"
+
+  api_host: "0.0.0.0"
+  api_port: 8100
+
+  # ── Provider-scaling: YP routes each job to the best of YOUR providers ──────
+  routing_strategy: quality        # quality | cost | weighted | round_robin
+  ai_providers:
+    - name: openai-primary
+      provider: openai
+      api_key: "sk-YOUR-OWN-OPENAI-KEY"
+      default_model: gpt-4o
+      weight: 2.0
+    - name: claude
+      provider: anthropic
+      api_key: "sk-ant-YOUR-OWN-KEY"
+      default_model: claude-sonnet-4
+    # - name: local-llama
+    #   provider: ollama
+    #   base_url: "http://localhost:11434/v1"
+    #   default_model: llama3.1
+
+  # ── Optional BYO GPU endpoints (YP runs full-power without them too) ────────
+  gpu_endpoints: []
+    # - name: runpod-a100
+    #   provider: runpod
+    #   base_url: "https://your-endpoint/v1"
+    #   api_key: "YOUR-OWN-KEY"
+    #   model: "llama3.1:70b"
+
+  # ── Privacy ────────────────────────────────────────────────────────────────
+  redact_before_forward: true      # strip PII/PHI/financial before any provider call
+
+  # ── Capability toggles (all native, on by default) ─────────────────────────
+  enable_security: true
+  enable_privacy: true
+  enable_gateway: true
+  enable_soc: true
+  enable_compliance: true
+  enable_ot: true
+  enable_legal: true

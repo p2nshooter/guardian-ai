@@ -28,7 +28,8 @@ export type ProductType =
   | "sentinel"
   | "antivirus"
   | "studio"
-  | "legal";     // AXTO Legal — AI Legal & Compliance Workflow
+  | "legal"      // AXTO Legal — AI Legal & Compliance Workflow
+  | "yp";        // Yusron Power — invite-only super-enterprise super-application
 
 // ── License key prefix per product ──────────────────────────────────────────
 const PRODUCT_PREFIX: Record<ProductType, string> = {
@@ -42,6 +43,7 @@ const PRODUCT_PREFIX: Record<ProductType, string> = {
   antivirus:  "AV",
   studio:     "STUD",
   legal:      "LEGL",    // AXTO Legal — AI-driven legal & compliance workflow
+  yp:         "YP",      // Yusron Power — super-enterprise
 };
 
 // ── Detect product from key prefix ──────────────────────────────────────────
@@ -166,6 +168,7 @@ export const PRODUCT_DISPLAY_NAMES: Record<ProductType, string> = {
   antivirus:  "Antivirus AI — ClamAV + ML-Powered Endpoint Protection",
   studio:     "AXTO Studio — Central AI & GPU Pool Platform",
   legal:      "AXTO Legal — AI-Driven Legal & Compliance Workflow Platform",
+  yp:         "Yusron Power — Super-Enterprise Unified AI Platform",
 };
 
 // ── Resolve package limits ───────────────────────────────────────────────────

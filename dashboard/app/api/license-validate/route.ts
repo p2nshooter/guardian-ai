@@ -52,6 +52,7 @@ const KEY_PREFIXES: Record<string, string> = {
   "AV":    "antivirus",
   "STUD":  "studio",     // AXTO Studio — Central AI & GPU Pool
   "LEGL":  "legal",      // AXTO Legal — AI Legal & Compliance Workflow
+  "YP":    "yp",         // Yusron Power — super-enterprise super-application
 };
 
 // ── Derive product from key prefix ────────────────────────────────────────────
