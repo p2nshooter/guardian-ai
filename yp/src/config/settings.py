@@ -86,6 +86,10 @@ class YPConfig(BaseSettings):
     # ── Gateway ──────────────────────────────────────────────────────────────
     gateway_rate_per_minute: int = 120   # per-downstream-key rate limit on /ai/complete
 
+    # ── Security / SOC ───────────────────────────────────────────────────────
+    bad_hashes: List[str] = []           # extra SHA-256 threat-intel hashes (BYO)
+    soc_sweep_interval_s: int = 0        # 0 = off; >0 = periodic correlation sweep
+
     # ── Quarantine ───────────────────────────────────────────────────────────
     quarantine_dir: Path = Path("/yp/data/quarantine")
 

@@ -19,6 +19,23 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+
+def _luhn_ok(digits: str) -> bool:
+    """Luhn checksum — real credit-card numbers pass; a random 16-digit ID
+    (e.g. an Indonesian NIK) almost never does, so we can tell them apart."""
+    if not digits.isdigit() or not (13 <= len(digits) <= 19):
+        return False
+    total, alt = 0, False
+    for ch in reversed(digits):
+        d = ord(ch) - 48
+        if alt:
+            d *= 2
+            if d > 9:
+                d -= 9
+        total += d
+        alt = not alt
+    return total % 10 == 0
+
 # Order matters: most specific patterns first so e.g. an SSN isn't caught as a
 # generic number. Each entry: (label, compiled regex).
 _PATTERNS = [
@@ -53,8 +70,13 @@ def redact(text: str) -> RedactionResult:
             original = m.group(0)
             # skip trivially short "credit card"/"phone" false hits
             digits = re.sub(r"\D", "", original)
-            if label in ("CREDIT_CARD",) and len(digits) < 13:
-                return original
+            if label == "CREDIT_CARD":
+                # Only treat as a card if it passes the Luhn checksum — this lets
+                # a bare 16-digit national ID (NIK) fall through to the NIK
+                # pattern below instead of being mislabeled as a card. Both are
+                # still redacted; this just makes the label honest/correct.
+                if not _luhn_ok(digits):
+                    return original
             if label == "PHONE" and len(digits) < 7:
                 return original
             counters[label] = counters.get(label, 0) + 1

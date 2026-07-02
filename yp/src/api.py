@@ -76,10 +76,30 @@ async def lifespan(app: FastAPI):
     STATE["soc"] = SOCEngine(db)
     STATE["gateway"] = Gateway(cfg.gateway_rate_per_minute)
 
+    # BYO threat intel: fold client-supplied bad hashes into the scanner set.
+    for h in (cfg.bad_hashes or []):
+        sec_mod.add_bad_hash(h)
+
+    # Optional periodic SOC correlation sweep (catches slow-burn patterns even
+    # without fresh ingest). Off unless soc_sweep_interval_s > 0.
+    STATE["_sweep_task"] = None
+    if cfg.soc_sweep_interval_s and cfg.soc_sweep_interval_s > 0:
+        import asyncio
+        async def _sweep_loop():
+            while True:
+                await asyncio.sleep(cfg.soc_sweep_interval_s)
+                try:
+                    await STATE["soc"].sweep()
+                except Exception as e:
+                    log.warning("soc_sweep_failed", error=str(e))
+        STATE["_sweep_task"] = asyncio.create_task(_sweep_loop())
+
     await db.log_event("core", "startup",
                        summary=f"YP {__version__} up; providers={len(cfg.ai_providers)}")
     yield
 
+    if STATE.get("_sweep_task"):
+        STATE["_sweep_task"].cancel()
     if STATE.get("scheduler"):
         await STATE["scheduler"].close()
     if STATE.get("license"):
