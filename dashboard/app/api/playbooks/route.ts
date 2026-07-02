@@ -8,7 +8,24 @@
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbQuery, dbFirst, dbRun, newId, now } from "@/lib/db";
+import { getDB, dbQuery, dbFirst, dbRun, newId, now, getR2 } from "@/lib/db";
+
+// The catalog seed sets a plausible-looking r2_key (and even a fake
+// file_size_bytes) for every playbook whether or not a file was ever
+// actually uploaded -- is_active alone can't be trusted to mean "has a
+// real file." Verify against R2 directly before ever taking payment, so a
+// client can't pay for something that 404s the moment they try to
+// download it.
+async function playbookFileExists(req: NextRequest, r2Key: string): Promise<boolean> {
+  if (!r2Key) return false;
+  try {
+    const r2 = getR2(req);
+    const obj = await r2.head(r2Key);
+    return !!obj;
+  } catch {
+    return false;
+  }
+}
 
 
 // GET — public catalog (no auth required for browsing)
@@ -70,6 +87,19 @@ export async function POST(req: NextRequest) {
     if (bundle_id) {
       const bundle = await dbFirst<any>(db, `SELECT * FROM playbook_bundles WHERE id = ? AND is_active = 1`, [bundle_id]);
       if (!bundle) return NextResponse.json({ error: "Bundle not found" }, { status: 404 });
+
+      let bundlePlaybookIds: string[] = [];
+      try { bundlePlaybookIds = JSON.parse(bundle.playbook_ids || "[]"); } catch {}
+      const bundleItems = bundlePlaybookIds.length
+        ? await dbQuery<any>(db, `SELECT r2_key FROM playbooks WHERE id IN (${bundlePlaybookIds.map(() => "?").join(",")})`, bundlePlaybookIds)
+        : [];
+      const allPresent = bundleItems.length > 0 && (
+        await Promise.all(bundleItems.map((p: any) => playbookFileExists(req, p.r2_key)))
+      ).every(Boolean);
+      if (!allPresent) {
+        return NextResponse.json({ error: "This bundle isn't ready for purchase yet — one or more items are still being prepared. Check back soon." }, { status: 409 });
+      }
+
       item_name = bundle.name;
       amount = bundle.price_usd;
       meta.bundle_id = bundle_id;
@@ -77,6 +107,9 @@ export async function POST(req: NextRequest) {
     } else if (playbook_id) {
       const pb = await dbFirst<any>(db, `SELECT * FROM playbooks WHERE id = ? AND is_active = 1`, [playbook_id]);
       if (!pb) return NextResponse.json({ error: "Playbook not found" }, { status: 404 });
+      if (!(await playbookFileExists(req, pb.r2_key))) {
+        return NextResponse.json({ error: "This playbook isn't ready for purchase yet — it's still being prepared. Check back soon." }, { status: 409 });
+      }
       item_name = pb.name;
       amount = pb.price_usd;
       meta.playbook_id = playbook_id;
