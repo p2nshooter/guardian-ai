@@ -149,6 +149,52 @@ export async function sendBundleEmail(params: {
   });
 }
 
+export async function sendResellerStatusEmail(params: {
+  to: string; name: string; status: "active" | "rejected"; referralCode?: string;
+}): Promise<void> {
+  const { to, name, status, referralCode } = params;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
+
+  if (status === "active") {
+    await sendEmail({
+      to,
+      subject: "✅ Your AXTO reseller application is approved",
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="background:#060c14;color:#e2f4ff;font-family:-apple-system,sans-serif;padding:40px 24px;margin:0">
+<div style="max-width:520px;margin:0 auto">
+  <div style="font-size:24px;font-weight:800;color:#22d3ee;margin-bottom:24px">🤝 AXTO</div>
+  <h2 style="color:#fff;margin:0 0 8px">You're approved, ${name}!</h2>
+  <p style="color:#94a3b8;line-height:1.6;margin:0 0 24px">Your reseller application has been reviewed and approved. Share your referral link below — every purchase made through it earns you commission automatically.</p>
+  <div style="background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.15);border-radius:12px;padding:20px;margin-bottom:24px">
+    <div style="color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Your Referral Link</div>
+    <code style="color:#22d3ee;font-size:13px;font-family:monospace;word-break:break-all">${appUrl}/register?ref=${referralCode || ""}</code>
+  </div>
+  <a href="${appUrl}" style="display:inline-block;background:linear-gradient(135deg,#0e7490,#22d3ee);color:#fff;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700">Visit AXTO →</a>
+  <hr style="border:none;border-top:1px solid #1e293b;margin:32px 0">
+  <p style="color:#334155;font-size:11px">Questions? <a href="mailto:hallo@axto.io" style="color:#22d3ee">hallo@axto.io</a></p>
+</div>
+</body></html>`,
+    });
+    return;
+  }
+
+  await sendEmail({
+    to,
+    subject: "Update on your AXTO reseller application",
+    html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="background:#060c14;color:#e2f4ff;font-family:-apple-system,sans-serif;padding:40px 24px;margin:0">
+<div style="max-width:520px;margin:0 auto">
+  <div style="font-size:24px;font-weight:800;color:#22d3ee;margin-bottom:24px">AXTO</div>
+  <h2 style="color:#fff;margin:0 0 8px">Hi ${name},</h2>
+  <p style="color:#94a3b8;line-height:1.6;margin:0 0 24px">Thanks for your interest in the AXTO reseller program. After review, we're not able to approve your application at this time. If you believe this is a mistake, or your circumstances change, reach out and we're happy to take another look.</p>
+  <p style="color:#334155;font-size:11px">Questions? <a href="mailto:hallo@axto.io" style="color:#22d3ee">hallo@axto.io</a></p>
+</div>
+</body></html>`,
+  });
+}
+
 export async function sendRenewalReminderEmail(params: {
   to: string; name: string; licenseKey: string; packageName: string; expiresAt: string; daysLeft: number;
 }): Promise<void> {
