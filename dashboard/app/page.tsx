@@ -352,6 +352,9 @@ export default function HomePage() {
             <p style={{ fontSize: 16.5, color: "#475569", lineHeight: 1.65 }}>
               {t("landing.products.subtitle")}
             </p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 18, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 999, padding: "8px 18px", fontSize: 12.5, color: "#075985", fontWeight: 600 }}>
+              🐳 Docker (Linux) is production-ready for every product · 🪟 Windows EXE is still in active development
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))", gap: 18 }}>

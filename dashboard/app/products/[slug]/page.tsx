@@ -119,6 +119,12 @@ export default function ProductPage() {
             🔜 {entry.name} is coming soon and not yet available for purchase. Pricing below reflects planned tiers.
           </div>
         )}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "12px 16px", marginBottom: 24 }}>
+          <span style={{ fontSize: 16 }}>🐳</span>
+          <div style={{ fontSize: 12.5, color: "#075985", lineHeight: 1.6 }}>
+            <strong>Docker (Linux) deployment is production-ready today.</strong> The Windows EXE build is still in active development — your client portal shows live, per-format availability once you have a license.
+          </div>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px,1fr))", gap: 16, marginBottom: 64 }}>
           {tiers.map(([code, pkg], i) => (
             <div key={code} className="card" style={{ padding: "22px 20px", border: i === Math.min(1, tiers.length - 1) ? `2px solid ${entry.color}` : undefined, position: "relative" }}>

@@ -69,6 +69,9 @@ function ProductSalePanel() {
             <div style={{ color: "#94a3b8", fontSize: 12 }}>Toggle products between For Sale and Coming Soon. Not-for-sale products show &quot;Coming Soon&quot; on landing page & portal.</div>
           </div>
         </div>
+        <div style={{ marginTop: 10, fontSize: 11.5, color: "#64748b", background: "#f8fafc", borderRadius: 8, padding: "8px 12px" }}>
+          🐳 This only controls purchase availability. Download <strong>format</strong> (Docker vs. Windows EXE) is separate — manage per-product, per-format at Admin → Releases.
+        </div>
       </div>
       <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         {SALE_PRODUCTS.map(p => {
