@@ -55,6 +55,49 @@ CREATE TABLE IF NOT EXISTS documents (
   tags_json   TEXT NOT NULL DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS idx_docs_jur ON documents(jurisdiction);
+
+-- SOC alerts raised by the correlation engine over the event stream.
+CREATE TABLE IF NOT EXISTS alerts (
+  id          TEXT PRIMARY KEY,
+  ts          REAL NOT NULL,
+  rule_id     TEXT NOT NULL DEFAULT '',
+  severity    TEXT NOT NULL DEFAULT 'medium',
+  title       TEXT NOT NULL DEFAULT '',
+  detail      TEXT NOT NULL DEFAULT '',
+  source      TEXT NOT NULL DEFAULT '',
+  status      TEXT NOT NULL DEFAULT 'open',    -- open | acknowledged | closed
+  meta_json   TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_alerts_ts     ON alerts(ts);
+CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
+
+-- OT/IoT asset inventory (client-registered, YP-classified).
+CREATE TABLE IF NOT EXISTS assets (
+  id          TEXT PRIMARY KEY,
+  ts          REAL NOT NULL,
+  name        TEXT NOT NULL DEFAULT '',
+  ip          TEXT NOT NULL DEFAULT '',
+  asset_type  TEXT NOT NULL DEFAULT '',       -- plc | rtu | hmi | sensor | server | unknown
+  protocol    TEXT NOT NULL DEFAULT '',       -- modbus | dnp3 | s7 | opcua | bacnet | ...
+  vendor      TEXT NOT NULL DEFAULT '',
+  risk_score  INTEGER NOT NULL DEFAULT 0,     -- 0..100
+  exposed     INTEGER NOT NULL DEFAULT 0,     -- reachable from untrusted network
+  meta_json   TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_assets_risk ON assets(risk_score);
+
+-- Antivirus / content scan findings.
+CREATE TABLE IF NOT EXISTS findings (
+  id          TEXT PRIMARY KEY,
+  ts          REAL NOT NULL,
+  target      TEXT NOT NULL DEFAULT '',
+  verdict     TEXT NOT NULL DEFAULT 'clean',  -- clean | suspicious | malicious
+  score       INTEGER NOT NULL DEFAULT 0,     -- 0..100
+  signatures  TEXT NOT NULL DEFAULT '[]',     -- JSON list of matched signature names
+  sha256      TEXT NOT NULL DEFAULT '',
+  quarantined INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_findings_verdict ON findings(verdict);
 """
 
 
@@ -144,4 +187,95 @@ class YPDatabase:
             "SELECT id, ts, title, jurisdiction, tags_json FROM documents "
             "WHERE title LIKE ? OR body LIKE ? ORDER BY ts DESC LIMIT ?",
             (like, like, limit))
+        return [dict(r) for r in await cur.fetchall()]
+
+    # ── Alerts (SOC) ─────────────────────────────────────────────────────────
+    async def add_alert(self, rule_id: str, severity: str, title: str,
+                       detail: str = "", source: str = "", meta_json: str = "{}") -> str:
+        assert self._db
+        aid = _uid()
+        await self._db.execute(
+            "INSERT INTO alerts (id, ts, rule_id, severity, title, detail, source, status, meta_json) "
+            "VALUES (?,?,?,?,?,?,?,'open',?)",
+            (aid, time.time(), rule_id, severity, title, detail, source, meta_json),
+        )
+        await self._db.commit()
+        return aid
+
+    async def recent_alerts(self, limit: int = 100, status: str | None = None) -> list:
+        assert self._db
+        if status:
+            cur = await self._db.execute(
+                "SELECT * FROM alerts WHERE status=? ORDER BY ts DESC LIMIT ?", (status, limit))
+        else:
+            cur = await self._db.execute(
+                "SELECT * FROM alerts ORDER BY ts DESC LIMIT ?", (limit,))
+        return [dict(r) for r in await cur.fetchall()]
+
+    async def set_alert_status(self, alert_id: str, status: str) -> bool:
+        assert self._db
+        cur = await self._db.execute(
+            "UPDATE alerts SET status=? WHERE id=?", (status, alert_id))
+        await self._db.commit()
+        return cur.rowcount > 0
+
+    async def count_events_since(self, module: str, kind: str, since_ts: float,
+                               source: str | None = None) -> int:
+        """Count matching events in a recent window — the SOC engine's primitive."""
+        assert self._db
+        if source is not None:
+            cur = await self._db.execute(
+                "SELECT COUNT(*) n FROM events WHERE module=? AND kind=? AND ts>=? "
+                "AND meta_json LIKE ?",
+                (module, kind, since_ts, f'%\"source\": \"{source}\"%'))
+        else:
+            cur = await self._db.execute(
+                "SELECT COUNT(*) n FROM events WHERE module=? AND kind=? AND ts>=?",
+                (module, kind, since_ts))
+        row = await cur.fetchone()
+        return (dict(row).get("n") if row else 0) or 0
+
+    # ── Assets (OT) ──────────────────────────────────────────────────────────
+    async def add_asset(self, name: str, ip: str, asset_type: str, protocol: str,
+                      vendor: str, risk_score: int, exposed: bool,
+                      meta_json: str = "{}") -> str:
+        assert self._db
+        aid = _uid()
+        await self._db.execute(
+            "INSERT INTO assets (id, ts, name, ip, asset_type, protocol, vendor, risk_score, exposed, meta_json) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (aid, time.time(), name, ip, asset_type, protocol, vendor, risk_score,
+             1 if exposed else 0, meta_json),
+        )
+        await self._db.commit()
+        return aid
+
+    async def list_assets(self, limit: int = 500) -> list:
+        assert self._db
+        cur = await self._db.execute(
+            "SELECT * FROM assets ORDER BY risk_score DESC, ts DESC LIMIT ?", (limit,))
+        return [dict(r) for r in await cur.fetchall()]
+
+    # ── Findings (AV / content scan) ─────────────────────────────────────────
+    async def add_finding(self, target: str, verdict: str, score: int,
+                        signatures: str, sha256: str, quarantined: bool) -> str:
+        assert self._db
+        fid = _uid()
+        await self._db.execute(
+            "INSERT INTO findings (id, ts, target, verdict, score, signatures, sha256, quarantined) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (fid, time.time(), target, verdict, score, signatures, sha256,
+             1 if quarantined else 0),
+        )
+        await self._db.commit()
+        return fid
+
+    async def recent_findings(self, limit: int = 100, verdict: str | None = None) -> list:
+        assert self._db
+        if verdict:
+            cur = await self._db.execute(
+                "SELECT * FROM findings WHERE verdict=? ORDER BY ts DESC LIMIT ?", (verdict, limit))
+        else:
+            cur = await self._db.execute(
+                "SELECT * FROM findings ORDER BY ts DESC LIMIT ?", (limit,))
         return [dict(r) for r in await cur.fetchall()]
