@@ -382,6 +382,11 @@ export default function HomePage() {
                   </div>
                   <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.4px", margin: 0, fontFamily: "Sora, sans-serif" }}>{p.name}</h3>
                   <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
+                  {available && (
+                    <span className="trial-cta" style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 800, color: "#0f766e", background: "rgba(13,148,136,0.1)", border: "1px solid rgba(13,148,136,0.25)", padding: "4px 10px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <span className="trial-cta-emoji">🎁</span> Free 7-day Enterprise trial
+                    </span>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
                     {available ? (
                       <span style={{ fontSize: 13, color: "#0a1628", fontWeight: 700 }}>{t("landing.products.available")} <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16, fontWeight: 900 }}>${from.toLocaleString()}</span><span style={{ color: "#94a3b8", fontWeight: 500 }}>/yr</span></span>
@@ -396,7 +401,9 @@ export default function HomePage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 40 }}>
-            <Link href="/register" className="btn-primary">{t("landing.products.trialcta")}</Link>
+            <Link href="/register" className="btn-primary trial-cta" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span className="trial-cta-emoji">🎁</span> {t("landing.products.trialcta")}
+            </Link>
             <a href="#pricing" className="btn-secondary">{t("landing.products.comparecta")}</a>
           </div>
         </div>
