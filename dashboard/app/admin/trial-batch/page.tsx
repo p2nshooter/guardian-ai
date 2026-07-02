@@ -25,11 +25,14 @@ function tiersFor(product: string) {
 
 interface Summary { product: string; package_code: string; available: number; claimed: number; disabled: number; total: number }
 interface Batch { batch_id: string; product: string; package_code: string; count: number; available: number; created_at: string }
+interface PromoWindow { starts_at: string; ends_at: string; enabled: number }
 
 export default function TrialBatchPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [win, setWin] = useState<PromoWindow | null>(null);
+  const [winDraft, setWinDraft] = useState<{ startsAt: string; endsAt: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -43,6 +46,8 @@ export default function TrialBatchPage() {
       const d = await r.json();
       setSummary(d.summary ?? []);
       setBatches(d.batches ?? []);
+      setWin(d.window ?? null);
+      if (d.window) setWinDraft({ startsAt: d.window.starts_at.replace(" ", "T").slice(0, 16), endsAt: d.window.ends_at.replace(" ", "T").slice(0, 16) });
     } catch {}
     setLoading(false);
   }, [router]);
@@ -69,9 +74,18 @@ export default function TrialBatchPage() {
       if (!r.ok) { setMsg(`⚠️ ${d.error || "Failed"}`); }
       else if (bodyObj.action === "generate") { setMsg(`✅ Generated ${d.generated} trial codes`); await load(); }
       else if (bodyObj.action === "list_codes") { setCodes({ batchId: bodyObj.batchId, list: d.codes || [] }); }
+      else if (bodyObj.action === "set_window") { setMsg(`✅ Promo window ${bodyObj.enabled ? "open" : "closed"}`); await load(); }
       else { await load(); }
     } catch (e: any) { setMsg(`⚠️ ${e?.message || "Network error"}`); }
     setBusy(null);
+  }
+
+  async function saveWindow(enabled: boolean) {
+    if (!winDraft) return;
+    await post({
+      action: "set_window", enabled,
+      startsAt: `${winDraft.startsAt}:00`, endsAt: `${winDraft.endsAt}:00`,
+    }, "window");
   }
 
   function copyCodes() {
@@ -98,6 +112,38 @@ export default function TrialBatchPage() {
             Disable or delete any batch — disabled codes stop working immediately (claimed codes are always preserved).
           </div>
         </div>
+
+        {win && winDraft && (
+          <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", padding: "16px 20px", marginBottom: 18, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: "#0a1628" }}>🪟 Claim Window</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>Dates are UTC. Clients can only claim while this is open.</div>
+            </div>
+            <span style={{ padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: win.enabled ? "rgba(34,197,94,0.1)" : "rgba(148,163,184,0.15)", color: win.enabled ? "#16a34a" : "#64748b" }}>
+              {win.enabled ? "● OPEN" : "○ CLOSED"}
+            </span>
+            <label style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
+              From{" "}
+              <input type="datetime-local" value={winDraft.startsAt}
+                onChange={e => setWinDraft(w => w && { ...w, startsAt: e.target.value })}
+                style={{ padding: "5px 8px", borderRadius: 6, border: "1.5px solid #e2e8f0", fontSize: 12 }} />
+            </label>
+            <label style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>
+              To{" "}
+              <input type="datetime-local" value={winDraft.endsAt}
+                onChange={e => setWinDraft(w => w && { ...w, endsAt: e.target.value })}
+                style={{ padding: "5px 8px", borderRadius: 6, border: "1.5px solid #e2e8f0", fontSize: 12 }} />
+            </label>
+            <button onClick={() => saveWindow(true)} disabled={busy === "window"}
+              style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#16a34a", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Save & Open
+            </button>
+            <button onClick={() => saveWindow(false)} disabled={busy === "window"}
+              style={{ padding: "7px 14px", borderRadius: 8, border: "1.5px solid #fca5a5", background: "#fef2f2", color: "#dc2626", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              {win.enabled ? "Close Now" : "Save (Stay Closed)"}
+            </button>
+          </div>
+        )}
 
         {msg && (
           <div style={{ background: msg.startsWith("⚠️") ? "#fef2f2" : "#f0fdf4", border: `1.5px solid ${msg.startsWith("⚠️") ? "#fca5a5" : "#86efac"}`, borderRadius: 10, padding: "10px 16px", marginBottom: 18, color: msg.startsWith("⚠️") ? "#dc2626" : "#166534", fontWeight: 700, fontSize: 13 }}>
