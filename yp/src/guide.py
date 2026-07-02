@@ -150,19 +150,60 @@ drafting. **Not legal advice** — always have a licensed attorney review output
 
 ---
 
-## 7. Operations, Security & Compliance Modules
+## 7. Operations, Security & Compliance Modules (all real, all wired together)
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /security/status` | Endpoint/AV & threat posture |
-| `GET /soc/events` | Security operations event stream (SIEM) |
-| `GET /compliance/frameworks` | Supported audit frameworks & status |
-| `GET /ot/assets` | IoT/OT asset inventory |
-| `GET /gateway/usage` | AI API gateway metering |
-| `GET /db/events` | Unified local audit log |
+### Antivirus / content scanning
+```bash
+# Scan text or base64 content — returns a real verdict + matched signatures
+curl -X POST http://YOUR_SERVER:8100/security/scan \
+  -H "Content-Type: application/json" \
+  -d '{"content":"<paste content>","target":"upload.bin"}'
+# Prove the scanner works with the industry-standard EICAR test artifact
+curl http://YOUR_SERVER:8100/security/eicar-test
+curl http://YOUR_SERVER:8100/security/findings?verdict=malicious
+```
+A **malicious** verdict automatically raises a SOC alert — the layers talk to
+each other.
+
+### SOC (SIEM + correlation)
+```bash
+# Feed security events; the engine correlates and raises alerts
+curl -X POST http://YOUR_SERVER:8100/soc/ingest \
+  -d '{"module":"auth","kind":"auth_failure","source":"1.2.3.4"}'
+curl http://YOUR_SERVER:8100/soc/alerts?status=open
+curl http://YOUR_SERVER:8100/soc/rules
+curl -X POST http://YOUR_SERVER:8100/soc/alerts/<id>/acknowledge
+```
+Default rules include brute-force detection, malware bursts, redaction/exfil
+spikes, and provider-failure storms.
+
+### Compliance (real controls engine)
+```bash
+curl http://YOUR_SERVER:8100/compliance/frameworks   # GDPR, HIPAA, SOC2, ISO27001, PCI-DSS, FedRAMP
+curl -X POST http://YOUR_SERVER:8100/compliance/evaluate \
+  -d '{"framework":"gdpr","facts":{"erasure_supported":true}}'
+```
+Evaluation folds in YP's **own live evidence** (redaction active, audit trail
+populated, SOC monitoring, asset inventory) so the compliance % reflects what
+YP is genuinely doing — not just checkboxes.
+
+### OT / IoT asset security
+```bash
+# Register an asset; YP classifies the protocol and scores real risk
+curl -X POST http://YOUR_SERVER:8100/ot/assets \
+  -d '{"name":"PLC-1","ip":"10.0.0.5","asset_type":"plc","protocol":"modbus","exposed":true}'
+curl http://YOUR_SERVER:8100/ot/assets
+```
+High-risk assets raise a SOC alert automatically.
+
+### Gateway & unified status
+```bash
+# Hand out downstream keys via the X-YP-Key header; each is metered + rate-limited
+curl http://YOUR_SERVER:8100/status    # one aggregate view of every module
+```
 
 Every module writes to the **smart local database** (`yp.db`) on your server —
-no telemetry is sent to AXTO.
+no telemetry is ever sent to AXTO.
 
 ---
 

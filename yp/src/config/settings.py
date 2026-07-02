@@ -81,6 +81,13 @@ class YPConfig(BaseSettings):
 
     # ── Redaction ────────────────────────────────────────────────────────────
     redact_before_forward: bool = True   # strip PII/PHI/financial before any provider call
+    high_redaction_threshold: int = 5    # >= this many redactions in one call → SOC signal
+
+    # ── Gateway ──────────────────────────────────────────────────────────────
+    gateway_rate_per_minute: int = 120   # per-downstream-key rate limit on /ai/complete
+
+    # ── Quarantine ───────────────────────────────────────────────────────────
+    quarantine_dir: Path = Path("/yp/data/quarantine")
 
     class Config:
         env_prefix = "YP_"
