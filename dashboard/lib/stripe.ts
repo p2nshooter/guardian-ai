@@ -24,7 +24,7 @@ export interface PackageInfo {
   description: string;
   price: number;           // annual USD
   priceMonthly: number;    // monthly USD
-  product: "guardian" | "orchestra" | "vault" | "edge" | "soc" | "compliance" | "sentinel" | "antivirus" | "studio" | "legal";
+  product: "guardian" | "orchestra" | "vault" | "edge" | "soc" | "compliance" | "sentinel" | "antivirus" | "studio" | "legal" | "yp";
   maxNodes?: number;       // -1 = unlimited (guardian, soc, sentinel)
   maxWorkers?: number;     // -1 = unlimited (orchestra)
   maxRequests?: number;    // daily request limit -1 = unlimited (vault, edge)
@@ -43,6 +43,19 @@ export interface PackageInfo {
   guardianPackage?: string;
   orchestraPackage?: string;
   forSale?: boolean;       // false = "Coming Soon", blocks checkout. Defaults to true if undefined.
+  // ── Yusron Power (YP) only ──────────────────────────────────────────────
+  isLifetimeDisconnect?: boolean; // true = yp_lifetime: once activated, the app
+                                   // verifies the license ONE final time then
+                                   // never calls home again — fully portable,
+                                   // no ongoing dependency on axto.io.
+  requiresPriorEnterprise?: boolean; // true = yp_trial_free: caller must already
+                                      // hold a completed Enterprise-tier purchase
+                                      // on ANY product (enforced server-side).
+  trialFeeUsd?: number;      // yp_trial_paid: non-refundable download/trial fee
+  trialFeeCreditable?: boolean; // fee is credited toward yp_annual/yp_lifetime
+  adminApprovalRequired?: boolean; // true = not self-service; admin must grant
+                                    // access before this client can even see
+                                    // the download (yp_access_grants table).
 }
 
 export const PACKAGE_INFO: Record<string, PackageInfo> = {
@@ -462,6 +475,51 @@ export const PACKAGE_INFO: Record<string, PackageInfo> = {
     product: "legal", isTrial: true, trialDays: 7, trialLimited: true, noApi: true, watermark: true,
     maxDocuments: 10,
     features: ["3 AI workspaces", "10 documents/day", "Core jurisdictions", "Watermarked exports"],
+  },
+
+  // ── Yusron Power (YP) — invite-only super-enterprise tier ──────────────────
+  // Merges every AXTO product's capability into one application, plus AI
+  // provider-scaling and a comprehensive legal-research module beyond
+  // legal-core's scope. 100% BYOK/BYOI/BYOD/BYOM/BYOX — AXTO operates zero
+  // shared infrastructure; the client's own keys, GPUs, and servers run it.
+  // Not self-service: adminApprovalRequired gates even seeing the download.
+  yp_annual: {
+    name: "Yusron Power — Annual",
+    description: "Every AXTO capability, merged into one super-application. Invite-only.",
+    price: 500000, priceMonthly: 0,
+    product: "yp", adminApprovalRequired: true, forSale: false, // not yet built — never show publicly until Phase B ships and is verified
+    features: [
+      "Every AXTO product's engine merged into one application",
+      "AI-provider scaling — auto-routes each job to the best-performing configured provider",
+      "Comprehensive global legal research module (prompts, jurisdictions, open legal APIs)",
+      "Smart local database on your own infrastructure",
+      "Full BYOK/BYOI/BYOD/BYOM/BYOX — your keys, your GPUs, your servers, always",
+      "Hardcoded in-app usage guide",
+    ],
+  },
+  yp_lifetime: {
+    name: "Yusron Power — Lifetime (Disconnect)",
+    description: "One-time payment. After final activation the app never calls axto.io again — move it between servers forever, no ongoing dependency.",
+    price: 5000000, priceMonthly: 0,
+    product: "yp", isLifetimeDisconnect: true, adminApprovalRequired: true, forSale: false, // not yet built
+    features: [
+      "Everything in Annual",
+      "One final license check, then permanently disconnected from axto.io",
+      "Move between servers indefinitely — no reactivation ever required",
+      "No GPU/CPU worker dependency — full capability standalone",
+    ],
+  },
+  yp_trial_free: {
+    name: "Yusron Power — Trial (Enterprise Clients)",
+    description: "7-day trial. Requires a completed Enterprise-tier purchase on any AXTO product.",
+    price: 0, priceMonthly: 0,
+    product: "yp", isTrial: true, trialDays: 7, requiresPriorEnterprise: true, adminApprovalRequired: true, forSale: false, // not yet built
+  },
+  yp_trial_paid: {
+    name: "Yusron Power — Trial (New Clients)",
+    description: "30-day trial. $100,000 non-refundable download fee, credited in full toward Annual or Lifetime if you continue.",
+    price: 100000, priceMonthly: 0,
+    product: "yp", isTrial: true, trialDays: 30, trialFeeUsd: 100000, trialFeeCreditable: true, adminApprovalRequired: true, forSale: false, // not yet built
   },
 };
 
