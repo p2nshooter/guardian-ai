@@ -11,56 +11,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, getR2Builds, dbRun, dbFirst, dbQuery, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-const PRODUCTS = [
-  "guardian-core","guardian-node","guardian-clamav","guardian-core-node","guardian-bundle",
-  "orchestra-core","orchestra-worker-cpu","orchestra-worker-gpu","orchestra-core-cpu","orchestra-bundle",
-  "full-bundle",
-];
 const TYPES   = ["docker","exe"];
 const ARCHES  = ["linux","arm64","windows"];
-const CHANNELS = ["latest"];
 
-// ── GET: list releases from R2 ───────────────────────────────────────────────
+// ── GET: list real builds from R2 ─────────────────────────────────────────────
+// CI writes to builds/latest/raw/<name>.tar.gz (docker) and
+// builds/latest/exe/<name>-windows.exe (Windows EXE) — this must list from
+// those exact prefixes, matching r2ImageKey()/r2ExeKey() in the admin UI.
+// (An earlier version listed a "releases/<channel>/*.zip" prefix that no
+// workflow has ever written to, so every product always showed "Not Built"
+// regardless of what was actually in R2.)
 export async function GET(req: NextRequest) {
   const user = await requireAdmin(req);
   if (!user) return NextResponse.json({ error:"Unauthorized" }, { status:401 });
-
-  const url     = new URL(req.url);
-  const channel = url.searchParams.get("channel") || "latest";
 
   let r2: any;
   try { r2 = getR2Builds(req); } catch {
     return NextResponse.json({ error:"R2 not available", hasR2:false });
   }
 
-  // Read manifest
-  let manifest: any = null;
-  try {
-    const mObj = await r2.get(`releases/${channel}/manifest.json`);
-    if (mObj) manifest = JSON.parse(await mObj.text());
-  } catch {}
-
-  // List all files in channel
   let files: any[] = [];
   try {
-    const list = await r2.list({ prefix:`releases/${channel}/`, limit:200 });
-    files = (list.objects || []).map((o: any) => ({
+    const [rawList, exeList] = await Promise.all([
+      r2.list({ prefix: "builds/latest/raw/", limit: 200 }),
+      r2.list({ prefix: "builds/latest/exe/", limit: 200 }),
+    ]);
+    const objects = [...(rawList.objects || []), ...(exeList.objects || [])];
+    files = objects.map((o: any) => ({
       key:      o.key,
       size:     o.size,
       size_mb:  o.size ? Math.round(o.size / 1024 / 1024) : 0,
       uploaded: o.uploaded,
-      name:     o.key.replace(`releases/${channel}/`, ""),
-    })).filter((f:any) => f.name !== "manifest.json");
+      name:     o.key.split("/").pop(),
+    }));
   } catch {}
 
-  // Parse files into structured product list
-  const parsed = files.map(f => {
-    // guardian-bundle-docker-linux.zip
-    const m = f.name.match(/^(.+)-(docker|exe)-(linux|arm64|windows)\.zip$/);
-    return m ? { ...f, product:m[1], type:m[2], arch:m[3] } : { ...f, product:"unknown", type:"?", arch:"?" };
-  });
-
-  return NextResponse.json({ channel, manifest, files: parsed, total: files.length, hasR2: true });
+  return NextResponse.json({ files, total: files.length, hasR2: true });
 }
 
 // ── POST: actions (delete, webhook callback) ─────────────────────────────────
