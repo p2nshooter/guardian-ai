@@ -93,6 +93,9 @@ export default function AdminPlaybooksPage() {
             <h1 style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", margin: 0 }}>📦 Playbooks Manager</h1>
             <p style={{ color: "#475569", fontSize: 13, marginTop: 4 }}>
               {data?.stats?.total_playbooks || 0} playbooks · {data?.stats?.total_purchases || 0} sales · ${Number(data?.stats?.total_revenue || 0).toLocaleString()} revenue
+              {(data?.stats?.missing_files || 0) > 0 && (
+                <span style={{ color: "#f59e0b", fontWeight: 700 }}> · ⚠ {data.stats.missing_files} missing a real file (not purchasable)</span>
+              )}
             </p>
           </div>
           <button onClick={() => { setEditId("new"); setForm({ action: "create_playbook", price_usd: 19, original_price: 29, prompt_count: 20 }); }} style={{ padding: "9px 20px", borderRadius: 10, background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer" }}>+ New Playbook</button>
@@ -131,7 +134,7 @@ export default function AdminPlaybooksPage() {
                     <td style={{ padding: "11px 14px", color: "#64748b" }}>{p.prompt_count}</td>
                     <td style={{ padding: "11px 14px", color: "#64748b" }}>{p.download_count}</td>
                     <td style={{ padding: "11px 14px" }}>
-                      {p.r2_key ? <span style={{ color: "#22c55e", fontSize: 12 }}>✅ Uploaded</span> : <span style={{ color: "#f59e0b", fontSize: 12 }}>⚠ No file</span>}
+                      {p.file_verified ? <span style={{ color: "#22c55e", fontSize: 12 }}>✅ Uploaded</span> : <span style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700 }}>⚠ No file — not purchasable</span>}
                       <label style={{ marginLeft: 8, cursor: "pointer", color: "#0284c7", fontSize: 11, fontWeight: 600 }}>
                         {uploading ? "..." : "Upload"}
                         <input type="file" accept=".pdf,.zip,.md,.txt" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) uploadFile(p.id, e.target.files[0]); }} />
@@ -141,7 +144,7 @@ export default function AdminPlaybooksPage() {
                       <div style={{ display: "flex", gap: 4 }}>
                         <button onClick={() => { setEditId(p.id); setForm({ action: "update_playbook", id: p.id, ...p }); }} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: 12 }}>✏️</button>
                         <button onClick={() => { if (confirm(`Delete "${p.name}"?`)) action({ action: "delete_playbook", id: p.id }); }} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: 12 }}>🗑</button>
-                        {p.r2_key && <a href={`/api/playbooks/download?id=${p.id}&admin=1`} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "transparent", color: "#0284c7", cursor: "pointer", fontSize: 12, textDecoration: "none" }}>⬇</a>}
+                        {p.file_verified && <a href={`/api/playbooks/download?id=${p.id}&admin=1`} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #e2e8f0", background: "transparent", color: "#0284c7", cursor: "pointer", fontSize: 12, textDecoration: "none" }}>⬇</a>}
                       </div>
                     </td>
                   </tr>

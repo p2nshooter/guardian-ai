@@ -23,12 +23,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 503 });
   }
   const categories = await dbQuery(db, `SELECT * FROM playbook_categories ORDER BY sort_order`);
-  const playbooks = await dbQuery(db, `SELECT p.*, c.name as category_name FROM playbooks p LEFT JOIN playbook_categories c ON c.id = p.category_id ORDER BY p.sort_order, p.created_at DESC`);
+  const playbooksRaw = await dbQuery<any>(db, `SELECT p.*, c.name as category_name FROM playbooks p LEFT JOIN playbook_categories c ON c.id = p.category_id ORDER BY p.sort_order, p.created_at DESC`);
   const bundles = await dbQuery(db, `SELECT * FROM playbook_bundles ORDER BY sort_order`);
   const purchases = await dbQuery(db, `SELECT pp.*, p.name as playbook_name, pb.name as bundle_name FROM playbook_purchases pp LEFT JOIN playbooks p ON p.id = pp.playbook_id LEFT JOIN playbook_bundles pb ON pb.id = pp.bundle_id ORDER BY pp.created_at DESC LIMIT 100`);
   const stats = await dbFirst<any>(db, `SELECT COUNT(*) as total_playbooks, SUM(download_count) as total_downloads, (SELECT COUNT(*) FROM playbook_purchases WHERE status='completed') as total_purchases, (SELECT SUM(amount_usd) FROM playbook_purchases WHERE status='completed') as total_revenue FROM playbooks`);
 
-  return NextResponse.json({ categories, playbooks, bundles, purchases, stats });
+  // r2_key alone doesn't mean a file exists -- the catalog seed sets a
+  // plausible-looking key (and even a fake file_size_bytes) for every
+  // playbook whether or not anything was ever actually uploaded. Verify
+  // against R2 directly so the admin can actually see which playbooks
+  // still need a real file, instead of every row falsely showing "Uploaded."
+  let r2: any = null;
+  try { r2 = getR2(req); } catch {}
+  const playbooks = await Promise.all(playbooksRaw.map(async (p) => {
+    let file_verified = false;
+    if (r2 && p.r2_key) {
+      try { file_verified = !!(await r2.head(p.r2_key)); } catch {}
+    }
+    return { ...p, file_verified };
+  }));
+  const missingFiles = playbooks.filter(p => !p.file_verified).length;
+
+  return NextResponse.json({ categories, playbooks, bundles, purchases, stats: { ...stats, missing_files: missingFiles } });
 }
 
 // POST — CRUD actions
