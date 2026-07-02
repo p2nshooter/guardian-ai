@@ -9,11 +9,13 @@
  * ============================================================================ */
 "use client";
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { cryptoQrValue } from "@/lib/crypto-qr";
 
 interface PublicMethod { id: string; symbol: string; name: string; network: string; category: string; confirmations: number; }
 interface Intent {
   orderId: string; symbol: string; network: string; depositAddress: string;
-  amountCrypto: number; amountUsd: number; confirmations: number; qr: string; expiresAt: string;
+  amountCrypto: number; amountUsd: number; confirmations: number; expiresAt: string;
 }
 
 const NETWORK_COLOR: Record<string, string> = {
@@ -105,6 +107,16 @@ export default function CryptoCheckout() {
           </div>
 
           <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 3px rgba(10,22,40,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <div style={{ background: "#fff", border: "1px solid #eef2f7", borderRadius: 12, padding: 12 }}>
+                <QRCodeSVG value={cryptoQrValue(intent.symbol, intent.depositAddress, intent.amountCrypto)} size={156} level="M" />
+              </div>
+            </div>
+            {intent.symbol !== "BTC" && (
+              <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginBottom: 14 }}>
+                QR code fills in the address only — enter the exact amount below manually in your wallet.
+              </div>
+            )}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <span style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>Send exactly</span>
               <span style={{ fontSize: 13, color: "#94a3b8" }}>≈ ${intent.amountUsd.toLocaleString()}</span>

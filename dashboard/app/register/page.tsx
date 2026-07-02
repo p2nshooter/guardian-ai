@@ -10,8 +10,10 @@ export const runtime = "edge";
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocale } from "@/lib/locale-provider";
 import { isForSale as checkForSale } from "@/lib/stripe";
+import { cryptoQrValue } from "@/lib/crypto-qr";
 
 // ── Prices must match lib/stripe.ts (canonical source of truth) ──────────
 const PACKAGES = [
@@ -315,17 +317,30 @@ function RegisterInner() {
                   <div style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#fca5a5", fontWeight: 700, textAlign: "center", marginBottom: 16 }}>
                     ⚠️ Send ONLY on the {cryptoIntent.network} network. Sending on the wrong network permanently loses funds.
                   </div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 4 }}>SEND EXACT AMOUNT</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+                    <div style={{ background: "#fff", borderRadius: 12, padding: 14 }}>
+                      <QRCodeSVG
+                        value={cryptoQrValue(cryptoIntent.symbol, cryptoIntent.depositAddress, cryptoIntent.amountCrypto)}
+                        size={168} level="M"
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 4, textAlign: "center" }}>SEND EXACT AMOUNT</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, justifyContent: "center" }}>
                     <span style={{ fontFamily: "monospace", fontSize: 20, color: "#34d399", fontWeight: 700 }}>{cryptoIntent.amountCrypto} {cryptoIntent.symbol}</span>
                     <button onClick={() => copyText(String(cryptoIntent.amountCrypto))} style={{ padding: "4px 10px", borderRadius: 7, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Copy</button>
                   </div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 16 }}>≈ ${cryptoIntent.amountUsd.toLocaleString()} · unique amount identifies your order</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 16, textAlign: "center" }}>≈ ${cryptoIntent.amountUsd.toLocaleString()} · unique amount identifies your order</div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontWeight: 700, marginBottom: 4 }}>DESTINATION ADDRESS ({cryptoIntent.network})</div>
                   <div style={{ fontFamily: "monospace", fontSize: 12, color: "#60c1f5", background: "rgba(255,255,255,0.05)", borderRadius: 8, padding: "10px 14px", wordBreak: "break-all", display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", marginBottom: 14 }}>
                     <span>{cryptoIntent.depositAddress}</span>
                     <button onClick={() => copyText(cryptoIntent.depositAddress)} style={{ padding: "4px 10px", borderRadius: 7, background: "rgba(96,193,245,0.15)", border: "1px solid rgba(96,193,245,0.3)", color: "#60c1f5", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>Copy</button>
                   </div>
+                  {cryptoIntent.symbol !== "BTC" && (
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textAlign: "center", marginBottom: 4, marginTop: -8 }}>
+                      QR code fills in the address only — enter the exact amount above manually in your wallet.
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", padding: "10px 0", color: "rgba(255,255,255,0.55)", fontSize: 12.5 }}>
                     <span style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.25)", borderTopColor: "#34d399", borderRadius: "50%", animation: "spin 1s linear infinite", display: "inline-block" }} />
                     Waiting for on-chain confirmation — this page updates automatically.
