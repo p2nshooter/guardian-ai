@@ -41,14 +41,23 @@ export async function GET(req: NextRequest) {
     `).run();
     const existing: any = await db.prepare("SELECT COUNT(*) as n FROM payment_methods").first();
     if ((existing?.n ?? 0) === 0) {
+      // Must mirror migration 0037/0046's real seed data exactly. If this
+      // fallback ever races ahead of the migrations (fresh D1, or the
+      // migration step failing silently — deploy-dashboard.yml treats it
+      // as non-fatal), its INSERT OR IGNORE wins by primary key and the
+      // real migration data can never override it afterward. A previous
+      // version of this fallback seeded blank/disabled rows here, which is
+      // exactly what happened in production (see migration 0047).
       await db.prepare(`
         INSERT OR IGNORE INTO payment_methods
           (id, symbol, name, category, network, kind, address, contract, decimals, confirmations, enabled, sort_order)
         VALUES
-          ('usdt_trc20','USDT','Tether USD (TRC20)','crypto','TRC20','trc20','','TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',6,20,0,10),
-          ('bnb','BNB','BNB (BEP20)','crypto','BEP20','native','','',18,12,0,20),
-          ('eth','ETH','Ethereum (ERC20)','crypto','Ethereum','native','','',18,50,0,30),
-          ('btc','BTC','Bitcoin','crypto','Bitcoin','native','','',8,1,0,40),
+          ('usdt_trc20','USDT','Tether USD (TRC20)','crypto','TRC20','trc20','TNo8jgJqmnUGAPUDb159cC8uhAeFDP8keW','TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',6,20,1,10),
+          ('bnb','BNB','BNB (BEP20)','crypto','BEP20','native','0x1bed722b27b3d2bdab3dfe06ea75b84a3a824f3d','',18,12,1,20),
+          ('eth','ETH','Ethereum (ERC20)','crypto','Ethereum','native','0x1bed722b27b3d2bdab3dfe06ea75b84a3a824f3d','',18,50,1,30),
+          ('btc','BTC','Bitcoin','crypto','Bitcoin','native','1AzqohLY6XPGbabHmMhstYMPFUThoiBnya','',8,1,1,40),
+          ('sol','SOL','Solana','crypto','Solana','native','CUnEGFRZvMu8xieLdiM9oHXa5dzS9xJVvNnEiyXRaogD','',9,32,1,50),
+          ('doge','DOGE','Dogecoin','crypto','Dogecoin','native','DJUK77iDsus6URWcwNZnsqAyESUr426Df3','',8,6,1,60),
           ('stripe','USD','Card (Stripe)','fiat','','native','','',2,0,0,100),
           ('paypal','USD','PayPal','fiat','','native','','',2,0,0,110),
           ('xendit','IDR','Xendit (Indonesia)','fiat','','native','','',2,0,0,120),

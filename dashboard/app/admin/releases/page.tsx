@@ -33,66 +33,92 @@ const AVAIL_PRODUCTS = [
   { key: "legal",      icon: "⚖️", name: "AXTO Legal",     color: "#0f766e" },
 ];
 
-// ── Catalog — mirrors CI output + R2 structure ────────────────────────────────
+// ── Catalog — mirrors CI output + R2 structure exactly (product names below
+// are the real matrix entries from auto-build-all.yml / auto-build-exe.yml,
+// not the earlier fictional "vault-enterprise" / "soc-engine" style names
+// that never matched anything CI ever built). ──────────────────────────────
 const GROUPS: {
   id: string; label: string; icon: string; color: string; border: string;
   products: {
     id: string; ciName: string; label: string; desc: string;
-    hasDocker: boolean; hasExe: boolean; exeId: string; manualGpu?: boolean;
+    hasDocker: boolean; hasExe: boolean; manualGpu?: boolean;
   }[];
 }[] = [
   {
     id: "guardian", label: "Guardian AI", icon: "🛡️", color: "#0ea5e9", border: "#0ea5e920",
     products: [
-      { id: "guardian-core",       ciName: "guardian-core",       label: "Guardian Core",        desc: "API server + security dashboard", hasDocker: true,  hasExe: true,  exeId: "axto-guardian-core" },
+      { id: "guardian-core", ciName: "guardian-core", label: "Guardian Core",       desc: "API server + security dashboard", hasDocker: true, hasExe: true },
+      { id: "guardian-node", ciName: "guardian-node", label: "Guardian Node Agent", desc: "Per-server threat detection agent", hasDocker: true, hasExe: true },
     ],
   },
   {
-    id: "vault", label: "Vault", icon: "🔐", color: "#8b5cf6", border: "#8b5cf620",
+    id: "antivirus", label: "Antivirus", icon: "🦠", color: "#e879f9", border: "#e879f920",
     products: [
-      { id: "vault-enterprise",    ciName: "vault-enterprise",    label: "Vault Enterprise",     desc: "AI Privacy Layer — PII/PHI/Financial redaction", hasDocker: true, hasExe: true, exeId: "axto-vault-enterprise" },
-      { id: "vault-lite-engine",   ciName: "vault-lite-engine",   label: "Vault Lite",           desc: "Lightweight privacy proxy", hasDocker: true, hasExe: true, exeId: "axto-vault-lite" },
-    ],
-  },
-  {
-    id: "sentinel", label: "Sentinel", icon: "📡", color: "#f59e0b", border: "#f59e0b20",
-    products: [
-      { id: "sentinel-enterprise", ciName: "sentinel-enterprise", label: "Sentinel Enterprise",  desc: "IoT/OT Security — full features", hasDocker: true, hasExe: true, exeId: "axto-sentinel-enterprise" },
-      { id: "sentinel-lite-engine",ciName: "sentinel-lite-engine",label: "Sentinel Lite",        desc: "Lightweight IoT monitoring", hasDocker: true, hasExe: true, exeId: "axto-sentinel-lite" },
-    ],
-  },
-  {
-    id: "soc", label: "SOC Engine", icon: "🛡️", color: "#ef4444", border: "#ef444420",
-    products: [
-      { id: "soc-engine",          ciName: "soc-engine",          label: "SOC Engine",           desc: "Security Operations Center — SIEM, SOAR, threat intel", hasDocker: true, hasExe: true, exeId: "axto-soc" },
-    ],
-  },
-  {
-    id: "compliance", label: "Compliance", icon: "📋", color: "#22c55e", border: "#22c55e20",
-    products: [
-      { id: "compliance-engine",   ciName: "compliance-engine",   label: "Compliance Engine",    desc: "Automated audit — SOC2, ISO, HIPAA, PCI-DSS", hasDocker: true, hasExe: true, exeId: "axto-compliance" },
-    ],
-  },
-  {
-    id: "edge", label: "Edge Agent", icon: "🌐", color: "#06b6d4", border: "#06b6d420",
-    products: [
-      { id: "edge-engine",         ciName: "edge-engine",         label: "Edge Agent",           desc: "AI API Gateway — rate limiting, billing, abuse detection", hasDocker: true, hasExe: true, exeId: "axto-edge-agent" },
+      { id: "guardian-antivirus", ciName: "guardian-antivirus", label: "Guardian Antivirus", desc: "ClamAV + AI file scanning — bundled in Guardian, also sold standalone", hasDocker: true, hasExe: true },
     ],
   },
   {
     id: "orchestra", label: "Orchestra AI", icon: "⚡", color: "#7c3aed", border: "#7c3aed20",
     products: [
-      { id: "orchestra-core",      ciName: "orchestra-core",      label: "Orchestra Core",       desc: "AI router + orchestration console", hasDocker: true, hasExe: false, exeId: "" },
-      { id: "orchestra-worker-gpu",ciName: "orchestra-worker-gpu",label: "Orchestra Worker GPU", desc: "Local GPU inference — MANUAL BUILD via Docker Desktop", hasDocker: true, hasExe: false, exeId: "", manualGpu: true },
+      { id: "orchestra-core",       ciName: "orchestra-core",       label: "Orchestra Core",       desc: "AI router + orchestration console", hasDocker: true, hasExe: true },
+      { id: "orchestra-worker-cpu", ciName: "orchestra-worker-cpu", label: "Orchestra Worker CPU", desc: "Cloud AI routing (15+ providers)", hasDocker: true, hasExe: true },
+      { id: "orchestra-worker-gpu", ciName: "orchestra-worker-gpu", label: "Orchestra Worker GPU", desc: "Local GPU inference — MANUAL BUILD via Docker Desktop (~6GB, VPN required)", hasDocker: true, hasExe: false, manualGpu: true },
+    ],
+  },
+  {
+    id: "vault", label: "Vault", icon: "🔐", color: "#8b5cf6", border: "#8b5cf620",
+    products: [
+      { id: "vault-core", ciName: "vault-core", label: "Vault Core", desc: "AI Privacy Layer — PII/PHI/Financial redaction", hasDocker: true, hasExe: true },
+    ],
+  },
+  {
+    id: "edge", label: "Edge Agent", icon: "🌐", color: "#06b6d4", border: "#06b6d420",
+    products: [
+      { id: "edge-core", ciName: "edge-core", label: "Edge Core", desc: "AI API Gateway — rate limiting, billing, abuse detection", hasDocker: true, hasExe: true },
+    ],
+  },
+  {
+    id: "soc", label: "SOC Engine", icon: "🛡️", color: "#ef4444", border: "#ef444420",
+    products: [
+      { id: "soc-core", ciName: "soc-core", label: "SOC Core", desc: "Security Operations Center — SIEM, SOAR, threat intel", hasDocker: true, hasExe: true },
+    ],
+  },
+  {
+    id: "compliance", label: "Compliance", icon: "📋", color: "#22c55e", border: "#22c55e20",
+    products: [
+      { id: "compliance-core", ciName: "compliance-core", label: "Compliance Core", desc: "Automated audit — SOC2, ISO, HIPAA, PCI-DSS", hasDocker: true, hasExe: true },
+    ],
+  },
+  {
+    id: "sentinel", label: "Sentinel OT", icon: "📡", color: "#f59e0b", border: "#f59e0b20",
+    products: [
+      { id: "sentinel-core", ciName: "sentinel-core", label: "Sentinel Core", desc: "IoT/OT Security — asset discovery, IEC 62443", hasDocker: true, hasExe: true },
+    ],
+  },
+  {
+    id: "studio", label: "AXTO Studio", icon: "🧠", color: "#f97316", border: "#f9731620",
+    products: [
+      { id: "studio-core",    ciName: "studio-core",    label: "Studio Core",         desc: "AI & GPU pool platform — client-facing app", hasDocker: true, hasExe: true },
+      { id: "ai-studio",      ciName: "ai-studio",      label: "AI Studio (image)",   desc: "AI workspace sub-container", hasDocker: true, hasExe: false },
+      { id: "gpu-studio",     ciName: "gpu-studio",     label: "GPU Studio (image)",  desc: "GPU pool sub-container", hasDocker: true, hasExe: false },
+      { id: "hybrid-studio",  ciName: "hybrid-studio",  label: "Hybrid Studio (image)", desc: "Hybrid pipeline sub-container", hasDocker: true, hasExe: false },
+    ],
+  },
+  {
+    id: "legal", label: "AXTO Legal", icon: "⚖️", color: "#0f766e", border: "#0f766e20",
+    products: [
+      { id: "legal-core", ciName: "legal-core", label: "Legal Core", desc: "AI legal research & document intelligence", hasDocker: true, hasExe: true },
     ],
   },
 ];
 
 // R2 keys must match exactly what CI writes and what the portal reads:
 //   docker → builds/latest/raw/<name>.tar.gz   (auto-build-* / _build-image / build-release)
-//   exe    → builds/latest/exe/<name>-windows.exe   (auto-build-exe)
+//   exe    → builds/latest/exe/<name>-windows.exe   (auto-build-exe) — note: NO "axto-"
+//            prefix in the R2 key, that prefix only exists in the local dist/ filename
+//            before upload (dist/axto-<name>.exe → uploaded as <name>-windows.exe).
 function r2ImageKey(ciName: string) { return `builds/latest/raw/${ciName}.tar.gz`; }
-function r2ExeKey(exeId: string)    { return `builds/latest/exe/${exeId}-windows.exe`; }
+function r2ExeKey(ciName: string)   { return `builds/latest/exe/${ciName}-windows.exe`; }
 
 function fmtSize(bytes: number | null) {
   if (!bytes) return null;
@@ -200,7 +226,7 @@ export default function AdminReleasesPage() {
 
   const allProducts = GROUPS.flatMap(g => g.products);
   const totalImages = allProducts.filter(p => p.hasDocker && getFile(r2ImageKey(p.ciName))).length;
-  const totalExe    = allProducts.filter(p => p.hasExe    && getFile(r2ExeKey(p.exeId))).length;
+  const totalExe    = allProducts.filter(p => p.hasExe    && getFile(r2ExeKey(p.ciName))).length;
   const maxImages   = allProducts.filter(p => p.hasDocker).length;
   const maxExe      = allProducts.filter(p => p.hasExe).length;
 
@@ -380,8 +406,8 @@ export default function AdminReleasesPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {visibleGroups.map(group => {
               const isExpanded = expanded[group.id] !== false;
-              const allBuilt   = group.products.every(p => (!p.hasDocker || getFile(r2ImageKey(p.ciName))) && (!p.hasExe || getFile(r2ExeKey(p.exeId))));
-              const anyBuilt   = group.products.some(p => getFile(r2ImageKey(p.ciName)) || (p.hasExe && getFile(r2ExeKey(p.exeId))));
+              const allBuilt   = group.products.every(p => (!p.hasDocker || getFile(r2ImageKey(p.ciName))) && (!p.hasExe || getFile(r2ExeKey(p.ciName))));
+              const anyBuilt   = group.products.some(p => getFile(r2ImageKey(p.ciName)) || (p.hasExe && getFile(r2ExeKey(p.ciName))));
 
               return (
                 <div key={group.id} className="anim" style={{ background: "rgba(255,255,255,0.018)", border: `1px solid ${group.color}18`, borderRadius: 16, overflow: "hidden" }}>
@@ -413,9 +439,9 @@ export default function AdminReleasesPage() {
 
                       {group.products.map((prod, pi) => {
                         const imgFile = prod.hasDocker ? getFile(r2ImageKey(prod.ciName)) : null;
-                        const exeFile = prod.hasExe    ? getFile(r2ExeKey(prod.exeId))    : null;
+                        const exeFile = prod.hasExe    ? getFile(r2ExeKey(prod.ciName))    : null;
                         const imgKey  = r2ImageKey(prod.ciName);
-                        const exeKey  = r2ExeKey(prod.exeId);
+                        const exeKey  = r2ExeKey(prod.ciName);
 
                         return (
                           <div key={prod.id} className="row-hover"
@@ -488,7 +514,7 @@ export default function AdminReleasesPage() {
                               )}
                               {exeFile && (
                                 <>
-                                  <button className="action-btn" onClick={() => downloadAdmin(exeKey, `${prod.exeId}.zip`)}
+                                  <button className="action-btn" onClick={() => downloadAdmin(exeKey, `axto-${prod.ciName}-windows.exe`)}
                                     style={{ padding: "5px 10px", background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 7, color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "filter 0.15s" }}>
                                     ⬇ EXE
                                   </button>
@@ -522,18 +548,23 @@ export default function AdminReleasesPage() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
             {[
-              { product: "guardian",   label: "Guardian AI",   color: "#0ea5e9", img: "guardian-core",       exe: "axto-guardian-core" },
-              { product: "vault",      label: "Vault",         color: "#8b5cf6", img: "vault-enterprise",    exe: "axto-vault-enterprise" },
-              { product: "soc",        label: "SOC Engine",    color: "#ef4444", img: "soc-engine",          exe: "axto-soc" },
-              { product: "compliance", label: "Compliance",    color: "#22c55e", img: "compliance-engine",   exe: "axto-compliance" },
-              { product: "edge",       label: "Edge Agent",    color: "#06b6d4", img: "edge-engine",         exe: "axto-edge-agent" },
-              { product: "sentinel",   label: "Sentinel",      color: "#f59e0b", img: "sentinel-enterprise", exe: "axto-sentinel-enterprise" },
+              { product: "guardian",   label: "Guardian AI",   color: "#0ea5e9", ci: ["guardian-core", "guardian-node"] },
+              { product: "antivirus",  label: "Antivirus",     color: "#e879f9", ci: ["guardian-antivirus"] },
+              { product: "orchestra",  label: "Orchestra AI",  color: "#7c3aed", ci: ["orchestra-core", "orchestra-worker-cpu"] },
+              { product: "vault",      label: "Vault",         color: "#8b5cf6", ci: ["vault-core"] },
+              { product: "edge",       label: "Edge Agent",    color: "#06b6d4", ci: ["edge-core"] },
+              { product: "soc",        label: "SOC Engine",    color: "#ef4444", ci: ["soc-core"] },
+              { product: "compliance", label: "Compliance",    color: "#22c55e", ci: ["compliance-core"] },
+              { product: "sentinel",   label: "Sentinel",      color: "#f59e0b", ci: ["sentinel-core"] },
+              { product: "studio",     label: "AXTO Studio",   color: "#f97316", ci: ["studio-core"] },
+              { product: "legal",      label: "AXTO Legal",    color: "#0f766e", ci: ["legal-core"] },
             ].map(p => (
               <div key={p.product} style={{ padding: "12px 14px", background: `${p.color}07`, border: `1px solid ${p.color}15`, borderRadius: 10 }}>
                 <div style={{ fontWeight: 700, fontSize: 12, color: p.color, marginBottom: 7 }}>{p.label}</div>
                 <div style={{ fontSize: 10, color: "#475569", fontFamily: "'DM Mono', monospace", lineHeight: 2 }}>
-                  🐳 images/{p.img}.tar.gz<br/>
-                  🪟 exe/{p.exe}.zip<br/>
+                  {p.ci.map(c => (
+                    <span key={c}>🐳 raw/{c}.tar.gz &nbsp;🪟 exe/{c}-windows.exe<br/></span>
+                  ))}
                   <span style={{ color: "#334155" }}>Gate: license.product = '{p.product}' &amp; status = 'active'</span>
                 </div>
               </div>

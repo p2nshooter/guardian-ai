@@ -80,65 +80,75 @@ export async function POST(req: NextRequest) {
 
   const { action } = body;
 
-  if (action === "generate") {
-    const { packageCode, count } = body;
-    const pkg = (PACKAGE_INFO as any)[packageCode];
-    if (!packageCode || !pkg) return NextResponse.json({ error: `Unknown package: ${packageCode}` }, { status: 400 });
-    const n = Math.min(Math.max(Number(count) || 100, 1), 500);
-    const batchId = uid("batch");
-    // Build a single multi-row insert; D1 handles ~100 rows fine in one statement.
-    const values: string[] = [];
-    const binds: any[] = [];
-    for (let i = 0; i < n; i++) {
-      values.push("(?, ?, ?, ?, ?, 'available', ?, datetime('now'))");
-      binds.push(uid("tc"), trialCode(), pkg.product, packageCode, batchId, user.email ?? "admin");
+  // Every branch below hits D1. A raw, uncaught D1 error (missing table,
+  // param-limit, transient failure) previously crashed the whole Edge
+  // Function, producing a non-JSON "Internal Server Error" the admin UI
+  // couldn't even parse — wrapping in try/catch here always surfaces a
+  // readable { error } response instead.
+  try {
+    if (action === "generate") {
+      const { packageCode, count } = body;
+      const pkg = (PACKAGE_INFO as any)[packageCode];
+      if (!packageCode || !pkg) return NextResponse.json({ error: `Unknown package: ${packageCode}` }, { status: 400 });
+      // Cap at 100/request: 100 rows x 7 binds = 700 params, safely under
+      // SQLite/D1's ~999 host-parameter limit for a single statement.
+      const n = Math.min(Math.max(Number(count) || 100, 1), 100);
+      const batchId = uid("batch");
+      const values: string[] = [];
+      const binds: any[] = [];
+      for (let i = 0; i < n; i++) {
+        values.push("(?, ?, ?, ?, ?, 'available', ?, datetime('now'))");
+        binds.push(uid("tc"), trialCode(), pkg.product, packageCode, batchId, user.email ?? "admin");
+      }
+      await dbRun(
+        db,
+        `INSERT INTO trial_batch_codes (id, code, product, package_code, batch_id, status, created_by, created_at) VALUES ${values.join(",")}`,
+        binds
+      );
+      return NextResponse.json({ success: true, batchId, generated: n });
     }
-    await dbRun(
-      db,
-      `INSERT INTO trial_batch_codes (id, code, product, package_code, batch_id, status, created_by, created_at) VALUES ${values.join(",")}`,
-      binds
-    );
-    return NextResponse.json({ success: true, batchId, generated: n });
-  }
 
-  if (action === "list_codes") {
-    const { batchId } = body;
-    if (!batchId) return NextResponse.json({ error: "batchId required" }, { status: 400 });
-    const codes = await dbQuery<any>(db, `SELECT id, code, status, claimed_email, claimed_at FROM trial_batch_codes WHERE batch_id = ? ORDER BY created_at ASC`, [batchId]);
-    return NextResponse.json({ codes });
-  }
-
-  if (action === "set_batch_status") {
-    const { batchId, status } = body; // status: available | disabled
-    if (!batchId || !["available", "disabled"].includes(status)) {
-      return NextResponse.json({ error: "batchId and valid status required" }, { status: 400 });
+    if (action === "list_codes") {
+      const { batchId } = body;
+      if (!batchId) return NextResponse.json({ error: "batchId required" }, { status: 400 });
+      const codes = await dbQuery<any>(db, `SELECT id, code, status, claimed_email, claimed_at FROM trial_batch_codes WHERE batch_id = ? ORDER BY created_at ASC`, [batchId]);
+      return NextResponse.json({ codes });
     }
-    // Only flip codes that aren't already claimed — claimed codes keep their link.
-    await dbRun(
-      db,
-      `UPDATE trial_batch_codes SET status = ?, disabled_at = CASE WHEN ?='disabled' THEN datetime('now') ELSE '' END
-       WHERE batch_id = ? AND status != 'claimed'`,
-      [status, status, batchId]
-    );
-    return NextResponse.json({ success: true });
-  }
 
-  if (action === "delete_batch") {
-    const { batchId } = body;
-    if (!batchId) return NextResponse.json({ error: "batchId required" }, { status: 400 });
-    // Never delete codes that were already claimed (they back a live license).
-    await dbRun(db, `DELETE FROM trial_batch_codes WHERE batch_id = ? AND status != 'claimed'`, [batchId]);
-    return NextResponse.json({ success: true });
-  }
-
-  if (action === "set_code_status") {
-    const { codeId, status } = body;
-    if (!codeId || !["available", "disabled"].includes(status)) {
-      return NextResponse.json({ error: "codeId and valid status required" }, { status: 400 });
+    if (action === "set_batch_status") {
+      const { batchId, status } = body; // status: available | disabled
+      if (!batchId || !["available", "disabled"].includes(status)) {
+        return NextResponse.json({ error: "batchId and valid status required" }, { status: 400 });
+      }
+      // Only flip codes that aren't already claimed — claimed codes keep their link.
+      await dbRun(
+        db,
+        `UPDATE trial_batch_codes SET status = ?, disabled_at = CASE WHEN ?='disabled' THEN datetime('now') ELSE '' END
+         WHERE batch_id = ? AND status != 'claimed'`,
+        [status, status, batchId]
+      );
+      return NextResponse.json({ success: true });
     }
-    await dbRun(db, `UPDATE trial_batch_codes SET status = ? WHERE id = ? AND status != 'claimed'`, [status, codeId]);
-    return NextResponse.json({ success: true });
-  }
 
-  return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    if (action === "delete_batch") {
+      const { batchId } = body;
+      if (!batchId) return NextResponse.json({ error: "batchId required" }, { status: 400 });
+      // Never delete codes that were already claimed (they back a live license).
+      await dbRun(db, `DELETE FROM trial_batch_codes WHERE batch_id = ? AND status != 'claimed'`, [batchId]);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "set_code_status") {
+      const { codeId, status } = body;
+      if (!codeId || !["available", "disabled"].includes(status)) {
+        return NextResponse.json({ error: "codeId and valid status required" }, { status: 400 });
+      }
+      await dbRun(db, `UPDATE trial_batch_codes SET status = ? WHERE id = ? AND status != 'claimed'`, [status, codeId]);
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message ?? "Database operation failed" }, { status: 500 });
+  }
 }

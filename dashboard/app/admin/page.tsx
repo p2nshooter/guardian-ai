@@ -324,14 +324,14 @@ export default function AdminPage() {
         {/* ── Admin Product Sell / Not Sell Toggle ──────────────── */}
         <ProductSalePanel />
 
-        {/* ── Admin Product Downloads — All 7 Products ──────────────── */}
+        {/* ── Admin Product Downloads — All 10 Products ──────────────── */}
         <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", overflow: "hidden", marginTop: 28 }}>
           <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 20 }}>📦</span>
               <div>
                 <div style={{ fontWeight: 800, fontSize: 15, color: "#0a1628" }}>Product Package Downloads</div>
-                <div style={{ color: "#94a3b8", fontSize: 12 }}>All 10 AXTO products — professionally packaged per tier. Admin only. Clients see only what they paid for.</div>
+                <div style={{ color: "#94a3b8", fontSize: 12 }}>All 10 AXTO products, real CI-built binaries. One binary per product line — pricing tiers are enforced by the license key, not separate files.</div>
               </div>
             </div>
             <Link href="/admin/releases" style={{ fontSize: 13, color: "#0284c7", textDecoration: "none", fontWeight: 700, padding: "8px 16px", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 8 }}>
@@ -340,92 +340,44 @@ export default function AdminPage() {
           </div>
           {[
             { key: "guardian", icon: "🛡️", name: "Guardian AI", sub: "AI Cybersecurity", color: "#0284c7", bg: "rgba(2,132,199,0.04)", border: "rgba(2,132,199,0.15)",
-              packages: [
-                { name: "Sentinel (1 server)", file: "guardian-sentinel-bundle" },
-                { name: "Professional (25 servers)", file: "guardian-professional-bundle" },
-                { name: "Business (100 servers)", file: "guardian-business-bundle" },
-                { name: "Enterprise (1,000 servers)", file: "guardian-enterprise-bundle" },
-              ], composeFile: "docker-compose.yml", configFile: "guardian.example.yml",
-              registry: "axto/guardian-core:latest",
+              tiers: ["Sentinel", "Professional", "Business", "Enterprise"], binaries: ["guardian-core", "guardian-node"],
+              composeFile: "docker-compose.yml", configFile: "guardian.example.yml", registry: "axto/guardian-core:latest",
             },
             { key: "orchestra", icon: "⚡", name: "Orchestra AI", sub: "AI Orchestration", color: "#7c3aed", bg: "rgba(124,58,237,0.04)", border: "rgba(124,58,237,0.15)",
-              packages: [
-                { name: "Starter (10 workers)", file: "orchestra-starter-bundle" },
-                { name: "Professional (50 workers)", file: "orchestra-professional-bundle" },
-                { name: "Enterprise (unlimited)", file: "orchestra-enterprise-bundle" },
-              ], composeFile: "orchestra-compose.yml", configFile: "orchestra.example.yml",
-              registry: "axto/orchestra-core:latest",
+              tiers: ["Starter", "Professional", "Enterprise"], binaries: ["orchestra-core", "orchestra-worker-cpu"],
+              composeFile: "orchestra-compose.yml", configFile: "orchestra.example.yml", registry: "axto/orchestra-core:latest",
             },
             { key: "vault", icon: "🔒", name: "Vault AI", sub: "Data Privacy & PII Redaction", color: "#0d9488", bg: "rgba(13,148,136,0.04)", border: "rgba(13,148,136,0.15)",
-              packages: [
-                { name: "Growth (100k req/day)", file: "vault-growth-bundle" },
-                { name: "Professional (1M req/day)", file: "vault-professional-bundle" },
-                { name: "Enterprise (multi-tenant)", file: "vault-enterprise-bundle" },
-                { name: "Sovereign (air-gap)", file: "vault-sovereign-bundle" },
-              ], composeFile: "vault-compose.yml", configFile: "vault.example.yml",
-              registry: "axto/vault-core:latest",
+              tiers: ["Growth", "Professional", "Enterprise", "Sovereign"], binaries: ["vault-core"],
+              composeFile: "vault-compose.yml", configFile: "vault.example.yml", registry: "axto/vault-core:latest",
             },
             { key: "edge", icon: "🌐", name: "Edge AI", sub: "AI API Gateway", color: "#f59e0b", bg: "rgba(245,158,11,0.04)", border: "rgba(245,158,11,0.15)",
-              packages: [
-                { name: "Growth (500k req/day)", file: "edge-growth-bundle" },
-                { name: "Professional (unlimited)", file: "edge-professional-bundle" },
-                { name: "Enterprise (white-label)", file: "edge-enterprise-bundle" },
-                { name: "Platform (multi-region HA)", file: "edge-platform-bundle" },
-              ], composeFile: "edge-compose.yml", configFile: "edge.example.yml",
-              registry: "axto/edge-core:latest",
+              tiers: ["Growth", "Professional", "Enterprise", "Platform"], binaries: ["edge-core"],
+              composeFile: "edge-compose.yml", configFile: "edge.example.yml", registry: "axto/edge-core:latest",
             },
             { key: "soc", icon: "🎯", name: "SOC AI", sub: "Security Operations Center", color: "#ef4444", bg: "rgba(239,68,68,0.04)", border: "rgba(239,68,68,0.15)",
-              packages: [
-                { name: "Growth (10 sources, 50GB/day)", file: "soc-growth-bundle" },
-                { name: "Professional (100 sources)", file: "soc-professional-bundle" },
-                { name: "Enterprise (500 sources)", file: "soc-enterprise-bundle" },
-                { name: "Platform (unlimited + team)", file: "soc-platform-bundle" },
-              ], composeFile: "soc-compose.yml", configFile: "soc.example.yml",
-              registry: "axto/soc-core:latest",
+              tiers: ["Growth", "Professional", "Enterprise", "Platform"], binaries: ["soc-core"],
+              composeFile: "soc-compose.yml", configFile: "soc.example.yml", registry: "axto/soc-core:latest",
             },
             { key: "compliance", icon: "📋", name: "Compliance AI", sub: "Compliance Automation", color: "#6366f1", bg: "rgba(99,102,241,0.04)", border: "rgba(99,102,241,0.15)",
-              packages: [
-                { name: "Growth (1 framework)", file: "compliance-growth-bundle" },
-                { name: "Professional (5 frameworks)", file: "compliance-professional-bundle" },
-                { name: "Enterprise (all frameworks)", file: "compliance-enterprise-bundle" },
-                { name: "Sovereign (white-label+FedRAMP)", file: "compliance-sovereign-bundle" },
-              ], composeFile: "compliance-compose.yml", configFile: "compliance.example.yml",
-              registry: "axto/compliance-core:latest",
+              tiers: ["Growth", "Professional", "Enterprise", "Sovereign"], binaries: ["compliance-core"],
+              composeFile: "compliance-compose.yml", configFile: "compliance.example.yml", registry: "axto/compliance-core:latest",
             },
             { key: "sentinel", icon: "🏭", name: "Sentinel OT", sub: "OT/ICS Industrial Security", color: "#ea580c", bg: "rgba(234,88,12,0.04)", border: "rgba(234,88,12,0.15)",
-              packages: [
-                { name: "Growth (250 devices)", file: "sentinel-growth-bundle" },
-                { name: "Professional (2,500 devices)", file: "sentinel-professional-bundle" },
-                { name: "Enterprise (25,000 devices)", file: "sentinel-enterprise-bundle" },
-                { name: "Critical (unlimited + air-gap)", file: "sentinel-critical-bundle" },
-              ], composeFile: "sentinel-compose.yml", configFile: "sentinel.example.yml",
-              registry: "axto/sentinel-core:latest",
+              tiers: ["Growth", "Professional", "Enterprise", "Critical"], binaries: ["sentinel-core"],
+              composeFile: "sentinel-compose.yml", configFile: "sentinel.example.yml", registry: "axto/sentinel-core:latest",
             },
             { key: "studio", icon: "🧠", name: "AXTO Studio", sub: "Self-Hosted AI & GPU Pool Platform", color: "#8b5cf6", bg: "rgba(139,92,246,0.04)", border: "rgba(139,92,246,0.15)",
-              packages: [
-                { name: "Starter ($49/mo)", file: "studio-starter-bundle" },
-                { name: "Professional ($199/mo)", file: "studio-professional-bundle" },
-                { name: "Enterprise ($799/mo)", file: "studio-enterprise-bundle" },
-              ], composeFile: "studio-compose.yml", configFile: "studio.example.yml",
-              registry: "axto/studio-core:latest",
+              tiers: ["Starter", "Professional", "Enterprise"], binaries: ["studio-core"],
+              composeFile: "studio-compose.yml", configFile: "studio.example.yml", registry: "axto/studio-core:latest",
             },
             { key: "antivirus", icon: "🦠", name: "Guardian Antivirus", sub: "ClamAV + AI File Scanning", color: "#e879f9", bg: "rgba(232,121,249,0.04)", border: "rgba(232,121,249,0.15)",
-              packages: [
-                { name: "Sentinel (1 server)", file: "antivirus-sentinel-bundle" },
-                { name: "Professional (25 servers)", file: "antivirus-professional-bundle" },
-                { name: "Business (100 servers)", file: "antivirus-business-bundle" },
-                { name: "Enterprise (1,000 servers)", file: "antivirus-enterprise-bundle" },
-              ], composeFile: "antivirus-compose.yml", configFile: "antivirus.example.yml",
-              registry: "axto/guardian-antivirus:latest",
+              tiers: ["Sentinel", "Professional", "Business", "Enterprise"], binaries: ["guardian-antivirus"],
+              composeFile: "antivirus-compose.yml", configFile: "antivirus.example.yml", registry: "axto/guardian-antivirus:latest",
             },
             { key: "legal", icon: "⚖️", name: "AXTO Legal", sub: "AI Legal & Compliance Platform", color: "#0f766e", bg: "rgba(15,118,110,0.04)", border: "rgba(15,118,110,0.15)",
-              packages: [
-                { name: "Growth", file: "legal-growth-bundle" },
-                { name: "Professional", file: "legal-professional-bundle" },
-                { name: "Enterprise", file: "legal-enterprise-bundle" },
-                { name: "Sovereign (air-gap)", file: "legal-sovereign-bundle" },
-              ], composeFile: "legal-compose.yml", configFile: "legal.env.example",
-              registry: "axto/legal-core:latest",
+              tiers: ["Growth", "Professional", "Enterprise", "Sovereign"], binaries: ["legal-core"],
+              composeFile: "legal-compose.yml", configFile: "legal.env.example", registry: "axto/legal-core:latest",
             },
           ].map((prod: any) => (
             <div key={prod.key} style={{ borderBottom: "1px solid #f1f5f9" }}>
@@ -433,18 +385,19 @@ export default function AdminPage() {
                 <span style={{ fontSize: 18 }}>{prod.icon}</span>
                 <span style={{ fontWeight: 800, fontSize: 13, color: "#0a1628" }}>{prod.name}</span>
                 <span style={{ color: "#94a3b8", fontSize: 11 }}>{prod.sub}</span>
+                <span style={{ color: "#cbd5e1", fontSize: 11, marginLeft: "auto" }}>Tiers: {prod.tiers.join(" · ")} — one binary, license key sets the limit</span>
               </div>
               <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.5px" }}>📦 Client Packages</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                    {prod.packages.map((pkg: any) => (
-                      <div key={pkg.file} style={{ display: "flex", gap: 5 }}>
-                        <a href={`/api/admin/releases/download?product=${pkg.file}&type=docker&arch=linux`}
+                    {prod.binaries.map((ci: string) => (
+                      <div key={ci} style={{ display: "flex", gap: 5 }}>
+                        <a href={`/api/admin/releases/download?key=${encodeURIComponent(`builds/latest/raw/${ci}.tar.gz`)}`}
                           style={{ flex: 1, padding: "8px 12px", borderRadius: 7, background: prod.bg, border: `1px solid ${prod.border}`, color: prod.color, textDecoration: "none", fontSize: 12, fontWeight: 600, display: "flex", gap: 6, alignItems: "center" }}>
-                          ⬇ {pkg.name}
+                          ⬇ {ci} (Docker)
                         </a>
-                        <a href={`/api/admin/releases/download?product=${pkg.file}&type=exe&arch=windows`}
+                        <a href={`/api/admin/releases/download?key=${encodeURIComponent(`builds/latest/exe/${ci}-windows.exe`)}`}
                           style={{ padding: "8px 10px", borderRadius: 7, background: "#f8fafc", border: "1px solid #e2e8f0", color: "#64748b", textDecoration: "none", fontSize: 11 }}>
                           🪟
                         </a>
@@ -471,36 +424,6 @@ export default function AdminPage() {
               </div>
             </div>
           ))}
-
-          {/* Bundle packages */}
-          <div>
-            <div style={{ padding: "13px 24px", background: "rgba(15,23,42,0.02)", display: "flex", alignItems: "center", gap: 10, borderTop: "1px solid #f1f5f9" }}>
-              <span style={{ fontSize: 18 }}>🎁</span>
-              <span style={{ fontWeight: 800, fontSize: 13, color: "#0a1628" }}>Multi-Product Bundles</span>
-              <span style={{ color: "#94a3b8", fontSize: 11 }}>Guardian AI + Orchestra AI combined</span>
-            </div>
-            <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12 }}>
-              {[
-                { name: "Security + AI Starter",      file: "bundle-starter",       color: "#0284c7" },
-                { name: "Security + AI Professional", file: "bundle-professional",  color: "#7c3aed" },
-                { name: "Security + AI Enterprise",   file: "bundle-enterprise",    color: "#0a1628" },
-              ].map(b => (
-                <div key={b.file} style={{ border: "1.5px solid #e2e8f0", borderRadius: 10, padding: 14 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#0a1628", marginBottom: 10 }}>🎁 {b.name}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <a href={`/api/admin/releases/download?product=${b.file}&type=docker&arch=linux`}
-                      style={{ display: "block", padding: "8px 12px", borderRadius: 7, background: b.color, color: "#fff", textDecoration: "none", fontSize: 12, fontWeight: 700, textAlign: "center" }}>
-                      ⬇ Docker Linux
-                    </a>
-                    <a href={`/api/admin/releases/download?product=${b.file}&type=exe&arch=windows`}
-                      style={{ display: "block", padding: "8px 12px", borderRadius: 7, border: `1.5px solid ${b.color}`, color: b.color, textDecoration: "none", fontSize: 12, fontWeight: 700, textAlign: "center", background: "transparent" }}>
-                      ⬇ Windows EXE
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Playbooks — quick link to the full download-manager page */}
