@@ -19,8 +19,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Xendit not configured" }, { status: 503 });
   }
 
+  // MANDATORY: an unconfigured webhook_token must reject every request, not
+  // silently skip verification -- this endpoint issues real licenses, so a
+  // gateway left partially configured can't mean "trust anything that POSTs here".
   const callbackToken = req.headers.get("x-callback-token") || "";
-  if (creds.webhook_token && callbackToken !== creds.webhook_token) {
+  if (!creds.webhook_token || callbackToken !== creds.webhook_token) {
     return NextResponse.json({ error: "Invalid callback token" }, { status: 401 });
   }
 

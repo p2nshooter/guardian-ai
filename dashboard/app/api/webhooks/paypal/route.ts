@@ -16,7 +16,10 @@ async function verifyPayPalWebhook(
   req: NextRequest, rawBody: string,
   creds: { client_id: string; client_secret: string; webhook_id?: string; mode?: string },
 ): Promise<boolean> {
-  if (!creds.webhook_id) return true; // skip if not configured
+  // MANDATORY: an unconfigured webhook_id must reject every request, not
+  // silently skip verification -- this endpoint issues real licenses, so a
+  // gateway left partially configured can't mean "trust anything that POSTs here".
+  if (!creds.webhook_id) return false;
   const base = (creds.mode === "live" || creds.mode === "production")
     ? "https://api-m.paypal.com"
     : "https://api-m.sandbox.paypal.com";

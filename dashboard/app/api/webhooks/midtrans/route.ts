@@ -30,7 +30,13 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Verify HMAC-SHA512 signature ─────────────────────────────────────
-  if (signature_key) {
+  // MANDATORY: a forged POST that simply omits signature_key must be
+  // rejected the same as one with a wrong signature -- this endpoint issues
+  // real licenses, so "no signature provided" cannot mean "trust it".
+  if (!signature_key || !creds.server_key) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+  {
     const encoder = new TextEncoder();
     const raw = `${order_id}${status_code}${gross_amount}${creds.server_key}`;
     const key = await crypto.subtle.importKey(
