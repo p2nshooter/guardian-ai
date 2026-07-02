@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, getR2Builds, dbFirst, dbRun, now } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { DISCLAIMER_VERSION } from "@/lib/disclaimer";
+import { GUIDES_5PRODUCTS, type ProductGuide5 } from "@/lib/guide-i18n-5products";
 
 // ── Product → R2 key mapping ────────────────────────────────────────────────
 function r2Key(product: string, type: "docker" | "exe" | "exe-linux") {
@@ -2008,6 +2009,18 @@ Workers self-register with the Core and appear in Dashboard → Orchestra → Wo
 
   };
 
+  // edge/soc/compliance/sentinel have real (not machine-translated-on-the-fly)
+  // guide content in 9 non-English languages from a dataset that existed but
+  // was never wired in (lib/guide-i18n-5products.ts). English keeps using the
+  // GUIDES map above, which already interpolates the real license key into
+  // its config block; guide5 content uses a generic key placeholder in step
+  // examples, so we still show the real key up top the same way every other
+  // guide in this file does.
+  if (lang !== "en") {
+    const g5 = (GUIDES_5PRODUCTS as any)[lang]?.products?.[product] as ProductGuide5 | undefined;
+    if (g5) return renderGuide5(g5, licenseKey, lang);
+  }
+
   const generator = GUIDES[product];
   if (generator) {
     const body = generator(licenseKey, maxNodes);
@@ -2142,8 +2155,10 @@ function _langLabel(lang: string): string {
 }
 
 // Honest fallback notice for products whose setup guide isn't translated
-// into the requested language yet (only vault/studio have full 10-language
-// guides today) — shown in the CLIENT's own requested language, so a
+// into the requested language yet (vault has full 10-language guides;
+// edge/soc/compliance/sentinel have full 9-non-English-language guides via
+// renderGuide5 below; guardian/orchestra/antivirus/legal/studio are
+// English-only) — shown in the CLIENT's own requested language, so a
 // non-English speaker knows immediately why the rest of the document is in
 // English, instead of silently receiving English content under a filename
 // that claims their language.
@@ -2160,4 +2175,59 @@ function _untranslatedNotice(lang: string): string {
     ko: "> ⚠️ **참고:** 이 가이드는 아직 한국어로 번역되지 않았습니다. 아래 내용은 영어입니다. 번역 작업 중입니다.",
   };
   return notices[lang] || "";
+}
+
+// Standard technical-doc section headers, translated. Unlike marketing copy
+// these are unambiguous, well-established terms in every one of these
+// languages' software documentation conventions.
+const GUIDE5_LABELS: Record<string, { licenseKey: string; prerequisites: string; configuration: string; verify: string; apiReference: string; support: string }> = {
+  id: { licenseKey: "Kunci Lisensi", prerequisites: "Prasyarat", configuration: "Konfigurasi", verify: "Verifikasi Instalasi", apiReference: "Referensi API", support: "Dukungan" },
+  zh: { licenseKey: "许可证密钥", prerequisites: "前提条件", configuration: "配置", verify: "验证安装", apiReference: "API 参考", support: "支持" },
+  ar: { licenseKey: "مفتاح الترخيص", prerequisites: "المتطلبات الأساسية", configuration: "التكوين", verify: "التحقق من التثبيت", apiReference: "مرجع API", support: "الدعم" },
+  es: { licenseKey: "Clave de licencia", prerequisites: "Requisitos previos", configuration: "Configuración", verify: "Verificar instalación", apiReference: "Referencia de API", support: "Soporte" },
+  fr: { licenseKey: "Clé de licence", prerequisites: "Prérequis", configuration: "Configuration", verify: "Vérifier l'installation", apiReference: "Référence API", support: "Assistance" },
+  de: { licenseKey: "Lizenzschlüssel", prerequisites: "Voraussetzungen", configuration: "Konfiguration", verify: "Installation überprüfen", apiReference: "API-Referenz", support: "Support" },
+  pt: { licenseKey: "Chave de licença", prerequisites: "Pré-requisitos", configuration: "Configuração", verify: "Verificar instalação", apiReference: "Referência de API", support: "Suporte" },
+  ja: { licenseKey: "ライセンスキー", prerequisites: "前提条件", configuration: "設定", verify: "インストールの確認", apiReference: "APIリファレンス", support: "サポート" },
+  ko: { licenseKey: "라이선스 키", prerequisites: "사전 요구 사항", configuration: "구성", verify: "설치 확인", apiReference: "API 참조", support: "지원" },
+};
+
+// Renders the real (non-English) guide content from lib/guide-i18n-5products.ts
+// into the same markdown shape as every other guide in this file. The real
+// license key goes in the top field exactly like every EN/vault guide does;
+// per-step code samples in the source dataset use a generic key placeholder
+// (same pattern the EN guides use in their curl/API examples too).
+function renderGuide5(g: ProductGuide5, key: string, lang: string): string {
+  const L = GUIDE5_LABELS[lang];
+  const prereqs = g.prerequisites.map(p => `- ${p}`).join("\n");
+  const steps = g.steps.map(s => `## ${s.title}\n${s.desc}\n\`\`\`bash\n${s.code}\n\`\`\``).join("\n\n");
+  const apis = g.api_examples.map(a => `- **${a.title}**: \`${a.code}\``).join("\n");
+  return `# ${g.name} — ${g.tagline}
+
+**${L.licenseKey}:** \`${key}\`
+
+${g.overview}
+
+## ${L.prerequisites}
+${prereqs}
+
+${steps}
+
+## ${L.configuration}
+\`\`\`yaml
+${g.config_example}
+\`\`\`
+
+## ${L.verify}
+\`\`\`bash
+${g.verify}
+\`\`\`
+${g.verify_expected}
+
+## ${L.apiReference}
+${apis}
+
+---
+${g.support_note}
+`;
 }
