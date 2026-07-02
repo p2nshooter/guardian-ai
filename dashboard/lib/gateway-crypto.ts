@@ -8,7 +8,13 @@
 /**
  * AES-256-GCM encryption for payment gateway credentials.
  * Uses ENCRYPTION_KEY env var (64 hex chars = 32 bytes).
- * Falls back to base64 obfuscation if key not set (NOT secure — set the key!).
+ * Writing NEVER falls back to plaintext-equivalent base64 — live Stripe/PayPal
+ * secrets are too sensitive to store reversibly by accident. If the key isn't
+ * configured, encryptObj throws and the save is refused (see app/api/admin/
+ * gateways/route.ts, which already surfaces this as a clear admin-facing error).
+ * decryptObj still reads the legacy "b64:" format so credentials saved before
+ * this fix (or before ENCRYPTION_KEY was configured) don't become unreadable —
+ * re-saving them once the key is set upgrades them to real encryption.
  */
 
 const FALLBACK_PREFIX = "b64:";
@@ -25,14 +31,10 @@ async function getEncKey(): Promise<CryptoKey | null> {
 
 export async function encryptObj<T>(obj: T): Promise<string> {
   const key = await getEncKey();
-  const json = JSON.stringify(obj);
-
   if (!key) {
-    // Fallback: base64 obfuscation (warns in logs)
-    console.warn("[gateway-crypto] ENCRYPTION_KEY not set — using base64 fallback. Set ENCRYPTION_KEY in env vars!");
-    return FALLBACK_PREFIX + btoa(json);
+    throw new Error("ENCRYPTION_KEY not set — refusing to store gateway credentials unencrypted. Set a 64-hex-char ENCRYPTION_KEY in env vars.");
   }
-
+  const json = JSON.stringify(obj);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const data = new TextEncoder().encode(json);
   const cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);

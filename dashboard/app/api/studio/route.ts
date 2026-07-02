@@ -133,7 +133,9 @@ export async function POST(req: NextRequest) {
     try {
       encCreds = await encryptObj(credsJson);
     } catch {
-      encCreds = credsJson; // fallback if encryption not configured
+      // Never persist a client's own provider API key in plaintext — refuse
+      // the save instead of silently downgrading protection.
+      return NextResponse.json({ error: "Encryption is not configured on the server. Please contact support before saving API credentials." }, { status: 503 });
     }
 
     const id = newId();
