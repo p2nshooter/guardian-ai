@@ -9,6 +9,14 @@
 export const runtime = "edge";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
+import { cryptoQrValue } from "@/lib/crypto-qr";
+
+interface CryptoMethod { id: string; symbol: string; name: string; network: string; category: string; confirmations: number; }
+interface CryptoIntent {
+  orderId: string; symbol: string; network: string; depositAddress: string;
+  amountCrypto: number; amountUsd: number; confirmations: number; expiresAt: string;
+}
 
 export default function PlaybooksPage() {
   const [data, setData] = useState<any>(null);
@@ -20,12 +28,16 @@ export default function PlaybooksPage() {
   const [email, setEmail] = useState("");
   const [gateway, setGateway] = useState("stripe");
   const [availableGateways, setAvailableGateways] = useState<string[]>(["stripe"]);
+  const [cryptoMethods, setCryptoMethods] = useState<CryptoMethod[]>([]);
+  const [cryptoIntent, setCryptoIntent] = useState<CryptoIntent | null>(null);
+  const [cryptoLeft, setCryptoLeft] = useState(0);
 
   const ALL_GW = [
     { v: "stripe", l: "Credit/Debit Card", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#635BFF"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">stripe</text></svg>` },
     { v: "paypal", l: "PayPal", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#003087"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">PayPal</text></svg>` },
     { v: "xendit", l: "Xendit", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#0D47A1"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">xendit</text></svg>` },
     { v: "midtrans", l: "Midtrans", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#00AA13"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">midtrans</text></svg>` },
+    { v: "crypto", l: "Cryptocurrency", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#0A1628"/><text x="26" y="14.5" text-anchor="middle" fill="#34D399" font-size="9" font-weight="700" font-family="sans-serif">crypto</text></svg>` },
   ];
 
   useEffect(() => {
@@ -35,9 +47,40 @@ export default function PlaybooksPage() {
         if (!d.gateways.includes(gateway)) setGateway(d.gateways[0]);
       }
     }).catch(() => {});
+    fetch("/api/checkout?crypto_methods=1").then(r => r.json()).then(d => {
+      if (d.methods?.length) {
+        setCryptoMethods(d.methods);
+        setAvailableGateways(prev => prev.includes("crypto") ? prev : [...prev, "crypto"]);
+      }
+    }).catch(() => {});
   }, []);
 
   const GATEWAYS = ALL_GW.filter(g => availableGateways.includes(g.v));
+
+  // Crypto QR countdown — matches the 30-minute intent window server-side.
+  useEffect(() => {
+    if (!cryptoIntent) return;
+    const t = setInterval(() => {
+      const ms = new Date(cryptoIntent.expiresAt).getTime() - Date.now();
+      setCryptoLeft(Math.max(0, Math.floor(ms / 1000)));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [cryptoIntent]);
+
+  async function pickCryptoMethod(methodId: string, playbookId?: string, bundleId?: string) {
+    if (!email.trim()) { setCheckoutError("Email is required"); return; }
+    setCheckoutLoading(true); setCheckoutError("");
+    try {
+      const res = await fetch("/api/playbooks", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "checkout", playbook_id: playbookId, bundle_id: bundleId, email: email.trim(), gateway: "crypto", methodId }),
+      });
+      const d = await res.json();
+      if (d.depositAddress) setCryptoIntent(d);
+      else setCheckoutError(d.error || "Could not start crypto payment");
+    } catch { setCheckoutError("Network error"); }
+    finally { setCheckoutLoading(false); }
+  }
 
   useEffect(() => {
     fetch("/api/playbooks").then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
@@ -173,7 +216,7 @@ export default function PlaybooksPage() {
 
       {/* ── Purchase Modal ── */}
       {selectedItem && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => { setSelectedItem(null); setCheckoutError(""); }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => { setSelectedItem(null); setCheckoutError(""); setCryptoIntent(null); }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 20, padding: 36, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
@@ -181,10 +224,10 @@ export default function PlaybooksPage() {
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: "#0a1628", marginTop: 8 }}>{selectedItem.name}</h3>
                 <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedItem.description}</p>
               </div>
-              <button onClick={() => setSelectedItem(null)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}>✕</button>
+              <button onClick={() => { setSelectedItem(null); setCryptoIntent(null); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}>✕</button>
             </div>
 
-            {selectedItem.preview_text && (
+            {!cryptoIntent && selectedItem.preview_text && (
               <div style={{ background: "#0f172a", borderRadius: 12, padding: 16, marginBottom: 20, maxHeight: 160, overflowY: "auto" }}>
                 <div style={{ fontSize: 10, color: "#64748b", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Preview</div>
                 <pre style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", whiteSpace: "pre-wrap", margin: 0 }}>{selectedItem.preview_text.substring(0, 300)}...</pre>
@@ -201,21 +244,69 @@ export default function PlaybooksPage() {
 
             {checkoutError && <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>⚠ {checkoutError}</div>}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none" }} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {GATEWAYS.map(g => (
-                  <label key={g.v} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${gateway === g.v ? "#7c3aed" : "#e2e8f0"}`, cursor: "pointer", background: gateway === g.v ? "rgba(124,58,237,0.04)" : "#fff" }}>
-                    <input type="radio" name="gw" value={g.v} checked={gateway === g.v} onChange={() => setGateway(g.v)} style={{ accentColor: "#7c3aed" }} />
-                    <span dangerouslySetInnerHTML={{ __html: g.logo }} style={{ width: 44, height: 18, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#0a1628" }}>{g.l}</span>
-                  </label>
-                ))}
+            {/* ── Crypto QR view (once an intent has been created) ── */}
+            {cryptoIntent ? (
+              <div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+                  <div style={{ background: "#fff", border: "1px solid #eef2f7", borderRadius: 12, padding: 12 }}>
+                    <QRCodeSVG value={cryptoQrValue(cryptoIntent.symbol, cryptoIntent.depositAddress, cryptoIntent.amountCrypto)} size={150} level="M" />
+                  </div>
+                </div>
+                {cryptoIntent.symbol !== "BTC" && (
+                  <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginBottom: 12 }}>
+                    QR code fills in the address only — enter the exact amount below manually in your wallet.
+                  </div>
+                )}
+                <div style={{ background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 10, padding: "12px 14px", marginBottom: 10, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>Send exactly · {cryptoIntent.network}</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: "#0a1628", marginTop: 2 }}>{cryptoIntent.amountCrypto} {cryptoIntent.symbol}</div>
+                </div>
+                <code style={{ display: "block", fontSize: 11.5, wordBreak: "break-all", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "9px 12px", marginBottom: 10 }}>{cryptoIntent.depositAddress}</code>
+                {cryptoLeft > 0 ? (
+                  <p style={{ textAlign: "center", fontSize: 12, color: cryptoLeft < 300 ? "#dc2626" : "#64748b", fontWeight: 700 }}>
+                    Expires in {String(Math.floor(cryptoLeft / 60)).padStart(2, "0")}:{String(cryptoLeft % 60).padStart(2, "0")}
+                  </p>
+                ) : (
+                  <div style={{ textAlign: "center" }}>
+                    <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginBottom: 8 }}>This QR has expired.</p>
+                    <button onClick={() => setCryptoIntent(null)} style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #7c3aed", background: "#fff", color: "#7c3aed", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Generate New QR →</button>
+                  </div>
+                )}
+                <p style={{ textAlign: "center", fontSize: 11, color: "#94a3b8", marginTop: 14 }}>Your download unlocks automatically once the payment confirms on-chain.</p>
               </div>
-              <button onClick={() => handleCheckout(selectedItem.type === "playbook" ? selectedItem.id : undefined, selectedItem.type === "bundle" ? selectedItem.id : undefined)} disabled={checkoutLoading} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: checkoutLoading ? "#64748b" : "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontWeight: 700, fontSize: 15, cursor: checkoutLoading ? "not-allowed" : "pointer" }}>
-                {checkoutLoading ? "Redirecting..." : `Pay $${selectedItem.price_usd} →`}
-              </button>
-            </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none" }} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {GATEWAYS.map(g => (
+                    <label key={g.v} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${gateway === g.v ? "#7c3aed" : "#e2e8f0"}`, cursor: "pointer", background: gateway === g.v ? "rgba(124,58,237,0.04)" : "#fff" }}>
+                      <input type="radio" name="gw" value={g.v} checked={gateway === g.v} onChange={() => setGateway(g.v)} style={{ accentColor: "#7c3aed" }} />
+                      <span dangerouslySetInnerHTML={{ __html: g.logo }} style={{ width: 44, height: 18, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#0a1628" }}>{g.l}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {gateway === "crypto" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px" }}>Choose a network</div>
+                    {cryptoMethods.length === 0 && <div style={{ fontSize: 12, color: "#94a3b8" }}>No crypto methods are currently available.</div>}
+                    {cryptoMethods.map(m => (
+                      <button key={m.id} disabled={checkoutLoading}
+                        onClick={() => pickCryptoMethod(m.id, selectedItem.type === "playbook" ? selectedItem.id : undefined, selectedItem.type === "bundle" ? selectedItem.id : undefined)}
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fff", cursor: checkoutLoading ? "wait" : "pointer", fontWeight: 700, fontSize: 13, color: "#0a1628" }}>
+                        <span>{m.name}</span>
+                        <span style={{ fontSize: 11, color: "#94a3b8" }}>{m.network}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <button onClick={() => handleCheckout(selectedItem.type === "playbook" ? selectedItem.id : undefined, selectedItem.type === "bundle" ? selectedItem.id : undefined)} disabled={checkoutLoading} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: checkoutLoading ? "#64748b" : "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontWeight: 700, fontSize: 15, cursor: checkoutLoading ? "not-allowed" : "pointer" }}>
+                    {checkoutLoading ? "Redirecting..." : `Pay $${selectedItem.price_usd} →`}
+                  </button>
+                )}
+              </div>
+            )}
             <p style={{ textAlign: "center", fontSize: 11, color: "#94a3b8", marginTop: 12 }}>Instant download after payment · 🔒 Secure checkout</p>
           </div>
         </div>

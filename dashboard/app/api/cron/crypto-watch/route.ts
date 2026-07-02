@@ -17,6 +17,7 @@ import { writeInvoice } from "@/lib/invoice";
 import { recordResellerSale } from "@/lib/reseller";
 import { sendWelcomeEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
+import { processPlaybookPurchase } from "@/lib/webhooks/shared";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -55,6 +56,21 @@ export async function GET(req: NextRequest) {
       const result = await settleCryptoPayment(method as PaymentMethod, intent, {
         // defaultFetcher routes to the correct chain explorer by method.kind/network
         issueLicense: async (a) => {
+          // Playbook/bundle purchases carry no license -- product is set to
+          // the 'playbook' sentinel at intent-creation time (see api/checkout
+          // gateway==='crypto' branch). Reuse the same completion logic every
+          // other gateway uses (idempotency, bundle expansion, purchase
+          // record, confirmation email) instead of a license.
+          if (a.product === "playbook") {
+            let pbMeta: any = {};
+            try { pbMeta = JSON.parse(p.meta || "{}"); } catch {}
+            await processPlaybookPurchase(req, {
+              email: a.email, name: pbMeta.name || a.email, amountUsd: p.amount_usd,
+              paymentRef: `${a.symbol}:${a.txHash}`, gateway: "crypto",
+              playbookId: pbMeta.playbook_id || undefined, bundleId: pbMeta.bundle_id || undefined,
+            });
+            return { licenseId: "" };
+          }
           const issued: any = await createLicense({
             clientName: a.email, clientEmail: a.email, product: a.product,
             packageCode: a.packageCode, licenseType: "paid", paymentRef: `${a.symbol}:${a.txHash}`,
