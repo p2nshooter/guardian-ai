@@ -15,6 +15,8 @@ import { getEnabledMethod } from "@/lib/payments/methods";
 import { settleCryptoPayment, type CryptoIntent, type PaymentMethod } from "@/lib/payments/crypto";
 import { writeInvoice } from "@/lib/invoice";
 import { recordResellerSale } from "@/lib/reseller";
+import { sendWelcomeEmail } from "@/lib/email";
+import { PACKAGE_INFO } from "@/lib/stripe";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -55,10 +57,24 @@ export async function GET(req: NextRequest) {
             clientName: a.email, clientEmail: a.email, product: a.product,
             packageCode: a.packageCode, licenseType: "paid", paymentRef: `${a.symbol}:${a.txHash}`,
           } as any, req);
-          const licenseId = issued?.licenseId || issued?.id || "";
+          // createLicense() returns { licenseKey, license, clientId, product } --
+          // the id lives on the nested license row, not a top-level licenseId/id.
+          const licenseId = issued?.license?.id || "";
           let referralCode = "";
           try { referralCode = JSON.parse(p.meta || "{}").referralCode || ""; } catch {}
           await recordResellerSale(db, { referralCode, amountUsd: p.amount_usd, licenseId, clientEmail: a.email });
+          // Same welcome-email step every other payment gateway does after
+          // issuing a license (see lib/webhooks/shared.ts processPayment) --
+          // crypto settlement never called it, so paying clients never got
+          // their license key by email despite the checkout page telling
+          // them to check it.
+          try {
+            await sendWelcomeEmail({
+              to: a.email, name: a.email, licenseKey: issued?.licenseKey || "",
+              packageName: PACKAGE_INFO[a.packageCode]?.name || a.packageCode,
+              expiresAt: issued?.license?.expires_at || "", product: a.product,
+            });
+          } catch {}
           return { licenseId };
         },
         writeInvoice: async (a) => {

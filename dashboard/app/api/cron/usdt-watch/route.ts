@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB } from "@/lib/db";
 import { createLicense } from "@/lib/license";
 import { settlePayment, type PaymentIntent } from "@/lib/payments/usdt-trc20";
+import { sendWelcomeEmail } from "@/lib/email";
+import { PACKAGE_INFO } from "@/lib/stripe";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -55,7 +57,23 @@ export async function GET(req: NextRequest) {
             packageCode: a.packageCode, licenseType: "paid",
             paymentRef: `usdt:${a.txHash}`,
           } as any, req);
-          return { licenseId: issued?.licenseId || issued?.id || "", licenseKey: issued?.licenseKey || "", expiresAt: issued?.expiresAt || "" };
+          // createLicense() returns { licenseKey, license, clientId, product } --
+          // id and expires_at live on the nested license row, not top-level.
+          const licenseId  = issued?.license?.id || "";
+          const licenseKey = issued?.licenseKey || "";
+          const expiresAt  = issued?.license?.expires_at || "";
+          // Same welcome-email step every other payment gateway sends after
+          // issuing a license (see lib/webhooks/shared.ts processPayment) --
+          // this watcher never called it, so paying clients never got their
+          // license key by email.
+          try {
+            await sendWelcomeEmail({
+              to: a.email, name: a.email, licenseKey,
+              packageName: PACKAGE_INFO[a.packageCode]?.name || a.packageCode,
+              expiresAt, product: a.product,
+            });
+          } catch {}
+          return { licenseId, licenseKey, expiresAt };
         },
         writeInvoice: async (a) => {
           try {
