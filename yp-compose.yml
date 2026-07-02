@@ -1,0 +1,44 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hallo@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+version: "3.9"
+
+# ============================================================
+# Yusron Power (YP) — Super-Enterprise Unified AI Platform
+#
+# Quick Start:
+#   cp yp.example.yml yp.yml   # then fill in YOUR OWN keys
+#   docker compose -f yp-compose.yml up -d
+#   Console: http://localhost:8100
+#   Health:  http://localhost:8100/health
+#   Guide:   http://localhost:8100/guide
+#
+# 100% BYOK/BYOI/BYOD/BYOM/BYOX — your keys, your infrastructure, always.
+# ============================================================
+
+services:
+
+  yp-core:
+    image: axto/yp-core:latest
+    container_name: yp-core
+    restart: unless-stopped
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./yp.yml:/yp/config/yp.yml:ro
+      - yp-data:/yp/data
+      - yp-logs:/yp/logs
+    environment:
+      - YP_CONFIG=/yp/config/yp.yml
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  yp-data:
+  yp-logs:

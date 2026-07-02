@@ -37,6 +37,7 @@ on:
       - "sentinel/**"
       - "studio/**"
       - "legal/**"
+      - "yp/**"
       - "build-scripts/exe-entrypoints/**"
       - ".github/workflows/auto-build-exe.yml"
 
@@ -64,6 +65,7 @@ jobs:
           - { product: sentinel-core,        reqdir: sentinel,   entry: "sentinel/src/__main__.py",   addsrc: "sentinel/src",   paths: "", collect: "", collectall: "" }
           - { product: studio-core,          reqdir: studio,     entry: "studio/src/__main__.py",     addsrc: "studio/src",     paths: "", collect: "", collectall: "" }
           - { product: legal-core,           reqdir: legal,      entry: "legal/src/__main__.py",      addsrc: "legal/src",      paths: "", collect: "", collectall: "" }
+          - { product: yp-core,              reqdir: yp,         entry: "yp/src/__main__.py",         addsrc: "yp/src",         paths: "", collect: "", collectall: "" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
