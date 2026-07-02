@@ -64,17 +64,18 @@ export async function POST(req: NextRequest) {
     JSON.stringify({ billing, priceSource: livePrice.source }),
   ).run();
 
-  const qr = method.kind === "trc20"
-    ? `tron:${method.address}?amount=${intent.amountCrypto}`
-    : method.network === "Bitcoin"
-      ? `bitcoin:${method.address}?amount=${intent.amountCrypto}`
-      : `ethereum:${method.address}?value=${intent.amountCrypto}`;
-
+  // QR payload is built client-side (lib/crypto-qr.ts) — BIP21 for BTC (a
+  // universally-supported standard we can safely embed the amount into),
+  // plain address for everything else. An ethereum: URI's `value` param is
+  // defined in wei (EIP-681), not a decimal coin amount, so embedding
+  // intent.amountCrypto there directly would be spec-non-compliant; safer
+  // to let the wallet scan the address and the client re-enter the amount
+  // shown next to the code.
   return NextResponse.json({
     ok: true, orderId, method: method.id, symbol: method.symbol, network: method.network,
     depositAddress: method.address, amountCrypto: intent.amountCrypto, amountUsd, billing,
     priceSource: livePrice.source, // "db" = admin panel price, "static" = fallback
-    confirmations: method.confirmations, qr, expiresAt: new Date(intent.expiresAt).toISOString(),
+    confirmations: method.confirmations, expiresAt: new Date(intent.expiresAt).toISOString(),
     note: "Send the EXACT amount on the EXACT network. The license is issued automatically once the payment confirms on-chain. An invoice is always generated.",
   });
 }

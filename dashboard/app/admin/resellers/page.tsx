@@ -116,6 +116,7 @@ export default function ResellersPage() {
 
   const resellerByCode: Record<string, string> = {};
   for (const r of resellers) resellerByCode[r.id] = `${r.name || r.email} (${r.referral_code})`;
+  const pending = resellers.filter(r => r.status === "pending");
 
   return (
     <div style={{ minHeight: "100vh", background: "#f1f5f9", fontFamily: "system-ui, -apple-system, sans-serif" }}>
@@ -137,6 +138,35 @@ export default function ResellersPage() {
           <div style={{ background: "#f0fdf4", border: "1.5px solid #86efac", borderRadius: 10, padding: "12px 16px", marginBottom: 20, color: "#166534", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>✅ Reseller created — referral code: <code style={{ background: "#dcfce7", padding: "2px 8px", borderRadius: 6 }}>{newCode}</code></span>
             <button onClick={() => setNewCode(null)} style={{ background: "none", border: "none", color: "#166534", cursor: "pointer", fontWeight: 700 }}>✕</button>
+          </div>
+        )}
+
+        {/* Pending Applications — from the public /reseller/register form */}
+        {pending.length > 0 && (
+          <div style={{ background: "#fffbeb", borderRadius: 14, border: "1.5px solid #fde68a", padding: 22, marginBottom: 24 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#92400e", marginBottom: 4 }}>🟡 {pending.length} Pending Application{pending.length !== 1 ? "s" : ""}</div>
+            <div style={{ fontSize: 12, color: "#92400e", marginBottom: 14, opacity: 0.85 }}>Submitted via the public reseller sign-up form. Their referral code earns zero commission until approved.</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {pending.map(r => (
+                <div key={r.id} style={{ background: "#fff", borderRadius: 10, border: "1px solid #fde68a", padding: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "#0a1628" }}>{r.name || r.email}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>{r.email}{r.company ? ` · ${r.company}` : ""}</div>
+                    {r.notes && <div style={{ fontSize: 11, color: "#64748b", marginTop: 4, maxWidth: 500 }}>&ldquo;{r.notes}&rdquo;</div>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <button onClick={() => toggleStatus(r.id, "active")}
+                      style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#16a34a", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      ✓ Approve
+                    </button>
+                    <button onClick={() => toggleStatus(r.id, "rejected")}
+                      style={{ padding: "7px 14px", borderRadius: 8, border: "1.5px solid #fca5a5", background: "#fff", color: "#dc2626", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                      ✕ Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -210,15 +240,25 @@ export default function ResellersPage() {
                     </td>
                     <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 800, fontSize: 13, color: "#16a34a" }}>{fmt(r.total_sales_usd)}</td>
                     <td style={{ padding: "12px 12px", textAlign: "center" }}>
-                      <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, background: r.status === "active" ? "rgba(34,197,94,0.1)" : "rgba(148,163,184,0.1)", color: r.status === "active" ? "#16a34a" : "#64748b" }}>
-                        {r.status === "active" ? "🟢 Active" : "⏸ Suspended"}
+                      <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800,
+                        background: r.status === "active" ? "rgba(34,197,94,0.1)" : r.status === "pending" ? "rgba(245,158,11,0.12)" : r.status === "rejected" ? "rgba(239,68,68,0.1)" : "rgba(148,163,184,0.1)",
+                        color: r.status === "active" ? "#16a34a" : r.status === "pending" ? "#b45309" : r.status === "rejected" ? "#dc2626" : "#64748b" }}>
+                        {r.status === "active" ? "🟢 Active" : r.status === "pending" ? "🟡 Pending" : r.status === "rejected" ? "✕ Rejected" : "⏸ Suspended"}
                       </span>
                     </td>
                     <td style={{ padding: "12px 12px", textAlign: "center" }}>
-                      <button onClick={() => toggleStatus(r.id, r.status === "active" ? "suspended" : "active")}
-                        style={{ padding: "6px 10px", borderRadius: 7, border: "1.5px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-                        {r.status === "active" ? "Suspend" : "Reactivate"}
-                      </button>
+                      {(r.status === "active" || r.status === "suspended") && (
+                        <button onClick={() => toggleStatus(r.id, r.status === "active" ? "suspended" : "active")}
+                          style={{ padding: "6px 10px", borderRadius: 7, border: "1.5px solid #e2e8f0", background: "#fff", color: "#64748b", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+                          {r.status === "active" ? "Suspend" : "Reactivate"}
+                        </button>
+                      )}
+                      {r.status === "rejected" && (
+                        <button onClick={() => toggleStatus(r.id, "active")}
+                          style={{ padding: "6px 10px", borderRadius: 7, border: "1.5px solid #86efac", background: "#f0fdf4", color: "#166534", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+                          Approve
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

@@ -803,7 +803,7 @@ export default function HomePage() {
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>{t("landing.footer.resources")}</h4>
-              {[[t("landing.footer.setupguide"),"/guide"],[t("landing.footer.playbooks"),"/playbooks"],[t("landing.footer.tos"),"/terms"],[t("landing.footer.privacy"),"/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
+              {[[t("landing.footer.setupguide"),"/guide"],[t("landing.footer.playbooks"),"/playbooks"],["Become a Reseller","/reseller/register"],[t("landing.footer.tos"),"/terms"],[t("landing.footer.privacy"),"/privacy"]].map(([l,h]) => <div key={l} style={{ marginBottom: 10 }}><Link href={h} style={{ color: "#64748b", fontSize: 14, textDecoration: "none" }}>{l}</Link></div>)}
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>{t("landing.footer.legal")}</h4>
