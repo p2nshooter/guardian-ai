@@ -461,7 +461,7 @@ export const PACKAGE_INFO: Record<string, PackageInfo> = {
       "White-label branding & custom domain",
       "Sovereign AI — 100% air-gapped deployment option",
       "Custom LLM fine-tuning pipeline",
-      "SLA 99.9% with dedicated support",
+      "Priority support & onboarding — self-hosted, no managed SLA",
       "Custom compliance framework builder",
       "Full BYOD connector marketplace",
       "On-premise government-grade deployment",
