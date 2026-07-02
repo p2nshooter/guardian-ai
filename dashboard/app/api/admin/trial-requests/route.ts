@@ -13,6 +13,8 @@ import { getDB } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { createLicense } from "@/lib/license";
 import { writeInvoice } from "@/lib/invoice";
+import { sendWelcomeEmail } from "@/lib/email";
+import { PACKAGE_INFO } from "@/lib/stripe";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -67,8 +69,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e?.message || "issue failed" }, { status: 400 });
   }
 
-  const licenseId = (issued as any)?.licenseId || (issued as any)?.id || "";
-  const expiresAt = (issued as any)?.expiresAt || "";
+  // createLicense() returns { licenseKey, license, clientId, product } -- the
+  // id and expires_at live on the nested license row, not top-level.
+  const licenseId  = (issued as any)?.license?.id || "";
+  const licenseKey = (issued as any)?.licenseKey || "";
+  const expiresAt  = (issued as any)?.license?.expires_at || "";
+
+  try {
+    await sendWelcomeEmail({
+      to: tr.user_email, name: tr.company || tr.user_email, licenseKey,
+      packageName: PACKAGE_INFO[tr.package_code || `trial_${tr.product}`]?.name || tr.product,
+      expiresAt, product: tr.product,
+    });
+  } catch {}
 
   // Free trial invoice (elegant "Complimentary — No Charge" wording in renderer).
   let invId = "";
