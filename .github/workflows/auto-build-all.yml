@@ -22,7 +22,7 @@ name: Auto Build All Images
 on:
   push:
     branches: [main]
-    paths: ['engine/**','antivirus/**','orchestra/**','vault/**','edge/**','soc/**','compliance/**','sentinel/**','studio/**','ai-studio/**','gpu-studio/**','hybrid-studio/**','legal/**','.github/workflows/auto-build-all.yml']
+    paths: ['engine/**','antivirus/**','orchestra/**','vault/**','edge/**','soc/**','compliance/**','sentinel/**','studio/**','ai-studio/**','gpu-studio/**','hybrid-studio/**','legal/**','yp/**','.github/workflows/auto-build-all.yml']
   workflow_dispatch:
     inputs:
       force_all: { description: 'Force rebuild ALL', required: false, default: 'false' }
@@ -49,6 +49,7 @@ jobs:
       gpu_studio: ${{ steps.f.outputs.gpu_studio }}
       hybrid_studio: ${{ steps.f.outputs.hybrid_studio }}
       legal: ${{ steps.f.outputs.legal }}
+      yp: ${{ steps.f.outputs.yp }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -68,6 +69,7 @@ jobs:
             gpu_studio: ['gpu-studio/**']
             hybrid_studio: ['hybrid-studio/**']
             legal: ['legal/**']
+            yp: ['yp/**']
 
   build-guardian-core:
     name: "🛡️ Guardian Core"
@@ -189,9 +191,17 @@ jobs:
     with: { context: ./legal, dockerfile: ./legal/Dockerfile, image_name: legal-core }
     secrets: inherit
 
+  build-yp-core:
+    name: "🚀 Yusron Power"
+    needs: detect-changes
+    if: needs.detect-changes.outputs.yp == 'true' || github.event.inputs.force_all == 'true'
+    uses: ./.github/workflows/_build-image.yml
+    with: { context: ./yp, dockerfile: ./yp/Dockerfile, image_name: yp-core }
+    secrets: inherit
+
   summary:
     name: "📊 Summary"
-    needs: [build-guardian-core,build-guardian-node,build-guardian-antivirus,build-orchestra-core,build-orchestra-worker-cpu,build-vault-core,build-edge-core,build-soc-core,build-compliance-core,build-sentinel-core,build-studio-core,build-ai-studio,build-gpu-studio,build-hybrid-studio,build-legal-core]
+    needs: [build-guardian-core,build-guardian-node,build-guardian-antivirus,build-orchestra-core,build-orchestra-worker-cpu,build-vault-core,build-edge-core,build-soc-core,build-compliance-core,build-sentinel-core,build-studio-core,build-ai-studio,build-gpu-studio,build-hybrid-studio,build-legal-core,build-yp-core]
     runs-on: ubuntu-latest
     if: always()
     steps:
