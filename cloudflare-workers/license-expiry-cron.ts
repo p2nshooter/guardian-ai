@@ -8,7 +8,8 @@
 /**
  * AXTO — License Expiry Warning Cron Worker
  * Runs daily at 08:00 UTC — triggers /api/cron/expire-licenses
- * Handles: license expiry + warning emails at 30/14/7/3/1 days
+ * Handles: license expiry + warning emails at 30/14/3 days (matches the
+ * landing-page FAQ promise — see WARNING_DAYS in that route).
  */
 
 export interface Env {
@@ -38,18 +39,14 @@ export default {
         return;
       }
 
+      // Matches the actual shape returned by /api/cron/expire-licenses.
       const result = await resp.json() as {
         ok: boolean;
         expired: number;
         warnings_sent: number;
-        errors: string[];
-        summary: string;
       };
 
-      console.log(`License expiry cron OK: ${result.summary}`);
-      if (result.errors?.length) {
-        console.warn(`Errors: ${result.errors.join(", ")}`);
-      }
+      console.log(`License expiry cron OK: ${result.expired} expired, ${result.warnings_sent} warnings sent`);
     } catch (err) {
       console.error(`License expiry cron exception: ${err}`);
     }
