@@ -511,15 +511,19 @@ export const PACKAGE_INFO: Record<string, PackageInfo> = {
   },
   yp_trial_free: {
     name: "Yusron Power — Trial (Enterprise Clients)",
-    description: "7-day trial. Requires a completed Enterprise-tier purchase on any AXTO product.",
+    description: "7-day trial — core modules only, no API, watermarked. Requires a completed Enterprise-tier purchase on any AXTO product.",
     price: 0, priceMonthly: 0,
-    product: "yp", isTrial: true, trialDays: 7, requiresPriorEnterprise: true, adminApprovalRequired: true, forSale: false, // not yet built
+    product: "yp", isTrial: true, trialDays: 7, trialLimited: true, noApi: true, watermark: true,
+    requiresPriorEnterprise: true, adminApprovalRequired: true, forSale: false, // not yet built
+    features: ["Core AI provider-scaling (1 provider)", "Privacy redaction", "Watermarked exports"],
   },
   yp_trial_paid: {
     name: "Yusron Power — Trial (New Clients)",
-    description: "30-day trial. $100,000 non-refundable download fee, credited in full toward Annual or Lifetime if you continue.",
-    price: 100000, priceMonthly: 0,
-    product: "yp", isTrial: true, trialDays: 30, trialFeeUsd: 100000, trialFeeCreditable: true, adminApprovalRequired: true, forSale: false, // not yet built
+    description: "30-day trial — core modules only, no API, watermarked. $100,000 non-refundable download fee, credited in full toward Annual or Lifetime if you continue.",
+    price: 0, priceMonthly: 0,
+    product: "yp", isTrial: true, trialDays: 30, trialLimited: true, noApi: true, watermark: true,
+    trialFeeUsd: 100000, trialFeeCreditable: true, adminApprovalRequired: true, forSale: false, // not yet built
+    features: ["Core AI provider-scaling (1 provider)", "Privacy redaction", "Watermarked exports"],
   },
 };
 

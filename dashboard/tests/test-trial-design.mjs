@@ -10,6 +10,12 @@ const paidFor = (product) =>
   Object.entries(PACKAGE_INFO).filter(([k, p]) => p.product === product && !p.isTrial && !p.isBundle && p.price > 0)
     .sort((a, b) => a[1].price - b[1].price).map(([k, p]) => p);
 
+// Every trial is 7 days EXCEPT Yusron Power's paid-download trial path, which
+// is deliberately 30 days by explicit product-owner design (the $100k
+// non-refundable download fee buys a longer evaluation window than the free
+// trial does; see PackageInfo.trialFeeUsd).
+const EXPECTED_TRIAL_DAYS = { yp_trial_paid: 30 };
+
 ok("there are trial packages", trials.length >= 8);
 
 for (const [key, t] of trials) {
@@ -18,7 +24,7 @@ for (const [key, t] of trials) {
   ok(`${key}: exports watermarked`, t.watermark === true);
   ok(`${key}: price is 0`, t.price === 0);
   ok(`${key}: has a (small) core feature list`, Array.isArray(t.features) && t.features.length > 0 && t.features.length <= 4);
-  ok(`${key}: duration set (7 days)`, (t.trialDays || 0) === 7);
+  ok(`${key}: duration set (${EXPECTED_TRIAL_DAYS[key] || 7} days)`, (t.trialDays || 0) === (EXPECTED_TRIAL_DAYS[key] || 7));
 
   const paid = paidFor(t.product);
   if (paid.length) {
