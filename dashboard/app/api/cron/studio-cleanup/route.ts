@@ -16,10 +16,11 @@ import { getDB, dbRun, dbFirst } from "@/lib/db";
  * Also resets daily AI request counters
  */
 export async function GET(req: NextRequest) {
-  // Verify cron secret
+  // Verify cron secret -- MANDATORY, an unconfigured secret must reject
+  // every request rather than skip auth.
   const authHeader = req.headers.get("authorization") || "";
   const cronSecret = process.env.CRON_SECRET || "";
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

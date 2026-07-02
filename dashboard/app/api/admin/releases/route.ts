@@ -56,9 +56,12 @@ export async function POST(req: NextRequest) {
 
   // ── Webhook from GitHub Actions (no admin session) ────────────────────────
   if (action === "auto_build_complete") {
+    // MANDATORY: an unconfigured BUILD_WEBHOOK_SECRET must reject every
+    // request rather than skip auth -- otherwise anyone can write fake
+    // entries into the build-history table the admin relies on.
     const secret    = process.env.BUILD_WEBHOOK_SECRET || "";
     const reqSecret = req.headers.get("X-Build-Secret") || "";
-    if (secret && reqSecret !== secret)
+    if (!secret || reqSecret !== secret)
       return NextResponse.json({ error:"Unauthorized" }, { status:401 });
 
     let db: any;
