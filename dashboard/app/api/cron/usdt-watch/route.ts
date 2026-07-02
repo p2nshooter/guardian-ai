@@ -18,9 +18,11 @@ import { PACKAGE_INFO } from "@/lib/stripe";
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 export async function GET(req: NextRequest) {
+  // MANDATORY: an unconfigured CRON_SECRET must reject every request, not
+  // skip auth -- this endpoint settles real payments and issues licenses.
   const secret = (process.env as any).CRON_SECRET || (req as any).env?.CRON_SECRET;
   const auth = req.headers.get("authorization") || "";
-  if (secret && auth !== `Bearer ${secret}`) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!secret || auth !== `Bearer ${secret}`) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   const db = getDB(req);
   const apiKey = (process.env as any).TRON_API_KEY || (req as any).env?.TRON_API_KEY;
