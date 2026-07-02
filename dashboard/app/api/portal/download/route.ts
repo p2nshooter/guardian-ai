@@ -374,7 +374,11 @@ function generateStudioGuide(lang: string, key: string): string {
     en: () => studioGuideEN(key),
     id: () => studioGuideID(key),
   };
-  return (guides[lang] || guides["en"])();
+  const generator = guides[lang];
+  if (generator) return generator();
+  const notice = _untranslatedNotice(lang);
+  const body = studioGuideEN(key);
+  return notice ? `${notice}\n\n${body}` : body;
 }
 
 function studioGuideEN(key: string): string {
