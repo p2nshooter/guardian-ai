@@ -838,7 +838,7 @@ export default function PortalPage() {
               <div style={{...S.card,textAlign:"center",color:"#64748b",fontSize:13}}>Loading current prices…</div>
             )}
 
-            {/* All 10 products — prices & for-sale status come live from the admin panel */}
+            {/* All products + bundles/suites — prices & for-sale status come live from the admin panel */}
             {(shopProducts || []).map((section: any) => {
               const productForSale = section.forSale;
               return (

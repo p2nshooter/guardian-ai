@@ -695,7 +695,7 @@ export default function HomePage() {
             <h2 className="font-display" style={{ fontSize: 38, fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 12 }}>{t("faq.title")}</h2>
             <p style={{ color: "#64748b", fontSize: 16 }}>{t("landing.faq.subtitle")}</p>
           </div>
-          {[1, 2, 3, 4, 5, 6].map(n => ({ q: t(`landing.faq.q${n}`), a: t(`landing.faq.a${n}`) })).map((item, i: number) => (
+          {[1, 2, 3, 4, 5, 6, 7].map(n => ({ q: t(`landing.faq.q${n}`), a: t(`landing.faq.a${n}`) })).map((item, i: number) => (
             <div key={i} style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", marginBottom: 14, border: "1px solid rgba(2,132,199,0.1)", boxShadow: "0 2px 8px rgba(2,132,199,0.06)" }}>
               <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0a1628", marginBottom: 10 }}>{item.q}</h4>
               <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.75 }}>{item.a}</p>

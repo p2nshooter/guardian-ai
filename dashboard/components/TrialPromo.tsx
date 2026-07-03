@@ -85,11 +85,13 @@ export default function TrialPromo() {
 
   return (
     <div>
-      <div style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)", borderRadius: 16, padding: "24px 26px", marginBottom: 20, color: "#fff" }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#7dd3fc", letterSpacing: "0.5px", textTransform: "uppercase" }}>🎁 Launch Promo · AXTO 2026–2027</div>
-        <div style={{ fontSize: 22, fontWeight: 900, marginTop: 6 }}>Free 7-Day Trial — On Us</div>
+      <div className="trial-cta" style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)", borderRadius: 16, padding: "24px 26px", marginBottom: 14, color: "#fff" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#7dd3fc", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+          <span className="trial-cta-emoji">🎁</span> Launch Promo · AXTO 2026–2027
+        </div>
+        <div style={{ fontSize: 22, fontWeight: 900, marginTop: 6 }}>AXTO just launched — claim a full-featured 7-day Enterprise trial, on us</div>
         <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 8, lineHeight: 1.6, maxWidth: 640 }}>
-          Claim a full-featured 7-day trial of any product, courtesy of axto.io. The clock starts the moment you claim.
+          Every tier's complete feature set, no limits, courtesy of axto.io. The clock starts the moment you claim.
           One trial per product per person — bound to your email, network and device. Limited pool: when a tier runs out, it&apos;s gone.
         </div>
         {win && (
@@ -97,6 +99,14 @@ export default function TrialPromo() {
             {win.open ? `Promo open until ${new Date(win.endsAt.replace(" ", "T") + "Z").toLocaleDateString()}` : "Promo is currently closed."}
           </div>
         )}
+      </div>
+
+      <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "14px 18px", marginBottom: 20, fontSize: 12.5, color: "#075985", lineHeight: 1.6 }}>
+        <strong>Two ways to try AXTO:</strong> This <em>Launch Promo</em> pool gives you the full Enterprise tier
+        of any product for 7 days, unlimited features — but the pool is limited and one-time per product/person.
+        If it's empty or you want a quicker start, every product also has its own always-available <strong>core-feature
+        trial</strong> (limited requests, watermarked, 1 device) — pick any &quot;Trial&quot; plan on the{" "}
+        <a href="/register" style={{ color: "#0284c7", fontWeight: 700 }}>Register</a> page, no waiting.
       </div>
 
       {msg && (

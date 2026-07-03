@@ -635,6 +635,7 @@ export const PRODUCT_NAMES: Record<string, string> = {
   antivirus:  "Antivirus",
   studio:     "AXTO Studio",
   legal:      "AXTO Legal",
+  bundle:     "Bundles & Suites",
 };
 
 /** Returns all non-bundle, non-trial packages for a given product */
