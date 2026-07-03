@@ -44,7 +44,7 @@ for pdf in "$PDF_DIR"/*.pdf; do
   
   echo "  ⬆ Uploading: $filename ($((size/1024))KB) → $r2_key"
   
-  npx wrangler r2 object put "$BUCKET/$r2_key" \
+  npx --yes wrangler@3 r2 object put "$BUCKET/$r2_key" \
     --file="$pdf" \
     --content-type="application/pdf" \
     2>/dev/null && UPLOADED=$((UPLOADED+1)) || {
@@ -78,8 +78,10 @@ for pdf in "$PDF_DIR"/*.pdf; do
 "
 done
 
+WRANGLER_CONFIG="dashboard/wrangler.toml"
+
 if [ -n "$SQL_COMMANDS" ]; then
-  echo "$SQL_COMMANDS" | npx wrangler d1 execute "$DB_NAME" --remote --command="$SQL_COMMANDS" 2>/dev/null || {
+  npx --yes wrangler@3 d1 execute "$DB_NAME" --remote --config="$WRANGLER_CONFIG" --command="$SQL_COMMANDS" 2>/dev/null || {
     # If batch fails, try one by one
     echo "  Batch SQL failed, trying individual updates..."
     for pdf in "$PDF_DIR"/*.pdf; do
@@ -88,8 +90,8 @@ if [ -n "$SQL_COMMANDS" ]; then
       slug="${filename%.pdf}"
       r2_key="playbooks/${slug}.pdf"
       size=$(stat -c%s "$pdf" 2>/dev/null || stat -f%z "$pdf" 2>/dev/null || echo "0")
-      
-      npx wrangler d1 execute "$DB_NAME" --remote \
+
+      npx --yes wrangler@3 d1 execute "$DB_NAME" --remote --config="$WRANGLER_CONFIG" \
         --command="UPDATE playbooks SET r2_key='${r2_key}', file_size_bytes=${size}, file_format='pdf', updated_at=datetime('now') WHERE slug='${slug}';" \
         2>/dev/null || true
     done

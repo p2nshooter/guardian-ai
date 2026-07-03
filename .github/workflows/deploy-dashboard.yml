@@ -50,6 +50,16 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
 
+      - name: Seed Playbooks (R2 + D1)
+        # Non-fatal: same graceful-degradation pattern as the migration step
+        # above. Uploads every PDF in playbooks-pdf/ to R2 and syncs each
+        # playbook's r2_key/file_size_bytes in D1 so checkout actually finds
+        # a real file instead of the fabricated seed-migration placeholder.
+        run: bash scripts/seed-playbooks.sh || echo "⚠️ Playbook seed skipped — dashboard will still deploy. Re-run after verifying CLOUDFLARE_API_TOKEN."
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
+
       - name: Build
         working-directory: dashboard
         run: npx @cloudflare/next-on-pages
