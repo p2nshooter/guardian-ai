@@ -48,6 +48,19 @@ const GW_INFO: Record<string, {
       { key: "is_production",  label: "Production? (true/false)", placeholder: "true" },
     ],
   },
+  resend: {
+    label: "Resend (Transactional Email)", icon: "📧",
+    fields: [
+      { key: "api_key", label: "API Key", placeholder: "re_...", secret: true },
+    ],
+  },
+  nowpayments: {
+    label: "NOWPayments (Crypto Checkout)", icon: "🪙",
+    fields: [
+      { key: "api_key", label: "API Key", placeholder: "...", secret: true },
+      { key: "ipn_secret", label: "IPN Callback Secret", placeholder: "...", secret: true },
+    ],
+  },
 };
 
 export default function GatewaysPage() {
@@ -190,7 +203,7 @@ export default function GatewaysPage() {
           <p style={{ color: "#64748b" }}>Loading...</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {(["stripe", "paypal", "xendit", "midtrans"] as const).map(gwName => {
+            {(["stripe", "paypal", "xendit", "midtrans", "resend", "nowpayments"] as const).map(gwName => {
               const gw = gateways[gwName];
               const info = GW_INFO[gwName];
               const isConfigured = gw?.hasCredentials === true;

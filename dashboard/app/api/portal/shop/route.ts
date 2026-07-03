@@ -47,9 +47,18 @@ const CATALOG: Record<string, {
     packages: { studio_starter: {limit:"500 req/day · 1 GPU", isMonthly:true}, studio_professional: {limit:"5K req/day · 5 GPUs · API", isMonthly:true, popular:true}, studio_enterprise: {limit:"Unlimited", isMonthly:true} } },
   legal: { color: "#4338ca", desc: "Self-hosted AI legal intelligence — 30+ jurisdictions, contract analysis, BYOK.",
     packages: { legal_starter: {limit:"30 jurisdictions · 3 workspaces"}, legal_professional: {limit:"100 jurisdictions · 10 workspaces", popular:true}, legal_business: {limit:"195+ jurisdictions · 18 workspaces"}, legal_enterprise: {limit:"Unlimited"} } },
+  bundle: { color: "#0d9488", desc: "Bundle two or more products together and save vs. buying each individually.",
+    packages: {
+      bundle_starter:       { limit: "Guardian Professional + Orchestra Starter" },
+      bundle_professional:  { limit: "Guardian Business + Orchestra Professional", popular: true },
+      bundle_enterprise:    { limit: "Guardian Enterprise + Orchestra Enterprise" },
+      privacy_suite:        { limit: "Vault Professional + Compliance Professional" },
+      security_suite:       { limit: "SOC Professional + Sentinel Professional" },
+      platform_5:           { limit: "Vault + Edge + SOC + Compliance + Sentinel (all Professional)" },
+    } },
 };
 
-const PRODUCT_ORDER = ["guardian","orchestra","vault","edge","soc","compliance","sentinel","antivirus","studio","legal"];
+const PRODUCT_ORDER = ["guardian","orchestra","vault","edge","soc","compliance","sentinel","antivirus","studio","legal","bundle"];
 
 function fmtPrice(n: number): string {
   if (n === 0) return "Free";

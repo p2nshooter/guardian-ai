@@ -125,6 +125,18 @@ a:hover { text-decoration: underline; }
 @keyframes counterUp { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
 @keyframes slideRight { from{opacity:0;transform:translateX(-24px);} to{opacity:1;transform:translateX(0);} }
 @keyframes slideLeft  { from{opacity:0;transform:translateX(24px);}  to{opacity:1;transform:translateX(0);} }
+@keyframes trialGlow  { 0%,100%{box-shadow:0 0 0 0 rgba(13,148,136,0.45);} 50%{box-shadow:0 0 0 10px rgba(13,148,136,0);} }
+@keyframes trialWiggle{ 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(-6deg);} 75%{transform:rotate(6deg);} }
+
+/* ── Animated trial-promo CTA — used on landing + every /products page ── */
+.trial-cta { position: relative; overflow: hidden; animation: trialGlow 2.2s ease-in-out infinite; }
+.trial-cta:hover { animation: none; transform: translateY(-1px); }
+.trial-cta::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+  background-size: 200% 100%; animation: shimmer 2.8s linear infinite;
+}
+.trial-cta-emoji { display: inline-block; animation: trialWiggle 1.6s ease-in-out infinite; }
 @keyframes bgShift { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
 
 .animate-fade-up  { animation: fadeUp 0.7s ease both; }

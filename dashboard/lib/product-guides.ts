@@ -1,8 +1,8 @@
 /* ==============================================================================
  * AXTO — Product Guides (single source of truth)
  * Complete install + usage + feature documentation for every product, rendered
- * consistently in English & Bahasa Indonesia. This is the "documentation SLA":
- * every product ships a complete, downloadable guide — no human SLA implied.
+ * consistently in English & Bahasa Indonesia. Every product ships a complete,
+ * downloadable guide in place of human/managed support — self-hosted, no SLA.
  *
  * To add/adjust a product, edit ONE entry below; the renderer keeps every
  * language and the website/in-app downloads in sync automatically.

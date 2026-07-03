@@ -11,11 +11,29 @@ interface EmailParams {
   to: string;
   subject: string;
   html: string;
+  db?: any; // optional — when provided, prefers the admin-managed encrypted
+            // credential (payment_gateways, gateway='resend') over the env var
 }
 
-export async function sendEmail({ to, subject, html }: EmailParams): Promise<void> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY not configured");
+async function resolveResendKey(db?: any): Promise<string> {
+  if (db) {
+    try {
+      const { decryptObj } = await import("@/lib/gateway-crypto");
+      const row: any = await db.prepare(
+        `SELECT credentials_enc FROM payment_gateways WHERE gateway = 'resend' AND is_active = 1`
+      ).first();
+      if (row?.credentials_enc) {
+        const creds = await decryptObj<{ api_key?: string }>(row.credentials_enc);
+        if (creds?.api_key) return creds.api_key;
+      }
+    } catch { /* fall through to env var */ }
+  }
+  return process.env.RESEND_API_KEY || "";
+}
+
+export async function sendEmail({ to, subject, html, db }: EmailParams): Promise<void> {
+  const key = await resolveResendKey(db);
+  if (!key) throw new Error("RESEND_API_KEY not configured (env var or admin → gateways → Resend)");
 
   const res = await fetch(RESEND_URL, {
     method: "POST",

@@ -352,6 +352,9 @@ export default function HomePage() {
             <p style={{ fontSize: 16.5, color: "#475569", lineHeight: 1.65 }}>
               {t("landing.products.subtitle")}
             </p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 18, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 999, padding: "8px 18px", fontSize: 12.5, color: "#075985", fontWeight: 600 }}>
+              🐳 Docker (Linux) is production-ready for every product · 🪟 Windows EXE is still in active development
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(272px, 1fr))", gap: 18 }}>
@@ -379,6 +382,11 @@ export default function HomePage() {
                   </div>
                   <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.4px", margin: 0, fontFamily: "Sora, sans-serif" }}>{p.name}</h3>
                   <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
+                  {available && (
+                    <span className="trial-cta" style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 800, color: "#0f766e", background: "rgba(13,148,136,0.1)", border: "1px solid rgba(13,148,136,0.25)", padding: "4px 10px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <span className="trial-cta-emoji">🎁</span> Free 7-day Enterprise trial
+                    </span>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
                     {available ? (
                       <span style={{ fontSize: 13, color: "#0a1628", fontWeight: 700 }}>{t("landing.products.available")} <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16, fontWeight: 900 }}>${from.toLocaleString()}</span><span style={{ color: "#94a3b8", fontWeight: 500 }}>/yr</span></span>
@@ -393,7 +401,9 @@ export default function HomePage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 40 }}>
-            <Link href="/register" className="btn-primary">{t("landing.products.trialcta")}</Link>
+            <Link href="/register" className="btn-primary trial-cta" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span className="trial-cta-emoji">🎁</span> {t("landing.products.trialcta")}
+            </Link>
             <a href="#pricing" className="btn-secondary">{t("landing.products.comparecta")}</a>
           </div>
         </div>
@@ -685,7 +695,7 @@ export default function HomePage() {
             <h2 className="font-display" style={{ fontSize: 38, fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 12 }}>{t("faq.title")}</h2>
             <p style={{ color: "#64748b", fontSize: 16 }}>{t("landing.faq.subtitle")}</p>
           </div>
-          {[1, 2, 3, 4, 5, 6].map(n => ({ q: t(`landing.faq.q${n}`), a: t(`landing.faq.a${n}`) })).map((item, i: number) => (
+          {[1, 2, 3, 4, 5, 6, 7].map(n => ({ q: t(`landing.faq.q${n}`), a: t(`landing.faq.a${n}`) })).map((item, i: number) => (
             <div key={i} style={{ background: "#fff", borderRadius: 14, padding: "24px 28px", marginBottom: 14, border: "1px solid rgba(2,132,199,0.1)", boxShadow: "0 2px 8px rgba(2,132,199,0.06)" }}>
               <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0a1628", marginBottom: 10 }}>{item.q}</h4>
               <p style={{ fontSize: 14, color: "#475569", lineHeight: 1.75 }}>{item.a}</p>

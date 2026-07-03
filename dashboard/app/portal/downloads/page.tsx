@@ -245,6 +245,10 @@ export default function ClientDownloads() {
   const [guide, setGuide] = useState<string|null>(null);
   const [copied, setCopied] = useState<string|null>(null);
   const [tab, setTab] = useState(0);
+  // Live per-format availability (build_formats, admin-controlled) -- checked
+  // up front via HEAD so "Windows EXE — In Development" shows BEFORE the
+  // client clicks download, not as an error after.
+  const [formatAvail, setFormatAvail] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -256,6 +260,35 @@ export default function ClientDownloads() {
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const licenses = (data?.licenses || []).filter((l: any) => l.product);
+    if (licenses.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const checks: [string, Promise<boolean>][] = [];
+      for (const lic of licenses) {
+        if (lic.status !== "active") continue;
+        const cat = PRODUCT_CATALOG[lic.product];
+        if (!cat) continue;
+        for (const pkg of cat.packages) {
+          for (const v of pkg.variants) {
+            const key = `${lic.id}|${pkg.id}|${v.type}|${v.arch}`;
+            checks.push([key, fetch(
+              `/api/portal/download?license_id=${lic.id}&product=${pkg.id}&type=${v.type}&arch=${v.arch}`,
+              { method: "HEAD", credentials: "include" }
+            ).then(r => r.ok).catch(() => false)]);
+          }
+        }
+      }
+      const results = await Promise.all(checks.map(([, p]) => p));
+      if (cancelled) return;
+      const next: Record<string, boolean> = {};
+      checks.forEach(([key], i) => { next[key] = results[i]; });
+      setFormatAvail(next);
+    })();
+    return () => { cancelled = true; };
+  }, [data]);
 
   async function download(licId: string, product: string, type: string, arch: string) {
     const key = `${licId}|${product}|${type}|${arch}`;
@@ -540,35 +573,43 @@ export default function ClientDownloads() {
                           {pkg.variants.map((v) => {
                             const dlKey = `${lic.id}|${pkg.id}|${v.type}|${v.arch}`;
                             const status = dlStatus[dlKey] || "idle";
+                            const available = formatAvail[dlKey] !== false;
                             return (
-                              <div key={dlKey} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0" }}>
+                              <div key={dlKey} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0", opacity: available ? 1 : 0.6 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                                   <span style={{ fontSize: 18 }}>{v.icon}</span>
                                   <div>
                                     <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 600, fontSize: 13, color: "#0f172a" }}>{v.label}</div>
                                     <div style={{ color: "#94a3b8", fontSize: 11, fontFamily: "'DM Mono', monospace" }}>
-                                      .{v.type === "docker" ? "tar.gz" : "zip"}
+                                      {available ? `.${v.type === "docker" ? "tar.gz" : "zip"}` : "Still in development"}
                                     </div>
                                   </div>
                                 </div>
 
-                                <button className="dl-btn"
-                                  disabled={status === "loading"}
-                                  onClick={() => download(lic.id, pkg.id, v.type, v.arch)}
-                                  style={{
-                                    padding: "8px 16px", borderRadius: 10, border: "none",
-                                    background: status === "done" ? "#dcfce7" : status === "error" ? "#fee2e2" : status === "loading" ? "#f1f5f9" : cat.color,
-                                    color: status === "done" ? "#166534" : status === "error" ? "#991b1b" : status === "loading" ? "#64748b" : "#fff",
-                                    fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 12,
-                                    cursor: status === "loading" ? "wait" : "pointer",
-                                    transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6,
-                                    boxShadow: status === "idle" ? `0 2px 8px ${cat.color}40` : "none",
-                                  }}>
-                                  {status === "loading" && (
-                                    <span style={{ width: 12, height: 12, border: "2px solid #cbd5e1", borderTopColor: "#64748b", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }}/>
-                                  )}
-                                  {status === "loading" ? "Downloading…" : status === "done" ? "✓ Done" : status === "error" ? "✕ Error" : "⬇ Download"}
-                                </button>
+                                {available ? (
+                                  <button className="dl-btn"
+                                    disabled={status === "loading"}
+                                    onClick={() => download(lic.id, pkg.id, v.type, v.arch)}
+                                    style={{
+                                      padding: "8px 16px", borderRadius: 10, border: "none",
+                                      background: status === "done" ? "#dcfce7" : status === "error" ? "#fee2e2" : status === "loading" ? "#f1f5f9" : cat.color,
+                                      color: status === "done" ? "#166534" : status === "error" ? "#991b1b" : status === "loading" ? "#64748b" : "#fff",
+                                      fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 12,
+                                      cursor: status === "loading" ? "wait" : "pointer",
+                                      transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6,
+                                      boxShadow: status === "idle" ? `0 2px 8px ${cat.color}40` : "none",
+                                    }}>
+                                    {status === "loading" && (
+                                      <span style={{ width: 12, height: 12, border: "2px solid #cbd5e1", borderTopColor: "#64748b", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }}/>
+                                    )}
+                                    {status === "loading" ? "Downloading…" : status === "done" ? "✓ Done" : status === "error" ? "✕ Error" : "⬇ Download"}
+                                  </button>
+                                ) : (
+                                  <span title="Not published by admin yet — check back soon or contact hallo@axto.io"
+                                    style={{ padding: "8px 14px", borderRadius: 10, background: "rgba(148,163,184,0.15)", color: "#64748b", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" }}>
+                                    🚧 In Development
+                                  </span>
+                                )}
                               </div>
                             );
                           })}
