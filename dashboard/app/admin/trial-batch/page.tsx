@@ -82,9 +82,12 @@ export default function TrialBatchPage() {
 
   async function saveWindow(enabled: boolean) {
     if (!winDraft) return;
+    // datetime-local inputs give "YYYY-MM-DDTHH:MM" -- the API expects the
+    // SQLite-style "YYYY-MM-DD HH:MM:SS" (space separator, explicit seconds).
     await post({
       action: "set_window", enabled,
-      startsAt: `${winDraft.startsAt}:00`, endsAt: `${winDraft.endsAt}:00`,
+      startsAt: `${winDraft.startsAt.replace("T", " ")}:00`,
+      endsAt: `${winDraft.endsAt.replace("T", " ")}:00`,
     }, "window");
   }
 

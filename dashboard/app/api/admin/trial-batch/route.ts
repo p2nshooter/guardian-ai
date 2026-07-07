@@ -93,21 +93,29 @@ export async function POST(req: NextRequest) {
       const { packageCode, count } = body;
       const pkg = (PACKAGE_INFO as any)[packageCode];
       if (!packageCode || !pkg) return NextResponse.json({ error: `Unknown package: ${packageCode}` }, { status: 400 });
-      // Cap at 100/request: 100 rows x 7 binds = 700 params, safely under
-      // SQLite/D1's ~999 host-parameter limit for a single statement.
       const n = Math.min(Math.max(Number(count) || 100, 1), 100);
       const batchId = uid("batch");
-      const values: string[] = [];
-      const binds: any[] = [];
-      for (let i = 0; i < n; i++) {
-        values.push("(?, ?, ?, ?, ?, 'available', ?, datetime('now'))");
-        binds.push(uid("tc"), trialCode(), pkg.product, packageCode, batchId, user.email ?? "admin");
+      // Cloudflare D1 caps a single statement at 100 bound parameters (NOT
+      // SQLite's desktop default of 999) -- 6 binds/row means >16 rows in
+      // one INSERT throws "D1_ERROR: too many SQL variables". Chunk into
+      // groups of 15 (90 params) and run atomically via db.batch().
+      const CHUNK = 15;
+      const stmts: any[] = [];
+      for (let start = 0; start < n; start += CHUNK) {
+        const rows = Math.min(CHUNK, n - start);
+        const values: string[] = [];
+        const binds: any[] = [];
+        for (let i = 0; i < rows; i++) {
+          values.push("(?, ?, ?, ?, ?, 'available', ?, datetime('now'))");
+          binds.push(uid("tc"), trialCode(), pkg.product, packageCode, batchId, user.email ?? "admin");
+        }
+        stmts.push(
+          db.prepare(
+            `INSERT INTO trial_batch_codes (id, code, product, package_code, batch_id, status, created_by, created_at) VALUES ${values.join(",")}`
+          ).bind(...binds)
+        );
       }
-      await dbRun(
-        db,
-        `INSERT INTO trial_batch_codes (id, code, product, package_code, batch_id, status, created_by, created_at) VALUES ${values.join(",")}`,
-        binds
-      );
+      await db.batch(stmts);
       return NextResponse.json({ success: true, batchId, generated: n });
     }
 
