@@ -39,11 +39,13 @@ const NAV: NavItem[] = [
   { href: "/admin/content",        icon: "📝", label: "Content",         group: "Marketing" },
   { href: "/admin/autopost",       icon: "📢", label: "AutoPost",        group: "Marketing" },
 
+  { href: "/admin/ai-keys",        icon: "🧠", label: "AI Provider Keys",group: "Infrastructure" },
+
   { href: "/guide",                icon: "📖", label: "Guide",           group: "More" },
   { href: "/admin/account",        icon: "⚙️", label: "Account Settings",group: "More" },
 ];
 
-const GROUPS = ["Overview", "Sales", "Delivery", "Payments", "Marketing", "More"];
+const GROUPS = ["Overview", "Sales", "Delivery", "Payments", "Marketing", "Infrastructure", "More"];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
