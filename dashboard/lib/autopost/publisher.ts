@@ -450,7 +450,7 @@ export async function publishToplatform(req: PublishRequest): Promise<PublishRes
   if (ayrshareKey && !classified.includes(req.platform)) {
     try {
       const { postViaAyrshare } = await import("@/lib/autopost/ayrshare");
-      const defaultImage = "https://axto.io/og-image.png";
+      const defaultImage = "https://axto.io/social-square.png"; // 1:1 -- safe across every platform's aspect-ratio rules
       const mediaUrls = req.post.image_url ? [req.post.image_url] : [defaultImage];
       const result = await postViaAyrshare(ayrshareKey, {
         post: req.post.body_text + (req.post.cta_text ? `

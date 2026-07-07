@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     post: `${filledText}\n\n🔗 ${appUrl}`,
     platforms: targetPlatforms,
     hashtags,
-    mediaUrls: body.image_url ? [body.image_url] : ["https://axto.io/og-image.png"],
+    mediaUrls: body.image_url ? [body.image_url] : ["https://axto.io/social-square.png"],
     title: language === "id" 
       ? "AXTO AI Platform — Keamanan Server Enterprise"
       : "AXTO AI Platform — Enterprise Server Security",

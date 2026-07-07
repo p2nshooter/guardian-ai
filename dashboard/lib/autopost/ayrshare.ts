@@ -89,8 +89,11 @@ export async function postViaAyrshare(
   if (post.mediaUrls?.length) {
     body.mediaUrls = post.mediaUrls;
   } else if (needsMedia) {
-    // Use default AXTO logo as fallback — prevents "Missing Required Fields" error
-    body.mediaUrls = ["https://axto.io/og-image.png"];
+    // og-image.png (1200x630, 1.90:1) sits right at Instagram's max 1.91:1
+    // aspect-ratio boundary and got rejected with "Media Error: An image
+    // or video could not be processed" (Ayrshare code 139). A true 1:1
+    // square is safe across every platform that requires media here.
+    body.mediaUrls = ["https://axto.io/social-square.png"];
   }
   if (post.scheduleDate)      body.scheduleDate = post.scheduleDate;
   if (post.title)             body.title = post.title;
