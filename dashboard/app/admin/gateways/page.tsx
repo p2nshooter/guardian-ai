@@ -61,6 +61,12 @@ const GW_INFO: Record<string, {
       { key: "ipn_secret", label: "IPN Callback Secret", placeholder: "...", secret: true },
     ],
   },
+  buffer: {
+    label: "Buffer (stored only — publishing not yet wired)", icon: "📋",
+    fields: [
+      { key: "access_token", label: "Access Token", placeholder: "1/...", secret: true },
+    ],
+  },
 };
 
 export default function GatewaysPage() {
@@ -203,7 +209,7 @@ export default function GatewaysPage() {
           <p style={{ color: "#64748b" }}>Loading...</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {(["stripe", "paypal", "xendit", "midtrans", "resend", "nowpayments"] as const).map(gwName => {
+            {(["stripe", "paypal", "xendit", "midtrans", "resend", "nowpayments", "buffer"] as const).map(gwName => {
               const gw = gateways[gwName];
               const info = GW_INFO[gwName];
               const isConfigured = gw?.hasCredentials === true;

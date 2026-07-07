@@ -253,6 +253,9 @@ export default function AdminAutopostPage() {
                       <div>
                         <div style={{ fontWeight: 800, fontSize: 16, color: "#0a1628" }}>Social Media — Autopilot</div>
                         <div style={{ fontSize: 12, color: "#64748b" }}>{ayrshareStatus?.connected ? `✅ ${connectedPlatforms.length} platforms connected via Ayrshare` : "Connect Ayrshare to enable"}</div>
+                        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                          Have a Buffer token too? Store it encrypted at <a href="/admin/gateways" style={{ color: "#0284c7", fontWeight: 700 }}>Admin → Gateways</a> — publishing runs through Ayrshare above, Buffer isn't wired as a publish path yet.
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
