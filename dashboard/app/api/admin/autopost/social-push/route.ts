@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { getRandomTemplate, autoFillTemplate } from "@/lib/autopost/generator";
-import { postViaAyrshare } from "@/lib/autopost/ayrshare";
+import { postViaAyrshare, getAyrshareProfiles } from "@/lib/autopost/ayrshare";
 
 /**
  * AXTO AutoPost — Social Media Push API
@@ -79,16 +79,24 @@ export async function POST(req: NextRequest) {
     ? ["#GuardianAI", "#AIKeamanan", "#CyberSecurity", "#OrchestraAI", "#axto", "#ServerSecurity"]
     : ["#GuardianAI", "#CyberSecurity", "#AIInfrastructure", "#OrchestraAI", "#axto", "#ServerSecurity"];
 
-  // All social platforms to post to
-  const allPlatforms = [
-    "facebook", "instagram", "twitter", "linkedin", 
-    "pinterest", "tiktok", "youtube", "threads", "telegram"
-  ];
+  // Only post to platforms actually connected in this Ayrshare account --
+  // posting to an unconnected platform guarantees a per-platform failure
+  // on every single push, which previously made "publish to all" always
+  // come back partial-success even when everything was configured right.
+  const profileData = await getAyrshareProfiles(ayrshareKey);
+  const targetPlatforms = body.platforms?.length ? body.platforms : profileData.connected;
+
+  if (!targetPlatforms.length) {
+    return NextResponse.json({
+      ok: false,
+      error: "No social accounts are connected in Ayrshare yet. Connect at least one platform in the Ayrshare dashboard first.",
+    }, { status: 400 });
+  }
 
   // Post via Ayrshare
   const result = await postViaAyrshare(ayrshareKey, {
     post: `${filledText}\n\n🔗 ${appUrl}`,
-    platforms: allPlatforms,
+    platforms: targetPlatforms,
     hashtags,
     mediaUrls: body.image_url ? [body.image_url] : ["https://axto.io/og-image.png"],
     title: language === "id" 
