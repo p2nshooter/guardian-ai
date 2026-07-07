@@ -377,10 +377,10 @@ export const PACKAGE_INFO: Record<string, PackageInfo> = {
   },
   studio_enterprise: {
     name: "Studio Enterprise",
-    description: "Unlimited scale — unlimited requests, GPUs, providers, white-label",
+    description: "High-volume scale — 50,000 req/day, 400 GPU hours/mo, white-label",
     price: 7990, priceMonthly: 799,
     product: "studio",
-    features: ["Unlimited everything", "White-label", "SSO-ready", "100 GB storage", "Webhook CI/CD", "SOC 2 audit logs"],
+    features: ["50,000 req/day", "400 GPU-hours/month", "All providers, custom endpoints", "White-label", "SSO-ready", "100 GB storage (30-day retention)", "Webhook CI/CD", "SOC 2 audit logs"],
   },
   trial_studio: {
     name: "Studio Trial",
