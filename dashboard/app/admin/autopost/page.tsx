@@ -50,6 +50,7 @@ export default function AdminAutopostPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [pushing, setPushing] = useState(false);
+  const [pushingSocial, setPushingSocial] = useState(false);
 
   const connectedPlatforms = ayrshareStatus?.platforms || [];
   const publishedCount = posts.filter((p: any) => p.status === "published").length;
@@ -128,6 +129,23 @@ export default function AdminAutopostPage() {
       } else setError(d.error || "Push failed");
     } catch (e: any) { setError(e.message); }
     finally { setPushing(false); }
+  }
+
+  async function pushSocialNow() {
+    setPushingSocial(true); setError(null);
+    try {
+      const res = await fetch("/api/admin/autopost/social-push", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: "en" }),
+      });
+      const d = await res.json();
+      if (d.ok) {
+        setMsg(`✅ Posted to: ${(d.platforms || []).join(", ") || "no platforms"}`);
+        await load();
+      } else setError(d.error || "Social push failed");
+    } catch (e: any) { setError(e.message); }
+    finally { setPushingSocial(false); }
   }
 
   async function connectAyrshare() {
@@ -276,6 +294,7 @@ export default function AdminAutopostPage() {
                         </select>
                       </div>
                       <button onClick={() => saveSchedule("social")} disabled={saving} style={{ padding: "7px 18px", borderRadius: 8, border: "none", background: "#7c3aed", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "Saving..." : "Save"}</button>
+                      <button onClick={pushSocialNow} disabled={pushingSocial} style={{ padding: "7px 18px", borderRadius: 8, border: "1.5px solid #7c3aed", background: "transparent", color: "#7c3aed", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: pushingSocial ? 0.6 : 1 }}>{pushingSocial ? "Pushing..." : "🚀 Push Now"}</button>
                       {socialLastRun && <span style={{ fontSize: 11, color: "#94a3b8" }}>Last: {fmtDate(socialLastRun)}</span>}
                     </div>
                   )}
@@ -352,7 +371,7 @@ export default function AdminAutopostPage() {
                           <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.status === "published" ? "#22c55e" : p.status === "failed" ? "#ef4444" : "#94a3b8", flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: "#0a1628" }}>{p.platform === "classified_batch" ? "🌍 Classified Push" : p.platform === "social_all" ? "📱 Social Post" : p.platform}</div>
-                            <div style={{ fontSize: 11, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.error_msg || p.title || p.body_text?.slice(0, 80)}</div>
+                            <div title={p.error_msg || ""} style={{ fontSize: 11, color: p.status === "failed" ? "#dc2626" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.error_msg || p.title || p.body_text?.slice(0, 80)}</div>
                           </div>
                           <div style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }}>{fmtDate(p.created_at)}</div>
                           <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, flexShrink: 0, background: p.status === "published" ? "#dcfce7" : p.status === "failed" ? "#fee2e2" : "#f1f5f9", color: p.status === "published" ? "#166534" : p.status === "failed" ? "#dc2626" : "#64748b" }}>{p.status}</div>

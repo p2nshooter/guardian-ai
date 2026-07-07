@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { pickUnusedTemplate, autoFillTemplate } from "@/lib/autopost/generator";
 import { ALL_CLASSIFIED_SITES, type ClassifiedSite } from "@/lib/classified-sites";
+import { postViaAyrshare, getAyrshareProfiles } from "@/lib/autopost/ayrshare";
 
 /**
  * AutoPost Cron — FULLY AUTOPILOT
@@ -84,35 +85,6 @@ async function pushToSite(
     return { site: site.name, success: r.ok || r.status === 302 || r.status === 301 };
   } catch (e: any) {
     return { site: site.name, success: false, error: e.message?.slice(0, 60) || "timeout" };
-  }
-}
-
-// ── Push to Ayrshare (social media) ──────────────────────────
-async function pushToAyrshare(
-  apiKey: string,
-  text: string
-): Promise<{ success: boolean; platforms?: string[]; error?: string }> {
-  try {
-    const res = await fetch("https://app.ayrshare.com/api/post", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        post: text,
-        platforms: ["facebook", "twitter", "linkedin", "instagram", "telegram"],
-        shorten_links: true,
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
-    const data: any = await res.json();
-    if (res.ok && !data.error) {
-      return { success: true, platforms: data.postIds ? Object.keys(data.postIds) : [] };
-    }
-    return { success: false, error: data.error || data.message || "Ayrshare error" };
-  } catch (e: any) {
-    return { success: false, error: e.message };
   }
 }
 
@@ -277,9 +249,22 @@ export async function GET(req: NextRequest) {
         const hashtags = (tmpl.hashtags || []).slice(0, 5).join(" ");
         const fullPost = `${text}\n\n${hashtags}`.trim();
 
-        const result = await pushToAyrshare(apiKey, fullPost);
+        // Only post to platforms actually connected in Ayrshare -- posting
+        // to an unlinked platform fails every single time (this is exactly
+        // what silently broke this cron: hardcoded platforms including ones
+        // never linked in the account, plus no media for Instagram, which
+        // requires it).
+        const profileData = await getAyrshareProfiles(apiKey);
+        const result = profileData.connected.length
+          ? await postViaAyrshare(apiKey, {
+              post: fullPost,
+              platforms: profileData.connected,
+              mediaUrls: ["https://axto.io/social-square.png"],
+              title: tmpl.title || "AXTO Platform",
+            })
+          : { success: false, error: "No social accounts connected in Ayrshare yet", postIds: {} };
         socialSuccess = result.success;
-        socialPlatforms = result.platforms || [];
+        socialPlatforms = result.postIds ? Object.keys(result.postIds) : [];
 
         // Update last_run
         await dbRun(db,
@@ -301,7 +286,9 @@ export async function GET(req: NextRequest) {
             result.success ? "published" : "failed",
             result.success
               ? `Posted to: ${socialPlatforms.join(", ")}`
-              : result.error || "Failed",
+              : (result as any).errors
+                ? Object.entries((result as any).errors).map(([p, e]) => `${p}: ${e}`).join(" | ")
+                : result.error || "Failed",
             result.success ? now() : null,
             now(),
           ]
