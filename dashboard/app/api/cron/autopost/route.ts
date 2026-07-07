@@ -12,6 +12,7 @@ import { getDB, dbQuery, dbRun, dbFirst, newId, now } from "@/lib/db";
 import { pickUnusedTemplate, autoFillTemplate } from "@/lib/autopost/generator";
 import { ALL_CLASSIFIED_SITES, type ClassifiedSite } from "@/lib/classified-sites";
 import { postViaAyrshare, getAyrshareProfiles } from "@/lib/autopost/ayrshare";
+import { getBufferCredentials, createBufferIdea } from "@/lib/autopost/buffer";
 
 /**
  * AutoPost Cron — FULLY AUTOPILOT
@@ -301,6 +302,75 @@ export async function GET(req: NextRequest) {
     console.error("[cron] social push error:", e.message);
   }
 
+  // ══════════════════════════════════════════════════════════
+  // STEP 3: BUFFER — DRAFT IDEAS (AUTOPILOT)
+  // ══════════════════════════════════════════════════════════
+  // Buffer's GraphQL API only creates a draft "Idea" in Buffer's content
+  // calendar, never a live publish. Autopilot here means "keep Buffer's
+  // Ideas queue stocked automatically" — a human still opens Buffer to
+  // turn an Idea into a scheduled post. Never log this as "published".
+  let bufferDraftCreated = false;
+  let bufferSkipped = false;
+
+  try {
+    const bufferSched = await dbFirst<any>(db,
+      `SELECT frequency, is_active, last_run FROM autopost_schedules WHERE platform = 'buffer_all'`
+    );
+
+    const bufferActive = bufferSched ? bufferSched.is_active === 1 : false;
+    const bufferFreq = bufferSched?.frequency || "daily";
+    const bufferLast = bufferSched?.last_run || "";
+    const bufferInterval = FREQ_HOURS[bufferFreq] ?? 24;
+    const bufferElapsed = bufferLast
+      ? (Date.now() - new Date(bufferLast).getTime()) / 3_600_000
+      : 999;
+
+    if (!bufferActive || bufferElapsed < bufferInterval) {
+      bufferSkipped = true;
+    } else {
+      const creds = await getBufferCredentials(db);
+      if (creds) {
+        const recentBuffer = await dbQuery<{ template_id: string }>(db,
+          `SELECT template_id FROM autopost_posts WHERE platform = 'buffer_draft' AND created_at > datetime('now', '-30 days')`
+        );
+        const usedIds = recentBuffer.map((p) => p.template_id).filter(Boolean);
+
+        const tmpl = pickUnusedTemplate(usedIds, "linkedin", "en");
+        const text = autoFillTemplate(tmpl.body_text || "", { appUrl, language: "en" });
+        const title = tmpl.title || "AXTO Platform";
+
+        const result = await createBufferIdea(creds.accessToken, creds.organizationId, title, `${text}\n\n🔗 ${appUrl}`);
+        bufferDraftCreated = result.success;
+
+        await dbRun(db,
+          `UPDATE autopost_schedules SET last_run = ?, updated_at = ? WHERE platform = 'buffer_all'`,
+          [now(), now()]
+        );
+
+        await dbRun(db,
+          `INSERT INTO autopost_posts (id, template_id, platform, category, title, body_text, status, error_msg, published_at, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            newId(),
+            tmpl.id,
+            "buffer_draft",
+            "social",
+            title,
+            text.slice(0, 500),
+            result.success ? "draft" : "failed",
+            result.success ? `Draft Idea created in Buffer (id: ${result.ideaId}) — open Buffer to schedule it` : result.error,
+            result.success ? now() : null,
+            now(),
+          ]
+        );
+      } else {
+        bufferSkipped = true;
+      }
+    }
+  } catch (e: any) {
+    console.error("[cron] buffer draft error:", e.message);
+  }
+
   const duration_ms = Date.now() - t0;
 
   return NextResponse.json({
@@ -318,6 +388,10 @@ export async function GET(req: NextRequest) {
       success: socialSuccess,
       platforms: socialPlatforms,
       skipped: socialSkipped,
+    },
+    buffer: {
+      draft_created: bufferDraftCreated,
+      skipped: bufferSkipped,
     },
     timestamp: now(),
   });

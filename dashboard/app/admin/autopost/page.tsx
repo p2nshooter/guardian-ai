@@ -46,6 +46,13 @@ export default function AdminAutopostPage() {
   const [showConnect, setShowConnect] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
+  // Buffer autopilot (draft Ideas only — never a live publish)
+  const [bufferEnabled, setBufferEnabled] = useState(false);
+  const [bufferInterval, setBufferInterval] = useState("daily");
+  const [bufferLastRun, setBufferLastRun] = useState("");
+  const [bufferConnected, setBufferConnected] = useState(false);
+  const [pushingBuffer, setPushingBuffer] = useState(false);
+
   // Stats
   const [posts, setPosts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
@@ -66,6 +73,7 @@ export default function AdminAutopostPage() {
 
       const cSched = (d.schedules || []).find((s: any) => s.platform === "classified_all");
       const sSched = (d.schedules || []).find((s: any) => s.platform === "social_all");
+      const bSched = (d.schedules || []).find((s: any) => s.platform === "buffer_all");
       if (cSched) {
         setClassifiedEnabled(cSched.is_active === 1);
         setClassifiedInterval(cSched.frequency || "6hours");
@@ -76,10 +84,24 @@ export default function AdminAutopostPage() {
         setSocialInterval(sSched.frequency || "daily");
         setSocialLastRun(sSched.last_run || "");
       }
+      if (bSched) {
+        setBufferEnabled(bSched.is_active === 1);
+        setBufferInterval(bSched.frequency || "daily");
+        setBufferLastRun(bSched.last_run || "");
+      }
 
       try {
         const aRes = await fetch("/api/admin/autopost/ayrshare", { credentials: "include" });
         if (aRes.ok) setAyrshareStatus(await aRes.json());
+      } catch {}
+
+      try {
+        const gRes = await fetch("/api/admin/gateways", { credentials: "include" });
+        if (gRes.ok) {
+          const gd = await gRes.json();
+          const bufferGw = (gd.gateways || []).find((g: any) => g.gateway === "buffer");
+          setBufferConnected(!!bufferGw?.hasCredentials);
+        }
       } catch {}
     } catch { setError("Network error"); }
     finally { setLoading(false); }
@@ -92,23 +114,20 @@ export default function AdminAutopostPage() {
     });
   }, []);
 
-  async function saveSchedule(type: "classified" | "social") {
+  async function saveSchedule(type: "classified" | "social" | "buffer") {
     setSaving(true); setError(null);
-    const isClassified = type === "classified";
+    const platform = type === "classified" ? "classified_all" : type === "social" ? "social_all" : "buffer_all";
+    const frequency = type === "classified" ? classifiedInterval : type === "social" ? socialInterval : bufferInterval;
+    const is_active = type === "classified" ? classifiedEnabled : type === "social" ? socialEnabled : bufferEnabled;
+    const label = type === "classified" ? "Classified" : type === "social" ? "Social" : "Buffer";
     try {
       const res = await fetch("/api/admin/autopost", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "schedule",
-          platform: isClassified ? "classified_all" : "social_all",
-          frequency: isClassified ? classifiedInterval : socialInterval,
-          language: "en",
-          is_active: isClassified ? classifiedEnabled : socialEnabled,
-        }),
+        body: JSON.stringify({ action: "schedule", platform, frequency, language: "en", is_active }),
       });
       const d = await res.json();
-      if (d.success) setMsg(`✅ ${isClassified ? "Classified" : "Social"} schedule saved!`);
+      if (d.success) setMsg(`✅ ${label} schedule saved!`);
       else setError(d.error || "Failed to save");
     } catch { setError("Network error"); }
     finally { setSaving(false); setTimeout(() => setMsg(null), 4000); }
@@ -146,6 +165,23 @@ export default function AdminAutopostPage() {
       } else setError(d.error || "Social push failed");
     } catch (e: any) { setError(e.message); }
     finally { setPushingSocial(false); }
+  }
+
+  async function pushBufferNow() {
+    setPushingBuffer(true); setError(null);
+    try {
+      const res = await fetch("/api/admin/autopost/buffer-push", {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: "en" }),
+      });
+      const d = await res.json();
+      if (d.ok) {
+        setMsg(`✅ Draft Idea created in Buffer — open Buffer to review & schedule it`);
+        await load();
+      } else setError(d.error || "Buffer draft failed");
+    } catch (e: any) { setError(e.message); }
+    finally { setPushingBuffer(false); }
   }
 
   async function connectAyrshare() {
@@ -272,7 +308,7 @@ export default function AdminAutopostPage() {
                         <div style={{ fontWeight: 800, fontSize: 16, color: "#0a1628" }}>Social Media — Autopilot</div>
                         <div style={{ fontSize: 12, color: "#64748b" }}>{ayrshareStatus?.connected ? `✅ ${connectedPlatforms.length} platforms connected via Ayrshare` : "Connect Ayrshare to enable"}</div>
                         <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
-                          Have a Buffer token too? Store it encrypted at <a href="/admin/gateways" style={{ color: "#0284c7", fontWeight: 700 }}>Admin → Gateways</a> — publishing runs through Ayrshare above, Buffer isn't wired as a publish path yet.
+                          This publishes live to every connected platform above. Using Buffer instead? See the Buffer card below — it works differently (drafts, not live posts).
                         </div>
                       </div>
                     </div>
@@ -296,6 +332,37 @@ export default function AdminAutopostPage() {
                       <button onClick={() => saveSchedule("social")} disabled={saving} style={{ padding: "7px 18px", borderRadius: 8, border: "none", background: "#7c3aed", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "Saving..." : "Save"}</button>
                       <button onClick={pushSocialNow} disabled={pushingSocial} style={{ padding: "7px 18px", borderRadius: 8, border: "1.5px solid #7c3aed", background: "transparent", color: "#7c3aed", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: pushingSocial ? 0.6 : 1 }}>{pushingSocial ? "Pushing..." : "🚀 Push Now"}</button>
                       {socialLastRun && <span style={{ fontSize: 11, color: "#94a3b8" }}>Last: {fmtDate(socialLastRun)}</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* BUFFER — DRAFT IDEAS (never a live publish) */}
+                <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 14, padding: "22px 24px", marginBottom: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#f59e0b,#0284c7)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📋</div>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 16, color: "#0a1628" }}>Buffer — Draft Ideas</div>
+                        <div style={{ fontSize: 12, color: "#64748b" }}>{bufferConnected ? "✅ Access Token + Organization ID configured" : "Not connected"}</div>
+                        <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                          Creates a draft "Idea" in Buffer's content calendar — not a live post. Open Buffer to review and schedule it. {!bufferConnected && <>Configure at <Link href="/admin/gateways" style={{ color: "#0284c7", fontWeight: 700 }}>Admin → Gateways → Buffer</Link>.</>}
+                        </div>
+                      </div>
+                    </div>
+                    {bufferConnected && <Toggle on={bufferEnabled} onClick={() => setBufferEnabled(!bufferEnabled)} />}
+                  </div>
+
+                  {bufferConnected && (
+                    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Create draft every:</span>
+                        <select value={bufferInterval} onChange={e => setBufferInterval(e.target.value)} style={{ padding: "7px 12px", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                          {INTERVAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+                      <button onClick={() => saveSchedule("buffer")} disabled={saving} style={{ padding: "7px 18px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "Saving..." : "Save"}</button>
+                      <button onClick={pushBufferNow} disabled={pushingBuffer} style={{ padding: "7px 18px", borderRadius: 8, border: "1.5px solid #f59e0b", background: "transparent", color: "#f59e0b", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: pushingBuffer ? 0.6 : 1 }}>{pushingBuffer ? "Sending..." : "📋 Create Draft Now"}</button>
+                      {bufferLastRun && <span style={{ fontSize: 11, color: "#94a3b8" }}>Last: {fmtDate(bufferLastRun)}</span>}
                     </div>
                   )}
                 </div>
@@ -368,13 +435,13 @@ export default function AdminAutopostPage() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       {posts.slice(0, 30).map((p: any) => (
                         <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, background: "#f8fafc" }}>
-                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.status === "published" ? "#22c55e" : p.status === "failed" ? "#ef4444" : "#94a3b8", flexShrink: 0 }} />
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.status === "published" ? "#22c55e" : p.status === "draft" ? "#f59e0b" : p.status === "failed" ? "#ef4444" : "#94a3b8", flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#0a1628" }}>{p.platform === "classified_batch" ? "🌍 Classified Push" : p.platform === "social_all" ? "📱 Social Post" : p.platform}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#0a1628" }}>{p.platform === "classified_batch" ? "🌍 Classified Push" : p.platform === "social_all" ? "📱 Social Post" : p.platform === "buffer_draft" ? "📋 Buffer Draft" : p.platform}</div>
                             <div title={p.error_msg || ""} style={{ fontSize: 11, color: p.status === "failed" ? "#dc2626" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.error_msg || p.title || p.body_text?.slice(0, 80)}</div>
                           </div>
                           <div style={{ fontSize: 11, color: "#94a3b8", flexShrink: 0 }}>{fmtDate(p.created_at)}</div>
-                          <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, flexShrink: 0, background: p.status === "published" ? "#dcfce7" : p.status === "failed" ? "#fee2e2" : "#f1f5f9", color: p.status === "published" ? "#166534" : p.status === "failed" ? "#dc2626" : "#64748b" }}>{p.status}</div>
+                          <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, flexShrink: 0, background: p.status === "published" ? "#dcfce7" : p.status === "draft" ? "#fef3c7" : p.status === "failed" ? "#fee2e2" : "#f1f5f9", color: p.status === "published" ? "#166534" : p.status === "draft" ? "#92400e" : p.status === "failed" ? "#dc2626" : "#64748b" }}>{p.status}</div>
                         </div>
                       ))}
                     </div>

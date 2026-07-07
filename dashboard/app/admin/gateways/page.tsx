@@ -62,9 +62,10 @@ const GW_INFO: Record<string, {
     ],
   },
   buffer: {
-    label: "Buffer (stored only — publishing not yet wired)", icon: "📋",
+    label: "Buffer (creates draft Ideas — not a live publish)", icon: "📋",
     fields: [
-      { key: "access_token", label: "Access Token", placeholder: "1/...", secret: true },
+      { key: "access_token",    label: "Access Token",   placeholder: "1/...", secret: true },
+      { key: "organization_id", label: "Organization ID", placeholder: "6a4b44b98807be891299fdb7" },
     ],
   },
 };
