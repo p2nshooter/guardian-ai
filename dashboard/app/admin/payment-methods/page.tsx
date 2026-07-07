@@ -60,8 +60,12 @@ export default function AdminPaymentMethods() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setEdit(m.id); setDraft({ address: m.address, network: m.network, confirmations: m.confirmations, name: m.name }); }}
-            style={{ padding: "7px 14px", borderRadius: 9, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>✎ Edit</button>
+          {m.category === "crypto" ? (
+            <button onClick={() => { setEdit(m.id); setDraft({ address: m.address, network: m.network, confirmations: m.confirmations, name: m.name }); }}
+              style={{ padding: "7px 14px", borderRadius: 9, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>✎ Edit</button>
+          ) : (
+            <a href="/admin/gateways" style={{ padding: "7px 14px", borderRadius: 9, border: "1px solid #cbd5e1", background: "#f8fafc", color: "#334155", fontWeight: 700, fontSize: 13, textDecoration: "none" }}>🔑 Configure credentials</a>
+          )}
           <button onClick={() => act(m.id, "toggle")}
             style={{ padding: "7px 16px", borderRadius: 9, border: "none", cursor: "pointer", fontWeight: 800, fontSize: 13, color: "#fff", background: m.enabled ? "linear-gradient(135deg,#16a34a,#22c55e)" : "linear-gradient(135deg,#94a3b8,#cbd5e1)" }}>
             {m.enabled ? "🟢 ON" : "🔴 OFF"}
@@ -73,7 +77,12 @@ export default function AdminPaymentMethods() {
           {m.address || <span style={{ color: "#b45309" }}>⚠ no address configured — set it before enabling</span>}
         </div>
       )}
-      {edit === m.id && (
+      {m.category === "fiat" && (
+        <div style={{ marginTop: 10, fontSize: 12, color: "#94a3b8" }}>
+          API credentials (client ID/secret, API keys) are managed at <a href="/admin/gateways" style={{ color: "#0284c7", fontWeight: 700 }}>Admin → Gateways</a>, not here — this toggle only controls client-facing visibility.
+        </div>
+      )}
+      {edit === m.id && m.category === "crypto" && (
         <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 14, display: "grid", gap: 10 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: "#475569" }}>Deposit address
             <input value={draft.address || ""} onChange={(e) => setDraft({ ...draft, address: e.target.value })}

@@ -720,7 +720,7 @@ export default function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24, marginBottom: 48 }}>
             {[
               { icon: "🐳", title: t("landing.delivery.c1t"), desc: t("landing.delivery.c1d"), tag: "docker compose up -d" },
-              { icon: "💻", title: t("landing.delivery.c2t"), desc: t("landing.delivery.c2d"), tag: "axto-vault.exe --port 8080" },
+              { icon: "🪟", title: t("landing.delivery.c2t"), desc: t("landing.delivery.c2d"), tag: "🚧 In development — not yet available" },
               { icon: "📖", title: t("landing.delivery.c3t"), desc: t("landing.delivery.c3d"), tag: "axto.io/guide → Download PDF" },
               { icon: "🔑", title: t("landing.delivery.c4t"), desc: t("landing.delivery.c4d"), tag: "VAULT-A1B2-C3D4-E5F6-G7H8..." },
               { icon: "🆓", title: t("landing.delivery.c5t"), desc: t("landing.delivery.c5d"), tag: "Register → Select Trial → Instant activation" },
