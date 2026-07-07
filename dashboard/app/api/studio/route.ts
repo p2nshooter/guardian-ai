@@ -12,6 +12,18 @@ import { getDB, dbFirst, dbQuery, dbRun, newId, now } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { encryptObj, decryptObj } from "@/lib/gateway-crypto";
 
+// Storage/quota per Studio package tier -- kept alongside lib/stripe.ts's
+// PACKAGE_INFO feature-bullet text (1GB/7-day, 10GB/14-day, 100GB) as the
+// single source of truth actually ENFORCED against a tenant row.
+const STUDIO_PLAN_QUOTAS: Record<string, { quota_ai_requests: number; quota_gpu_hours: number; quota_storage_mb: number }> = {
+  starter:      { quota_ai_requests: 500,   quota_gpu_hours: 0,   quota_storage_mb: 1024 },
+  professional: { quota_ai_requests: 5000,  quota_gpu_hours: 40,  quota_storage_mb: 10240 },
+  enterprise:   { quota_ai_requests: 50000, quota_gpu_hours: 400, quota_storage_mb: 102400 },
+};
+const STUDIO_PACKAGE_TO_PLAN: Record<string, string> = {
+  studio_starter: "starter", studio_professional: "professional", studio_enterprise: "enterprise", trial_studio: "starter",
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/studio — Load tenant dashboard data
 // POST /api/studio — CRUD operations (credentials, sessions, artifacts)
@@ -44,6 +56,25 @@ export async function GET(req: NextRequest) {
       [tid, client.id, user.email, client.name || user.email, "starter", now(), now()]);
     tenant = await dbFirst(db, `SELECT * FROM studio_tenants WHERE id = ?`, [tid]);
   }
+
+  // Sync plan + quotas to whatever Studio license is actually active. Runs on
+  // every load (cheap, idempotent) so upgrades/downgrades/renewals take effect
+  // immediately instead of a tenant being stuck on defaults from first signup.
+  try {
+    const activeLic = await dbFirst<any>(db,
+      `SELECT package_code FROM licenses WHERE client_id = ? AND product = 'studio' AND status = 'active'
+       ORDER BY expires_at DESC LIMIT 1`, [tenant.client_id]);
+    const plan = activeLic ? (STUDIO_PACKAGE_TO_PLAN[activeLic.package_code] || "starter") : "starter";
+    const quotas = STUDIO_PLAN_QUOTAS[plan] || STUDIO_PLAN_QUOTAS.starter;
+    if (tenant.plan !== plan || tenant.quota_storage_mb !== quotas.quota_storage_mb
+        || tenant.quota_ai_requests !== quotas.quota_ai_requests || tenant.quota_gpu_hours !== quotas.quota_gpu_hours) {
+      await dbRun(db,
+        `UPDATE studio_tenants SET plan = ?, quota_ai_requests = ?, quota_gpu_hours = ?, quota_storage_mb = ?, updated_at = datetime('now') WHERE id = ?`,
+        [plan, quotas.quota_ai_requests, quotas.quota_gpu_hours, quotas.quota_storage_mb, tenant.id]
+      );
+      tenant = { ...tenant, plan, ...quotas };
+    }
+  } catch { /* licenses table shape mismatch or lookup failure -- keep existing tenant quotas */ }
 
   // Load credentials (decrypt labels only, not full keys)
   const credentials = await dbQuery<any>(db,
