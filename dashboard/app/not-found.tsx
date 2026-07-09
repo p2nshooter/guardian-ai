@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -28,7 +28,7 @@ export default function NotFound() {
           </Link>
         </div>
         <p className="text-slate-600 text-xs mt-8">
-          Need help? <a href="mailto:hallo@axto.io" className="text-cyan-600 hover:underline">hallo@axto.io</a>
+          Need help? <a href="mailto:hello@axto.io" className="text-cyan-600 hover:underline">hello@axto.io</a>
         </p>
       </div>
     </div>

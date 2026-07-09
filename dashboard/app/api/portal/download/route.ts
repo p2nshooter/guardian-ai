@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
   if (!lic)
     return NextResponse.json({ error: "License not found. Please log in with the correct email." }, { status: 404 });
   if (lic.status === "revoked")
-    return NextResponse.json({ error: "License has been revoked. Contact hallo@axto.io" }, { status: 403 });
+    return NextResponse.json({ error: "License has been revoked. Contact hello@axto.io" }, { status: 403 });
   if (lic.status === "suspended")
     return NextResponse.json({ error: "License is suspended. Log in to the portal for information." }, { status: 403 });
   if (lic.expires_at && new Date(lic.expires_at) < new Date())
@@ -247,7 +247,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           error:   "coming_soon",
           message: "This download format is not yet available. The admin has not yet published this build.",
-          hint:    "Please check back soon, or contact hallo@axto.io if you need this urgently.",
+          hint:    "Please check back soon, or contact hello@axto.io if you need this urgently.",
           product: licProduct2,
           format:  fmtKey,
         }, { status: 503 });
@@ -257,7 +257,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         error:   "coming_soon",
         message: "This download format is not yet available. The admin has not yet published this build.",
-        hint:    "Please check back soon, or contact hallo@axto.io if you need this urgently.",
+        hint:    "Please check back soon, or contact hello@axto.io if you need this urgently.",
         product: licProduct2,
         format:  fmtKey,
       }, { status: 503 });
@@ -311,7 +311,7 @@ export async function GET(req: NextRequest) {
   if (!obj) {
     return NextResponse.json({
       error:   "File not yet available. Admin is processing the build. Please try again in a few minutes.",
-      hint:    "If the problem persists, contact hallo@axto.io",
+      hint:    "If the problem persists, contact hello@axto.io",
       r2_key:  key,
     }, { status: 404 });
   }
@@ -582,7 +582,7 @@ ws.onmessage = (e) => console.log(JSON.parse(e.data));
 
 ## Support
 - Portal: https://axto.io/portal
-- Email: hallo@axto.io
+- Email: hello@axto.io
 - Guide: https://axto.io/guide
 
 © AXTO Platform — 100% BYOK — Your keys never leave your server
@@ -695,7 +695,7 @@ Pipeline builder visual untuk menggabungkan AI cloud + GPU lokal:
 ---
 
 ## Support
-- Portal: https://axto.io/portal | Email: hallo@axto.io
+- Portal: https://axto.io/portal | Email: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -935,7 +935,7 @@ curl -X POST http://localhost:8080/vault/test \\
 
 ## Support
 - Portal:  https://axto.io/portal
-- Email:   hallo@axto.io
+- Email:   hello@axto.io
 - Guide:   https://axto.io/guide
 - Support: http://YOUR_VAULT_SERVER:8080/support (AI chat)
 
@@ -1074,7 +1074,7 @@ curl -X POST http://localhost:8080/vault/test \\
 
 ## Dukungan
 - Portal:  https://axto.io/portal
-- Email:   hallo@axto.io
+- Email:   hello@axto.io
 - Panduan: https://axto.io/guide
 - Support AI: http://SERVER_VAULT_ANDA:8080/support
 
@@ -1156,7 +1156,7 @@ client = OpenAI(api_key="任意值", base_url="http://您的VAULT服务器:8080/
 
 ## 支持
 - 门户: https://axto.io/portal
-- 邮件: hallo@axto.io
+- 邮件: hello@axto.io
 - AI 支持: http://您的VAULT服务器:8080/support
 
 © AXTO Platform — 100% BYOK — 您的密钥，您的数据，您的基础设施。
@@ -1222,7 +1222,7 @@ client = OpenAI(api_key="أي_قيمة", base_url="http://خادم-VAULT:8080/v1
 
 ## الدعم
 - البوابة: https://axto.io/portal
-- البريد: hallo@axto.io
+- البريد: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1268,7 +1268,7 @@ client = OpenAI(api_key="cualquier_valor", base_url="http://SU_VAULT:8080/v1")
 - Financiero: Tarjetas de crédito, IBAN, cuentas bancarias, claves API
 
 ## Soporte
-- Portal: https://axto.io/portal | Email: hallo@axto.io
+- Portal: https://axto.io/portal | Email: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1314,7 +1314,7 @@ client = OpenAI(api_key="n'importe_quoi", base_url="http://VOTRE_VAULT:8080/v1")
 - Financier: Cartes de crédit, IBAN, comptes bancaires, clés API
 
 ## Support
-- Portail: https://axto.io/portal | Email: hallo@axto.io
+- Portail: https://axto.io/portal | Email: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1360,7 +1360,7 @@ client = OpenAI(api_key="beliebig", base_url="http://IHR_VAULT:8080/v1")
 - Finanziell: Kreditkarten, IBAN, Bankkonten, API-Schlüssel
 
 ## Support
-- Portal: https://axto.io/portal | E-Mail: hallo@axto.io
+- Portal: https://axto.io/portal | E-Mail: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1406,7 +1406,7 @@ client = OpenAI(api_key="qualquer_coisa", base_url="http://SEU_VAULT:8080/v1")
 - Financeiro: Cartões de crédito, IBAN, contas bancárias, chaves de API
 
 ## Suporte
-- Portal: https://axto.io/portal | Email: hallo@axto.io
+- Portal: https://axto.io/portal | Email: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1452,7 +1452,7 @@ client = OpenAI(api_key="任意", base_url="http://お使いのVAULT:8080/v1")
 - 金融: クレジットカード、IBAN、銀行口座番号、API キー
 
 ## サポート
-- ポータル: https://axto.io/portal | メール: hallo@axto.io
+- ポータル: https://axto.io/portal | メール: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1498,7 +1498,7 @@ client = OpenAI(api_key="아무거나", base_url="http://귀하의VAULT:8080/v1"
 - 금융: 신용카드, IBAN, 은행 계좌번호, API 키
 
 ## 지원
-- 포털: https://axto.io/portal | 이메일: hallo@axto.io
+- 포털: https://axto.io/portal | 이메일: hello@axto.io
 
 © AXTO Platform — 100% BYOK
 `;
@@ -1596,7 +1596,7 @@ Open your AXTO dashboard → Guardian section.
 docker compose -f guardian-compose.yml logs guardian-core
 \`\`\`
 
-Support: hallo@axto.io | Renewal: https://axto.io/renew
+Support: hello@axto.io | Renewal: https://axto.io/renew
 `,
 
     orchestra: (key, nodes) => `# AXTO Orchestra AI — Complete Setup Guide
@@ -2035,7 +2035,7 @@ Workers self-register with the Core and appear in Dashboard → Orchestra → Wo
 
 For full installation documentation, visit: https://axto.io/guide?product=${product}
 
-Support: hallo@axto.io
+Support: hello@axto.io
 `;
 }
 
@@ -2139,7 +2139,7 @@ Billing:      ${d.billing === "yearly" ? "Annual Subscription" : "Monthly Subscr
 
 ══════════════════════════════════════════════════════════════
   AXTO — AI eXecution & Tools Orchestration
-  https://axto.io | hallo@axto.io
+  https://axto.io | hello@axto.io
   100% BYOK — Your keys, your data, your infrastructure.
 ══════════════════════════════════════════════════════════════
 `.trim();

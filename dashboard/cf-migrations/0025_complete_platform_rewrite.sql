@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- Copyright (c) 2024-2026 Axto AI. All rights reserved.
 -- Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
--- Maintained by: Axto AI <hallo@axto.io>
+-- Maintained by: Axto AI <hello@axto.io>
 -- Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 -- ==============================================================================
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -1034,7 +1034,7 @@ INSERT OR REPLACE INTO site_settings (id, key, value) VALUES
   ('ss001', 'platform_name',          'AXTO Platform'),
   ('ss002', 'platform_tagline',       'AI Security & Orchestration — 100% Self-Hosted'),
   ('ss003', 'platform_url',           'https://axto.io'),
-  ('ss004', 'support_email',          'hallo@axto.io'),
+  ('ss004', 'support_email',          'hello@axto.io'),
   ('ss005', 'product_count',          '7'),
   ('ss006', 'stats_licenses',         '500+'),
   ('ss007', 'stats_servers_protected','10,000+'),

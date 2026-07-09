@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -55,7 +55,7 @@ const CTA_ORCHESTRA = [
 const CTA_GENERAL = [
   "🔗 axto.io",
   "🌐 axto.io — AI eXecution & Tools Orchestration",
-  "📩 hallo@axto.io",
+  "📩 hello@axto.io",
   "🚀 axto.io/register",
 ];
 
@@ -178,7 +178,7 @@ export function autoFillTemplate(
   // Default fills
   result = result.replace(/\{\{cta\}\}/g,     "🔗 axto.io");
   result = result.replace(/\{\{website\}\}/g, "axto.io");
-  result = result.replace(/\{\{email\}\}/g,   "hallo@axto.io");
+  result = result.replace(/\{\{email\}\}/g,   "hello@axto.io");
   result = result.replace(/\{\{product\}\}/g, "AXTO");
   return result;
 }

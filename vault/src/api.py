@@ -1,7 +1,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
@@ -588,7 +588,7 @@ def _compliance_report_text(report: dict) -> str:
         "",
         f"{'='*60}",
         f"  AXTO Platform — AI Privacy Layer",
-        f"  https://axto.io | hallo@axto.io",
+        f"  https://axto.io | hello@axto.io",
         f"{'='*60}",
     ]
     return "\n".join(lines)

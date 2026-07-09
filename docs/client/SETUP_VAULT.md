@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO Vault — Complete Client Setup Guide
@@ -908,7 +908,7 @@ A: Yes — use `whitelist_domains` in your policy. E.g., `["axto.io", "our-compa
 |---------|---------|
 | **AI Support Chat** | http://YOUR_VAULT_SERVER:8080/support |
 | **Portal** | https://axto.io/portal |
-| **Email** | hallo@axto.io |
+| **Email** | hello@axto.io |
 | **Guide** | https://axto.io/guide |
 | **Health API** | http://YOUR_VAULT_SERVER:8080/health |
 

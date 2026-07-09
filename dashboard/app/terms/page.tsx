@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -31,7 +31,7 @@ export default function TermsPage() {
           <p>You may not reverse engineer, decompile, or redistribute the software. Each license key is bound to a single machine identifier. You are entitled to up to 3 machine binding resets per license year via your Client Portal.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>5. Payment & Refunds</h2>
-          <p>All prices are in USD. Payment is processed through third-party gateways. All licenses come with a 30-day satisfaction guarantee. Refund requests must be submitted within 30 days of purchase to hallo@axto.io.</p>
+          <p>All prices are in USD. Payment is processed through third-party gateways. All licenses come with a 30-day satisfaction guarantee. Refund requests must be submitted within 30 days of purchase to hello@axto.io.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>6. License Expiry</h2>
           <p>Licenses expire on the date specified at time of purchase. Upon expiry, the software will cease normal operation after a 4-hour grace period. Renewal is available through your Client Portal.</p>
@@ -40,7 +40,7 @@ export default function TermsPage() {
           <p>THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. AXTO SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES. TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID FOR THE LICENSE IN THE 12 MONTHS PRECEDING THE CLAIM.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>8. Contact</h2>
-          <p>For questions about these terms, contact <a href="mailto:hallo@axto.io" style={{ color: "#22d3ee" }}>hallo@axto.io</a>.</p>
+          <p>For questions about these terms, contact <a href="mailto:hello@axto.io" style={{ color: "#22d3ee" }}>hello@axto.io</a>.</p>
         </div>
       </div>
     </div>

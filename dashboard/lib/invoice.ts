@@ -110,7 +110,7 @@ td{padding:16px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:
   ${isTrial ? `<div class="note">This is a complimentary trial license issued at no charge. We hope AXTO proves its value to your team — upgrading to a paid plan is available at any time from your dashboard.</div>` : ""}
   <div class="foot">
     Thank you for choosing AXTO.<br>
-    This invoice was generated automatically. For questions, contact hallo@axto.io.
+    This invoice was generated automatically. For questions, contact hello@axto.io.
   </div>
 </div>
 </body></html>`;

@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO Admin — Setup Guide
@@ -72,7 +72,7 @@ wrangler pages secret put CRON_SECRET       --project-name=axto-dashboard
 ```bash
 wrangler d1 execute axto-db --remote --command="
   INSERT INTO users (id, email, role, created_at)
-  VALUES (lower(hex(randomblob(16))), 'hallo@axto.io', 'admin', datetime('now'))
+  VALUES (lower(hex(randomblob(16))), 'hello@axto.io', 'admin', datetime('now'))
 "
 ```
 

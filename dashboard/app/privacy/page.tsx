@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -31,10 +31,10 @@ export default function PrivacyPage() {
           <p>We do not sell, rent, or share your personal information with third parties. Payment data is processed directly by your chosen payment gateway and is subject to their respective privacy policies.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>5. Your Rights</h2>
-          <p>You may request access to, correction of, or deletion of your personal data at any time by contacting hallo@axto.io. Upon account deletion, all associated data will be permanently removed within 30 days.</p>
+          <p>You may request access to, correction of, or deletion of your personal data at any time by contacting hello@axto.io. Upon account deletion, all associated data will be permanently removed within 30 days.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>6. Contact</h2>
-          <p>For privacy-related inquiries, please contact us at <a href="mailto:hallo@axto.io" style={{ color: "#22d3ee" }}>hallo@axto.io</a>.</p>
+          <p>For privacy-related inquiries, please contact us at <a href="mailto:hello@axto.io" style={{ color: "#22d3ee" }}>hello@axto.io</a>.</p>
         </div>
       </div>
     </div>

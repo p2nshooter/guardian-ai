@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -339,7 +339,7 @@ export async function publishToClassified(req: PublishRequest, platform: string)
         title: req.post.title || "AXTO Platform - AI eXecution & Tools Orchestration",
         description: text,
         category: "software",
-        email: email || "hallo@axto.io",
+        email: email || "hello@axto.io",
         website: "https://axto.io",
         image_url: req.post.image_url || "",
         timestamp: new Date().toISOString(),

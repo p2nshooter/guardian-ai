@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO Edge — Complete Client Setup & Integration Guide
@@ -586,7 +586,7 @@ A: Yes — Enterprise plan. Customers see only your domain. No AXTO branding in 
 | **AI Support Chat** | http://localhost:8080/support |
 | **Dashboard** | http://localhost:8080 |
 | **Portal** | https://axto.io/portal |
-| **Email** | hallo@axto.io |
+| **Email** | hello@axto.io |
 | **Health API** | GET /health |
 
 ---

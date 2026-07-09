@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (purchase.max_downloads > 0 && purchase.download_count >= purchase.max_downloads) {
-      return NextResponse.json({ error: "Download limit reached. Contact hallo@axto.io for assistance." }, { status: 403 });
+      return NextResponse.json({ error: "Download limit reached. Contact hello@axto.io for assistance." }, { status: 403 });
     }
 
     // Increment download count
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   // Get playbook R2 key
   const pb = await dbFirst<any>(db, `SELECT r2_key, name, slug, file_format FROM playbooks WHERE id = ?`, [id]);
   if (!pb || !pb.r2_key) {
-    return NextResponse.json({ error: "File not available. Contact hallo@axto.io" }, { status: 404 });
+    return NextResponse.json({ error: "File not available. Contact hello@axto.io" }, { status: 404 });
   }
 
   // Fetch from R2

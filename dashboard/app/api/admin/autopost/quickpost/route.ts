@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     );
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
-    const contactEmail = body.contact_email || "hallo@axto.io";
+    const contactEmail = body.contact_email || "hello@axto.io";
     const contactPhone = body.contact_phone || "";
     const location = body.location || (language === "id" ? "Jakarta, Indonesia" : "Remote");
 
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
 
     if (classifiedList.includes(platform)) {
       // Classified site
-      const contactEmail = body.contact_email || creds.email || "hallo@axto.io";
+      const contactEmail = body.contact_email || creds.email || "hello@axto.io";
       const contactPhone = body.contact_phone || creds.phone || "";
       const location = body.location || creds.location || (language === "id" ? "Jakarta" : "Remote");
 
@@ -213,7 +213,7 @@ ${appUrl}`,
 
       if (classifiedList.includes(cfg.platform)) {
         const postContent = buildClassifiedPost(filledText, language as "id"|"en", {
-          contactEmail: creds.email || "hallo@axto.io",
+          contactEmail: creds.email || "hello@axto.io",
           contactPhone: creds.phone || "",
           location: creds.location || (language === "id" ? "Jakarta" : "Remote"),
         });

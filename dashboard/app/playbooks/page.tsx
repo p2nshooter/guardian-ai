@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -318,7 +318,7 @@ export default function PlaybooksPage() {
         <span style={{ margin: "0 12px" }}>·</span>
         <span>© {new Date().getFullYear()} AXTO. All rights reserved.</span>
         <span style={{ margin: "0 12px" }}>·</span>
-        <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none" }}>hallo@axto.io</a>
+        <a href="mailto:hello@axto.io" style={{ color: "#0284c7", textDecoration: "none" }}>hello@axto.io</a>
       </footer>
     </div>
   );

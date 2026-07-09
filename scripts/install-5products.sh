@@ -2,7 +2,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 # ============================================================
@@ -371,4 +371,4 @@ fi
 echo ""
 echo -e "${BLUE}📖 Full documentation: https://axto.io/docs${NC}"
 echo -e "${BLUE}🔑 License portal:     https://axto.io/portal${NC}"
-echo -e "${BLUE}💬 Support:            hallo@axto.io${NC}"
+echo -e "${BLUE}💬 Support:            hello@axto.io${NC}"

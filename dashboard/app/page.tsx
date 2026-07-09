@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -137,7 +137,7 @@ const JSONLD = {
   "@graph": [
     {
       "@type": "Organization", "@id": `${APP_URL}/#org`, name: "AXTO", url: APP_URL,
-      email: "hallo@axto.io",
+      email: "hello@axto.io",
       description: "AI eXecution & Tools Orchestration. 100% BYOK — your keys, your data, your infrastructure.",
     },
     {
@@ -460,7 +460,7 @@ export default function HomePage() {
           </div>
           <p style={{ textAlign: "center", marginTop: 28, fontSize: 13, color: "#64748b" }}>
             {t("landing.why.footer")}{" "}
-            <a href="mailto:hallo@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>{t("landing.why.footercta")}</a>
+            <a href="mailto:hello@axto.io" style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>{t("landing.why.footercta")}</a>
           </p>
         </div>
       </section>
@@ -790,7 +790,7 @@ export default function HomePage() {
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
             <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("hero.cta")}</a>
-            <a href="mailto:hallo@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.cta.contact")}</a>
+            <a href="mailto:hello@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.cta.contact")}</a>
           </div>
         </div>
       </section>
@@ -805,7 +805,7 @@ export default function HomePage() {
                 <span style={{ fontSize: 20, fontWeight: 900, color: "#fff", fontFamily: "Sora, sans-serif" }}>AXTO</span>
               </div>
               <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 280 }}>{t("landing.footer.tagline")}</p>
-              <p style={{ fontSize: 13, marginTop: 16 }}>✉ hallo@axto.io</p>
+              <p style={{ fontSize: 13, marginTop: 16 }}>✉ hello@axto.io</p>
             </div>
             <div>
               <h4 style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 16 }}>{t("landing.footer.products")}</h4>

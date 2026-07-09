@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
   if (lic.status === "revoked") {
     return signedJson({
       valid: false, reason: "revoked",
-      error: "License has been revoked. Contact hallo@axto.io for assistance.",
+      error: "License has been revoked. Contact hello@axto.io for assistance.",
     }, {
       licenseKey: cleanKey, machineId: mid, product: lic.product,
       valid: false, status: "revoked", expiresAt: lic.expires_at,

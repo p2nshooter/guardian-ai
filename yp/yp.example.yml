@@ -5,7 +5,7 @@
 # operates no shared infrastructure — 100% BYOK/BYOI/BYOD/BYOM/BYOX.
 # ==============================================================================
 yp:
-  # Invite-only license key (starts with YP-). Contact hallo@axto.io.
+  # Invite-only license key (starts with YP-). Contact hello@axto.io.
   license_key: "YP-XXXX-XXXX-XXXX-XXXX"
   license_validate_url: "https://axto.io/api/license-validate"
 

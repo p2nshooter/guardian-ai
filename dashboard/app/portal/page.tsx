@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -367,7 +367,7 @@ export default function PortalPage() {
         if (d.error === "coming_soon") {
           setDlError("⏳ " + (d.message || "This format is not yet available. The admin is preparing the build. Please check back in a few days.") + (d.hint ? "\n" + d.hint : ""));
         } else {
-          setDlError(d.hint || d.error || "File not yet available. Please try again later or contact hallo@axto.io");
+          setDlError(d.hint || d.error || "File not yet available. Please try again later or contact hello@axto.io");
         }
         setDlStatus(s => ({...s, [key]: "error"}));
         return;
@@ -775,7 +775,7 @@ export default function PortalPage() {
                         ))}
                         <div style={{marginTop:12,padding:"8px 10px",borderRadius:6,background:"rgba(251,191,36,.08)",border:"1px solid rgba(251,191,36,.2)"}}>
                           <span style={{color:"#fbbf24"}}>⚠️ Butuh bantuan?</span>
-                          <span style={{color:"#64748b"}}> Email: hallo@axto.io — sertakan server OS + error message</span>
+                          <span style={{color:"#64748b"}}> Email: hello@axto.io — sertakan server OS + error message</span>
                         </div>
                       </div>
                     </div>
