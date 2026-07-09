@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { href: "/admin/autopost",       icon: "📢", label: "AutoPost",        group: "Marketing" },
 
   { href: "/admin/ai-keys",        icon: "🧠", label: "AI Provider Keys",group: "Infrastructure" },
+  { href: "/admin/managed-infra",  icon: "🏗️", label: "Managed Infra (planned)", group: "Infrastructure" },
 
   { href: "/guide",                icon: "📖", label: "Guide",           group: "More" },
   { href: "/admin/account",        icon: "⚙️", label: "Account Settings",group: "More" },
