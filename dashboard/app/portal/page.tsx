@@ -981,7 +981,7 @@ export default function PortalPage() {
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                   <thead>
                     <tr style={{borderBottom:"1px solid #e2e8f0"}}>
-                      {["Date","Product","Amount","Gateway","Status"].map(h=>(
+                      {["Date","Product","Amount","Gateway","Status",""].map(h=>(
                         <th key={h} style={{padding:"10px 12px",textAlign:"left",color:"#475569",fontWeight:700,fontSize:11,textTransform:"uppercase"}}>{h}</th>
                       ))}
                     </tr>
@@ -991,14 +991,22 @@ export default function PortalPage() {
                       <tr key={inv.id} style={{borderBottom:"1px solid #f1f5f9"}}>
                         <td style={{padding:"10px 12px",color:"#64748b"}}>{new Date(inv.created_at).toLocaleDateString()}</td>
                         <td style={{padding:"10px 12px",color:"#0a1628",fontWeight:600}}>{PRODUCT_ICONS[inv.product] || "📦"} {inv.package_code||inv.product}</td>
-                        <td style={{padding:"10px 12px",fontWeight:700,color:"#22c55e"}}>${inv.amount_usd}</td>
-                        <td style={{padding:"10px 12px",color:"#64748b"}}>{inv.gateway}</td>
+                        <td style={{padding:"10px 12px",fontWeight:700,color:inv.kind==="trial"?"#0284c7":"#22c55e"}}>{inv.kind==="trial" ? "Complimentary" : `$${inv.amount_usd}`}</td>
+                        <td style={{padding:"10px 12px",color:"#64748b"}}>{inv.kind==="trial" ? "Trial grant" : inv.gateway}</td>
                         <td style={{padding:"10px 12px"}}>
                           <span style={{fontSize:10,padding:"2px 8px",borderRadius:4,fontWeight:700,
                             background:inv.status==="paid"?"rgba(34,197,94,0.1)":"rgba(245,158,11,0.1)",
                             color:inv.status==="paid"?"#22c55e":"#f59e0b"}}>
                             {inv.status}
                           </span>
+                        </td>
+                        <td style={{padding:"10px 12px"}}>
+                          {inv.license_id && (
+                            <a href={`/api/portal/download?license_id=${inv.license_id}&action=invoice`} target="_blank" rel="noreferrer"
+                              style={{fontSize:11,fontWeight:700,color:"#0284c7",textDecoration:"none"}}>
+                              🧾 Download
+                            </a>
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, getR2Builds, dbFirst, dbRun, now } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { DISCLAIMER_VERSION } from "@/lib/disclaimer";
+import { writeInvoice, renderInvoiceHTML } from "@/lib/invoice";
 import { GUIDES_5PRODUCTS, type ProductGuide5 } from "@/lib/guide-i18n-5products";
 
 // ── Product → R2 key mapping ────────────────────────────────────────────────
@@ -120,6 +121,7 @@ export async function GET(req: NextRequest) {
   const lic = await dbFirst<any>(db,
     `SELECT l.id, l.product, l.license_key, l.status, l.expires_at, l.max_nodes,
             l.package_code, l.billing_cycle, l.amount_usd, l.created_at,
+            l.license_type, l.source,
             c.name as client_name, c.email as client_email, c.organization
      FROM licenses l JOIN clients c ON c.id = l.client_id
      WHERE l.id = ? AND c.email = ?`,
@@ -139,45 +141,43 @@ export async function GET(req: NextRequest) {
   const productGroup = getProductsForLicense(licProduct);
 
   // ── Invoice ───────────────────────────────────────────────────────────────
+  // Single source of truth: lib/invoice.ts's writeInvoice()/renderInvoiceHTML()
+  // -- the same ones every paid (crypto/USDT) and admin-approved-trial invoice
+  // uses, so a trial invoice always reads "Complimentary" / "Pre-Launch Trial
+  // Promo" with the license's REAL expiry, never a plain "$0 / Annual
+  // Subscription" line that could look like a data-entry error.
   if (action === "invoice") {
-    const inv = await dbFirst<any>(db,
+    let inv = await dbFirst<any>(db,
       `SELECT * FROM invoices WHERE license_id = ? ORDER BY created_at DESC LIMIT 1`,
       [licenseId]
     );
 
-    const productDisplayName: Record<string, string> = {
-      guardian:   "Guardian AI — Self-Hosted Cybersecurity Platform",
-      orchestra:  "Orchestra AI — Self-Hosted AI Orchestration Platform",
-      vault:      "Vault AI — AI Privacy Layer (PII/PHI/Financial Redaction)",
-      edge:       "Edge AI — AI API Gateway & Traffic Management",
-      soc:        "SOC AI — AI-Powered Security Operations Center",
-      compliance: "Compliance AI — Automated Audit & Compliance Platform",
-      sentinel:   "Sentinel AI — IoT/OT Security Platform",
-      antivirus:  "Antivirus — ClamAV + AI Learning Threat Detection",
-      studio:     "AXTO Studio — AI & GPU Pool Platform",
-      legal:      "AXTO Legal — AI Legal Research & Document Intelligence",
-    };
+    // Self-heal: a license issued before invoice-writing was wired into its
+    // issuing flow still deserves a real, downloadable invoice the first
+    // time someone actually asks for one.
+    if (!inv) {
+      const isTrial = lic.license_type === "trial" || String(lic.package_code || "").startsWith("trial_");
+      const invId = await writeInvoice(db, {
+        email: lic.client_email, product: licProduct, licenseId,
+        kind: isTrial ? "trial" : "standard",
+        amountUsd: lic.amount_usd || 0, gateway: "manual",
+      });
+      inv = await dbFirst<any>(db, `SELECT * FROM invoices WHERE id = ?`, [invId]);
+    }
 
-    const invoiceText = buildInvoiceText({
-      number:       `INV-${(inv?.id || licenseId).slice(0,8).toUpperCase()}`,
-      date:         inv?.created_at || lic.created_at,
-      clientName:   lic.client_name,
-      clientEmail:  lic.client_email,
-      organization: lic.organization || "",
-      product:      productDisplayName[licProduct] || licProduct,
-      packageCode:  lic.package_code,
-      licenseKey:   lic.license_key,
-      amountUsd:    inv?.amount_usd || lic.amount_usd || 0,
-      billing:      lic.billing_cycle || "yearly",
-      expiresAt:    lic.expires_at,
-      maxNodes:     lic.max_nodes,
-      items:        productGroup.map(p => ({ name: PRODUCT_LABELS[p] || p, type: "Docker Image + Windows EXE" })),
+    const html = renderInvoiceHTML({
+      ...inv,
+      client_email: lic.client_email,
+      license_expires_at:  lic.expires_at,
+      license_created_at:  lic.created_at,
+      license_package_code: lic.package_code,
+      license_source:       lic.source,
     });
 
-    return new NextResponse(invoiceText, {
+    return new NextResponse(html, {
       headers: {
-        "Content-Type":        "text/plain; charset=utf-8",
-        "Content-Disposition": `attachment; filename="AXTO-Invoice-INV-${licenseId.slice(0,8).toUpperCase()}.txt"`,
+        "Content-Type":        "text/html; charset=utf-8",
+        "Content-Disposition": `inline; filename="AXTO-Invoice-${String(inv.id).toUpperCase()}.html"`,
         "Cache-Control":       "no-store",
       },
     });
@@ -2091,58 +2091,6 @@ function buildGuidePDF(markdownContent: string, lang: string): Uint8Array<ArrayB
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catObj} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
 
   return new TextEncoder().encode(pdf);
-}
-
-// ── Invoice builder ──────────────────────────────────────────────────────────
-function buildInvoiceText(d: {
-  number: string; date: string; clientName: string; clientEmail: string;
-  organization: string; product: string; packageCode: string; licenseKey: string;
-  amountUsd: number; billing: string; expiresAt: string; maxNodes: number;
-  items: { name: string; type: string }[];
-}): string {
-  return `
-══════════════════════════════════════════════════════════════
-  AXTO PLATFORM — OFFICIAL INVOICE
-══════════════════════════════════════════════════════════════
-
-Invoice #:    ${d.number}
-Date:         ${new Date(d.date).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}
-Status:       PAID
-
-──────────────────────────────────────────────────────────────
-  BILL TO
-──────────────────────────────────────────────────────────────
-Name:         ${d.clientName}
-Email:        ${d.clientEmail}
-Organization: ${d.organization || "—"}
-
-──────────────────────────────────────────────────────────────
-  LICENSE DETAILS
-──────────────────────────────────────────────────────────────
-Product:      ${d.product}
-Package:      ${d.packageCode}
-License Key:  ${d.licenseKey}
-Billing:      ${d.billing === "yearly" ? "Annual" : "Monthly"}
-Max Nodes:    ${d.maxNodes === -1 || d.maxNodes >= 9999 ? "Unlimited" : d.maxNodes}
-Expires:      ${new Date(d.expiresAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}
-
-──────────────────────────────────────────────────────────────
-  ITEMS INCLUDED
-──────────────────────────────────────────────────────────────
-${d.items.map((item, i) => `${i + 1}. ${item.name}\n   Format: ${item.type}`).join("\n")}
-
-──────────────────────────────────────────────────────────────
-  PAYMENT TOTAL
-──────────────────────────────────────────────────────────────
-Amount:       $${Number(d.amountUsd).toLocaleString("en-US")} USD
-Billing:      ${d.billing === "yearly" ? "Annual Subscription" : "Monthly Subscription"}
-
-══════════════════════════════════════════════════════════════
-  AXTO — AI eXecution & Tools Orchestration
-  https://axto.io | hello@axto.io
-  100% BYOK — Your keys, your data, your infrastructure.
-══════════════════════════════════════════════════════════════
-`.trim();
 }
 
 function _langLabel(lang: string): string {

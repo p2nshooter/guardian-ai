@@ -72,8 +72,15 @@ export async function GET(req: NextRequest) {
             });
             return { licenseId: "" };
           }
+          // Checkout already collected name/organization into this intent's
+          // meta blob (see api/checkout gateway==='crypto' branch) -- carry
+          // them through instead of dropping them (falling back to the email
+          // as the name, and losing the company name entirely).
+          let payerMeta: any = {};
+          try { payerMeta = JSON.parse(p.meta || "{}"); } catch {}
           const issued: any = await createLicense({
-            clientName: a.email, clientEmail: a.email, product: a.product,
+            clientName: payerMeta.name || a.email, clientEmail: a.email,
+            organization: payerMeta.organization || "", product: a.product,
             packageCode: a.packageCode, licenseType: "paid", paymentRef: `${a.symbol}:${a.txHash}`,
           } as any, req);
           // createLicense() returns { licenseKey, license, clientId, product } --

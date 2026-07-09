@@ -318,9 +318,12 @@ export async function createLicense(
     );
     client = { id: cid };
   } else {
+    // NULLIF/COALESCE guard: a caller that doesn't pass organization (e.g.
+    // trial-claim) must never blank out a value the client already gave at
+    // registration. Only a real, non-empty organization ever overwrites it.
     await dbRun(
       db,
-      `UPDATE clients SET name=?, organization=?, updated_at=? WHERE id=?`,
+      `UPDATE clients SET name=?, organization=COALESCE(NULLIF(?, ''), organization), updated_at=? WHERE id=?`,
       [params.clientName, params.organization ?? "", now(), client.id]
     );
   }
