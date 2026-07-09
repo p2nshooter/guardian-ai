@@ -263,6 +263,7 @@ const TRANSLATIONS: Record<string, Partial<Record<Locale, string>>> = {
   "common.days_left":  { en:"days left",     id:"hari tersisa",  zh:"天剩余",  ar:"أيام متبقية",      de:"Tage übrig", fr:"jours restants", es:"días restantes", pt:"dias restantes", ja:"日残り",  ko:"일 남음" },
   "common.per_year":   { en:"/year",         id:"/tahun",        zh:"/年",     ar:"/سنة",             de:"/Jahr",      fr:"/an",          es:"/año",        pt:"/ano",         ja:"/年",         ko:"/년" },
   // ── Landing page (new — batch 1: EN+ID verified, other locales fall back to EN) ──
+  "landing.nav.promo": { en:"🎁 Trial Promo", id:"🎁 Promo Trial" },
   "landing.nav.products": { en:"Products", id:"Produk" },
   "landing.nav.bundles": { en:"Bundles", id:"Bundle" },
   "landing.nav.playbooks": { en:"Playbooks", id:"Playbook" },
