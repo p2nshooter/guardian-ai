@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -367,7 +367,7 @@ export default function PortalPage() {
         if (d.error === "coming_soon") {
           setDlError("⏳ " + (d.message || "This format is not yet available. The admin is preparing the build. Please check back in a few days.") + (d.hint ? "\n" + d.hint : ""));
         } else {
-          setDlError(d.hint || d.error || "File not yet available. Please try again later or contact hallo@axto.io");
+          setDlError(d.hint || d.error || "File not yet available. Please try again later or contact hello@axto.io");
         }
         setDlStatus(s => ({...s, [key]: "error"}));
         return;
@@ -775,7 +775,7 @@ export default function PortalPage() {
                         ))}
                         <div style={{marginTop:12,padding:"8px 10px",borderRadius:6,background:"rgba(251,191,36,.08)",border:"1px solid rgba(251,191,36,.2)"}}>
                           <span style={{color:"#fbbf24"}}>⚠️ Butuh bantuan?</span>
-                          <span style={{color:"#64748b"}}> Email: hallo@axto.io — sertakan server OS + error message</span>
+                          <span style={{color:"#64748b"}}> Email: hello@axto.io — sertakan server OS + error message</span>
                         </div>
                       </div>
                     </div>
@@ -852,6 +852,9 @@ export default function PortalPage() {
                     {!productForSale && (
                       <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:8,background:"rgba(245,158,11,0.1)",color:"#f59e0b",whiteSpace:"nowrap"}}>🔜 Coming Soon</span>
                     )}
+                    {productForSale && section.discountEligible && (
+                      <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:8,background:"rgba(34,197,94,0.1)",color:"#16a34a",whiteSpace:"nowrap"}}>🎉 {section.discountPct}% OFF — trial reward</span>
+                    )}
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}>
                     {section.packages.map((x: any) => {
@@ -862,6 +865,9 @@ export default function PortalPage() {
                           {!tierForSale && <div style={{position:"absolute",top:8,right:8,fontSize:9,padding:"2px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#f59e0b",fontWeight:700}}>Coming Soon</div>}
                           <div style={{fontSize:14,fontWeight:800,color:"#0a1628"}}>{x.name}</div>
                           <div style={{fontSize:11,color:"#64748b",marginBottom:8}}>{x.limit}</div>
+                          {x.priceOriginalDisplay && (
+                            <div style={{fontSize:12,color:"#94a3b8",textDecoration:"line-through"}}>${x.priceOriginalDisplay}{x.priceSuffix}</div>
+                          )}
                           <div style={{fontSize:22,fontWeight:900,color: tierForSale ? section.color : "#94a3b8",marginBottom:10}}>
                             ${x.priceDisplay}<span style={{fontSize:12,color:"#94a3b8"}}>{x.priceSuffix}</span>
                           </div>

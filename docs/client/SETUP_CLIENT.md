@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO Platform — Client Setup Guide
@@ -330,7 +330,7 @@ curl http://localhost:8080/health
 
 - **Documentation**: https://axto.io/guide
 - **Client Portal**: https://axto.io/portal
-- **Email**: hallo@axto.io
+- **Email**: hello@axto.io
 - **Response time**: Within 24 hours for all plans, 4 hours for Enterprise
 
 ---

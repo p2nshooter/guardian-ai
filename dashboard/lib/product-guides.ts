@@ -422,7 +422,7 @@ export function renderGuide(product: string, lang: Lang = "en"): string {
   for (const e of t.enf) lines.push(`- ${e}`);
   lines.push("");
   lines.push(`## ${t.support}`);
-  lines.push(`hallo@axto.io · ${t.resp}`);
+  lines.push(`hello@axto.io · ${t.resp}`);
   lines.push("");
   lines.push("---");
   lines.push(lang === "id"

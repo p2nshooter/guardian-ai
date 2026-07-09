@@ -1,7 +1,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
@@ -80,7 +80,7 @@ SHUTDOWN_MSG = (
     "║  3. Restart this service after connectivity is restored      ║\n"
     "║                                                              ║\n"
     "║  Renew or manage your license: https://axto.io/portal        ║\n"
-    "║  Support: hallo@axto.io                                      ║\n"
+    "║  Support: hello@axto.io                                      ║\n"
     "╚══════════════════════════════════════════════════════════════╝\n"
 )
 
@@ -391,7 +391,7 @@ def require_valid(state: LicenseState) -> None:
         raise SystemExit(
             f"\n❌ AXTO Legal license invalid: {state.status}\n"
             f"   Please verify your license key or visit https://axto.io/portal\n"
-            f"   Support: hallo@axto.io\n"
+            f"   Support: hello@axto.io\n"
         )
     days_left = 999
     try:

@@ -1,7 +1,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
@@ -225,7 +225,7 @@ class LicenseManager:
             self._state = LicenseState(
                 valid=False, reason="no_license_key",
                 message="No license key configured. Set license_key in yp.yml or YP_LICENSE_KEY. "
-                        "Yusron Power is invite-only — contact hallo@axto.io.",
+                        "Yusron Power is invite-only — contact hello@axto.io.",
                 last_validated=now,
             )
             log.error("YP — NO LICENSE KEY configured.")

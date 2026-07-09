@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -18,7 +18,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
         <h1 className="text-2xl font-black text-white mb-3">Something went wrong</h1>
         <p className="text-slate-400 text-sm mb-8 leading-relaxed">
           An unexpected error occurred. If this persists, please contact{" "}
-          <a href="mailto:hallo@axto.io" className="text-cyan-400 hover:underline">hallo@axto.io</a>.
+          <a href="mailto:hello@axto.io" className="text-cyan-400 hover:underline">hello@axto.io</a>.
         </p>
         {error?.digest && (
           <p className="text-xs text-slate-600 font-mono mb-6">Error ID: {error.digest}</p>

@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { PACKAGE_INFO, isForSale } from "@/lib/stripe";
-import { getLivePrice, lifetimePrice } from "@/lib/pricing";
+import { getLivePrice, lifetimePrice, getTrialContinuationDiscount, TRIAL_CONTINUATION_DISCOUNT_PCT } from "@/lib/pricing";
 import { getStripeCredentials, getPayPalCredentials, getXenditCredentials, getMidtransCredentials } from "@/lib/gateways";
 import { createPayPalOrderWithCreds } from "@/lib/paypal";
 import { createXenditInvoiceWithKey } from "@/lib/xendit";
@@ -199,19 +199,29 @@ export async function POST(req: NextRequest) {
   // ── LIVE PRICING: query DB first, fall back to PACKAGE_INFO if unavailable ─
   // This is what makes prices editable from the admin panel without a deploy.
   const livePrice = await getLivePrice(req, pkg);
-  const amountUsd = isLifetime ? lifetimePrice(livePrice.price)
-                  : isYearly   ? livePrice.price
-                  :              livePrice.priceMonthly;
+  let amountUsd = isLifetime ? lifetimePrice(livePrice.price)
+                : isYearly   ? livePrice.price
+                :              livePrice.priceMonthly;
 
   const pkgName   = pkgInfo.name;
   const isBundle  = !!pkgInfo.isBundle;
+
+  // Launch-promo trial → real license: 50% off the first real (non-bundle,
+  // non-lifetime) purchase for a product the client already trialed. Scoped
+  // to yearly/monthly billing only — "50% off your first year" doesn't map
+  // cleanly onto a one-time lifetime fee, so lifetime is deliberately excluded.
+  let trialDiscountApplied = false;
+  if (!isBundle && !isLifetime && !pkgInfo.isTrial) {
+    trialDiscountApplied = await getTrialContinuationDiscount(req, email, pkgInfo.product);
+    if (trialDiscountApplied) amountUsd = Math.round(amountUsd * (1 - TRIAL_CONTINUATION_DISCOUNT_PCT / 100) * 100) / 100;
+  }
 
   const meta: Record<string, string> = {
     pkg, email, name: name || email, organization: organization || "",
     billing: billing || "yearly", isBundle: String(isBundle),
     guardianPackage: pkgInfo.guardianPackage || "", orchestraPackage: pkgInfo.orchestraPackage || "",
     originalPriceUsd: String(amountUsd), source: source || "checkout",
-    referralCode: referralCode || "",
+    referralCode: referralCode || "", trialDiscountApplied: String(trialDiscountApplied),
   };
 
   if (gateway === "stripe") {
@@ -237,7 +247,7 @@ export async function POST(req: NextRequest) {
       sessionParams.line_items = [{
         price_data: {
           currency: "usd", unit_amount: Math.round(amountUsd * 100),
-          product_data: { name: `AXTO ${pkgName}`, description: `${isLifetime ? "Lifetime (perpetual)" : isYearly ? "Annual" : "Monthly"} license` },
+          product_data: { name: `AXTO ${pkgName}`, description: `${isLifetime ? "Lifetime (perpetual)" : isYearly ? "Annual" : "Monthly"} license${trialDiscountApplied ? ` — ${TRIAL_CONTINUATION_DISCOUNT_PCT}% launch-trial discount applied` : ""}` },
         }, quantity: 1,
       }];
     }

@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -15,7 +15,7 @@
 // ── AXTO Service Model ─────────────────────────────────────────────────────
 // • 100% self-service. No managed-service agreements. No dedicated support engineers.
 // • All guidance provided via interactive multi-language Setup Guide (10 languages, PDF download).
-// • Community contact via email (hallo@axto.io) — best-effort response.
+// • Community contact via email (hello@axto.io) — best-effort response.
 // • 7-day free trial available for every product (1 server/instance, single IP).
 // • License locked to: 1 machine-id + 1 IP + 1 instance. No sharing.
 

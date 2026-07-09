@@ -1,7 +1,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
@@ -532,7 +532,7 @@ async def ollama_models(provider_id: str, base_url: str = "http://localhost:1143
 _DEFAULT_BRAND = {
     "name": "AXTO Orchestra — AI eXecution & Tools Orchestration", "logo_url": "", "primary_color": "#6366F1",
     "accent_color": "#818CF8", "domain": "axto.ai",
-    "tagline": "AI eXecution & Tools Orchestration — Orchestra", "support_email": "hallo@axto.io",
+    "tagline": "AI eXecution & Tools Orchestration — Orchestra", "support_email": "hello@axto.io",
     "hide_powered_by": False, "is_wl": False,
 }
 

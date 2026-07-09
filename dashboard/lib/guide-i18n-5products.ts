@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -110,7 +110,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "GDPR Erasure", code: "POST /v1/erasure\n{\"identifier\": \"user@email.com\", \"reason\": \"user_request\"}" },
           { title: "Stats", code: "GET /v1/stats" },
         ],
-        support_note: "Documentation: axto.io/docs/vault | Support: hallo@axto.io",
+        support_note: "Documentation: axto.io/docs/vault | Support: hello@axto.io",
       },
       soc: {
         name: "AXTO SOC", tagline: "Security Operations Center", port: 8092,
@@ -152,7 +152,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Dashboard", code: "GET /v1/dashboard" },
           { title: "Mark false positive", code: "POST /v1/feedback/false-positive\n{\"alert_id\":\"...\",\"analyst\":\"bob\",\"reason\":\"internal scanner\"}" },
         ],
-        support_note: "Documentation: axto.io/docs/soc | Support: hallo@axto.io",
+        support_note: "Documentation: axto.io/docs/soc | Support: hello@axto.io",
       },
       compliance: {
         name: "AXTO Compliance", tagline: "Automated Audit Platform", port: 8093,
@@ -191,7 +191,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Failing controls", code: "GET /v1/controls/soc2?status=fail" },
           { title: "Risk items", code: "GET /v1/risk-items?status=open" },
         ],
-        support_note: "Documentation: axto.io/docs/compliance | Support: hallo@axto.io",
+        support_note: "Documentation: axto.io/docs/compliance | Support: hello@axto.io",
       },
       edge: {
         name: "AXTO Edge", tagline: "AI Gateway & API Management", port: 8094,
@@ -230,7 +230,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Customer billing", code: "GET /v1/billing/{customer_id}/{YYYY-MM}" },
           { title: "Cache stats", code: "GET /v1/cache/stats" },
         ],
-        support_note: "Documentation: axto.io/docs/edge | Support: hallo@axto.io",
+        support_note: "Documentation: axto.io/docs/edge | Support: hello@axto.io",
       },
       sentinel: {
         name: "AXTO Sentinel", tagline: "IoT/OT Security", port: 8095,
@@ -273,13 +273,13 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "IEC 62443 report", code: "GET /v1/compliance/iec62443" },
           { title: "Modbus readings", code: "GET /v1/register-readings?device_ip=192.168.100.10&anomaly_only=true" },
         ],
-        support_note: "Documentation: axto.io/docs/sentinel | Support: hallo@axto.io",
+        support_note: "Documentation: axto.io/docs/sentinel | Support: hello@axto.io",
       },
     },
     support: [
       { label: "Portal",        value: "https://axto.io/portal" },
       { label: "Documentation", value: "https://axto.io/docs" },
-      { label: "Email",         value: "hallo@axto.io" },
+      { label: "Email",         value: "hello@axto.io" },
       { label: "Website",       value: "https://axto.io" },
     ],
   },
@@ -335,7 +335,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Mask saja", code: "POST /v1/mask\n{\"text\":\"...\",\"strategy\":\"pseudonymize\"}" },
           { title: "Erasure GDPR/PDPA", code: "POST /v1/erasure\n{\"identifier\":\"user@email.com\"}" },
         ],
-        support_note: "Dokumentasi: axto.io/docs/vault | Support: hallo@axto.io",
+        support_note: "Dokumentasi: axto.io/docs/vault | Support: hello@axto.io",
       },
       soc: {
         name: "AXTO SOC", tagline: "Security Operations Center", port: 8092,
@@ -367,7 +367,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Lihat alerts", code: "GET /v1/alerts?severity=critical" },
           { title: "Dashboard", code: "GET /v1/dashboard" },
         ],
-        support_note: "Dokumentasi: axto.io/docs/soc | Support: hallo@axto.io",
+        support_note: "Dokumentasi: axto.io/docs/soc | Support: hello@axto.io",
       },
       compliance: {
         name: "AXTO Compliance", tagline: "Automated Audit Platform", port: 8093,
@@ -392,7 +392,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Run assessment", code: "POST /v1/assess/{soc2|iso27001|gdpr|pdpa|hipaa|pci_dss|nist_csf}" },
           { title: "Laporan", code: "GET /v1/report/{framework}" },
         ],
-        support_note: "Dokumentasi: axto.io/docs/compliance | Support: hallo@axto.io",
+        support_note: "Dokumentasi: axto.io/docs/compliance | Support: hello@axto.io",
       },
       edge: {
         name: "AXTO Edge", tagline: "AI Gateway & API Management", port: 8094,
@@ -417,7 +417,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Chat completion", code: "POST /v1/chat/completions\n{\"model\":\"gpt-4o-mini\",\"messages\":[...]}" },
           { title: "Stats", code: "GET /v1/stats" },
         ],
-        support_note: "Dokumentasi: axto.io/docs/edge | Support: hallo@axto.io",
+        support_note: "Dokumentasi: axto.io/docs/edge | Support: hello@axto.io",
       },
       sentinel: {
         name: "AXTO Sentinel", tagline: "IoT/OT Security", port: 8095,
@@ -443,13 +443,13 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
           { title: "Perangkat OT", code: "GET /v1/devices" },
           { title: "Laporan IEC 62443", code: "GET /v1/compliance/iec62443" },
         ],
-        support_note: "Dokumentasi: axto.io/docs/sentinel | Support: hallo@axto.io",
+        support_note: "Dokumentasi: axto.io/docs/sentinel | Support: hello@axto.io",
       },
     },
     support: [
       { label: "Portal",       value: "https://axto.io/portal" },
       { label: "Dokumentasi",  value: "https://axto.io/docs" },
-      { label: "Email",        value: "hallo@axto.io" },
+      { label: "Email",        value: "hello@axto.io" },
       { label: "Website",      value: "https://axto.io" },
     ],
   },
@@ -480,7 +480,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  masking:\n    default_strategy: \"pseudonymize\"\n  compliance:\n    frameworks: [gdpr, pdpa]",
         verify:"curl http://localhost:8091/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"扫描 PII",code:"POST /v1/scan"},{title:"仅脱敏",code:"POST /v1/mask"}],
-        support_note:"文档：axto.io/docs/vault | 支持：hallo@axto.io" },
+        support_note:"文档：axto.io/docs/vault | 支持：hello@axto.io" },
       soc: { name:"AXTO SOC", tagline:"安全运营中心", port:8092, icon:"🛡️", color:"#dc2626",
         overview:"AXTO SOC 是全栈安全运营平台：SIEM 日志聚合、SOAR 自动响应（iptables IP 封锁、Slack 告警、主机隔离）、UEBA 异常检测、威胁情报。",
         prerequisites:["Docker Engine 20.10+","最低 2GB RAM，20GB 磁盘","AXTO SOC 许可证密钥"],
@@ -493,7 +493,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"soc:\n  license_key: \"SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  abuseipdb_api_key: \"您的密钥\"",
         verify:"curl http://localhost:8092/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"摄取日志",code:"POST /v1/ingest"},{title:"查看告警",code:"GET /v1/alerts"}],
-        support_note:"文档：axto.io/docs/soc | 支持：hallo@axto.io" },
+        support_note:"文档：axto.io/docs/soc | 支持：hello@axto.io" },
       compliance: { name:"AXTO Compliance", tagline:"自动审计平台", port:8093, icon:"📋", color:"#0284c7",
         overview:"AXTO Compliance 持续监控 SOC 2、ISO 27001、HIPAA、PCI-DSS、GDPR、PDPA 合规状态，通过真实自动检查（HTTP、TLS、进程、文件）。",
         prerequisites:["Docker Engine 20.10+","1GB RAM","AXTO Compliance 许可证"],
@@ -505,7 +505,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"compliance:\n  license_key: \"CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  frameworks: [soc2, gdpr]",
         verify:"curl http://localhost:8093/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"运行评估",code:"POST /v1/assess/{framework}"},{title:"获取报告",code:"GET /v1/report/{framework}"}],
-        support_note:"文档：axto.io/docs/compliance | 支持：hallo@axto.io" },
+        support_note:"文档：axto.io/docs/compliance | 支持：hello@axto.io" },
       edge: { name:"AXTO Edge", tagline:"AI 网关与 API 管理", port:8094, icon:"⚡", color:"#d97706",
         overview:"AXTO Edge 是 OpenAI 兼容的 AI 网关。更改一行代码（base_url）即可获得：智能多提供商路由、按客户计费、提示注入防火墙、响应缓存和自动故障转移。",
         prerequisites:["Docker Engine 20.10+","1GB RAM","AXTO Edge 许可证","至少一个 AI 提供商 API 密钥（BYOK）"],
@@ -517,7 +517,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"ai_pool:\n  routing_mode: \"cost_first\"\n  vendors:\n    - provider: openai\n      api_key: \"sk-您的密钥\"",
         verify:"curl http://localhost:8094/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"聊天完成",code:"POST /v1/chat/completions"},{title:"使用统计",code:"GET /v1/stats"}],
-        support_note:"文档：axto.io/docs/edge | 支持：hallo@axto.io" },
+        support_note:"文档：axto.io/docs/edge | 支持：hello@axto.io" },
       sentinel: { name:"AXTO Sentinel", tagline:"IoT/OT 安全", port:8095, icon:"📡", color:"#059669",
         overview:"AXTO Sentinel 保护工业和 IoT 网络：自动发现 OT 设备（PLC、HMI、SCADA、摄像头），轮询 Modbus 寄存器检测异常，审计 MQTT 匿名访问，CVE 匹配，IEC 62443 合规。",
         prerequisites:["Docker Engine 20.10+","2GB RAM，10GB 磁盘","AXTO Sentinel 许可证","OT 子网络访问权限"],
@@ -529,9 +529,9 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",
         verify:"curl http://localhost:8095/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"仪表板",code:"GET /v1/dashboard"},{title:"设备清单",code:"GET /v1/devices"},{title:"IEC 62443",code:"GET /v1/compliance/iec62443"}],
-        support_note:"文档：axto.io/docs/sentinel | 支持：hallo@axto.io" },
+        support_note:"文档：axto.io/docs/sentinel | 支持：hello@axto.io" },
     },
-    support:[{label:"门户",value:"https://axto.io/portal"},{label:"文档",value:"https://axto.io/docs"},{label:"邮箱",value:"hallo@axto.io"}],
+    support:[{label:"门户",value:"https://axto.io/portal"},{label:"文档",value:"https://axto.io/docs"},{label:"邮箱",value:"hello@axto.io"}],
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -559,7 +559,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  compliance:\n    frameworks: [gdpr, pdpa]",
         verify:"curl http://localhost:8091/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"فحص PII",code:"POST /v1/scan"},{title:"إخفاء فقط",code:"POST /v1/mask"}],
-        support_note:"التوثيق: axto.io/docs/vault | الدعم: hallo@axto.io" },
+        support_note:"التوثيق: axto.io/docs/vault | الدعم: hello@axto.io" },
       soc: { name:"AXTO SOC", tagline:"مركز عمليات الأمن", port:8092, icon:"🛡️", color:"#dc2626",
         overview:"AXTO SOC منصة SOC متكاملة: تجميع سجلات SIEM، استجابة آلية SOAR، كشف شذوذ UEBA، استخبارات التهديدات.",
         prerequisites:["Docker Engine 20.10+","ذاكرة وصول عشوائي 2GB","مفتاح ترخيص AXTO SOC"],
@@ -571,7 +571,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         config_example:"soc:\n  license_key: \"SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"",
         verify:"curl http://localhost:8092/health", verify_expected:"{\"status\":\"ok\"}",
         api_examples:[{title:"استيعاب السجلات",code:"POST /v1/ingest"},{title:"التنبيهات",code:"GET /v1/alerts"}],
-        support_note:"التوثيق: axto.io/docs/soc | الدعم: hallo@axto.io" },
+        support_note:"التوثيق: axto.io/docs/soc | الدعم: hello@axto.io" },
       compliance: { name:"AXTO Compliance", tagline:"منصة التدقيق الآلي", port:8093, icon:"📋", color:"#0284c7",
         overview:"AXTO Compliance يراقب الامتثال باستمرار مقابل SOC 2 وISO 27001 وHIPAA وPCI-DSS وGDPR وPDPA وNIST CSF.",
         prerequisites:["Docker Engine 20.10+","ذاكرة وصول عشوائي 1GB","مفتاح ترخيص"],
@@ -597,7 +597,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
         api_examples:[{title:"لوحة التحكم",code:"GET /v1/dashboard"},{title:"الأجهزة",code:"GET /v1/devices"}],
         support_note:"التوثيق: axto.io/docs/sentinel" },
     },
-    support:[{label:"البوابة",value:"https://axto.io/portal"},{label:"التوثيق",value:"https://axto.io/docs"},{label:"البريد",value:"hallo@axto.io"}],
+    support:[{label:"البوابة",value:"https://axto.io/portal"},{label:"التوثيق",value:"https://axto.io/docs"},{label:"البريد",value:"hello@axto.io"}],
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -615,7 +615,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
       edge:{name:"AXTO Edge",tagline:"Gateway de IA y Gestión de API",port:8094,icon:"⚡",color:"#d97706",overview:"Gateway de IA compatible con OpenAI. Cambia una línea de código y obtén enrutamiento inteligente, facturación y firewall de inyección de prompts.",prerequisites:["Docker 20.10+","1GB RAM","Licencia Edge","Clave API de proveedor IA"],steps:[{title:"1. Instalar",desc:"",code:"sudo bash install.sh edge"},{title:"2. Cambiar base_url",desc:"",code:"client = OpenAI(base_url='http://edge:8094/v1', api_key='cust-key')"}],config_example:"ai_pool:\n  vendors:\n    - provider: openai\n      api_key: \"sk-tu-clave\"",verify:"curl http://localhost:8094/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Chat",code:"POST /v1/chat/completions"}],support_note:"Documentación: axto.io/docs/edge"},
       sentinel:{name:"AXTO Sentinel",tagline:"Seguridad IoT/OT",port:8095,icon:"📡",color:"#059669",overview:"Protege redes industriales: descubrimiento automático de dispositivos OT, sondeo de registros Modbus, correlación CVE, cumplimiento IEC 62443.",prerequisites:["Docker 20.10+","2GB RAM","Licencia Sentinel","Acceso a subred OT"],steps:[{title:"1. Instalar",desc:"",code:"sudo bash install.sh sentinel"},{title:"2. Configurar subred",desc:"",code:"sentinel:\n  scan_subnets: [\"192.168.100.0/24\"]"},{title:"3. Monitorear",desc:"",code:"curl http://localhost:8095/v1/dashboard"}],config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",verify:"curl http://localhost:8095/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Dashboard",code:"GET /v1/dashboard"}],support_note:"Documentación: axto.io/docs/sentinel"},
     },
-    support:[{label:"Portal",value:"https://axto.io/portal"},{label:"Documentación",value:"https://axto.io/docs"},{label:"Email",value:"hallo@axto.io"}],
+    support:[{label:"Portal",value:"https://axto.io/portal"},{label:"Documentación",value:"https://axto.io/docs"},{label:"Email",value:"hello@axto.io"}],
   },
 
   fr: {
@@ -623,13 +623,13 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
     subtitle:"Vault · SOC · Compliance · Edge · Sentinel",
     download_steps:["Achetez votre licence sur axto.io/portal","Connectez-vous au portail → Licences → Télécharger","Choisissez le format: Docker Linux, EXE Linux ou EXE Windows","Extrayez le ZIP → exécutez install.sh (Linux) ou install.bat (Windows)"],
     products:{
-      vault:{name:"AXTO Vault",tagline:"Moteur d'Intelligence pour la Vie Privée",port:8091,icon:"🔒",color:"#7c3aed",overview:"Couche de confidentialité de niveau production: détecte, masque, tokenise et chiffre les PII automatiquement.",prerequisites:["Docker Engine 20.10+","1Go RAM minimum","Clé de licence AXTO Vault"],steps:[{title:"1. Installer",desc:"",code:"sudo bash install.sh vault"},{title:"2. Configurer",desc:"",code:"vault:\n  license_key: \"VAULT-XXXX-...\"\n  masking:\n    default_strategy: \"pseudonymize\""},{title:"3. Vérifier",desc:"",code:"curl http://localhost:8091/health"},{title:"4. Premier scan",desc:"",code:"curl -X POST http://localhost:8091/v1/scan \\\n  -d '{\"text\":\"email@example.com\"}'"}],config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  compliance:\n    frameworks: [gdpr]",verify:"curl http://localhost:8091/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Scanner PII",code:"POST /v1/scan"},{title:"Masquer",code:"POST /v1/mask"}],support_note:"Documentation: axto.io/docs/vault | Support: hallo@axto.io"},
+      vault:{name:"AXTO Vault",tagline:"Moteur d'Intelligence pour la Vie Privée",port:8091,icon:"🔒",color:"#7c3aed",overview:"Couche de confidentialité de niveau production: détecte, masque, tokenise et chiffre les PII automatiquement.",prerequisites:["Docker Engine 20.10+","1Go RAM minimum","Clé de licence AXTO Vault"],steps:[{title:"1. Installer",desc:"",code:"sudo bash install.sh vault"},{title:"2. Configurer",desc:"",code:"vault:\n  license_key: \"VAULT-XXXX-...\"\n  masking:\n    default_strategy: \"pseudonymize\""},{title:"3. Vérifier",desc:"",code:"curl http://localhost:8091/health"},{title:"4. Premier scan",desc:"",code:"curl -X POST http://localhost:8091/v1/scan \\\n  -d '{\"text\":\"email@example.com\"}'"}],config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  compliance:\n    frameworks: [gdpr]",verify:"curl http://localhost:8091/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Scanner PII",code:"POST /v1/scan"},{title:"Masquer",code:"POST /v1/mask"}],support_note:"Documentation: axto.io/docs/vault | Support: hello@axto.io"},
       soc:{name:"AXTO SOC",tagline:"Centre des Opérations de Sécurité",port:8092,icon:"🛡️",color:"#dc2626",overview:"SIEM + SOAR + Threat Intelligence + UEBA. Réponse automatique réelle aux incidents.",prerequisites:["Docker 20.10+","2Go RAM","Licence SOC"],steps:[{title:"1. Installer",desc:"",code:"sudo bash install.sh soc"},{title:"2. Envoyer les logs",desc:"",code:"curl -X POST http://soc:8092/v1/ingest -d '{\"logs\":[\"...\"]}'"},{title:"3. Surveiller",desc:"",code:"curl http://soc:8092/v1/dashboard"}],config_example:"soc:\n  license_key: \"SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"",verify:"curl http://localhost:8092/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Ingérer logs",code:"POST /v1/ingest"}],support_note:"Documentation: axto.io/docs/soc"},
       compliance:{name:"AXTO Compliance",tagline:"Plateforme d'Audit Automatisée",port:8093,icon:"📋",color:"#0284c7",overview:"Surveillance continue de la conformité SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA, NIST CSF.",prerequisites:["Docker 20.10+","1Go RAM","Licence Compliance"],steps:[{title:"1. Installer",desc:"",code:"sudo bash install.sh compliance"},{title:"2. Évaluer",desc:"",code:"curl -X POST http://localhost:8093/v1/assess/soc2"}],config_example:"compliance:\n  license_key: \"CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  frameworks: [soc2, gdpr]",verify:"curl http://localhost:8093/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Évaluer",code:"POST /v1/assess/{framework}"}],support_note:"Documentation: axto.io/docs/compliance"},
       edge:{name:"AXTO Edge",tagline:"Passerelle IA & Gestion d'API",port:8094,icon:"⚡",color:"#d97706",overview:"Passerelle IA compatible OpenAI. Changez une ligne de code et obtenez routage intelligent, facturation et pare-feu d'injection de prompts.",prerequisites:["Docker 20.10+","1Go RAM","Licence Edge","Clé API fournisseur IA"],steps:[{title:"1. Installer",desc:"",code:"sudo bash install.sh edge"},{title:"2. Changer base_url",desc:"",code:"client = OpenAI(base_url='http://edge:8094/v1', api_key='cle-client')"}],config_example:"ai_pool:\n  vendors:\n    - provider: openai\n      api_key: \"sk-votre-cle\"",verify:"curl http://localhost:8094/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Complétion de chat",code:"POST /v1/chat/completions"}],support_note:"Documentation: axto.io/docs/edge"},
       sentinel:{name:"AXTO Sentinel",tagline:"Sécurité IoT/OT",port:8095,icon:"📡",color:"#059669",overview:"Protège les réseaux industriels et IoT: découverte automatique des appareils OT, interrogation des registres Modbus, corrélation CVE, conformité IEC 62443.",prerequisites:["Docker 20.10+","2Go RAM","Licence Sentinel","Accès réseau OT"],steps:[{title:"1. Installer",desc:"",code:"sudo bash install.sh sentinel"},{title:"2. Configurer",desc:"",code:"sentinel:\n  scan_subnets: [\"192.168.100.0/24\"]"},{title:"3. Surveiller",desc:"",code:"curl http://localhost:8095/v1/dashboard"}],config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",verify:"curl http://localhost:8095/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Tableau de bord",code:"GET /v1/dashboard"}],support_note:"Documentation: axto.io/docs/sentinel"},
     },
-    support:[{label:"Portail",value:"https://axto.io/portal"},{label:"Documentation",value:"https://axto.io/docs"},{label:"Email",value:"hallo@axto.io"}],
+    support:[{label:"Portail",value:"https://axto.io/portal"},{label:"Documentation",value:"https://axto.io/docs"},{label:"Email",value:"hello@axto.io"}],
   },
 
   de: {
@@ -643,7 +643,7 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
       edge:{name:"AXTO Edge",tagline:"KI-Gateway & API-Management",port:8094,icon:"⚡",color:"#d97706",overview:"OpenAI-kompatibles KI-Gateway. Eine Zeile Code ändern und intelligentes Routing, Abrechnung und Prompt-Injection-Firewall erhalten.",prerequisites:["Docker 20.10+","1GB RAM","Edge-Lizenz","KI-Provider API-Schlüssel"],steps:[{title:"1. Installieren",desc:"",code:"sudo bash install.sh edge"},{title:"2. base_url ändern",desc:"",code:"client = OpenAI(base_url='http://edge:8094/v1', api_key='kunden-key')"}],config_example:"ai_pool:\n  vendors:\n    - provider: openai\n      api_key: \"sk-ihr-schlüssel\"",verify:"curl http://localhost:8094/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Chat-Vervollständigung",code:"POST /v1/chat/completions"}],support_note:"Dokumentation: axto.io/docs/edge"},
       sentinel:{name:"AXTO Sentinel",tagline:"IoT/OT-Sicherheit",port:8095,icon:"📡",color:"#059669",overview:"Schützt Industrie- und IoT-Netzwerke: automatische OT-Geräteerkennung, Modbus-Register-Polling, CVE-Korrelation, IEC 62443-Compliance.",prerequisites:["Docker 20.10+","2GB RAM","Sentinel-Lizenz","Zugang zum OT-Netz"],steps:[{title:"1. Installieren",desc:"",code:"sudo bash install.sh sentinel"},{title:"2. Konfigurieren",desc:"",code:"sentinel:\n  scan_subnets: [\"192.168.100.0/24\"]"},{title:"3. Überwachen",desc:"",code:"curl http://localhost:8095/v1/dashboard"}],config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",verify:"curl http://localhost:8095/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Dashboard",code:"GET /v1/dashboard"}],support_note:"Dokumentation: axto.io/docs/sentinel"},
     },
-    support:[{label:"Portal",value:"https://axto.io/portal"},{label:"Dokumentation",value:"https://axto.io/docs"},{label:"E-Mail",value:"hallo@axto.io"}],
+    support:[{label:"Portal",value:"https://axto.io/portal"},{label:"Dokumentation",value:"https://axto.io/docs"},{label:"E-Mail",value:"hello@axto.io"}],
   },
 
   pt: {
@@ -656,33 +656,33 @@ const GUIDES_5PRODUCTS: Record<LangCode, Guide5> = {
       edge:{name:"AXTO Edge",tagline:"Gateway de IA & Gestão de API",port:8094,icon:"⚡",color:"#d97706",overview:"Gateway de IA compatível com OpenAI. Mude uma linha de código e obtenha roteamento inteligente e cobrança por cliente.",prerequisites:["Docker 20.10+","1GB RAM","Licença Edge","Chave API de provedor IA"],steps:[{title:"1. Instalar",desc:"",code:"sudo bash install.sh edge"},{title:"2. Mudar base_url",desc:"",code:"client = OpenAI(base_url='http://edge:8094/v1', api_key='chave-cliente')"}],config_example:"ai_pool:\n  vendors:\n    - provider: openai\n      api_key: \"sk-sua-chave\"",verify:"curl http://localhost:8094/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Chat",code:"POST /v1/chat/completions"}],support_note:"Documentação: axto.io/docs/edge"},
       sentinel:{name:"AXTO Sentinel",tagline:"Segurança IoT/OT",port:8095,icon:"📡",color:"#059669",overview:"Protege redes industriais e IoT: descoberta automática de dispositivos OT, polling de registros Modbus, correlação CVE, conformidade IEC 62443.",prerequisites:["Docker 20.10+","2GB RAM","Licença Sentinel","Acesso à rede OT"],steps:[{title:"1. Instalar",desc:"",code:"sudo bash install.sh sentinel"},{title:"2. Configurar",desc:"",code:"sentinel:\n  scan_subnets: [\"192.168.100.0/24\"]"},{title:"3. Monitorar",desc:"",code:"curl http://localhost:8095/v1/dashboard"}],config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",verify:"curl http://localhost:8095/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"Dashboard",code:"GET /v1/dashboard"}],support_note:"Documentação: axto.io/docs/sentinel"},
     },
-    support:[{label:"Portal",value:"https://axto.io/portal"},{label:"Documentação",value:"https://axto.io/docs"},{label:"Email",value:"hallo@axto.io"}],
+    support:[{label:"Portal",value:"https://axto.io/portal"},{label:"Documentação",value:"https://axto.io/docs"},{label:"Email",value:"hello@axto.io"}],
   },
 
   ja: {
     title:"AXTO Platform — 5製品セットアップガイド",subtitle:"Vault · SOC · Compliance · Edge · Sentinel",
     download_steps:["axto.io/portalでライセンスを購入","ポータルにログイン → ライセンスタブ → ダウンロードをクリック","フォーマットを選択: Docker Linux、EXE Linux、またはEXE Windows","ZIPを展開 → install.sh (Linux) またはinstall.bat (Windows) を実行"],
     products:{
-      vault:{name:"AXTO Vault",tagline:"プライバシーインテリジェンスエンジン",port:8091,icon:"🔒",color:"#7c3aed",overview:"本番グレードのプライバシーレイヤー: すべてのデータストリームでPIIを自動的に検出、マスク、トークン化、暗号化します。",prerequisites:["Docker Engine 20.10+","最低1GB RAM","AXTO Vaultライセンスキー"],steps:[{title:"1. インストール",desc:"",code:"sudo bash install.sh vault"},{title:"2. 設定",desc:"",code:"vault:\n  license_key: \"VAULT-XXXX-...\""},{title:"3. 確認",desc:"",code:"curl http://localhost:8091/health"},{title:"4. 初回スキャン",desc:"",code:"curl -X POST http://localhost:8091/v1/scan \\\n  -d '{\"text\":\"email@example.com\"}'"}],config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  masking:\n    default_strategy: \"pseudonymize\"",verify:"curl http://localhost:8091/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"PIIスキャン",code:"POST /v1/scan"},{title:"マスクのみ",code:"POST /v1/mask"}],support_note:"ドキュメント: axto.io/docs/vault | サポート: hallo@axto.io"},
+      vault:{name:"AXTO Vault",tagline:"プライバシーインテリジェンスエンジン",port:8091,icon:"🔒",color:"#7c3aed",overview:"本番グレードのプライバシーレイヤー: すべてのデータストリームでPIIを自動的に検出、マスク、トークン化、暗号化します。",prerequisites:["Docker Engine 20.10+","最低1GB RAM","AXTO Vaultライセンスキー"],steps:[{title:"1. インストール",desc:"",code:"sudo bash install.sh vault"},{title:"2. 設定",desc:"",code:"vault:\n  license_key: \"VAULT-XXXX-...\""},{title:"3. 確認",desc:"",code:"curl http://localhost:8091/health"},{title:"4. 初回スキャン",desc:"",code:"curl -X POST http://localhost:8091/v1/scan \\\n  -d '{\"text\":\"email@example.com\"}'"}],config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  masking:\n    default_strategy: \"pseudonymize\"",verify:"curl http://localhost:8091/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"PIIスキャン",code:"POST /v1/scan"},{title:"マスクのみ",code:"POST /v1/mask"}],support_note:"ドキュメント: axto.io/docs/vault | サポート: hello@axto.io"},
       soc:{name:"AXTO SOC",tagline:"セキュリティオペレーションセンター",port:8092,icon:"🛡️",color:"#dc2626",overview:"SIEM + SOAR + 脅威インテリジェンス + UEBA。実際の自動インシデント対応。",prerequisites:["Docker 20.10+","2GB RAM","SOCライセンス"],steps:[{title:"1. インストール",desc:"",code:"sudo bash install.sh soc"},{title:"2. ログ送信",desc:"",code:"curl -X POST http://soc:8092/v1/ingest -d '{\"logs\":[\"...\"]}'"},{title:"3. 監視",desc:"",code:"curl http://soc:8092/v1/dashboard"}],config_example:"soc:\n  license_key: \"SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"",verify:"curl http://localhost:8092/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"ログ取り込み",code:"POST /v1/ingest"}],support_note:"ドキュメント: axto.io/docs/soc"},
       compliance:{name:"AXTO Compliance",tagline:"自動化監査プラットフォーム",port:8093,icon:"📋",color:"#0284c7",overview:"SOC 2、ISO 27001、HIPAA、PCI-DSS、GDPR、PDPA、NIST CSFの継続的コンプライアンス監視。",prerequisites:["Docker 20.10+","1GB RAM","Complianceライセンス"],steps:[{title:"1. インストール",desc:"",code:"sudo bash install.sh compliance"},{title:"2. 評価実行",desc:"",code:"curl -X POST http://localhost:8093/v1/assess/soc2"}],config_example:"compliance:\n  license_key: \"CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  frameworks: [soc2, gdpr]",verify:"curl http://localhost:8093/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"評価",code:"POST /v1/assess/{framework}"}],support_note:"ドキュメント: axto.io/docs/compliance"},
       edge:{name:"AXTO Edge",tagline:"AIゲートウェイ & API管理",port:8094,icon:"⚡",color:"#d97706",overview:"OpenAI互換AIゲートウェイ。1行のコード変更でスマートルーティング、請求、プロンプトインジェクション防御を取得。",prerequisites:["Docker 20.10+","1GB RAM","Edgeライセンス","AIプロバイダーAPIキー (BYOK)"],steps:[{title:"1. インストール",desc:"",code:"sudo bash install.sh edge"},{title:"2. base_url変更",desc:"",code:"client = OpenAI(base_url='http://edge:8094/v1', api_key='顧客キー')"}],config_example:"ai_pool:\n  vendors:\n    - provider: openai\n      api_key: \"sk-あなたのキー\"",verify:"curl http://localhost:8094/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"チャット完了",code:"POST /v1/chat/completions"}],support_note:"ドキュメント: axto.io/docs/edge"},
       sentinel:{name:"AXTO Sentinel",tagline:"IoT/OTセキュリティ",port:8095,icon:"📡",color:"#059669",overview:"産業用・IoTネットワークを保護: OTデバイスの自動検出、Modbusレジスタポーリング、CVEマッチング、IEC 62443準拠。",prerequisites:["Docker 20.10+","2GB RAM","Sentinelライセンス","OTネットワークへのアクセス"],steps:[{title:"1. インストール",desc:"",code:"sudo bash install.sh sentinel"},{title:"2. 設定",desc:"",code:"sentinel:\n  scan_subnets: [\"192.168.100.0/24\"]"},{title:"3. 監視",desc:"",code:"curl http://localhost:8095/v1/dashboard"}],config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",verify:"curl http://localhost:8095/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"ダッシュボード",code:"GET /v1/dashboard"}],support_note:"ドキュメント: axto.io/docs/sentinel"},
     },
-    support:[{label:"ポータル",value:"https://axto.io/portal"},{label:"ドキュメント",value:"https://axto.io/docs"},{label:"メール",value:"hallo@axto.io"}],
+    support:[{label:"ポータル",value:"https://axto.io/portal"},{label:"ドキュメント",value:"https://axto.io/docs"},{label:"メール",value:"hello@axto.io"}],
   },
 
   ko: {
     title:"AXTO Platform — 5제품 설치 가이드",subtitle:"Vault · SOC · Compliance · Edge · Sentinel",
     download_steps:["axto.io/portal에서 라이선스 구매","포털 로그인 → 라이선스 탭 → 다운로드 클릭","형식 선택: Docker Linux, EXE Linux 또는 EXE Windows","ZIP 압축 해제 → install.sh (Linux) 또는 install.bat (Windows) 실행"],
     products:{
-      vault:{name:"AXTO Vault",tagline:"프라이버시 인텔리전스 엔진",port:8091,icon:"🔒",color:"#7c3aed",overview:"프로덕션급 프라이버시 레이어: 모든 데이터 스트림에서 PII를 자동으로 감지, 마스킹, 토큰화, 암호화합니다.",prerequisites:["Docker Engine 20.10+","최소 1GB RAM","AXTO Vault 라이선스 키"],steps:[{title:"1. 설치",desc:"",code:"sudo bash install.sh vault"},{title:"2. 설정",desc:"",code:"vault:\n  license_key: \"VAULT-XXXX-...\""},{title:"3. 확인",desc:"",code:"curl http://localhost:8091/health"},{title:"4. 첫 번째 스캔",desc:"",code:"curl -X POST http://localhost:8091/v1/scan \\\n  -d '{\"text\":\"email@example.com\"}'"}],config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"",verify:"curl http://localhost:8091/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"PII 스캔",code:"POST /v1/scan"}],support_note:"문서: axto.io/docs/vault | 지원: hallo@axto.io"},
+      vault:{name:"AXTO Vault",tagline:"프라이버시 인텔리전스 엔진",port:8091,icon:"🔒",color:"#7c3aed",overview:"프로덕션급 프라이버시 레이어: 모든 데이터 스트림에서 PII를 자동으로 감지, 마스킹, 토큰화, 암호화합니다.",prerequisites:["Docker Engine 20.10+","최소 1GB RAM","AXTO Vault 라이선스 키"],steps:[{title:"1. 설치",desc:"",code:"sudo bash install.sh vault"},{title:"2. 설정",desc:"",code:"vault:\n  license_key: \"VAULT-XXXX-...\""},{title:"3. 확인",desc:"",code:"curl http://localhost:8091/health"},{title:"4. 첫 번째 스캔",desc:"",code:"curl -X POST http://localhost:8091/v1/scan \\\n  -d '{\"text\":\"email@example.com\"}'"}],config_example:"vault:\n  license_key: \"VAULT-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"",verify:"curl http://localhost:8091/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"PII 스캔",code:"POST /v1/scan"}],support_note:"문서: axto.io/docs/vault | 지원: hello@axto.io"},
       soc:{name:"AXTO SOC",tagline:"보안 운영 센터",port:8092,icon:"🛡️",color:"#dc2626",overview:"SIEM + SOAR + 위협 인텔리전스 + UEBA. 실제 자동화된 인시던트 대응.",prerequisites:["Docker 20.10+","2GB RAM","SOC 라이선스"],steps:[{title:"1. 설치",desc:"",code:"sudo bash install.sh soc"},{title:"2. 로그 전송",desc:"",code:"curl -X POST http://soc:8092/v1/ingest -d '{\"logs\":[\"...\"]}'"},{title:"3. 모니터링",desc:"",code:"curl http://soc:8092/v1/dashboard"}],config_example:"soc:\n  license_key: \"SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"",verify:"curl http://localhost:8092/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"로그 수집",code:"POST /v1/ingest"}],support_note:"문서: axto.io/docs/soc"},
       compliance:{name:"AXTO Compliance",tagline:"자동화 감사 플랫폼",port:8093,icon:"📋",color:"#0284c7",overview:"SOC 2, ISO 27001, HIPAA, PCI-DSS, GDPR, PDPA, NIST CSF에 대한 지속적인 컴플라이언스 모니터링.",prerequisites:["Docker 20.10+","1GB RAM","Compliance 라이선스"],steps:[{title:"1. 설치",desc:"",code:"sudo bash install.sh compliance"},{title:"2. 평가 실행",desc:"",code:"curl -X POST http://localhost:8093/v1/assess/soc2"}],config_example:"compliance:\n  license_key: \"CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  frameworks: [soc2, gdpr]",verify:"curl http://localhost:8093/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"평가",code:"POST /v1/assess/{framework}"}],support_note:"문서: axto.io/docs/compliance"},
       edge:{name:"AXTO Edge",tagline:"AI 게이트웨이 & API 관리",port:8094,icon:"⚡",color:"#d97706",overview:"OpenAI 호환 AI 게이트웨이. 코드 한 줄 변경으로 스마트 라우팅, 청구, 프롬프트 인젝션 방화벽을 바로 사용.",prerequisites:["Docker 20.10+","1GB RAM","Edge 라이선스","AI 공급자 API 키 (BYOK)"],steps:[{title:"1. 설치",desc:"",code:"sudo bash install.sh edge"},{title:"2. base_url 변경",desc:"",code:"client = OpenAI(base_url='http://edge:8094/v1', api_key='고객키')"}],config_example:"ai_pool:\n  vendors:\n    - provider: openai\n      api_key: \"sk-귀하의키\"",verify:"curl http://localhost:8094/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"채팅 완성",code:"POST /v1/chat/completions"}],support_note:"문서: axto.io/docs/edge"},
       sentinel:{name:"AXTO Sentinel",tagline:"IoT/OT 보안",port:8095,icon:"📡",color:"#059669",overview:"산업 및 IoT 네트워크 보호: OT 장치 자동 검색, Modbus 레지스터 폴링, CVE 매칭, IEC 62443 컴플라이언스.",prerequisites:["Docker 20.10+","2GB RAM","Sentinel 라이선스","OT 네트워크 접근"],steps:[{title:"1. 설치",desc:"",code:"sudo bash install.sh sentinel"},{title:"2. 설정",desc:"",code:"sentinel:\n  scan_subnets: [\"192.168.100.0/24\"]"},{title:"3. 모니터링",desc:"",code:"curl http://localhost:8095/v1/dashboard"}],config_example:"sentinel:\n  license_key: \"SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX\"\n  scan_subnets: [\"192.168.100.0/24\"]",verify:"curl http://localhost:8095/health",verify_expected:"{\"status\":\"ok\"}",api_examples:[{title:"대시보드",code:"GET /v1/dashboard"}],support_note:"문서: axto.io/docs/sentinel"},
     },
-    support:[{label:"포털",value:"https://axto.io/portal"},{label:"문서",value:"https://axto.io/docs"},{label:"이메일",value:"hallo@axto.io"}],
+    support:[{label:"포털",value:"https://axto.io/portal"},{label:"문서",value:"https://axto.io/docs"},{label:"이메일",value:"hello@axto.io"}],
   },
 };
 

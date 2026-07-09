@@ -1,7 +1,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
@@ -117,7 +117,7 @@ def _require_operational():
         raise HTTPException(status_code=402, detail={
             "error": "license_not_operational",
             "license": lic.state.to_api_dict() if lic else None,
-            "hint": "Yusron Power is invite-only. Contact hallo@axto.io."})
+            "hint": "Yusron Power is invite-only. Contact hello@axto.io."})
 
 
 def _client_key(req: Request) -> str:

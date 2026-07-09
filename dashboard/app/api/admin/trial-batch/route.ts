@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  *
@@ -59,7 +59,23 @@ export async function GET(req: NextRequest) {
     const win = await dbFirst<any>(
       db, `SELECT id, starts_at, ends_at, enabled FROM trial_promo_config WHERE id = 'axto_launch'`
     );
-    return NextResponse.json({ summary: rows, batches, window: win });
+    // 5-star satisfaction summary per product, from clients who rated a
+    // product they actually trialed (reviews.product joined against a
+    // claimed trial for the same email+product).
+    let ratings: any[] = [];
+    try {
+      ratings = await dbQuery<any>(
+        db,
+        `SELECT r.product, COUNT(*) AS count, ROUND(AVG(r.rating), 2) AS avg_rating
+         FROM reviews r
+         WHERE EXISTS (
+           SELECT 1 FROM trial_batch_codes tc
+           WHERE tc.claimed_email = r.client_email AND tc.product = r.product AND tc.status = 'claimed'
+         )
+         GROUP BY r.product`
+      );
+    } catch { /* reviews table unavailable — summary just stays empty */ }
+    return NextResponse.json({ summary: rows, batches, window: win, ratings });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed to load" }, { status: 500 });
   }
@@ -117,6 +133,23 @@ export async function POST(req: NextRequest) {
       }
       await db.batch(stmts);
       return NextResponse.json({ success: true, batchId, generated: n });
+    }
+
+    if (action === "list_ratings") {
+      const { product } = body;
+      if (!product) return NextResponse.json({ error: "product required" }, { status: 400 });
+      const rows = await dbQuery<any>(
+        db,
+        `SELECT r.id, r.client_email, r.client_name, r.rating, r.title, r.body, r.status, r.created_at
+         FROM reviews r
+         WHERE r.product = ? AND EXISTS (
+           SELECT 1 FROM trial_batch_codes tc
+           WHERE tc.claimed_email = r.client_email AND tc.product = r.product AND tc.status = 'claimed'
+         )
+         ORDER BY r.created_at DESC LIMIT 200`,
+        [product]
+      );
+      return NextResponse.json({ ratings: rows });
     }
 
     if (action === "list_codes") {

@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # 🚀 AXTO AutoPost — Panduan Setup Lengkap
@@ -171,4 +171,4 @@ Butuh: `ANTHROPIC_API_KEY` di CF Pages secrets.
 
 ---
 
-*AXTO — AI eXecution & Tools Orchestration | axto.io | hallo@axto.io*
+*AXTO — AI eXecution & Tools Orchestration | axto.io | hello@axto.io*

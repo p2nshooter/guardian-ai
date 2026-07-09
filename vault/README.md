@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # 🔐 AXTO Vault — AI Privacy Layer
@@ -221,7 +221,7 @@ axto-vault/
 |---------|---------|
 | **AI Support Chat** | http://localhost:8080/support |
 | **Client Portal** | https://axto.io/portal |
-| **Email** | hallo@axto.io |
+| **Email** | hello@axto.io |
 | **Documentation** | https://axto.io/guide |
 
 ---

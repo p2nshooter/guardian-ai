@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -229,9 +229,9 @@ Cocok untuk: perusahaan IT, hosting provider, e-commerce, fintech, pemerintahan.
 
 Harga terjangkau, jauh lebih hemat dari solusi enterprise lain.
 
-📧 hallo@axto.io | 🌐 axto.io`,
+📧 hello@axto.io | 🌐 axto.io`,
     hashtags: [],
-    cta_text: "Hubungi kami: hallo@axto.io",
+    cta_text: "Hubungi kami: hello@axto.io",
     image_prompt: "Simple clean cybersecurity product banner with AXTO branding",
     language: "id",
   },
@@ -398,9 +398,9 @@ Cocok untuk: AI startup, enterprise, GPU farm, AI research team.
 
 Hemat biaya AI hingga 60% dengan routing cerdas.
 
-📧 hallo@axto.io | 🌐 axto.io`,
+📧 hello@axto.io | 🌐 axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io",
+    cta_text: "hello@axto.io",
     image_prompt: "Orchestra AI product banner with workflow visualization",
     language: "id",
   },
@@ -529,7 +529,7 @@ Regulasi adalah tantangan. AXTO membuatnya mudah. ⚖️
 
 {{cta}}`,
     hashtags: ["#Compliance","#AXTO","#UUPDP","#GDPR","#DataGovernance","#FinTech","#RegTech"],
-    cta_text: "📊 Konsultasi kepatuhan: hallo@axto.io",
+    cta_text: "📊 Konsultasi kepatuhan: hello@axto.io",
     image_prompt: "Legal compliance documents with AI shield, professional corporate style",
     language: "id",
   },
@@ -1064,9 +1064,9 @@ Both are 100% self-hosted with BYOK support.
 
 Perfect for: IT companies, hosting providers, AI startups, enterprises.
 
-🌐 axto.io | 📧 hallo@axto.io`,
+🌐 axto.io | 📧 hello@axto.io`,
     hashtags: [],
-    cta_text: "axto.io | hallo@axto.io",
+    cta_text: "axto.io | hello@axto.io",
     image_prompt: "AXTO product banner showing both Guardian AI and Orchestra AI",
     language: "en",
   },
@@ -1093,10 +1093,10 @@ Jual software AI enterprise untuk bisnis Anda:
 Harga terjangkau, beli sekali, pakai selamanya.
 Cocok untuk perusahaan IT, hosting, fintech, pemerintahan.
 
-📞 hallo@axto.io
+📞 hello@axto.io
 🌐 axto.io`,
     hashtags: [],
-    cta_text: "Hubungi: hallo@axto.io",
+    cta_text: "Hubungi: hello@axto.io",
     image_prompt: "Indonesian enterprise software product banner",
     language: "id",
   },
@@ -1236,8 +1236,8 @@ export const EXTRA_TEMPLATES: AutoPostTemplate[] = [
   {id:"e001",title:"Guardian – Threat Hunting",category:"guardian_ai",platforms:["linkedin","twitter"],body_text:`🕵️ Threat hunting bukan hanya untuk security team besar.\n\nDengan AXTO Guardian AI, tim kecilpun bisa:\n→ Query log dan event secara cepat\n→ Cari pattern anomali\n→ Correlate events lintas server\n→ Export untuk forensik\n\nPower security analyst, tersedia untuk semua. 💪\n\n{{cta}}`,hashtags:["#ThreatHunting","#AXTO","#GuardianAI","#BlueTeam","#SOC"],cta_text:"axto.io",image_prompt:"Security analyst hunting threats on dark interface with AI assistance",language:"id"},
   {id:"e002",title:"Guardian – Incident Response",category:"guardian_ai",platforms:["linkedin","facebook"],body_text:`🚨 Ketika incident terjadi, setiap detik berharga.\n\nAXTO Guardian AI mempercepat incident response:\n✅ Alert langsung ke channel notifikasi pilihan Anda\n✅ Quarantine otomatis file berbahaya\n✅ Timeline event yang jelas\n✅ One-click evidence collection\n\nDari deteksi ke respons: menit, bukan jam. ⚡\n\n{{cta}}`,hashtags:["#IncidentResponse","#GuardianAI","#AXTO","#CyberSecurity","#IR"],cta_text:"axto.io",image_prompt:"Incident response timeline with AI automated actions, urgent but controlled",language:"id"},
   {id:"e003",title:"Orchestra – Cost Calculator",category:"orchestra_ai",platforms:["facebook","linkedin"],body_text:`💰 Hitung berapa Anda bisa hemat dengan AXTO Orchestra AI:\n\nAsumsi: 1 juta token/hari pakai GPT-4\n→ GPT-4: ~$30/hari = $900/bulan\n→ Dengan routing cerdas Orchestra AI:\n   - 40% task → Groq (5x lebih murah)\n   - 30% task → Gemini Flash\n   - 30% task tetap GPT-4\n→ Estimasi penghematan: 50-60%!\n\nROI payback biasanya < 2 bulan. 📊\n\n{{cta}}`,hashtags:["#ROI","#OrchestraAI","#AXTO","#AICost","#Savings","#Optimization"],cta_text:"axto.io",image_prompt:"Cost calculation chart showing massive AI savings with Orchestra AI",language:"id"},
-  {id:"e004",title:"Axto – For Hosting Companies",category:"announcement",platforms:["linkedin","facebook"],body_text:`🖥️ Hosting company? AXTO adalah secret weapon Anda.\n\nTawarkan ke klien:\n→ Managed security dengan Guardian AI per server\n→ AI-powered hosting dengan Orchestra AI\n→ White-label friendly\n→ Kelola semua lisensi dari satu dashboard\n\nTambah revenue stream baru sambil tingkatkan nilai layanan. 💡\n\n{{cta}}`,hashtags:["#HostingCompany","#AXTO","#WhiteLabel","#ManagedSecurity","#WebHosting"],cta_text:"hallo@axto.io",image_prompt:"Hosting company server infrastructure with AXTO AI protection layer",language:"id"},
-  {id:"e005",title:"Guardian – For Banks",category:"guardian_ai",platforms:["linkedin"],body_text:`🏦 Institusi keuangan membutuhkan keamanan di atas rata-rata.\n\nAXTO Guardian AI memenuhi standar keamanan perbankan:\n✅ Zero data leakage ke vendor pihak ketiga\n✅ Audit trail forensik lengkap\n✅ Compliant dengan OJK dan BI requirements\n✅ Enkripsi end-to-end semua data\n✅ On-premise deployment wajib terpenuhi\n\nKeamanan yang regulator Anda setujui. ⚖️\n\n{{cta}}`,hashtags:["#Banking","#FinTech","#GuardianAI","#AXTO","#OJK","#Compliance","#BankSecurity"],cta_text:"hallo@axto.io",image_prompt:"Bank building with AI security shield, formal professional style",language:"id"},
+  {id:"e004",title:"Axto – For Hosting Companies",category:"announcement",platforms:["linkedin","facebook"],body_text:`🖥️ Hosting company? AXTO adalah secret weapon Anda.\n\nTawarkan ke klien:\n→ Managed security dengan Guardian AI per server\n→ AI-powered hosting dengan Orchestra AI\n→ White-label friendly\n→ Kelola semua lisensi dari satu dashboard\n\nTambah revenue stream baru sambil tingkatkan nilai layanan. 💡\n\n{{cta}}`,hashtags:["#HostingCompany","#AXTO","#WhiteLabel","#ManagedSecurity","#WebHosting"],cta_text:"hello@axto.io",image_prompt:"Hosting company server infrastructure with AXTO AI protection layer",language:"id"},
+  {id:"e005",title:"Guardian – For Banks",category:"guardian_ai",platforms:["linkedin"],body_text:`🏦 Institusi keuangan membutuhkan keamanan di atas rata-rata.\n\nAXTO Guardian AI memenuhi standar keamanan perbankan:\n✅ Zero data leakage ke vendor pihak ketiga\n✅ Audit trail forensik lengkap\n✅ Compliant dengan OJK dan BI requirements\n✅ Enkripsi end-to-end semua data\n✅ On-premise deployment wajib terpenuhi\n\nKeamanan yang regulator Anda setujui. ⚖️\n\n{{cta}}`,hashtags:["#Banking","#FinTech","#GuardianAI","#AXTO","#OJK","#Compliance","#BankSecurity"],cta_text:"hello@axto.io",image_prompt:"Bank building with AI security shield, formal professional style",language:"id"},
   {id:"e006",title:"Orchestra – For AI Agencies",category:"orchestra_ai",platforms:["linkedin","facebook"],body_text:`🤖 AI agency dengan banyak klien?\n\nAXTO Orchestra AI adalah infrastructure Anda:\n→ Satu platform, banyak klien\n→ Isolasi resource per klien\n→ Billing tracking per job\n→ Monitoring performa otomatis\n→ Multi-model sesuai budget klien\n\nScale bisnis agency AI Anda tanpa scale biaya. 📈\n\n{{cta}}`,hashtags:["#AIAgency","#OrchestraAI","#AXTO","#AIBusiness","#AgencyLife"],cta_text:"axto.io",image_prompt:"AI agency managing multiple client projects from one orchestration hub",language:"id"},
   {id:"e007",title:"Guardian – Zero-Day Focus",category:"guardian_ai",platforms:["twitter","linkedin"],body_text:`🚨 Zero-day attack: ancaman yang belum punya patch.\n\nAntivirus tradisional? Buta total terhadapnya.\n\nAXTO Guardian AI mendeteksi zero-day dengan:\n→ Behavioral analysis (HOW it runs, not WHAT it is)\n→ Anomaly detection AI\n→ Heuristic pattern matching\n→ Sandbox-like analysis\n\nSignature tidak diperlukan. AI yang bekerja. 🧠\n\n{{cta}}`,hashtags:["#ZeroDay","#GuardianAI","#AXTO","#ThreatDetection","#AISecurityy"],cta_text:"axto.io",image_prompt:"Zero-day attack being blocked by AI shield before it can execute",language:"id"},
   {id:"e008",title:"Axto – Friday Motivation",category:"announcement",platforms:["instagram","facebook"],body_text:`🌅 Hari Jumat reminder:\n\nInfrastruktur yang tidak diamankan hari ini bisa jadi masalah besar di hari Senin.\n\nGunakan akhir pekan ini untuk setup AXTO Guardian AI di server Anda. 2-4 jam deploy, proteksi selamanya. 🛡️\n\nServer Anda butuh istirahat yang aman juga. 😄\n\n{{cta}}`,hashtags:["#FridayMotivation","#AXTO","#GuardianAI","#WeekendProject","#CyberSecurity"],cta_text:"axto.io",image_prompt:"Friday sunset with server security shield glowing, cozy tech vibe",language:"id"},
@@ -1246,7 +1246,7 @@ export const EXTRA_TEMPLATES: AutoPostTemplate[] = [
   {id:"e011",title:"Axto – Tech Stack",category:"feature",platforms:["linkedin","twitter"],body_text:`⚙️ Di balik AXTO: tech stack yang solid.\n\n🐍 Python/FastAPI — Engine performa tinggi\n⚛️ Next.js — Dashboard modern & responsif\n🗄️ Cloudflare D1 — Database at the edge\n🌐 Cloudflare Workers — Edge deployment global\n🐳 Docker — Container orchestration\n🔒 Row Level Security — Data isolation\n\nDibangun dengan tools terbaik. Untuk hasil terbaik. 💪\n\n{{cta}}`,hashtags:["#TechStack","#AXTO","#NextJS","#Python","","#Cloudflare"],cta_text:"axto.io/docs",image_prompt:"Tech stack logos arranged beautifully, AXTO at center",language:"id"},
   {id:"e012",title:"Axto – Open Source Philosophy",category:"feature",platforms:["linkedin","twitter"],body_text:`🔓 Transparansi adalah nilai inti AXTO.\n\nAnda bisa lihat:\n→ Bagaimana engine kami bekerja\n→ Apa yang dikirim dan tidak dikirim\n→ Cara lisensi divalidasi\n→ Data flow dari ujung ke ujung\n\nBukan black box yang mengklaim aman.\nTapi software yang bisa Anda verifikasi sendiri. ✅\n\n{{cta}}`,hashtags:["#Transparency","#AXTO","#OpenSource","#Verifiable","#TrustButVerify"],cta_text:"axto.io",image_prompt:"Open source code transparency visualization with AXTO",language:"id"},
   {id:"e013",title:"Guardian – For E-commerce",category:"guardian_ai",platforms:["facebook","instagram"],body_text:`🛒 E-commerce owners — customer data Anda adalah tanggung jawab Anda.\n\nSatu breach bisa hancurkan kepercayaan yang dibangun bertahun-tahun.\n\nAXTO Guardian AI melindungi:\n→ Server database customer\n→ File sistem dari ransomware\n→ Web server dari intrusi\n→ Payment data dari exfiltration\n\nBiaya proteksi vs biaya incident? Tidak ada bandingannya. 🛡️\n\n{{cta}}`,hashtags:["#Ecommerce","#GuardianAI","#AXTO","#CustomerData","#DataProtection","#OnlineSecurity"],cta_text:"axto.io",image_prompt:"E-commerce store protected by AI security shield, shopping bags and server",language:"id"},
-  {id:"e014",title:"Axto – Partnership Opportunity",category:"announcement",platforms:["linkedin","facebook"],body_text:`🤝 Tertarik jadi AXTO Reseller?\n\nKami mencari partner:\n→ IT consultant\n→ Software reseller\n→ MSP (Managed Service Provider)\n→ System integrator\n\nBenefit:\n✅ Margin kompetitif\n✅ Technical training\n✅ Co-branded materials\n✅ Priority support\n✅ Deal registration protection\n\nBangun bisnis bersama kami. 💼\n\n{{cta}}`,hashtags:["#Partner","#Reseller","#AXTO","#MSP","#ITConsultant","#JoinUs"],cta_text:"hallo@axto.io",image_prompt:"Partnership handshake with AXTO logo, professional business style",language:"id"},
+  {id:"e014",title:"Axto – Partnership Opportunity",category:"announcement",platforms:["linkedin","facebook"],body_text:`🤝 Tertarik jadi AXTO Reseller?\n\nKami mencari partner:\n→ IT consultant\n→ Software reseller\n→ MSP (Managed Service Provider)\n→ System integrator\n\nBenefit:\n✅ Margin kompetitif\n✅ Technical training\n✅ Co-branded materials\n✅ Priority support\n✅ Deal registration protection\n\nBangun bisnis bersama kami. 💼\n\n{{cta}}`,hashtags:["#Partner","#Reseller","#AXTO","#MSP","#ITConsultant","#JoinUs"],cta_text:"hello@axto.io",image_prompt:"Partnership handshake with AXTO logo, professional business style",language:"id"},
   {id:"e015",title:"Guardian – Compliance Checklist",category:"guardian_ai",platforms:["linkedin"],body_text:`📋 Security compliance checklist untuk perusahaan Anda:\n\n✅ Enkripsi data at-rest dan in-transit\n✅ Monitoring aktivitas server 24/7\n✅ Incident response plan\n✅ Regular vulnerability assessment\n✅ Access control & audit log\n✅ Malware protection dengan AI\n✅ Zero-day threat coverage\n\nAXTO Guardian AI membantu Anda check ✅ semua list di atas. 🎯\n\n{{cta}}`,hashtags:["#ComplianceChecklist","#AXTO","#GuardianAI","#ISO27001","#SecurityCompliance"],cta_text:"axto.io",image_prompt:"Security compliance checklist being checked with green checkmarks, professional",language:"id"},
 ];
 
@@ -1275,7 +1275,7 @@ Berbeda dari antivirus biasa yang hanya cocokkan signature. Guardian AI memantau
 
 {{cta}}`,
     hashtags: ["#GuardianAI", "#AXTO", "#CyberSecurity", "#SelfHosted"],
-    cta_text: "🔗 axto.io | 📧 hallo@axto.io",
+    cta_text: "🔗 axto.io | 📧 hello@axto.io",
     image_prompt: "Telegram post visual for Guardian AI cybersecurity",
     language: "id",
   },
@@ -1299,7 +1299,7 @@ Jalankan ratusan AI job secara paralel, routing otomatis ke provider termurah, d
 
 {{cta}}`,
     hashtags: ["#OrchestraAI", "#AXTO", "#AIOrchestration", "#GPU"],
-    cta_text: "🔗 axto.io | 📧 hallo@axto.io",
+    cta_text: "🔗 axto.io | 📧 hello@axto.io",
     image_prompt: "Telegram post visual for Orchestra AI orchestration",
     language: "id",
   },
@@ -1590,10 +1590,10 @@ PRICING (GBP):
 • Shield (100 servers): £2,369/year
 • Aegis (1,000 servers): £10,270/year
 
-Contact: hallo@axto.io
+Contact: hello@axto.io
 Website: axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Gumtree classified ad banner for cybersecurity software",
     language: "en",
   },
@@ -1630,10 +1630,10 @@ PRICING (GBP):
 • Scale (50 workers): £14,141/year
 • Unlimited: £27,571/year
 
-Contact: hallo@axto.io
+Contact: hello@axto.io
 Website: axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Gumtree classified for AI orchestration software",
     language: "en",
   },
@@ -1668,10 +1668,10 @@ LICENSE TYPES:
 
 All licenses: one-time purchase option available.
 
-CONTACT: hallo@axto.io
+CONTACT: hello@axto.io
 WEBSITE: axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Oodle classified listing for cybersecurity software US",
     language: "en",
   },
@@ -1712,11 +1712,11 @@ COMMON FEATURES (BOTH PRODUCTS):
 
 TARGET: IT companies, hosting, AI startups, enterprises, government
 
-CONTACT: hallo@axto.io
+CONTACT: hello@axto.io
 WEBSITE: axto.io
 ━━━━━━━━━━━━━━━━━━━━━━━━`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Adpost global listing for AXTO enterprise platform",
     language: "en",
   },
@@ -1731,7 +1731,7 @@ Self-hosted cybersecurity solution with behavioral AI analysis.
 Detects zero-day threats • Real-time threat feed • Multi-server • BYOK
 From $249/year | Docker deployment | 100% on-premise
 
-hallo@axto.io | axto.io`,
+hello@axto.io | axto.io`,
     hashtags: [],
     cta_text: "axto.io",
     image_prompt: "Trovit short listing for Guardian AI software",
@@ -1765,9 +1765,9 @@ Both products: one-time licence available, Docker deployment, BYOK.
 
 Suitable for: IT consultancies, SMEs, enterprises, hosting providers
 
-Email: hallo@axto.io | Web: axto.io`,
+Email: hello@axto.io | Web: axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Vivastreet UK classified for IT software",
     language: "en",
   },
@@ -1784,7 +1784,7 @@ Email: hallo@axto.io | Web: axto.io`,
 
 Perfect for IT companies, startups, enterprises.
 
-Contact: hallo@axto.io
+Contact: hello@axto.io
 Website: axto.io`,
     hashtags: [],
     cta_text: "axto.io",
@@ -1814,10 +1814,10 @@ Price: From $9,900/year
 
 Both products: BYOK, 100% self-hosted, Docker deployment
 
-Contact: hallo@axto.io
+Contact: hello@axto.io
 Website: axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "FreeAds India listing for enterprise software",
     language: "en",
   },
@@ -1857,10 +1857,10 @@ HARGA (USD):
 
 Tersedia opsi pembelian sekali (lifetime). Pembayaran via Stripe/Midtrans.
 
-📧 hallo@axto.io
+📧 hello@axto.io
 🌐 axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "OLX Indonesia listing for cybersecurity software",
     language: "id",
   },
@@ -1900,10 +1900,10 @@ HARGA (USD):
 
 Tersedia opsi pembelian sekali (lifetime). Pembayaran via Stripe/Midtrans.
 
-📧 hallo@axto.io
+📧 hello@axto.io
 🌐 axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "OLX Indonesia listing for AI orchestration software",
     language: "id",
   },
@@ -1922,9 +1922,9 @@ Harga: Mulai $249/tahun (dibayar dalam USD)
 
 Cocok untuk: perusahaan IT, hosting, fintech, e-commerce, pemerintah
 
-📧 hallo@axto.io | 🌐 axto.io`,
+📧 hello@axto.io | 🌐 axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Locanto Indonesia listing for server security software",
     language: "id",
   },
@@ -1957,10 +1957,10 @@ Manage AI workloads across multiple providers intelligently.
 ✓ Docker deployment (up in minutes)
 ✓ Enterprise-grade architecture
 
-CONTACT: hallo@axto.io
+CONTACT: hello@axto.io
 WEBSITE: https://axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "ClassifiedAds full listing for AXTO platform",
     language: "en",
   },
@@ -1995,10 +1995,10 @@ One-time purchase options available.
 ---GOOD FIT FOR---
 IT shops, hosting companies, fintech, healthcare, legal, government, e-commerce, startups.
 
-hallo@axto.io
+hello@axto.io
 https://axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Craigslist US tech listing for cybersecurity software",
     language: "en",
   },
@@ -2031,10 +2031,10 @@ An on-premise AI orchestration layer that sits between your apps and AI provider
 ---GOOD FIT FOR---
 AI agencies, AI startups, SaaS companies with high AI usage, GPU farms, research teams, enterprises.
 
-hallo@axto.io
+hello@axto.io
 https://axto.io`,
     hashtags: [],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "Craigslist US tech listing for AI orchestration software",
     language: "en",
   },
@@ -2068,7 +2068,7 @@ Proteksi data pasien Anda sekarang. Sebelum terlambat. 🔐
 
 {{cta}}`,
     hashtags: ["#Healthcare", "#MedicalDataSecurity", "#GuardianAI", "#AXTO", "#HIPAA", "#DataPasien"],
-    cta_text: "Konsultasi: hallo@axto.io | axto.io",
+    cta_text: "Konsultasi: hello@axto.io | axto.io",
     image_prompt: "Hospital server room protected by AI shield, medical data security visual",
     language: "id",
   },
@@ -2101,7 +2101,7 @@ Untuk keperluan tender dan procurement, hubungi kami. 📋
 
 {{cta}}`,
     hashtags: ["#Pemerintahan", "#SiberNasional", "#GuardianAI", "#AXTO", "#BSSN", "#Kominfo"],
-    cta_text: "📧 hallo@axto.io | 🌐 axto.io",
+    cta_text: "📧 hello@axto.io | 🌐 axto.io",
     image_prompt: "Government building with AI cybersecurity shield, official formal style",
     language: "id",
   },
@@ -2132,7 +2132,7 @@ Bantu riset AI Indonesia berkembang dengan infrastruktur yang tepat. 🇮🇩
 
 {{cta}}`,
     hashtags: ["#Universitas", "#AIResearch", "#OrchestraAI", "#AXTO", "#PendidikanTinggi", "#Riset"],
-    cta_text: "📧 hallo@axto.io | 🌐 axto.io",
+    cta_text: "📧 hello@axto.io | 🌐 axto.io",
     image_prompt: "University research lab with AI orchestration, academic professional setting",
     language: "id",
   },
@@ -2165,9 +2165,9 @@ TECHNICAL:
 
 If you manage 10+ servers for clients, this conversation is worth having.
 
-→ hallo@axto.io`,
+→ hello@axto.io`,
     hashtags: ["#MSP", "#ITConsultant", "#AXTO", "#ManagedSecurity", "#ResellerOpportunity"],
-    cta_text: "hallo@axto.io | axto.io",
+    cta_text: "hello@axto.io | axto.io",
     image_prompt: "MSP managing multiple client servers with AXTO platform overview",
     language: "en",
   },

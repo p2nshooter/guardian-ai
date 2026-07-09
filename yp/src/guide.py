@@ -1,7 +1,7 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 """
@@ -47,7 +47,7 @@ yp:
   license_key: "YP-XXXX-XXXX-XXXX-XXXX"
 ```
 or environment variable `YP_LICENSE_KEY`. YP is invite-only — contact
-hallo@axto.io.
+hello@axto.io.
 
 ---
 
@@ -218,7 +218,7 @@ curl http://YOUR_SERVER:8100/ai/providers  # live provider-scaling scoreboard
 
 ## Support
 - Portal: https://axto.io/portal
-- Email: hallo@axto.io
+- Email: hello@axto.io
 
 © AXTO Platform — Yusron Power. 100% BYOK/BYOI/BYOD/BYOM/BYOX.
 Your keys, your data, your infrastructure — always.

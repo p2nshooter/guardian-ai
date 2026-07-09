@@ -18,6 +18,7 @@ import { recordResellerSale } from "@/lib/reseller";
 import { sendWelcomeEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
 import { processPlaybookPurchase } from "@/lib/webhooks/shared";
+import { markTrialContinuationDiscountUsed } from "@/lib/pricing";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -81,6 +82,7 @@ export async function GET(req: NextRequest) {
           let referralCode = "";
           try { referralCode = JSON.parse(p.meta || "{}").referralCode || ""; } catch {}
           await recordResellerSale(db, { referralCode, amountUsd: p.amount_usd, licenseId, clientEmail: a.email });
+          await markTrialContinuationDiscountUsed(db, a.email, a.product);
           // Same welcome-email step every other payment gateway does after
           // issuing a license (see lib/webhooks/shared.ts processPayment) --
           // crypto settlement never called it, so paying clients never got

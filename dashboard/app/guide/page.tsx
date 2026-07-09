@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -1317,7 +1317,7 @@ export default function GuidePage() {
         </div>
 
         <div style={{padding:"12px 16px",borderTop:"1px solid #e2e8f0",fontSize:11,color:"#94a3b8"}}>
-          Support: <a href="mailto:hallo@axto.io" style={{color:"#0284c7"}}>hallo@axto.io</a>
+          Support: <a href="mailto:hello@axto.io" style={{color:"#0284c7"}}>hello@axto.io</a>
         </div>
       </div>
 
@@ -1892,7 +1892,7 @@ llm = OpenAI(
             </div>
 
             <div style={{marginTop:20,padding:"16px 20px",background:"rgba(34,197,94,.05)",border:"1.5px solid rgba(34,197,94,.2)",borderRadius:12,fontSize:13,color:"#16a34a",textAlign:"center"}}>
-              ✅ Done! you already menguasai seluruh fitur AXTO. Butuh bantuan? <a href="mailto:hallo@axto.io" style={{color:"#0284c7",fontWeight:700}}>hallo@axto.io</a>
+              ✅ Done! you already menguasai seluruh fitur AXTO. Butuh bantuan? <a href="mailto:hello@axto.io" style={{color:"#0284c7",fontWeight:700}}>hello@axto.io</a>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     if (!lic) return NextResponse.json({ error: "License not found" }, { status: 404 });
 
     if (lic.max_resets > 0 && lic.reset_count >= lic.max_resets) {
-      return NextResponse.json({ error: "Reset limit reached. Contact hallo@axto.io" }, { status: 403 });
+      return NextResponse.json({ error: "Reset limit reached. Contact hello@axto.io" }, { status: 403 });
     }
 
     await dbRun(db, `UPDATE licenses SET bound_machine_id = NULL, reset_count = COALESCE(reset_count, 0) + 1, updated_at = ? WHERE id = ?`, [now(), license_id]);

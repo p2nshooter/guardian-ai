@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -301,7 +301,7 @@ export function buildClassifiedPost(
     category: "software",
     location: options.location || (language === "id" ? "Jakarta, Indonesia" : "Remote / Worldwide"),
     website: "https://axto.io",
-    contact_email: options.contactEmail || "hallo@axto.io",
+    contact_email: options.contactEmail || "hello@axto.io",
     contact_phone: options.contactPhone || "",
   };
 }

@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -301,7 +301,7 @@ export default function ClientDownloads() {
       );
       if (!r.ok) {
         const d = await r.json().catch(() => ({}));
-        setDlError(d.error || "File belum tersedia — hubungi hallo@axto.io");
+        setDlError(d.error || "File belum tersedia — hubungi hello@axto.io");
         setDlStatus(s => ({ ...s, [key]: "error" }));
         return;
       }
@@ -416,7 +416,7 @@ export default function ClientDownloads() {
               <a href="https://axto.io" target="_blank" rel="noopener" style={{ padding: "10px 20px", background: "#0284c7", borderRadius: 10, color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
                 Beli Lisensi
               </a>
-              <a href="mailto:hallo@axto.io" style={{ padding: "10px 20px", background: "#f1f5f9", borderRadius: 10, color: "#475569", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
+              <a href="mailto:hello@axto.io" style={{ padding: "10px 20px", background: "#f1f5f9", borderRadius: 10, color: "#475569", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
                 Hubungi Support
               </a>
             </div>
@@ -539,10 +539,10 @@ export default function ClientDownloads() {
                       <div style={{ color: "#c2410c", fontSize: 13, marginTop: 4, lineHeight: 1.5 }}>
                         {lic.status === "pending"
                           ? "Pembayaran sedang diverifikasi. Download akan tersedia otomatis setelah verifikasi selesai (biasanya < 1 jam)."
-                          : "Lisensi ini tidak dapat digunakan untuk download. Hubungi hallo@axto.io untuk informasi lebih lanjut."
+                          : "Lisensi ini tidak dapat digunakan untuk download. Hubungi hello@axto.io untuk informasi lebih lanjut."
                         }
                       </div>
-                      <a href="mailto:hallo@axto.io" style={{ display: "inline-block", marginTop: 8, padding: "6px 14px", background: "#ea580c", borderRadius: 8, color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
+                      <a href="mailto:hello@axto.io" style={{ display: "inline-block", marginTop: 8, padding: "6px 14px", background: "#ea580c", borderRadius: 8, color: "#fff", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
                         Hubungi Support
                       </a>
                     </div>
@@ -605,7 +605,7 @@ export default function ClientDownloads() {
                                     {status === "loading" ? "Downloading…" : status === "done" ? "✓ Done" : status === "error" ? "✕ Error" : "⬇ Download"}
                                   </button>
                                 ) : (
-                                  <span title="Not published by admin yet — check back soon or contact hallo@axto.io"
+                                  <span title="Not published by admin yet — check back soon or contact hello@axto.io"
                                     style={{ padding: "8px 14px", borderRadius: 10, background: "rgba(148,163,184,0.15)", color: "#64748b", fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" }}>
                                     🚧 In Development
                                   </span>
@@ -639,7 +639,7 @@ export default function ClientDownloads() {
                   <div style={{ fontWeight: 700, fontSize: 13, color: "#92400e", marginBottom: 4 }}>⚠ Orchestra Worker GPU</div>
                   <div style={{ fontSize: 12, color: "#a16207", lineHeight: 1.5 }}>
                     Worker GPU membutuhkan NVIDIA GPU + nvidia-docker runtime. Image size ~4GB.
-                    Jika build belum tersedia, hubungi hallo@axto.io.
+                    Jika build belum tersedia, hubungi hello@axto.io.
                   </div>
                 </div>
               )}
@@ -652,7 +652,7 @@ export default function ClientDownloads() {
         <div style={{ marginTop: 40, padding: "24px 28px", background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", display: "flex", gap: 32, flexWrap: "wrap", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 14, color: "#0a1628", marginBottom: 4 }}>Butuh bantuan?</div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>Support: <a href="mailto:hallo@axto.io" style={{ color: "#0284c7" }}>hallo@axto.io</a> · Docs: <a href="https://axto.io/guide" style={{ color: "#0284c7" }}>axto.io/guide</a></div>
+            <div style={{ fontSize: 13, color: "#64748b" }}>Support: <a href="mailto:hello@axto.io" style={{ color: "#0284c7" }}>hello@axto.io</a> · Docs: <a href="https://axto.io/guide" style={{ color: "#0284c7" }}>axto.io/guide</a></div>
           </div>
           <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "right" }}>
             AXTO Platform — 100% BYOK<br/>

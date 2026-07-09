@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # Orchestra AI - AI eXecution & Tools Orchestration — Orchestra
@@ -119,7 +119,7 @@ workers:
 This is a self-hosted commercial software license.
 - **No SLA**: Not a managed service
 - **No Support**: Full documentation provided
-- **License Issues**: hallo@axto.io
+- **License Issues**: hello@axto.io
 
 ---
 

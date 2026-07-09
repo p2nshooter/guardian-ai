@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
 [//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
 [//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hallo@axto.io>)
+[//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO — Production Setup Guide
@@ -89,7 +89,7 @@ npx wrangler d1 migrations apply axto-db --remote
 # Create admin user
 npx wrangler d1 execute axto-db --remote --command="
   INSERT OR IGNORE INTO users (id, email, role, created_at, updated_at)
-  VALUES (lower(hex(randomblob(16))), 'hallo@axto.io', 'admin', datetime('now'), datetime('now'))
+  VALUES (lower(hex(randomblob(16))), 'hello@axto.io', 'admin', datetime('now'), datetime('now'))
 "
 
 # Set secrets

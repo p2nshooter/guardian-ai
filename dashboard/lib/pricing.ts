@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -94,6 +94,48 @@ export function lifetimePrice(annual: number): number {
 /** Clamp a negotiated lifetime price to the allowed floor (>= 5× annual). */
 export function clampLifetimePrice(annual: number, proposed: number): number {
   return Math.max(Math.round(annual * LIFETIME_MIN_MULTIPLIER), Math.round(proposed));
+}
+
+// ── Trial → real license continuation discount ──────────────────────────────
+// A client who claimed a launch-promo trial for a product gets 50% off the
+// first time they buy a real (non-trial, non-bundle, non-lifetime) license
+// for that same product. One-time per (email, product) — enforced by marking
+// trial_batch_codes.discount_used_at at the moment a real purchase actually
+// settles (see lib/webhooks/shared.ts and cron/crypto-watch), never at
+// checkout-intent time, so an abandoned checkout never burns the discount.
+export const TRIAL_CONTINUATION_DISCOUNT_PCT = 50;
+
+/** Read-only eligibility check — used at checkout time to compute the charge. */
+export async function getTrialContinuationDiscount(
+  req: NextRequest, email: string, product: string
+): Promise<boolean> {
+  if (!email || !product) return false;
+  try {
+    const db = getDB(req);
+    const row = await dbFirst<any>(
+      db,
+      `SELECT id FROM trial_batch_codes WHERE claimed_email = ? AND product = ? AND status = 'claimed' AND discount_used_at = '' LIMIT 1`,
+      [email.toLowerCase(), product]
+    );
+    return !!row;
+  } catch { return false; }
+}
+
+/**
+ * Marks the discount as redeemed. Safe to call unconditionally after any
+ * successful real-license purchase — it's a targeted UPDATE that only
+ * affects a matching, not-yet-used trial claim; a no-op otherwise.
+ */
+export async function markTrialContinuationDiscountUsed(
+  db: any, email: string, product: string
+): Promise<void> {
+  if (!email || !product) return;
+  try {
+    await db.prepare(
+      `UPDATE trial_batch_codes SET discount_used_at = datetime('now')
+       WHERE claimed_email = ? AND product = ? AND status = 'claimed' AND discount_used_at = ''`
+    ).bind(email.toLowerCase(), product).run();
+  } catch { /* best-effort — never block a paid purchase on this bookkeeping */ }
 }
 
 export interface LivePackageRow {

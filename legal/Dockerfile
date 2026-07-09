@@ -1,12 +1,12 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) — Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # ==============================================================================
 FROM python:3.11-slim
 
-LABEL maintainer="Axto AI <hallo@axto.io>"
+LABEL maintainer="Axto AI <hello@axto.io>"
 LABEL vendor="AXTO (axto.io)"
 LABEL product="AXTO Legal"
 LABEL version="1.0.0"

@@ -1,12 +1,12 @@
 # ==============================================================================
 # Copyright (c) 2024-2026 Axto AI. All rights reserved.
 # Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-# Maintained by: Axto AI <hallo@axto.io>
+# Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 FROM python:3.11-slim
 
-LABEL maintainer="AXTO Platform <hallo@axto.io>"
+LABEL maintainer="AXTO Platform <hello@axto.io>"
 LABEL description="AXTO GPU Studio — Self-Hosted Creative AI Workspace"
 LABEL version="2.0.0"
 

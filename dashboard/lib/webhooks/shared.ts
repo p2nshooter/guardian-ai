@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -11,6 +11,7 @@ import { createLicense, createBundleLicenses } from "@/lib/license";
 import { sendWelcomeEmail, sendBundleEmail, sendEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
 import { recordResellerSale } from "@/lib/reseller";
+import { markTrialContinuationDiscountUsed } from "@/lib/pricing";
 
 export async function processPlaybookPurchase(req: NextRequest, params: {
   email: string; name: string; amountUsd: number; paymentRef: string;
@@ -73,7 +74,7 @@ export async function processPlaybookPurchase(req: NextRequest, params: {
   <a href="${appUrl}/auth/login" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#0284c7);color:#fff;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px">Download from Portal →</a>
   <p style="color:#475569;font-size:12px;margin-top:24px;line-height:1.6">Login with your email: <strong style="color:#22d3ee">${email}</strong><br>Use Magic Link or the password you registered with.</p>
   <hr style="border:none;border-top:1px solid #1e293b;margin:28px 0">
-  <p style="color:#334155;font-size:11px">Need help? Contact <a href="mailto:hallo@axto.io" style="color:#22d3ee">hallo@axto.io</a></p>
+  <p style="color:#334155;font-size:11px">Need help? Contact <a href="mailto:hello@axto.io" style="color:#22d3ee">hello@axto.io</a></p>
 </div></body></html>`,
     });
   } catch {}
@@ -135,6 +136,7 @@ export async function processPayment(req: NextRequest, params: {
       });
     } catch {}
     await recordResellerSale(db, { referralCode, amountUsd, licenseId: (license as any).id, clientEmail: email });
+    await markTrialContinuationDiscountUsed(db, email, product);
   }
 
   return NextResponse.json({ ok: true });

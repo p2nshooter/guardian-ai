@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -127,7 +127,7 @@ export async function sendWelcomeEmail(params: {
   </p>
   <a href="${appUrl}/portal" style="display:inline-block;background:linear-gradient(135deg,#0e7490,#22d3ee);color:#fff;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;margin-top:16px">Access Your Portal →</a>
   <hr style="border:none;border-top:1px solid #1e293b;margin:32px 0">
-  <p style="color:#334155;font-size:11px">Need help? <a href="mailto:hallo@axto.io" style="color:#22d3ee">hallo@axto.io</a> · <a href="${appUrl}/portal" style="color:#22d3ee">axto.io/portal</a></p>
+  <p style="color:#334155;font-size:11px">Need help? <a href="mailto:hello@axto.io" style="color:#22d3ee">hello@axto.io</a> · <a href="${appUrl}/portal" style="color:#22d3ee">axto.io/portal</a></p>
 </div>
 </body></html>`,
   });
@@ -190,7 +190,7 @@ export async function sendResellerStatusEmail(params: {
   </div>
   <a href="${appUrl}" style="display:inline-block;background:linear-gradient(135deg,#0e7490,#22d3ee);color:#fff;padding:14px 36px;border-radius:10px;text-decoration:none;font-weight:700">Visit AXTO →</a>
   <hr style="border:none;border-top:1px solid #1e293b;margin:32px 0">
-  <p style="color:#334155;font-size:11px">Questions? <a href="mailto:hallo@axto.io" style="color:#22d3ee">hallo@axto.io</a></p>
+  <p style="color:#334155;font-size:11px">Questions? <a href="mailto:hello@axto.io" style="color:#22d3ee">hello@axto.io</a></p>
 </div>
 </body></html>`,
     });
@@ -207,7 +207,7 @@ export async function sendResellerStatusEmail(params: {
   <div style="font-size:24px;font-weight:800;color:#22d3ee;margin-bottom:24px">AXTO</div>
   <h2 style="color:#fff;margin:0 0 8px">Hi ${name},</h2>
   <p style="color:#94a3b8;line-height:1.6;margin:0 0 24px">Thanks for your interest in the AXTO reseller program. After review, we're not able to approve your application at this time. If you believe this is a mistake, or your circumstances change, reach out and we're happy to take another look.</p>
-  <p style="color:#334155;font-size:11px">Questions? <a href="mailto:hallo@axto.io" style="color:#22d3ee">hallo@axto.io</a></p>
+  <p style="color:#334155;font-size:11px">Questions? <a href="mailto:hello@axto.io" style="color:#22d3ee">hello@axto.io</a></p>
 </div>
 </body></html>`,
   });

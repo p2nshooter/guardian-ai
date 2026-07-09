@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  *
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       if (existing.status === "pending") {
         return NextResponse.json({ error: "You already have an application pending review. We'll email you once it's approved." }, { status: 409 });
       }
-      return NextResponse.json({ error: "An account already exists for this email. Contact hallo@axto.io if you believe this is a mistake." }, { status: 409 });
+      return NextResponse.json({ error: "An account already exists for this email. Contact hello@axto.io if you believe this is a mistake." }, { status: 409 });
     }
 
     let code = randomCode();

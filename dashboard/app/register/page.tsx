@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hallo@axto.io>
+ * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  */
@@ -263,7 +263,7 @@ function RegisterInner() {
         setCryptoStatus("pending");
         setLoading(false);
       } else {
-        setInlineError(d.error || "Checkout failed — please try again or contact hallo@axto.io");
+        setInlineError(d.error || "Checkout failed — please try again or contact hello@axto.io");
         setLoading(false);
       }
     } catch {
