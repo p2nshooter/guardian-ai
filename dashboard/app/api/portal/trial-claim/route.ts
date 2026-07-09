@@ -26,6 +26,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbQuery, dbRun } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { createLicense } from "@/lib/license";
+import { writeInvoice } from "@/lib/invoice";
 import { PACKAGE_INFO } from "@/lib/stripe";
 
 const TRIAL_DAYS = 7;
@@ -106,6 +107,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "DB not available" }, { status: 503 });
   }
 
+  // The client's company name, already collected at registration — carried
+  // through to createLicense() so the trial license (and the admin's Trial
+  // Activity view) shows who actually requested it, not a blank field.
+  const clientRow = await dbFirst<{ organization: string }>(db, `SELECT organization FROM clients WHERE email = ?`, [email]);
+  const organization = clientRow?.organization || "";
+
   // 1. Window open?
   const win = await promoWindow(db);
   if (!win.open) return NextResponse.json({ error: "The launch trial promo is not currently open." }, { status: 403 });
@@ -156,7 +163,7 @@ export async function POST(req: NextRequest) {
   let issued: any;
   try {
     issued = await createLicense({
-      clientName: name, clientEmail: email, product,
+      clientName: name, clientEmail: email, organization, product,
       packageCode, licenseType: "trial", isTrial: true, trialDays: TRIAL_DAYS,
       gateway: "manual", source: "trial_promo", amountUsd: 0,
       notes: `Launch-promo trial (code ${code.code})`,
@@ -176,6 +183,17 @@ export async function POST(req: NextRequest) {
         [fingerprint, ip, fingerprint || ip, licenseId]);
     } catch {}
   }
+
+  // A trial is still a real license grant — it gets a real, downloadable
+  // invoice like any paid purchase (see lib/invoice.ts renderInvoiceHTML,
+  // which reads the license's actual expiry/tier to describe it precisely
+  // rather than assuming a fixed trial length).
+  try {
+    await writeInvoice(db, {
+      email, product, licenseId, kind: "trial",
+      amountUsd: 0, gateway: "trial_promo", paymentRef: code.code,
+    });
+  } catch { /* invoice generation must never block a successful claim */ }
 
   return NextResponse.json({
     ok: true,

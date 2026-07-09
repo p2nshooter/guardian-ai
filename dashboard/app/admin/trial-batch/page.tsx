@@ -27,12 +27,18 @@ interface Summary { product: string; package_code: string; available: number; cl
 interface Batch { batch_id: string; product: string; package_code: string; count: number; available: number; created_at: string }
 interface PromoWindow { starts_at: string; ends_at: string; enabled: number }
 interface Rating { product: string; count: number; avg_rating: number }
+interface TrialLicense {
+  id: string; license_key: string; product: string; package_code: string;
+  status: string; expires_at: string; created_at: string;
+  client_name: string; client_email: string; organization: string;
+}
 
 export default function TrialBatchPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
+  const [licenses, setLicenses] = useState<TrialLicense[]>([]);
   const [win, setWin] = useState<PromoWindow | null>(null);
   const [winDraft, setWinDraft] = useState<{ startsAt: string; endsAt: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +56,7 @@ export default function TrialBatchPage() {
       setSummary(d.summary ?? []);
       setBatches(d.batches ?? []);
       setRatings(d.ratings ?? []);
+      setLicenses(d.licenses ?? []);
       setWin(d.window ?? null);
       if (d.window) setWinDraft({ startsAt: d.window.starts_at.replace(" ", "T").slice(0, 16), endsAt: d.window.ends_at.replace(" ", "T").slice(0, 16) });
     } catch {}
@@ -156,6 +163,70 @@ export default function TrialBatchPage() {
             </button>
           </div>
         )}
+
+        {/* ═══ Trial License Activity — the REAL licenses issued by the smart
+             license engine (lib/license.ts createLicense()), not just the
+             voucher-pool claim status above. Every row here is a genuine,
+             signed license row in the licenses table. ═══ */}
+        {!loading && (() => {
+          const now = Date.now();
+          const isLive = (l: TrialLicense) => l.status === "active" && new Date(l.expires_at).getTime() > now;
+          const activeCount = licenses.filter(isLive).length;
+          const expiredCount = licenses.length - activeCount;
+          return (
+            <div style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", overflow: "hidden", marginBottom: 20 }}>
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: "#0a1628" }}>📋 Trial License Activity</div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>Every trial license actually issued by the smart license engine — company, status, expiry.</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <span style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: "rgba(2,132,199,0.1)", color: "#0284c7" }}>{licenses.length} issued</span>
+                  <span style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: "rgba(34,197,94,0.1)", color: "#16a34a" }}>{activeCount} active</span>
+                  <span style={{ padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800, background: "rgba(148,163,184,0.15)", color: "#64748b" }}>{expiredCount} expired</span>
+                </div>
+              </div>
+              {licenses.length === 0 ? (
+                <div style={{ padding: 32, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>No trial licenses claimed yet — codes above are still just an unclaimed pool.</div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "#f8fafc" }}>
+                        {["Company", "Client", "Product / Tier", "License Key", "Issued", "Expires", "Status"].map(h => (
+                          <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontSize: 10.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {licenses.map((l, i) => {
+                        const live = isLive(l);
+                        return (
+                          <tr key={l.id} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderTop: "1px solid #f1f5f9" }}>
+                            <td style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 700, color: "#0a1628" }}>{l.organization || <span style={{ color: "#cbd5e1", fontWeight: 400 }}>— not provided —</span>}</td>
+                            <td style={{ padding: "9px 14px", fontSize: 12 }}>
+                              <div style={{ color: "#0a1628" }}>{l.client_name}</div>
+                              <div style={{ color: "#94a3b8", fontSize: 11 }}>{l.client_email}</div>
+                            </td>
+                            <td style={{ padding: "9px 14px", fontSize: 12 }}>{PRODUCT_ICONS[l.product]} {PRODUCT_NAMES[l.product]}<div style={{ color: "#94a3b8", fontSize: 11, fontFamily: "monospace" }}>{l.package_code}</div></td>
+                            <td style={{ padding: "9px 14px", fontSize: 11, fontFamily: "monospace", color: "#475569" }}>{l.license_key}</td>
+                            <td style={{ padding: "9px 14px", fontSize: 11.5, color: "#64748b", whiteSpace: "nowrap" }}>{new Date(l.created_at).toLocaleDateString()}</td>
+                            <td style={{ padding: "9px 14px", fontSize: 11.5, color: "#64748b", whiteSpace: "nowrap" }}>{new Date(l.expires_at).toLocaleDateString()}</td>
+                            <td style={{ padding: "9px 14px" }}>
+                              <span style={{ fontSize: 10.5, fontWeight: 700, padding: "2px 9px", borderRadius: 6, background: live ? "rgba(34,197,94,0.1)" : "rgba(148,163,184,0.15)", color: live ? "#16a34a" : "#64748b" }}>
+                                {live ? "● ACTIVE" : l.status === "revoked" ? "○ REVOKED" : "○ EXPIRED"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {msg && (
           <div style={{ background: msg.startsWith("⚠️") ? "#fef2f2" : "#f0fdf4", border: `1.5px solid ${msg.startsWith("⚠️") ? "#fca5a5" : "#86efac"}`, borderRadius: 10, padding: "10px 16px", marginBottom: 18, color: msg.startsWith("⚠️") ? "#dc2626" : "#166534", fontWeight: 700, fontSize: 13 }}>

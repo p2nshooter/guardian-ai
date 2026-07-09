@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
     ORDER BY l.created_at DESC`, [user.email]);
 
   const invoices = await dbQuery<any>(db, `
-    SELECT i.id, i.amount_usd, i.currency, i.amount_local, i.gateway,
-      i.status, i.payment_ref, i.created_at, l.package_code, l.product
+    SELECT i.id, i.license_id, i.amount_usd, i.currency, i.amount_local, i.gateway,
+      i.status, i.payment_ref, i.kind, i.created_at, l.package_code, l.product
     FROM invoices i LEFT JOIN licenses l ON l.id = i.license_id
     WHERE i.client_email = ? ORDER BY i.created_at DESC LIMIT 50`, [user.email]);
 

@@ -46,9 +46,22 @@ export async function writeInvoice(db: any, inv: InvoiceInput): Promise<string> 
 
 const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
+const fmtDate = (iso: string) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+};
+
+/**
+ * inv may optionally carry joined license fields (license_expires_at,
+ * license_created_at, license_package_code, license_source) -- when present,
+ * the trial description below is computed from the REAL license (exact day
+ * count, exact expiry, exact tier), never a hardcoded "7-day" guess.
+ */
 export function renderInvoiceHTML(inv: any): string {
   const isTrial = inv.kind === "trial";
   const isCrypto = inv.kind === "crypto";
+  const isPreLaunchPromo = isTrial && inv.license_source === "trial_promo";
   const date = (inv.created_at || "").slice(0, 10);
   const number = "AXTO-" + String(inv.id || "").toUpperCase().slice(-10);
   const amountLine = isTrial
@@ -57,6 +70,16 @@ export function renderInvoiceHTML(inv: any): string {
       ? `${esc(inv.amount_crypto)} ${esc(inv.symbol)} <span style="color:#94a3b8">(≈ $${Number(inv.amount_usd).toLocaleString()})</span>`
       : `$${Number(inv.amount_usd).toLocaleString()} ${esc(inv.currency || "USD")}`;
   const methodLine = isTrial ? "Trial grant" : isCrypto ? `${esc(inv.symbol)} on ${esc(inv.network)}` : esc(inv.gateway || "—");
+
+  // Exact trial length/expiry from the actual license row, never assumed.
+  let trialDesc = "Complimentary evaluation license";
+  if (isTrial && inv.license_expires_at) {
+    const issuedAt = inv.license_created_at ? new Date(inv.license_created_at) : new Date(inv.created_at);
+    const expiresAt = new Date(inv.license_expires_at);
+    const days = Math.max(1, Math.round((expiresAt.getTime() - issuedAt.getTime()) / 86_400_000));
+    const label = isPreLaunchPromo ? "Pre-Launch Trial Promo" : "Trial license";
+    trialDesc = `${label} — ${days}-day evaluation${inv.license_package_code ? ` (${esc(inv.license_package_code)} tier)` : ""}, expires ${fmtDate(inv.license_expires_at)}`;
+  }
 
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${esc(number)}</title>
@@ -83,13 +106,15 @@ td{padding:16px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:
 <div class="inv">
   <div class="top">
     <div class="brand">AXTO<small>axto.io — Sovereign AI Infrastructure</small></div>
-    <div class="tag">${isTrial ? "Trial Invoice" : "Invoice"}</div>
+    <div class="tag">${isPreLaunchPromo ? "Pre-Launch Trial Promo" : isTrial ? "Trial Invoice" : "Invoice"}</div>
   </div>
   <div class="meta">
     <div><div class="k">Invoice No.</div><div class="v">${esc(number)}</div></div>
     <div><div class="k">Date</div><div class="v">${esc(date)}</div></div>
     <div><div class="k">Billed to</div><div class="v">${esc(inv.client_email)}</div></div>
-    <div><div class="k">Status</div><div class="v" style="color:#16a34a">PAID</div></div>
+    ${isTrial && inv.license_expires_at
+      ? `<div><div class="k">License expires</div><div class="v" style="color:#dc2626">${fmtDate(inv.license_expires_at)}</div></div>`
+      : `<div><div class="k">Status</div><div class="v" style="color:#16a34a">PAID</div></div>`}
   </div>
   <div class="body">
     <table>
@@ -97,7 +122,7 @@ td{padding:16px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:
       <tbody>
         <tr>
           <td><strong>AXTO ${esc((inv.product || "").charAt(0).toUpperCase() + (inv.product || "").slice(1))}</strong><br>
-            <span style="color:#94a3b8;font-size:12.5px">${isTrial ? "Complimentary 7-day evaluation license" : "Software license"}</span><br>
+            <span style="color:#94a3b8;font-size:12.5px">${isTrial ? esc(trialDesc) : "Software license"}</span><br>
             <span style="color:#94a3b8;font-size:12px">Payment method: ${methodLine}</span>
             ${isCrypto && inv.tx_hash ? `<br><span style="color:#94a3b8;font-size:11px;word-break:break-all">Tx: ${esc(inv.tx_hash)}</span>` : ""}
           </td>
@@ -107,7 +132,10 @@ td{padding:16px 0;border-bottom:1px solid #f1f5f9;font-size:14px;vertical-align:
     </table>
     <div class="tot"><span class="l">Total</span><span class="r">${isTrial ? '<span style="color:#16a34a">$0.00</span>' : amountLine}</span></div>
   </div>
-  ${isTrial ? `<div class="note">This is a complimentary trial license issued at no charge. We hope AXTO proves its value to your team — upgrading to a paid plan is available at any time from your dashboard.</div>` : ""}
+  ${isTrial ? `<div class="note">${isPreLaunchPromo
+      ? "This is a complimentary pre-launch trial license, issued at no charge before AXTO's official market launch. It is valid only for the product, tier, and account shown above, and it stops working automatically at the expiry date — no action needed on your end. Continuing to a real license for this same product after the trial gets you 50% off your first year, applied automatically at checkout."
+      : "This is a complimentary trial license issued at no charge. We hope AXTO proves its value to your team — upgrading to a paid plan is available at any time from your dashboard."
+    }</div>` : ""}
   <div class="foot">
     Thank you for choosing AXTO.<br>
     This invoice was generated automatically. For questions, contact hello@axto.io.

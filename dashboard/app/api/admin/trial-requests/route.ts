@@ -55,8 +55,9 @@ export async function POST(req: NextRequest) {
   let issued;
   try {
     issued = await createLicense({
-      clientName: tr.company || tr.user_email,
+      clientName: tr.user_email,
       clientEmail: tr.user_email,
+      organization: tr.company || "",
       product: tr.product,
       packageCode: tr.package_code || `trial_${tr.product}`,
       licenseType: "trial",

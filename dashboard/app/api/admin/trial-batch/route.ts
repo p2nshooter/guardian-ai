@@ -75,7 +75,25 @@ export async function GET(req: NextRequest) {
          GROUP BY r.product`
       );
     } catch { /* reviews table unavailable — summary just stays empty */ }
-    return NextResponse.json({ summary: rows, batches, window: win, ratings });
+
+    // The REAL, smart-license-engine-issued licenses from this promo -- not
+    // just the voucher pool above. This is what actually went out the door:
+    // who (company + email) requested it, and whether it's live right now.
+    let licenses: any[] = [];
+    try {
+      licenses = await dbQuery<any>(
+        db,
+        `SELECT l.id, l.license_key, l.product, l.package_code, l.status, l.expires_at, l.created_at,
+                c.name AS client_name, c.email AS client_email, c.organization
+         FROM licenses l
+         JOIN clients c ON c.id = l.client_id
+         WHERE l.source = 'trial_promo'
+         ORDER BY l.created_at DESC
+         LIMIT 500`
+      );
+    } catch { /* licenses/clients join unavailable — activity list just stays empty */ }
+
+    return NextResponse.json({ summary: rows, batches, window: win, ratings, licenses });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed to load" }, { status: 500 });
   }
