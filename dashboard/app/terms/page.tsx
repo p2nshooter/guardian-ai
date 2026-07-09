@@ -34,7 +34,7 @@ export default function TermsPage() {
           <p>All prices are in USD. Payment is processed through third-party gateways. All licenses come with a 30-day satisfaction guarantee. Refund requests must be submitted within 30 days of purchase to hello@axto.io.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>6. License Expiry</h2>
-          <p>Licenses expire on the date specified at time of purchase. Upon expiry, the software will cease normal operation after a 4-hour grace period. Renewal is available through your Client Portal.</p>
+          <p>Licenses expire on the date specified at time of purchase. Each engine independently verifies its license against axto.io approximately every 30 minutes; if it cannot reach axto.io, it continues operating on its last verified state for up to a 4-hour offline grace period, which never extends past the license's actual expiry date. Once axto.io confirms the license has expired, or the offline grace period lapses, the software stops processing requests until renewed. There is no reduced-functionality or read-only mode. Renewal is available through your Client Portal.</p>
 
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, marginTop: 32, marginBottom: 12 }}>7. Limitation of Liability</h2>
           <p>THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. AXTO SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES. TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID FOR THE LICENSE IN THE 12 MONTHS PRECEDING THE CLAIM.</p>

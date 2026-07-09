@@ -191,6 +191,23 @@ def _read_cache() -> Optional[dict]:
             _cache_path().unlink(missing_ok=True)
             return None
 
+        # Offline grace must never extend past the license's REAL expiry —
+        # otherwise an outage that straddles the actual expiry moment would
+        # let the cache keep granting access after the license is genuinely
+        # over. Matches the same cap already enforced in every other engine
+        # (soc, vault, guardian, antivirus, edge, orchestra, compliance,
+        # sentinel — see GRACE_SECONDS usage in those license.py files).
+        try:
+            expires_ts = datetime.fromisoformat(
+                payload.get("expires_at", "").replace("Z", "+00:00")
+            ).timestamp()
+            if time.time() > expires_ts:
+                logger.info("AXTO Legal — cached grace would extend past real expiry, rejecting")
+                _cache_path().unlink(missing_ok=True)
+                return None
+        except Exception:
+            pass  # no parsable expires_at in payload — fall through, GRACE_SECONDS cap above still applies
+
         return raw
     except Exception:
         return None
