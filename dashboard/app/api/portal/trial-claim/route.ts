@@ -11,11 +11,12 @@
  *   POST → atomically claim one available code from the 100-pool for a
  *          product+tier and activate a 7-day trial license.
  *
- * Rules (per product owner):
+ * Rules (per product owner, pre-launch promo — open to brand-new prospects):
  *   • Claim only inside the 1-year launch window (trial_promo_config).
  *   • 1 email + 1 IP + 1 device fingerprint = at most 1 trial per product.
- *   • Enterprise-tier trial requires the client to already own a paid
- *     (non-trial) license for that same product.
+ *   • At most trial_promo_max_products (default 2) distinct products per
+ *     client — lets someone compare two products before market entry
+ *     without letting one email drain every pool.
  *   • When a product+tier pool is exhausted, that option closes.
  * ============================================================================ */
 export const runtime = "edge";
@@ -28,6 +29,7 @@ import { createLicense } from "@/lib/license";
 import { PACKAGE_INFO } from "@/lib/stripe";
 
 const TRIAL_DAYS = 7;
+const DEFAULT_MAX_PRODUCTS = 2;
 
 function clientIp(req: NextRequest): string {
   return req.headers.get("cf-connecting-ip")
@@ -35,10 +37,12 @@ function clientIp(req: NextRequest): string {
     || "";
 }
 
-function isEnterpriseTier(code: string): boolean {
-  const pkg = (PACKAGE_INFO as any)[code];
-  const tier = String(pkg?.tier || "").toLowerCase();
-  return tier === "enterprise" || /enterprise|aegis|critical|sovereign/i.test(code);
+async function maxProductsAllowed(db: any): Promise<number> {
+  try {
+    const row = await dbFirst<any>(db, `SELECT value FROM site_settings WHERE key = 'trial_promo_max_products'`);
+    const n = Number(row?.value);
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_PRODUCTS;
+  } catch { return DEFAULT_MAX_PRODUCTS; }
 }
 
 async function promoWindow(db: any): Promise<{ open: boolean; startsAt: string; endsAt: string }> {
@@ -74,7 +78,9 @@ export async function GET(req: NextRequest) {
       `SELECT product, package_code, claimed_at FROM trial_batch_codes WHERE claimed_email = ? AND status='claimed'`,
       [email]
     );
-    return NextResponse.json({ window: win, pool, claimed: mine });
+    const maxProducts = await maxProductsAllowed(db);
+    const claimedProductCount = new Set(mine.map((m: any) => m.product)).size;
+    return NextResponse.json({ window: win, pool, claimed: mine, maxProducts, claimedProductCount });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Failed" }, { status: 500 });
   }
@@ -116,18 +122,16 @@ export async function POST(req: NextRequest) {
     if (dupFp) return NextResponse.json({ error: "A trial for this product was already claimed from this device." }, { status: 409 });
   }
 
-  // 3. Enterprise gate: require an existing paid license for the same product.
-  if (isEnterpriseTier(packageCode)) {
-    const owned = await dbFirst(
-      db,
-      `SELECT l.id FROM licenses l JOIN clients c ON c.id = l.client_id
-       WHERE c.email = ? AND l.product = ? AND l.license_type != 'trial' AND l.status IN ('active','suspended')
-       LIMIT 1`,
-      [email, product]
-    );
-    if (!owned) {
-      return NextResponse.json({ error: "An Enterprise trial requires you to already own a paid plan for this product." }, { status: 403 });
-    }
+  // 3. Cap: at most `maxProductsAllowed` distinct products per client, so one
+  //    email can't drain every pool — the dupEmail check above already
+  //    guarantees at most 1 trial per product.
+  const maxProducts = await maxProductsAllowed(db);
+  const mineDistinct = await dbQuery<{ product: string }>(
+    db, `SELECT DISTINCT product FROM trial_batch_codes WHERE claimed_email = ? AND status='claimed'`, [email]
+  );
+  const claimedProducts = new Set(mineDistinct.map((m) => m.product));
+  if (!claimedProducts.has(product) && claimedProducts.size >= maxProducts) {
+    return NextResponse.json({ error: `You've reached the limit of ${maxProducts} trial products per person for this promo.` }, { status: 403 });
   }
 
   // 4. Claim an available code atomically (mark the oldest available one).

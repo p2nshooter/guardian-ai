@@ -14,6 +14,7 @@ import { createLicense } from "@/lib/license";
 import { settlePayment, type PaymentIntent } from "@/lib/payments/usdt-trc20";
 import { sendWelcomeEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
+import { markTrialContinuationDiscountUsed } from "@/lib/pricing";
 
 const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -75,6 +76,7 @@ export async function GET(req: NextRequest) {
               expiresAt, product: a.product,
             });
           } catch {}
+          await markTrialContinuationDiscountUsed(db, a.email, a.product);
           return { licenseId, licenseKey, expiresAt };
         },
         writeInvoice: async (a) => {

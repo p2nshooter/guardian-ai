@@ -26,17 +26,20 @@ function tiersFor(product: string) {
 interface Summary { product: string; package_code: string; available: number; claimed: number; disabled: number; total: number }
 interface Batch { batch_id: string; product: string; package_code: string; count: number; available: number; created_at: string }
 interface PromoWindow { starts_at: string; ends_at: string; enabled: number }
+interface Rating { product: string; count: number; avg_rating: number }
 
 export default function TrialBatchPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [ratings, setRatings] = useState<Rating[]>([]);
   const [win, setWin] = useState<PromoWindow | null>(null);
   const [winDraft, setWinDraft] = useState<{ startsAt: string; endsAt: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [codes, setCodes] = useState<{ batchId: string; list: any[] } | null>(null);
+  const [feedback, setFeedback] = useState<{ product: string; list: any[] } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +49,7 @@ export default function TrialBatchPage() {
       const d = await r.json();
       setSummary(d.summary ?? []);
       setBatches(d.batches ?? []);
+      setRatings(d.ratings ?? []);
       setWin(d.window ?? null);
       if (d.window) setWinDraft({ startsAt: d.window.starts_at.replace(" ", "T").slice(0, 16), endsAt: d.window.ends_at.replace(" ", "T").slice(0, 16) });
     } catch {}
@@ -61,6 +65,10 @@ export default function TrialBatchPage() {
   }, [load, router]);
 
   const sumFor = (product: string, code: string) => summary.find(s => s.product === product && s.package_code === code);
+  const ratingFor = (product: string) => ratings.find(r => r.product === product);
+  const totalFor = (product: string) => summary
+    .filter(s => s.product === product)
+    .reduce((acc, s) => ({ available: acc.available + s.available, claimed: acc.claimed + s.claimed }), { available: 0, claimed: 0 });
 
   async function post(bodyObj: any, label: string) {
     setBusy(label); setMsg(null);
@@ -74,6 +82,7 @@ export default function TrialBatchPage() {
       if (!r.ok) { setMsg(`⚠️ ${d.error || "Failed"}`); }
       else if (bodyObj.action === "generate") { setMsg(`✅ Generated ${d.generated} trial codes`); await load(); }
       else if (bodyObj.action === "list_codes") { setCodes({ batchId: bodyObj.batchId, list: d.codes || [] }); }
+      else if (bodyObj.action === "list_ratings") { setFeedback({ product: bodyObj.product, list: d.ratings || [] }); }
       else if (bodyObj.action === "set_window") { setMsg(`✅ Promo window ${bodyObj.enabled ? "open" : "closed"}`); await load(); }
       else { await load(); }
     } catch (e: any) { setMsg(`⚠️ ${e?.message || "Network error"}`); }
@@ -160,11 +169,24 @@ export default function TrialBatchPage() {
           PRODUCTS.map(product => {
             const tiers = tiersFor(product);
             if (tiers.length === 0) return null;
+            const total = totalFor(product);
+            const rating = ratingFor(product);
             return (
               <div key={product} style={{ background: "#fff", borderRadius: 14, border: "1.5px solid #e2e8f0", marginBottom: 16, overflow: "hidden" }}>
-                <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 18 }}>{PRODUCT_ICONS[product]}</span>
                   <span style={{ fontWeight: 800, fontSize: 14, color: "#0a1628" }}>{PRODUCT_NAMES[product]}</span>
+                  <span style={{ fontSize: 11, color: "#94a3b8" }}>· {total.available} available / {total.claimed} used total</span>
+                  <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+                    {rating && (
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#b45309", background: "rgba(245,158,11,0.1)", padding: "3px 9px", borderRadius: 6 }}>
+                        ⭐ {rating.avg_rating.toFixed(1)} ({rating.count})
+                      </span>
+                    )}
+                    <button onClick={() => post({ action: "list_ratings", product }, "")} style={{ padding: "5px 10px", borderRadius: 6, border: "1.5px solid #e2e8f0", background: "#fff", color: "#0284c7", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+                      💬 Feedback{rating ? ` (${rating.count})` : ""}
+                    </button>
+                  </div>
                 </div>
                 <div style={{ padding: "8px 12px" }}>
                   {tiers.map(t => {
@@ -254,6 +276,35 @@ export default function TrialBatchPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trial satisfaction feedback modal */}
+      {feedback && (
+        <div onClick={() => setFeedback(null)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 50 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 14, maxWidth: 560, width: "100%", maxHeight: "80vh", overflow: "auto", padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>{PRODUCT_ICONS[feedback.product]} {PRODUCT_NAMES[feedback.product]} — {feedback.list.length} trial ratings</div>
+              <button onClick={() => setFeedback(null)} style={{ padding: "6px 12px", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Close</button>
+            </div>
+            {feedback.list.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 32, color: "#94a3b8", fontSize: 13 }}>No trial ratings yet for this product.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {feedback.list.map(f => (
+                  <div key={f.id} style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: "#0a1628" }}>{f.client_name || f.client_email}</span>
+                      <span style={{ fontSize: 12, color: "#b45309", fontWeight: 700 }}>{"⭐".repeat(f.rating)}</span>
+                    </div>
+                    {f.title && <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 2 }}>{f.title}</div>}
+                    <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>{f.body}</div>
+                    <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 6 }}>{new Date(f.created_at).toLocaleDateString()} · {f.status}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

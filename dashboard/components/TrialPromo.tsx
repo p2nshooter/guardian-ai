@@ -35,11 +35,52 @@ function deviceFingerprint(): string {
 
 interface PoolRow { product: string; package_code: string; available: number }
 interface ClaimRow { product: string; package_code: string; claimed_at: string }
+interface MyReview { product: string; rating: number; status: string }
+
+// Compact 5-star picker + short comment, posted to the same moderated review
+// pipeline the public testimonials use (lib/reviews.ts) — one per (client,
+// product), scoped here to products the client actually trialed.
+function RatingBox({ product, onSubmit }: { product: string; onSubmit: (rating: number, body: string) => Promise<void> }) {
+  const [hover, setHover] = useState(0);
+  const [rating, setRating] = useState(0);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    if (!rating) { setErr("Pick a star rating first"); return; }
+    if (body.trim().length < 12) { setErr("A couple more words please (min 12 characters)"); return; }
+    setBusy(true); setErr(null);
+    try { await onSubmit(rating, body.trim()); } catch (e: any) { setErr(e?.message || "Could not submit"); }
+    setBusy(false);
+  }
+
+  return (
+    <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>How was the {PRODUCT_NAMES[product]} trial?</div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} type="button" onClick={() => setRating(n)} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, padding: 0, lineHeight: 1, color: n <= (hover || rating) ? "#f59e0b" : "#e2e8f0" }}>★</button>
+        ))}
+      </div>
+      <textarea value={body} onChange={e => setBody(e.target.value)} maxLength={1000} placeholder="What worked, what didn't — your honest take..."
+        rows={2} style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: "1.5px solid #e2e8f0", fontSize: 12.5, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+      {err && <div style={{ color: "#dc2626", fontSize: 11, marginTop: 4 }}>{err}</div>}
+      <button onClick={submit} disabled={busy} style={{ marginTop: 8, padding: "7px 16px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 12, cursor: "pointer", background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", opacity: busy ? 0.7 : 1 }}>
+        {busy ? "Sending…" : "Submit rating"}
+      </button>
+    </div>
+  );
+}
 
 export default function TrialPromo() {
   const [win, setWin] = useState<{ open: boolean; startsAt: string; endsAt: string } | null>(null);
   const [pool, setPool] = useState<PoolRow[]>([]);
   const [claimed, setClaimed] = useState<ClaimRow[]>([]);
+  const [maxProducts, setMaxProducts] = useState(2);
+  const [claimedProductCount, setClaimedProductCount] = useState(0);
+  const [myReviews, setMyReviews] = useState<MyReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -52,6 +93,13 @@ export default function TrialPromo() {
       setWin(d.window ?? null);
       setPool(d.pool ?? []);
       setClaimed(d.claimed ?? []);
+      setMaxProducts(d.maxProducts ?? 2);
+      setClaimedProductCount(d.claimedProductCount ?? 0);
+      try {
+        const rr = await fetch("/api/portal/reviews", { credentials: "include" });
+        const rd = await rr.json();
+        setMyReviews((rd.reviews ?? []).map((x: any) => ({ product: x.product, rating: x.rating, status: x.status })));
+      } catch {}
     } catch {}
     setLoading(false);
   }, []);
@@ -79,6 +127,20 @@ export default function TrialPromo() {
     setBusy(null);
   }
 
+  const myReviewFor = (product: string) => myReviews.find(r => r.product === product);
+
+  async function submitRating(product: string, rating: number, body: string) {
+    const r = await fetch("/api/portal/reviews", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ product, rating, body, title: "" }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Could not submit rating");
+    setMyReviews(prev => [...prev, { product, rating, status: "pending" }]);
+    setMsg({ kind: "ok", text: "✅ Thanks for the feedback! Your rating is on its way to our team." });
+  }
+
   if (loading) return <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>Loading trial promo…</div>;
 
   const windowClosed = !win?.open;
@@ -92,13 +154,14 @@ export default function TrialPromo() {
         <div style={{ fontSize: 22, fontWeight: 900, marginTop: 6 }}>AXTO just launched — claim a full-featured 7-day Enterprise trial, on us</div>
         <div style={{ fontSize: 13, color: "#cbd5e1", marginTop: 8, lineHeight: 1.6, maxWidth: 640 }}>
           Every tier's complete feature set, no limits, courtesy of axto.io. The clock starts the moment you claim.
-          One trial per product per person — bound to your email, network and device. Limited pool: when a tier runs out, it&apos;s gone.
+          One trial per product per person, up to {maxProducts} different products — bound to your email, network and device.
+          Limited pool: when a tier runs out, it&apos;s gone. Like what you tested? Continuing to a real license gets you
+          50% off your first year, automatically.
         </div>
-        {win && (
-          <div style={{ fontSize: 11, color: "#64748b", marginTop: 10 }}>
-            {win.open ? `Promo open until ${new Date(win.endsAt.replace(" ", "T") + "Z").toLocaleDateString()}` : "Promo is currently closed."}
-          </div>
-        )}
+        <div style={{ fontSize: 11, color: "#64748b", marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
+          {win && <span>{win.open ? `Promo open until ${new Date(win.endsAt.replace(" ", "T") + "Z").toLocaleDateString()}` : "Promo is currently closed."}</span>}
+          <span>{claimedProductCount}/{maxProducts} trial products claimed</span>
+        </div>
       </div>
 
       <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "14px 18px", marginBottom: 20, fontSize: 12.5, color: "#075985", lineHeight: 1.6 }}>
@@ -131,7 +194,8 @@ export default function TrialPromo() {
               {tiersFor(product).map(t => {
                 const avail = availFor(product, t.code);
                 const claimedThis = mine?.package_code === t.code;
-                const disabledProduct = !!mine; // one trial per product
+                const productCapped = !mine && claimedProductCount >= maxProducts; // hit the N-distinct-products cap
+                const disabledProduct = !!mine || productCapped;
                 if (avail === 0 && !claimedThis) return null;
                 return (
                   <div key={t.code} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 6px", borderBottom: "1px solid #f8fafc" }}>
@@ -145,20 +209,32 @@ export default function TrialPromo() {
                       <button
                         onClick={() => claim(t.code)}
                         disabled={busy === t.code || windowClosed || disabledProduct}
-                        title={disabledProduct ? "You already claimed a trial for this product" : windowClosed ? "Promo closed" : ""}
+                        title={mine ? "You already claimed a trial for this product" : productCapped ? `You've reached the ${maxProducts}-product trial limit` : windowClosed ? "Promo closed" : ""}
                         style={{
                           padding: "7px 16px", borderRadius: 8, border: "none", fontWeight: 700, fontSize: 12,
                           cursor: (windowClosed || disabledProduct) ? "not-allowed" : "pointer",
                           background: (windowClosed || disabledProduct) ? "#e2e8f0" : "linear-gradient(135deg,#0284c7,#0d9488)",
                           color: (windowClosed || disabledProduct) ? "#94a3b8" : "#fff", whiteSpace: "nowrap",
                         }}>
-                        {busy === t.code ? "…" : "🎁 Claim Trial"}
+                        {busy === t.code ? "…" : productCapped ? "Limit reached" : "🎁 Claim Trial"}
                       </button>
                     )}
                   </div>
                 );
               })}
             </div>
+            {mine && (
+              <div style={{ padding: "0 12px 12px" }}>
+                {myReviewFor(product) ? (
+                  <div style={{ background: "#f0fdf4", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#166534" }}>
+                    Thanks — you rated this trial {"⭐".repeat(myReviewFor(product)!.rating)}
+                    {myReviewFor(product)!.status === "pending" ? " (awaiting review)" : ""}.
+                  </div>
+                ) : (
+                  <RatingBox product={product} onSubmit={(rating, body) => submitRating(product, rating, body)} />
+                )}
+              </div>
+            )}
           </div>
         );
       })}

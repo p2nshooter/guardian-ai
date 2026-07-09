@@ -11,6 +11,7 @@ import { createLicense, createBundleLicenses } from "@/lib/license";
 import { sendWelcomeEmail, sendBundleEmail, sendEmail } from "@/lib/email";
 import { PACKAGE_INFO } from "@/lib/stripe";
 import { recordResellerSale } from "@/lib/reseller";
+import { markTrialContinuationDiscountUsed } from "@/lib/pricing";
 
 export async function processPlaybookPurchase(req: NextRequest, params: {
   email: string; name: string; amountUsd: number; paymentRef: string;
@@ -135,6 +136,7 @@ export async function processPayment(req: NextRequest, params: {
       });
     } catch {}
     await recordResellerSale(db, { referralCode, amountUsd, licenseId: (license as any).id, clientEmail: email });
+    await markTrialContinuationDiscountUsed(db, email, product);
   }
 
   return NextResponse.json({ ok: true });

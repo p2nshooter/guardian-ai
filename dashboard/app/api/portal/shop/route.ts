@@ -17,8 +17,9 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { getAllPackagesWithLivePrices } from "@/lib/pricing";
+import { getAllPackagesWithLivePrices, TRIAL_CONTINUATION_DISCOUNT_PCT } from "@/lib/pricing";
 import { PRODUCT_ICONS, PRODUCT_NAMES } from "@/lib/stripe";
+import { getDB, dbQuery } from "@/lib/db";
 
 interface PkgMeta { limit: string; popular?: boolean; isMonthly?: boolean }
 
@@ -76,26 +77,45 @@ export async function GET(req: NextRequest) {
   const byCode: Record<string, typeof allPkgs[0]> = {};
   for (const p of allPkgs) byCode[p.code] = p;
 
+  // Products this client trialed and hasn't yet redeemed the continuation
+  // discount for — one query, reused across every tier of that product below.
+  const email = String((user as any).email || "").toLowerCase();
+  let discountProducts = new Set<string>();
+  try {
+    const db = getDB(req);
+    const rows = await dbQuery<{ product: string }>(
+      db,
+      `SELECT DISTINCT product FROM trial_batch_codes WHERE claimed_email = ? AND status = 'claimed' AND discount_used_at = ''`,
+      [email]
+    );
+    discountProducts = new Set(rows.map((r) => r.product));
+  } catch { /* no discount surfaced if this lookup fails — never blocks the shop */ }
+
   const products = PRODUCT_ORDER.map((product) => {
     const meta = CATALOG[product];
     if (!meta) return null;
+    const discountEligible = discountProducts.has(product);
     const packages = Object.entries(meta.packages).map(([code, pm]) => {
       const live = byCode[code];
       const price = live?.price ?? 0;
       const priceMonthly = live?.priceMonthly ?? 0;
       const forSale = live?.forSale ?? false;
+      const basePrice = pm.isMonthly ? priceMonthly : price;
+      const finalPrice = discountEligible ? Math.round(basePrice * (1 - TRIAL_CONTINUATION_DISCOUNT_PCT / 100) * 100) / 100 : basePrice;
       return {
         code, name: live?.name ?? code, limit: pm.limit,
         popular: pm.popular ?? false, isMonthly: pm.isMonthly ?? false,
         price, priceMonthly,
-        priceDisplay: fmtPrice(pm.isMonthly ? priceMonthly : price),
+        priceDisplay: fmtPrice(finalPrice),
+        priceOriginalDisplay: discountEligible ? fmtPrice(basePrice) : undefined,
         priceSuffix: pm.isMonthly ? "/mo" : "/yr",
         forSale, source: live?.source ?? "static",
       };
     });
     const productForSale = packages.some((p) => p.forSale);
     return { product, name: PRODUCT_NAMES[product] ?? product, icon: PRODUCT_ICONS[product] ?? "📦",
-      color: meta.color, desc: meta.desc, forSale: productForSale, packages };
+      color: meta.color, desc: meta.desc, forSale: productForSale, packages,
+      discountEligible, discountPct: TRIAL_CONTINUATION_DISCOUNT_PCT };
   }).filter(Boolean);
 
   return NextResponse.json(

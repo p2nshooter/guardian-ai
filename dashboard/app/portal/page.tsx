@@ -852,6 +852,9 @@ export default function PortalPage() {
                     {!productForSale && (
                       <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:8,background:"rgba(245,158,11,0.1)",color:"#f59e0b",whiteSpace:"nowrap"}}>🔜 Coming Soon</span>
                     )}
+                    {productForSale && section.discountEligible && (
+                      <span style={{fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:8,background:"rgba(34,197,94,0.1)",color:"#16a34a",whiteSpace:"nowrap"}}>🎉 {section.discountPct}% OFF — trial reward</span>
+                    )}
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10}}>
                     {section.packages.map((x: any) => {
@@ -862,6 +865,9 @@ export default function PortalPage() {
                           {!tierForSale && <div style={{position:"absolute",top:8,right:8,fontSize:9,padding:"2px 6px",borderRadius:4,background:"rgba(245,158,11,0.1)",color:"#f59e0b",fontWeight:700}}>Coming Soon</div>}
                           <div style={{fontSize:14,fontWeight:800,color:"#0a1628"}}>{x.name}</div>
                           <div style={{fontSize:11,color:"#64748b",marginBottom:8}}>{x.limit}</div>
+                          {x.priceOriginalDisplay && (
+                            <div style={{fontSize:12,color:"#94a3b8",textDecoration:"line-through"}}>${x.priceOriginalDisplay}{x.priceSuffix}</div>
+                          )}
                           <div style={{fontSize:22,fontWeight:900,color: tierForSale ? section.color : "#94a3b8",marginBottom:10}}>
                             ${x.priceDisplay}<span style={{fontSize:12,color:"#94a3b8"}}>{x.priceSuffix}</span>
                           </div>
