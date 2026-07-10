@@ -50,7 +50,12 @@ export const metadata: Metadata = {
     images: [`${APP_URL}/og-image.png`],
   },
   alternates: { canonical: APP_URL },
-  other: { "google-site-verification": "YOUR_VERIFICATION_CODE" },
+  // Google AdSense site-ownership verification, rendered globally into every
+  // page's <head> via the root layout as:
+  //   <meta name="google-adsense-account" content="ca-pub-6371903555702163">
+  // (The previous "google-site-verification" entry held a placeholder value
+  // and was removed — a fake token verifies nothing and shouldn't ship.)
+  other: { "google-adsense-account": "ca-pub-6371903555702163" },
 };
 
 export const viewport: Viewport = {
