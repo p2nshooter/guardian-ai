@@ -64,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="google-adsense-account" content="ca-pub-6371903555702163" />
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6371903555702163" crossOrigin="anonymous" />
         <script async src="//www.ezojs.com/ezoic/sa.min.js" />
         <script dangerouslySetInnerHTML={{ __html: "window.ezstandalone = window.ezstandalone || {}; ezstandalone.cmd = ezstandalone.cmd || [];" }} />
