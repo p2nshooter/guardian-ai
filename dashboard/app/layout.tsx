@@ -10,6 +10,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LocaleProvider } from "@/lib/locale-provider";
 import VisitTracker from "./visit-tracker";
+import { AdSlot } from "@/components/AdSlot";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -71,7 +72,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script src="//ezoicanalytics.com/analytics.js" />
       </head>
       <body>
-        <LocaleProvider>{children}</LocaleProvider>
+        <LocaleProvider>
+          {children}
+          <div className="mx-auto w-full max-w-4xl px-4"><AdSlot placement="footer" /></div>
+        </LocaleProvider>
         <VisitTracker />
       </body>
     </html>
