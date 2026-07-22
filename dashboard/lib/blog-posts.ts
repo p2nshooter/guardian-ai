@@ -20,6 +20,8 @@ export interface BlogPost {
   body: string[]; // paragraphs; lines starting with "## " render as h2
 }
 
+import { BLOG_POSTS_2 } from "./blog-posts-batch2";
+
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "why-self-hosted-ai-security",
@@ -381,3 +383,5 @@ export const BLOG_POSTS: BlogPost[] = [
 export function getPost(slug: string): BlogPost | undefined {
   return BLOG_POSTS.find((p) => p.slug === slug);
 }
+
+BLOG_POSTS.push(...BLOG_POSTS_2);
