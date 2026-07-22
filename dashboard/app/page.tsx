@@ -225,7 +225,7 @@ export default function HomePage() {
   // Shared nav links — rendered in both the desktop bar and the mobile drawer.
   const NAV_LINKS: [string, string][] = [
     ["/promo",t("landing.nav.promo")],["#products",t("landing.nav.products")],["#pricing",t("landing.nav.bundles")],["#playbooks",t("landing.nav.playbooks")],
-    ["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],
+    ["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],["/acquire","Acquire"],
   ];
 
 
