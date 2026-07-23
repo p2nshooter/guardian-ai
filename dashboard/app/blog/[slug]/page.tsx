@@ -6,9 +6,11 @@
  */
 export const runtime = "edge";
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BLOG_POSTS, getPost } from "@/lib/blog-posts";
+import { AdSlot } from "@/components/AdSlot";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -41,19 +43,29 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </div>
       <h1 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">{post.title}</h1>
       <p className="mt-3 text-base opacity-75">{post.description}</p>
+
+      {/* Ad — top of article (network-controlled from ulyah.com admin) */}
+      <AdSlot placement="in_article_1" />
+
       <article className="mt-8 space-y-5 leading-relaxed">
-        {post.body.map((para, i) =>
-          para.startsWith("## ") ? (
-            <h2 key={i} className="mt-8 text-xl font-semibold">
-              {para.slice(3)}
-            </h2>
-          ) : (
-            <p key={i} className="opacity-90">
-              {para}
-            </p>
-          )
-        )}
+        {post.body.map((para, i) => {
+          const mid = Math.floor(post.body.length / 2);
+          return (
+            <Fragment key={i}>
+              {i === mid && i > 0 && <AdSlot placement="in_article_2" />}
+              {para.startsWith("## ") ? (
+                <h2 className="mt-8 text-xl font-semibold">{para.slice(3)}</h2>
+              ) : (
+                <p className="opacity-90">{para}</p>
+              )}
+            </Fragment>
+          );
+        })}
       </article>
+
+      {/* Ad — end of article */}
+      <AdSlot placement="footer" />
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

@@ -452,23 +452,23 @@ export default function HomePage() {
           {/* Featured playbooks — dynamic from catalog */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20, marginBottom: 48 }}>
             {[
-              { icon: "🔥", name: "Ultimate Sales Copy Pack", prompts: 50, price: 29, original: 49, badge: "BEST SELLER", color: "#ef4444" },
-              { icon: "⚖️", name: "Legal Document Vault", prompts: 30, price: 39, original: 79, badge: "HIGH VALUE", color: "#7c3aed" },
-              { icon: "👔", name: "Career Accelerator Pack", prompts: 30, price: 19, original: 34, badge: "POPULAR", color: "#0284c7" },
+              { icon: "🔥", name: "Ultimate Sales Copy Pack", slug: "ultimate-sales-copy-pack", prompts: 50, badge: "BEST SELLER", color: "#ef4444" },
+              { icon: "⚖️", name: "Legal Document Vault", slug: "legal-document-vault", prompts: 30, badge: "HIGH VALUE", color: "#7c3aed" },
+              { icon: "👔", name: "Career Accelerator Pack", slug: "career-accelerator-pack", prompts: 30, badge: "POPULAR", color: "#0284c7" },
             ].map(p => (
-              <div key={p.name} className="card" style={{ padding: 24, position: "relative" }}>
+              <Link key={p.name} href={`/playbooks/${p.slug}`} className="card" style={{ padding: 24, position: "relative", display: "block", textDecoration: "none" }}>
                 {p.badge && <div style={{ position: "absolute", top: 12, right: 12, background: `${p.color}15`, color: p.color, fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, letterSpacing: "0.3px" }}>{p.badge}</div>}
                 <div style={{ fontSize: 32, marginBottom: 12 }}>{p.icon}</div>
                 <h4 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{p.name}</h4>
-                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · PDF download · Works with ChatGPT, Claude, Gemini</p>
+                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · read online · Works with ChatGPT, Claude, Gemini</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 24, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
-                  <span style={{ fontSize: 13, color: "#94a3b8" }}>· instant PDF download</span>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
+                  <span style={{ fontSize: 13, color: "#94a3b8" }}>· no sign-up</span>
                 </div>
-                <Link href="/playbooks" style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
-                  ⬇ Download free
-                </Link>
-              </div>
+                <span style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
+                  Read the guide →
+                </span>
+              </Link>
             ))}
           </div>
 
@@ -484,10 +484,10 @@ export default function HomePage() {
             <div style={{ textAlign: "center" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, justifyContent: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 34, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
-                <span style={{ fontSize: 14, color: "#94a3b8" }}>· all packs</span>
+                <span style={{ fontSize: 14, color: "#94a3b8" }}>· read online</span>
               </div>
               <Link href="/playbooks" style={{ display: "inline-block", padding: "13px 32px", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 16px rgba(124,58,237,0.3)" }}>
-                {t("landing.playbooks.megacta")}
+                Browse all guides →
               </Link>
             </div>
           </div>
