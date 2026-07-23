@@ -10,7 +10,7 @@ export const runtime = "edge";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-provider";
-import { PACKAGE_INFO, isProductForSale } from "@/lib/stripe";
+import { isProductForSale } from "@/lib/stripe";
 import ReviewsSection from "@/components/ReviewsSection";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
@@ -45,62 +45,8 @@ const JSONLD = {
   ],
 };
 
-// ── Coming Soon / Buy Button helper ─────────────────────────────────────
-function LocalPriceTag({ usd, period }: { usd: number; period?: string }) {
-  const { currency, fmtPrice } = useLocale();
-  if (currency === "USD" || usd === 0) return null;
-  return (
-    <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-      ≈ {fmtPrice(usd)}{period || ""}
-    </div>
-  );
-}
-
-/** Reusable price display: shows USD price with local currency subtitle */
-function PriceDisplay({ usd, period, color }: { usd: number; period?: string; color?: string }) {
-  return (
-    <>
-      <div className="price-tag" style={{ marginBottom: 2, color: color || "#0a1628" }}>
-        <sup>$</sup>{usd.toLocaleString("en-US")}
-      </div>
-      <LocalPriceTag usd={usd} period={period || "/yr"} />
-    </>
-  );
-}
-
-function ProductBuyButton({ code, popular, color, label }: { code: string; popular?: boolean; color: string; label?: string }) {
-  const forSale = (PACKAGE_INFO[code]?.forSale !== false);
-  if (!forSale) {
-    return (
-      <div style={{ display: "block", textAlign: "center", padding: "14px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, background: "rgba(148,163,184,0.12)", color: "#94a3b8", border: "1.5px solid rgba(148,163,184,0.2)", cursor: "not-allowed", position: "relative" }}>
-        🔜 Coming Soon
-      </div>
-    );
-  }
-  return (
-    <Link href={`/register?pkg=${code}`} style={{ display: "block", textAlign: "center", padding: "14px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: popular ? `linear-gradient(135deg,${color},${color}cc)` : "transparent", color: popular ? "#fff" : color, border: popular ? "none" : `1.5px solid ${color}`, boxShadow: popular ? `0 4px 20px ${color}40` : "none" }}>
-      {label || "Get Started"}
-    </Link>
-  );
-}
-
-function ComingSoonBanner({ product, color }: { product: string; color: string }) {
-  if (isProductForSale(product)) return null;
-  return (
-    <div style={{ textAlign: "center", marginBottom: 24, padding: "12px 20px", borderRadius: 12, background: `${color}08`, border: `1.5px dashed ${color}40`, display: "inline-flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 20 }}>🔜</span>
-      <span style={{ fontSize: 14, fontWeight: 700, color }}>Coming Soon — Not Yet Available for Purchase</span>
-    </div>
-  );
-}
-
-// ── Inline SVG animations ───────────────────────────────────────────────
-
 export default function HomePage() {
-  const { t, fmtPrice } = useLocale();
-
-  // Legacy compat - same function name, uses context
-  const fmtUSD = fmtPrice;
+  const { t } = useLocale();
 
   const [navOpen, setNavOpen] = useState(false);
 
@@ -516,11 +462,11 @@ export default function HomePage() {
                 <h4 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{p.name}</h4>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · PDF download · Works with ChatGPT, Claude, Gemini</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${p.price}</span>
-                  <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${p.original}</span>
+                  <span style={{ fontSize: 24, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
+                  <span style={{ fontSize: 13, color: "#94a3b8" }}>· instant PDF download</span>
                 </div>
                 <Link href="/playbooks" style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
-                  Get Playbook →
+                  ⬇ Download free
                 </Link>
               </div>
             ))}
@@ -537,8 +483,8 @@ export default function HomePage() {
             </div>
             <div style={{ textAlign: "center" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, justifyContent: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 36, fontWeight: 900, color: "#7c3aed", fontFamily: "Sora, sans-serif" }}>$99</span>
-                <span style={{ fontSize: 16, color: "#94a3b8", textDecoration: "line-through" }}>$290</span>
+                <span style={{ fontSize: 34, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
+                <span style={{ fontSize: 14, color: "#94a3b8" }}>· all packs</span>
               </div>
               <Link href="/playbooks" style={{ display: "inline-block", padding: "13px 32px", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 16px rgba(124,58,237,0.3)" }}>
                 {t("landing.playbooks.megacta")}
