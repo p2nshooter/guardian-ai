@@ -29,6 +29,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { signLicenseResponse, SignableLicenseFields } from "@/lib/license-signing";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import {
+  resolveFreeAccess, computeFreeAccess, isFreeAccessKey, freeTopPackage,
+  FREE_ACCESS_PROGRAM_NAME,
+} from "@/lib/free-access";
 
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin":  "*",
@@ -154,6 +158,122 @@ export async function POST(req: NextRequest) {
      WHERE l.license_key = ?`,
     [cleanKey]
   );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AXTO Free Full-Access Program — full-tier grant, no paid licence required
+  // ---------------------------------------------------------------------------
+  // While the program window is OPEN, every recognised product key is granted
+  // full access until the GLOBAL program end date. Revoked / suspended keys are
+  // still blocked (abuse control). The grant's expires_at == the program end,
+  // so when the window closes each on-prem engine's own expiry check trips and
+  // it locks itself (read-only) with a clear message — no destructive code.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const faStatus = computeFreeAccess(await resolveFreeAccess(req));
+  if (faStatus.active) {
+    // Respect explicit bans even during the free program.
+    if (lic && lic.status === "revoked") {
+      return signedJson({
+        valid: false, reason: "revoked",
+        error: "License has been revoked. Contact hello@axto.io for assistance.",
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: lic.product,
+        valid: false, status: "revoked", expiresAt: lic.expires_at,
+      });
+    }
+    if (lic && lic.status === "suspended") {
+      return signedJson({
+        valid: false, reason: "suspended",
+        error: "License is suspended. Log in to axto.io/portal to view details.",
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: lic.product,
+        valid: false, status: "suspended", expiresAt: lic.expires_at,
+      });
+    }
+
+    const licProductLc  = (lic?.product || "").toLowerCase().trim();
+    const reqProductLc   = (requestedProduct || "").toLowerCase().trim();
+    const effectiveProduct = licProductLc || keyProduct; // keyProduct: from prefix
+    if (reqProductLc && reqProductLc !== effectiveProduct) {
+      const expectedPrefix = Object.entries(KEY_PREFIXES).find(([, v]) => v === reqProductLc)?.[0];
+      return signedJson({
+        valid: false, reason: "product_mismatch",
+        error: `This key is for "${effectiveProduct}", not "${reqProductLc}". Use a ${expectedPrefix ? expectedPrefix + "-" : ""}key for ${reqProductLc}.`,
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: effectiveProduct,
+        valid: false, status: "product_mismatch", expiresAt: faStatus.endISO,
+      });
+    }
+
+    // Grant expires at the program end — unless a real paid licence outlasts it,
+    // in which case the paying customer keeps their longer term.
+    const grantExpiresISO =
+      lic && new Date(lic.expires_at).getTime() > new Date(faStatus.endISO).getTime()
+        ? lic.expires_at
+        : faStatus.endISO;
+
+    const freePkg  = freeTopPackage(effectiveProduct);
+    const features = buildFeatures(effectiveProduct, freePkg, -1); // -1 = unlimited nodes
+
+    // Best-effort heartbeat only when a real licence row exists (shared free
+    // keys have no row; we don't fabricate one here).
+    if (lic?.id) {
+      const hbVersion = versionField
+        || guardian_version || orchestra_version || vault_version
+        || edge_version || soc_version || compliance_version || sentinel_version
+        || "unknown";
+      dbRun(db,
+        `INSERT INTO license_heartbeats
+           (id, license_id, machine_id, hostname, ip, product, version, node_count, worker_count, health, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [newId(), lic.id, mid, hostname || "", ip, effectiveProduct, hbVersion,
+         node_count ?? 0, effectiveProduct === "orchestra" ? (node_count ?? 0) : 0, "{}", now()]
+      ).catch(() => {});
+    }
+
+    const response: Record<string, any> = {
+      valid:        true,
+      status:       "active",
+      access_mode:  "free_program",
+      program:      FREE_ACCESS_PROGRAM_NAME,
+      license_key:  cleanKey,
+      product:      effectiveProduct,
+      package:      freePkg,
+      package_code: freePkg,
+      expires_at:   grantExpiresISO,
+      days_left:    faStatus.daysLeft,
+      max_nodes:    -1,
+      client_name:  lic?.client_name || "",
+      organization: lic?.organization || "",
+      features,
+      notice: `${FREE_ACCESS_PROGRAM_NAME}: full access is free until ${faStatus.endISO.slice(0, 10)}. No licence key required. When the program ends the app locks to read-only — your data and files stay untouched. Back up anything you need before then.`,
+    };
+    if (faStatus.daysLeft <= 60) {
+      response.warning = `Free access ends in ${faStatus.daysLeft} day${faStatus.daysLeft === 1 ? "" : "s"} (${faStatus.endISO.slice(0, 10)}). Export/back up your data before then; the app will lock to read-only afterwards.`;
+    }
+    if (faStatus.daysLeft <= 14) {
+      response.critical_warning = `⚠️ Free access ends in ${faStatus.daysLeft} day${faStatus.daysLeft === 1 ? "" : "s"}. Back up now — the app locks to read-only on ${faStatus.endISO.slice(0, 10)}.`;
+    }
+
+    return signedJson(response, {
+      licenseKey: cleanKey, machineId: mid, product: effectiveProduct,
+      valid: true, status: "active", expiresAt: grantExpiresISO,
+      entitlements: serializeEntitlements(features, freePkg),
+    });
+  }
+
+  // Free program has CLOSED and this is a free key with no paid licence behind
+  // it → the app should lock (read-only). Signed so the engine trusts the lock.
+  if (isFreeAccessKey(cleanKey) && !lic) {
+    return signedJson({
+      valid: false, reason: "program_ended", access_mode: "free_program",
+      program: FREE_ACCESS_PROGRAM_NAME,
+      error: `${FREE_ACCESS_PROGRAM_NAME} has ended. The app is now locked (read-only). Your data and files were left untouched. Visit axto.io/portal for options.`,
+      renew_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://axto.io"}/portal`,
+    }, {
+      licenseKey: cleanKey, machineId: mid, product: keyProduct,
+      valid: false, status: "program_ended", expiresAt: faStatus.endISO,
+    });
+  }
 
   if (!lic) {
     return NextResponse.json({
