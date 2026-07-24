@@ -13,6 +13,7 @@ import { useLocale } from "@/lib/locale-provider";
 import { isProductForSale } from "@/lib/stripe";
 import ReviewsSection from "@/components/ReviewsSection";
 import InstallCounter from "@/components/InstallCounter";
+import CountdownPromo from "@/components/CountdownPromo";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -59,8 +60,8 @@ export default function HomePage() {
 
   // Shared nav links — rendered in both the desktop bar and the mobile drawer.
   const NAV_LINKS: [string, string][] = [
-    ["/promo",t("landing.nav.promo")],["#products",t("landing.nav.products")],["#pricing","Free Access"],["#playbooks",t("landing.nav.playbooks")],
-    ["#counter","Live Count"],["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],["/acquire","Acquire"],
+    ["#pricing","🎁 Free 1-Year"],["#products",t("landing.nav.products")],["#counter","Live Count"],["#playbooks",t("landing.nav.playbooks")],
+    ["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],["/acquire","Acquire"],
   ];
 
 
@@ -178,8 +179,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── PRODUCT SHOWCASE — all 10, prominent, priced, clickable ── */}
-      <section id="products" style={{ padding: "88px 24px 96px", background: "linear-gradient(180deg,#ffffff,#f6fafe)", borderTop: "1px solid #e8eef5", position: "relative" }}>
+      {/* ── ANIMATED COUNTDOWN PROMO ──────────────────────────────── */}
+      <section style={{ padding: "0 24px", marginTop: -36, marginBottom: 8, position: "relative", zIndex: 10 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <CountdownPromo />
+        </div>
+      </section>
+
+      {/* ── PRODUCT SHOWCASE — all 10, prominent, clickable ── */}
+      <section id="products" style={{ padding: "72px 24px 96px", background: "linear-gradient(180deg,#ffffff,#f6fafe)", borderTop: "1px solid #e8eef5", position: "relative" }}>
         <div className="mesh-grid" style={{ position: "absolute", inset: 0, opacity: 0.5, pointerEvents: "none" }} />
         <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
           <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 48px" }}>

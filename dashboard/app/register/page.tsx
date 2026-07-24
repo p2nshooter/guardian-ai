@@ -14,7 +14,7 @@ export const runtime = "edge";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import FreeProgramBanner from "@/components/FreeProgramBanner";
+import CountdownPromo from "@/components/CountdownPromo";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -68,7 +68,7 @@ export default function RegisterPage() {
         </Link>
 
         <div style={{ marginBottom: 20 }}>
-          <FreeProgramBanner />
+          <CountdownPromo compact />
         </div>
 
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 18, padding: "30px 28px", boxShadow: "0 4px 24px rgba(2,132,199,0.06)" }}>

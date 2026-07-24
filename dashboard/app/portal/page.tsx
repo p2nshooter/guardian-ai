@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PRODUCT_ICONS } from "@/lib/stripe";
 import { useLocale } from "@/lib/locale-provider";
-import FreeProgramBanner from "@/components/FreeProgramBanner";
+import CountdownPromo from "@/components/CountdownPromo";
 
 // ── Product definitions ───────────────────────────────────────────────────────
 const GUARDIAN_PRODUCTS = [
@@ -428,7 +428,7 @@ export default function PortalPage() {
         </p>
 
         <div style={{ marginBottom: 24 }}>
-          <FreeProgramBanner />
+          <CountdownPromo />
         </div>
 
         {/* ── Tabs ── */}
