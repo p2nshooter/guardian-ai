@@ -11,6 +11,7 @@ import "./globals.css";
 import { LocaleProvider } from "@/lib/locale-provider";
 import VisitTracker from "./visit-tracker";
 import { AdSlot } from "@/components/AdSlot";
+import ScrollAnimator from "@/components/ScrollAnimator";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <div className="mx-auto w-full max-w-4xl px-4"><AdSlot placement="footer" /></div>
         </LocaleProvider>
+        <ScrollAnimator />
         <VisitTracker />
       </body>
     </html>

@@ -171,6 +171,18 @@ a:hover { text-decoration: underline; }
   .cd-bg,.cd-marquee,.cd-glow,.cd-floaty,.cd-pop,.cd-tick,.cd-sheen::after { animation: none !important; }
 }
 
+/* ── Site-wide scroll reveal (ScrollAnimator) ──────────────────────────── */
+.sa-pre { opacity: 0; transform: translateY(26px); }
+.sa-in  { opacity: 1; transform: none;
+  transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+/* Cards get a springier lift + a soft glow on hover (public pages) */
+.card { transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, border-color .18s ease; }
+.card:hover { transform: translateY(-5px) scale(1.008); }
+@media (prefers-reduced-motion: reduce) {
+  .sa-pre { opacity: 1 !important; transform: none !important; }
+  .card:hover { transform: none; }
+}
+
 .delay-100 { animation-delay:0.1s; } .delay-200 { animation-delay:0.2s; }
 .delay-300 { animation-delay:0.3s; } .delay-400 { animation-delay:0.4s; }
 .delay-500 { animation-delay:0.5s; } .delay-600 { animation-delay:0.6s; }
