@@ -10,6 +10,7 @@ export const dynamic  = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, getR2Builds, dbFirst, dbRun, now } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { resolveFreeAccess, computeFreeAccess, freeKeyForProduct } from "@/lib/free-access";
 import { DISCLAIMER_VERSION } from "@/lib/disclaimer";
 import { writeInvoice, renderInvoiceHTML } from "@/lib/invoice";
 import { GUIDES_5PRODUCTS, type ProductGuide5 } from "@/lib/guide-i18n-5products";
@@ -80,6 +81,15 @@ function getProductsForLicense(product: string): string[] {
   }
 }
 
+// Reverse: a build artifact ("guardian-core") → its top-level product
+// ("guardian"), used only to pick the right setup guide on the free path.
+function topLevelProduct(buildId: string): string {
+  for (const p of ["guardian","orchestra","vault","edge","soc","compliance","sentinel","antivirus","studio","legal"]) {
+    if (getProductsForLicense(p).includes(buildId)) return p;
+  }
+  return buildId.split("-")[0] || "guardian";
+}
+
 export async function GET(req: NextRequest) {
   const user = await requireUser(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -91,8 +101,7 @@ export async function GET(req: NextRequest) {
   const action    = url.searchParams.get("action") || "download";
   const lang      = url.searchParams.get("lang")   || "en";
 
-  if (!licenseId)
-    return NextResponse.json({ error: "license_id required" }, { status: 400 });
+  const isFreeDownload = !licenseId || licenseId.toLowerCase() === "free";
 
   // EXE availability is governed per-product by the admin (build_formats table,
   // toggled on the Releases page) and by the actual presence of the file in R2 —
@@ -116,6 +125,77 @@ export async function GET(req: NextRequest) {
         { status: 451 });
     }
   } catch { /* acceptances table absent (pre-migration) → do not block legacy */ }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FREE FULL-ACCESS PROGRAM — download without a licence
+  // While the window is open, any signed-in client may download any product
+  // build. No licence lookup; guides carry the product's free key. When the
+  // window closes this path 403s (program_ended) and the apps lock anyway.
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (isFreeDownload) {
+    const fa = computeFreeAccess(await resolveFreeAccess(req));
+    if (!fa.active) {
+      return NextResponse.json({
+        error: "The free programme has ended — a licence is now required. Contact WhatsApp +6285691234561 / hello@axto.io / salam@ulyah.com.",
+        code: "program_ended",
+      }, { status: 403 });
+    }
+
+    if (action === "guide") {
+      const gp = product && ALL_PRODUCTS.includes(product) ? topLevelProduct(product) : "guardian";
+      const guide = generateVaultGuide(gp, lang, freeKeyForProduct(gp), -1);
+      if (url.searchParams.get("format") === "pdf") {
+        const pdfBytes = buildGuidePDF(guide, lang);
+        return new NextResponse(pdfBytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="AXTO-${gp}-Setup-Guide.pdf"`, "Cache-Control": "public, max-age=3600" } });
+      }
+      return new NextResponse(guide, { headers: { "Content-Type": "text/markdown; charset=utf-8", "Content-Disposition": `attachment; filename="AXTO-${gp}-Setup-Guide-${lang}.md"`, "Cache-Control": "no-store" } });
+    }
+
+    if (!product || !ALL_PRODUCTS.includes(product)) {
+      return NextResponse.json({ error: `Unknown product: ${product}` }, { status: 400 });
+    }
+
+    const gpTop  = topLevelProduct(product);
+    const fmtKey = type === "exe" ? "exe-windows" : (type === "exe-linux" ? "exe-linux" : "docker");
+    try {
+      await dbRun(db, `CREATE TABLE IF NOT EXISTS build_formats (product TEXT NOT NULL, format TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (product, format))`, []);
+      const bf = await dbFirst<{ enabled: number }>(db, `SELECT enabled FROM build_formats WHERE product = ? AND format = ?`, [gpTop, fmtKey]);
+      const disabled = bf ? bf.enabled === 0 : fmtKey !== "docker";
+      if (disabled) {
+        if (action === "check" || req.method === "HEAD") return new NextResponse(null, { status: 404, headers: { "X-AXTO-Reason": "coming_soon" } });
+        return NextResponse.json({ error: "coming_soon", message: "This download format is not yet available.", product: gpTop, format: fmtKey }, { status: 503 });
+      }
+    } catch { /* fail-open on DB errors */ }
+
+    let r2f: any;
+    try { r2f = getR2Builds(req); } catch { return NextResponse.json({ error: "Storage unavailable" }, { status: 503 }); }
+    const keyF = r2Key(product, type);
+
+    if (action === "check" || req.method === "HEAD") {
+      const head = await r2f.head(keyF).catch(() => null);
+      return head
+        ? new NextResponse(null, { status: 200, headers: { "Content-Type": "application/octet-stream", "Content-Length": String(head.size || 0) } })
+        : new NextResponse(null, { status: 404 });
+    }
+
+    const objF = await r2f.get(keyF).catch(() => null);
+    if (!objF) {
+      return NextResponse.json({ error: "File not yet available. The admin is processing this build. Please try again shortly.", r2_key: keyF }, { status: 404 });
+    }
+    dbRun(db, `INSERT INTO audit_log (id, action, entity_type, entity_id, actor_email, metadata, created_at) VALUES (?, 'download', 'product', ?, ?, ?, ?)`,
+      [crypto.randomUUID(), product, user.email, JSON.stringify({ type, free: true }), now()]).catch(() => {});
+    return new NextResponse(objF.body, {
+      headers: {
+        "Content-Type":        "application/octet-stream",
+        "Content-Disposition": `attachment; filename="${filename(product, type)}"`,
+        "Content-Length":      String(objF.size || ""),
+        "Cache-Control":       "no-store",
+        "X-Product":           product,
+        "X-Access-Mode":       "free_program",
+        "X-Free-Ends":         fa.endISO,
+      },
+    });
+  }
 
   // ── Validate license ──────────────────────────────────────────────────────
   const lic = await dbFirst<any>(db,

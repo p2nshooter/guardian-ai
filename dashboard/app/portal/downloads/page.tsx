@@ -9,6 +9,7 @@
 export const runtime = "edge";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import CountdownPromo from "@/components/CountdownPromo";
 
 // ─── Product catalog per license type ────────────────────────────────────────
 const PRODUCT_CATALOG: Record<string, {
@@ -402,23 +403,50 @@ export default function ClientDownloads() {
           </div>
         )}
 
-        {/* ── No licenses state ── */}
+        {/* ── Free downloads (no licence needed) ── */}
         {licenses.length === 0 && (
-          <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #e2e8f0", padding: "64px 32px", textAlign: "center", animation: "slideIn 0.4s ease" }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>🔒</div>
-            <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 20, color: "#0a1628", marginBottom: 8 }}>
-              Belum Ada Lisensi Aktif
-            </h2>
-            <p style={{ color: "#64748b", maxWidth: 420, margin: "0 auto 24px", lineHeight: 1.6 }}>
-              Download hanya tersedia setelah pembelian dikonfirmasi. Link download akan muncul di sini otomatis setelah pembayaran diverifikasi.
-            </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <a href="https://axto.io" target="_blank" rel="noopener" style={{ padding: "10px 20px", background: "#0284c7", borderRadius: 10, color: "#fff", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
-                Beli Lisensi
-              </a>
-              <a href="mailto:hello@axto.io" style={{ padding: "10px 20px", background: "#f1f5f9", borderRadius: 10, color: "#475569", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
-                Hubungi Support
-              </a>
+          <div style={{ animation: "slideIn 0.4s ease" }}>
+            <div style={{ marginBottom: 24 }}><CountdownPromo /></div>
+            <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #e2e8f0", padding: "28px 26px" }}>
+              <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, fontSize: 22, color: "#0a1628", marginBottom: 6 }}>
+                ⬇ Download any app — free
+              </h2>
+              <p style={{ color: "#64748b", maxWidth: 640, marginBottom: 22, lineHeight: 1.6, fontSize: 14 }}>
+                Every AXTO app is free at full enterprise for the year — no licence key. Pick an app and deploy on your own server; it auto-registers this machine. Docker (Linux) is production-ready today; Windows builds roll out per app.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
+                {Object.entries(PRODUCT_CATALOG).map(([prod, cat]: any) => (
+                  <div key={prod} style={{ border: "1px solid #e2e8f0", borderRadius: 14, padding: "16px 16px", background: "#f8fafc" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <span style={{ fontSize: 22 }}>{cat.icon}</span>
+                      <span style={{ fontWeight: 700, fontSize: 15, color: "#0a1628" }}>{cat.label}</span>
+                    </div>
+                    {cat.packages.map((pkg: any) => (
+                      <div key={pkg.id} style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#475569", marginBottom: 6 }}>{pkg.name}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {pkg.variants.map((v: any) => {
+                            const k = `free|${pkg.id}|${v.type}|${v.arch}`;
+                            const st = dlStatus[k];
+                            const isDocker = v.type === "docker";
+                            return (
+                              <button key={k} className="dl-btn" disabled={st === "loading"}
+                                onClick={() => download("free", pkg.id, v.type, v.arch)}
+                                title={isDocker ? "" : "Windows/Linux binaries roll out per app"}
+                                style={{ padding: "7px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
+                                  background: isDocker ? "linear-gradient(135deg,#0284c7,#0d9488)" : "#e2e8f0",
+                                  color: isDocker ? "#fff" : "#64748b" }}>
+                                {st === "loading" ? "…" : st === "done" ? "✓ Downloaded" : `${v.icon} ${v.label}`}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              {dlError && <div style={{ marginTop: 16, fontSize: 13, color: "#dc2626", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "10px 12px" }}>{dlError}</div>}
             </div>
           </div>
         )}
