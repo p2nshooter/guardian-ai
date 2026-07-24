@@ -71,15 +71,15 @@ SHUTDOWN_MSG    = (
     "║  2. Confirm your license has not expired                     ║\n"
     "║  3. Restart this service after connectivity is restored      ║\n"
     "║                                                              ║\n"
-    "║  Renew or manage your license: https://axto.io/portal        ║\n"
+    "║  Free program — extend via WhatsApp +6285691234561 / hello@axto.io        ║\n"
     "║  Support: hello@axto.io                                      ║\n"
     "╚══════════════════════════════════════════════════════════════╝\n"
 )
 EXPIRY_BANNER = (
     "\n"
     "⚠️  ═══════════════════════════════════════════════════════════\n"
-    "   AXTO GUARDIAN LICENSE EXPIRES IN {{days}} DAY{{plural}}\n"
-    "   Renew immediately at: https://axto.io/portal\n"
+    "   AXTO GUARDIAN — FREE ACCESS ENDS IN {{days}} DAY{{plural}}\n"
+    "   Free program — need more time? WhatsApp +6285691234561 / hello@axto.io\n"
     "   Expires: {{expires}}\n"
     "   ═══════════════════════════════════════════════════════════\n"
 )
@@ -329,13 +329,13 @@ class LicenseState:
             return (
                 f"⚠️ License validation failed. Grace period: "
                 f"{self.grace_remaining_min} minutes remaining before suspension. "
-                f"Renew at: https://axto.io/portal"
+                f"Free program — extend via WhatsApp +6285691234561 / hello@axto.io"
             )
         if self.is_expiring_soon:
             return (
                 f"⚠️ License expires in {self.days_until_expiry} day"
                 f"{'s' if self.days_until_expiry != 1 else ''}. "
-                f"Renew at: https://axto.io/portal"
+                f"Free program — extend via WhatsApp +6285691234561 / hello@axto.io"
             )
         return None
 
@@ -546,7 +546,7 @@ class LicenseValidator:
                 elif state.reason == "expired":
                     log.critical(
                         f"AXTO GUARDIAN LICENSE EXPIRED | "
-                        f"Renew immediately: https://axto.io/portal"
+                        f"Free program — WhatsApp +6285691234561 / hello@axto.io"
                     )
                 elif state.reason == "machine_mismatch":
                     log.critical(
