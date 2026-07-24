@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PRODUCT_ICONS } from "@/lib/stripe";
 import { useLocale } from "@/lib/locale-provider";
-import TrialPromo from "@/components/TrialPromo";
+import FreeProgramBanner from "@/components/FreeProgramBanner";
 
 // ── Product definitions ───────────────────────────────────────────────────────
 const GUARDIAN_PRODUCTS = [
@@ -424,17 +424,18 @@ export default function PortalPage() {
           Welcome, {client.name || client.email || "there"}!
         </h1>
         <p style={{ color:"#64748b", fontSize:13, margin:"0 0 20px" }}>
-          Manage licenses, download products, browse documentation.
+          Download apps, track your free-access countdown, and browse documentation.
         </p>
+
+        <div style={{ marginBottom: 24 }}>
+          <FreeProgramBanner />
+        </div>
 
         {/* ── Tabs ── */}
         <div style={{ display:"flex", gap:4, background:"#e2e8f0", borderRadius:12, padding:4, marginBottom:24, flexWrap:"wrap" }}>
           {([
             { id:"overview"  as Tab, l:`🏠 Overview` },
-            { id:"licenses"  as Tab, l:`🔑 Licenses (${licenses.length})` },
-            { id:"trial"     as Tab, l:`🎁 Trial Promo` },
-            { id:"playbooks" as Tab, l:`📦 Playbooks (${playbooks.filter((p:any)=>p.playbook_id).length})` },
-            { id:"shop"      as Tab, l:`🛒 Buy Products` },
+            { id:"licenses"  as Tab, l:`🔑 My Installs (${licenses.length})` },
             { id:"docs"      as Tab, l:`📖 Docs & Guide` },
             { id:"invoices"  as Tab, l:`🧾 Invoices (${invoices.length})` },
           ]).map(t => (
@@ -466,10 +467,10 @@ export default function PortalPage() {
             <div style={S.card}>
               <h3 style={{fontSize:15,fontWeight:800,color:"#0a1628",margin:"0 0 16px"}}>Quick Actions</h3>
               <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <button onClick={()=>setTab("shop")}
-                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#0284c7,#0d9488)",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                  🛒 Buy Products
-                </button>
+                <Link href="/portal/downloads"
+                  style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#0284c7,#0d9488)",color:"#fff",fontWeight:700,fontSize:13,textDecoration:"none"}}>
+                  ⬇ Download Apps
+                </Link>
                 <Link href="/studio/ai"
                   style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#8b5cf6,#6366f1)",color:"#fff",fontWeight:700,fontSize:13,textDecoration:"none"}}>
                   🧠 Open AI Studio
@@ -785,9 +786,6 @@ export default function PortalPage() {
             )}
           </div>
         )}
-
-        {/* ══════════════════ TRIAL PROMO ══════════════════ */}
-        {tab==="trial" && <TrialPromo />}
 
         {/* ══════════════════ PLAYBOOKS ══════════════════ */}
         {tab==="playbooks" && (
