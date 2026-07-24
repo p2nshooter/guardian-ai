@@ -1,325 +1,124 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hello@axto.io>
- * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
- */
-"use client";
+ *
+ * Playbooks INDEX (/playbooks). Formerly a paid checkout; now a free article
+ * hub. Every card links straight to /playbooks/<slug> — no download, no
+ * purchase. Ads are network-controlled from the ulyah.com admin via <AdSlot/>.
+ * ============================================================================ */
 export const runtime = "edge";
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { QRCodeSVG } from "qrcode.react";
-import { cryptoQrValue } from "@/lib/crypto-qr";
+import { AdSlot } from "@/components/AdSlot";
+import {
+  PLAYBOOKS, getCategories, getPlaybooksByCategory, categoryLabel, readMinutes,
+} from "@/lib/playbooks/articles";
 
-interface CryptoMethod { id: string; symbol: string; name: string; network: string; category: string; confirmations: number; }
-interface CryptoIntent {
-  orderId: string; symbol: string; network: string; depositAddress: string;
-  amountCrypto: number; amountUsd: number; confirmations: number; expiresAt: string;
-}
+export const metadata: Metadata = {
+  title: "AI Prompt Guides — Free Playbooks for ChatGPT, Claude & Gemini | AXTO",
+  description:
+    "Free, ready-to-use AI prompt guides for copywriting, business, SaaS, e-commerce, careers and more. Read online — no sign-up, no download.",
+  alternates: { canonical: "/playbooks" },
+};
 
-export default function PlaybooksPage() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState("");
-  const [email, setEmail] = useState("");
-  const [gateway, setGateway] = useState("stripe");
-  const [availableGateways, setAvailableGateways] = useState<string[]>(["stripe"]);
-  const [cryptoMethods, setCryptoMethods] = useState<CryptoMethod[]>([]);
-  const [cryptoIntent, setCryptoIntent] = useState<CryptoIntent | null>(null);
-  const [cryptoLeft, setCryptoLeft] = useState(0);
+// Normalise a category token so old label links (?cat=Copywriting) and new slug
+// links (?cat=copywriting) both resolve.
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-  const ALL_GW = [
-    { v: "stripe", l: "Credit/Debit Card", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#635BFF"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">stripe</text></svg>` },
-    { v: "paypal", l: "PayPal", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#003087"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">PayPal</text></svg>` },
-    { v: "xendit", l: "Xendit", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#0D47A1"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">xendit</text></svg>` },
-    { v: "midtrans", l: "Midtrans", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#00AA13"/><text x="26" y="14.5" text-anchor="middle" fill="white" font-size="9" font-weight="700" font-family="sans-serif">midtrans</text></svg>` },
-    { v: "crypto", l: "Cryptocurrency", logo: `<svg viewBox="0 0 52 22" fill="none"><rect width="52" height="22" rx="3" fill="#0A1628"/><text x="26" y="14.5" text-anchor="middle" fill="#34D399" font-size="9" font-weight="700" font-family="sans-serif">crypto</text></svg>` },
-  ];
+export default async function PlaybooksIndexPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cat?: string }>;
+}) {
+  const { cat } = await searchParams;
+  const categories = getCategories();
 
-  useEffect(() => {
-    fetch("/api/health").then(r => r.json()).then(d => {
-      if (d.gateways?.length) {
-        setAvailableGateways(d.gateways);
-        if (!d.gateways.includes(gateway)) setGateway(d.gateways[0]);
-      }
-    }).catch(() => {});
-    fetch("/api/checkout?crypto_methods=1").then(r => r.json()).then(d => {
-      if (d.methods?.length) {
-        setCryptoMethods(d.methods);
-        setAvailableGateways(prev => prev.includes("crypto") ? prev : [...prev, "crypto"]);
-      }
-    }).catch(() => {});
-  }, []);
+  const activeCat = cat
+    ? categories.find((c) => norm(c.slug) === norm(cat) || norm(c.label) === norm(cat))?.slug ?? null
+    : null;
 
-  const GATEWAYS = ALL_GW.filter(g => availableGateways.includes(g.v));
-
-  // Crypto QR countdown — matches the 30-minute intent window server-side.
-  useEffect(() => {
-    if (!cryptoIntent) return;
-    const t = setInterval(() => {
-      const ms = new Date(cryptoIntent.expiresAt).getTime() - Date.now();
-      setCryptoLeft(Math.max(0, Math.floor(ms / 1000)));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [cryptoIntent]);
-
-  async function pickCryptoMethod(methodId: string, playbookId?: string, bundleId?: string) {
-    if (!email.trim()) { setCheckoutError("Email is required"); return; }
-    setCheckoutLoading(true); setCheckoutError("");
-    try {
-      const res = await fetch("/api/playbooks", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "checkout", playbook_id: playbookId, bundle_id: bundleId, email: email.trim(), gateway: "crypto", methodId }),
-      });
-      const d = await res.json();
-      if (d.depositAddress) setCryptoIntent(d);
-      else setCheckoutError(d.error || "Could not start crypto payment");
-    } catch { setCheckoutError("Network error"); }
-    finally { setCheckoutLoading(false); }
-  }
-
-  useEffect(() => {
-    fetch("/api/playbooks").then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
-
-  // Honor ?cat=<slug|name> from the landing page so a clicked category opens
-  // pre-filtered (read client-side to avoid a Suspense boundary requirement).
-  useEffect(() => {
-    if (!data?.categories?.length) return;
-    const cat = new URLSearchParams(window.location.search).get("cat");
-    if (!cat) return;
-    const want = cat.toLowerCase();
-    const hit = data.categories.find(
-      (c: any) => c.slug?.toLowerCase() === want || c.name?.toLowerCase() === want,
-    );
-    if (hit) setActiveCategory(hit.slug);
-  }, [data]);
-
-  async function handleCheckout(playbookId?: string, bundleId?: string) {
-    if (!email.trim()) { setCheckoutError("Email is required"); return; }
-    setCheckoutLoading(true); setCheckoutError("");
-    try {
-      const res = await fetch("/api/playbooks", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "checkout", playbook_id: playbookId, bundle_id: bundleId, email: email.trim(), gateway }),
-      });
-      const d = await res.json();
-      if (d.url) window.location.href = d.url;
-      else { setCheckoutError(d.error || "Checkout failed"); setCheckoutLoading(false); }
-    } catch { setCheckoutError("Network error"); setCheckoutLoading(false); }
-  }
-
-  const filtered = data?.playbooks?.filter((p: any) => !activeCategory || p.category_slug === activeCategory) || [];
-
-  if (loading) return <div style={{ minHeight: "100vh", background: "#f0f9ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" }}>Loading playbooks...</div>;
+  const list = activeCat ? getPlaybooksByCategory(activeCat) : PLAYBOOKS;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0f9ff" }}>
-      {/* Navbar */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(240,249,255,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(2,132,199,0.12)", padding: "0 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#0284c7,#0d9488)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🛡</div>
-            <span style={{ fontSize: 20, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>AXTO</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#7c3aed", marginLeft: 4 }}>Playbooks</span>
-          </Link>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/#pricing" style={{ color: "#475569", fontSize: 13, fontWeight: 600, padding: "8px 14px", borderRadius: 8, textDecoration: "none" }}>Infrastructure</Link>
-            <Link href="/auth/login" style={{ padding: "8px 18px", fontSize: 13, fontWeight: 700, borderRadius: 8, background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", textDecoration: "none" }}>My Portal</Link>
-          </div>
-        </div>
-      </nav>
-
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 20px 90px" }}>
       {/* Hero */}
-      <section style={{ padding: "64px 24px 48px", textAlign: "center" }}>
-        <h1 className="font-display" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1px", marginBottom: 12 }}>
-          AI Prompt <span style={{ background: "linear-gradient(135deg,#7c3aed,#0284c7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Playbooks</span>
+      <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 8px" }}>
+        <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: 1.5, color: "#7c3aed", textTransform: "uppercase", marginBottom: 12 }}>
+          AXTO Prompt Guides
+        </div>
+        <h1 style={{ fontSize: "clamp(30px,4.5vw,46px)", fontWeight: 900, color: "#0a1628", letterSpacing: "-1.2px", lineHeight: 1.1, marginBottom: 14, fontFamily: "Sora, sans-serif" }}>
+          Free AI prompt guides
         </h1>
-        <p style={{ color: "#475569", fontSize: 17, maxWidth: 600, margin: "0 auto 32px", lineHeight: 1.7 }}>
-          Professional prompt collections tested across real projects. Works with ChatGPT, Claude, Gemini, and more.
+        <p style={{ fontSize: 17, color: "#475569", lineHeight: 1.65 }}>
+          {PLAYBOOKS.length} hands-on guides of battle-tested prompts for ChatGPT, Claude and Gemini — read online,
+          free, no sign-up. Copy, adapt, ship.
         </p>
-      </section>
-
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px 80px" }}>
-        {/* Category filter */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 32 }}>
-          <button onClick={() => setActiveCategory(null)} style={{ padding: "8px 16px", borderRadius: 20, border: "1.5px solid", borderColor: !activeCategory ? "#7c3aed" : "#e2e8f0", background: !activeCategory ? "rgba(124,58,237,0.06)" : "#fff", color: !activeCategory ? "#7c3aed" : "#64748b", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>All</button>
-          {(data?.categories || []).map((c: any) => (
-            <button key={c.slug} onClick={() => setActiveCategory(c.slug)} style={{ padding: "8px 16px", borderRadius: 20, border: "1.5px solid", borderColor: activeCategory === c.slug ? "#7c3aed" : "#e2e8f0", background: activeCategory === c.slug ? "rgba(124,58,237,0.06)" : "#fff", color: activeCategory === c.slug ? "#7c3aed" : "#64748b", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              {c.icon} {c.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Bundles */}
-        {!activeCategory && data?.bundles?.length > 0 && (
-          <div style={{ marginBottom: 40 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0a1628", marginBottom: 16 }}>🎁 Bundle & Save</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-              {data.bundles.map((b: any) => (
-                <div key={b.id} style={{ background: "#fff", borderRadius: 16, padding: 24, border: b.is_featured ? "2px solid #7c3aed" : "1px solid #e2e8f0", position: "relative" }}>
-                  {b.badge && <div style={{ position: "absolute", top: 12, right: 12, background: "rgba(124,58,237,0.1)", color: "#7c3aed", fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6 }}>{b.badge}</div>}
-                  <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{b.name}</h3>
-                  <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16, lineHeight: 1.6 }}>{b.description}</p>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                    <span style={{ fontSize: 28, fontWeight: 900, color: "#7c3aed", fontFamily: "Sora, sans-serif" }}>${b.price_usd}</span>
-                    {b.original_price > b.price_usd && <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${b.original_price}</span>}
-                  </div>
-                  <button onClick={() => setSelectedItem({ type: "bundle", ...b })} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Get Bundle →</button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Playbook grid */}
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0a1628", marginBottom: 16 }}>
-          {activeCategory ? `${(data?.categories || []).find((c: any) => c.slug === activeCategory)?.icon || ""} ${(data?.categories || []).find((c: any) => c.slug === activeCategory)?.name || ""}` : "📦 All Playbooks"}
-          <span style={{ fontSize: 14, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>({filtered.length})</span>
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-          {filtered.map((p: any) => (
-            <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 24, border: "1px solid #e2e8f0", display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <span style={{ fontSize: 28 }}>{p.icon || "📄"}</span>
-                {p.badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(239,68,68,0.08)", color: "#ef4444" }}>{p.badge}</span>}
-              </div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0a1628", marginBottom: 4 }}>{p.name}</h3>
-              <p style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>{p.category_name}</p>
-              <p style={{ fontSize: 13, color: "#475569", marginBottom: 16, lineHeight: 1.6, flex: 1 }}>{p.description}</p>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-                <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: "#f1f5f9", color: "#475569" }}>{p.prompt_count} prompts</span>
-                <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: "#f1f5f9", color: "#475569" }}>{(p.file_format || "pdf").toUpperCase()}</span>
-                {p.rating_avg > 0 && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, background: "#fef3c7", color: "#92400e" }}>⭐ {p.rating_avg.toFixed(1)}</span>}
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                  <span style={{ fontSize: 22, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${p.price_usd}</span>
-                  {p.original_price > p.price_usd && <span style={{ fontSize: 13, color: "#94a3b8", textDecoration: "line-through" }}>${p.original_price}</span>}
-                </div>
-                <button onClick={() => setSelectedItem({ type: "playbook", ...p })} style={{ padding: "9px 18px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Buy Now</button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: 48, color: "#64748b" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📦</div>
-            <p>No playbooks in this category yet. Check back soon!</p>
-          </div>
-        )}
       </div>
 
-      {/* ── Purchase Modal ── */}
-      {selectedItem && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => { setSelectedItem(null); setCheckoutError(""); setCryptoIntent(null); }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 20, padding: 36, maxWidth: 480, width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-              <div>
-                <span style={{ fontSize: 28 }}>{selectedItem.icon || "📦"}</span>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: "#0a1628", marginTop: 8 }}>{selectedItem.name}</h3>
-                <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{selectedItem.description}</p>
-              </div>
-              <button onClick={() => { setSelectedItem(null); setCryptoIntent(null); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}>✕</button>
-            </div>
+      {/* Category filter */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", margin: "28px 0 8px" }}>
+        <Link href="/playbooks" style={chip(activeCat === null)}>All ({PLAYBOOKS.length})</Link>
+        {categories.map((c) => (
+          <Link key={c.slug} href={`/playbooks?cat=${c.slug}`} style={chip(activeCat === c.slug)}>
+            {c.icon} {c.label} ({c.count})
+          </Link>
+        ))}
+      </div>
 
-            {!cryptoIntent && selectedItem.preview_text && (
-              <div style={{ background: "#0f172a", borderRadius: 12, padding: 16, marginBottom: 20, maxHeight: 160, overflowY: "auto" }}>
-                <div style={{ fontSize: 10, color: "#64748b", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Preview</div>
-                <pre style={{ fontSize: 12, color: "#94a3b8", fontFamily: "monospace", whiteSpace: "pre-wrap", margin: 0 }}>{selectedItem.preview_text.substring(0, 300)}...</pre>
-              </div>
-            )}
+      {/* Ad — list top */}
+      <AdSlot placement="list" />
 
-            <div style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.04),rgba(2,132,199,0.04))", borderRadius: 12, padding: 16, marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#0a1628" }}>{selectedItem.prompt_count ? `${selectedItem.prompt_count} prompts` : "Full bundle"}</span>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontSize: 28, fontWeight: 900, color: "#7c3aed", fontFamily: "Sora, sans-serif" }}>${selectedItem.price_usd}</span>
-                {selectedItem.original_price > selectedItem.price_usd && <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${selectedItem.original_price}</span>}
-              </div>
-            </div>
-
-            {checkoutError && <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, color: "#dc2626", fontSize: 13 }}>⚠ {checkoutError}</div>}
-
-            {/* ── Crypto QR view (once an intent has been created) ── */}
-            {cryptoIntent ? (
-              <div>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-                  <div style={{ background: "#fff", border: "1px solid #eef2f7", borderRadius: 12, padding: 12 }}>
-                    <QRCodeSVG value={cryptoQrValue(cryptoIntent.symbol, cryptoIntent.depositAddress, cryptoIntent.amountCrypto)} size={150} level="M" />
-                  </div>
-                </div>
-                {cryptoIntent.symbol !== "BTC" && (
-                  <div style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginBottom: 12 }}>
-                    QR code fills in the address only — enter the exact amount below manually in your wallet.
-                  </div>
-                )}
-                <div style={{ background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 10, padding: "12px 14px", marginBottom: 10, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700 }}>Send exactly · {cryptoIntent.network}</div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: "#0a1628", marginTop: 2 }}>{cryptoIntent.amountCrypto} {cryptoIntent.symbol}</div>
-                </div>
-                <code style={{ display: "block", fontSize: 11.5, wordBreak: "break-all", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: 8, padding: "9px 12px", marginBottom: 10 }}>{cryptoIntent.depositAddress}</code>
-                {cryptoLeft > 0 ? (
-                  <p style={{ textAlign: "center", fontSize: 12, color: cryptoLeft < 300 ? "#dc2626" : "#64748b", fontWeight: 700 }}>
-                    Expires in {String(Math.floor(cryptoLeft / 60)).padStart(2, "0")}:{String(cryptoLeft % 60).padStart(2, "0")}
-                  </p>
-                ) : (
-                  <div style={{ textAlign: "center" }}>
-                    <p style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginBottom: 8 }}>This QR has expired.</p>
-                    <button onClick={() => setCryptoIntent(null)} style={{ padding: "9px 18px", borderRadius: 8, border: "1.5px solid #7c3aed", background: "#fff", color: "#7c3aed", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Generate New QR →</button>
-                  </div>
-                )}
-                <p style={{ textAlign: "center", fontSize: 11, color: "#94a3b8", marginTop: 14 }}>Your download unlocks automatically once the payment confirms on-chain.</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", fontSize: 14, outline: "none" }} />
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {GATEWAYS.map(g => (
-                    <label key={g.v} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${gateway === g.v ? "#7c3aed" : "#e2e8f0"}`, cursor: "pointer", background: gateway === g.v ? "rgba(124,58,237,0.04)" : "#fff" }}>
-                      <input type="radio" name="gw" value={g.v} checked={gateway === g.v} onChange={() => setGateway(g.v)} style={{ accentColor: "#7c3aed" }} />
-                      <span dangerouslySetInnerHTML={{ __html: g.logo }} style={{ width: 44, height: 18, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#0a1628" }}>{g.l}</span>
-                    </label>
-                  ))}
-                </div>
-
-                {gateway === "crypto" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.5px" }}>Choose a network</div>
-                    {cryptoMethods.length === 0 && <div style={{ fontSize: 12, color: "#94a3b8" }}>No crypto methods are currently available.</div>}
-                    {cryptoMethods.map(m => (
-                      <button key={m.id} disabled={checkoutLoading}
-                        onClick={() => pickCryptoMethod(m.id, selectedItem.type === "playbook" ? selectedItem.id : undefined, selectedItem.type === "bundle" ? selectedItem.id : undefined)}
-                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #e2e8f0", background: "#fff", cursor: checkoutLoading ? "wait" : "pointer", fontWeight: 700, fontSize: 13, color: "#0a1628" }}>
-                        <span>{m.name}</span>
-                        <span style={{ fontSize: 11, color: "#94a3b8" }}>{m.network}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <button onClick={() => handleCheckout(selectedItem.type === "playbook" ? selectedItem.id : undefined, selectedItem.type === "bundle" ? selectedItem.id : undefined)} disabled={checkoutLoading} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: checkoutLoading ? "#64748b" : "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", fontWeight: 700, fontSize: 15, cursor: checkoutLoading ? "not-allowed" : "pointer" }}>
-                    {checkoutLoading ? "Redirecting..." : `Pay $${selectedItem.price_usd} →`}
-                  </button>
-                )}
-              </div>
-            )}
-            <p style={{ textAlign: "center", fontSize: 11, color: "#94a3b8", marginTop: 12 }}>Instant download after payment · 🔒 Secure checkout</p>
-          </div>
-        </div>
+      {/* Article grid */}
+      {activeCat && (
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#0a1628", margin: "16px 0 18px", fontFamily: "Sora, sans-serif" }}>
+          {categoryLabel(activeCat)}
+        </h2>
       )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 18 }}>
+        {list.map((pb) => (
+          <Link key={pb.slug} href={`/playbooks/${pb.slug}`} className="card" style={{ padding: "22px 20px", textDecoration: "none", display: "flex", flexDirection: "column", gap: 8, position: "relative" }}>
+            {pb.badge && (
+              <span style={{ position: "absolute", top: 14, right: 14, fontSize: 10, fontWeight: 800, color: "#7c3aed", background: "rgba(124,58,237,0.1)", padding: "3px 9px", borderRadius: 6, letterSpacing: 0.3 }}>{pb.badge}</span>
+            )}
+            <div style={{ fontSize: 30 }}>{pb.icon}</div>
+            <h3 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", margin: 0, fontFamily: "Sora, sans-serif" }}>{pb.name}</h3>
+            <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{pb.subtitle}</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+              <span style={{ fontSize: 12, color: "#94a3b8", fontWeight: 600 }}>{pb.prompt_count} prompts · {readMinutes(pb)} min</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#7c3aed" }}>Read guide →</span>
+            </div>
+          </Link>
+        ))}
+      </div>
 
-      {/* Footer */}
-      <footer style={{ background: "#0a1628", padding: "40px 24px", textAlign: "center", color: "#475569", fontSize: 13 }}>
-        <Link href="/" style={{ color: "#64748b", textDecoration: "none" }}>← Back to AXTO</Link>
-        <span style={{ margin: "0 12px" }}>·</span>
-        <span>© {new Date().getFullYear()} AXTO. All rights reserved.</span>
-        <span style={{ margin: "0 12px" }}>·</span>
-        <a href="mailto:hello@axto.io" style={{ color: "#0284c7", textDecoration: "none" }}>hello@axto.io</a>
-      </footer>
-    </div>
+      {/* Ad — list bottom */}
+      <AdSlot placement="footer" />
+
+      {/* Free-apps CTA */}
+      <div style={{ marginTop: 40, textAlign: "center", background: "linear-gradient(135deg,#f0f9ff,#f0fdfa)", border: "1px solid rgba(2,132,199,0.18)", borderRadius: 18, padding: "34px 28px" }}>
+        <h2 style={{ fontSize: 22, fontWeight: 800, color: "#0a1628", marginBottom: 8, fontFamily: "Sora, sans-serif" }}>Own your AI stack</h2>
+        <p style={{ fontSize: 14.5, color: "#475569", lineHeight: 1.65, maxWidth: 560, margin: "0 auto 18px" }}>
+          Run prompts like these on your own private, self-hosted AI. Every AXTO application is free with full access —
+          no licence key — for one year.
+        </p>
+        <Link href="/portal/downloads" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 28px", borderRadius: 11, fontWeight: 700, fontSize: 14.5, textDecoration: "none", background: "linear-gradient(135deg,#0284c7,#0d9488)", color: "#fff" }}>
+          <span style={{ fontSize: 17 }}>⬇</span> Download the free apps
+        </Link>
+      </div>
+    </main>
   );
+}
+
+function chip(active: boolean): React.CSSProperties {
+  return {
+    fontSize: 13,
+    fontWeight: 700,
+    padding: "7px 14px",
+    borderRadius: 999,
+    textDecoration: "none",
+    border: active ? "1.5px solid #7c3aed" : "1px solid #e2e8f0",
+    background: active ? "rgba(124,58,237,0.1)" : "#fff",
+    color: active ? "#7c3aed" : "#475569",
+  };
 }

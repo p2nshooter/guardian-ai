@@ -6,7 +6,7 @@
 # ==============================================================================
 # AXTO GPU Studio — Configuration
 gpu_studio:
-  license_key: "GPUS-XXXX-XXXX-XXXX-XXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
   host: "0.0.0.0"
   port: 8092
   session_retention_days: 30

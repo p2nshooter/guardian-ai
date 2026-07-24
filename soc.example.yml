@@ -9,7 +9,7 @@
 #
 # HOW TO USE:
 #   1. Get your SOC license key from: https://axto.io/portal
-#   2. Set license_key below (starts with SOC-)
+#   2. No licence needed (free program) — leave license_key empty
 #   3. Configure syslog sources and alerting
 #   4. docker compose -f soc-compose.yml up -d
 #   5. Dashboard: http://YOUR_SERVER:8083
@@ -22,7 +22,7 @@
 soc:
 
   # ── License ──────────────────────────────────────────────
-  license_key: "SOC-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
   license_validate_url: "https://axto.io/api/license-validate"
 
   # ── API Server ───────────────────────────────────────────

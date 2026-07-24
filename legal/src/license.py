@@ -79,7 +79,7 @@ SHUTDOWN_MSG = (
     "║  2. Confirm your license has not expired                     ║\n"
     "║  3. Restart this service after connectivity is restored      ║\n"
     "║                                                              ║\n"
-    "║  Renew or manage your license: https://axto.io/portal        ║\n"
+    "║  Free program — extend via WhatsApp +6285691234561 / hello@axto.io        ║\n"
     "║  Support: hello@axto.io                                      ║\n"
     "╚══════════════════════════════════════════════════════════════╝\n"
 )
@@ -362,6 +362,9 @@ async def validate(license_key: str) -> LicenseState:
     global _state, _last_validated
 
     key = (license_key or "").strip()
+    # AXTO Free Full-Access Program — no licence input required.
+    if not key:
+        key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
     if not key or not key.upper().startswith(PRODUCT_PREFIX + "-"):
         return LicenseState(False, "invalid_key_prefix")
 
@@ -424,4 +427,4 @@ def require_valid(state: LicenseState) -> None:
         state.max_users, state.max_countries, state.workspaces
     )
     if 0 < days_left <= 30:
-        logger.warning("⚠️  AXTO Legal license expires in %d days. Renew at https://axto.io/portal", days_left)
+        logger.warning("⚠️  AXTO Legal license expires in %d days. Free program — extend via WhatsApp +6285691234561 / hello@axto.io", days_left)

@@ -16,7 +16,7 @@ export const runtime = "edge";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProductBySlug, PRODUCT_CATALOG } from "@/lib/product-catalog";
-import { getPackagesByProduct, isProductForSale, PACKAGE_INFO } from "@/lib/stripe";
+import { getPackagesByProduct } from "@/lib/stripe";
 import ProductMotif from "@/components/ProductMotif";
 
 export default function ProductPage() {
@@ -24,10 +24,13 @@ export default function ProductPage() {
   const entry = getProductBySlug(slug);
   if (!entry) return <NotFoundState />;
 
-  const forSale = isProductForSale(entry.product);
-  const tiers = Object.entries(getPackagesByProduct(entry.product))
-    .sort((a, b) => a[1].price - b[1].price);
-  const trialCode = Object.entries(PACKAGE_INFO).find(([, v]) => v.product === entry.product && v.isTrial)?.[0];
+  // During the AXTO Free Full-Access Program every tier is unlocked, so we no
+  // longer show prices — instead we surface the full, de-duplicated feature
+  // set across all tiers as "what you get, free".
+  const tiers = Object.entries(getPackagesByProduct(entry.product));
+  const allFeatures = Array.from(
+    new Set(tiers.flatMap(([, v]) => v.features || []))
+  ).slice(0, 14);
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
@@ -53,19 +56,17 @@ export default function ProductPage() {
             <p style={{ fontSize: 17, color: "rgba(255,255,255,0.65)", marginBottom: 10 }}>{entry.tagline}</p>
             <p style={{ fontSize: 15.5, color: "rgba(255,255,255,0.85)", lineHeight: 1.7, marginBottom: 26, maxWidth: 520 }}>{entry.hero}</p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {forSale ? (
-                <Link href={`/register?pkg=${tiers[0]?.[0] || ""}`} style={{ padding: "13px 26px", borderRadius: 12, background: `linear-gradient(135deg, ${entry.color}, ${entry.color}cc)`, color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", boxShadow: `0 6px 24px ${entry.color}55` }}>
-                  View Plans & Pricing →
-                </Link>
-              ) : (
-                <span style={{ padding: "13px 26px", borderRadius: 12, background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)", fontWeight: 700, fontSize: 14, border: "1px solid rgba(255,255,255,0.2)" }}>🔜 Coming Soon</span>
-              )}
-              {trialCode && forSale && (
-                <Link href={`/register?pkg=${trialCode}`} className="trial-cta" style={{ padding: "13px 26px", borderRadius: 12, background: "linear-gradient(135deg,#0d9488,#0f766e)", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", border: "1.5px solid rgba(255,255,255,0.35)", display: "inline-flex", alignItems: "center", gap: 8 }}>
-                  <span className="trial-cta-emoji">✨</span> AXTO just launched — claim your free 7-day Enterprise trial
-                </Link>
-              )}
+              <Link href={`/portal/downloads?product=${entry.product}`} style={{ padding: "13px 28px", borderRadius: 12, background: `linear-gradient(135deg, ${entry.color}, ${entry.color}cc)`, color: "#fff", fontWeight: 700, fontSize: 14.5, textDecoration: "none", boxShadow: `0 6px 24px ${entry.color}55`, display: "inline-flex", alignItems: "center", gap: 9 }}>
+                <span style={{ fontSize: 17 }}>⬇</span> Download {entry.name} — Free
+              </Link>
+              <a href="#included" style={{ padding: "13px 26px", borderRadius: 12, background: "rgba(255,255,255,0.08)", color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", border: "1px solid rgba(255,255,255,0.22)" }}>
+                What's included →
+              </a>
             </div>
+            <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, maxWidth: 500, display: "inline-flex", alignItems: "flex-start", gap: 8 }}>
+              <span style={{ fontSize: 15 }}>✨</span>
+              <span>Full access, no licence key. Every AXTO application is free for one year — download, self-host, and run the complete feature set.</span>
+            </p>
           </div>
           <ProductMotif motif={entry.anim} color={entry.color} />
         </div>
@@ -111,47 +112,36 @@ export default function ProductPage() {
           ))}
         </div>
 
-        {/* Pricing — real tiers, menus per package */}
-        <SectionLabel color={entry.color}>Plans</SectionLabel>
-        <h2 style={h2Style}>Choose your plan</h2>
-        {!forSale && (
-          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#92400e" }}>
-            🔜 {entry.name} is coming soon and not yet available for purchase. Pricing below reflects planned tiers.
-          </div>
-        )}
+        {/* Free full access — no prices, no tiers */}
+        <div id="included" style={{ scrollMarginTop: 80 }} />
+        <SectionLabel color={entry.color}>Free Full Access</SectionLabel>
+        <h2 style={h2Style}>Everything included — no licence, no price</h2>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "12px 16px", marginBottom: 24 }}>
           <span style={{ fontSize: 16 }}>🐳</span>
           <div style={{ fontSize: 12.5, color: "#075985", lineHeight: 1.6 }}>
-            <strong>Docker (Linux) deployment is production-ready today.</strong> The Windows EXE build is still in active development — your client portal shows live, per-format availability once you have a license.
+            <strong>Docker (Linux) deployment is production-ready today.</strong> The Windows build is still in active development — your download page shows live, per-format availability.
           </div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px,1fr))", gap: 16, marginBottom: 64 }}>
-          {tiers.map(([code, pkg], i) => (
-            <div key={code} className="card" style={{ padding: "22px 20px", border: i === Math.min(1, tiers.length - 1) ? `2px solid ${entry.color}` : undefined, position: "relative" }}>
-              {i === Math.min(1, tiers.length - 1) && tiers.length > 1 && (
-                <span style={{ position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)", background: entry.color, color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: 999, letterSpacing: 0.5 }}>POPULAR</span>
-              )}
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#0a1628", marginBottom: 4 }}>{pkg.name}</div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: entry.color, fontFamily: "Sora, sans-serif", marginBottom: 2 }}>
-                {pkg.price === 0 ? "Free" : `$${pkg.price.toLocaleString()}`}<span style={{ fontSize: 12, fontWeight: 500, color: "#94a3b8" }}>{pkg.price > 0 ? "/yr" : ""}</span>
-              </div>
-              {pkg.priceMonthly > 0 && <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 14 }}>or ${pkg.priceMonthly}/mo</div>}
-              <ul style={{ listStyle: "none", padding: 0, margin: "14px 0 18px", display: "flex", flexDirection: "column", gap: 7 }}>
-                {(pkg.features || []).map(f => (
-                  <li key={f} style={{ fontSize: 12.5, color: "#475569", display: "flex", gap: 7, alignItems: "flex-start" }}>
-                    <span style={{ color: "#16a34a", fontWeight: 900 }}>✓</span>{f}
-                  </li>
-                ))}
-              </ul>
-              {forSale ? (
-                <Link href={`/register?pkg=${code}`} style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 13, textDecoration: "none", background: `linear-gradient(135deg,${entry.color},${entry.color}cc)`, color: "#fff" }}>
-                  Get Started
-                </Link>
-              ) : (
-                <span style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 13, background: "rgba(148,163,184,0.15)", color: "#94a3b8" }}>Coming Soon</span>
-              )}
+        <div className="card" style={{ padding: "30px 28px", borderTop: `3px solid ${entry.color}`, marginBottom: 64, maxWidth: 780 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
+            <span style={{ fontSize: 36, fontWeight: 900, color: entry.color, fontFamily: "Sora, sans-serif" }}>Free</span>
+            <span style={{ fontSize: 13.5, color: "#64748b" }}>Full access · every feature · self-hosted · one year</span>
+          </div>
+          <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65, margin: "0 0 20px" }}>
+            {entry.name} ships with its complete capability set unlocked. There are no tiers to compare and no licence key to purchase — download it, run it on your own infrastructure, and keep every byte of data on your side.
+          </p>
+          {allFeatures.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px,1fr))", gap: "8px 24px", marginBottom: 24 }}>
+              {allFeatures.map(f => (
+                <div key={f} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: "#334155", lineHeight: 1.5 }}>
+                  <span style={{ color: entry.color, fontWeight: 900 }}>✓</span>{f}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          <Link href={`/portal/downloads?product=${entry.product}`} style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "13px 30px", borderRadius: 12, fontWeight: 700, fontSize: 14.5, textDecoration: "none", background: `linear-gradient(135deg,${entry.color},${entry.color}cc)`, color: "#fff", boxShadow: `0 6px 24px ${entry.color}44` }}>
+            <span style={{ fontSize: 17 }}>⬇</span> Download {entry.name} — Free
+          </Link>
         </div>
 
         {/* Integrations */}

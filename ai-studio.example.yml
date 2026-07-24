@@ -11,7 +11,7 @@
 
 ai_studio:
   # Your license key from axto.io/portal
-  license_key: "AIST-XXXX-XXXX-XXXX-XXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
 
   # Server settings (when running as exe/standalone)
   host: "0.0.0.0"

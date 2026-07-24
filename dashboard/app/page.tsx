@@ -10,127 +10,17 @@ export const runtime = "edge";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "@/lib/locale-provider";
-import { PACKAGE_INFO, isProductForSale } from "@/lib/stripe";
+import { isProductForSale } from "@/lib/stripe";
 import ReviewsSection from "@/components/ReviewsSection";
+import InstallCounter from "@/components/InstallCounter";
+import CountdownPromo from "@/components/CountdownPromo";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
-// ── Updated pricing (USD, market-competitive, BYOK premium) ─────────────
-const GUARDIAN_PRICING = [
-  {
-    name: "Sentinel",
-    code: "lite",
-    price: 990,
-    period: "/year",
-    servers: "1 server",
-    desc: "Deploy enterprise-grade AI threat detection on your most critical server — from a home lab to a production workload. Your keys, your infrastructure, absolute privacy.",
-    features: ["7-Layer AI Behavioral Analysis","Real-time Global Threat Intelligence","Automated Quarantine & Kill","Built-in ClamAV Antivirus Engine","Email, Slack & Discord Alerts","Self-Learning Malware Detection"],
-    popular: false,
-    color: "#0284c7",
-  },
-  {
-    name: "Professional",
-    code: "pro",
-    price: 4990,
-    period: "/year",
-    servers: "Up to 25 servers",
-    desc: "Complete infrastructure visibility with AI-powered threat hunting. From a startup rack to a growing enterprise — compliance-ready, self-hosted, BYOK.",
-    features: ["Everything in Sentinel","AI Threat Hunting & UEBA Analytics","Multi-Server Central Command","SOC 2, ISO 27001, HIPAA, PCI-DSS Reports","SIEM Forwarding (Splunk, ELK, Datadog)","Standalone Antivirus with REST API"],
-    popular: true,
-    color: "#0284c7",
-  },
-  {
-    name: "Business",
-    code: "shield",
-    price: 19900,
-    period: "/year",
-    servers: "Up to 100 servers",
-    desc: "Enterprise-grade kernel-level inspection with eBPF and encrypted node mesh. Zero blind spots. Zero data leaves your network. Zero compromise.",
-    features: ["Everything in Professional","eBPF Deep Kernel Inspection","mTLS Encrypted Node Mesh","Rootkit & Memory Forensics","Custom Incident Runbooks","Deception Engine (Honeypots & Decoys)"],
-    popular: false,
-    color: "#0284c7",
-  },
-  {
-    name: "Enterprise",
-    code: "aegis",
-    price: 79000,
-    period: "/year",
-    servers: "Up to 1,000 servers",
-    desc: "Global-scale protection for organizations that demand absolute sovereignty. Multi-tenant architecture, white-label ready, custom threat intelligence.",
-    features: ["Everything in Business","1,000 Node Global Scale","White-Label Dashboard","Custom Threat Intelligence Feed","Multi-Tenant Architecture","Comprehensive Interactive Setup Guide (10 Languages)"],
-    popular: false,
-    color: "#7c3aed",
-  },
-];
-
-const ORCHESTRA_PRICING = [
-  {
-    name: "Starter",
-    code: "orchestra_core",
-    price: 34900,
-    period: "/year",
-    workers: "Up to 10 workers",
-    desc: "Route AI workloads across OpenAI, Claude, Gemini, Groq, DeepSeek & 15+ providers with intelligent cost optimization. Your API keys, your control.",
-    features: ["CPU & GPU Auto-Detect Workers","Smart Routing (5 Strategies)","OpenAI, Claude, Gemini, Groq, Ollama","Cost Optimization & Budget Caps","Real-time Analytics Dashboard","OpenAI-Compatible Drop-in API"],
-    popular: false,
-  },
-  {
-    name: "Professional",
-    code: "orchestra_scale",
-    price: 89900,
-    period: "/year",
-    workers: "Up to 50 workers",
-    desc: "Scale AI operations across multiple teams with advanced failover, autoscaling, and cost analytics. Built for organizations that run AI at the core of their business.",
-    features: ["Everything in Starter","All 6 Routing Strategies","Priority Job Queue & Dead Letter","Autoscaler (scale-to-zero capable)","Federated Multi-Region Support","Custom Provider Endpoints"],
-    popular: true,
-  },
-  {
-    name: "Enterprise",
-    code: "orchestra_unlimited",
-    price: 249000,
-    period: "/year",
-    workers: "Unlimited workers",
-    desc: "Unlimited scale. Full sovereignty. White-label ready. For enterprises that demand absolute control over their AI infrastructure.",
-    features: ["Everything in Professional","Unlimited Workers (CPU + GPU)","White-Label API Gateway","Custom Routing Logic","Credential Vault & Rotation","Comprehensive Interactive Setup Guide (10 Languages)"],
-    popular: false,
-  },
-];
-
-const BUNDLE_PRICING = [
-  {
-    name: "Starter Bundle",
-    code: "bundle_starter",
-    guardian: "Guardian Professional",
-    orchestra: "Orchestra Starter",
-    originalPrice: 4990 + 34900,
-    bundlePrice: 33900,
-    savings: 4990 + 34900 - 33900,
-    color: "#0284c7",
-    highlight: false,
-  },
-  {
-    name: "Professional Bundle",
-    code: "bundle_professional",
-    guardian: "Guardian Business",
-    orchestra: "Orchestra Professional",
-    originalPrice: 19900 + 89900,
-    bundlePrice: 93300,
-    savings: 19900 + 89900 - 93300,
-    color: "#0d9488",
-    highlight: true,
-  },
-  {
-    name: "Enterprise Bundle",
-    code: "bundle_enterprise",
-    guardian: "Guardian Enterprise",
-    orchestra: "Orchestra Enterprise",
-    originalPrice: 79000 + 249000,
-    bundlePrice: 278800,
-    savings: 79000 + 249000 - 278800,
-    color: "#7c3aed",
-    highlight: false,
-  },
-];
+// AXTO Free Full-Access Program — the whole catalogue is free, full-tier, with
+// no licence key, for one year. Prices have been removed site-wide; this label
+// is the single copy string used across the landing hero, showcase and CTAs.
+const FREE_TAGLINE = "Free · full access · no licence key · one year";
 
 const JSONLD = {
   "@context": "https://schema.org",
@@ -143,76 +33,22 @@ const JSONLD = {
     {
       "@type": "SoftwareApplication", name: "Guardian AI",
       applicationCategory: "SecurityApplication", operatingSystem: "Linux",
-      offers: GUARDIAN_PRICING.map(p => ({ "@type": "Offer", name: `Guardian ${p.name}`, price: String(p.price), priceCurrency: "USD", billingDuration: "P1Y" })),
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD", availability: "https://schema.org/InStock", description: "Free full access — no licence required" },
       description: "Guardian AI — self-hosted threat detection, automated incident response, and compliance reporting.",
       provider: { "@id": `${APP_URL}/#org` },
     },
     {
       "@type": "SoftwareApplication", name: "Orchestra AI",
       applicationCategory: "DeveloperApplication", operatingSystem: "Linux",
-      offers: ORCHESTRA_PRICING.map(p => ({ "@type": "Offer", name: `Orchestra ${p.name}`, price: String(p.price), priceCurrency: "USD", billingDuration: "P1Y" })),
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD", availability: "https://schema.org/InStock", description: "Free full access — no licence required" },
       description: "Self-hosted AI workflow orchestration. Route jobs across GPU clusters and multiple LLM providers with your own API keys.",
       provider: { "@id": `${APP_URL}/#org` },
     },
   ],
 };
 
-// ── Coming Soon / Buy Button helper ─────────────────────────────────────
-function LocalPriceTag({ usd, period }: { usd: number; period?: string }) {
-  const { currency, fmtPrice } = useLocale();
-  if (currency === "USD" || usd === 0) return null;
-  return (
-    <div style={{ fontSize: 13, color: "#64748b", marginTop: 2 }}>
-      ≈ {fmtPrice(usd)}{period || ""}
-    </div>
-  );
-}
-
-/** Reusable price display: shows USD price with local currency subtitle */
-function PriceDisplay({ usd, period, color }: { usd: number; period?: string; color?: string }) {
-  return (
-    <>
-      <div className="price-tag" style={{ marginBottom: 2, color: color || "#0a1628" }}>
-        <sup>$</sup>{usd.toLocaleString("en-US")}
-      </div>
-      <LocalPriceTag usd={usd} period={period || "/yr"} />
-    </>
-  );
-}
-
-function ProductBuyButton({ code, popular, color, label }: { code: string; popular?: boolean; color: string; label?: string }) {
-  const forSale = (PACKAGE_INFO[code]?.forSale !== false);
-  if (!forSale) {
-    return (
-      <div style={{ display: "block", textAlign: "center", padding: "14px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, background: "rgba(148,163,184,0.12)", color: "#94a3b8", border: "1.5px solid rgba(148,163,184,0.2)", cursor: "not-allowed", position: "relative" }}>
-        🔜 Coming Soon
-      </div>
-    );
-  }
-  return (
-    <Link href={`/register?pkg=${code}`} style={{ display: "block", textAlign: "center", padding: "14px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: popular ? `linear-gradient(135deg,${color},${color}cc)` : "transparent", color: popular ? "#fff" : color, border: popular ? "none" : `1.5px solid ${color}`, boxShadow: popular ? `0 4px 20px ${color}40` : "none" }}>
-      {label || "Get Started"}
-    </Link>
-  );
-}
-
-function ComingSoonBanner({ product, color }: { product: string; color: string }) {
-  if (isProductForSale(product)) return null;
-  return (
-    <div style={{ textAlign: "center", marginBottom: 24, padding: "12px 20px", borderRadius: 12, background: `${color}08`, border: `1.5px dashed ${color}40`, display: "inline-flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: 20 }}>🔜</span>
-      <span style={{ fontSize: 14, fontWeight: 700, color }}>Coming Soon — Not Yet Available for Purchase</span>
-    </div>
-  );
-}
-
-// ── Inline SVG animations ───────────────────────────────────────────────
-
 export default function HomePage() {
-  const { t, fmtPrice } = useLocale();
-
-  // Legacy compat - same function name, uses context
-  const fmtUSD = fmtPrice;
+  const { t } = useLocale();
 
   const [navOpen, setNavOpen] = useState(false);
 
@@ -224,7 +60,7 @@ export default function HomePage() {
 
   // Shared nav links — rendered in both the desktop bar and the mobile drawer.
   const NAV_LINKS: [string, string][] = [
-    ["/promo",t("landing.nav.promo")],["#products",t("landing.nav.products")],["#pricing",t("landing.nav.bundles")],["#playbooks",t("landing.nav.playbooks")],
+    ["#pricing","🎁 Free 1-Year"],["#products",t("landing.nav.products")],["#counter","Live Count"],["#playbooks",t("landing.nav.playbooks")],
     ["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],["/acquire","Acquire"],
   ];
 
@@ -317,10 +153,13 @@ export default function HomePage() {
             {t("landing.hero.subtitle")}
           </p>
 
-          <div className="animate-fade-up delay-300" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 64 }}>
-            <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.hero.cta1")}</a>
-            <a href="#products" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.hero.cta2")}</a>
+          <div className="animate-fade-up delay-300" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 18 }}>
+            <Link href="/portal/downloads" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px", display: "inline-flex", alignItems: "center", gap: 9 }}><span style={{ fontSize: 18 }}>⬇</span> Download Free</Link>
+            <a href="#products" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>Explore the apps</a>
           </div>
+          <p className="animate-fade-up delay-300" style={{ fontSize: 14.5, color: "#0f766e", fontWeight: 700, marginBottom: 60, display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16 }}>✨</span> Every AXTO application is free, with full access and no licence key, for one year.
+          </p>
 
           {/* Stats row */}
           <div className="animate-fade-up delay-400" style={{ display: "flex", gap: 0, justifyContent: "center", flexWrap: "wrap", background: "rgba(255,255,255,0.7)", backdropFilter: "blur(12px)", border: "1px solid rgba(2,132,199,0.12)", borderRadius: 20, padding: "24px 8px", maxWidth: 720, margin: "0 auto", boxShadow: "0 4px 24px rgba(2,132,199,0.08)" }}>
@@ -340,8 +179,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── PRODUCT SHOWCASE — all 10, prominent, priced, clickable ── */}
-      <section id="products" style={{ padding: "88px 24px 96px", background: "linear-gradient(180deg,#ffffff,#f6fafe)", borderTop: "1px solid #e8eef5", position: "relative" }}>
+      {/* ── ANIMATED COUNTDOWN PROMO ──────────────────────────────── */}
+      <section style={{ padding: "0 24px", marginTop: -36, marginBottom: 8, position: "relative", zIndex: 10 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <CountdownPromo />
+        </div>
+      </section>
+
+      {/* ── PRODUCT SHOWCASE — all 10, prominent, clickable ── */}
+      <section id="products" style={{ padding: "72px 24px 96px", background: "linear-gradient(180deg,#ffffff,#f6fafe)", borderTop: "1px solid #e8eef5", position: "relative" }}>
         <div className="mesh-grid" style={{ position: "absolute", inset: 0, opacity: 0.5, pointerEvents: "none" }} />
         <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
           <div style={{ textAlign: "center", maxWidth: 720, margin: "0 auto 48px" }}>
@@ -371,8 +217,6 @@ export default function HomePage() {
               { product: "sentinel",   icon: "🏭", name: "AXTO Sentinel",   badge: "INDUSTRIAL",     color: "#ca8a04", tag: "Passive security for industrial IoT & OT — asset discovery, IEC 62443." },
             ].map((p) => {
               const available = isProductForSale(p.product);
-              const prices = Object.values(PACKAGE_INFO).filter((pk: any) => pk.product === p.product && !pk.isTrial && pk.price > 0).map((pk: any) => pk.price);
-              const from = prices.length ? Math.min(...prices) : 0;
               return (
                 <Link key={p.product} href={`/products/${p.product}`} className="card" style={{ position: "relative", padding: "24px 22px", display: "flex", flexDirection: "column", gap: 12, textDecoration: "none", overflow: "hidden" }}>
                   <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${p.color}, ${p.color}55)` }} />
@@ -382,18 +226,16 @@ export default function HomePage() {
                   </div>
                   <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.4px", margin: 0, fontFamily: "Sora, sans-serif" }}>{p.name}</h3>
                   <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, margin: 0, flex: 1 }}>{p.tag}</p>
-                  {available && (
-                    <span className="trial-cta" style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 800, color: "#0f766e", background: "rgba(13,148,136,0.1)", border: "1px solid rgba(13,148,136,0.25)", padding: "4px 10px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 5 }}>
-                      <span className="trial-cta-emoji">🎁</span> Free 7-day Enterprise trial
-                    </span>
-                  )}
+                  <span style={{ alignSelf: "flex-start", fontSize: 10.5, fontWeight: 800, color: "#0f766e", background: "rgba(13,148,136,0.1)", border: "1px solid rgba(13,148,136,0.25)", padding: "4px 10px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <span>✨</span> Free · full access · no licence
+                  </span>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4, paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
                     {available ? (
-                      <span style={{ fontSize: 13, color: "#0a1628", fontWeight: 700 }}>{t("landing.products.available")} <span style={{ fontFamily: "Sora, sans-serif", fontSize: 16, fontWeight: 900 }}>${from.toLocaleString()}</span><span style={{ color: "#94a3b8", fontWeight: 500 }}>/yr</span></span>
+                      <span style={{ fontSize: 12.5, fontWeight: 700, color: "#0f766e", background: "rgba(16,185,129,0.1)", padding: "4px 10px", borderRadius: 999 }}>● Available now</span>
                     ) : (
                       <span style={{ fontSize: 12, fontWeight: 800, color: "#b45309", background: "rgba(245,158,11,0.1)", padding: "4px 10px", borderRadius: 999 }}>{t("landing.products.comingsoon")}</span>
                     )}
-                    <span style={{ fontSize: 13, fontWeight: 800, color: p.color }}>{available ? t("landing.products.viewplans") : t("landing.products.notifyme")}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: p.color }}>⬇ Download →</span>
                   </div>
                 </Link>
               );
@@ -401,13 +243,16 @@ export default function HomePage() {
           </div>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 40 }}>
-            <Link href="/register" className="btn-primary trial-cta" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <span className="trial-cta-emoji">🎁</span> {t("landing.products.trialcta")}
+            <Link href="/portal/downloads" className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 17 }}>⬇</span> Download any app — free
             </Link>
-            <a href="#pricing" className="btn-secondary">{t("landing.products.comparecta")}</a>
+            <a href="#pricing" className="btn-secondary">See what's included</a>
           </div>
         </div>
       </section>
+
+      {/* ── LIVE INSTALL COUNTER (public, counts only) ────────────── */}
+      <InstallCounter />
 
       {/* ── GUARDIAN FEATURES ─────────────────────────────────────── */}
 
@@ -543,63 +388,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── PRICING ───────────────────────────────────────────────── */}
+      {/* ── FREE FULL ACCESS ──────────────────────────────────────── */}
       <section id="pricing" style={{ padding: "100px 24px", maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <span style={{ display: "inline-block", background: "rgba(2,132,199,0.08)", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 16 }}>{t("landing.bundle.eyebrow")}</span>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <span style={{ display: "inline-block", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.28)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0f766e", fontWeight: 800, letterSpacing: "0.5px", marginBottom: 16 }}>FREE FULL ACCESS · ONE YEAR</span>
           <h2 className="font-display" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, color: "#0a1628", letterSpacing: "-1.2px", marginBottom: 14 }}>
-            {t("landing.bundle.title")}
+            No plans. No prices. Just download.
           </h2>
-          <p style={{ color: "#475569", fontSize: 17, maxWidth: 560, margin: "0 auto" }}>
-            {t("landing.bundle.subtitle")}
+          <p style={{ color: "#475569", fontSize: 17, maxWidth: 640, margin: "0 auto", lineHeight: 1.7 }}>
+            The entire AXTO platform is free — at full tier, with no licence key — for one year. Pick an application, deploy it on your own infrastructure, and run the complete feature set. Your keys, your data, your servers.
           </p>
         </div>
 
-
-
-        {/* Bundle Pricing */}
-        <div style={{ background: "linear-gradient(135deg, #f8faff, #f0fdfa)", borderRadius: 24, padding: "48px 40px", border: "1px solid rgba(2,132,199,0.12)" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <span style={{ display: "inline-block", background: "linear-gradient(135deg,rgba(2,132,199,0.1),rgba(13,148,136,0.1))", border: "1px solid rgba(2,132,199,0.2)", borderRadius: 100, padding: "5px 18px", fontSize: 12, color: "#0284c7", fontWeight: 700, marginBottom: 14 }}>{t("landing.bundle.innereyebrow")}</span>
-            <h3 className="font-display" style={{ fontSize: 30, fontWeight: 800, color: "#0a1628", letterSpacing: "-0.7px", marginBottom: 10 }}>{t("landing.bundle.innertitle")}</h3>
-            <p style={{ color: "#475569", fontSize: 15 }}>{t("landing.bundle.innersub")}</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
-            {BUNDLE_PRICING.map((b) => (
-              <div key={b.name} className="card" style={{
-                padding: 28, position: "relative", overflow: "hidden",
-                border: b.highlight ? `2px solid ${b.color}` : "1px solid rgba(2,132,199,0.12)",
-                background: b.highlight ? `linear-gradient(160deg, ${b.color}08, ${b.color}04)` : "#fff",
-              }}>
-                {b.highlight && <div style={{ position: "absolute", top: 0, right: 0, background: `linear-gradient(135deg,${b.color},#0284c7)`, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 12px", borderRadius: "0 0 0 12px", letterSpacing: "0.5px" }}>{t("landing.bundle.bestvalue")}</div>}
-                <h4 style={{ fontSize: 18, fontWeight: 800, color: "#0a1628", marginBottom: 8 }}>{b.name}</h4>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <span style={{ background: "rgba(2,132,199,0.08)", color: "#0284c7", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>🛡 {b.guardian}</span>
+        <div style={{ background: "linear-gradient(135deg, #f0fdfa, #f0f9ff)", borderRadius: 24, padding: "48px 40px", border: "1px solid rgba(13,148,136,0.18)", textAlign: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: 22, marginBottom: 38, textAlign: "left", maxWidth: 920, marginLeft: "auto", marginRight: "auto" }}>
+            {[
+              { icon: "🔑", tt: "No licence to buy", d: "Full, unrestricted access to every tier — nothing to activate, nothing to pay." },
+              { icon: "🏠", tt: "100% self-hosted", d: "Runs on your own servers with Docker. No telemetry and no call-home." },
+              { icon: "🧩", tt: "Bring your own keys", d: "Plug in your own AI provider keys — your traffic never touches ours." },
+              { icon: "🗓️", tt: "One full year", d: "Free for the whole program window, with a clear in-app countdown — never a surprise." },
+            ].map(c => (
+              <div key={c.tt} style={{ display: "flex", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>{c.icon}</span>
+                <div>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: "#0a1628", marginBottom: 3 }}>{c.tt}</div>
+                  <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.55, margin: 0 }}>{c.d}</p>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-                  <span style={{ background: "rgba(13,148,136,0.08)", color: "#0d9488", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>🎼 {b.orchestra}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-                  <div className="price-tag" style={{ color: "#0a1628" }}><sup>$</sup>{b.bundlePrice.toLocaleString("en-US")}</div>
-                  <span style={{ fontSize: 13, color: "#94a3b8", textDecoration: "line-through" }}>{fmtUSD(b.originalPrice)}</span>
-                </div>
-                <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 12 }}>{t("landing.bundle.billed")}</p>
-                <div style={{ background: `${b.color}10`, border: `1px solid ${b.color}25`, borderRadius: 8, padding: "8px 12px", marginBottom: 20 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: b.color }}>{t("pricing.save")} {fmtUSD(b.savings)}{t("common.per_year")}</span>
-                </div>
-                <Link href={`/register?pkg=${b.code}`} style={{
-                  display: "block", textAlign: "center", padding: "12px 16px", borderRadius: 10,
-                  fontWeight: 700, fontSize: 14, textDecoration: "none",
-                  background: b.highlight ? `linear-gradient(135deg, ${b.color}, #0d9488)` : "transparent",
-                  color: b.highlight ? "#fff" : b.color,
-                  border: b.highlight ? "none" : `1.5px solid ${b.color}`,
-                  boxShadow: b.highlight ? `0 4px 16px ${b.color}40` : "none",
-                }}>
-                  {t("landing.bundle.getbundle")}
-                </Link>
               </div>
             ))}
           </div>
+          <Link href="/portal/downloads" className="btn-primary" style={{ fontSize: 16, padding: "16px 44px", display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 18 }}>⬇</span> Download the apps — free
+          </Link>
+          <p style={{ marginTop: 16, fontSize: 13, color: "#64748b" }}>🐳 Docker (Linux) is production-ready today · 🪟 Windows build in active development</p>
         </div>
       </section>
 
@@ -643,23 +464,23 @@ export default function HomePage() {
           {/* Featured playbooks — dynamic from catalog */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20, marginBottom: 48 }}>
             {[
-              { icon: "🔥", name: "Ultimate Sales Copy Pack", prompts: 50, price: 29, original: 49, badge: "BEST SELLER", color: "#ef4444" },
-              { icon: "⚖️", name: "Legal Document Vault", prompts: 30, price: 39, original: 79, badge: "HIGH VALUE", color: "#7c3aed" },
-              { icon: "👔", name: "Career Accelerator Pack", prompts: 30, price: 19, original: 34, badge: "POPULAR", color: "#0284c7" },
+              { icon: "🔥", name: "Ultimate Sales Copy Pack", slug: "ultimate-sales-copy-pack", prompts: 50, badge: "BEST SELLER", color: "#ef4444" },
+              { icon: "⚖️", name: "Legal Document Vault", slug: "legal-document-vault", prompts: 30, badge: "HIGH VALUE", color: "#7c3aed" },
+              { icon: "👔", name: "Career Accelerator Pack", slug: "career-accelerator-pack", prompts: 30, badge: "POPULAR", color: "#0284c7" },
             ].map(p => (
-              <div key={p.name} className="card" style={{ padding: 24, position: "relative" }}>
+              <Link key={p.name} href={`/playbooks/${p.slug}`} className="card" style={{ padding: 24, position: "relative", display: "block", textDecoration: "none" }}>
                 {p.badge && <div style={{ position: "absolute", top: 12, right: 12, background: `${p.color}15`, color: p.color, fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 6, letterSpacing: "0.3px" }}>{p.badge}</div>}
                 <div style={{ fontSize: 32, marginBottom: 12 }}>{p.icon}</div>
                 <h4 style={{ fontSize: 17, fontWeight: 800, color: "#0a1628", marginBottom: 6 }}>{p.name}</h4>
-                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · PDF download · Works with ChatGPT, Claude, Gemini</p>
+                <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{p.prompts} prompts · read online · Works with ChatGPT, Claude, Gemini</p>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 28, fontWeight: 900, color: "#0a1628", fontFamily: "Sora, sans-serif" }}>${p.price}</span>
-                  <span style={{ fontSize: 14, color: "#94a3b8", textDecoration: "line-through" }}>${p.original}</span>
+                  <span style={{ fontSize: 22, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
+                  <span style={{ fontSize: 13, color: "#94a3b8" }}>· no sign-up</span>
                 </div>
-                <Link href="/playbooks" style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
-                  Get Playbook →
-                </Link>
-              </div>
+                <span style={{ display: "block", textAlign: "center", padding: "11px 16px", borderRadius: 10, fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 12px rgba(124,58,237,0.2)" }}>
+                  Read the guide →
+                </span>
+              </Link>
             ))}
           </div>
 
@@ -674,11 +495,11 @@ export default function HomePage() {
             </div>
             <div style={{ textAlign: "center" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, justifyContent: "center", marginBottom: 8 }}>
-                <span style={{ fontSize: 36, fontWeight: 900, color: "#7c3aed", fontFamily: "Sora, sans-serif" }}>$99</span>
-                <span style={{ fontSize: 16, color: "#94a3b8", textDecoration: "line-through" }}>$290</span>
+                <span style={{ fontSize: 34, fontWeight: 900, color: "#16a34a", fontFamily: "Sora, sans-serif" }}>Free</span>
+                <span style={{ fontSize: 14, color: "#94a3b8" }}>· read online</span>
               </div>
               <Link href="/playbooks" style={{ display: "inline-block", padding: "13px 32px", borderRadius: 12, fontWeight: 700, fontSize: 15, textDecoration: "none", background: "linear-gradient(135deg,#7c3aed,#0284c7)", color: "#fff", boxShadow: "0 4px 16px rgba(124,58,237,0.3)" }}>
-                {t("landing.playbooks.megacta")}
+                Browse all guides →
               </Link>
             </div>
           </div>
@@ -752,10 +573,10 @@ export default function HomePage() {
       <section style={{ padding: "60px 24px", background: "linear-gradient(135deg,#0284c7,#0d9488)", textAlign: "center" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
           <h2 style={{ fontSize: "clamp(24px, 3.5vw, 38px)", fontWeight: 800, color: "#fff", marginBottom: 14, letterSpacing: "-0.5px" }}>
-            {t("landing.trial.title")}
+            Start today — every app, free to download
           </h2>
           <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 16, lineHeight: 1.7, marginBottom: 28, maxWidth: 560, margin: "0 auto 28px" }}>
-            {t("landing.trial.subtitle")}
+            No licence, no card, no trial clock. Full access to the whole platform for one year — pick an app and deploy.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {["Guardian","Orchestra","Vault","Edge","SOC","Compliance","Sentinel","Antivirus"].map(p => {
@@ -769,8 +590,8 @@ export default function HomePage() {
                 );
               }
               return (
-                <Link key={p} href={`/register?pkg=trial_${product}`} style={{ padding: "10px 20px", borderRadius: 10, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.15s", backdropFilter: "blur(4px)" }}>
-                  {p} {t("landing.trial.ctasuffix")}
+                <Link key={p} href={`/portal/downloads?product=${product}`} style={{ padding: "10px 20px", borderRadius: 10, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.15s", backdropFilter: "blur(4px)", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <span>⬇</span> {p}
                 </Link>
               );
             })}
@@ -789,7 +610,7 @@ export default function HomePage() {
             {t("landing.cta.subtitle")}
           </p>
           <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="#pricing" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("hero.cta")}</a>
+            <Link href="/portal/downloads" className="btn-primary" style={{ fontSize: 16, padding: "15px 36px", display: "inline-flex", alignItems: "center", gap: 9 }}><span style={{ fontSize: 18 }}>⬇</span> Download Free</Link>
             <a href="mailto:hello@axto.io" className="btn-secondary" style={{ fontSize: 16, padding: "15px 36px" }}>{t("landing.cta.contact")}</a>
           </div>
         </div>

@@ -18,6 +18,8 @@ import { signOut } from "@/lib/client-auth";
 interface NavItem { href: string; icon: string; label: string; group: string }
 
 const NAV: NavItem[] = [
+  { href: "/admin/free-access",    icon: "🎁", label: "Program Akses Gratis", group: "Program" },
+
   { href: "/admin",                icon: "📊", label: "Dashboard",       group: "Overview" },
   { href: "/admin/analytics",      icon: "🌍", label: "Analytics",       group: "Overview" },
   { href: "/admin/revenue",        icon: "💰", label: "Revenue",         group: "Overview" },
@@ -46,7 +48,7 @@ const NAV: NavItem[] = [
   { href: "/admin/account",        icon: "⚙️", label: "Account Settings",group: "More" },
 ];
 
-const GROUPS = ["Overview", "Sales", "Delivery", "Payments", "Marketing", "Infrastructure", "More"];
+const GROUPS = ["Program", "Overview", "Sales", "Delivery", "Payments", "Marketing", "Infrastructure", "More"];
 
 export default function AdminSidebar() {
   const pathname = usePathname();

@@ -71,7 +71,7 @@ SHUTDOWN_MSG    = (
     "║  2. Confirm your license has not expired                     ║\n"
     "║  3. Restart this service after connectivity is restored      ║\n"
     "║                                                              ║\n"
-    "║  Renew or manage your license: https://axto.io/portal        ║\n"
+    "║  Free program — extend via WhatsApp +6285691234561 / hello@axto.io        ║\n"
     "║  Support: hello@axto.io                                      ║\n"
     "╚══════════════════════════════════════════════════════════════╝\n"
 )
@@ -79,7 +79,7 @@ EXPIRY_BANNER = (
     "\n"
     "⚠️  ═══════════════════════════════════════════════════════════\n"
     "   AXTO SOC LICENSE EXPIRES IN {{days}} DAY{{plural}}\n"
-    "   Renew immediately at: https://axto.io/portal\n"
+    "   Free program — need more time? WhatsApp +6285691234561 / hello@axto.io\n"
     "   Expires: {{expires}}\n"
     "   ═══════════════════════════════════════════════════════════\n"
 )
@@ -329,13 +329,13 @@ class LicenseState:
             return (
                 f"⚠️ License validation failed. Grace period: "
                 f"{self.grace_remaining_min} minutes remaining before suspension. "
-                f"Renew at: https://axto.io/portal"
+                f"Free program — extend via WhatsApp +6285691234561 / hello@axto.io"
             )
         if self.is_expiring_soon:
             return (
                 f"⚠️ License expires in {self.days_until_expiry} day"
                 f"{'s' if self.days_until_expiry != 1 else ''}. "
-                f"Renew at: https://axto.io/portal"
+                f"Free program — extend via WhatsApp +6285691234561 / hello@axto.io"
             )
         return None
 
@@ -372,6 +372,15 @@ class LicenseValidator:
             or os.environ.get("SOC_LICENSE_KEY", "")
             or os.environ.get("AXTO_LICENSE_KEY", "")
         ).strip()
+        # ── AXTO Free Full-Access Program — no licence input required ─────────
+        # When no key is configured, self-register under the program's shared
+        # free key using this machine's fingerprint (machine_id) as the install
+        # ID — no user input, no purchase. The countdown and the synchronized,
+        # signed lock are driven entirely by the global end date the server
+        # returns (managed from the axto.io admin). A real, purchased key placed
+        # in config still takes priority and unlocks continued use afterwards.
+        if not self._key:
+            self._key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
         self._url   = config.get("license_validate_url", VALIDATE_URL)
         self._info: Optional[LicenseState] = None
         self._last: float = 0.0
@@ -537,7 +546,7 @@ class LicenseValidator:
                 elif state.reason == "expired":
                     log.critical(
                         f"AXTO SOC LICENSE EXPIRED | "
-                        f"Renew immediately: https://axto.io/portal"
+                        f"Free program — WhatsApp +6285691234561 / hello@axto.io"
                     )
                 elif state.reason == "machine_mismatch":
                     log.critical(

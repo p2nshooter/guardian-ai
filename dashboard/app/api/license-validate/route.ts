@@ -29,6 +29,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
 import { signLicenseResponse, SignableLicenseFields } from "@/lib/license-signing";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import {
+  resolveFreeAccess, computeFreeAccess, isFreeAccessKey, freeTopPackage,
+  FREE_ACCESS_PROGRAM_NAME,
+} from "@/lib/free-access";
 
 const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin":  "*",
@@ -154,6 +158,171 @@ export async function POST(req: NextRequest) {
      WHERE l.license_key = ?`,
     [cleanKey]
   );
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AXTO Free Full-Access Program — full-tier grant, no paid licence required
+  // ---------------------------------------------------------------------------
+  // While the program window is OPEN, every recognised product key is granted
+  // full access until the GLOBAL program end date. Revoked / suspended keys are
+  // still blocked (abuse control). The grant's expires_at == the program end,
+  // so when the window closes each on-prem engine's own expiry check trips and
+  // it locks itself (read-only) with a clear message — no destructive code.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const faStatus = computeFreeAccess(await resolveFreeAccess(req));
+  if (faStatus.active) {
+    // Respect explicit bans even during the free program.
+    if (lic && lic.status === "revoked") {
+      return signedJson({
+        valid: false, reason: "revoked",
+        error: "License has been revoked. Contact hello@axto.io for assistance.",
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: lic.product,
+        valid: false, status: "revoked", expiresAt: lic.expires_at,
+      });
+    }
+    if (lic && lic.status === "suspended") {
+      return signedJson({
+        valid: false, reason: "suspended",
+        error: "License is suspended. Log in to axto.io/portal to view details.",
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: lic.product,
+        valid: false, status: "suspended", expiresAt: lic.expires_at,
+      });
+    }
+
+    const licProductLc  = (lic?.product || "").toLowerCase().trim();
+    const reqProductLc   = (requestedProduct || "").toLowerCase().trim();
+    const effectiveProduct = licProductLc || keyProduct; // keyProduct: from prefix
+    if (reqProductLc && reqProductLc !== effectiveProduct) {
+      const expectedPrefix = Object.entries(KEY_PREFIXES).find(([, v]) => v === reqProductLc)?.[0];
+      return signedJson({
+        valid: false, reason: "product_mismatch",
+        error: `This key is for "${effectiveProduct}", not "${reqProductLc}". Use a ${expectedPrefix ? expectedPrefix + "-" : ""}key for ${reqProductLc}.`,
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: effectiveProduct,
+        valid: false, status: "product_mismatch", expiresAt: faStatus.endISO,
+      });
+    }
+
+    // ── Per-install admin controls (all managed from the admin portal) ──────
+    // A revoked or banned install ID is locked here; a per-ID time extension
+    // (expires_override) lengthens the countdown for that single install.
+    let installRow: any = null;
+    if (mid) {
+      try {
+        installRow = await dbFirst<any>(db,
+          `SELECT status, expires_override FROM installs WHERE install_id = ? AND product = ?`,
+          [mid, effectiveProduct]
+        );
+      } catch { installRow = null; }
+    }
+    if (installRow && installRow.status && installRow.status !== "active") {
+      const banned = installRow.status === "banned";
+      return signedJson({
+        valid: false, reason: installRow.status, access_mode: "free_program",
+        program: FREE_ACCESS_PROGRAM_NAME,
+        error: banned
+          ? "This install has been blocked by the administrator. If you believe this is a mistake, contact WhatsApp +6285691234561 / hello@axto.io."
+          : "This install ID was revoked. To reinstall, request a reset from the admin — WhatsApp +6285691234561 / hello@axto.io / salam@ulyah.com (a reinstall fee applies).",
+        contact: { whatsapp: "+6285691234561", email: ["hello@axto.io", "salam@ulyah.com"] },
+        renew_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://axto.io"}/portal`,
+      }, {
+        licenseKey: cleanKey, machineId: mid, product: effectiveProduct,
+        valid: false, status: installRow.status, expiresAt: faStatus.endISO,
+      });
+    }
+
+    // Effective end date for THIS install: the LATEST of the global program end,
+    // an admin per-ID extension (expires_override), and any real paid licence —
+    // so a manual extension or a paid term never shortens someone's countdown.
+    const grantExpiresISO = [faStatus.endISO, installRow?.expires_override, lic?.expires_at]
+      .filter(Boolean)
+      .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime())[0];
+    const effDaysLeft = Math.max(0, Math.ceil((new Date(grantExpiresISO).getTime() - Date.now()) / 86_400_000));
+
+    const freePkg  = freeTopPackage(effectiveProduct);
+    const features = buildFeatures(effectiveProduct, freePkg, -1); // -1 = unlimited nodes
+
+    const hbVersion = versionField
+      || guardian_version || orchestra_version || vault_version
+      || edge_version || soc_version || compliance_version || sentinel_version
+      || "unknown";
+
+    // ── Install registration (one ID = one install) ─────────────────────────
+    // The machine fingerprint IS the install ID — no licence, no user input.
+    // First contact stamps first_seen (when this install's countdown started);
+    // every later heartbeat only bumps last_seen. This is what the admin portal
+    // counts, and it never creates a second install for the same machine.
+    if (mid) {
+      dbRun(db,
+        `INSERT INTO installs (install_id, product, first_seen, last_seen, hostname, version, ip)
+         VALUES (?,?,?,?,?,?,?)
+         ON CONFLICT(install_id, product) DO UPDATE SET
+           last_seen = excluded.last_seen,
+           hostname  = excluded.hostname,
+           version   = excluded.version,
+           ip        = excluded.ip`,
+        [mid, effectiveProduct, now(), now(), hostname || "", hbVersion, ip]
+      ).catch(() => {});
+    }
+
+    // Best-effort heartbeat only when a real licence row exists (shared free
+    // keys have no row; we don't fabricate one here).
+    if (lic?.id) {
+      dbRun(db,
+        `INSERT INTO license_heartbeats
+           (id, license_id, machine_id, hostname, ip, product, version, node_count, worker_count, health, created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [newId(), lic.id, mid, hostname || "", ip, effectiveProduct, hbVersion,
+         node_count ?? 0, effectiveProduct === "orchestra" ? (node_count ?? 0) : 0, "{}", now()]
+      ).catch(() => {});
+    }
+
+    const response: Record<string, any> = {
+      valid:        true,
+      status:       "active",
+      access_mode:  "free_program",
+      program:      FREE_ACCESS_PROGRAM_NAME,
+      license_key:  cleanKey,
+      product:      effectiveProduct,
+      package:      freePkg,
+      package_code: freePkg,
+      expires_at:   grantExpiresISO,
+      days_left:    effDaysLeft,
+      max_nodes:    -1,
+      client_name:  lic?.client_name || "",
+      organization: lic?.organization || "",
+      features,
+      notice: `${FREE_ACCESS_PROGRAM_NAME}: full access is free until ${grantExpiresISO.slice(0, 10)}. No licence key required. When the countdown ends the app locks (read-only) — your data and files stay untouched. Need more time? WhatsApp +6285691234561 / hello@axto.io / salam@ulyah.com.`,
+      contact: { whatsapp: "+6285691234561", email: ["hello@axto.io", "salam@ulyah.com"] },
+    };
+    if (effDaysLeft <= 60) {
+      response.warning = `Free access ends in ${effDaysLeft} day${effDaysLeft === 1 ? "" : "s"} (${grantExpiresISO.slice(0, 10)}). Back up your data before then; the app will lock to read-only. Extend via WhatsApp +6285691234561 / hello@axto.io.`;
+    }
+    if (effDaysLeft <= 14) {
+      response.critical_warning = `⚠️ Free access ends in ${effDaysLeft} day${effDaysLeft === 1 ? "" : "s"}. Back up now — the app locks on ${grantExpiresISO.slice(0, 10)}. To extend: WhatsApp +6285691234561 / hello@axto.io.`;
+    }
+
+    return signedJson(response, {
+      licenseKey: cleanKey, machineId: mid, product: effectiveProduct,
+      valid: true, status: "active", expiresAt: grantExpiresISO,
+      entitlements: serializeEntitlements(features, freePkg),
+    });
+  }
+
+  // Free program has CLOSED and this is a free key with no paid licence behind
+  // it → the app should lock (read-only). Signed so the engine trusts the lock.
+  if (isFreeAccessKey(cleanKey) && !lic) {
+    return signedJson({
+      valid: false, reason: "program_ended", access_mode: "free_program",
+      program: FREE_ACCESS_PROGRAM_NAME,
+      error: `${FREE_ACCESS_PROGRAM_NAME} has ended. The app is now locked (read-only). Your data and files were left untouched. Visit axto.io/portal for options.`,
+      renew_url: `${process.env.NEXT_PUBLIC_APP_URL || "https://axto.io"}/portal`,
+    }, {
+      licenseKey: cleanKey, machineId: mid, product: keyProduct,
+      valid: false, status: "program_ended", expiresAt: faStatus.endISO,
+    });
+  }
 
   if (!lic) {
     return NextResponse.json({

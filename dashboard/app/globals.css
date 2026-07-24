@@ -149,6 +149,40 @@ a:hover { text-decoration: underline; }
 .animate-spin-slow { animation: spin 12s linear infinite; }
 .spinner { animation: spin 1s linear infinite; }
 
+/* ── Countdown promo / animated banner ─────────────────── */
+@keyframes marquee   { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes glowPulse { 0%,100% { opacity:.55; } 50% { opacity:1; } }
+@keyframes floatY    { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes popIn     { 0% { transform: scale(.6); opacity:0; } 60% { transform: scale(1.08); } 100% { transform: scale(1); opacity:1; } }
+@keyframes sheen     { 0% { transform: translateX(-120%) skewX(-18deg); } 100% { transform: translateX(220%) skewX(-18deg); } }
+@keyframes tickPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.cd-bg      { background-size: 220% 220%; animation: bgShift 9s ease infinite; }
+.cd-marquee { display: inline-flex; white-space: nowrap; animation: marquee 26s linear infinite; }
+.cd-marquee:hover { animation-play-state: paused; }
+.cd-glow    { animation: glowPulse 2.6s ease-in-out infinite; }
+.cd-floaty  { animation: floatY 4.5s ease-in-out infinite; }
+.cd-pop     { animation: popIn .5s cubic-bezier(.2,.8,.2,1) both; }
+.cd-tick    { animation: tickPulse 1s ease-in-out; }
+.cd-sheen   { position: relative; overflow: hidden; }
+.cd-sheen::after { content:""; position:absolute; top:0; left:0; width:40%; height:100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  animation: sheen 4.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .cd-bg,.cd-marquee,.cd-glow,.cd-floaty,.cd-pop,.cd-tick,.cd-sheen::after { animation: none !important; }
+}
+
+/* ── Site-wide scroll reveal (ScrollAnimator) ──────────────────────────── */
+.sa-pre { opacity: 0; transform: translateY(26px); }
+.sa-in  { opacity: 1; transform: none;
+  transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+/* Cards get a springier lift + a soft glow on hover (public pages) */
+.card { transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s ease, border-color .18s ease; }
+.card:hover { transform: translateY(-5px) scale(1.008); }
+@media (prefers-reduced-motion: reduce) {
+  .sa-pre { opacity: 1 !important; transform: none !important; }
+  .card:hover { transform: none; }
+}
+
 .delay-100 { animation-delay:0.1s; } .delay-200 { animation-delay:0.2s; }
 .delay-300 { animation-delay:0.3s; } .delay-400 { animation-delay:0.4s; }
 .delay-500 { animation-delay:0.5s; } .delay-600 { animation-delay:0.6s; }

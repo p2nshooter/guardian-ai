@@ -8,7 +8,7 @@
 # Copy to edge.yml and fill in your values.
 
 edge:
-  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
   license_validate_url: "https://axto.io/api/license-validate"
   ai_pool:
     vendors:
