@@ -10,7 +10,7 @@ version: "3.9"
 # AXTO Orchestra — AI eXecution & Tools Orchestration | Docker Compose
 # Usage:
 #   1. cp orchestra.example.yml orchestra.yml
-#   2. Edit orchestra.yml (license_key + AI vendor keys)
+#   2. Edit orchestra.yml (AI vendor keys only — no licence needed)
 #   3. docker compose -f orchestra-compose.yml up -d
 #
 # Orchestra Core API: http://localhost:8088

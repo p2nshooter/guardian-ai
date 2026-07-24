@@ -8,7 +8,7 @@
 # AXTO Edge — AI API Gateway & Billing | Configuration
 #
 # HOW TO USE:
-#   1. Enter license_key from https://axto.io/portal
+#   1. No licence needed (free program) — the app auto-registers
 #   2. Add your AI vendor keys (BYOK) under ai_pool.vendors
 #   3. docker compose -f edge-compose.yml up -d
 #   4. Open http://YOUR_SERVER:8080 → Dashboard
@@ -21,7 +21,7 @@
 edge:
 
   # ── License ──────────────────────────────────────────────
-  license_key: "EDGE-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
   license_validate_url: "https://axto.io/api/license-validate"
 
   # ── AI Vendor Pool (BYOK) ─────────────────────────────────

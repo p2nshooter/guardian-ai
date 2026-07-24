@@ -23,10 +23,10 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket download ke folder axto-guardian/",
       "Load image: docker load < guardian-core.tar.gz",
-      "Edit guardian.yml — masukkan license key + AI API key",
+      "Edit guardian.yml — add your own AI API key (no licence needed — BYOK)",
       "Jalankan: docker compose up -d",
       "Buka browser: http://SERVER_IP:8080",
-      "Aktivasi license key di wizard yang muncul",
+      "App auto-registers this machine on first run — no activation, no licence",
       "Deploy guardian-node ke tiap server yang dilindungi",
     ],
     packages: [
@@ -68,7 +68,7 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket ke folder axto-orchestra/",
       "Load images: for f in *.tar.gz; do docker load < $f; done",
-      "Edit orchestra.yml — masukkan license key + AI API keys",
+      "Edit orchestra.yml — add your AI API keys (no licence needed — BYOK)",
       "Jalankan: docker compose -f orchestra-compose.yml up -d",
       "Console UI: http://SERVER_IP:8080/console",
       "API endpoint: http://SERVER_IP:8080/v1/chat/completions",
@@ -110,7 +110,7 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket ke folder axto-vault/",
       "docker load < vault-core.tar.gz",
-      "Edit vault.yml — masukkan license key + AI API keys",
+      "Edit vault.yml — add your AI API keys (no licence needed — BYOK)",
       "docker compose -f vault-compose.yml up -d",
       "Verify: curl http://localhost:8080/health",
       "Ganti base_url AI client ke http://SERVER:8080/v1",
@@ -132,7 +132,7 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket ke folder axto-soc/",
       "docker load < soc-engine.tar.gz",
-      "Edit soc.yml — masukkan license key",
+      "Edit soc.yml — no licence needed (auto-registers)",
       "docker compose -f soc-compose.yml up -d",
       "Dashboard: http://SERVER_IP:8085",
     ],
@@ -153,7 +153,7 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket ke folder axto-compliance/",
       "docker load < compliance-engine.tar.gz",
-      "Edit compliance.yml — masukkan license key",
+      "Edit compliance.yml — no licence needed (auto-registers)",
       "docker compose -f compliance-compose.yml up -d",
       "Dashboard: http://SERVER_IP:8086",
     ],
@@ -174,7 +174,7 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket ke folder axto-sentinel/",
       "docker load < sentinel-engine.tar.gz",
-      "Edit sentinel.yml — masukkan license key",
+      "Edit sentinel.yml — no licence needed (auto-registers)",
       "docker compose -f sentinel-compose.yml up -d",
       "Dashboard: http://SERVER_IP:8087",
     ],
@@ -195,7 +195,7 @@ const PRODUCT_CATALOG: Record<string, {
     guide: [
       "Unzip paket ke folder axto-edge/",
       "docker load < edge-engine.tar.gz",
-      "Edit edge.yml — masukkan license key",
+      "Edit edge.yml — add your upstream AI key(s), no licence needed",
       "docker compose -f edge-compose.yml up -d",
       "Dashboard: http://SERVER_IP:8084",
     ],

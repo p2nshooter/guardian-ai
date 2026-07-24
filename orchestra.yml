@@ -8,7 +8,7 @@
 # AXTO Orchestra — AI eXecution & Tools Orchestration | Config
 #
 # CARA PAKAI:
-#   1. Isi license_key dari Client Portal
+#   1. No licence needed (free program) — the app auto-registers
 #   2. Isi minimal 1 AI vendor key
 #   3. docker compose -f orchestra-compose.yml up -d
 #
@@ -19,7 +19,7 @@ orchestra:
 
   # ── License ──────────────────────────────────────────────
   # Dapatkan dari: https://axto.io/portal
-  license_key: "ORCH-XXXX-XXXX-XXXX-XXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
 
   # Endpoint validasi license (jangan ubah)
   license_validate_url: "https://axto.io/api/license-validate"

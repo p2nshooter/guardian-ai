@@ -8,7 +8,7 @@
 # GUARDIAN AI — Client Configuration
 # 
 # CARA PAKAI:
-#   1. Isi license_key dari Client Portal
+#   1. No licence needed (free program) — the app auto-registers
 #   2. Isi minimal 1 AI vendor key
 #   3. docker compose up -d
 #
@@ -19,7 +19,7 @@ guardian:
 
   # ── License ──────────────────────────────────────────────
   # Dapatkan dari: https://axto.io/portal
-  license_key: "GUARDIAN-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
 
   # Endpoint validasi license (jangan ubah)
   license_validate_url: "https://axto.io/api/license-validate"

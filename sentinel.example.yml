@@ -13,7 +13,7 @@
 #   3. Dashboard: http://YOUR_SERVER:8085
 # ============================================================
 sentinel:
-  license_key: "SNTL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
   port: 8095

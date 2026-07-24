@@ -11,7 +11,7 @@ version: "3.9"
 # Image · Video · Upscale — via your own GPU endpoints
 #
 # CARA PAKAI:
-#   1. Edit gpu-studio.yml → set license_key
+#   1. Edit gpu-studio.yml (no licence needed — BYOK keys only)
 #   2. docker compose -f gpu-studio-compose.yml up -d
 #   3. Open: http://YOUR_SERVER:8092
 # ============================================================

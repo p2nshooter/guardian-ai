@@ -7,14 +7,14 @@
 # ============================================================
 # GUARDIAN AI — Configuration Template
 # Copy: cp guardian.example.yml guardian.yml
-# Fill in your license_key and at least one AI vendor key
+# No licence needed (free program). Fill in at least one AI vendor key (BYOK)
 # NEVER commit guardian.yml — it contains your secrets
 # ============================================================
 
 guardian:
 
   # Your license key (from Client Portal)
-  license_key: "GUARDIAN-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
 
   # License validation endpoint (get from your welcome email or Client Portal)
   # Format: https://axto.io/api/license-validate
