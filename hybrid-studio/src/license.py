@@ -253,6 +253,10 @@ def is_valid() -> bool:
 
 async def validate_license(license_key: str) -> LicenseState:
     global _state
+    # AXTO Free Full-Access Program — no licence input required. Empty key →
+    # self-register under the shared free key (machine fingerprint = install ID).
+    if not (license_key or "").strip():
+        license_key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
     async with _lock:
         _state.key = license_key.strip().upper()
         _state.last_check = time.time()

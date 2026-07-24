@@ -345,6 +345,12 @@ class LicenseValidator:
 
     def __init__(self, config: dict):
         self._key    = config.get("license_key", "")
+        # ── AXTO Free Full-Access Program — no licence input required ─────────
+        # No key configured → self-register under the program's shared free key
+        # using this machine's fingerprint as the install ID (no user input).
+        # Countdown + synchronized signed lock come from the global admin date.
+        if not self._key:
+            self._key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
         self._url    = config.get("license_validate_url", VALIDATE_URL)
         self._info:  Optional[LicenseState] = None
         self._last:  float = 0.0

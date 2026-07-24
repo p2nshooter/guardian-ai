@@ -372,6 +372,15 @@ class LicenseValidator:
             or os.environ.get("ANTIVIRUS_LICENSE_KEY", "")
             or os.environ.get("AXTO_LICENSE_KEY", "")
         ).strip()
+        # ── AXTO Free Full-Access Program — no licence input required ─────────
+        # When no key is configured, self-register under the program's shared
+        # free key using this machine's fingerprint (machine_id) as the install
+        # ID — no user input, no purchase. The countdown and the synchronized,
+        # signed lock are driven entirely by the global end date the server
+        # returns (managed from the axto.io admin). A real, purchased key placed
+        # in config still takes priority and unlocks continued use afterwards.
+        if not self._key:
+            self._key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
         self._url   = config.get("license_validate_url", VALIDATE_URL)
         self._info: Optional[LicenseState] = None
         self._last: float = 0.0

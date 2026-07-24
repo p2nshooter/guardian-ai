@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useLocale } from "@/lib/locale-provider";
 import { isProductForSale } from "@/lib/stripe";
 import ReviewsSection from "@/components/ReviewsSection";
+import InstallCounter from "@/components/InstallCounter";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
 
@@ -59,7 +60,7 @@ export default function HomePage() {
   // Shared nav links — rendered in both the desktop bar and the mobile drawer.
   const NAV_LINKS: [string, string][] = [
     ["/promo",t("landing.nav.promo")],["#products",t("landing.nav.products")],["#pricing","Free Access"],["#playbooks",t("landing.nav.playbooks")],
-    ["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],["/acquire","Acquire"],
+    ["#counter","Live Count"],["#byok",t("landing.nav.byok")],["#faq",t("landing.nav.faq")],["/guide",t("nav.guide")],["/acquire","Acquire"],
   ];
 
 
@@ -241,6 +242,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── LIVE INSTALL COUNTER (public, counts only) ────────────── */}
+      <InstallCounter />
 
       {/* ── GUARDIAN FEATURES ─────────────────────────────────────── */}
 

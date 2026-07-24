@@ -362,6 +362,9 @@ async def validate(license_key: str) -> LicenseState:
     global _state, _last_validated
 
     key = (license_key or "").strip()
+    # AXTO Free Full-Access Program — no licence input required.
+    if not key:
+        key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
     if not key or not key.upper().startswith(PRODUCT_PREFIX + "-"):
         return LicenseState(False, "invalid_key_prefix")
 
