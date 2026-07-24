@@ -2453,39 +2453,61 @@ export const SENTINEL_TEMPLATES: AutoPostTemplate[] = [
   {id:"sntl010",title:"Sentinel — For Critical Infrastructure & Utilities",category:"sentinel",platforms:["linkedin","twitter","facebook"],body_text:`Critical infrastructure operators face a unique challenge:\n\nThe most catastrophic security failures aren't data breaches.\nThey're process disruptions — power outages, water contamination, pipeline explosions.\n\nAXTO Sentinel is built for operators who need to protect:\n• Electric generation and distribution\n• Water and wastewater treatment\n• Oil and gas pipelines\n• Manufacturing process control\n• Building automation and smart facilities\n\nSelf-hosted. Air-gap compatible. No cloud dependency.\n\n{{cta}}`,hashtags:["#CriticalInfrastructure","#UtilitySecurity","#OTSecurity","#ICS","#EnergySector","#AXTO"],cta_text:"🔗 axto.io/sentinel",image_prompt:"Critical infrastructure security operations showing power grid water treatment and pipeline facilities monitoring",language:"en"},
 ];
 
-export const ALL_TEMPLATES: AutoPostTemplate[] = [
-  ...GUARDIAN_AI_TEMPLATES,
-  ...ORCHESTRA_AI_TEMPLATES,
-  ...VAULT_TEMPLATES,
-  ...VAULT_ENTERPRISE_TEMPLATES,
-  ...EDGE_TEMPLATES,
-  ...EDGE_ENTERPRISE_TEMPLATES,
-  ...SOC_TEMPLATES,
-  ...SOC_ENTERPRISE_TEMPLATES,
-  ...COMPLIANCE_TEMPLATES,
-  ...COMPLIANCE_ENTERPRISE_TEMPLATES,
-  ...SENTINEL_TEMPLATES,
-  ...SENTINEL_ENTERPRISE_TEMPLATES,
-  ...SELFHOSTED_TEMPLATES,
-  ...PRICING_TEMPLATES,
-  ...COMPARISON_TEMPLATES,
-  ...FEATURE_TEMPLATES,
-  ...TESTIMONIAL_TEMPLATES,
-  ...ANNOUNCEMENT_TEMPLATES,
-  ...TUTORIAL_TEMPLATES,
-  ...EXTRA_TEMPLATES,
-  ...TELEGRAM_TEMPLATES,
-  ...TIKTOK_TEMPLATES,
-  ...YOUTUBE_TEMPLATES,
-  ...CLASSIFIED_EXTENDED_TEMPLATES,
-  ...INDUSTRY_TEMPLATES,
-  ...ENGAGEMENT_TEMPLATES,
-  ...PLAYBOOKS_TEMPLATES,
-  ...EXTRA_200_TEMPLATES,
-  ...EXTRA_BATCH2,
-  ...EXTRA_BATCH3,
-  ...EN_1000_TEMPLATES,
+// ═══════════════════════════════════════════════════════════════════════════
+// AXTO Free Full-Access Program — the CURRENT ad set ("iklan terbaru")
+// ---------------------------------------------------------------------------
+// Every priced/trial promo array above is retained in source for reference but
+// is NO LONGER POSTED. autopost draws ONLY from these free-program templates,
+// so the old paid/7-day-trial ads are effectively removed from circulation.
+// Copy: free for one year · full enterprise · no licence · self-hosted · BYOK.
+// No prices anywhere — anything beyond the free year is "contact admin".
+// ═══════════════════════════════════════════════════════════════════════════
+const P_SOCIAL = ["facebook","instagram","linkedin","twitter","telegram","pinterest"];
+const P_CLASS  = ["craigslist","olx","locanto","classifiedads","gumtree","adpost","freeads"];
+export const FREE_PROGRAM_TEMPLATES: AutoPostTemplate[] = [
+  { id:"free001", title:"AXTO — Free Launch (ID)", category:"announcement", platforms:P_SOCIAL,
+    body_text:`🎁 GRATIS SATU TAHUN — seluruh aplikasi AXTO, full enterprise.\n\nTanpa lisensi. Tanpa biaya. Tanpa batasan.\nUnduh, jalankan di server Anda sendiri, pakai API key Anda sendiri (BYOK).\n\n🛡️ Guardian · 🎼 Orchestra · 🧠 Studio · 🔒 Vault · 🌐 Edge · 🎯 SOC · 📋 Compliance · 🏭 Sentinel · ⚖️ Legal · 🦠 Antivirus\n\nData Anda tetap milik Anda. Nol telemetry.\n⏳ Penawaran waktu terbatas — hitung mundur berjalan.\n\n{{cta}}`,
+    hashtags:["#AXTO","#GratisSetahun","#SelfHosted","#BYOK","#AITools","#Enterprise"], cta_text:"axto.io", image_prompt:"Elegant dark hero with glowing AXTO product logos and a large '1 YEAR FREE' badge, countdown timer, premium gradient", language:"id" },
+
+  { id:"free002", title:"AXTO — Free Launch (EN)", category:"announcement", platforms:P_SOCIAL,
+    body_text:`🎁 ONE YEAR FREE — every AXTO app, full enterprise tier.\n\nNo licence key. No payment. No limits.\nDownload, self-host on your own machines, bring your own AI keys.\n\nTen sovereign AI apps · your data never leaves your servers · zero telemetry.\n\n⏳ Limited-time launch — the countdown is live.\n\n{{cta}}`,
+    hashtags:["#AXTO","#FreeForAYear","#SelfHostedAI","#BYOK","#Sovereign","#Enterprise"], cta_text:"axto.io", image_prompt:"Premium tech banner, product app icons floating, '1 YEAR FREE' countdown, elegant gradient", language:"en" },
+
+  { id:"free003", title:"Guardian — Free (ID)", category:"guardian_ai", platforms:P_SOCIAL,
+    body_text:`🛡️ Guardian AI kini GRATIS setahun — full enterprise.\n\nDeteksi ancaman 7-lapis + respons otomatis < 30 detik, 100% di server Anda.\nTanpa lisensi, tanpa biaya. BYOK. Unduh & pasang via Docker hari ini.\n\n{{cta}}`,
+    hashtags:["#GuardianAI","#CyberSecurity","#GratisSetahun","#SelfHosted","#AXTO"], cta_text:"axto.io", image_prompt:"Cyber shield with AI nodes, 'FREE 1 YEAR' ribbon, on-prem server rack, elegant", language:"id" },
+
+  { id:"free004", title:"Orchestra — Free (EN)", category:"orchestra_ai", platforms:P_SOCIAL,
+    body_text:`🎼 Orchestra AI — free for a year, full enterprise.\n\nOne endpoint, 15+ AI providers, smart routing to the cheapest/fastest/best. Your keys, your infra. No licence, no bill.\n\nSelf-host it now — the free countdown is running.\n\n{{cta}}`,
+    hashtags:["#OrchestraAI","#LLMOps","#FreeForAYear","#BYOK","#AXTO"], cta_text:"axto.io", image_prompt:"AI routing graph across providers, 'FREE 1 YEAR' badge, sleek dark UI", language:"en" },
+
+  { id:"free005", title:"Studio — Free (ID)", category:"feature", platforms:P_SOCIAL,
+    body_text:`🧠 AXTO Studio GRATIS setahun — chat, gambar/video, pipeline & API, plus GPU pool.\n\nFull enterprise, tanpa lisensi. Jalankan sendiri, pakai key & GPU Anda.\n⏳ Waktu terbatas.\n\n{{cta}}`,
+    hashtags:["#AXTOStudio","#GenAI","#GPU","#GratisSetahun","#SelfHosted"], cta_text:"axto.io", image_prompt:"Creative AI studio workspace, GPU glow, 'FREE 1 YEAR' tag, elegant", language:"id" },
+
+  { id:"free006", title:"No licence — Free (EN)", category:"self_hosted", platforms:P_SOCIAL,
+    body_text:`🔑 No licence key. No payment. No cloud lock-in.\n\nThe entire AXTO platform is free for one year at full enterprise. Download, run on your own servers, plug in your own AI keys. Back up anytime — when the year ends, apps lock gracefully and your data stays yours.\n\n{{cta}}`,
+    hashtags:["#SelfHostedAI","#BYOK","#DataSovereignty","#AXTO","#FreeForAYear"], cta_text:"axto.io", image_prompt:"Key dissolving into 'FREE', on-prem servers, privacy theme, elegant gradient", language:"en" },
+
+  { id:"free007", title:"Countdown urgency (ID)", category:"engagement", platforms:P_SOCIAL,
+    body_text:`⏳ Hitung mundur berjalan.\n\nSelama satu tahun ini, SEMUA aplikasi AXTO gratis — full enterprise, tanpa lisensi. Setelah itu? Kembali berbayar.\n\nAmbil sekarang selagi gratis. Unduh di server Anda sendiri.\n\n{{cta}}`,
+    hashtags:["#LimitedTime","#GratisSetahun","#AXTO","#SelfHosted","#AI"], cta_text:"axto.io", image_prompt:"Large elegant countdown timer, product logos, 'FREE ends soon', premium", language:"id" },
+
+  { id:"free008", title:"Free platform — classified (EN)", category:"self_hosted", platforms:P_CLASS,
+    body_text:`AXTO — 10 self-hosted AI apps, FREE for one year (full enterprise).\n\nGuardian (security), Orchestra (LLM routing), Studio (AI+GPU), Vault (PII redaction), Edge, SOC, Compliance, Sentinel, Legal, Antivirus.\n\nNo licence. No payment. Docker deploy on your own servers. Bring your own AI keys. Your data never leaves your network.\n\nDownload free: axto.io`,
+    hashtags:["#AI","#SelfHosted","#Free","#Enterprise"], cta_text:"axto.io", image_prompt:"Clean product grid of 10 AI apps with 'FREE 1 YEAR'", language:"en" },
+
+  { id:"free009", title:"Free platform — classified (ID)", category:"self_hosted", platforms:P_CLASS,
+    body_text:`AXTO — 10 aplikasi AI self-hosted, GRATIS satu tahun (full enterprise).\n\nGuardian, Orchestra, Studio, Vault, Edge, SOC, Compliance, Sentinel, Legal, Antivirus.\n\nTanpa lisensi, tanpa biaya. Deploy via Docker di server sendiri, pakai API key sendiri. Data tidak keluar dari jaringan Anda.\n\nUnduh gratis: axto.io`,
+    hashtags:["#AI","#SelfHosted","#Gratis","#Enterprise"], cta_text:"axto.io", image_prompt:"Clean grid of 10 AI apps with 'GRATIS 1 TAHUN'", language:"id" },
+
+  { id:"free010", title:"BYOX sovereignty (EN)", category:"byok", platforms:P_SOCIAL,
+    body_text:`Own your entire AI stack. 🔐\n\nAXTO runs fully on your servers — your keys, your models, your data. Free for a full year at enterprise tier, no licence required. No call-home, no telemetry.\n\nDownload and deploy today.\n\n{{cta}}`,
+    hashtags:["#BYOX","#DataSovereignty","#SelfHostedAI","#AXTO","#FreeForAYear"], cta_text:"axto.io", image_prompt:"Sovereign data vault, own-your-stack theme, 'FREE 1 YEAR', elegant", language:"en" },
 ];
+
+// autopost now draws ONLY from the free-program ad set (old arrays deprecated).
+export const ALL_TEMPLATES: AutoPostTemplate[] = [...FREE_PROGRAM_TEMPLATES];
 
 export const TEMPLATE_CATEGORIES = [
   { value: "guardian_ai",  label: "🛡️ Guardian AI",    count: GUARDIAN_AI_TEMPLATES.length },
