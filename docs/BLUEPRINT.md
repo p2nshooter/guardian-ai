@@ -1,0 +1,204 @@
+# AXTO v3 — Blueprint Rombak Total
+
+> Status: **disetujui untuk dikerjakan** (rombak total, bertahap).
+> Branch kerja: `claude/app-consistency-paid-model-5hjkqo`.
+> Deploy produksi terjadi otomatis saat branch ini di-merge ke `main`
+> (GitHub Actions → Cloudflare Pages + migrasi D1 + sinkron konten R2).
+
+---
+
+## 1. Ringkasan keputusan
+
+| Area | Sebelum | Sesudah (v3) |
+|---|---|---|
+| Model bisnis | "Gratis 1 tahun, tanpa lisensi" + 4 skema harga bertumpuk (paket tahunan $990–$79.000, Studio bulanan, promo, trial) | **Satu** skema langganan: Starter / Pro / Business / Enterprise, bulanan atau tahunan |
+| Cara pakai | Wajib unduh Docker / docker-compose | **Aplikasi web langsung di browser** (tanpa Docker). Docker tetap ada sebagai edisi *self-hosted* berlisensi |
+| Lisensi self-hosted | Key gratis `*-FREE-ACCESS-2026` otomatis | Key berbayar, fitur **tier tertinggi**, termasuk di paket Business & Enterprise |
+| Prompt premium | 50 PDF "playbook" (ikut ter-publish di repo publik) + dijual satuan | **Prompt Library** di dalam langganan, 24 bidang, 4 level (Basic → Elite), konten terenkripsi di R2 |
+| Portal | Portal klien & admin campur aduk, 22 menu admin | Dua portal bersih dan konsisten: **Member** (`/app`) & **Admin** (`/admin`) |
+| Data | 68 tabel D1, log & iklan disimpan di D1 | D1 ramping (inti relasional saja), **R2 untuk semua konten & file**, entitlement di token sesi |
+| SEO | Semua halaman dinamis (edge + client), sitemap.xml invalid, placeholder verifikasi | Halaman publik statis (SSG), metadata per halaman, JSON-LD lengkap, sitemap terindeks per bagian |
+| Klien | 7 akun klien uji + 3.800 kode trial | **Sudah dihapus** dari D1 produksi (2 akun admin dipertahankan) |
+
+---
+
+## 2. Temuan audit (bug & inkonsistensi)
+
+### Kritis
+1. **Monetisasi mati** — `/api/license-validate` memberi akses penuh ke key apa pun selama "program gratis"; 13 engine otomatis memakai key `*-FREE-ACCESS-2026`.
+2. **Tabel `licenses` rusak** — `CHECK (product IN ('guardian','orchestra'))` membuat lisensi Vault/Legal/SOC/dll. gagal dibuat.
+3. **Celah harga** — checkout playbook memakai `playbook_meta.amount_usd` dari browser → bisa bayar $0,01.
+4. **Konten berbayar bocor** — 50 PDF premium ada di repo **publik** GitHub.
+5. **`public/sitemap.xml` tidak valid** (komentar HTML sebelum `<?xml`) dan bentrok dengan `app/sitemap.ts`; `public/robots.txt` bentrok dengan `app/robots.ts`.
+
+### Tinggi
+6. Meta `google-site-verification` berisi placeholder `YOUR_VERIFICATION_CODE`.
+7. Semua halaman `runtime="edge"` + `"use client"` → tidak ada halaman statis; SEO & kecepatan (Core Web Vitals) buruk.
+8. Sitemap tidak memuat halaman produk, prompt, panduan.
+9. AdSense **dan** Ezoic dimuat global (termasuk portal & admin) → lambat dan tidak profesional untuk SaaS berbayar.
+10. `/studio/*` tidak dilindungi middleware.
+11. `typescript.ignoreBuildErrors: true` menyembunyikan error.
+
+### Inkonsistensi
+12. Jumlah produk berbeda-beda: "all 10", "12", 11 prefix key, 14 image build; Studio terduplikasi 4× (studio / ai-studio / gpu-studio / hybrid-studio).
+13. Dua halaman login (`/login` dan `/auth/login`).
+14. Menu admin tidak relevan: *Program Akses Gratis, Trial Batch, Promo Pricing, Resellers, Managed Infra (planned), AutoPost*.
+15. AutoPost: ±8.000 baris template iklan "gratis" + posting ke situs iklan baris (risiko spam → merusak reputasi SEO), 4.358 baris di D1.
+16. Halaman `/acquire` (menjual perusahaan) dan `/promo` tidak cocok untuk situs SaaS.
+17. Bahasa campur (menu admin sebagian Indonesia, sebagian Inggris).
+
+---
+
+## 3. Arsitektur target
+
+```
+                         ┌───────────────────────────── Cloudflare ─────────────────────────────┐
+ Browser ──HTTPS──▶  Pages (Next.js 15)                                                         │
+                     │  ├─ Situs publik  (SSG, cepat, terindeks Google)                          │
+                     │  ├─ /app   Portal Member  (edge, JWT + entitlement di token)              │
+                     │  ├─ /admin Portal Admin   (edge, role=admin)                              │
+                     │  └─ /api   (edge)  auth · billing · ai · files · license-validate          │
+                     │                                                                           │
+                     ├─ D1  axto-db       : users, subscriptions, orders, sh_licenses,            │
+                     │                      usage_monthly, files, user_ai_keys, platform_config   │
+                     ├─ R2  axto-storage  : konten (prompt terenkripsi), invoice, arsip           │
+                     ├─ R2  axto-documents: file & hasil kerja member (per user)                  │
+                     ├─ R2  axto-builds   : image Docker / EXE / PDF panduan (self-hosted)        │
+                     ├─ KV  axto-kv       : rate-limit & cache ringan                             │
+                     └─ Workers AI        : model AI bawaan (fallback tanpa API key)              │
+                         └────────────────────────────────────────────────────────────────────────┘
+ Penyedia AI (opsional): kunci platform (admin) atau BYOK member — Anthropic, OpenAI, Gemini, Groq, OpenRouter
+ Pembayaran: Stripe · PayPal · Xendit · Midtrans · Crypto (NOWPayments)
+ Engine self-hosted (Docker) ──▶ /api/license-validate (respons ditandatangani Ed25519)
+```
+
+Prinsip:
+- **Satu sumber kebenaran**: paket & batas di `lib/plans.ts`, aplikasi di `lib/apps.ts`, produk self-hosted di `lib/self-hosted.ts`.
+- **D1 hemat**: tidak ada tabel log per-request; heartbeat lisensi hanya memperbarui 1 baris (maks. 1×/jam); entitlement dibawa di JWT dan disegarkan per jam.
+- **R2 maksimal**: semua isi (prompt, dokumen, hasil AI, invoice, arsip) di R2; D1 hanya indeks kecil.
+- **Mudah dipahami**: bahasa sederhana, satu pola tata letak untuk seluruh portal, setiap halaman punya judul + penjelasan singkat + satu tombol utama.
+
+---
+
+## 4. Paket langganan
+
+Harga default (bisa diubah admin di **Admin → Paket & Harga**). Tahunan = 10× bulanan (hemat 2 bulan).
+
+| | **Starter** | **Pro** | **Business** | **Enterprise** |
+|---|---|---|---|---|
+| Harga / bulan | $19 | $49 | $199 | $999 |
+| Harga / tahun | $190 | $490 | $1.990 | $9.990 |
+| AI runs / bulan | 300 | 2.000 | 10.000 | 50.000 |
+| Penyimpanan (R2) | 1 GB | 10 GB | 50 GB | 500 GB |
+| Prompt Library | Basic + Pro | + Premium | + Elite | Semua |
+| Legal AI | 6 workspace inti | 18 workspace | 18 workspace | 18 workspace |
+| AI Studio · Privacy Vault | ✓ | ✓ | ✓ | ✓ |
+| Compliance Center · Security Analyst | – | ✓ | ✓ | ✓ |
+| Lisensi self-hosted (Docker) | – | – | 3 aplikasi × 5 node | 10 aplikasi, node tak terbatas |
+| BYOK (kunci AI sendiri) | ✓ (tidak memotong kuota) | ✓ | ✓ | ✓ |
+
+- Akun gratis hanya untuk melihat katalog & contoh prompt level Basic. Semua aplikasi = berbayar.
+- Pembayaran **prabayar per periode** (bulanan/tahunan) di semua gateway, termasuk QRIS/VA/crypto; pengingat email 7/3/1 hari sebelum berakhir; perpanjang 1 klik.
+- Lisensi self-hosted selalu **tier tertinggi** (fitur paling lengkap) dan berakhir bersama periode langganan.
+
+---
+
+## 5. Aplikasi
+
+### 5a. Aplikasi web — tanpa Docker (di dalam `/app`)
+| Aplikasi | Isi | Padanan self-hosted |
+|---|---|---|
+| **Legal AI** | 18 workspace ahli (riset hukum, review kontrak, drafting, due diligence, AML/KYC, privasi data, ketenagakerjaan, HKI, ESG, litigasi, dll.), unggah dokumen (PDF/DOCX/TXT), ekspor | AXTO Legal |
+| **Prompt Library** | Ribuan variasi prompt siap pakai, 24 bidang × 4 level, isi variabel, salin/jalankan | – |
+| **AI Studio** | Chat multi-model, system prompt, riwayat tersimpan di R2 | AXTO Studio / Orchestra |
+| **Privacy Vault** | Deteksi & redaksi PII **di browser** (data tidak keluar perangkat): email, telepon, kartu (Luhn), IBAN, NIK, NPWP, SSN, IP, dll. + tokenisasi & pemulihan | AXTO Vault |
+| **Compliance Center** | Analisis gap SOC 2 / ISO 27001 / GDPR / HIPAA / PCI DSS / UU PDP / NIST CSF, rencana perbaikan, generator kebijakan | AXTO Compliance |
+| **Security Analyst** | Triage log & alert, pemetaan MITRE ATT&CK, ekstraksi IOC, laporan insiden | Guardian AI / AXTO SOC |
+
+Mesin AI: urutan prioritas **BYOK member → kunci platform (admin) → Cloudflare Workers AI** (selalu tersedia, tanpa kunci).
+
+### 5b. Edisi self-hosted — Docker, wajib lisensi berbayar
+10 aplikasi konsisten: Guardian AI, Orchestra AI, Vault, Edge, SOC, Compliance, Sentinel, Antivirus, Studio, Legal.
+(`yp`, `ai-studio`, `gpu-studio`, `hybrid-studio` tidak dijual terpisah; Studio = satu produk.)
+
+---
+
+## 6. Portal
+
+### Portal Member `/app`
+`Beranda` (status paket, meter kuota, langkah memulai) · `Aplikasi` (6 aplikasi web) · `File Saya` · `Self-Hosted` (unduhan + kunci lisensi, untuk Business/Enterprise) · `Tagihan` (paket, upgrade, riwayat & invoice) · `Pengaturan` (profil, kata sandi, kunci AI sendiri) · `Bantuan`.
+
+### Portal Admin `/admin`
+`Ringkasan` (MRR, pelanggan aktif, pendapatan, pemakaian AI) · `Member` · `Pesanan & Pembayaran` (konfirmasi transfer manual) · `Langganan` · `Lisensi Self-Hosted` · `Paket & Harga` · `Prompt Library` · `Mesin AI` (kunci penyedia, model default) · `Gateway Pembayaran` · `Rilis (build R2)` · `Pengaturan` · `Log Audit`.
+
+Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch, Promo Pricing, Resellers, Managed Infra, AutoPost, Playbooks (diganti Prompt Library), Crypto Methods (digabung ke Gateway).
+
+---
+
+## 7. Data: D1 ramping, R2 maksimal
+
+**D1 (inti saja)**
+| Tabel | Isi |
+|---|---|
+| `users` | akun (admin & member), profil, status |
+| `subscriptions` | 1 baris per member: paket, siklus, periode aktif |
+| `orders` | pesanan & pembayaran (menggantikan invoices/crypto_payments/usdt_payments/playbook_purchases) |
+| `sh_licenses` | lisensi self-hosted (menggantikan `licenses` yang rusak) |
+| `usage_monthly` | penghitung AI runs per member per bulan (1 upsert per run) |
+| `files` | indeks file member; isi di R2 |
+| `user_ai_keys` | kunci BYOK terenkripsi |
+| `platform_config`, `payment_gateways`, `ai_provider_keys`, `audit_log` | konfigurasi (dipakai ulang) |
+
+**R2**
+- `axto-storage/content/prompts/*.enc` — isi Prompt Library, terenkripsi AES-256-GCM (repo publik hanya menyimpan ciphertext).
+- `axto-storage/invoices/YYYY/<order>.html` — invoice.
+- `axto-documents/u/<userId>/…` — unggahan & hasil kerja member.
+- `axto-builds/…` — image Docker, EXE, PDF panduan (sudah berjalan).
+
+**Tabel lama** (autopost_*, trial_*, promo_*, reseller*, playbook_*, studio_*, installs, dll.) tidak lagi dipakai kode v3. Penghapusan tabel lama disediakan sebagai skrip terpisah `dashboard/cf-migrations-optional/` agar tidak ada data yang hilang tanpa persetujuan.
+
+---
+
+## 8. Prompt Library
+
+- **24 bidang**: Bisnis & Strategi, Marketing, Penjualan, Konten & SEO, Media Sosial, E-commerce, Keuangan & Akuntansi, Investasi, Hukum, Kepatuhan & Risiko, SDM & Rekrutmen, Karier, Pendidikan, Riset Akademik, Kesehatan, Pengembangan Software, Data & Analitik, Keamanan Siber, Desain & UX, Manajemen Produk, Operasional & Supply Chain, Properti, Hospitality & Pariwisata, Produktivitas Pribadi.
+- **4 level**: Basic (tugas kecil sehari-hari) → Pro (kerangka profesional) → Premium (alur kerja ahli multi-langkah) → **Elite** (skala global: multi-negara, multi-mata uang, tingkat C-level/konsultan).
+- Setiap prompt: judul, ringkasan publik (untuk SEO), variabel `{{...}}`, isi lengkap (terkunci sesuai paket), contoh penggunaan, model yang cocok.
+- Halaman publik per bidang & per prompt (judul + ringkasan) → ratusan halaman yang bisa diindeks Google; isi lengkap hanya untuk member.
+
+---
+
+## 9. SEO (standar Google Search Console)
+
+- Halaman publik **statis** (SSG) dengan `generateMetadata` per halaman: title unik, description, canonical, Open Graph, Twitter Card.
+- JSON-LD: `Organization`, `WebSite` + `SearchAction`, `SoftwareApplication` + `Offer` (harga nyata), `FAQPage`, `BreadcrumbList`, `BlogPosting`, `CreativeWork` (prompt).
+- `sitemap.xml` (indeks) + sub-sitemap: halaman, aplikasi, prompt, blog; `lastModified` akurat.
+- `robots.txt` dari `app/robots.ts` saja; halaman portal/admin/auth `noindex`.
+- Verifikasi Search Console via env `NEXT_PUBLIC_GSC_VERIFICATION` (atau DNS TXT di Cloudflare — direkomendasikan).
+- Core Web Vitals: tanpa skrip iklan global, font sistem, JS minimal di halaman publik, cache static assets 1 tahun.
+- RSS blog, halaman 404 yang benar, `manifest.webmanifest`, ikon, `security.txt`.
+
+---
+
+## 10. Fase pengerjaan
+
+| Fase | Isi | Status |
+|---|---|---|
+| 0 | Audit + blueprint + hapus data klien uji | ✅ |
+| 1 | Fondasi langganan: `lib/plans.ts`, migrasi D1 v3, auth baru, checkout & webhook, putus program gratis di server **dan** engine | ⏳ |
+| 2 | Design system + Portal Member `/app` | ⏳ |
+| 3 | Portal Admin baru + hapus menu/halaman lama | ⏳ |
+| 4 | Aplikasi web: Legal AI, AI Studio, Privacy Vault, Compliance Center, Security Analyst | ⏳ |
+| 5 | Prompt Library (konten + enkripsi + R2) | ⏳ |
+| 6 | Situs publik baru + SEO lengkap | ⏳ |
+| 7 | Optimasi R2/D1, skrip sinkron R2 di workflow deploy, pembersihan tabel lama (opsional) | ⏳ |
+
+---
+
+## 11. Yang perlu disiapkan pemilik
+
+1. **Merge** branch ini ke `main` untuk deploy (migrasi D1 & upload R2 berjalan otomatis).
+2. Secret Pages yang sudah ada tetap dipakai: `JWT_SECRET`, `ENCRYPTION_KEY`, `ADMIN_PASSWORD`, `CRON_SECRET`.
+3. Aktifkan gateway pembayaran di **Admin → Gateway Pembayaran** (PayPal & NOWPayments sudah aktif; Stripe/Xendit/Midtrans tinggal diisi).
+4. Opsional: kunci AI platform di **Admin → Mesin AI** (tanpa ini, Workers AI Cloudflare dipakai otomatis).
+5. Verifikasi domain di Google Search Console (DNS TXT di Cloudflare), lalu kirim `https://axto.io/sitemap.xml`.
