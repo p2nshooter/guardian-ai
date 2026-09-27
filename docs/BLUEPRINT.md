@@ -269,3 +269,36 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 3. Aktifkan gateway pembayaran di **Admin → Gateway Pembayaran** (PayPal & NOWPayments sudah aktif; Stripe/Xendit/Midtrans tinggal diisi).
 4. Managed AI tetap terkunci sampai Anda membukanya di **Admin → Managed AI**.
 5. Verifikasi domain di Google Search Console (DNS TXT di Cloudflare), lalu kirim `https://axto.io/sitemap.xml`.
+
+---
+
+## 12. Standar puncak v3.1 — target "kelas dunia" (permintaan pemilik, Sep 2026)
+
+Prinsip: tidak ada fitur setengah jadi. Setiap poin di bawah wajib punya (1) kode, (2) panduan pakai, (3) uji otomatis yang dijalankan **berulang** (setiap push + terjadwal setiap malam). Fakta hukum tidak pernah dikarang: AI diwajibkan menandai `VERIFY` bila tidak yakin dan menyebut tanggal "per" (as-of).
+
+### 12a. Legal AI — setara/melampaui Harvey, CoCounsel, Lexis+ AI
+| Area | Spesifikasi |
+|---|---|
+| **Yurisdiksi** | ±200 negara + Uni Eropa + hukum internasional; filter **negara → negara bagian/provinsi/rezim khusus → kota/kabupaten**. Subdivisi untuk negara yang hukum daerahnya berbeda: ID (38 provinsi + Aceh/qanun, DIY, DKJ, Papua Otsus, Bali desa adat, IKN), US (50 negara bagian + DC + teritori; Louisiana civil law), CA (Québec civil law), AU, IN, MY (Sabah/Sarawak, Syariah negeri), GB (Skotlandia, Irlandia Utara), DE, BR, MX, ES (derecho foral), IT, CH, AE (DIFC/ADGM), NG (negara bagian Syariah), ZA, AR, PK, SA, PH (BARMM), CN, JP, KR, CO, CL, BE, AT, CM, FR (Alsace-Moselle, DOM-TOM), DK, FI, PT, IQ, BA, TZ, KZ (AIFC), QA (QFC). Sistem hukum per negara (civil/common/Islam/adat/sosialis), hierarki peraturan, sumber resmi, dan **perubahan terbaru** yang wajib dicek (mis. KUHP baru 2 Jan 2026, BNS/BNSS/BSA India, EU AI Act). |
+| **Hukum terbaru** | Mode *Live research*: Anthropic (web_search + web_fetch server tools), OpenRouter (web plugin), Perplexity (sonar) → jawaban dengan sumber & tanggal. Tanpa live research, AI wajib menyatakan batas pengetahuannya dan daftar yang harus diverifikasi. Prinsip waktu: hukum yang berlaku saat peristiwa vs saat ini, aturan peralihan, *lex mitior* untuk pidana. |
+| **Susun ulang perkara** (Case Builder) | Unggah banyak berkas (PDF, DOCX, TXT, MD, HTML, EML, CSV) → teks diekstrak **di browser** (pdf.js, pembaca DOCX bawaan) dengan penanda halaman `[DOC-n p.x]` → AI menyusun: para pihak, kronologi (tabel bertanggal + rujukan dokumen), pokok masalah hukum, dasar hukum berjenjang dari konstitusi sampai peraturan daerah & yurisprudensi (dengan cek keberlakuan), analisis per unsur, matriks bukti & kekurangan bukti, kompetensi/tenggat/daluwarsa, argumen & bantahan, penilaian risiko, strategi, dokumen yang perlu dibuat, sumber & daftar verifikasi. |
+| **Workspace** | 36 workspace dalam 5 kelompok: Riset & Analisis (riset hukum, case builder, perbandingan multi-yurisdiksi, penjelas pasal, uji konstitusional, analisis putusan, radar regulasi, cek sitasi), Kontrak & Transaksi (review & redline, drafting, strategi negosiasi, due diligence, kesekretariatan korporasi, perbandingan dokumen), Litigasi & Sengketa (strategi litigasi, gugatan/jawaban/banding/kasasi/PK, kronologi & bukti, persiapan saksi, simulasi lawan & hakim, arbitrase, somasi & nilai damai, pidana), Kepatuhan & Risiko (gap kepatuhan, privasi/DPIA, AML/KYC/sanksi, ketenagakerjaan, HKI, pajak, ESG, tata kelola AI), Drafting & Komunikasi (surat & pendapat hukum, penjelasan bahasa awam, perancangan peraturan/naskah akademik, terjemahan hukum, kalkulator tenggat, tanya bebas). Starter: 6 workspace inti; Pro ke atas: semua. |
+| **Kontrol** | 45 bidang hukum, peran/pihak (penggugat, tergugat, jaksa, penasihat hukum, hakim, mediator, in-house, regulator, netral), audiens (pengacara, klien awam, pengadilan, direksi), kedalaman (ringkas/standar/menyeluruh), bahasa output, tanggal peristiwa & tanggal "per", gaya sitasi (Bluebook, OSCOLA, AGLC, McGill, praktik Indonesia, EU). |
+| **Prompt** | Prompt berlapis dibangun **hanya di server** (tidak bisa dilihat/diubah browser): standar profesi → yurisdiksi → waktu → protokol riset & sitasi → metode workspace → fokus bidang → peran & audiens → protokol dokumen (anti prompt-injection dari isi dokumen) → format output → etika & kerahasiaan. |
+| **Matter (perkara)** | Disimpan terenkripsi AES-256-GCM per member di R2 (dokumen, hasil, catatan); D1 tidak menyimpan isi. Riwayat per perkara, lanjutkan percakapan, ekspor **DOCX**, PDF (cetak), Markdown. |
+
+### 12b. BYOX / BYOK / BYOM / BYOE — harus benar-benar jalan
+- Penyedia: Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Perplexity, DeepSeek, Mistral, xAI (Grok), Together AI, Fireworks AI, Cerebras, Deepgram (STT), dan **endpoint sendiri** (Ollama, vLLM, LM Studio, LiteLLM, Azure-compatible gateway).
+- Daftar model diambil langsung dari akun member (`/models`), tombol **Tes koneksi**, pilih penyedia & model per jalankan, urutan cadangan otomatis antar kunci milik member (tidak pernah jatuh ke AI platform).
+- Uji E2E dengan penyedia tiruan (mock) memverifikasi: kunci terenkripsi, prompt sistem dari server, dokumen & yurisdiksi masuk ke prompt, streaming, error yang jelas.
+
+### 12c. Clipper — setara OpusClip / Klap / Vizard
+Transkripsi kata-per-kata (Deepgram/Groq/OpenAI), skor viralitas (hook, payoff, emosi, kejelasan) dengan alasan, auto-reframe 9:16/1:1/16:9 dengan deteksi wajah di browser, caption animasi (template, highlight kata kunci, emoji), hapus jeda & kata pengisi, brand kit (logo, font, warna), judul/deskripsi/hashtag per platform, terjemahan caption, ekspor MP4 + SRT/VTT, proyek tersimpan di R2. Video diproses di perangkat member (ffmpeg.wasm).
+
+### 12d. SEO & konversi
+- Halaman programatik yang bermanfaat (bukan tipis): Legal AI per negara (sistem hukum, sumber resmi, subdivisi, workspace, FAQ), per workspace, per bidang prompt; JSON-LD `SoftwareApplication`/`Offer`/`FAQPage`/`BreadcrumbList`; internal link; sitemap per kelompok.
+- Ajakan membeli kuat & jujur: CTA utama di setiap bagian, harga jelas + hemat tahunan, tabel perbandingan, demo interaktif, jaminan keamanan data, aktivasi instan, sticky CTA di mobile. **Tanpa testimoni/angka palsu.**
+
+### 12e. Docker Windows & Linux — nol bug, diuji berulang
+- CI: build + jalankan + aktivasi lisensi untuk ke-15 image di Linux (setiap push & **setiap malam**), uji installer (Go) di Linux + build/uji CLI di runner Windows, E2E platform lengkap.
+- Rilis hanya jika semua hijau; hasil uji dicatat di Admin → Releases.
