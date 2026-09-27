@@ -11,6 +11,7 @@ BYOK LLM · BYOD Connectors · Real-time Regulatory Radar
 Copyright (c) 2024-2026 Axto AI. All rights reserved.
 """
 
+import asyncio
 import logging
 import os
 import time
@@ -30,7 +31,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.config.settings import get_config
-from src.license import validate, require_valid, PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR
+from src.license import validate, require_valid, HEARTBEAT_SECS, PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR
 
 logging.basicConfig(
     level=os.environ.get("LEGL_LOG_LEVEL", "INFO"),
@@ -53,15 +54,37 @@ async def lifespan(app: FastAPI):
     logger.info("  18 AI Workspaces · 195+ Jurisdictions · 50+ Frameworks")
     logger.info("=" * 72)
 
-    _license_state = await validate(cfg.license_key)
-    require_valid(_license_state)
-
     for d in [cfg.data_path, cfg.upload_path, cfg.output_path, cfg.index_path]:
         Path(d).mkdir(parents=True, exist_ok=True)
+
+    # Never exit on a licence problem: start LOCKED (every API answers 402 with
+    # the reason) and keep re-validating — a short axto.io outage at boot or a
+    # key added later must not put the container into a crash loop.
+    _license_state = await validate(cfg.license_key)
+    if _license_state.valid:
+        require_valid(_license_state)          # logs the plan summary
+    else:
+        logger.warning("🔒 AXTO Legal is LOCKED — licence %s. Manage it at https://axto.io/app/self-hosted", _license_state.status)
+    task = asyncio.create_task(_license_heartbeat())
 
     logger.info("✅ AXTO Legal started — http://%s:%s | LLM: %s/%s",
                 cfg.api_host, cfg.api_port, cfg.llm_provider, cfg.llm_model)
     yield
+    task.cancel()
+
+
+async def _license_heartbeat():
+    global _license_state
+    while True:
+        # every minute while locked, every 30 minutes while licensed
+        await asyncio.sleep(60 if not getattr(_license_state, "valid", False) else HEARTBEAT_SECS)
+        try:
+            state = await validate(cfg.license_key)
+            if state.valid != getattr(_license_state, "valid", False):
+                logger.warning("AXTO Legal licence is now %s", "VALID" if state.valid else f"LOCKED ({state.status})")
+            _license_state = state
+        except Exception as e:
+            logger.warning("Licence re-validation failed: %s", e)
 
 
 app = FastAPI(
@@ -80,6 +103,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── Licence gate: everything except health/licence status needs a valid licence ──
+_OPEN_PATHS = ("/health", "/api/v1/license", "/favicon.ico")
+
+
+@app.middleware("http")
+async def licence_gate(request: Request, call_next):
+    if request.url.path.startswith(_OPEN_PATHS) or getattr(_license_state, "valid", False):
+        return await call_next(request)
+    status = getattr(_license_state, "status", "not_validated") or "not_validated"
+    return JSONResponse(status_code=402, content={
+        "error": "licence_required",
+        "message": f"AXTO Legal is locked (licence {status}). Add or renew your LEGL- key — https://axto.io/app/self-hosted",
+        "manage_url": "https://axto.io/app/self-hosted",
+    })
 
 
 # ── Auth guard ────────────────────────────────────────────────────────────────

@@ -420,6 +420,18 @@ class LicenseState:
         return None
 
 
+def _product_licence_config() -> dict:
+    """license_key / license_validate_url from this engine's settings module
+    (used when core.py creates the validator without an explicit config)."""
+    try:
+        from src.config.settings import get_config  # type: ignore
+        cfg = get_config()
+        get = (lambda k: cfg.get(k, "")) if isinstance(cfg, dict) else (lambda k: getattr(cfg, k, ""))
+        return {"license_key": get("license_key") or "", "license_validate_url": get("license_validate_url") or ""}
+    except Exception:
+        return {}
+
+
 # ── License Validator ─────────────────────────────────────────────────────────
 
 class _UntrustedLicenseResponse(Exception):
@@ -446,7 +458,9 @@ class LicenseValidator:
         asyncio.create_task(validator.start_heartbeat())
     """
 
-    def __init__(self, config: dict):
+    def __init__(self, config: Optional[dict] = None):
+        if config is None:
+            config = _product_licence_config()
         self._key   = (
             config.get("license_key", "")
             or os.environ.get("SENTINEL_LICENSE_KEY", "")
@@ -818,6 +832,23 @@ class LicenseValidator:
             except Exception as e:
                 failures += 1
                 log.error(f"Heartbeat exception (attempt {failures}): {type(e).__name__}: {e}")
+
+    # ── API used by the engines' core.py ─────────────────────────────────────
+    async def heartbeat(self, *_ignored) -> None:
+        """Alias of start_heartbeat() (core.py passes the node count)."""
+        await self.start_heartbeat()
+
+    async def startup(self) -> "LicenseState":
+        """Validate now and keep re-validating in the background."""
+        state = await self.validate(force=True)
+        self._hb_task = asyncio.create_task(self.start_heartbeat())
+        return state
+
+    async def shutdown(self) -> None:
+        task = getattr(self, "_hb_task", None)
+        if task:
+            task.cancel()
+        await self.close()
 
     async def close(self) -> None:
         """Clean up HTTP client on application shutdown."""

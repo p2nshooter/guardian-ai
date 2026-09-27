@@ -29,8 +29,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 import yaml
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, Depends, Header, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, Header, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 

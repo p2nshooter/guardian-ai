@@ -361,6 +361,23 @@ class RedactionEngine:
         self._all_financial  = _FINANCIAL_PATTERNS
         self._all_legal      = _LEGAL_PATTERNS
 
+    # Pattern counts (shown on /health and the dashboard)
+    @property
+    def pii_count(self) -> int:
+        return len(self._all_pii)
+
+    @property
+    def phi_count(self) -> int:
+        return len(self._all_phi)
+
+    @property
+    def financial_count(self) -> int:
+        return len(self._all_financial)
+
+    @property
+    def legal_count(self) -> int:
+        return len(self._all_legal)
+
     # ── Public API ────────────────────────────────────────────────────────────
 
     def redact_messages(

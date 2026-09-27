@@ -36,7 +36,7 @@ PRAGMA foreign_keys=ON;
 -- ── Scan events ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS scan_events (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts           REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    ts           REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     node_id      TEXT    NOT NULL DEFAULT '',
     scan_type    TEXT    NOT NULL,   -- 'file'|'ip'|'domain'|'process'|'memory'|'network'
     target       TEXT    NOT NULL,   -- file path / IP / domain / pid
@@ -55,7 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_scan_hash    ON scan_events(target_hash);
 -- ── Quarantine log ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS quarantine_log (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts               REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    ts               REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     original_path    TEXT    NOT NULL,
     quarantine_path  TEXT    NOT NULL,
     file_hash        TEXT    DEFAULT '',
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS quarantine_log (
 -- ── Process events ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS process_events (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts           REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    ts           REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     node_id      TEXT    NOT NULL DEFAULT '',
     event_type   TEXT    NOT NULL,  -- 'spawn'|'exec'|'kill'|'inject'|'privilege'
     pid          INTEGER NOT NULL DEFAULT 0,
@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_proc_name ON process_events(name);
 -- ── Network events ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS network_events (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts           REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    ts           REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     node_id      TEXT    NOT NULL DEFAULT '',
     direction    TEXT    NOT NULL DEFAULT 'outbound',  -- 'inbound'|'outbound'
     src_ip       TEXT    DEFAULT '',
@@ -108,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_net_dst_ip ON network_events(dst_ip);
 -- ── Honeypot events ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS honeypot_events (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts           REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    ts           REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     node_id      TEXT    NOT NULL DEFAULT '',
     honeypot_path TEXT   NOT NULL,
     accessor_pid INTEGER DEFAULT 0,
@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS honeypot_events (
 -- ── Learned patterns (self-learning) ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS learned_patterns (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at     REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
-    updated_at     REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    created_at     REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
+    updated_at     REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     pattern_type   TEXT    NOT NULL,  -- 'hash'|'path_pattern'|'behavior'|'network'
     pattern_value  TEXT    NOT NULL UNIQUE,
     threat_type    TEXT    DEFAULT '',
@@ -142,14 +142,14 @@ CREATE TABLE IF NOT EXISTS host_risk (
     last_alert   REAL    DEFAULT NULL,
     alert_count  INTEGER NOT NULL DEFAULT 0,
     malware_count INTEGER NOT NULL DEFAULT 0,
-    updated_at   REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec'))
+    updated_at   REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 
 -- ── MITRE ATT&CK mappings ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS attack_mappings (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     scan_event_id INTEGER REFERENCES scan_events(id),
-    ts           REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec')),
+    ts           REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     tactic       TEXT    NOT NULL,    -- 'execution'|'persistence'|'privilege_escalation' etc
     technique_id TEXT    NOT NULL,    -- 'T1059.001' etc
     technique    TEXT    NOT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS cve_cache (
     description  TEXT    DEFAULT '',
     published    TEXT    DEFAULT '',
     cpe          TEXT    DEFAULT '[]',  -- JSON array
-    cached_at    REAL    NOT NULL DEFAULT (unixepoch('now', 'subsec'))
+    cached_at    REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 """
 
@@ -326,7 +326,7 @@ class GuardianDB:
                    ON CONFLICT(pattern_value) DO UPDATE SET
                      hit_count  = hit_count + 1,
                      confidence = MIN(1.0, (confidence * hit_count + ?) / (hit_count + 1)),
-                     updated_at = unixepoch('now', 'subsec')""",
+                     updated_at = ((julianday('now') - 2440587.5) * 86400.0)""",
                 (pattern_type, pattern_value, threat_type, confidence, source, confidence)
             )
             await self._db.commit()
@@ -448,7 +448,7 @@ class GuardianDB:
                     """INSERT INTO cve_cache (cve_id, severity, score, description, published, cpe)
                        VALUES (?,?,?,?,?,?)
                        ON CONFLICT(cve_id) DO UPDATE SET
-                         cached_at=unixepoch('now','subsec')""",
+                         cached_at=((julianday('now') - 2440587.5) * 86400.0)""",
                     (cve.get("id",""), cve.get("severity","MEDIUM"),
                      cve.get("score", 0), cve.get("description","")[:500],
                      cve.get("published",""), json.dumps(cve.get("cpe",[])))

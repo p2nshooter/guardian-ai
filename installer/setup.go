@@ -1,0 +1,479 @@
+// Copyright (c) 2024-2026 Axto AI. All rights reserved.
+//
+// The install / update / uninstall pipeline, shared by the wizard and the CLI.
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/rand"
+	"embed"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+)
+
+//go:embed bundle
+var bundle embed.FS
+
+// Progress receives human-readable steps and a 0–100 completion estimate.
+type Progress interface {
+	Step(pct int, msg string)
+}
+
+type Options struct {
+	Product  *Product
+	Key      string
+	Dir      string // install directory for this product (config + compose)
+	Port     int
+	LAN      bool   // expose on the network (servers) instead of localhost only
+	Portal   string // https://axto.io
+	KeepData bool   // uninstall: keep Docker volumes
+}
+
+type Installed struct {
+	Slug        string    `json:"slug"`
+	Name        string    `json:"name"`
+	Dir         string    `json:"dir"`
+	Port        int       `json:"port"`
+	LAN         bool      `json:"lan"`
+	KeyTail     string    `json:"key_tail"`
+	InstalledAt time.Time `json:"installed_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Images      []string  `json:"images"`
+}
+
+var (
+	keyPlaceholder = regexp.MustCompile(`[A-Z]{2,5}-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX`)
+	changeMe       = regexp.MustCompile(`CHANGE_ME[A-Z_]*`)
+)
+
+func randomSecret() string {
+	b := make([]byte, 24)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// RenderConfig fills in the licence key and replaces every CHANGE_ME placeholder
+// with a strong random secret (each placeholder gets its own value).
+func RenderConfig(example []byte, key string) []byte {
+	out := keyPlaceholder.ReplaceAll(example, []byte(strings.ToUpper(strings.TrimSpace(key))))
+	return changeMe.ReplaceAllFunc(out, func([]byte) []byte { return []byte(randomSecret()) })
+}
+
+// RenderCompose maps the product's UI port to the chosen host port and, unless
+// LAN access is wanted, binds it to localhost only.
+func RenderCompose(compose []byte, p *Product, port int, lan bool) ([]byte, error) {
+	re := regexp.MustCompile(`"(?:[0-9.]+:)?` + strconv.Itoa(p.Port) + `:(\d+)"`)
+	if !re.Match(compose) {
+		return nil, fmt.Errorf("port %d not found in %s", p.Port, p.Compose)
+	}
+	host := ""
+	if !lan {
+		host = "127.0.0.1:"
+	}
+	done := false
+	return re.ReplaceAllFunc(compose, func(m []byte) []byte {
+		if done {
+			return m
+		}
+		done = true
+		sub := re.FindSubmatch(m)
+		return []byte(fmt.Sprintf(`"%s%d:%s"`, host, port, sub[1]))
+	}), nil
+}
+
+func readBundle(name string) ([]byte, error) { return bundle.ReadFile("bundle/" + name) }
+
+// ── portal ───────────────────────────────────────────────────────────────────
+
+type imageLink struct {
+	Name      string `json:"name"`
+	Label     string `json:"label"`
+	Optional  bool   `json:"optional"`
+	Available bool   `json:"available"`
+	Size      int64  `json:"size"`
+	URL       string `json:"url"`
+}
+
+type licenceInfo struct {
+	OK        bool        `json:"ok"`
+	Error     string      `json:"error"`
+	Product   string      `json:"product"`
+	Name      string      `json:"name"`
+	ExpiresAt string      `json:"expires_at"`
+	Images    []imageLink `json:"images"`
+}
+
+var httpClient = &http.Client{Timeout: 0}
+
+func CheckLicence(ctx context.Context, portal, key string) (*licenceInfo, error) {
+	body, _ := json.Marshal(map[string]string{"license_key": strings.ToUpper(strings.TrimSpace(key))})
+	req, _ := http.NewRequestWithContext(ctx, "POST", strings.TrimRight(portal, "/")+"/api/selfhosted/installer", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "AXTO-Installer/"+Version)
+	c := &http.Client{Timeout: 45 * time.Second}
+	res, err := c.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("cannot reach %s — check your internet connection (%v)", portal, err)
+	}
+	defer res.Body.Close()
+	var info licenceInfo
+	if err := json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(&info); err != nil {
+		return nil, fmt.Errorf("unexpected answer from %s (HTTP %d)", portal, res.StatusCode)
+	}
+	if !info.OK {
+		if info.Error == "" {
+			info.Error = fmt.Sprintf("licence check failed (HTTP %d)", res.StatusCode)
+		}
+		return nil, errors.New(info.Error)
+	}
+	return &info, nil
+}
+
+// download fetches url into path, resuming a partial file, reporting progress.
+func download(ctx context.Context, url, path string, expected int64, onBytes func(done, total int64)) error {
+	var have int64
+	if st, err := os.Stat(path + ".part"); err == nil {
+		have = st.Size()
+	}
+	for attempt := 0; attempt < 5; attempt++ {
+		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req.Header.Set("User-Agent", "AXTO-Installer/"+Version)
+		if have > 0 {
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", have))
+		}
+		res, err := httpClient.Do(req)
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			time.Sleep(time.Duration(attempt+1) * 2 * time.Second)
+			continue
+		}
+		// Size: what the portal told us, else Content-Range / Content-Length
+		// (streamed responses may omit Content-Length).
+		total := expected
+		switch {
+		case res.StatusCode == http.StatusPartialContent:
+			if total <= 0 {
+				if i := strings.LastIndex(res.Header.Get("Content-Range"), "/"); i >= 0 {
+					total, _ = strconv.ParseInt(res.Header.Get("Content-Range")[i+1:], 10, 64)
+				}
+			}
+		case res.StatusCode == http.StatusOK:
+			have = 0
+			if total <= 0 {
+				total = res.ContentLength
+			}
+		case res.StatusCode == http.StatusRequestedRangeNotSatisfiable:
+			res.Body.Close()
+			return os.Rename(path+".part", path)
+		default:
+			msg, _ := io.ReadAll(io.LimitReader(res.Body, 500))
+			res.Body.Close()
+			return fmt.Errorf("download failed (HTTP %d): %s", res.StatusCode, strings.TrimSpace(string(msg)))
+		}
+		flag := os.O_CREATE | os.O_WRONLY
+		if have > 0 {
+			flag |= os.O_APPEND
+		} else {
+			flag |= os.O_TRUNC
+		}
+		f, err := os.OpenFile(path+".part", flag, 0o644)
+		if err != nil {
+			res.Body.Close()
+			return err
+		}
+		buf := make([]byte, 1<<20)
+		last := time.Time{}
+		for {
+			n, rerr := res.Body.Read(buf)
+			if n > 0 {
+				if _, werr := f.Write(buf[:n]); werr != nil {
+					f.Close()
+					res.Body.Close()
+					return werr
+				}
+				have += int64(n)
+				if time.Since(last) > 300*time.Millisecond {
+					onBytes(have, total)
+					last = time.Now()
+				}
+			}
+			if rerr == io.EOF {
+				f.Close()
+				res.Body.Close()
+				onBytes(have, total)
+				if total > 0 && have < total {
+					break // connection dropped: resume
+				}
+				if total > 0 && have > total {
+					_ = os.Remove(path + ".part")
+					return fmt.Errorf("download is larger than expected (%d > %d bytes) — run the installer again", have, total)
+				}
+				return os.Rename(path+".part", path)
+			}
+			if rerr != nil {
+				f.Close()
+				res.Body.Close()
+				break // resume
+			}
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+	}
+	return errors.New("download kept failing — check your connection and run the installer again (it resumes)")
+}
+
+// ── install ──────────────────────────────────────────────────────────────────
+
+func projectName(p *Product) string { return "axto-" + p.Slug }
+
+func composeArgs(o Options, rest ...string) []string {
+	return append([]string{"compose", "-p", projectName(o.Product), "-f", filepath.Join(o.Dir, o.Product.Compose)}, rest...)
+}
+
+func servicesFor(p *Product) []string {
+	if runtime.GOOS == "windows" && len(p.WindowsOnly) > 0 {
+		return p.WindowsOnly
+	}
+	return p.Services
+}
+
+// writeFiles writes compose + config. Existing configs are kept (update path).
+func writeFiles(o Options) error {
+	p := o.Product
+	if err := os.MkdirAll(o.Dir, 0o755); err != nil {
+		return fmt.Errorf("cannot create %s: %v", o.Dir, err)
+	}
+	for _, d := range p.Dirs {
+		_ = os.MkdirAll(filepath.Join(o.Dir, d), 0o755)
+	}
+	compose, err := readBundle(p.Compose)
+	if err != nil {
+		return err
+	}
+	compose, err = RenderCompose(compose, p, o.Port, o.LAN)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(o.Dir, p.Compose), compose, 0o644); err != nil {
+		return err
+	}
+	if p.Config != "" {
+		dst := filepath.Join(o.Dir, p.ConfigAs)
+		if cur, err := os.ReadFile(dst); err == nil {
+			// Keep the customer's edits; only refresh the licence key.
+			upd := regexp.MustCompile(p.KeyPrefix+`-[0-9A-FX]{8}-[0-9A-FX]{8}-[0-9A-FX]{8}-[0-9A-FX]{8}`).ReplaceAll(cur, []byte(strings.ToUpper(o.Key)))
+			return os.WriteFile(dst, upd, 0o600)
+		}
+		example, err := readBundle(p.Config)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(dst, RenderConfig(example, o.Key), 0o600); err != nil {
+			return err
+		}
+	}
+	for _, e := range p.Extra {
+		if b, err := readBundle(e); err == nil {
+			_ = os.WriteFile(filepath.Join(o.Dir, e), b, 0o644)
+		}
+	}
+	return nil
+}
+
+func fmtBytes(n int64) string {
+	switch {
+	case n >= 1<<30:
+		return fmt.Sprintf("%.2f GB", float64(n)/(1<<30))
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+	default:
+		return fmt.Sprintf("%d KB", n/1024)
+	}
+}
+
+// Install runs the whole pipeline. It is idempotent: running it again updates.
+func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
+	p := o.Product
+	pr.Step(2, "Checking Docker…")
+	if d := CheckDocker(ctx); !d.Ready {
+		return nil, errors.New(d.Problem)
+	}
+	pr.Step(5, "Checking your licence with "+o.Portal+"…")
+	info, err := CheckLicence(ctx, o.Portal, o.Key)
+	if err != nil {
+		return nil, err
+	}
+	if info.Product != p.Slug {
+		return nil, fmt.Errorf("this key is for %s, not %s", info.Name, p.Name)
+	}
+	pr.Step(8, fmt.Sprintf("Licence OK — %s, valid until %s", info.Name, strings.SplitN(info.ExpiresAt, "T", 2)[0]))
+
+	if err := writeFiles(o); err != nil {
+		return nil, err
+	}
+	pr.Step(10, "Configuration written to "+o.Dir)
+
+	var need []imageLink
+	for _, im := range info.Images {
+		if im.Optional {
+			continue
+		}
+		if !im.Available {
+			return nil, fmt.Errorf("the %s build is being prepared on our side — please try again in a few minutes", im.Label)
+		}
+		need = append(need, im)
+	}
+	var total int64
+	for _, im := range need {
+		total += im.Size
+	}
+	imgDir := filepath.Join(o.Dir, "images")
+	_ = os.MkdirAll(imgDir, 0o755)
+	var before int64
+	loaded := []string{}
+	for _, im := range need {
+		file := filepath.Join(imgDir, im.Name+".tar.gz")
+		label := im.Label
+		err := download(ctx, im.URL, file, im.Size, func(done, all int64) {
+			pct := 10
+			if total > 0 {
+				pct = 10 + int(float64(before+done)/float64(total)*60)
+			}
+			pr.Step(pct, fmt.Sprintf("Downloading %s — %s of %s", label, fmtBytes(done), fmtBytes(all)))
+		})
+		if err != nil {
+			return nil, err
+		}
+		before += im.Size
+		pr.Step(10+int(float64(before)/float64(max64(total, 1))*60), "Loading "+label+" into Docker…")
+		if out, err := dockerCmd(ctx, "load", "-i", file); err != nil {
+			return nil, fmt.Errorf("docker could not load %s: %s", label, lastLines(out, 5))
+		}
+		_ = os.Remove(file)
+		loaded = append(loaded, im.Name)
+	}
+
+	pr.Step(75, "Starting "+p.Name+"…")
+	args := composeArgs(o, append([]string{"up", "-d", "--remove-orphans"}, servicesFor(p)...)...)
+	if out, err := dockerCmd(ctx, args...); err != nil {
+		return nil, fmt.Errorf("could not start the containers: %s", lastLines(out, 8))
+	}
+
+	pr.Step(85, "Waiting for "+p.Name+" to answer…")
+	if err := waitHealthy(ctx, o.Port, 4*time.Minute); err != nil {
+		logs, _ := dockerCmd(ctx, composeArgs(o, "logs", "--tail", "30")...)
+		return nil, fmt.Errorf("%v\n\nLast log lines:\n%s", err, lastLines(logs, 30))
+	}
+
+	now := time.Now().UTC()
+	st := &Installed{Slug: p.Slug, Name: p.Name, Dir: o.Dir, Port: o.Port, LAN: o.LAN, KeyTail: keyTail(o.Key), InstalledAt: now, UpdatedAt: now, Images: loaded}
+	if prev := LoadState()[p.Slug]; prev != nil {
+		st.InstalledAt = prev.InstalledAt
+	}
+	SaveInstalled(st)
+	pr.Step(95, "Creating shortcuts…")
+	_ = CreateShortcuts(st)
+	pr.Step(100, fmt.Sprintf("%s is running at http://localhost:%d", p.Name, o.Port))
+	return st, nil
+}
+
+func keyTail(k string) string {
+	k = strings.TrimSpace(k)
+	if len(k) <= 9 {
+		return k
+	}
+	return k[:strings.Index(k, "-")+1] + "…" + k[len(k)-4:]
+}
+
+func max64(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func lastLines(s string, n int) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+	}
+	return strings.Join(lines, "\n")
+}
+
+func waitHealthy(ctx context.Context, port int, limit time.Duration) error {
+	deadline := time.Now().Add(limit)
+	c := &http.Client{Timeout: 5 * time.Second}
+	url := fmt.Sprintf("http://127.0.0.1:%d/health", port)
+	for time.Now().Before(deadline) {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if res, err := c.Get(url); err == nil {
+			res.Body.Close()
+			if res.StatusCode < 500 || res.StatusCode == 503 {
+				return nil
+			}
+		}
+		time.Sleep(2 * time.Second)
+	}
+	return fmt.Errorf("the app did not answer on port %d within %s", port, limit)
+}
+
+// Control runs start / stop / restart / logs for an installed product.
+func Control(ctx context.Context, st *Installed, action string) (string, error) {
+	p := ProductBySlug(st.Slug)
+	if p == nil {
+		return "", errors.New("unknown product")
+	}
+	o := Options{Product: p, Dir: st.Dir, Port: st.Port}
+	switch action {
+	case "start":
+		return dockerCmd(ctx, composeArgs(o, append([]string{"up", "-d"}, servicesFor(p)...)...)...)
+	case "stop":
+		return dockerCmd(ctx, composeArgs(o, "stop")...)
+	case "restart":
+		return dockerCmd(ctx, composeArgs(o, "restart")...)
+	case "logs":
+		return dockerCmd(ctx, composeArgs(o, "logs", "--tail", "200", "--no-color")...)
+	case "status":
+		return dockerCmd(ctx, composeArgs(o, "ps", "--format", "table {{.Service}}\t{{.State}}\t{{.Status}}")...)
+	}
+	return "", fmt.Errorf("unknown action %q", action)
+}
+
+// Uninstall stops and removes the containers (and, unless KeepData, the volumes).
+func Uninstall(ctx context.Context, st *Installed, keepData bool) error {
+	p := ProductBySlug(st.Slug)
+	if p == nil {
+		return errors.New("unknown product")
+	}
+	o := Options{Product: p, Dir: st.Dir}
+	args := composeArgs(o, "down", "--remove-orphans")
+	if !keepData {
+		args = append(args, "-v")
+	}
+	if out, err := dockerCmd(ctx, args...); err != nil && !strings.Contains(out, "no such file") {
+		return fmt.Errorf("docker compose down failed: %s", lastLines(out, 5))
+	}
+	RemoveShortcuts(st)
+	if !keepData {
+		_ = os.RemoveAll(st.Dir)
+	}
+	RemoveInstalled(st.Slug)
+	return nil
+}

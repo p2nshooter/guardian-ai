@@ -41,7 +41,7 @@ PRAGMA wal_autocheckpoint = 1000;
 
 CREATE TABLE IF NOT EXISTS _schema_version (
     version    INTEGER NOT NULL,
-    applied_at REAL    NOT NULL DEFAULT (unixepoch('now','subsec'))
+    applied_at REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     parent_job_id     TEXT    DEFAULT '',
     semantic_category TEXT    DEFAULT '',
     quality_score     REAL    DEFAULT 0,
-    queued_at         REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
+    queued_at         REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     started_at        REAL    DEFAULT NULL,
     done_at           REAL    DEFAULT NULL,
     expires_at        REAL    DEFAULT NULL
@@ -92,8 +92,8 @@ CREATE TABLE IF NOT EXISTS job_cache (
     input_tokens INTEGER DEFAULT 0,
     output_tokens INTEGER DEFAULT 0,
     hit_count    INTEGER DEFAULT 1,
-    created_at   REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
-    last_hit     REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
+    created_at   REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
+    last_hit     REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     ttl_sec      INTEGER DEFAULT 3600
 );
 
@@ -122,8 +122,8 @@ CREATE TABLE IF NOT EXISTS workers (
     circuit_state  TEXT    DEFAULT 'closed',
     circuit_open_at REAL   DEFAULT NULL,
     idle_since     REAL    DEFAULT NULL,
-    last_heartbeat REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
-    registered_at  REAL    NOT NULL DEFAULT (unixepoch('now','subsec'))
+    last_heartbeat REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
+    registered_at  REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 CREATE INDEX IF NOT EXISTS idx_workers_status   ON workers(status);
 CREATE INDEX IF NOT EXISTS idx_workers_provider ON workers(provider_id);
@@ -143,13 +143,13 @@ CREATE TABLE IF NOT EXISTS nodes (
     gpu_pct        INTEGER DEFAULT 0,
     gpu_vram_free  REAL    DEFAULT 0,
     throughput_rps REAL    DEFAULT 0,
-    last_heartbeat REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
-    registered_at  REAL    NOT NULL DEFAULT (unixepoch('now','subsec'))
+    last_heartbeat REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
+    registered_at  REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 
 CREATE TABLE IF NOT EXISTS cost_events (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts                REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
+    ts                REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     job_id            TEXT    NOT NULL DEFAULT '',
     provider_id       TEXT    NOT NULL DEFAULT '',
     model             TEXT    DEFAULT '',
@@ -165,7 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_cost_caller   ON cost_events(caller_id);
 
 CREATE TABLE IF NOT EXISTS circuit_events (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts          REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
+    ts          REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     provider_id TEXT    NOT NULL,
     event_type  TEXT    NOT NULL,
     error_msg   TEXT    DEFAULT '',
@@ -176,7 +176,7 @@ CREATE INDEX IF NOT EXISTS idx_circuit_ts ON circuit_events(ts DESC);
 CREATE TABLE IF NOT EXISTS settings (
     key        TEXT PRIMARY KEY,
     value      TEXT NOT NULL DEFAULT '',
-    updated_at REAL NOT NULL DEFAULT (unixepoch('now','subsec'))
+    updated_at REAL NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 
 CREATE TABLE IF NOT EXISTS rate_limits (
@@ -187,11 +187,11 @@ CREATE TABLE IF NOT EXISTS rate_limits (
     rpm_used        INTEGER DEFAULT 0,
     tpm_used        INTEGER DEFAULT 0,
     daily_usd_used  REAL    DEFAULT 0,
-    window_start    REAL    NOT NULL DEFAULT (unixepoch('now','subsec'))
+    window_start    REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
 
 CREATE TABLE IF NOT EXISTS metrics (
-    ts     REAL NOT NULL DEFAULT (unixepoch('now','subsec')),
+    ts     REAL NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     metric TEXT NOT NULL,
     value  REAL NOT NULL,
     labels TEXT DEFAULT '{}'
@@ -200,7 +200,7 @@ CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics(ts DESC, metric);
 
 CREATE TABLE IF NOT EXISTS audit_log (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    ts       REAL    NOT NULL DEFAULT (unixepoch('now','subsec')),
+    ts       REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     actor    TEXT    NOT NULL DEFAULT '',
     action   TEXT    NOT NULL,
     resource TEXT    DEFAULT '',
@@ -340,7 +340,7 @@ def get_setting(key: str, default: str = "") -> str:
 
 
 def set_setting(key: str, value: str) -> None:
-    ex("INSERT INTO settings(key,value,updated_at) VALUES(?,?,unixepoch('now','subsec')) "
+    ex("INSERT INTO settings(key,value,updated_at) VALUES(?,?,((julianday('now') - 2440587.5) * 86400.0)) "
        "ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at",
        (key, value))
 
@@ -376,7 +376,7 @@ def dequeue_job(worker_id: str) -> Optional[Dict]:
     with _write_tx() as c:
         row = c.execute(
             """SELECT j.* FROM jobs j WHERE j.status='queued'
-               AND (j.expires_at IS NULL OR j.expires_at > unixepoch('now','subsec'))
+               AND (j.expires_at IS NULL OR j.expires_at > ((julianday('now') - 2440587.5) * 86400.0))
                AND (j.parent_job_id='' OR EXISTS(
                      SELECT 1 FROM jobs p WHERE p.id=j.parent_job_id AND p.status='done'))
                ORDER BY j.priority_score DESC, j.queued_at ASC LIMIT 1"""
@@ -384,7 +384,7 @@ def dequeue_job(worker_id: str) -> Optional[Dict]:
         if not row:
             return None
         job = dict(row)
-        c.execute("UPDATE jobs SET status='running',worker_id=?,started_at=unixepoch('now','subsec'),"
+        c.execute("UPDATE jobs SET status='running',worker_id=?,started_at=((julianday('now') - 2440587.5) * 86400.0),"
                   "attempt=attempt+1 WHERE id=?", (worker_id, job["id"]))
     job["messages"] = json.loads(job.get("messages") or "[]")
     job["metadata"] = json.loads(job.get("metadata") or "{}")
@@ -400,7 +400,7 @@ def finish_job(job_id: str, result: str = "", error: str = "",
         c.execute(
             """UPDATE jobs SET status=?,result=?,error=?,input_tokens=?,output_tokens=?,
                cost_usd=?,latency_ms=?,model_used=?,provider_used=?,quality_score=?,
-               done_at=unixepoch('now','subsec') WHERE id=?""",
+               done_at=((julianday('now') - 2440587.5) * 86400.0) WHERE id=?""",
             (status, result, error, input_tokens, output_tokens, cost_usd,
              latency_ms, model_used, provider_used, quality_score, job_id))
         if cost_usd > 0:
@@ -428,7 +428,7 @@ def retry_job(job_id: str) -> bool:
 def cancel_expired_jobs() -> int:
     return ex("UPDATE jobs SET status='timeout',error='SLA or TTL exceeded' "
               "WHERE status='queued' AND expires_at IS NOT NULL "
-              "AND expires_at<unixepoch('now','subsec')")
+              "AND expires_at<((julianday('now') - 2440587.5) * 86400.0)")
 
 
 def get_job(job_id: str) -> Optional[Dict]:
@@ -445,9 +445,9 @@ def get_queue_snapshot() -> Dict:
     depth   = (q1("SELECT COUNT(*) as n FROM jobs WHERE status='queued'") or {}).get("n", 0)
     running = (q1("SELECT COUNT(*) as n FROM jobs WHERE status='running'") or {}).get("n", 0)
     done24  = (q1("SELECT COUNT(*) as n FROM jobs WHERE status='done' "
-                  "AND done_at>unixepoch('now','subsec')-86400") or {}).get("n", 0)
+                  "AND done_at>((julianday('now') - 2440587.5) * 86400.0)-86400") or {}).get("n", 0)
     err24   = (q1("SELECT COUNT(*) as n FROM jobs WHERE status='error' "
-                  "AND done_at>unixepoch('now','subsec')-86400") or {}).get("n", 0)
+                  "AND done_at>((julianday('now') - 2440587.5) * 86400.0)-86400") or {}).get("n", 0)
     return {"by_status": by_status, "depth": depth,
             "running": running, "done_24h": done24, "error_24h": err24}
 
@@ -457,9 +457,9 @@ def get_queue_snapshot() -> Dict:
 def cache_get(cache_key: str) -> Optional[Dict]:
     if not cache_key: return None
     row = q1("SELECT * FROM job_cache WHERE cache_key=? "
-             "AND (created_at+ttl_sec)>unixepoch('now','subsec')", (cache_key,))
+             "AND (created_at+ttl_sec)>((julianday('now') - 2440587.5) * 86400.0)", (cache_key,))
     if row:
-        ex("UPDATE job_cache SET hit_count=hit_count+1,last_hit=unixepoch('now','subsec') "
+        ex("UPDATE job_cache SET hit_count=hit_count+1,last_hit=((julianday('now') - 2440587.5) * 86400.0) "
            "WHERE cache_key=?", (cache_key,))
     return row
 
@@ -469,12 +469,12 @@ def cache_set(cache_key: str, result: str, model_used: str = "",
     if not cache_key: return
     ex("INSERT INTO job_cache(cache_key,result,model_used,input_tokens,output_tokens,ttl_sec) "
        "VALUES(?,?,?,?,?,?) ON CONFLICT(cache_key) DO UPDATE SET result=excluded.result,"
-       "last_hit=unixepoch('now','subsec'),hit_count=hit_count+1",
+       "last_hit=((julianday('now') - 2440587.5) * 86400.0),hit_count=hit_count+1",
        (cache_key, result, model_used, input_tokens, output_tokens, ttl_sec))
 
 
 def cache_evict_expired() -> int:
-    return ex("DELETE FROM job_cache WHERE (created_at+ttl_sec)<unixepoch('now','subsec')")
+    return ex("DELETE FROM job_cache WHERE (created_at+ttl_sec)<((julianday('now') - 2440587.5) * 86400.0)")
 
 
 # ── Workers ───────────────────────────────────────────────────────────────────
@@ -486,16 +486,16 @@ def upsert_worker(w: Dict) -> None:
        :retry_count,:priority,:gpu_vram_gb,:base_url,:worker_url,:label,:status)
        ON CONFLICT(id) DO UPDATE SET status=excluded.status,provider_id=excluded.provider_id,
        model=excluded.model,base_url=excluded.base_url,worker_url=excluded.worker_url,
-       last_heartbeat=unixepoch('now','subsec')""",
+       last_heartbeat=((julianday('now') - 2440587.5) * 86400.0)""",
        w)
 
 
 def heartbeat_worker(worker_id: str, load_pct: int, tasks_active: int) -> bool:
     return ex(
-        """UPDATE workers SET last_heartbeat=unixepoch('now','subsec'),status='active',
+        """UPDATE workers SET last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status='active',
            load_pct=?,tasks_active=?,
            idle_since=CASE WHEN ?> 0 THEN NULL
-                      ELSE COALESCE(idle_since,unixepoch('now','subsec')) END
+                      ELSE COALESCE(idle_since,((julianday('now') - 2440587.5) * 86400.0)) END
            WHERE id=?""",
         (load_pct, tasks_active, tasks_active, worker_id)) > 0
 
@@ -550,7 +550,7 @@ def circuit_record_failure(provider_id: str, error_msg: str = "") -> None:
     if worker["error_rate"] >= threshold and worker["circuit_state"] != "open":
         with _write_tx() as c:
             c.execute("UPDATE workers SET circuit_state='open',"
-                      "circuit_open_at=unixepoch('now','subsec') WHERE provider_id=?",
+                      "circuit_open_at=((julianday('now') - 2440587.5) * 86400.0) WHERE provider_id=?",
                       (provider_id,))
             c.execute("INSERT INTO circuit_events(provider_id,event_type,error_msg,error_rate) "
                       "VALUES(?,?,?,?)", (provider_id,"open",error_msg,worker["error_rate"]))
@@ -593,7 +593,7 @@ def upsert_node(node: Dict) -> None:
     ex("""INSERT INTO nodes(id,name,endpoint,node_type,max_workers,region,cluster_id,tags)
        VALUES(:id,:name,:endpoint,:node_type,:max_workers,:region,:cluster_id,:tags)
        ON CONFLICT(id) DO UPDATE SET name=excluded.name,endpoint=excluded.endpoint,
-       last_heartbeat=unixepoch('now','subsec'),status='online'""", node)
+       last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status='online'""", node)
 
 
 def get_nodes(timeout_sec: int = 120) -> List[Dict]:
@@ -607,7 +607,7 @@ def get_nodes(timeout_sec: int = 120) -> List[Dict]:
 
 def heartbeat_node(node_id: str, cpu_pct: int = 0, mem_pct: int = 0,
                    gpu_pct: int = 0, throughput_rps: float = 0) -> bool:
-    return ex("UPDATE nodes SET last_heartbeat=unixepoch('now','subsec'),status='online',"
+    return ex("UPDATE nodes SET last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status='online',"
               "cpu_pct=?,mem_pct=?,gpu_pct=?,throughput_rps=? WHERE id=?",
               (cpu_pct, mem_pct, gpu_pct, throughput_rps, node_id)) > 0
 
@@ -645,6 +645,7 @@ def get_performance_stats(hours: int = 24) -> Dict:
     return {"total_jobs": done.get("n") or 0, "error_count": err.get("n") or 0,
             "error_rate": round((err.get("n") or 0)/max(total_n,1),3),
             "avg_lat_ms": round(done.get("avg_lat") or 0,1),
+            "avg_latency_ms": round(done.get("avg_lat") or 0,1),
             "p50_lat_ms": pct(lats,50), "p95_lat_ms": pct(lats,95), "p99_lat_ms": pct(lats,99),
             "throughput_rps": round((done.get("n") or 0)/max(hours*3600,1),4)}
 
@@ -657,7 +658,7 @@ def record_metric(metric: str, value: float, labels: dict = None) -> None:
 
 
 def prune_metrics(days: int = 7) -> int:
-    return ex("DELETE FROM metrics WHERE ts<unixepoch('now','subsec')-?", (days*86400,))
+    return ex("DELETE FROM metrics WHERE ts<((julianday('now') - 2440587.5) * 86400.0)-?", (days*86400,))
 
 
 def audit(actor: str, action: str, resource: str = "", detail: str = "",
