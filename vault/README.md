@@ -10,7 +10,7 @@
 
 [![Product](https://img.shields.io/badge/AXTO-Vault%201.0-6366f1)](https://axto.io/vault)
 [![BYOK](https://img.shields.io/badge/100%25-BYOK-brightgreen)](https://axto.io)
-[![License](https://img.shields.io/badge/License-Commercial-blue)](https://axto.io/portal)
+[![License](https://img.shields.io/badge/License-Commercial-blue)](https://axto.io/app/self-hosted)
 [![Compliance](https://img.shields.io/badge/Compliant-HIPAA%20%7C%20GDPR%20%7C%20SOC2%20%7C%20PCI--DSS-success)](https://axto.io/vault)
 
 ---
@@ -99,7 +99,7 @@ Your App → AXTO Vault (your server) → AI Provider (your API key)
 
 ```bash
 # 1. Download from portal
-# https://axto.io/portal → Licenses → Download → Docker
+# https://axto.io/app/self-hosted → Licenses → Download → Docker
 
 mkdir axto-vault && cd axto-vault
 # (extract vault-package.zip)
@@ -144,7 +144,7 @@ curl http://localhost:8080/health
 | **Business** | $14,900/yr | 1,000,000 | Multi-tenant |
 | **Enterprise** | $49,900/yr | Unlimited | Unlimited |
 
-[Purchase at axto.io →](https://axto.io/portal)
+[Purchase at axto.io →](https://axto.io/app/self-hosted)
 
 ---
 
@@ -220,7 +220,7 @@ axto-vault/
 | Channel | Contact |
 |---------|---------|
 | **AI Support Chat** | http://localhost:8080/support |
-| **Client Portal** | https://axto.io/portal |
+| **Client Portal** | https://axto.io/app/self-hosted |
 | **Email** | hello@axto.io |
 | **Documentation** | https://axto.io/guide |
 

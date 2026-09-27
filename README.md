@@ -45,5 +45,5 @@ git add . && git commit -m "initial" && git push origin main
 | | |
 |---|---|
 | Website | https://axto.io |
-| Client Portal | https://axto.io/portal |
+| Client Portal | https://axto.io/app/self-hosted |
 | Contact | hello@axto.io |

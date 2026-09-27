@@ -106,7 +106,7 @@ app.add_middleware(
 def require_license():
     """Check license validity. Raises 403 if invalid."""
     if not lic.is_valid():
-        raise HTTPException(status_code=403, detail="License invalid or expired. Visit axto.io/portal to renew.")
+        raise HTTPException(status_code=403, detail="License invalid or expired. Visit axto.io/app/self-hosted to renew.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

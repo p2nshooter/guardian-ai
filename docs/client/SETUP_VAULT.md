@@ -134,7 +134,7 @@ Your App (receives full response as normal)
 | Disk | 1 GB | 5 GB (for audit logs) |
 | CPU | 1 core | 2+ cores |
 | AI API Key | At least 1 provider | Multiple for redundancy |
-| License Key | Required (from axto.io/portal) | — |
+| License Key | Required (from axto.io/app/self-hosted) | — |
 | Network | Outbound to AI provider only | — |
 
 **You do NOT need:**
@@ -150,7 +150,7 @@ Your App (receives full response as normal)
 ### Step 1 — Download from portal
 
 ```
-https://axto.io/portal → Licenses → Download → Docker (Linux)
+https://axto.io/app/self-hosted → Licenses → Download → Docker (Linux)
 ```
 
 ### Step 2 — Extract
@@ -907,7 +907,7 @@ A: Yes — use `whitelist_domains` in your policy. E.g., `["axto.io", "our-compa
 | Channel | Details |
 |---------|---------|
 | **AI Support Chat** | http://YOUR_VAULT_SERVER:8080/support |
-| **Portal** | https://axto.io/portal |
+| **Portal** | https://axto.io/app/self-hosted |
 | **Email** | hello@axto.io |
 | **Guide** | https://axto.io/guide |
 | **Health API** | http://YOUR_VAULT_SERVER:8080/health |

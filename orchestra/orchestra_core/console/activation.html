@@ -422,7 +422,7 @@
       <h1 id="title">Activate Your License</h1>
       <p class="subtitle" id="subtitle">
         Enter your license key to unlock all features.
-        Don't have one? <a href="https://axto.io/portal" target="_blank">Purchase at axto.io →</a>
+        Don't have one? <a href="https://axto.io/app/self-hosted" target="_blank">Purchase at axto.io →</a>
       </p>
 
       <!-- Alert box -->
@@ -480,7 +480,7 @@
     </div>
 
     <div class="footer-links">
-      <a href="https://axto.io/portal" target="_blank">Client Portal</a>
+      <a href="https://axto.io/app/self-hosted" target="_blank">Client Portal</a>
       <a href="https://axto.io/guide" target="_blank">Setup Guide</a>
       <a href="mailto:hello@axto.io">Support</a>
     </div>
@@ -607,9 +607,9 @@ async function activate() {
       const msg = data.message || data.error || 'Invalid license key.';
       const hints = {
         'product_mismatch': `This key is for ${data.key_is_for || 'a different product'}. Please use a ${PRODUCT === 'guardian' ? 'GUARD-' : 'ORCH-'} key.`,
-        'expired': 'This license has expired. Renew at axto.io/portal.',
+        'expired': 'This license has expired. Renew at axto.io/app/self-hosted.',
         'revoked': 'This license has been revoked. Contact hello@axto.io.',
-        'not_found': 'Key not found. Check the key in your portal at axto.io/portal.',
+        'not_found': 'Key not found. Check the key in your portal at axto.io/app/self-hosted.',
         'machine_mismatch': 'This key is already activated on another machine. Contact support to reset.',
       };
       showAlert('error', hints[data.reason] || msg);

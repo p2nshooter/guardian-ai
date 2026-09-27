@@ -108,7 +108,7 @@ def _check_limit():
     if limit and limit > 0 and _counter["count"] >= limit:
         raise HTTPException(429, {
             "error": "Limit harian tercapai",
-            "message": f"Batas {limit} dokumen/hari telah tercapai. Upgrade plan di axto.io/portal.",
+            "message": f"Batas {limit} dokumen/hari telah tercapai. Upgrade plan di axto.io/app/self-hosted.",
         })
     _counter["count"] += 1
 
@@ -135,7 +135,7 @@ def _require_workspace_licensed(workspace_id: str):
             "error":   "Workspace terkunci untuk paket Anda",
             "message": f"Workspace '{ws['name']}' tidak termasuk dalam paket Anda "
                        f"({allowed} dari {total} workspace aktif). Upgrade paket di "
-                       f"axto.io/portal untuk membuka seluruh workspace.",
+                       f"axto.io/app/self-hosted untuk membuka seluruh workspace.",
             "workspace_id":        workspace_id,
             "licensed_workspaces": allowed,
             "total_workspaces":    total,

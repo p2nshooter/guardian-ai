@@ -218,7 +218,7 @@ tbody tr:hover td{background:rgba(5,150,105,.04)}
     <div class="card"><div class="ct">📖 Resources</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <a href="https://axto.io/guide" target="_blank" class="btn btng sm">📚 Docs</a>
-        <a href="https://axto.io/portal" target="_blank" class="btn btng sm">🏠 Portal</a>
+        <a href="https://axto.io/app/self-hosted" target="_blank" class="btn btng sm">🏠 Portal</a>
         <a href="/support" class="btn btng sm">🛠 Support</a>
       </div>
     </div>
@@ -300,7 +300,7 @@ async function loadOverview(){
       Object.entries(s.blocked_by_type||{}).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([t,n])=>`<div class="sr"><span class="sl">${t}</span><span class="sv" style="color:#f87171">${n}</span></div>`).join('')||'<div style="color:var(--text3);font-size:12px">No blocked requests</div>':
       '<div style="color:var(--text3);font-size:12px">No blocked requests</div>';
     // Sys info
-    document.getElementById('sys-info').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#34d399">${s.license?.plan||'—'}</span></div><div class="sr"><span class="sl">Mode</span><span class="sv">${s.mode||'proxy'}</span></div><div class="sr"><span class="sl">Expires</span><span class="sv">${s.license?.expires_at?fds(s.license.expires_at):'—'}</span></div><a href="https://axto.io/portal" target="_blank" class="btn btng xs" style="margin-top:10px">Manage →</a>`;
+    document.getElementById('sys-info').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#34d399">${s.license?.plan||'—'}</span></div><div class="sr"><span class="sl">Mode</span><span class="sv">${s.mode||'proxy'}</span></div><div class="sr"><span class="sl">Expires</span><span class="sv">${s.license?.expires_at?fds(s.license.expires_at):'—'}</span></div><a href="https://axto.io/app/self-hosted" target="_blank" class="btn btng xs" style="margin-top:10px">Manage →</a>`;
     document.getElementById('lic-detail').innerHTML=`<div class="sr"><span class="sl">Plan</span><span class="sv" style="color:#34d399">${s.license?.plan||'—'}</span></div><div class="sr"><span class="sl">Machine</span><span class="sv mono" style="font-size:10px">${s.license?.machine_id?s.license.machine_id.slice(0,20)+'…':'—'}</span></div><div class="sr"><span class="sl">Expires</span><span class="sv">${s.license?.expires_at?fds(s.license.expires_at):'—'}</span></div>`;
   }catch(e){console.warn('OV:',e)}
 }

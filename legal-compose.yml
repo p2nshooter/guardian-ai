@@ -11,13 +11,13 @@ version: "3.9"
 #
 # Quick Start:
 #   1. cp legal.env.example legal.env
-#   2. Isi LEGL_LICENSE_KEY dari Client Portal / Fill LEGL_LICENSE_KEY from Client Portal
+#   2. Isi LEGL_LICENSE_KEY dari AXTO portal (Self-Hosted) / Fill LEGL_LICENSE_KEY from https://axto.io/app/self-hosted
 #   3. Isi minimal 1 LLM provider key (BYOK) / Add at least 1 LLM provider key (BYOK)
 #   4. docker compose -f legal-compose.yml up -d
 #   5. Dashboard: http://YOUR_SERVER:8096
 #
 # Pull image: docker pull axto/legal-core:latest
-# Portal:     https://axto.io/portal
+# Portal:     https://axto.io/app/self-hosted
 # Docs:       https://axto.io/guide
 # ============================================================
 

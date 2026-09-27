@@ -159,18 +159,16 @@ async def orch_license_wizard(request: Request, call_next):
 # ── License activate endpoint ─────────────────────────────────────────────────
 @app.post("/api/license/activate")
 async def orch_license_activate(request: Request):
-    import os, httpx, socket as _sock, uuid as _uuid
+    import os, httpx, socket as _sock
     body = await request.json()
     key = (body.get("license_key") or "").strip().upper()
     if not key:
         return JSONResponse({"valid": False, "error": "No license key"}, status_code=400)
 
     validate_url = os.environ.get("AXTO_LICENSE_SERVER", "https://axto.io/api/license-validate")
-    try:
-        mid_path = "/etc/machine-id"
-        machine_id = open(mid_path).read().strip() if os.path.exists(mid_path) else str(_uuid.uuid4())
-    except Exception:
-        machine_id = str(_uuid.uuid4())
+    # Same fingerprint the licence validator sends on every heartbeat (see license.machine_id).
+    from license import machine_id as _machine_id
+    machine_id = _machine_id()
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:

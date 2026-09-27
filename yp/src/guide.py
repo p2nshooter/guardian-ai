@@ -217,7 +217,7 @@ curl http://YOUR_SERVER:8100/ai/providers  # live provider-scaling scoreboard
 ---
 
 ## Support
-- Portal: https://axto.io/portal
+- Portal: https://axto.io/app/self-hosted
 - Email: hello@axto.io
 
 © AXTO Platform — Yusron Power. 100% BYOK/BYOI/BYOD/BYOM/BYOX.

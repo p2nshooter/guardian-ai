@@ -203,11 +203,11 @@ def _check_expiry(payload: dict) -> None:
         # Expiry warnings
         days_left = (exp_dt - now_dt).days
         if days_left == 0:
-            logger.warning(f"⚠️  ORCHESTRA LICENSE EXPIRES TODAY — renew at https://axto.io/portal | Expires: {exp}")
+            logger.warning(f"⚠️  ORCHESTRA LICENSE EXPIRES TODAY — renew at https://axto.io/app/self-hosted | Expires: {exp}")
         elif days_left <= 7:
-            logger.warning(f"⚠️  ORCHESTRA LICENSE EXPIRES IN {days_left} DAYS — renew at https://axto.io/portal | Expires: {exp}")
+            logger.warning(f"⚠️  ORCHESTRA LICENSE EXPIRES IN {days_left} DAYS — renew at https://axto.io/app/self-hosted | Expires: {exp}")
         elif days_left <= 30:
-            logger.info(f"Orchestra license expires in {days_left} days ({exp}) — renew at https://axto.io/portal")
+            logger.info(f"Orchestra license expires in {days_left} days ({exp}) — renew at https://axto.io/app/self-hosted")
     except EnforcementError:
         raise
     except Exception as e:

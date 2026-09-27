@@ -79,7 +79,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 def _chk():
     if not lic.is_valid():
-        raise HTTPException(403, "License invalid or expired. Visit axto.io/portal to renew.")
+        raise HTTPException(403, "License invalid or expired. Visit axto.io/app/self-hosted to renew.")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DASHBOARD

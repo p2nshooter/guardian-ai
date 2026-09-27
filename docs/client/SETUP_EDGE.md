@@ -91,7 +91,7 @@ Your margin:               $0.00185/1K tokens  (~12x markup)
 ### Step 1: Download
 
 ```
-https://axto.io/portal → Licenses → Download → Docker
+https://axto.io/app/self-hosted → Licenses → Download → Docker
 ```
 
 ### Step 2: Load & Configure
@@ -585,7 +585,7 @@ A: Yes — Enterprise plan. Customers see only your domain. No AXTO branding in 
 |---------|---------|
 | **AI Support Chat** | http://localhost:8080/support |
 | **Dashboard** | http://localhost:8080 |
-| **Portal** | https://axto.io/portal |
+| **Portal** | https://axto.io/app/self-hosted |
 | **Email** | hello@axto.io |
 | **Health API** | GET /health |
 

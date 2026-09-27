@@ -237,12 +237,12 @@ async def license_activate(request: Request):
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            import socket as _sock, uuid as _uuid
-            try:
-                mid_path = "/etc/machine-id"
-                machine_id = open(mid_path).read().strip() if os.path.exists(mid_path) else str(_uuid.uuid4())
-            except Exception:
-                machine_id = str(_uuid.uuid4())
+            import socket as _sock
+            # Must be the SAME fingerprint the licence validator sends on every
+            # heartbeat — otherwise the first activation binds the key to an id
+            # the engine never sends again and the licence locks (machine_mismatch).
+            from src.license import machine_id as _machine_id
+            machine_id = _machine_id()
 
             resp = await client.post(validate_url, json={
                 "license_key": key,

@@ -11,12 +11,12 @@ version: "3.9"
 # Supports 14+ AI providers via YOUR own API keys
 #
 # CARA PAKAI:
-#   1. Edit ai-studio.yml (no licence needed — BYOK keys only)
+#   1. Edit ai-studio.yml → set license_key
 #   2. docker compose -f ai-studio-compose.yml up -d
 #   3. Open: http://YOUR_SERVER:8091
 #
 # Data stays on YOUR server. AXTO never sees your prompts.
-# Portal:  https://axto.io/portal
+# Portal:  https://axto.io/app/self-hosted
 # Docs:    https://axto.io/guide/ai-studio
 # ============================================================
 

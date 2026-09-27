@@ -354,7 +354,7 @@ LREOF
     echo -e "  ${BOLD}Service:${NC}    systemctl {start|stop|restart|status} ${SERVICE_NAME}"
     echo ""
     echo -e "  ${YELLOW}${BOLD}NEXT STEP:${NC} Edit ${INSTALL_DIR}/${PROD}.yml"
-    echo -e "  ${YELLOW}         Set license_key from: https://axto.io/portal${NC}"
+    echo -e "  ${YELLOW}         Set license_key from: https://axto.io/app/self-hosted${NC}"
     echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════════${NC}"
 done
 
@@ -370,5 +370,5 @@ fi
 
 echo ""
 echo -e "${BLUE}📖 Full documentation: https://axto.io/docs${NC}"
-echo -e "${BLUE}🔑 License portal:     https://axto.io/portal${NC}"
+echo -e "${BLUE}🔑 License portal:     https://axto.io/app/self-hosted${NC}"
 echo -e "${BLUE}💬 Support:            hello@axto.io${NC}"

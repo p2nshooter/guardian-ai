@@ -17,14 +17,14 @@ Before you begin, ensure you have:
 - A Linux server (Ubuntu 20.04+, Debian 11+, CentOS 8+, or any Docker-compatible OS)
 - Docker Engine 20.10+ and Docker Compose v2+
 - At least one AI provider API key (OpenAI, Anthropic, Google, Groq, or a local Ollama instance)
-- Your AXTO license key (available at https://axto.io/portal after purchase)
+- Your AXTO license key (available at https://axto.io/app/self-hosted after purchase)
 - Minimum 2 GB RAM and 10 GB disk space per product
 
 ---
 
 ## 1. Download Your Package
 
-1. Sign in to your client portal at **https://axto.io/portal**
+1. Sign in to your client portal at **https://axto.io/app/self-hosted**
 2. Navigate to the **Licenses** tab
 3. Locate your active license and click the **Download** button
 4. Select your preferred format:
@@ -74,7 +74,7 @@ Required fields:
 
 ```yaml
 guardian:
-  # Your license key — find it at https://axto.io/portal
+  # Your license key — find it at https://axto.io/app/self-hosted
   license_key: "GUARDIAN-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
 
   # Scan mode: "auto" (recommended), "manual", or "off"
@@ -329,7 +329,7 @@ curl http://localhost:8080/health
 ## 5. Support
 
 - **Documentation**: https://axto.io/guide
-- **Client Portal**: https://axto.io/portal
+- **Client Portal**: https://axto.io/app/self-hosted
 - **Email**: hello@axto.io
 - **Response time**: Within 24 hours for all plans, 4 hours for Enterprise
 

@@ -1,0 +1,11 @@
+/* Public FAQ — one source for the homepage, pricing page and FAQPage JSON-LD. */
+export const FAQ: { q: string; a: string }[] = [
+  { q: "Do I need to install anything?", a: "No. Every AXTO app runs in your web browser. Self-hosted Docker and Windows editions are available on the Business and Enterprise plans if you prefer to run AXTO on your own servers." },
+  { q: "What does BYOK / BYOX mean?", a: "Bring Your Own Key (or model, or endpoint). The apps use your own AI provider key — Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Deepgram — or your own OpenAI-compatible server such as Ollama or vLLM. You pay the provider directly at their price, with no markup from us, and your usage is unlimited on our side." },
+  { q: "Is there a free way to get an AI key?", a: "Yes. Google AI Studio (Gemini) and Groq both offer free tiers that work with AXTO. Paste the key in Settings → My AI keys and press Test." },
+  { q: "Is my data used to train models?", a: "Not by AXTO. Your keys are stored encrypted and used only to answer your own requests; your files are stored privately and never shared. What your AI provider does with API traffic is governed by your agreement with them — most API providers do not train on API data." },
+  { q: "How does billing work?", a: "Plans are prepaid monthly or yearly. You can pay by card, PayPal, Indonesian QRIS / virtual account / e-wallet, crypto or bank transfer. We send reminders before your plan ends; renewing is one click. Changing plans converts unused time into extra days on the new plan." },
+  { q: "Can I cancel anytime?", a: "Yes. Your plan simply stays active until the end of the period you paid for. See the Refund Policy for the refund rules." },
+  { q: "What is Managed AI?", a: "An upcoming option where AXTO provides the AI models so you don't need your own key. It will be a separate plan; until it launches, every app works with your own keys." },
+  { q: "What do the self-hosted editions include?", a: "Ten Docker / Windows editions (Guardian AI, Orchestra AI, Vault, Edge, SOC, Compliance, Sentinel, Antivirus, Studio and Legal), always licensed at the highest tier. Business includes any 3 apps on up to 5 servers each; Enterprise includes all 10 on unlimited servers." },
+];

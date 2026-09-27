@@ -80,7 +80,7 @@ async def _guard(core: VaultCore):
         raise HTTPException(
             status_code=429,
             detail=f"Daily request limit reached ({used}/{max_daily}). "
-                   f"Resets at midnight UTC. Upgrade at axto.io/portal.",
+                   f"Resets at midnight UTC. Upgrade at axto.io/app/self-hosted.",
             headers={"X-Vault-Requests-Used": str(used),
                      "X-Vault-Requests-Limit": str(max_daily)},
         )

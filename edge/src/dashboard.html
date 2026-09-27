@@ -500,7 +500,7 @@ async function loadOverview(){
       <div class="stat-row"><span class="stat-lbl">License</span><span class="stat-val" style="color:#c4b5fd">${h.license?.plan||'—'}</span></div>
       <div class="stat-row"><span class="stat-lbl">Uptime</span><span class="stat-val" style="color:#34d399">${h.uptime_seconds?Math.floor(h.uptime_seconds/3600)+'h':'—'}</span></div>
       <div class="stat-row"><span class="stat-lbl">Version</span><span class="stat-val">v${h.version||'1.0'}</span></div>
-      <a href="https://axto.io/portal" target="_blank" class="btn btn-ghost btn-xs" style="margin-top:10px">Portal ↗</a>`;
+      <a href="https://axto.io/app/self-hosted" target="_blank" class="btn btn-ghost btn-xs" style="margin-top:10px">Portal ↗</a>`;
   }catch(e){}
 
   try{
