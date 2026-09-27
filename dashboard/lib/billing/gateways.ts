@@ -9,8 +9,9 @@
  * document (lib/secure-store.ts, name "payments") edited from Admin → Payments.
  * Nothing payment-related is stored in D1 or in the repository.
  * ============================================================================ */
-import { dbFirst } from "../db";
+import { dbFirst, dbQuery, getR2, now } from "../db";
 import { readSecure, writeSecure } from "../secure-store";
+import { decryptObj } from "../gateway-crypto";
 
 export type GatewayId = "stripe" | "paypal" | "xendit" | "midtrans" | "nowpayments" | "manual" | "crypto";
 
@@ -96,6 +97,36 @@ export async function paymentSettings(): Promise<PaymentSettings> {
 
 export async function savePaymentSettings(s: PaymentSettings): Promise<void> {
   await writeSecure(undefined, "payments", s);
+}
+
+/**
+ * One-time move of the v2 settings (D1 `payment_gateways`, encrypted rows) into
+ * the encrypted R2 documents. Runs when an admin opens Payments and no R2
+ * document exists yet; the D1 rows are left untouched (nothing is lost).
+ */
+export async function migrateLegacyPayments(db: any): Promise<number> {
+  if (await getR2().head("secure/payments.json.enc")) return 0;
+  let rows: { gateway: string; credentials_enc: string; is_active: number; is_test_mode: number }[] = [];
+  try {
+    rows = await dbQuery(db, `SELECT gateway, credentials_enc, is_active, is_test_mode FROM payment_gateways WHERE credentials_enc != ''`);
+  } catch {
+    return 0;
+  }
+  const settings: PaymentSettings = { gateways: {}, updatedAt: now(), updatedBy: "migration:d1" };
+  let email: Record<string, string> | null = null;
+  for (const r of rows) {
+    let creds: Record<string, string>;
+    try { creds = await decryptObj<Record<string, string>>(r.credentials_enc); } catch { continue; }
+    if (r.gateway === "resend") { email = { api_key: creds.api_key || "" }; continue; }
+    const g = gatewayInfo(r.gateway);
+    if (!g) continue;
+    const kept: Record<string, string> = {};
+    for (const f of g.fields) if (creds[f.key]) kept[f.key] = String(creds[f.key]);
+    settings.gateways[g.id] = { active: !!r.is_active && isConfigured(g, kept), testMode: !!r.is_test_mode, creds: kept, updatedAt: now() };
+  }
+  await savePaymentSettings(settings);
+  if (email?.api_key && !(await getR2().head("secure/email.json.enc"))) await writeSecure(undefined, "email", email);
+  return Object.keys(settings.gateways).length;
 }
 
 /** Credentials of an ACTIVE, fully configured gateway (else null). `_db` kept for call-site compatibility. */

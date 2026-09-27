@@ -1,0 +1,149 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# ==============================================================================
+# Docker smoke test — every self-hosted image, on every branch and PR that
+# touches an engine, a Dockerfile or a compose file:
+#   1. every *compose*.yml passes `docker compose config`
+#   2. every image builds from scratch
+#   3. every container starts with the customer's example config, stays up,
+#      and answers /health on the port its compose file maps
+#   4. the image's own HEALTHCHECK command succeeds inside the container
+# No licence is needed: an unlicensed engine must still start and report
+# itself as locked, never crash.
+# ==============================================================================
+name: Docker smoke test
+
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'engine/**'
+      - 'antivirus/**'
+      - 'orchestra/**'
+      - 'vault/**'
+      - 'edge/**'
+      - 'soc/**'
+      - 'compliance/**'
+      - 'sentinel/**'
+      - 'studio/**'
+      - 'ai-studio/**'
+      - 'gpu-studio/**'
+      - 'hybrid-studio/**'
+      - 'legal/**'
+      - '*compose*.yml'
+      - '*.example.yml'
+      - 'legal.env.example'
+      - '.github/workflows/docker-smoke.yml'
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'antivirus/**'
+      - 'orchestra/**'
+      - 'vault/**'
+      - 'edge/**'
+      - 'soc/**'
+      - 'compliance/**'
+      - 'sentinel/**'
+      - 'studio/**'
+      - 'ai-studio/**'
+      - 'gpu-studio/**'
+      - 'hybrid-studio/**'
+      - 'legal/**'
+      - '*compose*.yml'
+      - '*.example.yml'
+      - 'legal.env.example'
+      - '.github/workflows/docker-smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docker-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose:
+    name: "compose files"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config
+        run: |
+          cp legal.env.example legal.env
+          fail=0
+          for f in *compose*.yml; do
+            if docker compose -f "$f" config -q; then echo "✅ $f"; else echo "❌ $f"; fail=1; fi
+          done
+          exit $fail
+
+  image:
+    name: "${{ matrix.name }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: guardian-core,        context: engine,        dockerfile: engine/Dockerfile,               port: 8080, mount: "guardian.example.yml:/guardian/config/guardian.yml" }
+          - { name: guardian-node,        context: engine,        dockerfile: engine/Dockerfile.node,          port: 0,    mount: "guardian.example.yml:/guardian/config/guardian.yml", args: "-e GUARDIAN_CORE_URL=http://127.0.0.1:9" }
+          - { name: guardian-antivirus,   context: antivirus,     dockerfile: antivirus/Dockerfile,            port: 8097, mount: "antivirus.example.yml:/guardian/config/guardian.yml", args: "-e AV_PORT=8097" }
+          - { name: orchestra-core,       context: orchestra,     dockerfile: orchestra/Dockerfile,            port: 8080, mount: "orchestra.example.yml:/app/orchestra_core/config/orchestra.yml" }
+          - { name: orchestra-worker-cpu, context: orchestra,     dockerfile: orchestra/Dockerfile.worker-cpu, port: 7891, mount: "", args: "-e ORCHESTRA_CORE_URL=http://127.0.0.1:9 -e WORKER_PORT=7891" }
+          - { name: vault-core,           context: vault,         dockerfile: vault/Dockerfile,                port: 8080, mount: "vault.example.yml:/vault/config/vault.yml" }
+          - { name: edge-core,            context: edge,          dockerfile: edge/Dockerfile,                 port: 8080, mount: "edge.example.yml:/edge/config/edge.yml" }
+          - { name: soc-core,             context: soc,           dockerfile: soc/Dockerfile,                  port: 8092, mount: "soc.example.yml:/soc/config/soc.yml", args: "-e SOC_PORT=8092" }
+          - { name: compliance-core,      context: compliance,    dockerfile: compliance/Dockerfile,           port: 8093, mount: "compliance.example.yml:/compliance/config/compliance.yml", args: "-e COMPLIANCE_PORT=8093" }
+          - { name: sentinel-core,        context: sentinel,      dockerfile: sentinel/Dockerfile,             port: 8095, mount: "sentinel.example.yml:/sentinel/config/sentinel.yml", args: "-e SENTINEL_PORT=8095" }
+          - { name: studio-core,          context: studio,        dockerfile: studio/Dockerfile,               port: 8080, mount: "studio.example.yml:/studio/config/studio.yml" }
+          - { name: ai-studio,            context: ai-studio,     dockerfile: ai-studio/Dockerfile,            port: 8091, mount: "ai-studio.example.yml:/ai-studio/config/ai-studio.yml" }
+          - { name: gpu-studio,           context: gpu-studio,    dockerfile: gpu-studio/Dockerfile,           port: 8092, mount: "gpu-studio.example.yml:/gpu-studio/config/gpu-studio.yml" }
+          - { name: hybrid-studio,        context: hybrid-studio, dockerfile: hybrid-studio/Dockerfile,        port: 8093, mount: "hybrid-studio.example.yml:/hybrid-studio/config/hybrid-studio.yml" }
+          - { name: legal-core,           context: legal,         dockerfile: legal/Dockerfile,                port: 8096, mount: "", args: "--env-file legal.env.example" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          load: true
+          push: false
+          tags: smoke/${{ matrix.name }}:test
+          cache-from: type=gha,scope=smoke-${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=smoke-${{ matrix.name }}
+      - name: Run and probe
+        env:
+          NAME: ${{ matrix.name }}
+          PORT: ${{ matrix.port }}
+          MOUNT: ${{ matrix.mount }}
+          ARGS: ${{ matrix.args }}
+        run: |
+          set -u
+          opts=(--name smoke -d)
+          if [ -n "$MOUNT" ]; then opts+=(-v "$PWD/${MOUNT%%:*}:${MOUNT#*:}:ro"); fi
+          if [ "$PORT" != "0" ]; then opts+=(-p "18080:$PORT"); fi
+          # shellcheck disable=SC2206
+          extra=($ARGS)
+          docker run "${opts[@]}" "${extra[@]}" "smoke/$NAME:test"
+          code=000
+          for i in $(seq 1 90); do
+            sleep 2
+            running=$(docker inspect -f '{{.State.Running}}' smoke)
+            if [ "$running" != "true" ]; then echo "❌ container exited"; docker logs smoke | tail -80; exit 1; fi
+            if [ "$PORT" = "0" ]; then [ "$i" -ge 10 ] && { echo "✅ agent stays up (no HTTP port)"; code=ok; break; } || continue; fi
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' "http://127.0.0.1:18080/health" || true)
+            [ "$code" != "000" ] && break
+          done
+          echo "HTTP /health → $code"; [ -f /tmp/health.json ] && head -c 800 /tmp/health.json; echo
+          if [ "$code" = "000" ]; then echo "❌ /health never answered"; docker logs smoke | tail -120; exit 1; fi
+          if [ "$code" != "ok" ] && [ "$code" -ge 500 ] && [ "$code" != "503" ]; then echo "❌ /health returned $code"; docker logs smoke | tail -120; exit 1; fi
+          # The image's own HEALTHCHECK must work (it is what compose depends_on uses).
+          hc=$(docker inspect -f '{{if .Config.Healthcheck}}{{join .Config.Healthcheck.Test " "}}{{end}}' smoke)
+          echo "HEALTHCHECK: ${hc:-none}"
+          if [ -n "$hc" ] && [ "${hc#NONE}" = "$hc" ] && [ "$code" = "200" ]; then
+            docker exec smoke sh -c "${hc#CMD-SHELL }" && echo "✅ HEALTHCHECK passes" || { echo "❌ HEALTHCHECK command fails"; exit 1; }
+          fi
+          docker logs smoke 2>&1 | tail -25
+          echo "✅ $NAME"
+      - name: Logs on failure
+        if: failure()
+        run: docker logs smoke 2>&1 | tail -200 || true

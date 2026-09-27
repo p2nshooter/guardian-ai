@@ -9,7 +9,7 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, now } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
-import { GATEWAYS, isConfigured, paymentSettings, savePaymentSettings, type GatewayField } from "@/lib/billing/gateways";
+import { GATEWAYS, isConfigured, paymentSettings, savePaymentSettings, migrateLegacyPayments, type GatewayField } from "@/lib/billing/gateways";
 import { emailSettings, type EmailSettings } from "@/lib/mail";
 import { writeSecure, maskValue, keepSecret, SettingsKeyMissing } from "@/lib/secure-store";
 import { readJson, fail, audit } from "@/lib/http";
@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
+    const migrated = await migrateLegacyPayments(getDB(req)).catch(() => 0);
     const [pay, mail] = await Promise.all([paymentSettings(), emailSettings()]);
     const gateways = GATEWAYS.map((g) => {
       const cur = pay.gateways[g.id];
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
       };
     });
     const email = { id: "email", label: "E-mail (Resend)", fields: EMAIL_FIELDS, values: view(EMAIL_FIELDS, mail as Record<string, string>), configured: !!mail.api_key };
-    return respond({ gateways, email, storage: "r2-encrypted" }, ctx);
+    return respond({ gateways, email, storage: "r2-encrypted", migrated }, ctx);
   } catch (e) {
     if (e instanceof SettingsKeyMissing) return fail("Set the SETTINGS_ENCRYPTION_KEY secret before configuring payments.", 503);
     throw e;
@@ -65,6 +66,7 @@ export async function PUT(req: NextRequest) {
   const b = await readJson(req);
   const db = getDB(req);
   try {
+    await migrateLegacyPayments(db).catch(() => 0);   // never overwrite un-migrated v2 settings
     if (b?.gateway === "email") {
       const cur = await emailSettings();
       const next = merge(EMAIL_FIELDS, b?.credentials, cur as Record<string, string>) as EmailSettings;
