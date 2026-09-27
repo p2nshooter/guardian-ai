@@ -4,8 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
-
 # ============================================================
 # AXTO Orchestra — AI eXecution & Tools Orchestration | Docker Compose
 # Usage:
@@ -33,11 +31,13 @@ services:
       - ORCHESTRA_HOST=0.0.0.0
       - ORCHESTRA_PORT=8080
       - ORCHESTRA_LOG_LEVEL=INFO
+      # Leave empty to use orchestra.yml; secrets not set anywhere are generated
+      # on first start (printed once in `docker logs orchestra-core`).
       - AXTO_LICENSE_KEY=${AXTO_LICENSE_KEY:-}
-      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-orchestra-console}
-      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-orchestra-worker-secret}
+      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-}
+      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-}
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=8)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,19 +52,21 @@ services:
     image: axto/orchestra-worker-cpu:latest
     container_name: orchestra-worker-cpu-1
     restart: unless-stopped
-    command: python orchestra_worker/worker_cpu.py
     depends_on:
       orchestra-core:
         condition: service_healthy
     environment:
       - ORCHESTRA_CORE_URL=http://orchestra-core:8080
-      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-orchestra-worker-secret}
-      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-orchestra-console}
+      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-}
+      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-}
       - WORKER_PROVIDER=${WORKER_PROVIDER:-groq}
       - WORKER_MODEL=${WORKER_MODEL:-llama-3.1-8b-instant}
       - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-4}
       - WORKER_PORT=7891
       - NODE_ID=cpu-node-1
+    volumes:
+      # Same volume as the core, read-only: tokens and the encrypted BYOK vault.
+      - orchestra-data:/app/data:ro
     networks:
       - orchestra-net
     logging:
@@ -76,7 +78,6 @@ services:
   #   image: axto/orchestra-worker-gpu:latest
   #   container_name: orchestra-worker-gpu-1
   #   restart: unless-stopped
-  #   command: python -m orchestra_worker.worker_gpu
   #   runtime: nvidia
   #   deploy:
   #     resources:
@@ -90,8 +91,8 @@ services:
   #       condition: service_healthy
   #   environment:
   #     - ORCHESTRA_CORE_URL=http://orchestra-core:8080
-  #     - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-orchestra-worker-secret}
-  #     - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-orchestra-console}
+  #     - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-}
+  #     - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-}
   #     - WORKER_MODEL=llama3.2
   #     - OLLAMA_BASE_URL=http://localhost:11434
   #     - WORKER_PORT=7892
@@ -99,6 +100,8 @@ services:
   #     # WORKER_SELF_URL: address reachable from orchestra-core container
   #     # Use the container name + port so core can POST tasks to /run
   #     - WORKER_SELF_URL=http://orchestra-worker-gpu-1:7892
+  #   volumes:
+  #     - orchestra-data:/app/data:ro
   #   ports:
   #     - "7892:7892"
   #   networks:

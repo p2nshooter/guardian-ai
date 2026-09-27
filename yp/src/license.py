@@ -48,7 +48,7 @@ log = logging.getLogger("yp.license")
 PRODUCT        = "yp"
 PRODUCT_PREFIX = "YP"
 VERSION        = "1.0.0"
-VALIDATE_URL   = "https://axto.io/api/license-validate"
+VALIDATE_URL   = os.environ.get("AXTO_LICENSE_SERVER", "").strip() or "https://axto.io/api/license-validate"
 GRACE_SECONDS  = 14400   # 4 hours — absolute maximum, NEVER increase
 HEARTBEAT_SECS = 1800    # 30 minutes
 CACHE_SECONDS  = 1800
@@ -66,10 +66,69 @@ SIGNED_PAYLOAD_FIELDS = [
 DISCONNECT_CERT_NAME = "yp_lifetime.cert"
 
 
+_MACHINE_ID = ""
+
+
+def _state_dir() -> str:
+    """Writable directory for licence state (installation id, verified proof).
+    The Docker images point AXTO_STATE_DIR at a persistent volume."""
+    import os
+    configured = os.environ.get("AXTO_STATE_DIR", "").strip()
+    if configured:
+        try:
+            os.makedirs(configured, exist_ok=True)
+        except Exception:
+            pass
+        if os.path.isdir(configured):
+            return configured    # may be read-only (a worker sharing the core's volume)
+    for candidate in ("/var/lib/axto", os.path.expanduser("~/.axto")):
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            if os.access(candidate, os.W_OK):
+                return candidate
+        except Exception:
+            continue
+    return "."
+
+
 def machine_id() -> str:
-    """Stable per-machine identifier (hostname + MAC), hashed."""
-    raw = f"{socket.gethostname()}|{uuid.getnode()}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:32]
+    """
+    Stable installation fingerprint for licence binding (32 hex chars).
+    A container has no stable hardware identity (hostname and MAC change every
+    time it is re-created), so the first value is persisted in the state
+    directory (a Docker volume) and reused across restarts and image updates.
+    Source order: persisted id -> host /etc/machine-id -> random (then persisted).
+    """
+    import hashlib, os, uuid
+    global _MACHINE_ID
+    if _MACHINE_ID:
+        return _MACHINE_ID
+    path = os.path.join(_state_dir(), "machine-id")
+    try:
+        with open(path) as f:
+            saved = f.read().strip()
+        if len(saved) == 32 and all(c in "0123456789abcdef" for c in saved):
+            _MACHINE_ID = saved
+            return saved
+    except Exception:
+        pass
+    raw = ""
+    for candidate in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+        try:
+            with open(candidate) as f:
+                raw = f.read().strip()
+        except Exception:
+            raw = ""
+        if raw:
+            break
+    mid = hashlib.sha256((raw or uuid.uuid4().hex).encode()).hexdigest()[:32]
+    try:
+        with open(path, "w") as f:
+            f.write(mid)
+    except Exception:
+        pass
+    _MACHINE_ID = mid
+    return mid
 
 
 def _verify_signature(signed_payload: str, signature_b64: str) -> bool:
@@ -154,7 +213,7 @@ class LicenseManager:
 
     def __init__(self, license_key: str, validate_url: str, data_dir: Path):
         self._key = (license_key or "").strip()
-        self._url = validate_url or VALIDATE_URL
+        self._url = os.environ.get("AXTO_LICENSE_SERVER", "").strip() or validate_url or VALIDATE_URL
         self._data_dir = Path(data_dir)
         self._cert_path = self._data_dir / DISCONNECT_CERT_NAME
         self._state = LicenseState()

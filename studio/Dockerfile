@@ -4,7 +4,9 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
+# Shared licence state when Studio core and modules run side by side (see *-compose.yml).
+RUN mkdir -p /axto-state && chmod 1777 /axto-state
 
 LABEL org.opencontainers.image.title="AXTO Studio Engine"
 LABEL org.opencontainers.image.description="AXTO Studio — Self-Hosted AI & GPU Pool Platform with Enterprise Studio"
@@ -33,7 +35,8 @@ RUN mkdir -p /studio/data /studio/logs /studio/config /studio/artifacts
 
 EXPOSE 8080
 
+ENV AXTO_STATE_DIR=/studio/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=8)" || exit 1
 
 CMD ["python", "-m", "uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -14,6 +14,7 @@ import { api, signOut } from "@/lib/client";
 import { useI18n, formatDate, type Key } from "@/lib/i18n";
 import { CLOUD_APPS } from "@/lib/apps";
 import { Spinner } from "@/components/ui";
+import ChatWidget from "@/components/support/ChatWidget";
 
 export interface Me {
   user: { id: string; email: string; role: "admin" | "member"; name: string; organization: string; country: string; createdAt: string };
@@ -53,6 +54,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/members", label: "Members", icon: "👥", match: "/admin/members" },
       { href: "/admin/orders", label: "Orders & payments", icon: "🧾" },
       { href: "/admin/licenses", label: "Licences", icon: "🔑" },
+      { href: "/admin/support", label: "Support inbox", icon: "💬" },
     ] },
     { section: "Configuration", items: [
       { href: "/admin/plans", label: "Plans & pricing", icon: "🏷️" },
@@ -156,6 +158,7 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
             ) : children}
           </main>
         </div>
+        {variant === "member" && me ? <ChatWidget lang={lang} defaultName={me.user.name} defaultEmail={me.user.email} /> : null}
       </div>
     </MeCtx.Provider>
   );

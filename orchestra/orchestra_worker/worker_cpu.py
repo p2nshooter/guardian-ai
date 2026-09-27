@@ -33,8 +33,16 @@ from pydantic import BaseModel
 
 # ── Config ────────────────────────────────────────────────────────────────────
 ORCHESTRA_URL     = os.environ.get("ORCHESTRA_CORE_URL",         "http://orchestra-core:8080")
-WORKER_TOKEN      = os.environ.get("ORCHESTRA_WORKER_TOKEN",     "orchestra-worker-secret")
-CONSOLE_TOKEN     = os.environ.get("ORCHESTRA_CONSOLE_PASSWORD", "orchestra-console")
+# Tokens: environment → orchestra.yml → secrets the core generated in the
+# shared data volume (see orchestra_core/settings.py). No built-in defaults.
+sys.path.insert(0, str(Path(__file__).parent.parent / "orchestra_core"))
+try:
+    import settings as _settings
+    _settings.apply(generate=False)
+except Exception:
+    pass
+WORKER_TOKEN      = os.environ.get("ORCHESTRA_WORKER_TOKEN",     "")
+CONSOLE_TOKEN     = os.environ.get("ORCHESTRA_CONSOLE_PASSWORD", "")
 PROVIDER_ID       = os.environ.get("WORKER_PROVIDER",            "openai")
 MODEL             = os.environ.get("WORKER_MODEL",               "gpt-4o-mini")
 CONCURRENCY       = int(os.environ.get("WORKER_CONCURRENCY",     "5"))
@@ -346,4 +354,4 @@ async def on_shutdown():
     deregister()
 
 if __name__ == "__main__":
-    uvicorn.run("worker_cpu:app", host="0.0.0.0", port=WORKER_PORT, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=WORKER_PORT, log_level="info")

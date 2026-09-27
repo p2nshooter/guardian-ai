@@ -249,6 +249,12 @@ test("license-validate: engine protocol end to end", async () => {
   assert.equal(f!.valid, "true");
   assert.equal(f!.status, "active");
   assert.match(f!.entitlements, /^package=aegis;.*ebpf=true/);
+  // Separately-signed entitlements block (Legal + Studio modules read this one).
+  const ep = await engineVerify({ signed_payload: ok.json.entitlements_payload, signature: ok.json.entitlements_signature });
+  assert.ok(ep, "entitlements block is signed with the same key");
+  const [eKey, eMid, eProduct, eEnt] = String(ok.json.entitlements_payload).split("|");
+  assert.deepEqual([eKey, eMid, eProduct], [guardKey, "machine-A", "guardian"]);
+  assert.match(eEnt, /^package=aegis;/);
   const tampered = { ...ok.json, signed_payload: ok.json.signed_payload.replace("|true|", "|false|") };
   assert.equal(await engineVerify(tampered), null, "tampering breaks the signature");
 

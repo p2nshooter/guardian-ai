@@ -5,7 +5,7 @@
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Orchestra Worker CPU"
@@ -34,8 +34,10 @@ RUN mkdir -p /app/data /app/logs \
  && touch /app/orchestra_worker/__init__.py \
  && touch /app/orchestra_core/__init__.py
 
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+ENV AXTO_STATE_DIR=/app/data/.axto
+ENV DATA_DIR=/app/data
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('WORKER_PORT', '7891') + '/health', timeout=8)" || exit 1
 
 ENV WORKER_TYPE=cpu
 CMD ["python", "-m", "orchestra_worker.worker_cpu"]

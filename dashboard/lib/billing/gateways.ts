@@ -4,65 +4,120 @@
  * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
- * Payment gateway registry + encrypted credential access.
- * Credentials are stored AES-GCM encrypted in D1 `payment_gateways` and are
- * edited from Admin → Payments.
+ * Payment gateway registry + encrypted settings access.
+ * Every credential, bank account and wallet address lives in ONE encrypted R2
+ * document (lib/secure-store.ts, name "payments") edited from Admin → Payments.
+ * Nothing payment-related is stored in D1 or in the repository.
  * ============================================================================ */
-import { dbFirst, dbQuery } from "../db";
-import { decryptObj } from "../gateway-crypto";
+import { dbFirst } from "../db";
+import { readSecure, writeSecure } from "../secure-store";
 
-export type GatewayId = "stripe" | "paypal" | "xendit" | "midtrans" | "nowpayments" | "manual";
+export type GatewayId = "stripe" | "paypal" | "xendit" | "midtrans" | "nowpayments" | "manual" | "crypto";
 
+export interface GatewayField { key: string; label: string; secret?: boolean; placeholder?: string; multiline?: boolean }
 export interface GatewayInfo {
   id: GatewayId;
   label: string;          // shown to customers
   methods: string;        // what the customer can pay with
   currency: "USD" | "IDR";
-  fields: { key: string; label: string; secret?: boolean; placeholder?: string }[];
+  fields: GatewayField[];
+  /** A gateway can be activated once one of these field groups is complete. */
+  requires: string[][];
+  confirmation: "automatic" | "admin";
   webhookPath?: string;   // to paste into the gateway dashboard
 }
 
 export const GATEWAYS: GatewayInfo[] = [
-  { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD",
+  { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic",
     fields: [{ key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…" }, { key: "webhook_secret", label: "Webhook signing secret", secret: true, placeholder: "whsec_…" }],
-    webhookPath: "/api/webhooks/stripe" },
-  { id: "paypal", label: "PayPal", methods: "PayPal balance or card", currency: "USD",
+    requires: [["secret_key", "webhook_secret"]], webhookPath: "/api/webhooks/stripe" },
+  { id: "paypal", label: "PayPal", methods: "PayPal balance or card", currency: "USD", confirmation: "automatic",
     fields: [{ key: "client_id", label: "Client ID" }, { key: "client_secret", label: "Client secret", secret: true }, { key: "mode", label: "Mode (live / sandbox)", placeholder: "live" }, { key: "webhook_id", label: "Webhook ID (optional)" }],
-    webhookPath: "/api/webhooks/paypal" },
-  { id: "xendit", label: "Indonesia — QRIS, VA, e-wallet (Xendit)", methods: "QRIS, bank virtual account, OVO, DANA, ShopeePay", currency: "IDR",
+    requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal" },
+  { id: "xendit", label: "Indonesia — QRIS, VA, e-wallet (Xendit)", methods: "QRIS, bank virtual account, OVO, DANA, ShopeePay", currency: "IDR", confirmation: "automatic",
     fields: [{ key: "secret_key", label: "Secret key", secret: true, placeholder: "xnd_production_…" }, { key: "webhook_token", label: "Callback verification token", secret: true }],
-    webhookPath: "/api/webhooks/xendit" },
-  { id: "midtrans", label: "Indonesia — QRIS, VA, GoPay (Midtrans)", methods: "QRIS, bank transfer, GoPay, card", currency: "IDR",
+    requires: [["secret_key", "webhook_token"]], webhookPath: "/api/webhooks/xendit" },
+  { id: "midtrans", label: "Indonesia — QRIS, VA, GoPay (Midtrans)", methods: "QRIS, bank transfer, GoPay, card", currency: "IDR", confirmation: "automatic",
     fields: [{ key: "server_key", label: "Server key", secret: true, placeholder: "Mid-server-…" }, { key: "client_key", label: "Client key" }, { key: "is_production", label: "Production (true / false)", placeholder: "true" }],
-    webhookPath: "/api/webhooks/midtrans" },
-  { id: "nowpayments", label: "Crypto (USDT, BTC, ETH…)", methods: "150+ cryptocurrencies", currency: "USD",
+    requires: [["server_key"]], webhookPath: "/api/webhooks/midtrans" },
+  { id: "nowpayments", label: "Crypto — automatic (NOWPayments)", methods: "USDT, BTC, ETH and 150+ coins, confirmed automatically", currency: "USD", confirmation: "automatic",
     fields: [{ key: "api_key", label: "API key", secret: true }, { key: "ipn_secret", label: "IPN secret", secret: true }],
-    webhookPath: "/api/webhooks/nowpayments" },
-  { id: "manual", label: "Bank transfer (manual)", methods: "Transfer, then we confirm within 1 business day", currency: "USD",
-    fields: [{ key: "instructions", label: "Payment instructions shown to customers", placeholder: "Bank, account name, account number, SWIFT…" }] },
+    requires: [["api_key", "ipn_secret"]], webhookPath: "/api/webhooks/nowpayments" },
+  { id: "crypto", label: "Crypto — direct wallet transfer", methods: "USDT / USDC / BTC / ETH / SOL straight to our wallet, confirmed by our team", currency: "USD", confirmation: "admin",
+    fields: [
+      { key: "usdt_trc20", label: "USDT · TRC20 (Tron) address", secret: true },
+      { key: "usdt_erc20", label: "USDT · ERC20 (Ethereum) address", secret: true },
+      { key: "usdt_bep20", label: "USDT · BEP20 (BNB Chain) address", secret: true },
+      { key: "usdc_erc20", label: "USDC · ERC20 address", secret: true },
+      { key: "btc", label: "BTC address", secret: true },
+      { key: "eth", label: "ETH address", secret: true },
+      { key: "sol", label: "SOL address", secret: true },
+      { key: "instructions", label: "Extra instructions (optional)", multiline: true },
+    ],
+    requires: [["usdt_trc20"], ["usdt_erc20"], ["usdt_bep20"], ["usdc_erc20"], ["btc"], ["eth"], ["sol"]] },
+  { id: "manual", label: "Bank transfer (BNI / local bank)", methods: "Transfer to our bank account, confirmed by our team within 1 business day", currency: "IDR", confirmation: "admin",
+    fields: [
+      { key: "bank_name", label: "Bank", placeholder: "BNI (Bank Negara Indonesia)" },
+      { key: "account_number", label: "Account number", secret: true },
+      { key: "account_name", label: "Account holder name", secret: true },
+      { key: "branch", label: "Branch (optional)" },
+      { key: "swift_code", label: "SWIFT / BIC for international transfers (optional)", placeholder: "BNINIDJA" },
+      { key: "instructions", label: "Extra instructions (optional)", multiline: true },
+    ],
+    requires: [["account_number", "account_name"], ["instructions"]] },
 ];
+
+export const CRYPTO_ASSETS: { key: string; asset: string; network: string }[] = [
+  { key: "usdt_trc20", asset: "USDT", network: "TRC20 (Tron)" },
+  { key: "usdt_erc20", asset: "USDT", network: "ERC20 (Ethereum)" },
+  { key: "usdt_bep20", asset: "USDT", network: "BEP20 (BNB Chain)" },
+  { key: "usdc_erc20", asset: "USDC", network: "ERC20 (Ethereum)" },
+  { key: "btc", asset: "BTC", network: "Bitcoin" },
+  { key: "eth", asset: "ETH", network: "Ethereum" },
+  { key: "sol", asset: "SOL", network: "Solana" },
+];
+
+export interface GatewaySetting { active: boolean; testMode?: boolean; creds: Record<string, string>; updatedAt?: string }
+export interface PaymentSettings { gateways: Partial<Record<GatewayId, GatewaySetting>>; updatedAt?: string; updatedBy?: string }
 
 export function gatewayInfo(id: string): GatewayInfo | undefined {
   return GATEWAYS.find((g) => g.id === id);
 }
 
-export async function gatewayCreds(db: any, id: GatewayId): Promise<Record<string, string> | null> {
-  const row = await dbFirst<{ credentials_enc: string; is_active: number }>(db,
-    `SELECT credentials_enc, is_active FROM payment_gateways WHERE gateway = ?`, [id]);
-  if (!row?.is_active || !row.credentials_enc) return null;
+export function isConfigured(g: GatewayInfo, creds: Record<string, string> | undefined): boolean {
+  if (!creds) return false;
+  return g.requires.some((group) => group.every((k) => String(creds[k] || "").trim()));
+}
+
+export async function paymentSettings(): Promise<PaymentSettings> {
+  const s = await readSecure<PaymentSettings>(undefined, "payments", { gateways: {} });
+  return { ...s, gateways: s.gateways || {} };
+}
+
+export async function savePaymentSettings(s: PaymentSettings): Promise<void> {
+  await writeSecure(undefined, "payments", s);
+}
+
+/** Credentials of an ACTIVE, fully configured gateway (else null). `_db` kept for call-site compatibility. */
+export async function gatewayCreds(_db: any, id: GatewayId): Promise<Record<string, string> | null> {
+  const g = gatewayInfo(id);
+  if (!g) return null;
   try {
-    return await decryptObj<Record<string, string>>(row.credentials_enc);
+    const cur = (await paymentSettings()).gateways[id];
+    return cur?.active && isConfigured(g, cur.creds) ? cur.creds : null;
   } catch {
     return null;
   }
 }
 
-/** Gateways a customer can use right now (active + has credentials). */
-export async function activeGateways(db: any): Promise<GatewayInfo[]> {
-  const rows = await dbQuery<{ gateway: string; is_active: number; credentials_enc: string }>(db,
-    `SELECT gateway, is_active, credentials_enc FROM payment_gateways WHERE is_active = 1`);
-  const on = new Set(rows.filter((r) => r.credentials_enc).map((r) => r.gateway));
-  return GATEWAYS.filter((g) => on.has(g.id));
+/** Gateways a customer can use right now (active + configured). */
+export async function activeGateways(_db: any): Promise<GatewayInfo[]> {
+  try {
+    const s = await paymentSettings();
+    return GATEWAYS.filter((g) => s.gateways[g.id]?.active && isConfigured(g, s.gateways[g.id]!.creds));
+  } catch {
+    return [];
+  }
 }
 
 // ── USD → IDR ───────────────────────────────────────────────────────────────

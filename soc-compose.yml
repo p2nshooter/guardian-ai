@@ -4,8 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
-
 # ============================================================
 # AXTO SOC — Security Operations Center
 # docker compose -f soc-compose.yml up -d
@@ -26,7 +24,7 @@ services:
       - SOC_CONFIG=/soc/config/soc.yml
       - SOC_PORT=8092
     healthcheck:
-      test: ["CMD","curl","-sf","http://localhost:8092/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8092/health', timeout=8)"]
       interval: 30s
       timeout: 10s
       retries: 3

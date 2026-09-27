@@ -4,37 +4,40 @@
  * Maintained by: Axto AI <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
- * Transactional email via Resend. The API key comes from the RESEND_API_KEY
- * secret or, if absent, from Admin → Payments & Email (gateway "resend").
+ * Transactional email via Resend. Settings (API key, sender, admin inbox
+ * address) come from the RESEND_API_KEY / EMAIL_FROM secrets or, if absent,
+ * from Admin → Payments & email (encrypted R2 document "email").
  * Sending never throws: email is best-effort and must not break a checkout.
  * ============================================================================ */
-import { getDB, dbFirst, secret } from "./db";
-import { decryptObj } from "./gateway-crypto";
+import { secret } from "./db";
+import { readSecure } from "./secure-store";
 import { SITE, absoluteUrl } from "./site";
 
-async function resendKey(): Promise<string> {
-  const env = secret("RESEND_API_KEY");
-  if (env) return env;
+export interface EmailSettings { api_key?: string; from?: string; admin_email?: string }
+
+export async function emailSettings(): Promise<EmailSettings> {
   try {
-    const row = await dbFirst<{ credentials_enc: string; is_active: number }>(getDB(),
-      `SELECT credentials_enc, is_active FROM payment_gateways WHERE gateway = 'resend'`);
-    if (!row?.is_active || !row.credentials_enc) return "";
-    const c = await decryptObj<Record<string, string>>(row.credentials_enc);
-    return c.api_key || "";
+    return await readSecure<EmailSettings>(undefined, "email", {});
   } catch {
-    return "";
+    return {};
   }
 }
 
-export async function sendMail(to: string, subject: string, html: string): Promise<boolean> {
+/** Where support/contact notifications go. */
+export async function adminInbox(): Promise<string> {
+  return secret("ADMIN_NOTIFY_EMAIL") || (await emailSettings()).admin_email || SITE.email;
+}
+
+export async function sendMail(to: string, subject: string, html: string, replyTo?: string): Promise<boolean> {
   try {
-    const key = await resendKey();
+    const cfg = await emailSettings();
+    const key = secret("RESEND_API_KEY") || cfg.api_key || "";
     if (!key) return false;
-    const from = secret("EMAIL_FROM") || `${SITE.name} <${SITE.email}>`;
+    const from = secret("EMAIL_FROM") || cfg.from || `${SITE.name} <${SITE.email}>`;
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [to], subject, html, reply_to: SITE.supportEmail }),
+      body: JSON.stringify({ from, to: [to], subject, html, reply_to: replyTo || SITE.supportEmail }),
     });
     return r.ok;
   } catch {
@@ -91,5 +94,11 @@ export const mails = {
       `<p>Your self-hosted licence key:</p><p style="font-family:ui-monospace,Menlo,monospace;font-size:14px;background:#f1f5f9;padding:12px;border-radius:8px">${esc(o.key)}</p>
        <p>Downloads and step-by-step setup are in your portal.</p>`,
       { label: "Open Self-Hosted", href: absoluteUrl("/app/self-hosted") }),
+  }),
+  supportReceived: (o: { name: string; topic: string }) => ({
+    subject: `We received your message — ${o.topic}`,
+    html: mailLayout("Thanks — we've got your message",
+      `<p>Hi ${esc(o.name || "there")},</p><p>Your message about <b>${esc(o.topic)}</b> reached our team. We usually reply within one business day — simply reply to this e-mail to add anything.</p>`,
+      { label: `Visit ${SITE.name}`, href: absoluteUrl("/") }),
   }),
 };

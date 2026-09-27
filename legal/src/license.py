@@ -51,9 +51,9 @@ PRODUCT_VENDOR  = "AXTO (axto.io)"
 # ── Authorship fingerprint ────────────────────────────────────
 _AUTHOR_FP = hashlib.sha256(base64.b64decode(b"WXVzcm9uRWZlbmRpLUFYVE8tMjAyNA==")).digest()[0]
 
-# ── Ed25519 public key — loaded from env first, embedded key as final fallback ─
-# Override with env var AXTO_SIGNING_PUBLIC_KEY_B64 before going live.
-# Key generated during AXTO Security Hardening Phase (June 2026).
+# ── Ed25519 public key ─────────────────────────────────────────────────────────
+# Production signing key (rotated 2026-09-27, AXTO v3). Compiled in; there is
+# deliberately no way to override it at runtime.
 _EMBEDDED_PUBLIC_KEY_B64 = "p9cJ3Ct6j/tQPGtH/YJA7Fm8P/VgOSc2+e57+dFNMF0="
 
 SIGNED_PAYLOAD_FIELDS = [
@@ -61,7 +61,7 @@ SIGNED_PAYLOAD_FIELDS = [
     "status", "expires_at", "issued_at", "nonce",
 ]
 
-VALIDATE_URL    = "https://axto.io/api/license-validate"
+VALIDATE_URL    = os.environ.get("AXTO_LICENSE_SERVER", "").strip() or "https://axto.io/api/license-validate"
 GRACE_SECONDS   = 14400   # 4 hours — absolute maximum, NEVER increase
 HEARTBEAT_SECS  = 1800    # 30 minutes re-validation interval
 CACHE_SECONDS   = 1800    # local cache window
@@ -86,19 +86,69 @@ SHUTDOWN_MSG = (
 
 
 # ── Machine ID ────────────────────────────────────────────────────────────────
-def machine_id() -> str:
-    for path in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
+_MACHINE_ID = ""
+
+
+def _state_dir() -> str:
+    """Writable directory for licence state (installation id, verified proof).
+    The Docker images point AXTO_STATE_DIR at a persistent volume."""
+    import os
+    configured = os.environ.get("AXTO_STATE_DIR", "").strip()
+    if configured:
         try:
-            mid = Path(path).read_text().strip()
-            if mid:
-                return mid[:32]
+            os.makedirs(configured, exist_ok=True)
         except Exception:
             pass
+        if os.path.isdir(configured):
+            return configured    # may be read-only (a worker sharing the core's volume)
+    for candidate in ("/var/lib/axto", os.path.expanduser("~/.axto")):
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            if os.access(candidate, os.W_OK):
+                return candidate
+        except Exception:
+            continue
+    return "."
+
+
+def machine_id() -> str:
+    """
+    Stable installation fingerprint for licence binding (32 hex chars).
+    A container has no stable hardware identity (hostname and MAC change every
+    time it is re-created), so the first value is persisted in the state
+    directory (a Docker volume) and reused across restarts and image updates.
+    Source order: persisted id -> host /etc/machine-id -> random (then persisted).
+    """
+    import hashlib, os, uuid
+    global _MACHINE_ID
+    if _MACHINE_ID:
+        return _MACHINE_ID
+    path = os.path.join(_state_dir(), "machine-id")
     try:
-        import uuid
-        return str(uuid.getnode())
+        with open(path) as f:
+            saved = f.read().strip()
+        if len(saved) == 32 and all(c in "0123456789abcdef" for c in saved):
+            _MACHINE_ID = saved
+            return saved
     except Exception:
-        return "unknown"
+        pass
+    raw = ""
+    for candidate in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+        try:
+            with open(candidate) as f:
+                raw = f.read().strip()
+        except Exception:
+            raw = ""
+        if raw:
+            break
+    mid = hashlib.sha256((raw or uuid.uuid4().hex).encode()).hexdigest()[:32]
+    try:
+        with open(path, "w") as f:
+            f.write(mid)
+    except Exception:
+        pass
+    _MACHINE_ID = mid
+    return mid
 
 
 # ── Key Watermark Check (forensic, non-blocking) ──────────────────────────────
@@ -120,7 +170,9 @@ def _verify_signature(signed_payload: str, signature_b64: str) -> bool:
     try:
         if not signed_payload or not signature_b64:
             return False
-        key_b64 = os.environ.get("AXTO_SIGNING_PUBLIC_KEY_B64", _EMBEDDED_PUBLIC_KEY_B64)
+        # The key is compiled in on purpose — never read it from the environment,
+        # or anyone could run their own licence server with their own key.
+        key_b64 = _EMBEDDED_PUBLIC_KEY_B64
         pub_raw = base64.b64decode(key_b64)
         pub_key = _ed25519.Ed25519PublicKey.from_public_bytes(pub_raw)
         sig     = base64.b64decode(signature_b64)
@@ -144,6 +196,23 @@ def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
         return d
     except Exception:
         return None
+
+
+def _binding_problem(fields, key: str, mid: str, nonce) -> str:
+    """Why a signed payload with a GENUINE signature must still be refused for
+    this request ("" = accept). The answer has to be for this licence key, this
+    installation and — for live answers — this very request (the server echoes
+    our nonce), so a captured answer cannot be replayed to other servers or
+    after the licence has lapsed."""
+    if not fields:
+        return "malformed"
+    if str(fields.get("license_key", "")).upper() != str(key or "").upper():
+        return "key_mismatch"
+    if fields.get("machine_id", "") != mid:
+        return "machine_mismatch"
+    if nonce is not None and fields.get("nonce", "") != nonce:
+        return "stale_or_replayed"
+    return ""
 
 
 # ── Cache ─────────────────────────────────────────────────────────────────────
@@ -308,7 +377,7 @@ _state: Optional[LicenseState] = None
 _last_validated: float = 0.0
 
 
-def _parse_response(data: dict) -> LicenseState:
+def _parse_response(data: dict, key: str = "", mid: str = "", nonce=None) -> LicenseState:
     sp  = data.get("signed_payload", "")
     sig = data.get("signature", "")
 
@@ -322,6 +391,10 @@ def _parse_response(data: dict) -> LicenseState:
     payload = _parse_signed_payload(sp)
     if not payload:
         return LicenseState(False, "malformed_payload")
+    problem = _binding_problem(payload, key, mid, nonce) if key else "unbound"
+    if problem:
+        logger.error("AXTO Legal — signed response refused (%s)", problem)
+        return LicenseState(False, f"untrusted_response:{problem}")
 
     valid  = payload.get("valid", "false").lower() == "true"
     status = payload.get("status", "")
@@ -371,11 +444,15 @@ async def validate(license_key: str) -> LicenseState:
     if now - _last_validated < 60 and _state and _state.valid:
         return _state
 
+    key   = key.strip().upper()
+    mid   = machine_id()
+    nonce = os.urandom(16).hex()
     payload = {
         "license_key": key,
         "product":     PRODUCT_CODE,
         "version":     PRODUCT_VERSION,
-        "machine_id":  machine_id(),
+        "machine_id":  mid,
+        "nonce":       nonce,
         "timestamp":   datetime.now(timezone.utc).isoformat(),
     }
 
@@ -383,17 +460,21 @@ async def validate(license_key: str) -> LicenseState:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(VALIDATE_URL, json=payload)
         data = resp.json()
+        # Busy/unavailable server or an unsigned answer: same as unreachable —
+        # never let it wipe a verified proof.
+        if resp.status_code == 429 or resp.status_code >= 500 or not data.get("signed_payload"):
+            raise RuntimeError(f"no signed answer (HTTP {resp.status_code})")
         _last_validated = time.time()
     except Exception as e:
         logger.warning("AXTO Legal — cannot reach license server: %s", e)
         cached = _read_cache()
         if cached:
             logger.info("AXTO Legal — serving from verified offline cache (grace active)")
-            _state = _parse_response(cached)
+            _state = _parse_response(cached, key, mid, None)
             return _state
         return LicenseState(False, "server_unreachable_no_cache")
 
-    _state = _parse_response(data)
+    _state = _parse_response(data, key, mid, nonce)
 
     if _state.valid:
         _write_cache(data)

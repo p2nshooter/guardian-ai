@@ -1,66 +1,95 @@
-/* AXTO — /api/admin/gateways (admin only)
- *   GET → every gateway: fields, configured?, active?, test mode?, webhook URL (never secrets)
- *   PUT {gateway, credentials, is_active, is_test_mode} → blank secret fields keep their saved value */
+/* AXTO — /api/admin/gateways (admin only) · Admin → Payments & email
+ *   GET → every payment method + e-mail settings: fields, masked values,
+ *         configured?, active?, webhook URL. Secrets are NEVER returned.
+ *   PUT {gateway, credentials, is_active, is_test_mode}
+ *       gateway = a payment method id, or "email" for the e-mail settings.
+ *       A blank or still-masked secret field keeps its saved value.
+ * Storage: one AES-256-GCM encrypted R2 document per area (lib/secure-store.ts). */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
+import { getDB, now } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
-import { encryptObj, decryptObj } from "@/lib/gateway-crypto";
-import { GATEWAYS } from "@/lib/billing/gateways";
+import { GATEWAYS, isConfigured, paymentSettings, savePaymentSettings, type GatewayField } from "@/lib/billing/gateways";
+import { emailSettings, type EmailSettings } from "@/lib/mail";
+import { writeSecure, maskValue, keepSecret, SettingsKeyMissing } from "@/lib/secure-store";
 import { readJson, fail, audit } from "@/lib/http";
 import { absoluteUrl } from "@/lib/site";
 
-// Email is configured alongside payments (same encrypted store).
-const EXTRA = [{ id: "resend", label: "Email (Resend)", methods: "Transactional email", currency: "USD", fields: [{ key: "api_key", label: "API key", secret: true }], webhookPath: "" }];
+const EMAIL_FIELDS: GatewayField[] = [
+  { key: "api_key", label: "Resend API key", secret: true, placeholder: "re_…" },
+  { key: "from", label: "Sender", placeholder: "AXTO <hello@axto.io>" },
+  { key: "admin_email", label: "Admin inbox for support & contact messages", placeholder: "support@yourcompany.com" },
+];
+
+function view(fields: GatewayField[], creds: Record<string, string> = {}) {
+  const values: Record<string, string> = {};
+  for (const f of fields) values[f.key] = creds[f.key] ? (f.secret ? maskValue(String(creds[f.key])) : String(creds[f.key])) : "";
+  return values;
+}
+
+function merge(fields: GatewayField[], submitted: any, stored: Record<string, string> = {}) {
+  const next: Record<string, string> = {};
+  for (const f of fields) {
+    const v = submitted?.[f.key];
+    const val = f.secret ? keepSecret(v, stored[f.key]) : (typeof v === "string" ? v.trim() : stored[f.key] || "");
+    if (val) next[f.key] = val.slice(0, f.multiline ? 4000 : 500);
+  }
+  return next;
+}
 
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const rows = await dbQuery<any>(getDB(req), `SELECT gateway, credentials_enc, is_active, is_test_mode, updated_at FROM payment_gateways`);
-  const out = [];
-  for (const g of [...GATEWAYS, ...EXTRA]) {
-    const r = rows.find((x) => x.gateway === g.id);
-    let values: Record<string, string> = {};
-    if (r?.credentials_enc) {
-      try {
-        const c = await decryptObj<Record<string, string>>(r.credentials_enc);
-        for (const f of g.fields) values[f.key] = c[f.key] ? ((f as any).secret ? `••••${String(c[f.key]).slice(-4)}` : String(c[f.key])) : "";
-      } catch { values = {}; }
-    }
-    out.push({
-      id: g.id, label: g.label, methods: g.methods, currency: g.currency, fields: g.fields, values,
-      configured: !!r?.credentials_enc, active: !!r?.is_active, testMode: !!r?.is_test_mode, updatedAt: r?.updated_at || "",
-      webhookUrl: g.webhookPath ? absoluteUrl(g.webhookPath) : "",
+  try {
+    const [pay, mail] = await Promise.all([paymentSettings(), emailSettings()]);
+    const gateways = GATEWAYS.map((g) => {
+      const cur = pay.gateways[g.id];
+      return {
+        id: g.id, label: g.label, methods: g.methods, currency: g.currency, confirmation: g.confirmation,
+        fields: g.fields, values: view(g.fields, cur?.creds),
+        configured: isConfigured(g, cur?.creds), active: !!cur?.active, testMode: !!cur?.testMode, updatedAt: cur?.updatedAt || "",
+        webhookUrl: g.webhookPath ? absoluteUrl(g.webhookPath) : "",
+      };
     });
+    const email = { id: "email", label: "E-mail (Resend)", fields: EMAIL_FIELDS, values: view(EMAIL_FIELDS, mail as Record<string, string>), configured: !!mail.api_key };
+    return respond({ gateways, email, storage: "r2-encrypted" }, ctx);
+  } catch (e) {
+    if (e instanceof SettingsKeyMissing) return fail("Set the SETTINGS_ENCRYPTION_KEY secret before configuring payments.", 503);
+    throw e;
   }
-  return respond({ gateways: out }, ctx);
 }
 
 export async function PUT(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const b = await readJson(req);
-  const g = [...GATEWAYS, ...EXTRA].find((x) => x.id === b?.gateway);
-  if (!g) return fail("Unknown gateway.");
   const db = getDB(req);
-  const row = await dbFirst<any>(db, `SELECT credentials_enc FROM payment_gateways WHERE gateway = ?`, [g.id]);
-  let current: Record<string, string> = {};
-  if (row?.credentials_enc) { try { current = await decryptObj(row.credentials_enc); } catch {} }
-  const next: Record<string, string> = { ...current };
-  for (const f of g.fields) {
-    const v = b?.credentials?.[f.key];
-    if (typeof v !== "string") continue;
-    const t = v.trim();
-    if ((f as any).secret && (t === "" || t.startsWith("••••"))) continue; // keep saved secret
-    next[f.key] = t.slice(0, 4000);
+  try {
+    if (b?.gateway === "email") {
+      const cur = await emailSettings();
+      const next = merge(EMAIL_FIELDS, b?.credentials, cur as Record<string, string>) as EmailSettings;
+      if (next.admin_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.admin_email)) return fail("Admin inbox must be an e-mail address.");
+      await writeSecure(undefined, "email", next);
+      await audit(db, ctx.session, "admin.email.update", "settings", "email", { configured: !!next.api_key }, req);
+      return respond({ ok: true }, ctx);
+    }
+    const g = GATEWAYS.find((x) => x.id === b?.gateway);
+    if (!g) return fail("Unknown payment method.");
+    const settings = await paymentSettings();
+    const cur = settings.gateways[g.id];
+    const creds = merge(g.fields, b?.credentials, cur?.creds);
+    const active = !!b?.is_active;
+    if (active && !isConfigured(g, creds)) {
+      return fail(`Fill in ${g.requires.map((grp) => grp.map((k) => g.fields.find((f) => f.key === k)?.label || k).join(" + ")).join(", or ")} before activating.`);
+    }
+    settings.gateways[g.id] = { active, testMode: !!b?.is_test_mode, creds, updatedAt: now() };
+    settings.updatedAt = now();
+    settings.updatedBy = ctx.session.email;
+    await savePaymentSettings(settings);
+    await audit(db, ctx.session, "admin.gateway.update", "payment_gateway", g.id, { active }, req);
+    return respond({ ok: true }, ctx);
+  } catch (e) {
+    if (e instanceof SettingsKeyMissing) return fail("Set the SETTINGS_ENCRYPTION_KEY secret before configuring payments.", 503);
+    throw e;
   }
-  const enc = Object.keys(next).length ? await encryptObj(next) : "";
-  const active = b?.is_active ? 1 : 0;
-  if (active && !enc) return fail("Enter the credentials before activating.");
-  await dbRun(db,
-    `INSERT INTO payment_gateways (id, gateway, display_name, credentials_enc, is_active, is_test_mode, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(gateway) DO UPDATE SET credentials_enc = excluded.credentials_enc, is_active = excluded.is_active, is_test_mode = excluded.is_test_mode, display_name = excluded.display_name, updated_at = excluded.updated_at`,
-    [crypto.randomUUID(), g.id, g.label, enc, active, b?.is_test_mode ? 1 : 0, now()]);
-  await audit(db, ctx.session, "admin.gateway.update", "payment_gateway", g.id, { active }, req);
-  return respond({ ok: true }, ctx);
 }

@@ -4,7 +4,7 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Orchestra Core"
@@ -44,7 +44,10 @@ ENV ORCHESTRA_HOST=0.0.0.0
 ENV ORCHESTRA_PORT=8080
 ENV ORCHESTRA_LOG_LEVEL=INFO
 
+ENV AXTO_STATE_DIR=/app/data/.axto
+ENV DATA_DIR=/app/data
+ENV ORCHESTRA_CONFIG=/app/orchestra_core/config/orchestra.yml
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('ORCHESTRA_PORT', '8080') + '/health', timeout=8)" || exit 1
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

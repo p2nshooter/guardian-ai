@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
     await audit(db, s, "license.issued", "sh_license", product.slug, {}, req);
     const m = mails.licenseIssued({ product: catalogEntry(product.slug)?.name || product.slug, key });
     await sendMail(s.email, m.subject, m.html);
-    return respond({ ok: true }, ctx);
+    const license = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ?`, [s.sub, product.slug]);
+    return respond({ ok: true, license }, ctx);
   }
 
   if (!existing || existing.status === "revoked") return fail("You don't have a licence for this app yet.");

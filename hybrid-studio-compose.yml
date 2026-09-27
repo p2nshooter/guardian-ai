@@ -4,7 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
 # AXTO Hybrid Studio — Pipeline Automation: AI + GPU + Voice + Sound
 # Port: 8093  |  Docs: axto.io/guide/hybrid-studio
 services:
@@ -18,10 +17,12 @@ services:
       - ./hybrid-studio.yml:/hybrid-studio/config/hybrid-studio.yml:ro
       - hybrid-studio-data:/hybrid-studio/data
       - hybrid-studio-logs:/hybrid-studio/logs
+      - axto-studio-state:/axto-state   # shared by Studio core + modules
     environment:
+      - AXTO_STATE_DIR=/axto-state
       - HYBRID_STUDIO_CONFIG=/hybrid-studio/config/hybrid-studio.yml
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8093/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8093/health', timeout=8)"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -29,3 +30,5 @@ services:
 volumes:
   hybrid-studio-data:
   hybrid-studio-logs:
+  axto-studio-state:
+    name: axto-studio-state

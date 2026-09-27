@@ -4,8 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
-
 # ============================================================
 # AXTO Sentinel — IoT/OT Security
 # docker compose -f sentinel-compose.yml up -d
@@ -26,7 +24,7 @@ services:
       - SENTINEL_CONFIG=/sentinel/config/sentinel.yml
       - SENTINEL_PORT=8095
     healthcheck:
-      test: ["CMD","curl","-sf","http://localhost:8095/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8095/health', timeout=8)"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Guardian Node Agent"
@@ -42,7 +42,8 @@ RUN mkdir -p /guardian/data /guardian/logs /guardian/config /guardian/quarantine
 # Required env: GUARDIAN_CORE_URL → guardian-core container
 ENV GUARDIAN_CONFIG=/guardian/config/guardian.yml
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+ENV AXTO_STATE_DIR=/guardian/data/.axto
+# The node agent has no HTTP port; guardian-core tracks it by heartbeat.
+HEALTHCHECK NONE
 
 CMD ["python", "-m", "src"]

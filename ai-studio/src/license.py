@@ -39,7 +39,7 @@ STUDIO_MODULE    = "ai"                 # this app's entry in STUDIO_PLANS[].stu
 LICENSE_PRODUCT  = "studio"             # AXTO Studio — ONE shared license unlocks ai/gpu/hybrid studio
 PRODUCT_PREFIX   = "STUD"
 VERSION         = "1.1.0"
-VALIDATE_URL    = "https://axto.io/api/license-validate"
+VALIDATE_URL    = os.environ.get("AXTO_LICENSE_SERVER", "").strip() or "https://axto.io/api/license-validate"
 GRACE_SECONDS   = 14400
 HEARTBEAT_SECS  = 1800
 CACHE_SECONDS   = 1800
@@ -71,17 +71,69 @@ SIGNED_PAYLOAD_FIELDS = [
 ]
 
 
+_MACHINE_ID = ""
+
+
+def _state_dir() -> str:
+    """Writable directory for licence state (installation id, verified proof).
+    The Docker images point AXTO_STATE_DIR at a persistent volume."""
+    import os
+    configured = os.environ.get("AXTO_STATE_DIR", "").strip()
+    if configured:
+        try:
+            os.makedirs(configured, exist_ok=True)
+        except Exception:
+            pass
+        if os.path.isdir(configured):
+            return configured    # may be read-only (a worker sharing the core's volume)
+    for candidate in ("/var/lib/axto", os.path.expanduser("~/.axto")):
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            if os.access(candidate, os.W_OK):
+                return candidate
+        except Exception:
+            continue
+    return "."
+
+
 def machine_id() -> str:
+    """
+    Stable installation fingerprint for licence binding (32 hex chars).
+    A container has no stable hardware identity (hostname and MAC change every
+    time it is re-created), so the first value is persisted in the state
+    directory (a Docker volume) and reused across restarts and image updates.
+    Source order: persisted id -> host /etc/machine-id -> random (then persisted).
+    """
+    import hashlib, os, uuid
+    global _MACHINE_ID
+    if _MACHINE_ID:
+        return _MACHINE_ID
+    path = os.path.join(_state_dir(), "machine-id")
     try:
-        for candidate in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
-            if os.path.exists(candidate):
-                raw = open(candidate).read().strip()
-                if raw:
-                    return hashlib.sha256(raw.encode()).hexdigest()[:32]
-        raw = socket.gethostname() + str(uuid.getnode())
-        return hashlib.sha256(raw.encode()).hexdigest()[:32]
+        with open(path) as f:
+            saved = f.read().strip()
+        if len(saved) == 32 and all(c in "0123456789abcdef" for c in saved):
+            _MACHINE_ID = saved
+            return saved
     except Exception:
-        return hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()[:32]
+        pass
+    raw = ""
+    for candidate in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+        try:
+            with open(candidate) as f:
+                raw = f.read().strip()
+        except Exception:
+            raw = ""
+        if raw:
+            break
+    mid = hashlib.sha256((raw or uuid.uuid4().hex).encode()).hexdigest()[:32]
+    try:
+        with open(path, "w") as f:
+            f.write(mid)
+    except Exception:
+        pass
+    _MACHINE_ID = mid
+    return mid
 
 
 # ── Signed-response verification & local proof cache (HARDENING) ────────────
@@ -116,6 +168,23 @@ def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
     if len(parts) > len(SIGNED_PAYLOAD_FIELDS):
         d.update({f"extra_{i}": v for i, v in enumerate(parts[len(SIGNED_PAYLOAD_FIELDS):])})
     return d
+
+
+def _binding_problem(fields, key: str, mid: str, nonce) -> str:
+    """Why a signed payload with a GENUINE signature must still be refused for
+    this request ("" = accept). The answer has to be for this licence key, this
+    installation and — for live answers — this very request (the server echoes
+    our nonce), so a captured answer cannot be replayed to other servers or
+    after the licence has lapsed."""
+    if not fields:
+        return "malformed"
+    if str(fields.get("license_key", "")).upper() != str(key or "").upper():
+        return "key_mismatch"
+    if fields.get("machine_id", "") != mid:
+        return "machine_mismatch"
+    if nonce is not None and fields.get("nonce", "") != nonce:
+        return "stale_or_replayed"
+    return ""
 
 
 # ── Separately-signed entitlements (which studios this license unlocks) ──────
@@ -267,11 +336,12 @@ async def validate_license(license_key: str) -> LicenseState:
             log.error(f"License rejected: wrong prefix. Got '{_state.key[:10]}...', expected '{PRODUCT_PREFIX}-'")
             return _state
 
-        mid = machine_id()
+        mid, nonce = machine_id(), os.urandom(16).hex()
         try:
             async with httpx.AsyncClient(timeout=15) as client:
                 resp = await client.post(VALIDATE_URL, json={
                     "license_key": _state.key,
+                    "nonce": nonce,
                     "product": LICENSE_PRODUCT,
                     "machine_id": mid,
                     "version": VERSION,
@@ -295,7 +365,7 @@ async def validate_license(license_key: str) -> LicenseState:
                 )
                 raise httpx.TransportError("signature_verification_failed")
             signed_fields = _parse_signed_payload(sig_payload)
-            if not signed_fields or signed_fields.get("license_key") != _state.key:
+            if _binding_problem(signed_fields, _state.key, mid, nonce):
                 log.critical("AXTO AI STUDIO — SIGNED RESPONSE FIELD MISMATCH. Treating as unreachable.")
                 raise httpx.TransportError("signed_field_mismatch")
 

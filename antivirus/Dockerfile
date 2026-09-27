@@ -9,7 +9,7 @@
 # ClamAV daemon + Python multi-engine scanner + REST API + Self-learning
 # Works INDEPENDENTLY — no guardian-node required
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.title="AXTO Guardian Antivirus"
 LABEL org.opencontainers.image.description="World-class standalone antivirus with ClamAV + AI learning"
@@ -46,9 +46,10 @@ RUN mkdir -p /guardian/data /guardian/data/quarantine /guardian/config /guardian
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 8090
+EXPOSE 8097
 
+ENV AXTO_STATE_DIR=/guardian/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-    CMD curl -f http://localhost:8090/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('AV_PORT', '8097') + '/health', timeout=8)" || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

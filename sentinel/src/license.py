@@ -51,7 +51,7 @@ SIGNED_PAYLOAD_FIELDS = [
     "status", "expires_at", "issued_at", "nonce",
 ]
 VERSION         = "2.1.0"  # HARDENED build — see AXTO_Security_Hardening_Report.pdf
-VALIDATE_URL    = "https://axto.io/api/license-validate"
+VALIDATE_URL    = os.environ.get("AXTO_LICENSE_SERVER", "").strip() or "https://axto.io/api/license-validate"
 GRACE_SECONDS   = 14400   # 4 hours — absolute maximum, NEVER increase
 HEARTBEAT_SECS  = 1800    # 30 minutes — re-validation interval
 CACHE_SECONDS   = 1800    # local cache window (matches heartbeat)
@@ -84,23 +84,69 @@ EXPIRY_BANNER = (
 
 # ── Machine ID fingerprinting ─────────────────────────────────────────────────
 
+_MACHINE_ID = ""
+
+
+def _state_dir() -> str:
+    """Writable directory for licence state (installation id, verified proof).
+    The Docker images point AXTO_STATE_DIR at a persistent volume."""
+    import os
+    configured = os.environ.get("AXTO_STATE_DIR", "").strip()
+    if configured:
+        try:
+            os.makedirs(configured, exist_ok=True)
+        except Exception:
+            pass
+        if os.path.isdir(configured):
+            return configured    # may be read-only (a worker sharing the core's volume)
+    for candidate in ("/var/lib/axto", os.path.expanduser("~/.axto")):
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            if os.access(candidate, os.W_OK):
+                return candidate
+        except Exception:
+            continue
+    return "."
+
+
 def machine_id() -> str:
     """
-    Stable machine fingerprint for license binding.
-    Priority: /etc/machine-id (Linux systemd) → DBUS → hostname-UUID.
-    SHA-256 hashed to 32 chars — no raw system data transmitted.
+    Stable installation fingerprint for licence binding (32 hex chars).
+    A container has no stable hardware identity (hostname and MAC change every
+    time it is re-created), so the first value is persisted in the state
+    directory (a Docker volume) and reused across restarts and image updates.
+    Source order: persisted id -> host /etc/machine-id -> random (then persisted).
     """
+    import hashlib, os, uuid
+    global _MACHINE_ID
+    if _MACHINE_ID:
+        return _MACHINE_ID
+    path = os.path.join(_state_dir(), "machine-id")
     try:
-        for candidate in ["/etc/machine-id", "/var/lib/dbus/machine-id"]:
-            if os.path.exists(candidate):
-                raw = open(candidate).read().strip()
-                if raw:
-                    return hashlib.sha256(raw.encode()).hexdigest()[:32]
-        raw = socket.gethostname() + str(uuid.getnode())
-        return hashlib.sha256(raw.encode()).hexdigest()[:32]
+        with open(path) as f:
+            saved = f.read().strip()
+        if len(saved) == 32 and all(c in "0123456789abcdef" for c in saved):
+            _MACHINE_ID = saved
+            return saved
     except Exception:
-        # Deterministic fallback from UUID based on available entropy
-        return hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()[:32]
+        pass
+    raw = ""
+    for candidate in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+        try:
+            with open(candidate) as f:
+                raw = f.read().strip()
+        except Exception:
+            raw = ""
+        if raw:
+            break
+    mid = hashlib.sha256((raw or uuid.uuid4().hex).encode()).hexdigest()[:32]
+    try:
+        with open(path, "w") as f:
+            f.write(mid)
+    except Exception:
+        pass
+    _MACHINE_ID = mid
+    return mid
 
 
 # ── Signed-response verification & local proof cache (HARDENING) ────────────
@@ -144,6 +190,43 @@ def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
     if len(parts) > len(SIGNED_PAYLOAD_FIELDS):
         d.update({f"extra_{i}": v for i, v in enumerate(parts[len(SIGNED_PAYLOAD_FIELDS):])})
     return d
+
+
+def _binding_problem(fields, key: str, mid: str, nonce) -> str:
+    """Why a signed payload with a GENUINE signature must still be refused for
+    this request ("" = accept). The answer has to be for this licence key, this
+    installation and — for live answers — this very request (the server echoes
+    our nonce), so a captured answer cannot be replayed to other servers or
+    after the licence has lapsed."""
+    if not fields:
+        return "malformed"
+    if str(fields.get("license_key", "")).upper() != str(key or "").upper():
+        return "key_mismatch"
+    if fields.get("machine_id", "") != mid:
+        return "machine_mismatch"
+    if nonce is not None and fields.get("nonce", "") != nonce:
+        return "stale_or_replayed"
+    return ""
+
+
+def _signed_entitlements(fields: dict) -> dict:
+    """The entitlements segment of the SIGNED payload ("package=x;k=v;...")
+    parsed and typed. Limits and features must come from here — the plain
+    JSON `features` object is not covered by the signature."""
+    raw = "|".join(v for k, v in sorted(fields.items()) if k.startswith("extra_")) if fields else ""
+    out: dict = {}
+    for kv in raw.split(";"):
+        if "=" not in kv:
+            continue
+        k, v = (x.strip() for x in kv.split("=", 1))
+        if v in ("true", "false"):
+            out[k] = (v == "true")
+        else:
+            try:
+                out[k] = int(v)
+            except ValueError:
+                out[k] = v
+    return out
 
 
 def _cache_path() -> str:
@@ -368,8 +451,8 @@ class LicenseValidator:
             config.get("license_key", "")
             or os.environ.get("SENTINEL_LICENSE_KEY", "")
             or os.environ.get("AXTO_LICENSE_KEY", "")
-        ).strip()
-        self._url   = config.get("license_validate_url", VALIDATE_URL)
+        ).strip().upper()
+        self._url   = os.environ.get("AXTO_LICENSE_SERVER", "").strip() or config.get("license_validate_url") or VALIDATE_URL
         self._info: Optional[LicenseState] = None
         self._last: float = 0.0
         self._client = httpx.AsyncClient(timeout=20.0, verify=True)
@@ -431,12 +514,14 @@ class LicenseValidator:
             return state
 
         # ── Remote validation ─────────────────────────────────────────────────
+        _mid, _nonce = machine_id(), os.urandom(16).hex()
         try:
             resp = await self._client.post(
                 self._url,
                 json={
                     "license_key": self._key,
-                    "machine_id":  machine_id(),
+                    "machine_id":  _mid,
+                    "nonce":       _nonce,
                     "product":     PRODUCT,
                     "version":     VERSION,
                     "hostname":    socket.gethostname(),
@@ -464,7 +549,7 @@ class LicenseValidator:
                 )
                 raise _UntrustedLicenseResponse("signature_verification_failed")
             _signed_fields = _parse_signed_payload(_sig_payload)
-            if not _signed_fields or _signed_fields.get("license_key") != self._key:
+            if _binding_problem(_signed_fields, self._key, _mid, _nonce):
                 log.critical(
                     "AXTO SENTINEL — SIGNED RESPONSE FIELD MISMATCH. "
                     "Treating as unreachable."
@@ -479,6 +564,13 @@ class LicenseValidator:
             # the signature, because only `_sig_payload` itself is what was
             # actually signed. Overriding here closes that gap.
             data["valid"] = (_signed_fields.get("valid") == "true")
+            _ent = _signed_entitlements(_signed_fields)
+            if _ent:
+                data["features"] = {k: v for k, v in _ent.items() if k != "package"}
+                data["package"] = data["package_code"] = str(_ent.get("package", ""))
+                data["max_nodes"] = _ent.get("max_nodes", _ent.get("max_workers", _ent.get("max_devices", 1)))   # never the unsigned value
+                if "max_requests_daily" in _ent:
+                    data["max_requests_daily"] = _ent["max_requests_daily"]
             data["status"] = _signed_fields.get("status", data.get("status", ""))
             if _signed_fields.get("expires_at"):
                 data["expires_at"] = _signed_fields["expires_at"]

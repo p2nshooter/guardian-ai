@@ -9,7 +9,7 @@
 # registry.gitlab.com/axto-platform/edge-engine/edge-engine:latest
 # ghcr.io/your-org/edge-engine:latest
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.title="AXTO Edge"
 LABEL org.opencontainers.image.description="AI Gateway & API Management"
@@ -33,7 +33,8 @@ RUN mkdir -p /edge/data /edge/config /edge/logs
 
 EXPOSE 8094
 
+ENV AXTO_STATE_DIR=/edge/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
-    CMD curl -sf http://localhost:8094/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:8094/health', timeout=8)" || exit 1
 
 CMD ["python", "-m", "src"]

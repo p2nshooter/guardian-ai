@@ -9,7 +9,7 @@
 # registry.gitlab.com/axto-platform/compliance-engine/compliance-engine:latest
 # ghcr.io/your-org/compliance-engine:latest
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.title="AXTO Compliance"
 LABEL org.opencontainers.image.description="Automated Audit Platform"
@@ -33,7 +33,8 @@ RUN mkdir -p /compliance/data /compliance/config /compliance/logs
 
 EXPOSE 8093
 
+ENV AXTO_STATE_DIR=/compliance/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
-    CMD curl -sf http://localhost:8093/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('COMPLIANCE_PORT', '8093') + '/health', timeout=8)" || exit 1
 
 CMD ["python", "-m", "src"]

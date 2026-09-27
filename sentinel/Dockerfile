@@ -4,7 +4,7 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 LABEL org.opencontainers.image.title="AXTO Sentinel Engine"
 LABEL org.opencontainers.image.description="AXTO Sentinel — IoT/OT Security: Device discovery, OT protocol detection, CVE tracking, risk scoring"
 LABEL org.opencontainers.image.licenses="Commercial"
@@ -16,6 +16,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt && apt-get purge -y gcc g++ && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* /root/.cache/pip
 COPY src/ ./src/
 RUN mkdir -p /sentinel/data /sentinel/logs
-EXPOSE 8087
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD curl -f http://localhost:8087/health || exit 1
-CMD ["python", "-m", "uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8087"]
+EXPOSE 8095
+ENV AXTO_STATE_DIR=/sentinel/data/.axto
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('SENTINEL_PORT', '8095') + '/health', timeout=8)" || exit 1
+CMD ["python", "-m", "src"]

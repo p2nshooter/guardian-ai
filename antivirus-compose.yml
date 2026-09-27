@@ -4,8 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
-
 # =====================================================
 #  AXTO Guardian Antivirus — Docker Compose
 #  Docs: https://docs.axto.io/guardian/antivirus
@@ -57,10 +55,7 @@ services:
     networks:
       - axto-antivirus
     healthcheck:
-      test: >
-        curl -sf http://localhost:8097/health |
-        python3 -c "import sys,json; d=json.load(sys.stdin);
-        sys.exit(0 if d.get('status') in ('ok','grace_period') else 1)"
+      test: ["CMD", "python", "-c", "import json, urllib.request; d = json.load(urllib.request.urlopen('http://127.0.0.1:8097/health', timeout=8)); raise SystemExit(0 if d.get('status') in ('ok', 'grace_period') else 1)"]
       interval: 30s
       timeout: 10s
       start_period: 60s

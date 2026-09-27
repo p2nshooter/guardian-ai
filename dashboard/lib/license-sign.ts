@@ -28,6 +28,8 @@ export interface SignFields {
   status: string;
   expiresAt: string;
   entitlements?: string;
+  /** Engine-supplied request nonce, echoed so a captured answer cannot be replayed. */
+  nonce?: string;
 }
 
 export class SigningUnavailable extends Error {
@@ -80,14 +82,36 @@ export function canonicalPayload(f: SignFields, issuedAt: string, nonce: string)
   return parts.join("|");
 }
 
-/** Returns the fields every engine verifies: { signed_payload, signature, issued_at }. */
-export async function signLicense(db: any, f: SignFields): Promise<{ signed_payload: string; signature: string; issued_at: string }> {
+async function signString(db: any, payload: string): Promise<string> {
   const key = await signingKey(db);
-  const issuedAt = new Date().toISOString();
-  const nonce = Array.from(crypto.getRandomValues(new Uint8Array(12))).map((b) => b.toString(16).padStart(2, "0")).join("");
-  const payload = canonicalPayload(f, issuedAt, nonce);
   const sig = new Uint8Array(await crypto.subtle.sign({ name: "Ed25519" } as any, key, new TextEncoder().encode(payload)));
   let bin = "";
   for (let i = 0; i < sig.length; i++) bin += String.fromCharCode(sig[i]);
-  return { signed_payload: payload, signature: btoa(bin), issued_at: issuedAt };
+  return btoa(bin);
+}
+
+/** Accepts an engine nonce only in a strict, delimiter-free form. */
+export function requestNonce(v: unknown): string {
+  return typeof v === "string" && /^[A-Za-z0-9]{16,64}$/.test(v) ? v : "";
+}
+
+function newNonce(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(12))).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Separately-signed entitlements block read by Legal and the Studio modules
+ * (ai/gpu/hybrid). Field order must match ENTITLEMENTS_FIELDS in those engines:
+ *   license_key|machine_id|product|entitlements|issued_at|nonce
+ */
+export async function signEntitlements(db: any, f: { licenseKey: string; machineId: string; product: string; entitlements: string; nonce?: string }): Promise<{ entitlements_payload: string; entitlements_signature: string }> {
+  const payload = [clean(f.licenseKey), clean(f.machineId), clean(f.product), f.entitlements.replace(/[|\r\n]/g, ""), new Date().toISOString(), requestNonce(f.nonce) || newNonce()].join("|");
+  return { entitlements_payload: payload, entitlements_signature: await signString(db, payload) };
+}
+
+/** Returns the fields every engine verifies: { signed_payload, signature, issued_at }. */
+export async function signLicense(db: any, f: SignFields): Promise<{ signed_payload: string; signature: string; issued_at: string }> {
+  const issuedAt = new Date().toISOString();
+  const payload = canonicalPayload(f, issuedAt, requestNonce(f.nonce) || newNonce());
+  return { signed_payload: payload, signature: await signString(db, payload), issued_at: issuedAt };
 }

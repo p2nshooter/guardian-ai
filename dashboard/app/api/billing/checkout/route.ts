@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 import { getDB, getEnv, dbRun, newId, now } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS } from "@/lib/plans";
-import { gatewayCreds, gatewayInfo, usdIdrRate, toIdr, type GatewayId } from "@/lib/billing/gateways";
+import { gatewayCreds, gatewayInfo, usdIdrRate, toIdr, CRYPTO_ASSETS, type GatewayId } from "@/lib/billing/gateways";
 import { stripeCreate, paypalCreate, xenditCreate, midtransCreate, nowpaymentsCreate, type OrderForPayment } from "@/lib/billing/providers";
 import { readJson, fail, audit } from "@/lib/http";
 import { SITE } from "@/lib/site";
@@ -49,7 +49,17 @@ export async function POST(req: NextRequest) {
       case "midtrans": url = await midtransCreate(creds, o); break;
       case "nowpayments": ({ url, ref } = await nowpaymentsCreate(creds, o)); break;
       case "manual":
-        return respond({ ok: true, orderId: id, manual: true, amountUsd, instructions: creds.instructions || `Email ${SITE.supportEmail} with your order number.` }, ctx);
+        return respond({
+          ok: true, orderId: id, manual: true, method: "bank", reference: id, amountUsd, amountIdr, currency: "IDR",
+          bank: { bank_name: creds.bank_name || "BNI", account_number: creds.account_number || "", account_name: creds.account_name || "", branch: creds.branch || "", swift_code: creds.swift_code || "" },
+          instructions: creds.instructions || `Transfer exactly Rp${amountIdr.toLocaleString("id-ID")} and write ${id} in the transfer note. Then send the receipt in the Support chat (topic “Pay by bank transfer”) — we confirm within one business day.`,
+        }, ctx);
+      case "crypto":
+        return respond({
+          ok: true, orderId: id, manual: true, method: "crypto", reference: id, amountUsd, currency: "USD",
+          wallets: CRYPTO_ASSETS.filter((a) => creds[a.key]).map((a) => ({ asset: a.asset, network: a.network, address: creds[a.key] })),
+          instructions: creds.instructions || `Send the equivalent of US$${amountUsd} (stablecoins 1:1) to one of the addresses — only on the network shown. Then send the transaction hash in the Support chat (topic “Pay with crypto”) — we confirm within one business day.`,
+        }, ctx);
     }
     if (ref) await dbRun(db, `UPDATE orders SET gateway_ref = ? WHERE id = ?`, [ref, id]);
     return respond({ ok: true, orderId: id, url }, ctx);

@@ -4,7 +4,7 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Product: AXTO Legal — Enterprise AI Legal & Compliance Platform
 # ==============================================================================
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL maintainer="Axto AI <hello@axto.io>"
 LABEL vendor="AXTO (axto.io)"
@@ -33,7 +33,8 @@ USER axto
 
 EXPOSE 8096
 
+ENV AXTO_STATE_DIR=/legal/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD curl -sf http://localhost:8096/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/health', timeout=8)" || exit 1
 
 CMD ["python", "-m", "src"]

@@ -19,7 +19,7 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, now } from "@/lib/db";
-import { signLicense, SigningUnavailable, type SignFields } from "@/lib/license-sign";
+import { signLicense, signEntitlements, SigningUnavailable, type SignFields } from "@/lib/license-sign";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { SELF_HOSTED, productFromKey } from "@/lib/selfhosted";
 import { absoluteUrl } from "@/lib/site";
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   const {
     license_key, machine_id, product: requestedProduct, node_count,
     version: versionField, vault_version, guardian_version, orchestra_version,
-    edge_version, soc_version, compliance_version, sentinel_version,
+    edge_version, soc_version, compliance_version, sentinel_version, nonce,
   } = body || {};
   if (!license_key || typeof license_key !== "string") return plain({ valid: false, error: "license_key is required" }, 400);
 
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       valid: false, reason: "program_ended",
       error: `The AXTO free program has ended. This app is now locked (read-only) — your data is untouched. Subscribe to a Business or Enterprise plan at ${PRICING} and paste your licence key from ${PORTAL} to continue.`,
       renew_url: PRICING,
-    }, { licenseKey: key, machineId: mid, product: keyProduct, valid: false, status: "program_ended", expiresAt: new Date().toISOString() });
+    }, { licenseKey: key, machineId: mid, product: keyProduct, valid: false, status: "program_ended", expiresAt: new Date().toISOString(), nonce });
   }
 
   const lic = await dbFirst<any>(db,
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   if (!lic) return plain({ valid: false, error: `License key not found. Get your key at ${PORTAL}` });
 
   const sign = (status: string, valid = false, extra: Partial<SignFields> = {}): SignFields =>
-    ({ licenseKey: key, machineId: mid, product: lic.product, valid, status, expiresAt: lic.expires_at, ...extra });
+    ({ licenseKey: key, machineId: mid, product: lic.product, valid, status, expiresAt: lic.expires_at, nonce, ...extra });
 
   if (lic.status === "revoked") {
     return signed(db, { valid: false, reason: "revoked", error: "License has been revoked. Contact hello@axto.io for assistance." }, sign("revoked"));
@@ -157,7 +157,16 @@ export async function POST(req: NextRequest) {
   if (daysLeft <= 14) response.warning = `License renews with your plan in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Keep your plan active at ${PORTAL}.`;
   if (daysLeft <= 3) response.critical_warning = `⚠️ License expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}! Renew your plan at ${PORTAL}.`;
 
-  return signed(db, response, sign("active", true, { entitlements: serializeEntitlements(features, lic.package_code) }));
+  const entitlements = serializeEntitlements(features, lic.package_code);
+  try {
+    // Legal and the Studio modules (ai/gpu/hybrid) read their feature set from
+    // this separately-signed block; the other engines ignore it.
+    Object.assign(response, await signEntitlements(db, { licenseKey: key, machineId: mid, product: lic.product, entitlements, nonce }));
+  } catch (e) {
+    if (e instanceof SigningUnavailable) return plain({ valid: false, error: "Licensing service is temporarily unavailable." }, 503);
+    throw e;
+  }
+  return signed(db, response, sign("active", true, { entitlements }));
 }
 
 // Deterministic, signable entitlements: "package=<code>;<k>=<v>;…" (keys sorted).
@@ -173,7 +182,8 @@ function serializeEntitlements(features: Record<string, any>, packageCode: strin
 // Top-tier feature sets — identical to the v2 server's answers for the top
 // package of each engine, so the engines unlock their most complete version.
 function buildFeatures(product: string, packageCode: string, maxNodes: number): Record<string, any> {
-  const base = { ai_pool: true, support_chat: true, byok: true, self_hosted: true };
+  // max_nodes is in every signed entitlement set, so no engine ever falls back to an unsigned limit.
+  const base = { ai_pool: true, support_chat: true, byok: true, self_hosted: true, max_nodes: maxNodes };
   switch (product) {
     case "guardian":
       return { ...base, max_nodes: maxNodes, compliance_reports: true, threat_hunting: true, ebpf: true, mtls: true, multi_tenant: true, white_label: true };

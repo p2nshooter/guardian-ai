@@ -4,7 +4,7 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Guardian Engine"
@@ -49,7 +49,8 @@ RUN mkdir -p /guardian/data /guardian/logs /guardian/config /guardian/quarantine
 
 EXPOSE 8080
 
+ENV AXTO_STATE_DIR=/guardian/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=8)" || exit 1
 
 CMD ["python", "-m", "uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8080"]

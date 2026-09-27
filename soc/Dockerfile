@@ -9,7 +9,7 @@
 # registry.gitlab.com/axto-platform/soc-engine/soc-engine:latest
 # ghcr.io/your-org/soc-engine:latest
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 LABEL org.opencontainers.image.title="AXTO SOC"
 LABEL org.opencontainers.image.description="Security Operations Center"
@@ -33,7 +33,8 @@ RUN mkdir -p /soc/data /soc/config /soc/logs
 
 EXPOSE 8092
 
+ENV AXTO_STATE_DIR=/soc/data/.axto
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=3 \
-    CMD curl -sf http://localhost:8092/health || exit 1
+    CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('SOC_PORT', '8092') + '/health', timeout=8)" || exit 1
 
 CMD ["python", "-m", "src"]

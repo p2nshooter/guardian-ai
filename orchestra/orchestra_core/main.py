@@ -22,6 +22,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import settings
+_CFG = settings.apply()   # env ← orchestra.yml ← generated secrets; before the imports below
+
+import hmac
 import enforcement
 import security_hardening
 import credential_vault
@@ -49,7 +53,8 @@ app.add_middleware(
     allow_methods=["*"], allow_headers=["*"],
 )
 
-CONSOLE_PASSWORD = os.environ.get("ORCHESTRA_CONSOLE_PASSWORD", "orchestra-console")
+CONSOLE_PASSWORD = os.environ.get("ORCHESTRA_CONSOLE_PASSWORD", "")
+WORKER_TOKEN     = os.environ.get("ORCHESTRA_WORKER_TOKEN", "")
 CONSOLE_DIR      = Path(__file__).parent / "console"
 
 
@@ -69,11 +74,20 @@ async def startup():
         logger.critical("CRITICAL HARDENING FAILURE — shutting down")
         raise SystemExit(1)
 
-    # License enforcement
-    state = enforcement.run_enforcement()
-    logger.info(f"License: {state['status']} | Tier: {state.get('tier','?')} | ID: {state.get('license_id','TRIAL')}")
+    # License enforcement (signed, online; 4h verified offline grace)
+    state = await enforcement.start()
+    logger.info(f"License: {state['status']} | Tier: {state.get('tier','-')} | ID: {state.get('license_id','-')}")
     if state["status"] != "ACTIVE":
-        logger.warning(f"WARNING: {state.get('error')} — operating in degraded mode")
+        logger.warning(f"LOCKED: {state.get('error')} — open http://localhost:8088 to activate")
+
+    # BYOK vendor keys from orchestra.yml → encrypted credential vault
+    for provider, api_key, _model in settings.vendor_keys(_CFG):
+        try:
+            if credential_vault.get_key(provider) != api_key:
+                credential_vault.store_key(provider, api_key, "orchestra.yml")
+                logger.info(f"Vendor key for '{provider}' imported from orchestra.yml")
+        except Exception as e:
+            logger.warning(f"Could not import vendor key for '{provider}': {e}")
 
     logger.info(f"Unit ID: {enforcement.get_unit_id()}")
     logger.info(f"Console: http://0.0.0.0:8080/console")
@@ -108,7 +122,7 @@ async def require_console(request: Request):
         or request.cookies.get("console_token")
         or request.query_params.get("token")
     )
-    if not token or token != CONSOLE_PASSWORD:
+    if not token or not CONSOLE_PASSWORD or not hmac.compare_digest(str(token), CONSOLE_PASSWORD):
         raise HTTPException(status_code=401, detail="Unauthorized — invalid console token")
     return token
 
@@ -118,7 +132,7 @@ async def require_worker_auth(request: Request):
         request.headers.get("X-Orchestra-Worker-Token")
         or request.headers.get("Authorization", "").replace("Bearer ", "")
     )
-    if not token:
+    if not token or not WORKER_TOKEN or not hmac.compare_digest(str(token), WORKER_TOKEN):
         raise HTTPException(status_code=401, detail="Worker authentication required")
     return token
 
@@ -159,38 +173,17 @@ async def orch_license_wizard(request: Request, call_next):
 # ── License activate endpoint ─────────────────────────────────────────────────
 @app.post("/api/license/activate")
 async def orch_license_activate(request: Request):
-    import os, httpx, socket as _sock
-    body = await request.json()
-    key = (body.get("license_key") or "").strip().upper()
-    if not key:
-        return JSONResponse({"valid": False, "error": "No license key"}, status_code=400)
-
-    validate_url = os.environ.get("AXTO_LICENSE_SERVER", "https://axto.io/api/license-validate")
-    # Same fingerprint the licence validator sends on every heartbeat (see license.machine_id).
-    from license import machine_id as _machine_id
-    machine_id = _machine_id()
-
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(validate_url, json={
-                "license_key": key,
-                "machine_id":  machine_id,
-                "product":     "orchestra",
-                "hostname":    _sock.gethostname(),
-            })
-            data = resp.json()
-
-        if data.get("valid"):
-            data_dir = os.environ.get("DATA_DIR", "./data")
-            os.makedirs(data_dir, exist_ok=True)
-            with open(os.path.join(data_dir, "license.key"), "w") as f:
-                f.write(key)
-            # Update enforcement state
-            enforcement._enforcement_state = {"status": "ACTIVE", "license_id": key[:12]}
-            return {**data, "machine_id": machine_id[:16]}
-        return {"valid": False, **data}
-    except Exception as e:
-        return JSONResponse({"valid": False, "error": str(e), "reason": "network_error"}, status_code=503)
+        body = await request.json()
+    except Exception:
+        body = {}
+    result = await enforcement.activate(body.get("license_key") or "")
+    if not result["ok"]:
+        return JSONResponse({"valid": False, "error": result.get("error"), "reason": result.get("reason"),
+                             "machine_id": (result.get("unit_id") or "")[:16]}, status_code=400)
+    state = result["state"]
+    return {"valid": True, "status": "active", "tier": state.get("tier"), "expires_at": state.get("expires_at"),
+            "machine_id": state.get("unit_id", "")[:16]}
 
 @app.get("/")
 async def root():

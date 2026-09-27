@@ -51,7 +51,7 @@ def _get_master_key() -> bytes:
     from enforcement import get_enforcement_state
     state    = get_enforcement_state()
     unit_id  = state.get("unit_id", "unknown")
-    password = os.environ.get("ORCHESTRA_CONSOLE_PASSWORD", "orchestra-console")
+    password = os.environ.get("ORCHESTRA_CONSOLE_PASSWORD", "")
     return _derive_master_key(unit_id, password)
 
 

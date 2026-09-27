@@ -4,7 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
 # ============================================================
 # AXTO Vault — Tier 2 (PostgreSQL + Redis)
 # For high-volume production: 100K+ scans/day
@@ -15,21 +14,20 @@ services:
     image: axto/vault-core:latest
     container_name: axto-vault
     restart: unless-stopped
-    ports: ["8081:8091"]
+    ports: ["8081:8080"]
     volumes:
       - ./vault.yml:/vault/config/vault.yml:ro
       - vault-data:/vault/data
       - vault-logs:/vault/logs
     environment:
       - VAULT_CONFIG=/vault/config/vault.yml
-      - VAULT_PORT=8091
       - VAULT_DB_URL=postgresql://vault:${POSTGRES_PASSWORD:-vault_change_me}@vault-postgres:5432/vault
       - VAULT_REDIS_URL=redis://:${REDIS_PASSWORD:-redis_change_me}@vault-redis:6379/0
     depends_on:
       vault-postgres: {condition: service_healthy}
       vault-redis:    {condition: service_healthy}
     healthcheck:
-      test: ["CMD","curl","-sf","http://localhost:8091/health"]
+      test: ["CMD","python","-c","import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=8)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -51,7 +49,7 @@ services:
     volumes:
       - vault-postgres-data:/var/lib/postgresql/data
       - ./migrations/vault/0001_init.sql:/docker-entrypoint-initdb.d/0001_init.sql:ro
-    ports: ["127.0.0.1:5432:5432"]
+    ports: ["127.0.0.1:5434:5432"]
     healthcheck:
       test: ["CMD-SHELL","pg_isready -U vault -d vault"]
       interval: 10s
@@ -71,7 +69,7 @@ services:
       --requirepass ${REDIS_PASSWORD:-redis_change_me}
       --loglevel warning
     volumes: [vault-redis-data:/data]
-    ports: ["127.0.0.1:6379:6379"]
+    ports: ["127.0.0.1:6381:6379"]
     healthcheck:
       test: ["CMD","redis-cli","--no-auth-warning","-a","${REDIS_PASSWORD:-redis_change_me}","ping"]
       interval: 10s

@@ -153,7 +153,15 @@ Tidak ada fallback dari BYOX ke Managed atau sebaliknya.
 
 ### 5c. Edisi self-hosted — Docker **dan EXE Windows**, wajib lisensi berbayar
 10 aplikasi konsisten: Guardian AI, Orchestra AI, Vault, Edge, SOC, Compliance, Sentinel, Antivirus, Studio, Legal.
-Dikirim sebagai image Docker (Linux) dan EXE Windows (PyInstaller, dibangun GitHub Actions → R2 `axto-builds`), diunduh dari portal. Aktivasi: online (langganan) atau offline (Lifetime).
+Dikirim sebagai image Docker (Linux) dan installer Windows (menjalankan image yang sama lewat Docker Desktop/WSL2), dibangun GitHub Actions → R2 `axto-builds`, diunduh dari portal. Aktivasi: online (langganan) atau offline (Lifetime).
+
+**Protokol lisensi v3 (diuji E2E dengan kode engine asli, semua 13 modul lisensi):**
+- Jawaban server ditandatangani Ed25519; engine memverifikasi dengan public key yang dikompilasi (tidak bisa diganti lewat env).
+- Engine mengirim `nonce` acak per permintaan; server menandatangani nonce itu → jawaban lama tidak bisa diputar ulang (replay).
+- Payload terikat ke kunci lisensi **dan** ID instalasi; limit (node/worker/perangkat) diambil dari segmen *entitlements* yang ditandatangani, bukan dari JSON biasa.
+- ID instalasi disimpan di volume data (`AXTO_STATE_DIR`) → stabil saat container dibuat ulang/di-update; Studio core + modul berbagi satu ID.
+- `AXTO_LICENSE_SERVER` boleh diarahkan ke proxy/mirror — aman karena tanda tangan tetap diverifikasi.
+- Tidak ada trial/mode gratis di engine mana pun (Orchestra trial dihapus).
 
 ### 5d. Panduan penggunaan (wajib untuk setiap aplikasi)
 - Aplikasi web: halaman "Cara pakai" di dalam aplikasi + halaman publik `/apps/<app>` + pusat bantuan `/help`.
@@ -171,7 +179,17 @@ Dikirim sebagai image Docker (Linux) dan EXE Windows (PyInstaller, dibangun GitH
 ### Portal Admin `/admin`
 `Ringkasan` (MRR, pelanggan aktif, pendapatan, pemakaian AI) · `Member` · `Pesanan & Pembayaran` (konfirmasi transfer manual) · `Langganan` · `Lisensi Self-Hosted` · `Paket & Harga` · `Prompt Library` · `Mesin AI` (kunci penyedia, model default) · `Gateway Pembayaran` · `Rilis (build R2)` · `Pengaturan` · `Log Audit`.
 
+`Support` (inbox live chat + form kontak, status online/away, pengaturan AI asisten) · `Pembayaran & Email` (semua kredensial, rekening BNI, wallet crypto — terenkripsi di R2).
+
 Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch, Promo Pricing, Resellers, Managed Infra, AutoPost, Playbooks (diganti Prompt Library), Crypto Methods (digabung ke Gateway).
+
+---
+
+### Live support
+- Widget chat di situs publik & portal member; dropdown topik: penawaran/quotation, **nego harga lisensi Lifetime**, bayar **crypto**, bayar **transfer bank (BNI)**, enterprise, tagihan, teknis, akun, lainnya.
+- Admin online → admin menjawab langsung. Admin tidak online → **AI asisten** menjawab (pool API key dari admin, rotasi + failover; Workers AI sebagai cadangan).
+- **Anti-bocor by design:** model hanya menerima fakta publik (paket, harga, aplikasi, FAQ, nama metode bayar). Kunci, rekening, wallet, data pelanggan, konfigurasi tidak pernah masuk konteks; setiap jawaban disaring filter redaksi rahasia. AI tidak menegosiasikan harga dan tidak mengonfirmasi pembayaran — topik tersebut ditandai "perlu orang" dan dikirim ke email admin.
+- Form kontak `/contact` → masuk inbox Support + email ke admin + balasan otomatis ke pengirim.
 
 ---
 
@@ -187,13 +205,16 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 | `usage_monthly` | penghitung AI runs per member per bulan (1 upsert per run) |
 | `files` | indeks file member; isi di R2 |
 | `user_ai_keys` | kunci BYOK terenkripsi |
-| `platform_config`, `payment_gateways`, `ai_provider_keys`, `audit_log` | konfigurasi (dipakai ulang) |
+| `platform_config`, `ai_provider_keys`, `audit_log` | konfigurasi (dipakai ulang) |
+| `support_threads` | indeks percakapan support (isi pesan di R2) |
 
 **R2**
 - `axto-storage/content/prompts/*.enc` — isi Prompt Library, terenkripsi AES-256-GCM (repo publik hanya menyimpan ciphertext).
 - `axto-storage/invoices/YYYY/<order>.html` — invoice.
 - `axto-documents/u/<userId>/…` — unggahan & hasil kerja member.
 - `axto-builds/…` — image Docker, EXE, PDF panduan (sudah berjalan).
+- `axto-storage/secure/<nama>.json.enc` — pengaturan rahasia (gateway pembayaran, rekening bank, wallet crypto, email, pool API key AI support), AES-256-GCM dengan kunci dari secret `SETTINGS_ENCRYPTION_KEY`, AAD = nama dokumen. Admin API hanya mengembalikan nilai yang dimasking.
+- `axto-storage/support/threads/<id>.json` — isi percakapan support (append dengan cek etag); `support/presence.json` — status online admin.
 
 **Tabel lama** (autopost_*, trial_*, promo_*, reseller*, playbook_*, studio_*, installs, dll.) tidak lagi dipakai kode v3. Penghapusan tabel lama disediakan sebagai skrip terpisah `dashboard/cf-migrations-optional/` agar tidak ada data yang hilang tanpa persetujuan.
 

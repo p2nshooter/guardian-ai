@@ -4,8 +4,6 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
-version: "3.9"
-
 # ============================================================
 # AXTO GPU Studio — Self-Hosted Creative AI Workspace
 # Image · Video · Upscale — via your own GPU endpoints
@@ -27,10 +25,12 @@ services:
       - ./gpu-studio.yml:/gpu-studio/config/gpu-studio.yml:ro
       - gpu-studio-data:/gpu-studio/data
       - gpu-studio-logs:/gpu-studio/logs
+      - axto-studio-state:/axto-state   # shared by Studio core + modules
     environment:
+      - AXTO_STATE_DIR=/axto-state
       - GPU_STUDIO_CONFIG=/gpu-studio/config/gpu-studio.yml
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8092/health', timeout=8)"]
       interval: 30s
       timeout: 10s
       start_period: 30s
@@ -39,3 +39,5 @@ services:
 volumes:
   gpu-studio-data:
   gpu-studio-logs:
+  axto-studio-state:
+    name: axto-studio-state
