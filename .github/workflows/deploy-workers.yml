@@ -2,7 +2,7 @@
 # Copyright (c) 2024-2026 AXTO (axto.io). All rights reserved.
 # Platform: AXTO (axto.io) — Sovereign AI Infrastructure.
 # ==============================================================================
-# Deploys the AXTO cron Workers (currently: crypto-payment watcher) to Cloudflare.
+# Deploys the AXTO automation Worker (every minute → /api/cron/tick) to Cloudflare.
 # The crypto watcher issues a client's Smart License automatically, within ~1 min
 # of their crypto payment confirming on-chain.
 #

@@ -44,7 +44,7 @@ export const GATEWAYS: GatewayInfo[] = [
   { id: "nowpayments", label: "Crypto — automatic (NOWPayments)", methods: "USDT, BTC, ETH and 150+ coins, confirmed automatically", currency: "USD", confirmation: "automatic",
     fields: [{ key: "api_key", label: "API key", secret: true }, { key: "ipn_secret", label: "IPN secret", secret: true }],
     requires: [["api_key", "ipn_secret"]], webhookPath: "/api/webhooks/nowpayments" },
-  { id: "crypto", label: "Crypto — direct wallet transfer", methods: "USDT / USDC / BTC / ETH / SOL straight to our wallet, confirmed by our team", currency: "USD", confirmation: "admin",
+  { id: "crypto", label: "Crypto — direct wallet transfer", methods: "USDT / USDC / BTC / ETH / SOL straight to our wallet, confirmed on-chain automatically", currency: "USD", confirmation: "automatic",
     fields: [
       { key: "usdt_trc20", label: "USDT · TRC20 (Tron) address", secret: true },
       { key: "usdt_erc20", label: "USDT · ERC20 (Ethereum) address", secret: true },
@@ -53,6 +53,8 @@ export const GATEWAYS: GatewayInfo[] = [
       { key: "btc", label: "BTC address", secret: true },
       { key: "eth", label: "ETH address", secret: true },
       { key: "sol", label: "SOL address", secret: true },
+      { key: "etherscan_api_key", label: "Etherscan API v2 key — auto-confirms ERC20 / BEP20 / ETH (free at etherscan.io)", secret: true },
+      { key: "tron_api_key", label: "TronGrid API key (optional — raises TRC20 rate limits)", secret: true },
       { key: "instructions", label: "Extra instructions (optional)", multiline: true },
     ],
     requires: [["usdt_trc20"], ["usdt_erc20"], ["usdt_bep20"], ["usdc_erc20"], ["btc"], ["eth"], ["sol"]] },

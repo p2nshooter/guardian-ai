@@ -5,13 +5,12 @@
  * ==============================================================================
  */
 /**
- * AXTO — Crypto Payment Watcher Cron Worker
- * Runs every minute. Triggers the on-chain settlement watchers so that a
- * client's Smart License is issued automatically, with no manual step, as soon
- * as their crypto payment confirms on-chain:
- *   • /api/cron/crypto-watch  (USDT-TRC20, BNB, ETH, BTC)
- *   • /api/cron/usdt-watch    (USDT-TRC20 dedicated watcher)
- * Both endpoints are idempotent and secured by CRON_SECRET.
+ * AXTO — platform automation heartbeat (every minute).
+ * Calls /api/cron/tick, which without any person:
+ *   • confirms direct crypto payments on-chain → activates the plan and
+ *     issues the licences immediately
+ *   • hourly: renewal reminders, expiries, stale orders
+ * The endpoint is idempotent and protected by CRON_SECRET.
  */
 
 export interface Env {
@@ -19,33 +18,22 @@ export interface Env {
   APP_URL: string;
 }
 
-const ENDPOINTS = ["/api/cron/crypto-watch", "/api/cron/usdt-watch"];
-
 export default {
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
     const base = env.APP_URL || "https://axto.io";
-    const secret = env.CRON_SECRET;
-    if (!secret) {
-      console.error("CRON_SECRET not configured — skipping crypto watch");
+    if (!env.CRON_SECRET) {
+      console.error("CRON_SECRET not configured — skipping automation tick");
       return;
     }
-
-    for (const path of ENDPOINTS) {
-      try {
-        const resp = await fetch(`${base}${path}`, {
-          method: "GET",
-          headers: { Authorization: `Bearer ${secret}`, "User-Agent": "AXTO-CryptoWatch/1.0" },
-        });
-        if (!resp.ok) {
-          const body = await resp.text().catch(() => "");
-          console.error(`crypto watch ${path} failed: HTTP ${resp.status} — ${body}`);
-          continue;
-        }
-        const r = await resp.json().catch(() => ({}));
-        console.log(`crypto watch ${path} OK: ${JSON.stringify(r)}`);
-      } catch (err) {
-        console.error(`crypto watch ${path} exception: ${err}`);
-      }
+    try {
+      const resp = await fetch(`${base}/api/cron/tick`, {
+        headers: { "x-cron-secret": env.CRON_SECRET, "User-Agent": "AXTO-Automation/3.0" },
+      });
+      const body = await resp.text().catch(() => "");
+      if (!resp.ok) console.error(`tick failed: HTTP ${resp.status} — ${body.slice(0, 500)}`);
+      else console.log(`tick OK: ${body.slice(0, 500)}`);
+    } catch (err) {
+      console.error(`tick exception: ${err}`);
     }
   },
 } satisfies ExportedHandler<Env>;

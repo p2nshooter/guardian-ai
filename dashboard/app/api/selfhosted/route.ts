@@ -15,7 +15,8 @@ import { limitsFor, PLANS, isPlanId } from "@/lib/plans";
 import { SELF_HOSTED, getSelfHosted, catalogEntry, generateLicenseKey } from "@/lib/selfhosted";
 import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
-import { sendMail, mails } from "@/lib/mail";
+import { sendMail } from "@/lib/mail";
+import { issueLicence, licencesMail } from "@/lib/licences";
 
 /** Names of build files present in R2 (cached in KV for 10 minutes). */
 async function availableBuilds(req: NextRequest): Promise<Set<string>> {
@@ -85,22 +86,13 @@ export async function POST(req: NextRequest) {
     const sub = await dbFirst<{ current_period_end: string }>(db, `SELECT current_period_end FROM subscriptions WHERE user_id = ? AND status = 'active'`, [s.sub]);
     if (!sub) return fail("No active plan.", 402, { upgrade: true });
     if (existing && existing.status === "active") return respond({ ok: true, license: existing }, ctx);
-    if (lim.selfHostedApps > 0) {
-      const n = await dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active'`, [s.sub]);
-      if ((n?.n ?? 0) >= lim.selfHostedApps) return fail(`Your plan includes ${lim.selfHostedApps} self-hosted apps. Release one first, or upgrade to Enterprise for all of them.`, 409);
-    }
-    const key = await generateLicenseKey(product.slug, secret("LICENSE_KEY_HMAC_SECRET") || undefined);
-    if (existing) {
-      await dbRun(db, `UPDATE sh_licenses SET license_key = ?, package_code = ?, max_nodes = ?, status = 'active', expires_at = ?, bound_machine_id = '', updated_at = ? WHERE id = ?`,
-        [key, product.packageCode, lim.selfHostedNodes, sub.current_period_end, now(), existing.id]);
-    } else {
-      await dbRun(db, `INSERT INTO sh_licenses (id, user_id, product, license_key, package_code, max_nodes, status, expires_at, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
-        [newId(), s.sub, product.slug, key, product.packageCode, lim.selfHostedNodes, sub.current_period_end, now(), now()]);
-    }
+    const r = await issueLicence(db, s.sub, product.slug, lim, sub.current_period_end);
+    if (r && "error" in r) return fail(r.error, 409);
     await audit(db, s, "license.issued", "sh_license", product.slug, {}, req);
-    const m = mails.licenseIssued({ product: catalogEntry(product.slug)?.name || product.slug, key });
-    await sendMail(s.email, m.subject, m.html);
+    if (r) {
+      const m = licencesMail([r]);
+      await sendMail(s.email, m.subject, m.html);
+    }
     const license = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ?`, [s.sub, product.slug]);
     return respond({ ok: true, license }, ctx);
   }

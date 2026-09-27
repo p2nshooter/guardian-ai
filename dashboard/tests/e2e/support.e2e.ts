@@ -109,7 +109,8 @@ test("payments: bank (BNI) + crypto wallets are stored encrypted in R2 and maske
   assert.ok(!opts.text.includes(WALLET), "public options never expose wallets");
   const co = await m.post("/api/billing/checkout", { plan: "pro", cycle: "monthly", gateway: "crypto" });
   assert.equal(co.status, 200, co.text);
-  assert.deepEqual(co.json.wallets, [{ asset: "USDT", network: "TRC20 (Tron)", address: WALLET }]);
+  assert.deepEqual(co.json.wallets.map(({ asset, network, address }: any) => ({ asset, network, address })), [{ asset: "USDT", network: "TRC20 (Tron)", address: WALLET }]);
+  assert.match(co.json.wallets[0].amount, /^49\.\d{2}$/, "unique stablecoin amount");
   const cb = await m.post("/api/billing/checkout", { plan: "pro", cycle: "monthly", gateway: "manual" });
   assert.equal(cb.json.bank.account_number, BANK_ACC);
   assert.ok(cb.json.amountIdr > 0 && cb.json.reference === cb.json.orderId);

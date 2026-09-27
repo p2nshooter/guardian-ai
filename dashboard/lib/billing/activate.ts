@@ -13,6 +13,7 @@
  * the current period is converted into extra days on the new plan, so
  * upgrades, downgrades and renewals all use one fair rule.
  * ============================================================================ */
+import { autoIssueAfterPayment } from "../licences";
 import { dbFirst, dbRun, dbQuery, dbBatch, getR2, now } from "../db";
 import { PLANS, addPeriod, isPlanId, isCycle, formatUsd, type PlanId, type Cycle } from "../plans";
 import { sendMail, mails } from "../mail";
@@ -156,5 +157,10 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
 
   const m = mails.paymentReceived({ planName: PLANS[o.plan].name, cycle: o.cycle, amount: formatUsd(o.amount_usd), invoiceNo, until });
   await sendMail(o.email, m.subject, m.html);
+
+  // Zero-touch: licences are issued the moment the payment is confirmed.
+  let chosen: string[] = [];
+  try { chosen = JSON.parse(o.meta || "{}").apps || []; } catch {}
+  await autoIssueAfterPayment(db, o.user_id, o.email, o.plan, endIso, Array.isArray(chosen) ? chosen.map(String) : []);
   return { ok: true };
 }
