@@ -1,74 +1,21 @@
-/* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hello@axto.io>
- * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
- * ==============================================================================
- */
+/* AXTO — POST /api/webhooks/xendit · invoice PAID/SETTLED → activate plan. */
 export const runtime = "edge";
-export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { getXenditCredentials } from "@/lib/gateways";
-import { processPayment } from "@/lib/webhooks/shared";
-import { localToUsd } from "@/lib/fx";
-
+import { getDB } from "@/lib/db";
+import { gatewayCreds } from "@/lib/billing/gateways";
+import { xenditVerify } from "@/lib/billing/providers";
+import { markOrderPaid } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
-  let creds;
-  try { creds = await getXenditCredentials(req); } catch {
-    return NextResponse.json({ error: "Xendit not configured" }, { status: 503 });
+  const db = getDB(req);
+  const creds = await gatewayCreds(db, "xendit");
+  if (!creds || !xenditVerify(req.headers.get("x-callback-token"), creds)) {
+    return NextResponse.json({ error: "invalid token" }, { status: 401 });
   }
-
-  // MANDATORY: an unconfigured webhook_token must reject every request, not
-  // silently skip verification -- this endpoint issues real licenses, so a
-  // gateway left partially configured can't mean "trust anything that POSTs here".
-  const callbackToken = req.headers.get("x-callback-token") || "";
-  if (!creds.webhook_token || callbackToken !== creds.webhook_token) {
-    return NextResponse.json({ error: "Invalid callback token" }, { status: 401 });
+  const b: any = await req.json().catch(() => ({}));
+  if ((b.status === "PAID" || b.status === "SETTLED") && b.external_id) {
+    const r = await markOrderPaid(db, b.external_id, { gatewayRef: b.id, paidLocal: Number(b.paid_amount ?? b.amount ?? 0) });
+    if (!r.ok) return NextResponse.json({ error: r.reason }, { status: 422 });
   }
-
-  let body: any = {};
-  try { body = await req.json(); } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-  if (body.status !== "PAID" && body.status !== "SETTLED") {
-    return NextResponse.json({ received: true });
-  }
-
-  const meta = body.metadata || {};
-
-  // Always prefer originalPriceUsd stored in metadata (set by /api/checkout, always USD).
-  // Fallback: convert body.amount using live rate for the invoice currency.
-  let amountUsd: number;
-  if (meta.originalPriceUsd && Number(meta.originalPriceUsd) > 0) {
-    amountUsd = Number(meta.originalPriceUsd);
-  } else {
-    const rawAmount = Number(body.amount || 0);
-    const currency  = (body.currency || "USD").toUpperCase();
-    amountUsd = currency === "USD"
-      ? rawAmount
-      : await localToUsd(rawAmount, currency, req);
-  }
-
-  if (!meta.email) {
-    return NextResponse.json({ received: true });
-  }
-
-  return processPayment(req, {
-    pkg:              meta.pkg || "",
-    email:            meta.email,
-    name:             meta.name || meta.email || "",
-    organization:     meta.organization || "",
-    billing:          meta.billing || "yearly",
-    isBundle:         meta.isBundle === "true",
-    guardianPackage:  meta.guardianPackage || "",
-    orchestraPackage: meta.orchestraPackage || "",
-    amountUsd,
-    paymentRef:       body.external_id || body.id || "",
-    gateway:          "xendit",
-    source:           meta.source || "",
-    playbookId:       meta.playbook_id || "",
-    bundleId:         meta.bundle_id || "",
-    referralCode:     meta.referralCode || "",
-  });
+  return NextResponse.json({ received: true });
 }

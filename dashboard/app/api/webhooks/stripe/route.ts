@@ -1,50 +1,26 @@
-/* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hello@axto.io>
- * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
- * ==============================================================================
- */
+/* AXTO — POST /api/webhooks/stripe · checkout.session.completed → activate plan. */
 export const runtime = "edge";
-export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-import { getStripeCredentials } from "@/lib/gateways";
-import { processPayment } from "@/lib/webhooks/shared";
-
+import { getDB } from "@/lib/db";
+import { gatewayCreds } from "@/lib/billing/gateways";
+import { stripeVerify } from "@/lib/billing/providers";
+import { markOrderPaid } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
-  let creds;
-  try { creds = await getStripeCredentials(req); } catch {
-    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+  const payload = await req.text();
+  const db = getDB(req);
+  const creds = await gatewayCreds(db, "stripe");
+  if (!creds || !(await stripeVerify(payload, req.headers.get("stripe-signature"), creds.webhook_secret))) {
+    return NextResponse.json({ error: "invalid signature" }, { status: 400 });
   }
-
-  const stripe = new Stripe(creds.secret_key, { apiVersion: "2025-02-24.acacia" as any, httpClient: Stripe.createFetchHttpClient() });
-  const sig = req.headers.get("stripe-signature") || "";
-  const rawBody = await req.text();
-
-  let event: Stripe.Event;
-  try {
-    event = await stripe.webhooks.constructEventAsync(rawBody, sig, creds.webhook_secret);
-  } catch (e: any) {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
-  }
-
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const m = session.metadata || {};
-    const paymentRef = (session.payment_intent as string) || session.id;
-
-    return processPayment(req, {
-      pkg: m.pkg || "", email: m.email || session.customer_email || "",
-      name: m.name || "", organization: m.organization || "",
-      billing: m.billing || "yearly", isBundle: m.isBundle === "true",
-      guardianPackage: m.guardianPackage || "", orchestraPackage: m.orchestraPackage || "",
-      amountUsd: Number(m.originalPriceUsd || m.amount_usd) || (session.amount_total || 0) / 100,
-      paymentRef, gateway: "stripe",
-      source: m.source || "", playbookId: m.playbook_id || "", bundleId: m.bundle_id || "",
-      referralCode: m.referralCode || "",
-    });
+  const ev = JSON.parse(payload);
+  if (ev.type === "checkout.session.completed" || ev.type === "checkout.session.async_payment_succeeded") {
+    const s = ev.data?.object || {};
+    const orderId = s.client_reference_id || s.metadata?.order_id;
+    if (orderId && s.payment_status === "paid") {
+      const r = await markOrderPaid(db, orderId, { gatewayRef: s.payment_intent || s.id, paidUsd: Number(s.amount_total || 0) / 100 });
+      if (!r.ok) return NextResponse.json({ error: r.reason }, { status: 422 });
+    }
   }
   return NextResponse.json({ received: true });
 }

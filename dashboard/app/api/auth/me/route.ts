@@ -1,18 +1,29 @@
-/* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hello@axto.io>
- * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
- * ==============================================================================
- */
+/* AXTO — GET /api/auth/me · current account, plan, usage. Always re-reads the
+ * plan from D1 (so a fresh payment is visible immediately) and refreshes the cookie. */
 export const runtime = "edge";
-export const dynamic = "force-dynamic";
-import { NextRequest, NextResponse } from "next/server";
-import { getUser } from "@/lib/auth";
-
+import { NextRequest } from "next/server";
+import { getDB, dbFirst } from "@/lib/db";
+import { loadSession, respond, effectiveTier } from "@/lib/auth";
+import { getUsage } from "@/lib/usage";
+import { PLANS, limitsFor, isPlanId } from "@/lib/plans";
 
 export async function GET(req: NextRequest) {
-  const user = await getUser(req);
-  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  return NextResponse.json({ sub: user.sub, email: user.email, role: user.role });
+  const ctx = await loadSession(req, { fresh: true });
+  if (!ctx) return respond({ user: null }, null, { status: 401 });
+  const s = ctx.session;
+  const db = getDB(req);
+  const tier = effectiveTier(s);
+  const [profile, sub, usage] = await Promise.all([
+    dbFirst<any>(db, `SELECT name, organization, country, created_at FROM users WHERE id = ?`, [s.sub]),
+    dbFirst<any>(db, `SELECT plan, cycle, status, current_period_start, current_period_end FROM subscriptions WHERE user_id = ?`, [s.sub]),
+    getUsage(db, s.sub, tier),
+  ]);
+  return respond({
+    user: { id: s.sub, email: s.email, role: s.role, name: profile?.name || "", organization: profile?.organization || "", country: profile?.country || "", createdAt: profile?.created_at || "" },
+    tier,
+    planName: isPlanId(tier) ? PLANS[tier].name : "Free account",
+    subscription: sub || null,
+    limits: limitsFor(tier),
+    usage,
+  }, ctx);
 }

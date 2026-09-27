@@ -10,8 +10,8 @@
 # ============================================================
 
 ai_studio:
-  # Your license key from axto.io/portal
-  license_key: "AIST-XXXX-XXXX-XXXX-XXXX"
+  # Your license key from axto.io/app/self-hosted
+  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
 
   # Server settings (when running as exe/standalone)
   host: "0.0.0.0"

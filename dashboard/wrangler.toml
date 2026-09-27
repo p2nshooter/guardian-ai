@@ -4,34 +4,48 @@
 # Maintained by: Axto AI <hello@axto.io>
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
+# Cloudflare Pages project "axto-dashboard" (Next.js via @cloudflare/next-on-pages).
 name = "axto-dashboard"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
+# D1 — lean relational core (users, subscriptions, orders, licences, usage…)
 [[d1_databases]]
-binding    = "DB"
-database_name = "axto-db"
+binding        = "DB"
+database_name  = "axto-db"
 database_id    = "125ec216-76f4-4bdb-ba8d-f29092759183"
 migrations_dir = "cf-migrations"
 
+# KV — rate limits and small caches
 [[kv_namespaces]]
 binding = "KV"
 id      = "9d8210f3e9234464b60553644c631511"
 
+# R2 — platform content: encrypted prompt library, invoices, archives
 [[r2_buckets]]
 binding     = "R2"
 bucket_name = "axto-storage"
 
+# R2 — member files & saved work (u/<userId>/…)
+[[r2_buckets]]
+binding     = "USER_FILES"
+bucket_name = "axto-documents"
+
+# R2 — self-hosted Docker images, EXEs and guide PDFs
 [[r2_buckets]]
 binding     = "R2_BUILDS"
 bucket_name = "axto-builds"
 
-[vars]
-NEXT_PUBLIC_APP_URL    = "https://axto.io"
-NEXT_PUBLIC_GITLAB_PROJECT = "axto-platform/guardian-ai"
+# Workers AI — used ONLY by the (locked) Managed AI path.
+[ai]
+binding = "AI"
 
-# Secrets (set via: wrangler pages secret put <KEY>):
-# GITLAB_TOKEN    → GitLab personal access token (CI trigger)
-# GITLAB_PROJECT  → axto-platform/guardian-ai
-# BUILD_WEBHOOK_SECRET → webhook secret untuk CI callback
+[vars]
+NEXT_PUBLIC_APP_URL = "https://axto.io"
+
+# Secrets (wrangler pages secret put <NAME> --project-name axto-dashboard):
+#   JWT_SECRET · ENCRYPTION_KEY · ADMIN_PASSWORD · CRON_SECRET
+#   RESEND_API_KEY (optional — else Admin → Payments & Email) · EMAIL_FROM (optional)
+#   LICENSE_KEY_HMAC_SECRET (optional) · CONTENT_KEY (prompt library; see docs)
+#   license-signing private key (unchanged from v2)

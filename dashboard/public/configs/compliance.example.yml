@@ -8,12 +8,12 @@
 # AXTO Compliance — Automated Audit Platform | Configuration
 #
 # HOW TO USE:
-#   1. Get license: https://axto.io/portal (keys start with CMPL-)
+#   1. Get license: https://axto.io/app/self-hosted (keys start with CMPL-)
 #   2. docker compose -f compliance-compose.yml up -d
 #   3. Dashboard: http://YOUR_SERVER:8084
 # ============================================================
 compliance:
-  license_key: "CMPL-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  license_key: "CMPL-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
   port: 8093

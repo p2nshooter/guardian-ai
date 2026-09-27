@@ -12,44 +12,42 @@ if (process.env.NODE_ENV === "development") {
   setupDevPlatform().catch(() => {});
 }
 
+const SECURITY_HEADERS = [
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
+];
+
 const nextConfig: NextConfig = {
   images: { unoptimized: true },
-  // Don't let pre-existing type/lint issues in this large codebase block the
-  // production deploy. Syntax errors still fail the webpack build.
-  typescript: { ignoreBuildErrors: true },
+  poweredByHeader: false,
+  reactStrictMode: true,
+  // v3 is type-checked in CI: type errors now fail the build.
+  typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: true },
   async headers() {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://axto.io";
     return [
-      // License-validate must stay open — called from client servers (any IP/domain)
-      {
-        source: "/api/license-validate",
-        headers: [
-          { key: "Access-Control-Allow-Origin",  value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,POST,OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type" },
-          { key: "Cache-Control",                value: "no-store" },
-        ],
-      },
-      // All other API routes — restricted to own domain only
-      {
-        source: "/api/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin",  value: appUrl },
-          { key: "Access-Control-Allow-Methods", value: "GET,POST,PUT,DELETE,OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
-          { key: "Cache-Control",                value: "no-store" },
-        ],
-      },
-      {
-        source: "/((?!api|_next/static|_next/image|favicon).*)",
-        headers: [
-          { key: "X-Frame-Options",           value: "DENY" },
-          { key: "X-Content-Type-Options",    value: "nosniff" },
-          { key: "Referrer-Policy",           value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy",        value: "camera=(), microphone=(), geolocation=()" },
-        ],
-      },
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      { source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
+      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
+    ];
+  },
+  async redirects() {
+    // Old URLs → their v3 homes (permanent, so search engines transfer ranking).
+    return [
+      { source: "/auth/login", destination: "/login", permanent: true },
+      { source: "/portal", destination: "/app", permanent: true },
+      { source: "/portal/:path*", destination: "/app", permanent: true },
+      { source: "/studio/:path*", destination: "/app/studio", permanent: true },
+      { source: "/products/:slug", destination: "/self-hosted/:slug", permanent: true },
+      { source: "/playbooks", destination: "/prompts", permanent: true },
+      { source: "/playbooks/:slug", destination: "/prompts", permanent: true },
+      { source: "/guide", destination: "/self-hosted", permanent: true },
+      { source: "/promo", destination: "/pricing", permanent: true },
+      { source: "/acquire", destination: "/", permanent: true },
+      { source: "/reseller/:path*", destination: "/contact", permanent: true },
     ];
   },
 };

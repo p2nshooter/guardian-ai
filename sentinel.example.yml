@@ -8,12 +8,12 @@
 # AXTO Sentinel — IoT/OT Security Platform | Configuration
 #
 # HOW TO USE:
-#   1. Get license: https://axto.io/portal (keys start with SNTL-)
+#   1. Get license: https://axto.io/app/self-hosted (keys start with SNTL-)
 #   2. docker compose -f sentinel-compose.yml up -d
 #   3. Dashboard: http://YOUR_SERVER:8085
 # ============================================================
 sentinel:
-  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
+  license_key: "SNTL-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
   port: 8095

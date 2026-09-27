@@ -67,7 +67,7 @@ SHUTDOWN_MSG    = (
     "║  2. Confirm your license has not expired                     ║\n"
     "║  3. Restart this service after connectivity is restored      ║\n"
     "║                                                              ║\n"
-    "║  Free program — extend via WhatsApp +6285691234561 / hello@axto.io        ║\n"
+    "║  Renew or manage your license: https://axto.io/app/self-hosted        ║\n"
     "║  Support: hello@axto.io                                      ║\n"
     "╚══════════════════════════════════════════════════════════════╝\n"
 )
@@ -75,7 +75,7 @@ EXPIRY_BANNER = (
     "\n"
     "⚠️  ═══════════════════════════════════════════════════════════\n"
     "   AXTO ORCHESTRA LICENSE EXPIRES IN {{days}} DAY{{plural}}\n"
-    "   Free program — need more time? WhatsApp +6285691234561 / hello@axto.io\n"
+    "   Renew immediately at: https://axto.io/app/self-hosted\n"
     "   Expires: {{expires}}\n"
     "   ═══════════════════════════════════════════════════════════\n"
 )
@@ -282,7 +282,7 @@ class LicenseState:
         elif d <= 7:
             log.warning(msg)
         elif d <= 30:
-            log.info(f"License expires in {d} days ({self.expires_at}) — renew: https://axto.io/portal")
+            log.info(f"License expires in {d} days ({self.expires_at}) — renew: https://axto.io/app/self-hosted")
 
     def to_api_dict(self) -> dict:
         """Serializable dict for health/status API endpoints."""
@@ -306,13 +306,13 @@ class LicenseState:
             return (
                 f"⚠️ License validation failed. Grace period: "
                 f"{self.grace_remaining_min} minutes remaining before suspension. "
-                f"Free program — extend via WhatsApp +6285691234561 / hello@axto.io"
+                f"Renew at: https://axto.io/app/self-hosted"
             )
         if self.is_expiring_soon:
             return (
                 f"⚠️ License expires in {self.days_until_expiry} day"
                 f"{'s' if self.days_until_expiry != 1 else ''}. "
-                f"Free program — extend via WhatsApp +6285691234561 / hello@axto.io"
+                f"Renew at: https://axto.io/app/self-hosted"
             )
         return None
 
@@ -345,12 +345,6 @@ class LicenseValidator:
 
     def __init__(self, config: dict):
         self._key    = config.get("license_key", "")
-        # ── AXTO Free Full-Access Program — no licence input required ─────────
-        # No key configured → self-register under the program's shared free key
-        # using this machine's fingerprint as the install ID (no user input).
-        # Countdown + synchronized signed lock come from the global admin date.
-        if not self._key:
-            self._key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
         self._url    = config.get("license_validate_url", VALIDATE_URL)
         self._info:  Optional[LicenseState] = None
         self._last:  float = 0.0
@@ -487,12 +481,12 @@ class LicenseValidator:
                     log.error(
                         f"LICENSE REJECTED — MACHINE BINDING MISMATCH | "
                         f"License bound to different server. "
-                        f"Reset binding at: https://axto.io/portal"
+                        f"Reset binding at: https://axto.io/app/self-hosted"
                     )
                 else:
                     log.warning(
                         f"License invalid: {state.reason} — {state.message} | "
-                        f"Renew: https://axto.io/portal"
+                        f"Renew: https://axto.io/app/self-hosted"
                     )
 
             # ── HARDENING: persist or clear the local signed-proof cache

@@ -13,6 +13,7 @@
 |---|---|---|
 | Model bisnis | "Gratis 1 tahun, tanpa lisensi" + 4 skema harga bertumpuk (paket tahunan $990–$79.000, Studio bulanan, promo, trial) | **Satu** skema langganan: Starter / Pro / Business / Enterprise, bulanan atau tahunan |
 | Cara pakai | Wajib unduh Docker / docker-compose | **Aplikasi web langsung di browser** (tanpa Docker). Docker tetap ada sebagai edisi *self-hosted* berlisensi |
+| Mesin AI | Campur | **BYOX** (kunci/model/endpoint milik member) dan **Managed** (AI disediakan AXTO) dipisah 100%. Managed dibangun tetapi **dikunci** sampai dibuka admin |
 | Lisensi self-hosted | Key gratis `*-FREE-ACCESS-2026` otomatis | Key berbayar, fitur **tier tertinggi**, termasuk di paket Business & Enterprise |
 | Prompt premium | 50 PDF "playbook" (ikut ter-publish di repo publik) + dijual satuan | **Prompt Library** di dalam langganan, 24 bidang, 4 level (Basic → Elite), konten terenkripsi di R2 |
 | Portal | Portal klien & admin campur aduk, 22 menu admin | Dua portal bersih dan konsisten: **Member** (`/app`) & **Admin** (`/admin`) |
@@ -76,6 +77,7 @@ Prinsip:
 - **Satu sumber kebenaran**: paket & batas di `lib/plans.ts`, aplikasi di `lib/apps.ts`, produk self-hosted di `lib/self-hosted.ts`.
 - **D1 hemat**: tidak ada tabel log per-request; heartbeat lisensi hanya memperbarui 1 baris (maks. 1×/jam); entitlement dibawa di JWT dan disegarkan per jam.
 - **R2 maksimal**: semua isi (prompt, dokumen, hasil AI, invoice, arsip) di R2; D1 hanya indeks kecil.
+- **BYOX & Managed terpisah 100%**: tidak ada kode, rute, tabel, atau menu yang dipakai bersama untuk kredensial AI.
 - **Mudah dipahami**: bahasa sederhana, satu pola tata letak untuk seluruh portal, setiap halaman punya judul + penjelasan singkat + satu tombol utama.
 
 ---
@@ -88,16 +90,18 @@ Harga default (bisa diubah admin di **Admin → Paket & Harga**). Tahunan = 10×
 |---|---|---|---|---|
 | Harga / bulan | $19 | $49 | $199 | $999 |
 | Harga / tahun | $190 | $490 | $1.990 | $9.990 |
-| AI runs / bulan | 300 | 2.000 | 10.000 | 50.000 |
+| Pemakaian AI (BYOX) | Tak terbatas — pakai kunci sendiri | Tak terbatas | Tak terbatas | Tak terbatas |
+| Clipper (video → klip pendek) | 10 video/bln | 50 video/bln | 200 video/bln | Tak terbatas |
 | Penyimpanan (R2) | 1 GB | 10 GB | 50 GB | 500 GB |
 | Prompt Library | Basic + Pro | + Premium | + Elite | Semua |
 | Legal AI | 6 workspace inti | 18 workspace | 18 workspace | 18 workspace |
 | AI Studio · Privacy Vault | ✓ | ✓ | ✓ | ✓ |
 | Compliance Center · Security Analyst | – | ✓ | ✓ | ✓ |
 | Lisensi self-hosted (Docker) | – | – | 3 aplikasi × 5 node | 10 aplikasi, node tak terbatas |
-| BYOK (kunci AI sendiri) | ✓ (tidak memotong kuota) | ✓ | ✓ | ✓ |
+| BYOX: kunci sendiri (Anthropic, OpenAI, Gemini, Groq, OpenRouter, Deepgram) + endpoint/model sendiri (Ollama, vLLM, LM Studio via URL) | ✓ | ✓ | ✓ | ✓ |
 
 - Akun gratis hanya untuk melihat katalog & contoh prompt level Basic. Semua aplikasi = berbayar.
+- Paket di atas adalah paket **BYOX**. Paket **Managed** (AI disediakan AXTO, dengan kredit bulanan) didefinisikan terpisah dan dikunci.
 - Pembayaran **prabayar per periode** (bulanan/tahunan) di semua gateway, termasuk QRIS/VA/crypto; pengingat email 7/3/1 hari sebelum berakhir; perpanjang 1 klik.
 - Lisensi self-hosted selalu **tier tertinggi** (fitur paling lengkap) dan berakhir bersama periode langganan.
 
@@ -114,10 +118,22 @@ Harga default (bisa diubah admin di **Admin → Paket & Harga**). Tahunan = 10×
 | **Privacy Vault** | Deteksi & redaksi PII **di browser** (data tidak keluar perangkat): email, telepon, kartu (Luhn), IBAN, NIK, NPWP, SSN, IP, dll. + tokenisasi & pemulihan | AXTO Vault |
 | **Compliance Center** | Analisis gap SOC 2 / ISO 27001 / GDPR / HIPAA / PCI DSS / UU PDP / NIST CSF, rencana perbaikan, generator kebijakan | AXTO Compliance |
 | **Security Analyst** | Triage log & alert, pemetaan MITRE ATT&CK, ekstraksi IOC, laporan insiden | Guardian AI / AXTO SOC |
+| **Clipper** | Video panjang → klip pendek viral: transkripsi (kunci STT milik member), deteksi momen terbaik (LLM milik member), potong & reframe 9:16/1:1/16:9, caption animasi, judul & hashtag, ekspor MP4 — diproses **di perangkat member** (ffmpeg WebAssembly) | – |
 
-Mesin AI: urutan prioritas **BYOK member → kunci platform (admin) → Cloudflare Workers AI** (selalu tersedia, tanpa kunci).
+### 5b. Dua jalur AI yang terpisah total
+| | **BYOX** (aktif) | **Managed** (dikunci) |
+|---|---|---|
+| Sumber AI | Kunci/model/endpoint milik member | Kunci platform AXTO + Cloudflare Workers AI |
+| Kode | `lib/ai/byox.ts`, `/api/byox/*` | `lib/ai/managed.ts`, `/api/managed/*` |
+| Data | `user_ai_keys` (terenkripsi) | `ai_provider_keys`, `usage_monthly.runs` |
+| Kuota | Tidak ada (biaya AI ditanggung member di penyedia) | Kredit AI per bulan |
+| UI | Pengaturan → Kunci AI Saya | Menu *Managed AI* (terkunci, "segera hadir") |
+| Admin | – | Admin → Managed AI (tombol buka/kunci) |
 
-### 5b. Edisi self-hosted — Docker, wajib lisensi berbayar
+
+Tidak ada fallback dari BYOX ke Managed atau sebaliknya.
+
+### 5c. Edisi self-hosted — Docker, wajib lisensi berbayar
 10 aplikasi konsisten: Guardian AI, Orchestra AI, Vault, Edge, SOC, Compliance, Sentinel, Antivirus, Studio, Legal.
 (`yp`, `ai-studio`, `gpu-studio`, `hybrid-studio` tidak dijual terpisah; Studio = satu produk.)
 
@@ -184,14 +200,19 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 
 | Fase | Isi | Status |
 |---|---|---|
+**Gerbang kualitas (wajib):** satu tahap/aplikasi baru dimulai hanya setelah tahap sebelumnya lulus uji E2E penuh — build, uji unit, uji alur browser (Playwright) terhadap D1/R2/KV lokal, dan pemeriksaan konsistensi (nama, harga, menu, tautan). Tidak ada "setengah jadi" yang naik.
+
+| Tahap | Isi | Status |
+|---|---|---|
 | 0 | Audit + blueprint + hapus data klien uji | ✅ |
-| 1 | Fondasi langganan: `lib/plans.ts`, migrasi D1 v3, auth baru, checkout & webhook, putus program gratis di server **dan** engine | ⏳ |
-| 2 | Design system + Portal Member `/app` | ⏳ |
-| 3 | Portal Admin baru + hapus menu/halaman lama | ⏳ |
-| 4 | Aplikasi web: Legal AI, AI Studio, Privacy Vault, Compliance Center, Security Analyst | ⏳ |
-| 5 | Prompt Library (konten + enkripsi + R2) | ⏳ |
-| 6 | Situs publik baru + SEO lengkap | ⏳ |
-| 7 | Optimasi R2/D1, skrip sinkron R2 di workflow deploy, pembersihan tabel lama (opsional) | ⏳ |
+| 1 | Fondasi: paket, migrasi D1 v3, auth, checkout & 5 webhook, BYOX vs Managed (terkunci), lisensi berbayar (server + 13 engine) | ⏳ |
+| 2 | Design system + Portal Member + Portal Admin + halaman publik inti (beranda, harga, legal) — diuji E2E | ⏳ |
+| 3 | Aplikasi 1: **Legal AI** (paling sering dipakai) | ⏳ |
+| 4 | Aplikasi 2: **Prompt Library** (konten + enkripsi + R2) | ⏳ |
+| 5 | Aplikasi 3: **AI Studio** | ⏳ |
+| 6 | Aplikasi 4: **Clipper** | ⏳ |
+| 7 | Aplikasi 5–7: Privacy Vault, Compliance Center, Security Analyst | ⏳ |
+| 8 | SEO lengkap + blog + sitemap + optimasi R2/D1 + pembersihan tabel lama (opsional) | ⏳ |
 
 ---
 
@@ -200,5 +221,5 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 1. **Merge** branch ini ke `main` untuk deploy (migrasi D1 & upload R2 berjalan otomatis).
 2. Secret Pages yang sudah ada tetap dipakai: `JWT_SECRET`, `ENCRYPTION_KEY`, `ADMIN_PASSWORD`, `CRON_SECRET`.
 3. Aktifkan gateway pembayaran di **Admin → Gateway Pembayaran** (PayPal & NOWPayments sudah aktif; Stripe/Xendit/Midtrans tinggal diisi).
-4. Opsional: kunci AI platform di **Admin → Mesin AI** (tanpa ini, Workers AI Cloudflare dipakai otomatis).
+4. Managed AI tetap terkunci sampai Anda membukanya di **Admin → Managed AI**.
 5. Verifikasi domain di Google Search Console (DNS TXT di Cloudflare), lalu kirim `https://axto.io/sitemap.xml`.

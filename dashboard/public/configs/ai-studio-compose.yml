@@ -16,7 +16,7 @@ version: "3.9"
 #   3. Open: http://YOUR_SERVER:8091
 #
 # Data stays on YOUR server. AXTO never sees your prompts.
-# Portal:  https://axto.io/portal
+# Portal:  https://axto.io/app/self-hosted
 # Docs:    https://axto.io/guide/ai-studio
 # ============================================================
 

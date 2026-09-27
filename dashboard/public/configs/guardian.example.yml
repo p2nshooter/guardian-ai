@@ -13,10 +13,10 @@
 
 guardian:
 
-  # Your license key (from Client Portal)
-  license_key: "GUARDIAN-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+  # Your license key (from https://axto.io/app/self-hosted)
+  license_key: "GUARD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
 
-  # License validation endpoint (get from your welcome email or Client Portal)
+  # License validation endpoint (get from your welcome email or AXTO portal (Self-Hosted))
   # Format: https://axto.io/api/license-validate
   license_validate_url: "https://axto.io/api/license-validate"
 

@@ -56,7 +56,7 @@ SHUTDOWN_MSG    = (
     "║  2. Confirm your license has not expired                     ║\n"
     "║  3. Restart this service after connectivity is restored      ║\n"
     "║                                                              ║\n"
-    "║  Free program — extend via WhatsApp +6285691234561 / hello@axto.io        ║\n"
+    "║  Renew or manage your license: https://axto.io/app/self-hosted        ║\n"
     "║  Support: hello@axto.io                                      ║\n"
     "╚══════════════════════════════════════════════════════════════╝\n"
 )
@@ -253,10 +253,6 @@ def is_valid() -> bool:
 
 async def validate_license(license_key: str) -> LicenseState:
     global _state
-    # AXTO Free Full-Access Program — no licence input required. Empty key →
-    # self-register under the shared free key (machine fingerprint = install ID).
-    if not (license_key or "").strip():
-        license_key = f"{PRODUCT_PREFIX}-FREE-ACCESS-2026"
     async with _lock:
         _state.key = license_key.strip().upper()
         _state.last_check = time.time()
@@ -321,7 +317,7 @@ async def validate_license(license_key: str) -> LicenseState:
                     _state.valid = False
                     _state.error = (
                         "Your AXTO Studio plan does not include AI Studio. "
-                        "Upgrade your plan at axto.io/portal to unlock it."
+                        "Upgrade your plan at axto.io/app/self-hosted to unlock it."
                     )
                     _clear_cache()
                     log.warning(f"❌ License valid but plan does not include '{STUDIO_MODULE}' studio: {_state.error}")

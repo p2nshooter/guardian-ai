@@ -8,21 +8,21 @@
 # AXTO SOC — AI Security Operations Center | Configuration
 #
 # HOW TO USE:
-#   1. Get your SOC license key from: https://axto.io/portal
-#   2. No licence needed (free program) — leave license_key empty
+#   1. Get your SOC license key from: https://axto.io/app/self-hosted
+#   2. Paste your licence key (Business or Enterprise plan) from https://axto.io/app/self-hosted
 #   3. Configure syslog sources and alerting
 #   4. docker compose -f soc-compose.yml up -d
 #   5. Dashboard: http://YOUR_SERVER:8083
 #
 # Pull image: docker pull axto/soc-core:latest
-# Portal:     https://axto.io/portal
+# Portal:     https://axto.io/app/self-hosted
 # Docs:       https://axto.io/guide
 # ============================================================
 
 soc:
 
   # ── License ──────────────────────────────────────────────
-  license_key: ""   # FREE PROGRAM: no licence needed — leave empty, the app auto-registers this machine
+  license_key: "SOC-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
 
   # ── API Server ───────────────────────────────────────────

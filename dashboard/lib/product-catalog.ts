@@ -10,9 +10,9 @@
  * Everything here is CLIENT-FACING marketing content only. It deliberately
  * contains NO company secrets: no internal source layout, no infrastructure
  * details, no ports/hostnames, no proprietary algorithms — only the value a
- * customer gets. Pricing and per-tier feature lists are NOT duplicated here;
- * they come from PACKAGE_INFO (lib/stripe.ts) via getPackagesByProduct(), the
- * single source of truth, so they can never drift.
+ * customer gets. Self-hosted editions are licensed through the Business and
+ * Enterprise subscription plans (lib/plans.ts); delivery data (images, config
+ * files, ports, licence prefixes) lives in lib/selfhosted.ts.
  * ============================================================================ */
 
 export type AnimMotif =
@@ -24,7 +24,7 @@ export interface Integration { slug: string; emoji: string; name: string; desc: 
 
 export interface ProductCatalogEntry {
   slug: string;            // URL: /products/<slug>
-  product: string;         // PACKAGE_INFO product key (for tiers/pricing)
+  product: string;         // self-hosted product key (lib/selfhosted.ts)
   name: string;
   emoji: string;
   badge: string;

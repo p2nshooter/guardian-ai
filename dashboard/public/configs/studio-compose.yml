@@ -17,7 +17,7 @@ version: "3.9"
 # Your data stays on YOUR server. AXTO never sees your prompts.
 # Artifacts auto-delete after 14 days.
 #
-# Portal:  https://axto.io/portal
+# Portal:  https://axto.io/app/self-hosted
 # Docs:    https://axto.io/guide
 # Support: hello@axto.io
 # ============================================================
