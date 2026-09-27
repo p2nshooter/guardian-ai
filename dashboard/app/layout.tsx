@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   publisher: SITE.name,
   category: "technology",
   formatDetection: { telephone: false },
+  ...(SITE.isPreview ? { robots: { index: false, follow: false } } : {}),
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/apple-touch-icon.png" },
   openGraph: { type: "website", siteName: SITE.name, url: SITE.url, locale: SITE.locale, images: [{ url: absoluteUrl(SITE.ogImage), width: 1200, height: 630, alt: SITE.name }] },
   twitter: { card: "summary_large_image", site: SITE.twitter, images: [absoluteUrl(SITE.ogImage)] },
@@ -42,7 +43,14 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {SITE.isPreview ? (
+          <div className="bg-amber-400 px-4 py-1.5 text-center text-xs font-semibold text-amber-950">
+            Preview of the next AXTO release — test data only. The live site is axto.io.
+          </div>
+        ) : null}
+        {children}
+      </body>
     </html>
   );
 }

@@ -24,6 +24,8 @@ export const SITE = {
   adsenseClient: "ca-pub-6371903555702163",
   gscVerification: process.env.NEXT_PUBLIC_GSC_VERIFICATION || "",
   bingVerification: process.env.NEXT_PUBLIC_BING_VERIFICATION || "",
+  // Preview deployments (axto-preview.pages.dev): noindex, no ads, visible banner.
+  isPreview: process.env.NEXT_PUBLIC_PREVIEW === "1",
 } as const;
 
 export function absoluteUrl(path = "/"): string {

@@ -16,8 +16,10 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main id="main">{children}</main>
       <SiteFooter />
       <ChatWidget />
-      <Script id="adsense" async strategy="afterInteractive" crossOrigin="anonymous"
-        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}`} />
+      {SITE.isPreview ? null : (
+        <Script id="adsense" async strategy="afterInteractive" crossOrigin="anonymous"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}`} />
+      )}
     </>
   );
 }

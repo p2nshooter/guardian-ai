@@ -1,0 +1,39 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# ==============================================================================
+# PREVIEW project "axto-preview" (https://axto-preview.pages.dev) — a separate
+# Cloudflare Pages project with its OWN D1 / KV / R2, so previews can never
+# touch production (project "axto-dashboard", database "axto-db").
+# Used by .github/workflows/deploy-preview.yml (copied over wrangler.toml).
+name = "axto-preview"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+[[d1_databases]]
+binding        = "DB"
+database_name  = "axto-preview-db"
+database_id    = "cad99944-179f-461f-85aa-b6cf958ca734"
+migrations_dir = "cf-migrations"
+
+[[kv_namespaces]]
+binding = "KV"
+id      = "d727a8edb2784b60acbaab94069fcff8"
+
+[[r2_buckets]]
+binding     = "R2"
+bucket_name = "axto-preview-storage"
+
+[[r2_buckets]]
+binding     = "USER_FILES"
+bucket_name = "axto-preview-documents"
+
+[[r2_buckets]]
+binding     = "R2_BUILDS"
+bucket_name = "axto-preview-builds"
+
+[ai]
+binding = "AI"
+
+[vars]
+NEXT_PUBLIC_APP_URL = "https://axto-preview.pages.dev"
