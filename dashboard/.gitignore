@@ -25,3 +25,8 @@ yarn-debug.log*
 next-env.d.ts
 tests/test-results.json
 tests/lifecycle-results.json
+
+# local e2e state
+.e2e-state/
+.e2e-state-serve.log
+.e2e-build.log

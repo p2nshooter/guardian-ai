@@ -105,6 +105,24 @@ Harga default (bisa diubah admin di **Admin → Paket & Harga**). Tahunan = 10×
 - Pembayaran **prabayar per periode** (bulanan/tahunan) di semua gateway, termasuk QRIS/VA/crypto; pengingat email 7/3/1 hari sebelum berakhir; perpanjang 1 klik.
 - Lisensi self-hosted selalu **tier tertinggi** (fitur paling lengkap) dan berakhir bersama periode langganan.
 
+### 4b. Lisensi Lifetime (offline, super-enterprise)
+
+Lisensi **seumur hidup** untuk edisi self-hosted — **tidak perlu koneksi lagi ke axto.io**. Setiap perangkat diaktifkan dengan *file aktivasi offline* yang ditandatangani Ed25519 dan terkunci ke ID mesin perangkat itu; engine memverifikasinya secara lokal (air-gapped). Jumlah perangkat dibatasi 1–100.
+
+| Perangkat | Satu aplikasi | **Suite 10 aplikasi** |
+|---|---|---|
+| 1 | $24.900 | $149.000 |
+| s.d. 5 | $99.000 | $590.000 |
+| s.d. 10 | $179.000 | $990.000 |
+| s.d. 25 | $390.000 | $1.990.000 |
+| s.d. 50 | $690.000 | $3.490.000 |
+| s.d. 100 | $1.190.000 | $5.900.000 |
+
+- Termasuk: fitur **tier tertinggi**, penggunaan selamanya untuk versi mayor yang dibeli, pembaruan 12 bulan, EXE Windows + image Docker.
+- Pembayaran: transfer bank/wire (invoice), crypto, atau kartu (Stripe maks. $999.999 per transaksi). Nilai di atas itu otomatis lewat wire.
+- Harga dapat diubah admin (**Admin → Paket & Harga → Lifetime**).
+- Kode: `lib/lifetime.ts`, tabel `lifetime_licenses` + `lifetime_activations`, file aktivasi `.axto-license` per perangkat.
+
 ---
 
 ## 5. Aplikasi
@@ -133,8 +151,14 @@ Harga default (bisa diubah admin di **Admin → Paket & Harga**). Tahunan = 10×
 
 Tidak ada fallback dari BYOX ke Managed atau sebaliknya.
 
-### 5c. Edisi self-hosted — Docker, wajib lisensi berbayar
+### 5c. Edisi self-hosted — Docker **dan EXE Windows**, wajib lisensi berbayar
 10 aplikasi konsisten: Guardian AI, Orchestra AI, Vault, Edge, SOC, Compliance, Sentinel, Antivirus, Studio, Legal.
+Dikirim sebagai image Docker (Linux) dan EXE Windows (PyInstaller, dibangun GitHub Actions → R2 `axto-builds`), diunduh dari portal. Aktivasi: online (langganan) atau offline (Lifetime).
+
+### 5d. Panduan penggunaan (wajib untuk setiap aplikasi)
+- Aplikasi web: halaman "Cara pakai" di dalam aplikasi + halaman publik `/apps/<app>` + pusat bantuan `/help`.
+- Self-hosted: panduan instalasi Docker, EXE Windows, aktivasi online/offline, dan menu per produk di `/self-hosted/<produk>/guide` (juga PDF di R2).
+- Aplikasi tidak boleh lolos gerbang kualitas tanpa panduannya.
 (`yp`, `ai-studio`, `gpu-studio`, `hybrid-studio` tidak dijual terpisah; Studio = satu produk.)
 
 ---
@@ -207,6 +231,7 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 | 0 | Audit + blueprint + hapus data klien uji | ✅ |
 | 1 | Fondasi: paket, migrasi D1 v3, auth, checkout & 5 webhook, BYOX vs Managed (terkunci), lisensi berbayar (server + 13 engine) | ⏳ |
 | 2 | Design system + Portal Member + Portal Admin + halaman publik inti (beranda, harga, legal) — diuji E2E | ⏳ |
+| 2b | Self-hosted: Lifetime offline (harga, checkout, file aktivasi, dukungan offline di 13 engine), EXE Windows, panduan instalasi | ⏳ |
 | 3 | Aplikasi 1: **Legal AI** (paling sering dipakai) | ⏳ |
 | 4 | Aplikasi 2: **Prompt Library** (konten + enkripsi + R2) | ⏳ |
 | 5 | Aplikasi 3: **AI Studio** | ⏳ |

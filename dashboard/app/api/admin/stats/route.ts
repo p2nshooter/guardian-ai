@@ -1,0 +1,41 @@
+/* AXTO — GET /api/admin/stats · overview KPIs (admin only). */
+export const runtime = "edge";
+import { NextRequest, NextResponse } from "next/server";
+import { getDB, dbFirst, dbQuery } from "@/lib/db";
+import { requireAdmin, respond } from "@/lib/auth";
+import { monthKey } from "@/lib/plans";
+
+export async function GET(req: NextRequest) {
+  const ctx = await requireAdmin(req);
+  if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const db = getDB(req);
+  const nowIso = new Date().toISOString();
+  const d30 = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const [members, newMembers, subs, rev30, revAll, pending, lic, byox, recent, monthly] = await Promise.all([
+    dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM users WHERE role = 'client'`),
+    dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?`, [d30]),
+    dbQuery<{ plan: string; cycle: string; n: number }>(db,
+      `SELECT plan, cycle, COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ? GROUP BY plan, cycle`, [nowIso]),
+    dbFirst<{ s: number; n: number }>(db, `SELECT COALESCE(SUM(amount_usd), 0) AS s, COUNT(*) AS n FROM orders WHERE status = 'paid' AND paid_at >= ?`, [d30]),
+    dbFirst<{ s: number; n: number }>(db, `SELECT COALESCE(SUM(amount_usd), 0) AS s, COUNT(*) AS n FROM orders WHERE status = 'paid'`),
+    dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`),
+    dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE status = 'active'`),
+    dbFirst<{ r: number; c: number }>(db, `SELECT COALESCE(SUM(requests), 0) AS r, COALESCE(SUM(clipper_videos), 0) AS c FROM byox_usage WHERE month = ?`, [monthKey()]),
+    dbQuery(db, `SELECT o.id, o.email, o.plan, o.cycle, o.amount_usd, o.gateway, o.status, o.created_at, o.paid_at FROM orders o ORDER BY o.created_at DESC LIMIT 8`),
+    dbQuery<{ m: string; s: number }>(db,
+      `SELECT substr(paid_at, 1, 7) AS m, SUM(amount_usd) AS s FROM orders WHERE status = 'paid' AND paid_at >= ? GROUP BY m ORDER BY m`,
+      [new Date(Date.now() - 365 * 86_400_000).toISOString()]),
+  ]);
+  const { PLANS, isPlanId } = await import("@/lib/plans");
+  let mrr = 0;
+  for (const r of subs) if (isPlanId(r.plan)) mrr += r.n * (r.cycle === "yearly" ? PLANS[r.plan].yearly / 12 : PLANS[r.plan].monthly);
+  return respond({
+    members: members?.n ?? 0, newMembers30d: newMembers?.n ?? 0,
+    activeSubscriptions: subs.reduce((a, r) => a + r.n, 0), byPlan: subs,
+    mrr: Math.round(mrr * 100) / 100,
+    revenue30d: rev30?.s ?? 0, orders30d: rev30?.n ?? 0, revenueAll: revAll?.s ?? 0,
+    pendingOrders: pending?.n ?? 0, activeLicenses: lic?.n ?? 0,
+    byoxRequestsMonth: byox?.r ?? 0, clipperVideosMonth: byox?.c ?? 0,
+    recentOrders: recent, revenueByMonth: monthly,
+  }, ctx);
+}

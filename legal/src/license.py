@@ -54,7 +54,7 @@ _AUTHOR_FP = hashlib.sha256(base64.b64decode(b"WXVzcm9uRWZlbmRpLUFYVE8tMjAyNA=="
 # ── Ed25519 public key — loaded from env first, embedded key as final fallback ─
 # Override with env var AXTO_SIGNING_PUBLIC_KEY_B64 before going live.
 # Key generated during AXTO Security Hardening Phase (June 2026).
-_EMBEDDED_PUBLIC_KEY_B64 = "ZTgH36b64ILwsRnUv6XSg4ctaLm0Pd7/CvDOumbre9M="
+_EMBEDDED_PUBLIC_KEY_B64 = "p9cJ3Ct6j/tQPGtH/YJA7Fm8P/VgOSc2+e57+dFNMF0="
 
 SIGNED_PAYLOAD_FIELDS = [
     "license_key", "machine_id", "product", "valid",

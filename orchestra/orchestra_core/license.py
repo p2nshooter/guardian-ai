@@ -43,9 +43,9 @@ VERSION         = "2.1.0"  # HARDENED build — see AXTO_Security_Hardening_Repo
 # produce a signature this constant will accept. See
 # AXTO_Security_Hardening_Report.pdf §3 for the full design rationale.
 #
-# ⚠️  DEMO KEYPAIR — regenerate before production use (see
-#     dashboard/lib/license-signing.ts header comment).
-AXTO_LICENSE_PUBLIC_KEY_B64 = "ZTgH36b64ILwsRnUv6XSg4ctaLm0Pd7/CvDOumbre9M="
+# Production signing key (rotated 2026-09-27, AXTO v3). The matching PRIVATE
+# key lives only in axto.io's secret store — never in this repository.
+AXTO_LICENSE_PUBLIC_KEY_B64 = "p9cJ3Ct6j/tQPGtH/YJA7Fm8P/VgOSc2+e57+dFNMF0="
 SIGNED_PAYLOAD_FIELDS = [
     "license_key", "machine_id", "product", "valid",
     "status", "expires_at", "issued_at", "nonce",

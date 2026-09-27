@@ -43,12 +43,9 @@ PRODUCT_PREFIX  = "VAULT"
 # build of this file cannot be used to forge a "valid" response. See
 # AXTO_Security_Hardening_Report.pdf §3 for the full design rationale.
 #
-# ⚠️  DEMO KEYPAIR — regenerate before production use. This default keypair
-#     was generated for this hardening pass and documented in the audit
-#     report; rotate it (see lib/license-signing.ts header comment) before
-#     axto.io goes live with this build, since its private half is, by
-#     necessity, recorded in that report.
-AXTO_LICENSE_PUBLIC_KEY_B64 = "ZTgH36b64ILwsRnUv6XSg4ctaLm0Pd7/CvDOumbre9M="
+# Production signing key (rotated 2026-09-27, AXTO v3). The matching PRIVATE
+# key lives only in axto.io's secret store — never in this repository.
+AXTO_LICENSE_PUBLIC_KEY_B64 = "p9cJ3Ct6j/tQPGtH/YJA7Fm8P/VgOSc2+e57+dFNMF0="
 SIGNED_PAYLOAD_FIELDS = [
     "license_key", "machine_id", "product", "valid",
     "status", "expires_at", "issued_at", "nonce",

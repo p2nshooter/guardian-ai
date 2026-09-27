@@ -17,6 +17,7 @@
  * ============================================================================ */
 
 import type { NextRequest } from "next/server";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export interface CfEnv {
   DB?: any;
@@ -30,10 +31,8 @@ export interface CfEnv {
 
 export function getEnv(_req?: NextRequest): CfEnv {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { getRequestContext } = require("@cloudflare/next-on-pages");
     const ctx = getRequestContext();
-    if (ctx?.env) return ctx.env as CfEnv;
+    if (ctx?.env) return ctx.env as unknown as CfEnv;
   } catch {}
   try {
     const pe = (process as any).env;

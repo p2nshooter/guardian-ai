@@ -57,7 +57,7 @@ CACHE_SECONDS  = 1800
 # key must match lib/license-signing.ts on the server. Only axto.io holds the
 # private half, so an open-source build of this file cannot forge a "valid"
 # response. (Shared with the other products' hardened license modules.)
-AXTO_LICENSE_PUBLIC_KEY_B64 = "ZTgH36b64ILwsRnUv6XSg4ctaLm0Pd7/CvDOumbre9M="
+AXTO_LICENSE_PUBLIC_KEY_B64 = "p9cJ3Ct6j/tQPGtH/YJA7Fm8P/VgOSc2+e57+dFNMF0="
 SIGNED_PAYLOAD_FIELDS = [
     "license_key", "machine_id", "product", "valid",
     "status", "expires_at", "issued_at", "nonce",

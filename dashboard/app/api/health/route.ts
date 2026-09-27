@@ -1,7 +1,7 @@
 /* AXTO — GET /api/health · liveness + binding check (no secrets, no data). */
 export const runtime = "edge";
 import { NextResponse } from "next/server";
-import { getEnv, dbFirst } from "@/lib/db";
+import { getEnv, dbFirst, secret } from "@/lib/db";
 
 export async function GET() {
   const env = getEnv();
@@ -10,6 +10,8 @@ export async function GET() {
   return NextResponse.json({
     ok: d1, version: "3.0.0",
     bindings: { d1, kv: !!env.KV, r2: !!env.R2, userFiles: !!env.USER_FILES, builds: !!env.R2_BUILDS },
+    // Presence only — never values.
+    secrets: { jwt: !!secret("JWT_SECRET"), encryption: !!secret("ENCRYPTION_KEY"), cron: !!secret("CRON_SECRET") },
     time: new Date().toISOString(),
   }, { headers: { "Cache-Control": "no-store" } });
 }

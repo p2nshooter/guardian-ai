@@ -9,7 +9,7 @@
  * engines lock themselves read-only with a clear message.
  *
  * Wire protocol is unchanged from v2 so existing engines keep working:
- *   • every licence-specific answer is Ed25519-signed (lib/license-signing.ts)
+ *   • every licence-specific answer is Ed25519-signed (lib/license-sign.ts, fail-closed)
  *   • the signed payload binds key, machine, product, status, expiry and the
  *     serialized entitlements, so no MITM or local edit can unlock a higher tier
  *   • licences are always issued at the TOP tier of each engine
@@ -19,7 +19,7 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, now } from "@/lib/db";
-import { signLicenseResponse, SignableLicenseFields } from "@/lib/license-signing";
+import { signLicense, SigningUnavailable, type SignFields } from "@/lib/license-sign";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { SELF_HOSTED, productFromKey } from "@/lib/selfhosted";
 import { absoluteUrl } from "@/lib/site";
@@ -37,8 +37,15 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-async function signed(body: Record<string, any>, sign: SignableLicenseFields, status = 200) {
-  return NextResponse.json({ ...body, ...(await signLicenseResponse(sign)) }, { status, headers: CORS });
+async function signed(db: any, body: Record<string, any>, sign: SignFields, status = 200) {
+  try {
+    return NextResponse.json({ ...body, ...(await signLicense(db, sign)) }, { status, headers: CORS });
+  } catch (e) {
+    // Fail closed: never send an unsigned licence decision. Engines treat this
+    // like "server unreachable" and fall back to their last verified proof.
+    if (e instanceof SigningUnavailable) return plain({ valid: false, error: "Licensing service is temporarily unavailable." }, 503);
+    throw e;
+  }
 }
 
 function plain(body: Record<string, any>, status = 200) {
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
   if (!license_key || typeof license_key !== "string") return plain({ valid: false, error: "license_key is required" }, 400);
 
   const key = license_key.trim().toUpperCase();
-  const mid = typeof machine_id === "string" ? machine_id.trim().slice(0, 200) : "";
+  const mid = typeof machine_id === "string" ? machine_id.trim().replace(/[^A-Za-z0-9_.:-]/g, "").slice(0, 128) : "";
   const keyLimit = await rateLimit(req, "license-validate-key", key, { max: 30, windowSeconds: 60 });
   if (keyLimit.limited) {
     return NextResponse.json({ valid: false, error: "Too many validation requests for this license key. Please slow down." },
@@ -76,42 +83,42 @@ export async function POST(req: NextRequest) {
     return plain({ valid: false, error: `Unrecognized license key format. Key must start with one of: ${SELF_HOSTED.map((p) => p.keyPrefix + "-").join(", ")}` });
   }
 
+  let db: any;
+  try { db = getDB(req); } catch { return plain({ valid: false, error: "Service temporarily unavailable. Try again in a moment." }, 503); }
+
   // ── Former free-program keys: signed lock ────────────────────────────────
   if (/-FREE-ACCESS-\d{4}$/.test(key)) {
-    return signed({
+    return signed(db, {
       valid: false, reason: "program_ended",
       error: `The AXTO free program has ended. This app is now locked (read-only) — your data is untouched. Subscribe to a Business or Enterprise plan at ${PRICING} and paste your licence key from ${PORTAL} to continue.`,
       renew_url: PRICING,
     }, { licenseKey: key, machineId: mid, product: keyProduct, valid: false, status: "program_ended", expiresAt: new Date().toISOString() });
   }
 
-  let db: any;
-  try { db = getDB(req); } catch { return plain({ valid: false, error: "Service temporarily unavailable. Try again in a moment." }, 503); }
-
   const lic = await dbFirst<any>(db,
     `SELECT l.*, u.name AS client_name, u.organization AS organization, u.status AS user_status
        FROM sh_licenses l LEFT JOIN users u ON u.id = l.user_id WHERE l.license_key = ?`, [key]);
   if (!lic) return plain({ valid: false, error: `License key not found. Get your key at ${PORTAL}` });
 
-  const sign = (status: string, valid = false, extra: Partial<SignableLicenseFields> = {}): SignableLicenseFields =>
+  const sign = (status: string, valid = false, extra: Partial<SignFields> = {}): SignFields =>
     ({ licenseKey: key, machineId: mid, product: lic.product, valid, status, expiresAt: lic.expires_at, ...extra });
 
   if (lic.status === "revoked") {
-    return signed({ valid: false, reason: "revoked", error: "License has been revoked. Contact hello@axto.io for assistance." }, sign("revoked"));
+    return signed(db, { valid: false, reason: "revoked", error: "License has been revoked. Contact hello@axto.io for assistance." }, sign("revoked"));
   }
   if (lic.status === "suspended" || (lic.user_status && lic.user_status !== "active")) {
-    return signed({ valid: false, reason: "suspended", error: `License is suspended — your plan no longer includes this app. Manage it at ${PORTAL}.`, renew_url: PORTAL }, sign("suspended"));
+    return signed(db, { valid: false, reason: "suspended", error: `License is suspended — your plan no longer includes this app. Manage it at ${PORTAL}.`, renew_url: PORTAL }, sign("suspended"));
   }
   const expiresAt = new Date(lic.expires_at);
   if (!(expiresAt.getTime() > Date.now())) {
-    return signed({ valid: false, reason: "expired", error: `License expired. Renew your plan at ${PORTAL} to restore access.`, expired_at: lic.expires_at, renew_url: PORTAL }, sign("expired"));
+    return signed(db, { valid: false, reason: "expired", error: `License expired. Renew your plan at ${PORTAL} to restore access.`, expired_at: lic.expires_at, renew_url: PORTAL }, sign("expired"));
   }
 
   const reqProduct = String(requestedProduct || "").toLowerCase().trim();
   const licProduct = String(lic.product).toLowerCase();
   if (reqProduct && reqProduct !== licProduct) {
     const expected = SELF_HOSTED.find((p) => p.slug === reqProduct)?.keyPrefix;
-    return signed({
+    return signed(db, {
       valid: false, reason: "product_mismatch", key_is_for: lic.product,
       error: `This key is for "${lic.product}", not "${reqProduct}". Use a ${expected ? expected + "-" : ""}key for ${reqProduct}.`,
     }, sign("product_mismatch"));
@@ -121,13 +128,13 @@ export async function POST(req: NextRequest) {
     if (!lic.bound_machine_id) {
       await dbRun(db, `UPDATE sh_licenses SET bound_machine_id = ?, updated_at = ? WHERE id = ? AND bound_machine_id = ''`, [mid, now(), lic.id]).catch(() => {});
     } else if (lic.bound_machine_id !== mid) {
-      return signed({ valid: false, reason: "machine_mismatch", error: `License is bound to a different server. Reset the binding at ${PORTAL}.`, reset_url: PORTAL }, sign("machine_mismatch"));
+      return signed(db, { valid: false, reason: "machine_mismatch", error: `License is bound to a different server. Reset the binding at ${PORTAL}.`, reset_url: PORTAL }, sign("machine_mismatch"));
     }
   }
 
   const maxNodes = Number(lic.max_nodes ?? 1);
   if (maxNodes !== -1 && typeof node_count === "number" && node_count > maxNodes) {
-    return signed({
+    return signed(db, {
       valid: false, reason: "node_limit_exceeded", max_nodes: maxNodes, current_nodes: node_count, upgrade_url: PRICING,
       error: `Node limit exceeded. Your ${lic.product} licence allows ${maxNodes} node(s); you have ${node_count}. Upgrade to Enterprise for unlimited nodes.`,
     }, sign("node_limit_exceeded"));
@@ -150,7 +157,7 @@ export async function POST(req: NextRequest) {
   if (daysLeft <= 14) response.warning = `License renews with your plan in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Keep your plan active at ${PORTAL}.`;
   if (daysLeft <= 3) response.critical_warning = `⚠️ License expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}! Renew your plan at ${PORTAL}.`;
 
-  return signed(response, sign("active", true, { entitlements: serializeEntitlements(features, lic.package_code) }));
+  return signed(db, response, sign("active", true, { entitlements: serializeEntitlements(features, lic.package_code) }));
 }
 
 // Deterministic, signable entitlements: "package=<code>;<k>=<v>;…" (keys sorted).
