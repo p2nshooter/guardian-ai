@@ -7,10 +7,11 @@ import { JsonLd } from "@/components/JsonLd";
 import { orgJsonLd, websiteJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 import ChatWidget from "@/components/support/ChatWidget";
+import { I18nProvider } from "@/lib/i18n";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <I18nProvider>
       <JsonLd data={[orgJsonLd(), websiteJsonLd()]} />
       <SiteHeader />
       <main id="main">{children}</main>
@@ -20,6 +21,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         <Script id="adsense" async strategy="afterInteractive" crossOrigin="anonymous"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}`} />
       )}
-    </>
+    </I18nProvider>
   );
 }

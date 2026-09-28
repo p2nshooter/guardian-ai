@@ -13,6 +13,7 @@ type Dict = Partial<Record<Key, string>>;
 
 // ── Deutsch ──────────────────────────────────────────────────────────────────
 const de: Dict = {
+  "site.apps": "Apps", "site.prompts": "Prompts", "site.selfhosted": "Self-Hosting", "site.pricing": "Preise", "site.guides": "Anleitungen", "site.blog": "Blog", "site.signin": "Anmelden", "site.getstarted": "Loslegen", "site.menu": "Menü",
   "nav.home": "Start", "nav.apps": "Apps", "nav.files": "Meine Dateien", "nav.selfhosted": "Self-Hosted", "nav.lifetime": "Lifetime-Lizenzen",
   "nav.billing": "Tarif & Abrechnung", "nav.settings": "Einstellungen", "nav.help": "Hilfe & Anleitungen", "nav.managed": "Managed AI",
   "nav.signout": "Abmelden", "nav.language": "Sprache", "nav.admin": "Admin-Portal", "nav.member": "Mitglieder-Portal",
@@ -67,6 +68,7 @@ const de: Dict = {
 
 // ── Français ─────────────────────────────────────────────────────────────────
 const fr: Dict = {
+  "site.apps": "Applis", "site.prompts": "Prompts", "site.selfhosted": "Auto-hébergé", "site.pricing": "Tarifs", "site.guides": "Guides", "site.blog": "Blog", "site.signin": "Se connecter", "site.getstarted": "Commencer", "site.menu": "Menu",
   "nav.home": "Accueil", "nav.apps": "Applications", "nav.files": "Mes fichiers", "nav.selfhosted": "Auto-hébergé", "nav.lifetime": "Licences à vie",
   "nav.billing": "Offre & facturation", "nav.settings": "Paramètres", "nav.help": "Aide & guides", "nav.managed": "IA gérée",
   "nav.signout": "Déconnexion", "nav.language": "Langue", "nav.admin": "Portail admin", "nav.member": "Portail membre",
@@ -121,6 +123,7 @@ const fr: Dict = {
 
 // ── Italiano ─────────────────────────────────────────────────────────────────
 const it: Dict = {
+  "site.apps": "App", "site.prompts": "Prompt", "site.selfhosted": "Self-hosted", "site.pricing": "Prezzi", "site.guides": "Guide", "site.blog": "Blog", "site.signin": "Accedi", "site.getstarted": "Inizia", "site.menu": "Menu",
   "nav.home": "Home", "nav.apps": "App", "nav.files": "I miei file", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Licenze a vita",
   "nav.billing": "Piano e fatturazione", "nav.settings": "Impostazioni", "nav.help": "Aiuto e guide", "nav.managed": "IA gestita",
   "nav.signout": "Esci", "nav.language": "Lingua", "nav.admin": "Portale admin", "nav.member": "Portale membri",
@@ -175,6 +178,7 @@ const it: Dict = {
 
 // ── Bahasa Melayu ────────────────────────────────────────────────────────────
 const ms: Dict = {
+  "site.apps": "Apl", "site.prompts": "Prompt", "site.selfhosted": "Hos sendiri", "site.pricing": "Harga", "site.guides": "Panduan", "site.blog": "Blog", "site.signin": "Log masuk", "site.getstarted": "Mula", "site.menu": "Menu",
   "nav.home": "Laman Utama", "nav.apps": "Aplikasi", "nav.files": "Fail saya", "nav.selfhosted": "Hos sendiri", "nav.lifetime": "Lesen seumur hidup",
   "nav.billing": "Pelan & bil", "nav.settings": "Tetapan", "nav.help": "Bantuan & panduan", "nav.managed": "AI Terurus",
   "nav.signout": "Log keluar", "nav.language": "Bahasa", "nav.admin": "Portal admin", "nav.member": "Portal ahli",
@@ -229,6 +233,7 @@ const ms: Dict = {
 
 // ── 中文 (简体) ───────────────────────────────────────────────────────────────
 const zh: Dict = {
+  "site.apps": "应用", "site.prompts": "提示词", "site.selfhosted": "自托管", "site.pricing": "价格", "site.guides": "指南", "site.blog": "博客", "site.signin": "登录", "site.getstarted": "开始使用", "site.menu": "菜单",
   "nav.home": "首页", "nav.apps": "应用", "nav.files": "我的文件", "nav.selfhosted": "自托管", "nav.lifetime": "终身许可证",
   "nav.billing": "套餐与账单", "nav.settings": "设置", "nav.help": "帮助与指南", "nav.managed": "托管 AI",
   "nav.signout": "退出登录", "nav.language": "语言", "nav.admin": "管理员门户", "nav.member": "会员门户",
@@ -283,6 +288,7 @@ const zh: Dict = {
 
 // ── 日本語 ────────────────────────────────────────────────────────────────────
 const ja: Dict = {
+  "site.apps": "アプリ", "site.prompts": "プロンプト", "site.selfhosted": "セルフホスト", "site.pricing": "料金", "site.guides": "ガイド", "site.blog": "ブログ", "site.signin": "ログイン", "site.getstarted": "始める", "site.menu": "メニュー",
   "nav.home": "ホーム", "nav.apps": "アプリ", "nav.files": "マイファイル", "nav.selfhosted": "セルフホスト", "nav.lifetime": "買い切りライセンス",
   "nav.billing": "プランと請求", "nav.settings": "設定", "nav.help": "ヘルプとガイド", "nav.managed": "マネージド AI",
   "nav.signout": "ログアウト", "nav.language": "言語", "nav.admin": "管理者ポータル", "nav.member": "メンバーポータル",
@@ -337,6 +343,7 @@ const ja: Dict = {
 
 // ── हिन्दी ────────────────────────────────────────────────────────────────────
 const hi: Dict = {
+  "site.apps": "ऐप्स", "site.prompts": "प्रॉम्प्ट", "site.selfhosted": "सेल्फ-होस्टेड", "site.pricing": "मूल्य", "site.guides": "गाइड", "site.blog": "ब्लॉग", "site.signin": "साइन इन", "site.getstarted": "शुरू करें", "site.menu": "मेन्यू",
   "nav.home": "होम", "nav.apps": "ऐप्स", "nav.files": "मेरी फ़ाइलें", "nav.selfhosted": "सेल्फ़-होस्टेड", "nav.lifetime": "लाइफ़टाइम लाइसेंस",
   "nav.billing": "प्लान और बिलिंग", "nav.settings": "सेटिंग्स", "nav.help": "सहायता और गाइड", "nav.managed": "मैनेज्ड AI",
   "nav.signout": "साइन आउट", "nav.language": "भाषा", "nav.admin": "एडमिन पोर्टल", "nav.member": "सदस्य पोर्टल",
@@ -391,6 +398,7 @@ const hi: Dict = {
 
 // ── العربية (RTL) ─────────────────────────────────────────────────────────────
 const ar: Dict = {
+  "site.apps": "التطبيقات", "site.prompts": "الأوامر", "site.selfhosted": "الاستضافة الذاتية", "site.pricing": "الأسعار", "site.guides": "الأدلة", "site.blog": "المدونة", "site.signin": "تسجيل الدخول", "site.getstarted": "ابدأ الآن", "site.menu": "القائمة",
   "nav.home": "الرئيسية", "nav.apps": "التطبيقات", "nav.files": "ملفاتي", "nav.selfhosted": "الاستضافة الذاتية", "nav.lifetime": "تراخيص مدى الحياة",
   "nav.billing": "الخطة والفوترة", "nav.settings": "الإعدادات", "nav.help": "المساعدة والأدلة", "nav.managed": "الذكاء الاصطناعي المُدار",
   "nav.signout": "تسجيل الخروج", "nav.language": "اللغة", "nav.admin": "بوابة المشرف", "nav.member": "بوابة الأعضاء",
