@@ -10,7 +10,8 @@
 
 @layer base {
   html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
-  body { @apply bg-white text-slate-800 font-sans; }
+  body { @apply bg-white text-slate-800 font-sans; -webkit-tap-highlight-color: transparent; }
+  @media (display-mode: standalone) { body { overscroll-behavior-y: none; } }
   h1, h2, h3, h4 { @apply text-slate-900 tracking-tight; }
   a { @apply text-brand-700 hover:text-brand-800; }
   ::selection { @apply bg-brand-200 text-brand-950; }
@@ -39,7 +40,7 @@
   /* Forms */
   .label { @apply mb-1.5 block text-sm font-medium text-slate-800; }
   .hint { @apply mt-1 text-xs text-slate-500; }
-  .input { @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-50; }
+  .input { @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-50; }
   .select { @apply input pr-8; }
   .textarea { @apply input min-h-[120px] leading-relaxed; }
 
@@ -93,4 +94,14 @@
   .surface-ink h1, .surface-ink h2, .surface-ink h3 { @apply text-white; }
   .glow { background: radial-gradient(60% 60% at 30% 20%, rgba(31,216,192,.18) 0%, rgba(7,9,13,0) 70%); }
   .grid-lines { background-image: linear-gradient(rgba(148,163,184,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.08) 1px, transparent 1px); background-size: 48px 48px; }
+}
+
+/* Print / "Save as PDF" of a single AI answer (Legal AI and other apps). */
+@media print {
+  body.printing * { visibility: hidden !important; }
+  body.printing .print-target, body.printing .print-target * { visibility: visible !important; }
+  body.printing .print-target { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; box-shadow: none; padding: 0; }
+  body.printing .print-target .print-only { display: block !important; }
+  body.printing .print-target .no-print { display: none !important; }
+  @page { margin: 18mm 16mm; }
 }

@@ -17,7 +17,7 @@ import { SITE } from "@/lib/site";
 export const metadata: Metadata = {
   ...pageMeta({
     title: `${SITE.name} — AI workspace for legal, security & business teams`,
-    description: "Legal AI with 18 expert workspaces, a premium prompt library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst — in your browser, on your own AI keys. Self-hosted Docker & Windows editions for Business and Enterprise.",
+    description: "Legal AI with 36 expert workspaces for 200+ jurisdictions, a premium prompt library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst — in your browser, on your own AI keys. Self-hosted Docker & Windows editions for Business and Enterprise.",
     path: "/",
     keywords: ["AI workspace", "legal AI", "BYOK AI", "AI prompt library", "AI video clipper", "PII redaction", "compliance gap analysis", "AI security analyst", "self-hosted AI"],
   }),

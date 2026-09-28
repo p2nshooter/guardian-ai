@@ -92,8 +92,8 @@ export function isConfigured(g: GatewayInfo, creds: Record<string, string> | und
   return g.requires.some((group) => group.every((k) => String(creds[k] || "").trim()));
 }
 
-export async function paymentSettings(): Promise<PaymentSettings> {
-  const s = await readSecure<PaymentSettings>(undefined, "payments", { gateways: {} });
+export async function paymentSettings(opts: { fresh?: boolean } = {}): Promise<PaymentSettings> {
+  const s = await readSecure<PaymentSettings>(undefined, "payments", { gateways: {} }, opts);
   return { ...s, gateways: s.gateways || {} };
 }
 
@@ -136,7 +136,7 @@ export async function gatewayCreds(_db: any, id: GatewayId): Promise<Record<stri
   const g = gatewayInfo(id);
   if (!g) return null;
   try {
-    const cur = (await paymentSettings()).gateways[id];
+    const cur = (await paymentSettings({ fresh: true })).gateways[id];
     return cur?.active && isConfigured(g, cur.creds) ? cur.creds : null;
   } catch {
     return null;

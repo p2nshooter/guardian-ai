@@ -41,7 +41,7 @@ function save(v: { id: string; token: string } | null) {
   try { v ? localStorage.setItem(STORE, JSON.stringify(v)) : localStorage.removeItem(STORE); } catch {}
 }
 
-export default function ChatWidget({ lang: forced, defaultName = "", defaultEmail = "" }: { lang?: Lang; defaultName?: string; defaultEmail?: string }) {
+export default function ChatWidget({ lang: forced, defaultName = "", defaultEmail = "", raised = false }: { lang?: Lang; defaultName?: string; defaultEmail?: string; raised?: boolean }) {
   const [lang, setLang] = useState<Lang>(forced || "en");
   const t = T[lang];
   const [open, setOpen] = useState(false);
@@ -131,14 +131,15 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
   return (
     <>
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? t.close : t.open}
-        className="fixed bottom-5 right-5 z-[60] inline-flex h-14 items-center gap-2 rounded-full bg-ink-900 px-5 text-sm font-semibold text-white shadow-lift transition hover:bg-ink-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300">
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
+        className={`fixed ${raised ? "bottom-20 lg:bottom-5" : "bottom-5"} right-4 z-[60] inline-flex h-14 items-center gap-2 rounded-full bg-ink-900 px-5 text-sm font-semibold text-white shadow-lift transition hover:bg-ink-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 sm:right-5`}>
         <span aria-hidden="true" className="relative text-lg">💬{online ? <span className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-ink-900" /> : null}</span>
         <span className="hidden sm:inline">{open ? t.close : t.open}</span>
       </button>
 
       {open ? (
         <section role="dialog" aria-label={t.title}
-          className="fixed bottom-24 right-3 z-[60] flex max-h-[min(640px,calc(100vh-7.5rem))] w-[calc(100vw-1.5rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lift sm:right-5">
+          className={`fixed ${raised ? "bottom-36 lg:bottom-24" : "bottom-24"} right-3 z-[60] flex max-h-[min(640px,calc(100dvh-10rem))] w-[calc(100vw-1.5rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lift sm:right-5`}>
           <header className="flex items-center gap-3 bg-ink-900 px-4 py-3 text-white">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 font-bold">A</div>
             <div className="min-w-0 flex-1">

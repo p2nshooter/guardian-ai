@@ -190,6 +190,18 @@ export async function loadSession(req: NextRequest, opts: { fresh?: boolean } = 
   }
 }
 
+/**
+ * Session for a plan-gated feature. The cookie's plan can be up to an hour old;
+ * when it would DENY access, re-read the plan from D1 once before refusing, so a
+ * payment that was just confirmed (webhook, on-chain, admin approval) works at
+ * once. The allowed path costs nothing extra.
+ */
+export async function loadSessionFor(req: NextRequest, allowed: (tier: Tier) => boolean): Promise<{ session: Session; refreshed: string | null } | null> {
+  const ctx = await loadSession(req);
+  if (!ctx || allowed(effectiveTier(ctx.session)) || ctx.refreshed) return ctx;
+  return (await loadSession(req, { fresh: true })) || ctx;
+}
+
 /** JSON response that also persists a refreshed session token when there is one. */
 export function respond(data: unknown, ctx: { refreshed: string | null } | null, init?: ResponseInit): NextResponse {
   const res = NextResponse.json(data, init);

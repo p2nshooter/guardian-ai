@@ -57,6 +57,18 @@ const EN = {
   "managed.title": "Managed AI", "managed.locked": "Managed AI is coming soon", "managed.lockedSub": "With Managed AI, AXTO provides the AI models so you don't need your own keys. Until then, every app works with your own keys (BYOX).",
   // Apps
   "apps.title": "Apps", "apps.sub": "Everything runs in your browser — no installation.", "apps.locked": "Included in {plan}",
+  // Auth
+  "auth.signin": "Sign in", "auth.signinTitle": "Welcome back", "auth.signinSub": "Sign in to your AXTO workspace.",
+  "auth.register": "Create account", "auth.registerTitle": "Create your AXTO account", "auth.registerSub": "One account for every app — web and self-hosted.",
+  "auth.email": "Email", "auth.password": "Password", "auth.name": "Full name", "auth.org": "Company (optional)",
+  "auth.forgot": "Forgot password?", "auth.noAccount": "New to AXTO?", "auth.haveAccount": "Already have an account?",
+  "auth.show": "Show", "auth.hide": "Hide", "auth.pwHint": "At least 8 characters, with a letter and a number.",
+  "auth.terms": "I agree to the {terms} and {privacy}.", "auth.termsLink": "Terms of Service", "auth.privacyLink": "Privacy Policy",
+  "auth.forgotTitle": "Reset your password", "auth.forgotSub": "Enter your email and we'll send you a link to choose a new password.",
+  "auth.sendLink": "Send reset link", "auth.linkSent": "If an account exists for that email, a reset link is on its way. It works for 30 minutes.",
+  "auth.resetTitle": "Choose a new password", "auth.newPassword": "New password", "auth.confirmPassword": "Confirm new password",
+  "auth.mismatch": "The passwords don't match.", "auth.setPassword": "Save and sign in", "auth.noToken": "This reset link is incomplete. Request a new one.",
+  "auth.backToSignin": "Back to sign in", "auth.working": "Please wait…", "auth.secure": "Protected by encryption. We never share your data.",
 };
 
 export type Key = keyof typeof EN;
@@ -101,6 +113,17 @@ const ID: Record<Key, string> = {
   "sh.preparing": "Build sedang disiapkan", "sh.bound": "Terikat ke server", "sh.unbound": "Belum diaktifkan", "sh.lastSeen": "Terakhir aktif",
   "managed.title": "Managed AI", "managed.locked": "Managed AI segera hadir", "managed.lockedSub": "Dengan Managed AI, AXTO menyediakan model AI sehingga Anda tidak perlu kunci sendiri. Sampai saat itu, semua aplikasi berjalan dengan kunci Anda sendiri (BYOX).",
   "apps.title": "Aplikasi", "apps.sub": "Semua berjalan di browser — tanpa instalasi.", "apps.locked": "Termasuk di {plan}",
+  "auth.signin": "Masuk", "auth.signinTitle": "Selamat datang kembali", "auth.signinSub": "Masuk ke ruang kerja AXTO Anda.",
+  "auth.register": "Buat akun", "auth.registerTitle": "Buat akun AXTO Anda", "auth.registerSub": "Satu akun untuk semua aplikasi — web dan self-hosted.",
+  "auth.email": "Email", "auth.password": "Kata sandi", "auth.name": "Nama lengkap", "auth.org": "Perusahaan (opsional)",
+  "auth.forgot": "Lupa kata sandi?", "auth.noAccount": "Baru di AXTO?", "auth.haveAccount": "Sudah punya akun?",
+  "auth.show": "Lihat", "auth.hide": "Sembunyikan", "auth.pwHint": "Minimal 8 karakter, berisi huruf dan angka.",
+  "auth.terms": "Saya setuju dengan {terms} dan {privacy}.", "auth.termsLink": "Ketentuan Layanan", "auth.privacyLink": "Kebijakan Privasi",
+  "auth.forgotTitle": "Atur ulang kata sandi", "auth.forgotSub": "Masukkan email Anda, kami kirimkan tautan untuk membuat kata sandi baru.",
+  "auth.sendLink": "Kirim tautan", "auth.linkSent": "Jika akun dengan email tersebut ada, tautan reset sedang dikirim. Berlaku 30 menit.",
+  "auth.resetTitle": "Buat kata sandi baru", "auth.newPassword": "Kata sandi baru", "auth.confirmPassword": "Ulangi kata sandi baru",
+  "auth.mismatch": "Kata sandi tidak sama.", "auth.setPassword": "Simpan dan masuk", "auth.noToken": "Tautan reset tidak lengkap. Minta tautan baru.",
+  "auth.backToSignin": "Kembali ke halaman masuk", "auth.working": "Mohon tunggu…", "auth.secure": "Dilindungi enkripsi. Data Anda tidak pernah dibagikan.",
 };
 
 const DICTS: Record<Lang, Record<Key, string>> = { en: EN, id: ID };
@@ -141,4 +164,11 @@ export function formatDate(iso: string | null | undefined, lang: Lang = "en"): s
 
 export function formatMoney(n: number, currency = "USD", lang: Lang = "en"): string {
   return new Intl.NumberFormat(lang === "id" ? "id-ID" : "en-US", { style: "currency", currency, maximumFractionDigits: currency === "IDR" ? 0 : n % 1 ? 2 : 0 }).format(n);
+}
+
+export function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 ** 2) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 ** 3) return `${(n / 1024 ** 2).toFixed(1)} MB`;
+  return `${(n / 1024 ** 3).toFixed(2)} GB`;
 }

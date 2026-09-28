@@ -10,7 +10,7 @@
 export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { getDB, getEnv, getR2Builds, dbFirst, dbQuery, dbRun, newId, now, secret } from "@/lib/db";
-import { loadSession, unauthorized, respond, effectiveTier } from "@/lib/auth";
+import { loadSession, unauthorized, respond, effectiveTier, loadSessionFor } from "@/lib/auth";
 import { limitsFor, PLANS, isPlanId } from "@/lib/plans";
 import { SELF_HOSTED, getSelfHosted, catalogEntry, generateLicenseKey } from "@/lib/selfhosted";
 import { readJson, fail, audit } from "@/lib/http";
@@ -38,7 +38,7 @@ async function availableBuilds(req: NextRequest): Promise<Set<string>> {
 }
 
 export async function GET(req: NextRequest) {
-  const ctx = await loadSession(req);
+  const ctx = await loadSessionFor(req, (tier) => limitsFor(tier).selfHostedApps !== 0);
   if (!ctx) return unauthorized();
   const tier = effectiveTier(ctx.session);
   const lim = limitsFor(tier);

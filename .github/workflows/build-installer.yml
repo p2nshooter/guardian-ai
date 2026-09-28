@@ -1,0 +1,112 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# ==============================================================================
+# AXTO Setup (installer/, Go) — tested on Linux AND on a real Windows runner on
+# every change; published to R2 (axto-builds) from main only:
+#   builds/latest/installer/AXTO-Setup.exe
+#   builds/latest/installer/axto-setup-linux-amd64 | -linux-arm64 | -macos-arm64
+#   builds/v<version>/installer/…   (immutable copy)
+# The portal serves them at /api/download/installer?os=windows|linux-amd64|linux-arm64|macos-arm64.
+# Replaces the old per-product PyInstaller EXEs (auto-build-exe.yml).
+# Secrets (upload only): CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY
+name: AXTO Setup (installer)
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "installer/**"
+      - "*-compose.yml"
+      - "docker-compose.yml"
+      - "*.example.yml"
+      - "legal.env.example"
+      - ".github/workflows/build-installer.yml"
+  schedule:
+    - cron: "30 2 * * *"      # nightly re-test (catches toolchain / OS image drift)
+
+concurrency:
+  group: installer-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERSION: "3.0.0"
+
+jobs:
+  linux:
+    name: 🐧 Test + build (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.23", cache-dependency-path: installer/go.mod }
+      - name: Windows resources (icon, version info, manifest)
+        working-directory: installer
+        run: |
+          go install github.com/tc-hib/go-winres@v0.3.3
+          go-winres make --in winres/winres.json --product-version "${VERSION}.0" --file-version "${VERSION}.0"
+          ls -l *.syso
+      - name: vet, test, cross-compile
+        run: bash installer/build.sh "${VERSION}"
+      - name: CLI smoke test
+        working-directory: installer/dist
+        run: |
+          ./axto-setup-linux-amd64 version
+          ./axto-setup-linux-amd64 list | tee list.txt
+          grep -q "No AXTO apps installed yet" list.txt
+          ./axto-setup-linux-amd64 doctor || true
+      - uses: actions/upload-artifact@v4
+        with: { name: axto-setup, path: installer/dist/, retention-days: 7 }
+
+  windows:
+    name: 🪟 Test on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.23", cache-dependency-path: installer/go.mod }
+      - name: Bundle configs
+        shell: bash
+        run: |
+          mkdir -p installer/bundle
+          cp docker-compose.yml *-compose.yml *.example.yml legal.env.example installer/bundle/
+      - name: go vet + tests (Windows code paths)
+        working-directory: installer
+        run: |
+          go vet ./...
+          go test ./...
+      - name: Build console + GUI binaries and run the CLI
+        working-directory: installer
+        shell: pwsh
+        run: |
+          go build -trimpath -ldflags "-s -w -X main.Version=$env:VERSION" -o axto-cli.exe .
+          go build -trimpath -ldflags "-s -w -X main.Version=$env:VERSION -H=windowsgui" -o AXTO-Setup.exe .
+          ./axto-cli.exe version
+          $list = ./axto-cli.exe list | Out-String
+          if ($list -notmatch "No AXTO apps installed yet") { throw "list command failed: $list" }
+          ./axto-cli.exe doctor; if ($LASTEXITCODE -gt 1) { throw "doctor crashed" }
+          if ((Get-Item AXTO-Setup.exe).Length -lt 1MB) { throw "GUI binary too small" }
+
+  publish:
+    name: ☁️ Publish to R2
+    needs: [linux, windows]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: axto-setup, path: dist }
+      - name: Upload
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          CF_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
+          R2_BUCKET: axto-builds
+        run: |
+          pip install -q "awscli>=1.32"
+          sha256sum dist/* | sed 's#dist/##' > dist/SHA256SUMS.txt
+          for f in dist/*; do
+            n=$(basename "$f")
+            for p in "builds/latest/installer/$n" "builds/v${VERSION}/installer/$n"; do
+              aws s3 cp "$f" "s3://${R2_BUCKET}/$p" --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" --no-progress
+            done
+          done
+          cat dist/SHA256SUMS.txt

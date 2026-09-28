@@ -15,6 +15,7 @@ import { useI18n, formatDate, type Key } from "@/lib/i18n";
 import { CLOUD_APPS } from "@/lib/apps";
 import { Spinner } from "@/components/ui";
 import ChatWidget from "@/components/support/ChatWidget";
+import { InstallButton } from "@/components/pwa/Pwa";
 
 export interface Me {
   user: { id: string; email: string; role: "admin" | "member"; name: string; organization: string; country: string; createdAt: string };
@@ -137,6 +138,7 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
             <button className="btn-ghost btn-sm lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
             <div className="lg:hidden"><Logo size={22} /></div>
             <div className="ml-auto flex items-center gap-3">
+              <InstallButton lang={lang} className="btn-secondary btn-sm" />
               {me ? (
                 <>
                   {variant === "member" ? (
@@ -152,13 +154,30 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
               ) : <Spinner className="h-4 w-4 text-slate-400" />}
             </div>
           </header>
-          <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+          <main className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6 sm:px-6 sm:py-8 lg:pb-8">
             {failed ? (
               <div className="alert-error">⛔ {t("common.error")} <button className="ml-2 underline" onClick={reload}>{t("common.retry")}</button></div>
             ) : children}
           </main>
         </div>
-        {variant === "member" && me ? <ChatWidget lang={lang} defaultName={me.user.name} defaultEmail={me.user.email} /> : null}
+        {variant === "member" && me ? <ChatWidget lang={lang} defaultName={me.user.name} defaultEmail={me.user.email} raised /> : null}
+        {/* Phone: app-style bottom navigation (thumb reach, safe-area aware) */}
+        <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Quick">
+          <div className="grid grid-cols-5">
+            {(variant === "admin"
+              ? [["/admin", "📊", "Overview"], ["/admin/members", "👥", "Members"], ["/admin/orders", "🧾", "Orders"], ["/admin/support", "💬", "Support"], ["menu", "☰", "Menu"]]
+              : [["/app", "🏠", t("nav.home")], ["/app/legal", "⚖️", "Legal"], ["/app/apps", "🧩", t("nav.apps")], ["/app/billing", "💳", lang === "id" ? "Paket" : "Plan"], ["menu", "☰", "Menu"]]
+            ).map(([href, icon, label]) => href === "menu" ? (
+              <button key={href} onClick={() => setOpen(true)} className="flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-600">
+                <span className="text-lg leading-none" aria-hidden="true">{icon}</span>{label}
+              </button>
+            ) : (
+              <Link key={href} href={href} className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium no-underline ${(href === "/app" || href === "/admin" ? path === href : path.startsWith(href)) ? "text-brand-700" : "text-slate-600"}`}>
+                <span className="text-lg leading-none" aria-hidden="true">{icon}</span>{label}
+              </Link>
+            ))}
+          </div>
+        </nav>
       </div>
     </MeCtx.Provider>
   );

@@ -1,17 +1,17 @@
 /* AXTO — /api/byox/keys · the member's own AI keys & endpoints (BYOX only).
  *   GET    → saved keys (hints only, never the secret) + provider catalogue
  *   POST   {provider, value, model?, baseUrl?} → save / replace
- *   PATCH  {preferred} → default chat provider
+ *   PATCH  {preferred} → default chat provider · {provider, model} → default model for that key
  *   DELETE ?provider=… → remove */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
-import { listKeys, saveKey, deleteKey, setPreferred } from "@/lib/ai/byox";
+import { listKeys, saveKey, deleteKey, setPreferred, setModel } from "@/lib/ai/byox";
 import { PROVIDERS } from "@/lib/ai/providers";
 import { readJson, fail, audit } from "@/lib/http";
 
-const catalogue = PROVIDERS.map((p) => ({ id: p.id, name: p.name, chat: p.chat, stt: p.stt, defaultModel: p.defaultModel, models: p.models, keyHint: p.keyHint, keyUrl: p.keyUrl, freeTier: p.freeTier || "" }));
+const catalogue = PROVIDERS.map((p) => ({ id: p.id, name: p.name, chat: p.chat, stt: p.stt, defaultModel: p.defaultModel, models: p.models, keyHint: p.keyHint, keyUrl: p.keyUrl, freeTier: p.freeTier || "", research: !!p.research }));
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
@@ -36,7 +36,9 @@ export async function PATCH(req: NextRequest) {
   if (!ctx) return unauthorized();
   const b = await readJson(req);
   const db = getDB(req);
-  const err = await setPreferred(db, ctx.session.sub, String(b?.preferred || ""));
+  const err = b?.provider && typeof b?.model === "string"
+    ? await setModel(db, ctx.session.sub, String(b.provider), b.model)
+    : await setPreferred(db, ctx.session.sub, String(b?.preferred || ""));
   if (err) return fail(err);
   return respond({ ok: true, ...(await listKeys(db, ctx.session.sub)) }, ctx);
 }

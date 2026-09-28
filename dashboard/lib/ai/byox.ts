@@ -97,16 +97,31 @@ async function connectionFor(db: any, userId: string, provider: ProviderId, mode
   return { provider, apiKey: s.value || "", model, baseUrl: s.baseUrl };
 }
 
-/** Connection for text generation: requested provider → member's default → any chat key. */
-export async function resolveChat(db: any, userId: string, want?: { provider?: string; model?: string }): Promise<Connection> {
+/** Every usable chat connection in failover order: requested provider → member's default → other keys. */
+export async function resolveChatAll(db: any, userId: string, want?: { provider?: string; model?: string }): Promise<Connection[]> {
   const { keys, preferred } = await listKeys(db, userId);
   const chatKeys = keys.filter((k) => providerInfo(k.provider)!.chat).map((k) => k.provider);
   const order = [want?.provider, preferred, ...chatKeys].filter((p, i, a): p is ProviderId => isProviderId(p) && chatKeys.includes(p) && a.indexOf(p) === i);
+  const out: Connection[] = [];
   for (const p of order) {
     const c = await connectionFor(db, userId, p, want?.provider === p ? want?.model : undefined);
-    if (c) return c;
+    if (c) out.push(c);
   }
-  throw new ByoxMissingKey("chat");
+  if (!out.length) throw new ByoxMissingKey("chat");
+  return out;
+}
+
+/** Connection for text generation: requested provider → member's default → any chat key. */
+export async function resolveChat(db: any, userId: string, want?: { provider?: string; model?: string }): Promise<Connection> {
+  return (await resolveChatAll(db, userId, want))[0];
+}
+
+/** Change the saved default model for a provider without re-entering the key. */
+export async function setModel(db: any, userId: string, provider: string, model: string): Promise<string | null> {
+  if (!isProviderId(provider)) return "Unknown provider.";
+  const m = String(model || "").trim().slice(0, 200);
+  const r = await dbRun(db, `UPDATE user_ai_keys SET model = ? WHERE user_id = ? AND provider = ?`, [m, userId, provider]);
+  return r?.meta?.changes ? null : "Add a key for that provider first.";
 }
 
 /** Connection for speech-to-text (Clipper): Deepgram → Groq → OpenAI, or the one requested. */

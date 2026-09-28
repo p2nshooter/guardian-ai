@@ -26,23 +26,25 @@ export interface CloudApp {
 
 export const CLOUD_APPS: CloudApp[] = [
   {
-    slug: "legal", live: false, name: "Legal AI", icon: "⚖️", color: "#4f46e5",
-    short: "18 expert legal workspaces: research, contracts, drafting, due diligence and more.",
-    hero: "A private AI legal team in your browser. Research law across jurisdictions, review contracts clause by clause, draft documents and run due diligence — with risk flags, confidence scores and citations you can verify.",
+    slug: "legal", live: true, name: "Legal AI", icon: "⚖️", color: "#4f46e5",
+    short: "36 expert legal workspaces for 200+ jurisdictions — research, case building, contracts, litigation and compliance.",
+    hero: "A private AI legal team in your browser. Pick any country, state or province, upload the case file, and get it rebuilt against current law — from the constitution down to regional regulations — with sources, risk ratings and a strategy. Plus 35 more expert workspaces for research, contracts, litigation and compliance.",
     steps: [
-      "Pick a workspace — e.g. Contract Intelligence or Legal Research.",
-      "Describe the matter or upload a document (PDF, DOCX or TXT).",
-      "Get a structured answer with risks, sources and next steps — then save or export it.",
+      "Choose the jurisdiction — country, then state/province and city — and a workspace such as Case Builder or Contract Review.",
+      "Upload the documents (PDF, DOCX, TXT, e-mails) or describe the matter. Text is extracted in your browser.",
+      "Get a structured, sourced analysis — with live research on current law when your AI supports it — then save it to the matter or export to Word/PDF.",
     ],
     features: [
-      { title: "18 expert workspaces", desc: "Research, compliance, contracts, regulatory radar, due diligence, AML/KYC, IP, ESG, litigation, employment, privacy, governance, tax, real estate, immigration, M&A, disputes and drafting." },
-      { title: "Document review", desc: "Upload contracts and filings; text is extracted in your browser and analysed clause by clause." },
-      { title: "Risk-first output", desc: "Every answer is tagged LOW / MEDIUM / HIGH / CRITICAL risk with a confidence score and what to verify." },
-      { title: "Multi-jurisdiction", desc: "Ask about any country; answers state which jurisdiction each rule applies to and point to official sources." },
+      { title: "200+ jurisdictions, down to the province", desc: "Every country plus the EU and international law; states, provinces and special regimes (Aceh, Québec, Scotland, DIFC, Louisiana…) and your city or regency." },
+      { title: "Case Builder", desc: "Upload a case file and get parties, a sourced chronology, legal issues, the applicable law from the constitution down, element-by-element analysis, evidence gaps, deadlines and strategy." },
+      { title: "Current law, with sources", desc: "Live research checks each statute and decision against official sources and lists what it retrieved — and old-vs-new law is compared for the date of your facts." },
+      { title: "36 expert workspaces", desc: "Research memos, contract review & drafting, due diligence, pleadings, arbitration, criminal analysis, compliance, privacy, AML, employment, IP, tax, ESG, AI governance and more." },
+      { title: "Encrypted matters", desc: "Documents and results are saved per matter, encrypted with a key unique to your account." },
+      { title: "Export anywhere", desc: "Word (.docx), PDF and Markdown exports, ready for your letterhead." },
     ],
-    useCases: ["Contract review & redlining", "Legal research memos", "Compliance gap checks", "Due diligence checklists", "Drafting NDAs, policies and letters"],
+    useCases: ["Rebuilding a case file for trial", "Contract review & redlining", "Legal research memos with sources", "Due diligence red-flag reports", "Pleadings, appeals and legal opinions", "Multi-country compliance surveys"],
     selfHosted: "legal",
-    keywords: ["legal AI", "AI contract review", "AI legal research", "legal document drafting AI", "due diligence AI"],
+    keywords: ["legal AI", "AI lawyer", "AI legal research", "AI contract review", "case analysis AI", "legal document drafting AI", "due diligence AI", "AI hukum Indonesia"],
   },
   {
     slug: "prompts", live: false, name: "Prompt Library", icon: "📚", color: "#7c3aed",

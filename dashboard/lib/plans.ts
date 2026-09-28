@@ -80,7 +80,7 @@ export const PLANS: Record<PlanId, Plan> = {
     },
     features: [
       "Unlimited AI with your own keys (BYOK)",
-      "Legal AI — all 18 workspaces",
+      "Legal AI — all 36 workspaces",
       "Prompt Library — + Premium prompts",
       "Compliance Center & Security Analyst",
       "Clipper — 50 videos per month",

@@ -5,3 +5,4 @@
  * Each app adds one line here when it ships.
  * ============================================================================ */
 import "./tasks";
+import "../legal/task";

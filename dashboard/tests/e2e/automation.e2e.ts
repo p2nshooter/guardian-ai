@@ -24,9 +24,10 @@ function d1(sql: string): any[] {
 
 class Client {
   cookie = "";
+  ip = `10.${1 + Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;   // one simulated visitor per client (cf-connecting-ip)
   async call(method: string, p: string, body?: unknown, headers: Record<string, string> = {}) {
     const res = await fetch(BASE + p, { method, redirect: "manual", signal: AbortSignal.timeout(90_000),
-      headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(this.cookie ? { Cookie: this.cookie } : {}), ...headers },
+      headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), "cf-connecting-ip": this.ip, ...(this.cookie ? { Cookie: this.cookie } : {}), ...headers },
       body: body !== undefined ? JSON.stringify(body) : undefined });
     const m = (res.headers.get("set-cookie") || "").match(/axto_session=([^;]*)/);
     if (m) this.cookie = m[1] ? `axto_session=${m[1]}` : "";

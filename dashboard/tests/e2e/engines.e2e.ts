@@ -50,7 +50,7 @@ function d1(sql: string): any[] {
 async function call(method: string, p: string, body?: unknown, cookie = "") {
   const res = await fetch(BASE + p, {
     method, redirect: "manual", signal: AbortSignal.timeout(60_000),
-    headers: { "Content-Type": "application/json", ...(cookie ? { Cookie: cookie } : {}) },
+    headers: { "Content-Type": "application/json", "cf-connecting-ip": `10.${1 + Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`, ...(cookie ? { Cookie: cookie } : {}) },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   const m = (res.headers.get("set-cookie") || "").match(/axto_session=([^;]+)/);

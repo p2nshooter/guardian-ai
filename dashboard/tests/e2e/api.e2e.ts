@@ -42,10 +42,11 @@ async function engineVerify(j: any): Promise<Record<string, string> | null> {
 // ── helpers ────────────────────────────────────────────────────────────────
 class Client {
   cookie = "";
+  ip = `10.${1 + Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;   // one simulated visitor per client (cf-connecting-ip)
   async call(method: string, p: string, body?: unknown, headers: Record<string, string> = {}) {
     const res = await fetch(BASE + p, {
       method, redirect: "manual", signal: AbortSignal.timeout(60_000),
-      headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...(this.cookie ? { Cookie: this.cookie } : {}), ...headers },
+      headers: { ...(body !== undefined ? { "Content-Type": "application/json" } : {}), "cf-connecting-ip": this.ip, ...(this.cookie ? { Cookie: this.cookie } : {}), ...headers },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }).catch((e) => { throw new Error(`${method} ${p} → ${e?.cause?.code || e?.cause?.message || e?.message}`); });
     const set = res.headers.get("set-cookie");

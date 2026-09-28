@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const migrated = await migrateLegacyPayments(getDB(req)).catch(() => 0);
-    const [pay, mail] = await Promise.all([paymentSettings(), emailSettings()]);
+    const [pay, mail] = await Promise.all([paymentSettings({ fresh: true }), emailSettings()]);
     const gateways = GATEWAYS.map((g) => {
       const cur = pay.gateways[g.id];
       return {
@@ -77,7 +77,7 @@ export async function PUT(req: NextRequest) {
     }
     const g = GATEWAYS.find((x) => x.id === b?.gateway);
     if (!g) return fail("Unknown payment method.");
-    const settings = await paymentSettings();
+    const settings = await paymentSettings({ fresh: true });   // merge onto the latest, never a stale cache
     const cur = settings.gateways[g.id];
     const creds = merge(g.fields, b?.credentials, cur?.creds);
     const active = !!b?.is_active;

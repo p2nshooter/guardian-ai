@@ -23,7 +23,7 @@ export default function PricingPage() {
   const rows: [string, (id: (typeof PLAN_ORDER)[number]) => React.ReactNode][] = [
     ["AI usage with your own keys", () => "Unlimited"],
     ...CLOUD_APPS.map((a) => [a.name, (id: (typeof PLAN_ORDER)[number]) => PLANS[id].limits.apps.includes(a.slug)
-      ? (a.slug === "legal" ? (PLANS[id].limits.legalWorkspaces === "all" ? "All 18 workspaces" : "6 core workspaces") : yes) : no] as [string, (id: (typeof PLAN_ORDER)[number]) => React.ReactNode]),
+      ? (a.slug === "legal" ? (PLANS[id].limits.legalWorkspaces === "all" ? "All 36 workspaces" : "6 core workspaces") : yes) : no] as [string, (id: (typeof PLAN_ORDER)[number]) => React.ReactNode]),
     ["Prompt levels", (id) => PLANS[id].limits.promptLevels.map((l) => l[0].toUpperCase() + l.slice(1)).join(", ")],
     ["Clipper videos / month", (id) => (PLANS[id].limits.clipperVideosPerMonth === -1 ? "Unlimited" : String(PLANS[id].limits.clipperVideosPerMonth))],
     ["Secure file storage", (id) => `${PLANS[id].limits.storageGB} GB`],

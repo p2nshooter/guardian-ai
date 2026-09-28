@@ -9,6 +9,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SITE, absoluteUrl } from "@/lib/site";
+import { PwaRegister } from "@/components/pwa/Pwa";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
@@ -20,6 +21,8 @@ export const metadata: Metadata = {
   publisher: SITE.name,
   category: "technology",
   formatDetection: { telephone: false },
+  appleWebApp: { capable: true, title: "AXTO", statusBarStyle: "black-translucent" },
+  other: { "mobile-web-app-capable": "yes" },
   ...(SITE.isPreview ? { robots: { index: false, follow: false } } : {}),
   icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/apple-touch-icon.png" },
   openGraph: { type: "website", siteName: SITE.name, url: SITE.url, locale: SITE.locale, images: [{ url: absoluteUrl(SITE.ogImage), width: 1200, height: 630, alt: SITE.name }] },
@@ -37,6 +40,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: [{ media: "(prefers-color-scheme: light)", color: "#ffffff" }, { media: "(prefers-color-scheme: dark)", color: "#07090d" }],
 };
 
@@ -50,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         ) : null}
         {children}
+        <PwaRegister />
       </body>
     </html>
   );

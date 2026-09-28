@@ -3,8 +3,8 @@
   "version": "2.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/vendor.mjs && next dev",
+    "build": "node scripts/vendor.mjs && next build",
     "pages:build": "npx @cloudflare/next-on-pages",
     "start": "next start",
     "preview": "wrangler pages dev",
@@ -27,6 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
+    "pdfjs-dist": "^5.7.284",
     "postcss": "^8.4.49",
     "server-only": "^0.0.1",
     "tailwindcss": "^3.4.17",

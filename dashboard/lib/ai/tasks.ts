@@ -13,9 +13,11 @@ export interface TaskInput {
   task?: string;               // app-specific sub-task (e.g. a Legal workspace id)
   messages: ChatMessage[];     // conversation (last message = the new request)
   options?: Record<string, string>;
+  documents?: unknown;         // app-specific attachments (already text, e.g. Legal uploads)
+  research?: boolean;          // live web research is available on the resolved connection
 }
 
-export interface BuiltTask { system: string; messages: ChatMessage[]; title: string }
+export interface BuiltTask { system: string; messages: ChatMessage[]; title: string; research?: boolean; maxOutputTokens?: number }
 
 export interface AppTaskHandler {
   app: string;

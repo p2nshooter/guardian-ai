@@ -12,6 +12,8 @@
  *            (falls back to ENCRYPTION_KEY), info "axto-settings-v1"
  *
  * Reads are cached per isolate for 60 s (R2-lean); a write refreshes the cache.
+ * Anything a customer pays against (wallets, bank account) is read `fresh`, so a
+ * replaced wallet is never shown from another isolate's stale cache.
  * Secrets never leave the server: admin APIs return them masked (maskSecrets).
  * ============================================================================ */
 import { getR2, secret } from "./db";
@@ -61,9 +63,9 @@ function objectKey(name: string) {
 }
 
 /** Decrypted document, or `fallback` when it has never been saved. */
-export async function readSecure<T>(req: any | undefined, name: string, fallback: T): Promise<T> {
+export async function readSecure<T>(req: any | undefined, name: string, fallback: T, opts: { fresh?: boolean } = {}): Promise<T> {
   const hit = cache.get(name);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.value as T;
+  if (!opts.fresh && hit && Date.now() - hit.at < TTL_MS) return hit.value as T;
   const obj = await getR2(req).get(objectKey(name));
   const value = obj ? await decryptJson<T>(name, await obj.text()) : fallback;
   cache.set(name, { at: Date.now(), value });
