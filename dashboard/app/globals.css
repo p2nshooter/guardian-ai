@@ -105,3 +105,35 @@
   body.printing .print-target .no-print { display: none !important; }
   @page { margin: 18mm 16mm; }
 }
+
+/* ── Motion: promos & guides (progressive enhancement, SEO-safe) ─────────────
+   Content is always in the HTML; these only animate its entrance/emphasis and
+   are fully disabled for visitors who prefer reduced motion. */
+@layer utilities {
+  @keyframes axto-fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  @keyframes axto-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes axto-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(31,216,192,.45); } 70% { box-shadow: 0 0 0 12px rgba(31,216,192,0); } 100% { box-shadow: 0 0 0 0 rgba(31,216,192,0); } }
+  @keyframes axto-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes axto-gradient { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  @keyframes axto-scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(220%); } }
+  @keyframes axto-count { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .anim-float { animation: axto-float 6s ease-in-out infinite; }
+  .anim-pulse-ring { animation: axto-pulse-ring 2.4s ease-out infinite; }
+  .anim-gradient { background-size: 200% 200%; animation: axto-gradient 8s ease infinite; }
+  .anim-in { animation: axto-fade-up .6s cubic-bezier(.22,1,.36,1) both; }
+  .anim-delay-1 { animation-delay: .08s; } .anim-delay-2 { animation-delay: .16s; }
+  .anim-delay-3 { animation-delay: .24s; } .anim-delay-4 { animation-delay: .32s; } .anim-delay-5 { animation-delay: .4s; }
+
+  /* Scroll-reveal: hidden until <Reveal> marks it visible. */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); will-change: opacity, transform; }
+  .reveal.is-visible { opacity: 1; transform: none; }
+
+  .shimmer-text { background: linear-gradient(90deg, currentColor 0%, rgba(255,255,255,.75) 20%, currentColor 40%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: axto-shimmer 3.5s linear infinite; }
+  .scanline { position: absolute; inset-inline: 0; height: 40%; background: linear-gradient(180deg, transparent, rgba(31,216,192,.14), transparent); animation: axto-scan 3.2s ease-in-out infinite; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-float, .anim-pulse-ring, .anim-gradient, .anim-in, .shimmer-text, .scanline { animation: none !important; }
+  .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+}

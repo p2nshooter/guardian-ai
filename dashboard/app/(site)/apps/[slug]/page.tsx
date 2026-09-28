@@ -7,6 +7,7 @@ import { CLOUD_APPS, getCloudApp } from "@/lib/apps";
 import { PLANS, planForApp, isPlanId } from "@/lib/plans";
 import { pageMeta, breadcrumbJsonLd, softwareJsonLd } from "@/lib/seo";
 import { catalogEntry } from "@/lib/selfhosted";
+import Reveal from "@/components/site/Reveal";
 
 export const dynamicParams = false;
 export function generateStaticParams() {
@@ -53,10 +54,10 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
             <h2 className="text-2xl font-bold">How to use {a.name}</h2>
             <ol className="mt-6 space-y-5">
               {a.steps.map((s, i) => (
-                <li key={i} className="flex gap-4">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>
+                <Reveal key={i} as="li" delay={i * 80} className="flex gap-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white anim-pulse-ring">{i + 1}</span>
                   <p className="pt-1 text-[15px] leading-relaxed text-slate-700">{s}</p>
-                </li>
+                </Reveal>
               ))}
             </ol>
             <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5">
@@ -65,11 +66,11 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {a.features.map((f) => (
-              <div key={f.title} className="card-pad">
+            {a.features.map((f, i) => (
+              <Reveal key={f.title} as="div" delay={i * 60} className="card-pad transition-shadow hover:shadow-lift">
                 <h3 className="font-semibold">{f.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">{f.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>

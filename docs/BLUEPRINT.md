@@ -302,3 +302,32 @@ Transkripsi kata-per-kata (Deepgram/Groq/OpenAI), skor viralitas (hook, payoff, 
 ### 12e. Docker Windows & Linux — nol bug, diuji berulang
 - CI: build + jalankan + aktivasi lisensi untuk ke-15 image di Linux (setiap push & **setiap malam**), uji installer (Go) di Linux + build/uji CLI di runner Windows, E2E platform lengkap.
 - Rilis hanya jika semua hijau; hasil uji dicatat di Admin → Releases.
+
+---
+
+## 13. Penyimpanan & riwayat kerja universal (permintaan pemilik, Sep 2026)
+
+Prinsip: **klien tidak pernah kehilangan hasil kerjanya**, dan bisa melihat riwayat, membuka lagi, mengganti nama, dan menghapus — di web maupun self-hosted.
+
+### 13a. Aplikasi web (R2, terenkripsi per member — `lib/user-crypto.ts`)
+Pola "matter" Legal AI digeneralisasi menjadi **Workspace History** yang dipakai semua app lewat satu pustaka `lib/history.ts`:
+- **CRUD penuh**: list (sidebar riwayat), buka, ganti nama, duplikat, hapus, dan ekspor.
+- Struktur R2: `app/<slug>/<uid>/index.enc` (daftar) + `.../items/<id>.enc` (isi), AES-256-GCM kunci unik per akun; D1 hanya menyimpan total penyimpanan.
+- Per app:
+  - **Legal**: matters (sudah ada) — dokumen + hasil + catatan.
+  - **AI Studio**: percakapan tersimpan (judul, model, pesan) — lanjutkan kapan saja.
+  - **Clipper**: proyek video (sumber, klip, caption, gaya) + hasil ekspor.
+  - **Prompt Library**: prompt favorit & hasil yang dijalankan.
+  - **Privacy Vault**: sesi redaksi (opsional; default tetap di perangkat).
+  - **Compliance / Security**: asesmen & laporan tersimpan.
+- **Upload**: berkas diproses di browser; yang disimpan hanya yang diminta klien (teks/hasil), terenkripsi. Kuota mengikuti paket (storageGB) dengan meteran yang jelas.
+- **Download/Ekspor**: DOCX/PDF/Markdown/MP4/SRT sesuai app; tautan unduhan aman.
+
+### 13b. Self-hosted (Docker & EXE Windows/Linux — local storage di volume data)
+- Setiap engine menyimpan **riwayat kerja** di `AXTO_STATE_DIR` (volume data, bukan image), dengan API CRUD lokal dan UI riwayat di dashboard engine.
+- Installer AXTO Setup memetakan volume data persisten sehingga update/rebuild container **tidak menghapus** riwayat & hasil klien.
+- Ekspor/impor riwayat (backup) dari UI; data klien tidak pernah dihapus oleh update, integrity-lock, atau pembekuan lisensi.
+
+### 13c. Kenyamanan (wajib)
+- Autosave draf, indikator "tersimpan", pencarian riwayat, dan kelanjutan lintas perangkat (web) / lintas restart (self-hosted).
+- Tidak ada langkah yang menyulitkan: default aman, satu klik untuk simpan/buka/ekspor.

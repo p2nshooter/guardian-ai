@@ -13,6 +13,7 @@ import { FAQ } from "@/lib/faq";
 import { PLANS, PLAN_ORDER } from "@/lib/plans";
 import { SELF_HOSTED, catalogEntry } from "@/lib/selfhosted";
 import { SITE } from "@/lib/site";
+import Reveal from "@/components/site/Reveal";
 
 export const metadata: Metadata = {
   ...pageMeta({
@@ -36,25 +37,26 @@ export default function HomePage() {
         <div className="grid-lines pointer-events-none absolute inset-0 [mask-image:radial-gradient(70%_60%_at_50%_0%,#000,transparent)]" />
         <div className="container-page relative grid items-center gap-12 py-20 lg:grid-cols-[1.1fr_1fr] lg:py-28">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-brand-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-400" /> Your keys · your data · no installation
+            <span className="anim-in inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-brand-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-400 anim-pulse-ring" /> Your keys · your data · no installation
             </span>
-            <h1 className="h-display mt-6 text-white">The AI workspace for <span className="bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">legal, security & business</span> work.</h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
+            <h1 className="h-display anim-in anim-delay-1 mt-6 text-white">The AI workspace for <span className="anim-gradient bg-gradient-to-r from-brand-200 via-brand-400 to-brand-600 bg-clip-text text-transparent">legal, security &amp; business</span> work.</h1>
+            <p className="anim-in anim-delay-2 mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
               Seven professional AI apps in one place — Legal AI, a premium Prompt Library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst. Everything runs in your browser on your own AI keys.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="anim-in anim-delay-3 mt-8 flex flex-wrap gap-3">
               <Link href="/register" className="btn-primary btn-lg">Get started</Link>
               <Link href="/pricing" className="btn btn-lg border border-white/15 text-white hover:bg-white/10 hover:text-white">See pricing</Link>
             </div>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+            <ul className="anim-in anim-delay-4 mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
               <li>✓ Runs in the browser</li><li>✓ Unlimited AI on your own keys</li><li>✓ Docker & Windows editions</li>
             </ul>
           </div>
           {/* Product preview (pure HTML — no image weight) */}
           <div className="relative">
             <div className="absolute -inset-4 rounded-3xl bg-brand-500/10 blur-2xl" />
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-ink-900 shadow-2xl">
+            <div className="anim-float relative overflow-hidden rounded-2xl border border-white/10 bg-ink-900 shadow-2xl">
+              <div className="scanline pointer-events-none" />
               <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-3">
                 <span className="h-2.5 w-2.5 rounded-full bg-rose-400/80" /><span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" /><span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
                 <span className="ml-3 text-xs text-slate-500">Legal AI · Contract Intelligence</span>
@@ -78,11 +80,11 @@ export default function HomePage() {
       {/* Apps */}
       <section className="py-20 sm:py-24">
         <div className="container-page">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <p className="eyebrow">Seven apps, one subscription</p>
             <h2 className="h-section mt-3">Everything you need to work with AI — professionally.</h2>
             <p className="lead mt-4">Each app is built for a real job, with clear steps and results you can save, export and share.</p>
-          </div>
+          </Reveal>
           <div className="mt-12"><AppGrid /></div>
         </div>
       </section>
@@ -90,10 +92,10 @@ export default function HomePage() {
       {/* How it works */}
       <section className="border-y border-slate-200 bg-slate-50 py-20">
         <div className="container-page">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <p className="eyebrow">How it works</p>
             <h2 className="h-section mt-3">Up and running in three minutes.</h2>
-          </div>
+          </Reveal>
           <ol className="mt-12 grid gap-5 md:grid-cols-3">
             {[
               { t: "Choose a plan", d: "Pay monthly or yearly by card, PayPal, QRIS / virtual account, crypto or bank transfer." },
