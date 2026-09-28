@@ -1,6 +1,7 @@
 /* Country → state/province/special regime → city picker for Legal AI.
  * Country names are localised by the browser (Intl.DisplayNames). */
 "use client";
+import { pick, type Lang } from "@/lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flag, type Country, type Subdivision } from "@/lib/legal/jurisdictions";
 
@@ -15,7 +16,7 @@ const T = {
   id: { country: "Negara / tatanan hukum", search: "Cari negara…", sub: "Negara bagian / provinsi / rezim khusus", allSub: "Seluruh negara (hukum nasional)", city: "Kota / kabupaten / kotamadya", cityPh: "opsional, mis. Surabaya, Kab. Bogor, Los Angeles County", none: "Tidak ditemukan" },
 };
 
-export function countryName(c: Country, lang: "en" | "id"): string {
+export function countryName(c: Country, lang: Lang): string {
   if (c.code.length !== 2 || c.code === "XK" && lang === "en") return c.name;
   try {
     const n = new Intl.DisplayNames([lang === "id" ? "id" : "en"], { type: "region" }).of(c.code);
@@ -24,9 +25,9 @@ export function countryName(c: Country, lang: "en" | "id"): string {
 }
 
 export default function JurisdictionPicker({ countries, subdivisions, value, onChange, lang }: {
-  countries: Country[]; subdivisions: Record<string, Subdivision[]>; value: JurValue; onChange: (v: JurValue) => void; lang: "en" | "id";
+  countries: Country[]; subdivisions: Record<string, Subdivision[]>; value: JurValue; onChange: (v: JurValue) => void; lang: Lang;
 }) {
-  const t = T[lang];
+  const t = pick(T, lang);
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const box = useRef<HTMLDivElement>(null);

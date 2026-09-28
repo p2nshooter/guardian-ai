@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/client";
-import { useI18n, formatDate } from "@/lib/i18n";
+import { useI18n, formatDate, pick } from "@/lib/i18n";
 import { Alert, CopyButton, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
 
 interface Product {
@@ -49,7 +49,7 @@ const L = {
 
 export default function SelfHostedPage() {
   const { lang } = useI18n();
-  const t = L[lang];
+  const t = pick(L, lang);
   const [d, setD] = useState<Data | null>(null);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<{ tone: "success" | "error"; text: string } | null>(null);

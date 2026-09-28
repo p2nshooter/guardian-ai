@@ -11,9 +11,9 @@
  * ============================================================================ */
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { pick, isLang, type Lang } from "@/lib/i18n";
 
-type Lang = "en" | "id";
-interface Topic { id: string; label: Record<Lang, string>; hint: Record<Lang, string>; handoff: boolean }
+interface Topic { id: string; label: Partial<Record<Lang, string>>; hint: Partial<Record<Lang, string>>; handoff: boolean }
 interface Msg { id: string; from: "visitor" | "admin" | "ai" | "system"; name: string; text: string; at: string }
 
 const STORE = "axto_support_v1";
@@ -42,8 +42,8 @@ function save(v: { id: string; token: string } | null) {
 }
 
 export default function ChatWidget({ lang: forced, defaultName = "", defaultEmail = "", raised = false }: { lang?: Lang; defaultName?: string; defaultEmail?: string; raised?: boolean }) {
-  const [lang, setLang] = useState<Lang>(forced || "en");
-  const t = T[lang];
+  const [lang, setLang] = useState<Lang>(forced || "en");  // content falls back to English beyond en/id
+  const t = pick(T, lang);
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<Topic[]>([]);
   const [online, setOnline] = useState(false);
@@ -148,7 +148,7 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
                 <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-400" : "bg-slate-400"}`} />{online ? t.online : t.offline}
               </div>
             </div>
-            <button onClick={() => setLang(lang === "en" ? "id" : "en")} className="rounded px-2 py-1 text-xs font-bold text-slate-300 hover:bg-white/10">{lang === "en" ? "ID" : "EN"}</button>
+            <button onClick={() => setLang(lang === "id" ? "en" : "id")} className="rounded px-2 py-1 text-xs font-bold text-slate-300 hover:bg-white/10">{lang === "en" ? "ID" : "EN"}</button>
             <button onClick={() => setOpen(false)} aria-label={t.close} className="rounded px-2 py-1 text-slate-300 hover:bg-white/10">✕</button>
           </header>
 
@@ -156,9 +156,9 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
             <form onSubmit={start} className="flex flex-col gap-3 overflow-y-auto p-4">
               <label className="text-sm font-semibold text-slate-800" htmlFor="sup-topic">{t.topic}</label>
               <select id="sup-topic" className="input" value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })}>
-                {topics.map((x) => <option key={x.id} value={x.id}>{x.label[lang]}</option>)}
+                {topics.map((x) => <option key={x.id} value={x.id}>{x.label[lang] ?? x.label.en}</option>)}
               </select>
-              {topic ? <p className="-mt-1 text-xs text-slate-500">{topic.hint[lang]}</p> : null}
+              {topic ? <p className="-mt-1 text-xs text-slate-500">{topic.hint[lang] ?? topic.hint.en}</p> : null}
               <div className="grid grid-cols-2 gap-2">
                 <input className="input" placeholder={t.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={80} autoComplete="name" />
                 <input className="input" type="email" placeholder={topic?.handoff ? t.emailReq : t.email} value={form.email} required={!!topic?.handoff}

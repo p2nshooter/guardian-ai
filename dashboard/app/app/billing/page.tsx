@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
-import { useI18n, formatDate, formatMoney } from "@/lib/i18n";
+import { useI18n, formatDate, formatMoney, pick } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { Alert, CopyButton, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
 import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
@@ -59,7 +59,7 @@ const L = {
 
 function BillingInner() {
   const { lang } = useI18n();
-  const t = L[lang];
+  const t = pick(L, lang);
   const { me, reload } = useMe();
   const q = useSearchParams();
   const [opts, setOpts] = useState<Options | null>(null);

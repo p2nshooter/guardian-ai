@@ -1,6 +1,7 @@
 /* Documents for a Legal AI run: drag & drop or pick files (extracted in the
  * browser), paste text, include documents saved in the matter, size meter. */
 "use client";
+import { pick, type Lang } from "@/lib/i18n";
 import { useRef, useState } from "react";
 import { ACCEPT, extractFile, estimateTokens } from "@/lib/legal/extract";
 import { Spinner } from "@/components/ui";
@@ -15,9 +16,9 @@ const T = {
 export const MAX_RUN_TOKENS = 145_000;
 
 export default function DocumentsPanel({ lang, docs, setDocs, required, canSave, onSave }: {
-  lang: "en" | "id"; docs: RunDoc[]; setDocs: (fn: (d: RunDoc[]) => RunDoc[]) => void; required: boolean; canSave: boolean; onSave: (d: RunDoc) => Promise<void>;
+  lang: Lang; docs: RunDoc[]; setDocs: (fn: (d: RunDoc[]) => RunDoc[]) => void; required: boolean; canSave: boolean; onSave: (d: RunDoc) => Promise<void>;
 }) {
-  const t = T[lang];
+  const t = pick(T, lang);
   const input = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [paste, setPaste] = useState<{ name: string; text: string } | null>(null);

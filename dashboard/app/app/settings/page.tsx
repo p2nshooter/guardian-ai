@@ -5,7 +5,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, pick, type Lang } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { Alert, Field, LoadingBlock, PageHeader, Section, Spinner, Tabs } from "@/components/ui";
 import { PasswordInput } from "@/components/auth/AuthFrame";
@@ -39,8 +39,8 @@ const L = {
   },
 };
 
-function AiKeys({ lang }: { lang: "en" | "id" }) {
-  const t = L[lang];
+function AiKeys({ lang }: { lang: Lang }) {
+  const t = pick(L, lang);
   const [data, setData] = useState<KeysData | null>(null);
   const [form, setForm] = useState({ provider: "google", value: "", model: "", baseUrl: "" });
   const [busy, setBusy] = useState("");
@@ -168,8 +168,8 @@ function AiKeys({ lang }: { lang: "en" | "id" }) {
   );
 }
 
-function Profile({ lang }: { lang: "en" | "id" }) {
-  const t = L[lang];
+function Profile({ lang }: { lang: Lang }) {
+  const t = pick(L, lang);
   const { me, reload } = useMe();
   const [f, setF] = useState({ name: "", organization: "", country: "" });
   const [state, setState] = useState<{ busy: boolean; msg?: string; err?: string }>({ busy: false });
@@ -196,8 +196,8 @@ function Profile({ lang }: { lang: "en" | "id" }) {
   );
 }
 
-function Password({ lang }: { lang: "en" | "id" }) {
-  const t = L[lang];
+function Password({ lang }: { lang: Lang }) {
+  const t = pick(L, lang);
   const [f, setF] = useState({ current: "", next: "" });
   const [state, setState] = useState<{ busy: boolean; msg?: string; err?: string }>({ busy: false });
   return (
@@ -221,7 +221,7 @@ function Password({ lang }: { lang: "en" | "id" }) {
 
 function SettingsInner() {
   const { lang } = useI18n();
-  const t = L[lang];
+  const t = pick(L, lang);
   const q = useSearchParams();
   const [tab, setTab] = useState<"ai" | "profile" | "password">((q.get("tab") as any) === "profile" ? "profile" : (q.get("tab") as any) === "password" ? "password" : "ai");
   return (

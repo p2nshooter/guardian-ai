@@ -4,6 +4,7 @@
  * or typed by hand), and switch live web research on when the provider has it.
  * ============================================================================ */
 "use client";
+import { pick, type Lang } from "@/lib/i18n";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/client";
@@ -29,8 +30,8 @@ export function useAiKeys() {
   return { ...state, reload };
 }
 
-export default function ModelPicker({ lang, value, onChange, showResearch = true }: { lang: "en" | "id"; value: AiChoice; onChange: (v: AiChoice) => void; showResearch?: boolean }) {
-  const t = T[lang];
+export default function ModelPicker({ lang, value, onChange, showResearch = true }: { lang: Lang; value: AiChoice; onChange: (v: AiChoice) => void; showResearch?: boolean }) {
+  const t = pick(T, lang);
   const { loading, keys, preferred, providers } = useAiKeys();
   const [models, setModels] = useState<Record<string, string[]>>({});
   const [busy, setBusy] = useState(false);

@@ -9,7 +9,7 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, pick } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { Alert, LoadingBlock, Modal, Spinner } from "@/components/ui";
@@ -90,7 +90,7 @@ const fileSafe = (s: string) => s.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/
 export default function LegalApp() {
   const { lang } = useI18n();
   const { me } = useMe();
-  const t = L[lang];
+  const t = pick(L, lang);
   const [cat, setCat] = useState<Catalog | null>(null);
   const [catErr, setCatErr] = useState("");
   const [wsId, setWsId] = useState("case-builder");

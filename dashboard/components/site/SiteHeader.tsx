@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { InstallButton } from "@/components/pwa/Pwa";
+import LangSwitcher from "@/components/site/LangSwitcher";
 
 const LINKS = [
   { href: "/apps", label: "Apps" },
@@ -22,11 +23,12 @@ export default function SiteHeader() {
           ))}
         </nav>
         <div className="ml-auto hidden items-center gap-2 md:flex">
+          <LangSwitcher />
           <InstallButton className="btn-ghost" />
           <Link href="/login" className="btn-ghost">Sign in</Link>
           <Link href="/register" className="btn-primary">Get started</Link>
         </div>
-        <div className="ml-auto md:hidden"><InstallButton className="btn-secondary btn-sm" /></div>
+        <div className="ml-auto flex items-center gap-2 md:hidden"><LangSwitcher /><InstallButton className="btn-secondary btn-sm" /></div>
         <details className="relative md:hidden">
           <summary className="btn-ghost cursor-pointer list-none" aria-label="Menu">☰</summary>
           <div className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-lift">

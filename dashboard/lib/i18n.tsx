@@ -7,8 +7,11 @@
  * ============================================================================ */
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { EXTRA_DICTS } from "./i18n-dicts";
 
-export type Lang = "en" | "id";
+export { LANGS, LANG_CODES, isLang, dirOf, type Lang } from "./i18n-shared";
+import { LOCALE, isLang, LANG_COOKIE, dirOf, type Lang } from "./i18n-shared";
+export { LANG_COOKIE };
 
 const EN = {
   // Shell
@@ -126,23 +129,32 @@ const ID: Record<Key, string> = {
   "auth.backToSignin": "Kembali ke halaman masuk", "auth.working": "Mohon tunggu…", "auth.secure": "Dilindungi enkripsi. Data Anda tidak pernah dibagikan.",
 };
 
-const DICTS: Record<Lang, Record<Key, string>> = { en: EN, id: ID };
+const DICTS: Record<Lang, Partial<Record<Key, string>>> = { en: EN, id: ID, ...EXTRA_DICTS };
 
 function detect(): Lang {
   if (typeof document === "undefined") return "en";
-  const m = document.cookie.match(/(?:^|; )axto_lang=(en|id)/);
-  if (m) return m[1] as Lang;
-  return (navigator.language || "").toLowerCase().startsWith("id") ? "id" : "en";
+  const m = document.cookie.match(/(?:^|; )axto_lang=([a-z]{2})/);
+  if (m && isLang(m[1])) return m[1];
+  const nav = (navigator.language || "").toLowerCase().slice(0, 2);
+  return isLang(nav) ? nav : "en";
 }
 
 interface Ctx { lang: Lang; setLang: (l: Lang) => void; t: (k: Key, vars?: Record<string, string | number>) => string }
 const I18n = createContext<Ctx>({ lang: "en", setLang: () => {}, t: (k) => EN[k] });
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
-  useEffect(() => { setLangState(detect()); }, []);
+export function I18nProvider({ children, initial }: { children: ReactNode; initial?: Lang }) {
+  // `initial` comes from the server (cookie) so the first paint is already in
+  // the right language — no flash of English on refresh or navigation.
+  const [lang, setLangState] = useState<Lang>(initial && isLang(initial) ? initial : "en");
+  useEffect(() => { if (!initial) setLangState(detect()); }, [initial]);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = dirOf(lang);
+  }, [lang]);
   const setLang = useCallback((l: Lang) => {
-    document.cookie = `axto_lang=${l}; path=/; max-age=31536000; samesite=lax`;
+    // 1-year cookie so the choice sticks across refreshes, pages and sessions.
+    document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax`;
     setLangState(l);
   }, []);
   const t = useCallback((k: Key, vars?: Record<string, string | number>) => {
@@ -155,15 +167,21 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 export const useI18n = () => useContext(I18n);
 
+/** Local per-page dictionaries ({ en, id, … }) — return the language's copy,
+ * falling back to English for any language not yet translated on that page. */
+export function pick<T>(dict: Partial<Record<Lang, T>>, lang: Lang): T {
+  return (dict[lang] ?? dict.en) as T;
+}
+
 export function formatDate(iso: string | null | undefined, lang: Lang = "en"): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { year: "numeric", month: "short", day: "numeric" });
+  return d.toLocaleDateString(LOCALE[lang] || "en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function formatMoney(n: number, currency = "USD", lang: Lang = "en"): string {
-  return new Intl.NumberFormat(lang === "id" ? "id-ID" : "en-US", { style: "currency", currency, maximumFractionDigits: currency === "IDR" ? 0 : n % 1 ? 2 : 0 }).format(n);
+  return new Intl.NumberFormat(LOCALE[lang] || "en-US", { style: "currency", currency, maximumFractionDigits: currency === "IDR" ? 0 : n % 1 ? 2 : 0 }).format(n);
 }
 
 export function formatBytes(n: number): string {

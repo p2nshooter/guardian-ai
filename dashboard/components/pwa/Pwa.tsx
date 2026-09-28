@@ -4,6 +4,7 @@
  * "Share → Add to Home Screen" steps. Hidden once AXTO runs as an app.
  * ============================================================================ */
 "use client";
+import { pick, type Lang } from "@/lib/i18n";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 type Prompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -67,10 +68,10 @@ const T = {
 };
 
 /** Button that installs the app, or explains how on iOS. Renders nothing when not installable. */
-export function InstallButton({ lang = "en", className = "btn-secondary btn-sm" }: { lang?: "en" | "id"; className?: string }) {
+export function InstallButton({ lang = "en", className = "btn-secondary btn-sm" }: { lang?: Lang; className?: string }) {
   const { canInstall, ios, install } = usePwaInstall();
   const [help, setHelp] = useState(false);
-  const t = T[lang];
+  const t = pick(T, lang);
   if (!canInstall) return null;
   return (
     <>

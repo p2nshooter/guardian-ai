@@ -8,9 +8,9 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, LANGS, pick } from "@/lib/i18n";
 
-const POINTS = {
+const POINTS: Partial<Record<"en" | "id", [string, string, string][]>> = {
   en: [
     ["⚖️", "Legal AI for 190+ countries", "Filter by country, state or province; restructure a case file against current law, with sources."],
     ["🔑", "Your own AI — BYOK, BYOM, BYOE", "Claude, GPT, Gemini, Groq, OpenRouter or your private model. Unlimited use, your data stays yours."],
@@ -23,7 +23,7 @@ const POINTS = {
     ["🖥️", "Edisi self-hosted", "Business & Enterprise menjalankan aplikasi di server Anda sendiri dengan lisensi bertanda tangan."],
     ["⚡", "Aktivasi instan", "Bayar dengan kartu, PayPal, kripto atau transfer bank — paket dan lisensi aktif otomatis."],
   ],
-} as const;
+};
 
 export default function AuthFrame({ children }: { children: ReactNode }) {
   const { lang, setLang } = useI18n();
@@ -39,7 +39,7 @@ export default function AuthFrame({ children }: { children: ReactNode }) {
             {lang === "id" ? "Kerjakan pekerjaan hukum, keamanan & bisnis 10× lebih cepat." : "Do legal, security & business work 10× faster."}
           </h2>
           <ul className="mt-8 space-y-5">
-            {POINTS[lang].map(([icon, title, body]) => (
+            {pick(POINTS, lang).map(([icon, title, body]: readonly [string, string, string]) => (
               <li key={title} className="flex gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg" aria-hidden="true">{icon}</span>
                 <div>
@@ -55,11 +55,10 @@ export default function AuthFrame({ children }: { children: ReactNode }) {
       <div className="flex flex-col bg-slate-50">
         <div className="flex items-center justify-between px-5 py-4 sm:px-8">
           <Link href="/" className="no-underline lg:invisible"><Logo size={24} /></Link>
-          <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" aria-label="Language">
-            {(["en", "id"] as const).map((l) => (
-              <button key={l} onClick={() => setLang(l)} className={`rounded px-2.5 py-1 text-xs font-bold ${lang === l ? "bg-ink-900 text-white" : "text-slate-600"}`}>{l.toUpperCase()}</button>
-            ))}
-          </div>
+          <select value={lang} onChange={(e) => setLang(e.target.value as typeof lang)} aria-label="Language"
+            className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700">
+            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.native}</option>)}
+          </select>
         </div>
         <main className="flex flex-1 items-center justify-center px-4 pb-12 sm:px-8">
           <div className="w-full max-w-md">{children}</div>

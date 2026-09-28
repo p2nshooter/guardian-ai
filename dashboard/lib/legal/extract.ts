@@ -134,9 +134,12 @@ async function readOdt(buf: ArrayBuffer): Promise<string> {
 let pdfjs: any = null;
 async function loadPdfJs() {
   if (pdfjs) return pdfjs;
-  const url = "/vendor/pdfjs/pdf.min.mjs";
-  pdfjs = await import(/* webpackIgnore: true */ url);
-  pdfjs.GlobalWorkerOptions.workerSrc = "/vendor/pdfjs/pdf.worker.min.mjs";
+  // Runtime-computed URL so the bundler leaves it as a real browser import of
+  // our self-hosted copy (documents are parsed in the browser, never uploaded).
+  const origin = typeof location !== "undefined" ? location.origin : "";
+  const url = new URL("/vendor/pdfjs/pdf.min.mjs", origin).href;
+  pdfjs = await import(/* webpackIgnore: true */ /* @vite-ignore */ url);
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL("/vendor/pdfjs/pdf.worker.min.mjs", origin).href;
   return pdfjs;
 }
 

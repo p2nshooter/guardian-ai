@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import { api, signOut } from "@/lib/client";
-import { useI18n, formatDate, type Key } from "@/lib/i18n";
+import { useI18n, formatDate, LANGS, type Key } from "@/lib/i18n";
 import { CLOUD_APPS } from "@/lib/apps";
 import { Spinner } from "@/components/ui";
 import ChatWidget from "@/components/support/ChatWidget";
@@ -110,11 +110,10 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
         ) : null}
         <div className="flex items-center gap-2 px-2.5 py-2 text-sm">
           <span className="text-slate-500">🌐 {t("nav.language")}</span>
-          <div className="ml-auto inline-flex rounded-md border border-slate-200 p-0.5">
-            {(["en", "id"] as const).map((l) => (
-              <button key={l} onClick={() => setLang(l)} className={`rounded px-2 py-0.5 text-xs font-bold ${lang === l ? "bg-ink-900 text-white" : "text-slate-600"}`}>{l.toUpperCase()}</button>
-            ))}
-          </div>
+          <select value={lang} onChange={(e) => setLang(e.target.value as typeof lang)} aria-label={t("nav.language")}
+            className="ml-auto rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700">
+            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.native}</option>)}
+          </select>
         </div>
         <button onClick={signOut} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100">
           <span className="w-5 text-center">↩︎</span>{t("nav.signout")}
