@@ -32,6 +32,8 @@ from pydantic import BaseModel, Field
 
 from src.config.settings import get_config
 from src.license import validate, require_valid, HEARTBEAT_SECS, PRODUCT_NAME, PRODUCT_VERSION, PRODUCT_AUTHOR
+from src import _integrity as _axto_integrity
+_axto_integrity.enforce("legal")   # dormant unless the build stamped an integrity key
 
 logging.basicConfig(
     level=os.environ.get("LEGL_LOG_LEVEL", "INFO"),

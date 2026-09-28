@@ -36,7 +36,7 @@ interface Matter { id: string; title: string; client: string; opponent: string; 
 const L = {
   en: {
     title: "Legal AI", sub: "36 expert workspaces · 200+ jurisdictions · your own AI", workspaces: "Workspaces", search: "Search workspaces…",
-    context: "Jurisdiction & context", area: "Practice area", advanced: "Advanced options", audience: "Audience", depth: "Depth", outLang: "Answer language",
+    context: "Jurisdiction & context", jurLock: "Lock", jurLocked: "Locked", jurLockHint: "Lock the jurisdiction so it stays fixed until you unlock it", jurUnlockHint: "Unlock to change the jurisdiction", area: "Practice area", advanced: "Advanced options", audience: "Audience", depth: "Depth", outLang: "Answer language",
     asOf: "Law as of", factsDate: "When did the facts happen?", citation: "Citation style", auto: "Same as my request",
     aud: { lawyer: "Lawyers", client: "Client (plain language)", court: "Court / tribunal", board: "Board / management" },
     dep: { brief: "Brief", standard: "Standard", exhaustive: "Exhaustive" },
@@ -53,7 +53,7 @@ const L = {
   },
   id: {
     title: "Legal AI", sub: "36 workspace ahli · 200+ yurisdiksi · AI milik Anda", workspaces: "Workspace", search: "Cari workspace…",
-    context: "Yurisdiksi & konteks", area: "Bidang hukum", advanced: "Opsi lanjutan", audience: "Audiens", depth: "Kedalaman", outLang: "Bahasa jawaban",
+    context: "Yurisdiksi & konteks", jurLock: "Kunci", jurLocked: "Terkunci", jurLockHint: "Kunci yurisdiksi agar tetap sama sampai Anda buka kunci", jurUnlockHint: "Buka kunci untuk mengubah yurisdiksi", area: "Bidang hukum", advanced: "Opsi lanjutan", audience: "Audiens", depth: "Kedalaman", outLang: "Bahasa jawaban",
     asOf: "Hukum per tanggal", factsDate: "Kapan fakta terjadi?", citation: "Gaya sitasi", auto: "Sama dengan permintaan saya",
     aud: { lawyer: "Praktisi hukum", client: "Klien (bahasa awam)", court: "Pengadilan / majelis", board: "Direksi / manajemen" },
     dep: { brief: "Ringkas", standard: "Standar", exhaustive: "Menyeluruh" },
@@ -96,6 +96,7 @@ export default function LegalApp() {
   const [wsId, setWsId] = useState("case-builder");
   const [wsQuery, setWsQuery] = useState("");
   const [jur, setJur] = useState<JurValue>({ country: "ID" });
+  const [jurLocked, setJurLocked] = useState(false);
   const [area, setArea] = useState("general");
   const [adv, setAdv] = useState({ audience: "lawyer", depth: "standard", lang: "auto", asOf: today(), factsDate: "", citation: "auto" });
   const [showAdv, setShowAdv] = useState(false);
@@ -130,6 +131,7 @@ export default function LegalApp() {
       const p = loadPrefs();
       if (p.wsId && r.data.workspaces.some((w) => w.id === p.wsId)) setWsId(p.wsId);
       if (p.jur?.country && r.data.countries.some((c) => c.code === p.jur.country)) setJur(p.jur);
+      if (typeof p.jurLocked === "boolean") setJurLocked(p.jurLocked);
       if (p.area) setArea(p.area);
       if (p.adv) setAdv((a) => ({ ...a, ...p.adv, asOf: today() }));
       if (p.ai?.provider) setAi(p.ai);
@@ -139,7 +141,7 @@ export default function LegalApp() {
       }
     })();
   }, []);
-  useEffect(() => { if (cat) savePrefs({ wsId, jur, area, adv: { ...adv, asOf: undefined }, ai }); }, [cat, wsId, jur, area, adv, ai]);
+  useEffect(() => { if (cat) savePrefs({ wsId, jur, jurLocked, area, adv: { ...adv, asOf: undefined }, ai }); }, [cat, wsId, jur, jurLocked, area, adv, ai]);
 
   const ws = cat?.workspaces.find((w) => w.id === wsId);
   const unlocked = useCallback((id: string) => !!cat?.unlocked.includes(id), [cat]);
@@ -410,8 +412,15 @@ export default function LegalApp() {
 
           {/* Jurisdiction & context */}
           <section className="no-print card-pad">
-            <h2 className="mb-3 text-base font-semibold">🌍 {t.context}</h2>
-            <JurisdictionPicker countries={cat.countries} subdivisions={cat.subdivisions} value={jur} onChange={setJur} lang={lang} />
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">🌍 {t.context}</h2>
+              <button type="button" onClick={() => setJurLocked((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${jurLocked ? "bg-brand-600 text-white" : "border border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+                title={jurLocked ? t.jurUnlockHint : t.jurLockHint}>
+                {jurLocked ? `🔒 ${t.jurLocked}` : `🔓 ${t.jurLock}`}
+              </button>
+            </div>
+            <JurisdictionPicker countries={cat.countries} subdivisions={cat.subdivisions} value={jur} onChange={setJur} lang={lang} locked={jurLocked} />
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="sm:col-span-2">
                 <span className="label">{t.area}</span>

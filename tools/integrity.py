@@ -38,7 +38,7 @@ from typing import Dict, List, Optional, Tuple
 MANIFEST_NAME = "axto_integrity.json"
 _CODE_EXT = (".py", ".pyc", ".so", ".pyd")
 # Files/dirs that legitimately change at runtime and are NOT part of the signed code.
-_SKIP_DIRS = {"__pycache__", ".git", "data", "logs", "config", "quarantine", ".axto", "tests"}
+_SKIP_DIRS = {"__pycache__", ".git", "data", "logs", "quarantine", ".axto", "tests", ".pytest_cache"}
 _SKIP_FILES = {MANIFEST_NAME}
 
 
@@ -152,3 +152,50 @@ _PUBLIC_KEY = os.environ.get("_AXTO_INTEGRITY_PUBLIC_KEY_BUILD", "")
 
 def public_key() -> str:
     return _PUBLIC_KEY
+
+
+# ── runtime enforcement (called at engine startup) ────────────────────────────
+def enforce(product: str, *, exit_on_fail: bool = True) -> bool:
+    """
+    Verify this engine's own code against its signed manifest.
+
+    Dormant when no public key was stamped at build time (open-source checkout /
+    local dev) so contributors can run freely. In a real AXTO image the build
+    stamps the key and writes the manifest, so any modification to the shipped
+    code — or a stripped/forged manifest — makes verify() fail and the engine
+    refuses to start (fail-closed). It never touches the customer's data volume;
+    a tampered engine is simply inert, and its licence is frozen server-side on
+    the next validation because the reported build no longer matches.
+
+    Returns True when the engine may run.
+    """
+    if not enforced():
+        return True
+    root = os.path.dirname(os.path.abspath(__file__))
+    ok, reason = verify(root, public_key(), product)
+    if ok:
+        return True
+    msg = (
+        "\n" + "=" * 70 +
+        f"\n  AXTO {product.upper()} — CODE INTEGRITY CHECK FAILED\n" +
+        f"  {reason}\n\n" +
+        "  This copy has been modified and will not run. Reinstall the\n" +
+        "  official image from https://axto.io/app/self-hosted with your\n" +
+        "  licence key. Your data volume is untouched.\n" +
+        "=" * 70 + "\n"
+    )
+    try:
+        import logging
+        logging.getLogger("axto.integrity").critical(msg)
+    except Exception:  # noqa: BLE001
+        pass
+    print(msg, file=sys.stderr, flush=True)
+    # Leave a marker so orchestration/monitoring can see why it stopped.
+    try:
+        with open(os.path.join(root, ".integrity-lock"), "w", encoding="utf-8") as fh:
+            fh.write(reason)
+    except Exception:  # noqa: BLE001
+        pass
+    if exit_on_fail:
+        raise SystemExit(3)
+    return False

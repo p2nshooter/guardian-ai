@@ -12,8 +12,8 @@ const REGIONS: Record<string, [string, string]> = {
   europe: ["Europe", "Eropa"], americas: ["Americas", "Amerika"], africa: ["Africa", "Afrika"], oceania: ["Oceania", "Oseania"],
 };
 const T = {
-  en: { country: "Country / legal order", search: "Search a country…", sub: "State / province / special regime", allSub: "Whole country (national law)", city: "City / regency / municipality", cityPh: "optional, e.g. Surabaya, Kab. Bogor, Los Angeles County", none: "No match" },
-  id: { country: "Negara / tatanan hukum", search: "Cari negara…", sub: "Negara bagian / provinsi / rezim khusus", allSub: "Seluruh negara (hukum nasional)", city: "Kota / kabupaten / kotamadya", cityPh: "opsional, mis. Surabaya, Kab. Bogor, Los Angeles County", none: "Tidak ditemukan" },
+  en: { country: "Country / legal order", search: "Search a country…", sub: "State / province / special regime", allSub: "Whole country (national law)", city: "City / regency / municipality", cityPh: "optional, e.g. Surabaya, Kab. Bogor, Los Angeles County", none: "No match", locked: "Jurisdiction locked — unlock to change", current: "Current jurisdiction" },
+  id: { country: "Negara / tatanan hukum", search: "Cari negara…", sub: "Negara bagian / provinsi / rezim khusus", allSub: "Seluruh negara (hukum nasional)", city: "Kota / kabupaten / kotamadya", cityPh: "opsional, mis. Surabaya, Kab. Bogor, Los Angeles County", none: "Tidak ditemukan", locked: "Yurisdiksi dikunci — buka kunci untuk mengubah", current: "Yurisdiksi saat ini" },
 };
 
 export function countryName(c: Country, lang: Lang): string {
@@ -24,8 +24,8 @@ export function countryName(c: Country, lang: Lang): string {
   } catch { return c.name; }
 }
 
-export default function JurisdictionPicker({ countries, subdivisions, value, onChange, lang }: {
-  countries: Country[]; subdivisions: Record<string, Subdivision[]>; value: JurValue; onChange: (v: JurValue) => void; lang: Lang;
+export default function JurisdictionPicker({ countries, subdivisions, value, onChange, lang, locked = false }: {
+  countries: Country[]; subdivisions: Record<string, Subdivision[]>; value: JurValue; onChange: (v: JurValue) => void; lang: Lang; locked?: boolean;
 }) {
   const t = pick(T, lang);
   const [open, setOpen] = useState(false);
@@ -49,6 +49,17 @@ export default function JurisdictionPicker({ countries, subdivisions, value, onC
     for (const h of hits) (by[h.c.region] ||= []).push(h);
     return Object.entries(REGIONS).map(([id, names]) => ({ id, name: names[lang === "id" ? 1 : 0], items: (by[id] || []).sort((a, b) => a.label.localeCompare(b.label)) })).filter((g) => g.items.length);
   }, [countries, q, lang]);
+
+  if (locked) {
+    const label = [value.city, sub?.name, current ? countryName(current, lang) : value.country].filter(Boolean).join(", ");
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50/60 px-3 py-2.5 text-sm">
+        <span aria-hidden="true">🔒</span>
+        <span className="font-semibold text-slate-900">{current ? flag(current.code) : ""} {label || "—"}</span>
+        <span className="ml-auto text-xs text-slate-500">{t.locked}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-3 sm:grid-cols-3">
