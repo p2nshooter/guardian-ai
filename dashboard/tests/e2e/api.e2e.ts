@@ -304,9 +304,12 @@ test("BYOX: keys, custom endpoint, live test against a provider", async () => {
   const rows = d1(`SELECT key_enc FROM user_ai_keys WHERE provider = 'custom'`);
   assert.ok(rows.length && !String(rows[0].key_enc).includes("sk-local-test-key"), "stored encrypted");
 
-  // Apps that have not passed their release gate are closed.
+  // AI Studio is live and included in the member's plan → it runs on their own key.
   const run = await member.post("/api/byox/run", { app: "studio", messages: [{ role: "user", content: "hi" }] });
-  assert.equal(run.status, 503);
+  assert.equal(run.status, 200, run.text);
+  // A still-unreleased app is closed (release gate).
+  const soon = await member.post("/api/byox/run", { app: "clipper", messages: [{ role: "user", content: "hi" }] });
+  assert.ok(soon.status === 503 || soon.status === 400, `coming-soon gate: ${soon.status}`);
 
   assert.equal((await member.del("/api/byox/keys?provider=custom")).status, 200);
   assert.equal((await member.get("/api/byox/keys")).json.keys.length, 0);
