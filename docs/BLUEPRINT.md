@@ -331,3 +331,94 @@ Pola "matter" Legal AI digeneralisasi menjadi **Workspace History** yang dipakai
 ### 13c. Kenyamanan (wajib)
 - Autosave draf, indikator "tersimpan", pencarian riwayat, dan kelanjutan lintas perangkat (web) / lintas restart (self-hosted).
 - Tidak ada langkah yang menyulitkan: default aman, satu klik untuk simpan/buka/ekspor.
+
+---
+
+## 14. Kesiapan skala dunia & super-enterprise (target puncak, Sep 2026)
+
+Checklist "tidak ada yang ketinggalan" sebelum menaikkan versi:
+
+**Keamanan & kepercayaan**
+- Enkripsi at-rest (AES-256-GCM per member di R2) + in-transit (TLS/HSTS); kunci AI & pembayaran tidak pernah tampil ulang.
+- Lisensi Ed25519 fail-closed, terikat mesin, anti-replay; integrity manifest per engine.
+- Audit log tamper-evident (D1) untuk setiap aksi akun/pembayaran/lisensi/admin.
+- SSO/SAML/OIDC + SCIM untuk enterprise (roadmap Fase E1); 2FA/passkey untuk semua akun.
+- Data residency: pilihan region R2/D1; jejak "data tidak pernah dipakai untuk training".
+- Halaman kepercayaan: /security, /privacy, /terms, /dpa, /subprocessors, security.txt, status page.
+
+**Skala & keandalan**
+- Cloudflare edge global (Pages + Workers), D1 ramping + R2 maksimal (budget 10 TB).
+- Rate limiting berlapis, idempotensi pembayaran, cron heartbeat, housekeeping.
+- Backup/restore (ekspor R2), disaster recovery, RPO/RTO terdokumentasi.
+- Observability: log terstruktur, metrik penggunaan, alert; halaman status publik.
+
+**Kenyamanan klien (wajib)**
+- 10 bahasa manual + RTL; pilihan bahasa persisten; a11y (WCAG AA), keyboard, kontras, prefers-reduced-motion.
+- Autosave + riwayat kerja CRUD di setiap app (web & self-hosted); tidak pernah kehilangan pekerjaan.
+- PWA installable, mobile-first, offline page; panduan visual & animasi di setiap app.
+- Onboarding 3 langkah, empty-state yang membantu, pesan error yang jelas & dapat ditindaklanjuti.
+
+**Komersial**
+- Paket bulanan/tahunan + lifetime 1–100 device (super-enterprise), kupon, proforma invoice, pajak.
+- Pembayaran: kartu/PayPal/QRIS/VA/e-wallet/crypto/transfer BNI; aktivasi instan zero-hand.
+- Portal admin lengkap; reseller/affiliate (roadmap); SLA & dukungan berjenjang.
+
+## 15. Sistem prompt super-premium (arsitektur, semua app)
+
+Prinsip: prompt dibangun **hanya di server** (tidak bisa dilihat/diubah browser), berlapis, dan diversi. Struktur umum tiap app: `identitas & standar profesi → konteks (yurisdiksi/industri/peran) → metode langkah-demi-langkah → protokol data/dokumen (anti-injection) → format output → etika & keamanan → bahasa`.
+
+| App | Cakupan prompt premium |
+|---|---|
+| **Legal AI** | 36 workspace × prompt 11-lapis (sudah ada); ditambah pustaka klausul, checklist per bidang, dan template dokumen per yurisdiksi. |
+| **Prompt Library** | 24 bidang × 4 level (Basic→Elite) × banyak varian; setiap prompt: judul, ringkasan SEO, variabel `{{...}}`, isi lengkap terkunci per paket, contoh, model yang cocok, estimasi token/biaya. Target ≥ 2.000 prompt kurasi. |
+| **AI Studio** | Peran sistem + pustaka "persona" siap pakai (analis, engineer, penulis, dsb.), mode reasoning/effort, ringkas vs mendalam. |
+| **Clipper** | Prompt deteksi momen viral (hook/payoff/emosi), penulisan judul/hook/hashtag per platform, gaya caption, terjemahan. |
+| **Compliance** | Prompt per framework (SOC2/ISO27001/GDPR/HIPAA/PCI/NIST/UU PDP): asesmen, gap, remediasi, kebijakan. |
+| **Security Analyst** | Triage, pemetaan MITRE ATT&CK, ekstraksi IOC, laporan insiden; playbook per jenis serangan. |
+| **Vault** | Aturan deteksi PII/PHI/finansial per negara; strategi redaksi/tokenisasi. |
+| **Orchestra/SOC/Edge/Sentinel/Antivirus** | Prompt operasional + kebijakan enforcement (self-hosted). |
+
+Semua prompt disimpan sebagai data terversi (R2/D1), dengan uji "golden output" agar kualitas konsisten.
+
+## 16. Strategi API key AI optimal + estimasi hemat biaya
+
+Model AXTO = **BYOX** (klien pakai kunci sendiri, tanpa markup) + **Managed** (opsional, terkunci; AXTO sediakan model + kredit). Untuk keduanya, terapkan lever hemat biaya (referensi praktik terkini):
+
+**Lever hemat (urut dampak, tanpa mengorbankan kualitas):**
+1. **Prompt caching** untuk system prompt panjang (Legal 11-lapis, dokumen) — hemat hingga ~90% token input berulang; TTL 5 menit/1 jam.
+2. **Model tiering / routing**: tugas ringan → model kecil (Haiku/Gemini Flash/Llama-70B di Groq), tugas berat → model besar (Opus/Sonnet/GPT-5). Router memilih otomatis per jenis tugas.
+3. **Batch API** untuk pekerjaan non-interaktif (indexing prompt, pembuatan dataset) — umumnya ~50% lebih murah.
+4. **Effort/thinking adaptif**: kedalaman "ringkas" untuk jawaban pendek, "menyeluruh" hanya saat diminta.
+5. **Higiene token**: potong dokumen relevan saja, ringkas riwayat panjang, streaming untuk hindari timeout.
+6. **Free-tier friendly**: default sarankan Gemini/Groq/Cerebras (ada tier gratis) untuk pengguna baru.
+
+**Estimasi (indikatif, per 1.000 permintaan tipikal, campuran input 4k + output 1k token):**
+- Tanpa optimasi, model besar: ~US$30–60.
+- Dengan caching + routing + effort adaptif: ~US$6–15 (hemat ~60–80%).
+- Tugas batch non-interaktif dengan model kecil: ~US$1–3.
+(Angka final dihitung dari `response.usage` nyata; halaman admin akan menampilkan biaya aktual per app.)
+
+**Pemasangan kunci "paling optimal":** Managed AI (saat dibuka) memakai kolam kunci dengan failover + routing di atas; BYOX tetap gratis di sisi AXTO. Rekomendasi default model per app dikurasi dan bisa dioverride.
+
+## 17. Sumber data & aset — LINK-FIRST (hemat R2)
+
+Prinsip hemat (revisi permintaan pemilik): **jangan mengunduh & menyimpan aset pihak ketiga ke R2 — cukup beri TAUTAN ke sumber unduhannya.** R2 hanya menyimpan hal yang benar-benar harus lokal.
+
+**Yang HANYA ditautkan (tidak di-host di R2):**
+| Kebutuhan | Diberikan sebagai tautan ke sumber resmi/terbuka |
+|---|---|
+| Antivirus signatures / rules | Tautan feed resmi (ClamAV main/daily/bytecode, YARA komunitas, abuse.ch URLhaus/MalwareBazaar/Feodo). Engine self-hosted mengunduh langsung dari sumber saat runtime (bukan lewat R2). |
+| Clipper SFX / musik / video / animasi | Tautan ke pustaka CC0/bebas royalti (Freesound CC0, Pixabay/Pexels sesuai lisensi). Klien mengunduh dari sumber; kami hanya kurasi daftar + tautan + catatan lisensi. |
+| Sumber hukum (Legal) | Tautan ke portal resmi (lembaran negara, pengadilan) — sudah ada di `lib/legal/jurisdictions.ts` (SOURCES). Live research mengambil langsung dari web. |
+| Framework compliance | Tautan ke publikasi resmi (mis. NIST). |
+
+**Yang tetap di R2 (kecil / milik AXTO / wajib lokal):**
+- Image build self-hosted (`builds/latest/...`) & installer — sudah ada.
+- Aset & prompt ORISINAL buatan AXTO (Prompt Library, template, ikon/overlay Clipper buatan sendiri).
+- Data member terenkripsi (matters, riwayat kerja) — kecil, per akun.
+- **Indeks/manifest** kecil berisi daftar tautan + versi + checksum + lisensi (bukan berkasnya).
+
+**Mekanisme:** portal menampilkan katalog "download" yang menunjuk ke tautan sumber (dengan lisensi & ukuran), bukan proxy R2. Untuk feed antivirus yang butuh kesegaran, engine self-hosted menarik langsung dari sumber terjadwal. Ini menekan pemakaian R2 seminimal mungkin (tetap ada headroom hingga 10 TB bila suatu saat perlu meng-host aset orisinal besar).
+
+## 18. Urutan setelah blueprint final
+Setelah blueprint ini disepakati: (1) pustaka prompt premium + golden tests, (2) pipeline dataset→R2 (antivirus/Clipper dulu), (3) app berikutnya (Studio ✓, Prompt Library, Clipper, Vault, Compliance, Security), (4) SSO/enterprise & halaman kepercayaan, (5) rollout integrity + Cython ke semua engine dengan uji docker-smoke berulang.

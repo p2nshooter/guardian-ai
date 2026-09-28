@@ -65,7 +65,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["AI prompt library", "premium ChatGPT prompts", "Claude prompts", "business prompts", "prompt templates"],
   },
   {
-    slug: "studio", live: false, name: "AI Studio", icon: "🧠", color: "#0f766e",
+    slug: "studio", live: true, name: "AI Studio", icon: "🧠", color: "#0f766e",
     short: "Chat with leading AI models, save conversations and reuse your best prompts.",
     hero: "One workspace for many AI models. Chat, set a system role, keep your history, and bring your own API keys for unlimited use.",
     steps: [
