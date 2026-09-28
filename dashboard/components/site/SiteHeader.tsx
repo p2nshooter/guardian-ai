@@ -6,6 +6,7 @@ import LangSwitcher from "@/components/site/LangSwitcher";
 
 const LINKS = [
   { href: "/apps", label: "Apps" },
+  { href: "/prompts", label: "Prompts" },
   { href: "/self-hosted", label: "Self-hosted" },
   { href: "/pricing", label: "Pricing" },
   { href: "/help", label: "Guides" },
