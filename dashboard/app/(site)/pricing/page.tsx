@@ -69,7 +69,7 @@ export default function PricingPage() {
       <section className="border-t border-slate-200 bg-slate-50 py-16">
         <div className="container-page max-w-3xl">
           <h2 className="text-2xl font-bold">Frequently asked questions</h2>
-          <div className="mt-6"><Faq items={FAQ} /></div>
+          <div className="mt-6"><Faq items={FAQ} i18nPrefix="faq" /></div>
         </div>
       </section>
     </>

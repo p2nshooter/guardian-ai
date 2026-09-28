@@ -32,7 +32,7 @@ test("i18n: every translated string keeps its placeholders", () => {
     // No accidental stray tokens like {foo} that EN never had.
     for (const [key, v] of Object.entries(dict as Record<string, string>)) {
       for (const tok of tokens(v)) {
-        assert.ok(["{date}", "{name}", "{order}", "{amount}", "{total}", "{used}", "{plan}", "{terms}", "{privacy}"].includes(tok),
+        assert.ok(["{date}", "{name}", "{order}", "{amount}", "{total}", "{used}", "{plan}", "{terms}", "{privacy}", "{v}"].includes(tok),
           `${code}.${key} has unexpected ${tok}`);
       }
     }
@@ -44,5 +44,18 @@ test("i18n: the eight extra languages are present and non-trivial", () => {
     const d = (EXTRA_DICTS as Record<string, Record<string, string>>)[c];
     assert.ok(d && Object.keys(d).length >= 100, `${c} has a full dictionary (${d ? Object.keys(d).length : 0} keys)`);
     assert.ok(d["nav.home"] && d["auth.signin"], `${c} has core keys`);
+  }
+});
+
+test("i18n: every public-site string exists in all 10 languages (no mixed-language pages)", () => {
+  // EN + ID completeness is enforced by the type system (ID is Record<Key,string>).
+  // Here: each of the 8 extra languages must carry every public-site key.
+  const SITE_KEY = /^(site\.|lp\.|foot\.|price\.|faq\.[qa]\d+$|plan\.(starter|pro|business|enterprise)\.|app\.(available|soon|learn|short\.)|auth\.admin)/;
+  const union = new Set<string>();
+  for (const dict of Object.values(EXTRA_DICTS)) for (const k of Object.keys(dict)) if (SITE_KEY.test(k)) union.add(k);
+  assert.ok(union.size >= 150, `public-site key set is substantial (${union.size})`);
+  for (const [code, dict] of Object.entries(EXTRA_DICTS)) {
+    const missing = [...union].filter((k) => !(dict as Record<string, string>)[k]);
+    assert.deepEqual(missing, [], `${code} is missing public-site keys`);
   }
 });

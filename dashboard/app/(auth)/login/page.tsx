@@ -11,6 +11,7 @@ function LoginForm() {
   const { t } = useI18n();
   const q = useSearchParams();
   const redirect = q.get("redirect") || "";
+  const admin = q.get("admin") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,15 +20,16 @@ function LoginForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setError("");
-    const r = await api<{ redirect: string }>("/api/auth/login", { body: { email, password, redirect } });
+    const r = await api<{ redirect: string }>("/api/auth/login", { body: { email, password, redirect: redirect || (admin ? "/admin" : "") } });
     if (r.ok) { window.location.href = r.data.redirect || "/app"; return; }
     setError(r.error); setBusy(false);
   }
 
   return (
     <div className="card-pad">
-      <h1 className="text-2xl font-bold">{t("auth.signinTitle")}</h1>
-      <p className="mt-1 text-sm text-slate-600">{t("auth.signinSub")}</p>
+      {admin ? <span className="badge-amber mb-2 inline-block">🛡️ ADMIN</span> : null}
+      <h1 className="text-2xl font-bold">{admin ? t("auth.adminTitle") : t("auth.signinTitle")}</h1>
+      <p className="mt-1 text-sm text-slate-600">{admin ? t("auth.adminSub") : t("auth.signinSub")}</p>
       {q.get("reset") ? <div className="mt-4"><Alert tone="success">{t("auth.linkSent")}</Alert></div> : null}
       <form onSubmit={submit} className="mt-6 space-y-4">
         <Field label={t("auth.email")} htmlFor="email">
