@@ -6,3 +6,5 @@
  * ============================================================================ */
 import "./tasks";
 import "../legal/task";
+import "../security/task";
+import "../compliance/task";

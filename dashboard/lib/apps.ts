@@ -102,7 +102,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["AI video clipper", "long video to shorts", "auto captions", "podcast clips AI", "OpusClip alternative"],
   },
   {
-    slug: "vault", live: false, name: "Privacy Vault", icon: "🔒", color: "#4338ca",
+    slug: "vault", live: true, name: "Privacy Vault", icon: "🔒", color: "#4338ca",
     short: "Find and redact personal data in text and documents — entirely inside your browser.",
     hero: "Remove names, emails, phone numbers, card numbers, national IDs and more before you share a document or send it to any AI. Detection runs on your device, so the original never leaves it.",
     steps: [
@@ -121,7 +121,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["PII redaction tool", "redact personal data", "data masking online", "GDPR redaction"],
   },
   {
-    slug: "compliance", live: false, name: "Compliance Center", icon: "📋", color: "#16a34a",
+    slug: "compliance", live: true, name: "Compliance Center", icon: "📋", color: "#16a34a",
     short: "Gap analysis, remediation plans and policies for SOC 2, ISO 27001, GDPR, HIPAA and more.",
     hero: "Answer a short guided assessment and get an audit-style gap analysis, a prioritised remediation plan and ready-to-edit policy drafts for the frameworks you need.",
     steps: [
@@ -140,7 +140,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["compliance gap analysis", "SOC 2 readiness", "ISO 27001 gap analysis", "GDPR compliance tool", "policy generator"],
   },
   {
-    slug: "security", live: false, name: "Security Analyst", icon: "🛡️", color: "#0284c7",
+    slug: "security", live: true, name: "Security Analyst", icon: "🛡️", color: "#0284c7",
     short: "Paste logs or alerts — get triage, MITRE ATT&CK mapping, IOCs and an incident report.",
     hero: "An AI security analyst on demand. Paste raw logs, alerts or a suspicious script and get a clear verdict, the attacker techniques involved, extracted indicators and a ready-to-send incident report.",
     steps: [
