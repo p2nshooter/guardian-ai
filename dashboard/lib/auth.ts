@@ -71,7 +71,11 @@ export async function verifySession(token: string | undefined | null): Promise<S
   try {
     const [h, b, s] = token.split(".");
     if (!h || !b || !s) return null;
-    const ok = await crypto.subtle.verify("HMAC", await jwtKey(), unb64u(s), enc(`${h}.${b}`));
+    // Only the canonical encoding is accepted: the last base64url character has
+    // two unused bits, so an altered token could otherwise decode to the same bytes.
+    const sig = unb64u(s);
+    if (b64u(sig) !== s) return null;
+    const ok = await crypto.subtle.verify("HMAC", await jwtKey(), sig, enc(`${h}.${b}`));
     if (!ok) return null;
     const p = JSON.parse(new TextDecoder().decode(unb64u(b)));
     if (!p?.sub || typeof p.exp !== "number" || p.exp < Date.now() / 1000) return null;

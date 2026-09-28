@@ -40,6 +40,11 @@ jobs:
         working-directory: dashboard
         run: npm ci --prefer-offline
 
+      # Gate: a type error or failing unit test never reaches axto.io.
+      - name: Checks (types + unit tests)
+        working-directory: dashboard
+        run: npx tsc --noEmit -p . && npm test
+
       - name: Apply D1 Migrations
         if: ${{ !inputs.skip_migration }}
         working-directory: dashboard

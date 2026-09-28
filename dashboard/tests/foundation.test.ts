@@ -83,7 +83,7 @@ test("webhook signatures: stripe / midtrans / nowpayments / xendit", async () =>
   const t = Math.floor(Date.now() / 1000);
   const good = await hmac("SHA-256", "whsec_test", `${t}.${payload}`);
   assert.ok(await stripeVerify(payload, `t=${t},v1=${good}`, "whsec_test"));
-  assert.ok(!(await stripeVerify(payload, `t=${t},v1=${good.replace(/.$/, "0")}`, "whsec_test")));
+  assert.ok(!(await stripeVerify(payload, `t=${t},v1=${good.replace(/.$/, (c) => (c === "0" ? "1" : "0"))}`, "whsec_test")));
   assert.ok(!(await stripeVerify(payload, `t=${t - 1000},v1=${good}`, "whsec_test")), "replay window");
 
   const n = { order_id: "ord_1", status_code: "200", gross_amount: "825000.00" };
@@ -146,7 +146,11 @@ test("sessions & passwords", async () => {
   const s = await auth.verifySession(token);
   assert.equal(s?.tier, "pro");
   assert.equal(auth.effectiveTier(s!), "pro");
-  assert.equal(await auth.verifySession(token.replace(/.$/, token.endsWith("A") ? "B" : "A")), null);
+  const flip = (t: string, i: number) => t.slice(0, i) + (t[i] === "A" ? "B" : "A") + t.slice(i + 1);
+  const sigAt = token.lastIndexOf(".") + 1;
+  assert.equal(await auth.verifySession(flip(token, sigAt + 5)), null, "altered signature rejected");
+  assert.equal(await auth.verifySession(flip(token, token.length - 1)), null, "non-canonical last character rejected");
+  assert.equal(await auth.verifySession(flip(token, token.indexOf(".") + 3)), null, "altered payload rejected");
   const expired = { ...s!, until: Math.floor(Date.now() / 1000) - 5 };
   assert.equal(auth.effectiveTier(expired), "none");
   assert.equal(auth.effectiveTier({ ...expired, role: "admin" }), "enterprise");
