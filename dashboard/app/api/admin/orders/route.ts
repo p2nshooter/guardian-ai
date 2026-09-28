@@ -5,6 +5,7 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
+import { parseIdrQuery } from "@/lib/billing/unique-amount";
 import { markOrderPaid, syncLicenses } from "@/lib/billing/activate";
 import { readJson, fail, audit } from "@/lib/http";
 
@@ -19,7 +20,9 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
   const where: string[] = ["1 = 1"]; const args: unknown[] = [];
   if (status) { where.push("status = ?"); args.push(status); }
-  if (q) { where.push("(email LIKE ? OR id LIKE ? OR invoice_no LIKE ? OR gateway_ref LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
+  const idr = parseIdrQuery(q);
+  if (idr) { where.push("(CAST(ROUND(amount_local) AS INTEGER) = ? OR id LIKE ? OR invoice_no LIKE ?)"); args.push(idr, `%${q}%`, `%${q}%`); }
+  else if (q) { where.push("(email LIKE ? OR id LIKE ? OR invoice_no LIKE ? OR gateway_ref LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
   const db = getDB(req);
   const w = where.join(" AND ");
   const [orders, total] = await Promise.all([

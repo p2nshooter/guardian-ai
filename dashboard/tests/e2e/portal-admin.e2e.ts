@@ -55,6 +55,17 @@ test("BNI bank transfer is manual: pending until the admin confirms, then the pl
   assert.equal(co.json.method, "bank");
   assert.ok(co.json.amountIdr > 0 && co.json.bank.account_number === "0123456789", "shows BNI account + rupiah amount");
   orderId = co.json.orderId;
+  // Unique 3-digit code: the last three digits identify this order.
+  const code = co.json.uniqueCode;
+  assert.ok(code >= 1 && code <= 999, `unique code 1-999 (${code})`);
+  assert.equal(co.json.amountIdr % 1000, code, "code is the last 3 digits of the amount");
+  assert.match(co.json.instructions, new RegExp(String(code).padStart(3, "0")), "instructions mention the code");
+  const other = await member.post("/api/billing/checkout", { plan: "business", cycle: "monthly", gateway: "manual", apps: ["guardian"] });
+  assert.notEqual(other.json.amountIdr, co.json.amountIdr, "two open orders never share an amount");
+  // Admin pastes the amount seen in the BNI app → exactly this order.
+  const pasted = "Rp " + co.json.amountIdr.toLocaleString("id-ID");
+  const found = await admin.get(`/api/admin/orders?q=${encodeURIComponent(pasted)}`);
+  assert.deepEqual(found.json.orders.map((o: any) => o.id), [orderId], `search "${pasted}" finds the order`);
   assert.equal(d1(`SELECT status FROM orders WHERE id='${orderId}'`)[0].status, "pending", "no auto-confirmation for bank transfers");
   const before = (await member.get("/api/auth/me")).json;
   assert.equal(before.tier, "none", "no access before confirmation");

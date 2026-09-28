@@ -17,8 +17,8 @@ import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
 interface Options { plans: { id: PlanId; name: string; monthly: number; yearly: number }[]; gateways: { id: string; label: string; methods: string; currency: string }[]; usdIdr: number }
 interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; status: string; created_at: string; paid_at: string }[] }
 type Pay =
-  | { kind: "bank"; orderId: string; amountUsd: number; amountIdr: number; bank: Record<string, string>; instructions: string }
-  | { kind: "crypto"; orderId: string; amountUsd: number; wallets: { key: string; asset: string; network: string; address: string; amount: string; auto: boolean }[]; instructions: string };
+  | { kind: "bank"; orderId: string; amountUsd: number; amountIdr: number; uniqueCode?: number; bank: Record<string, string>; note: string }
+  | { kind: "crypto"; orderId: string; amountUsd: number; wallets: { key: string; asset: string; network: string; address: string; amount: string; auto: boolean }[]; note: string };
 
 const SH_APPS: [string, string][] = [["guardian", "Guardian AI"], ["orchestra", "Orchestra AI"], ["vault", "Vault"], ["edge", "Edge"], ["soc", "SOC"], ["compliance", "Compliance"], ["sentinel", "Sentinel"], ["antivirus", "Antivirus"], ["studio", "Studio"], ["legal", "Legal (self-hosted)"]];
 
@@ -28,6 +28,9 @@ const L = {
     welcome: "Welcome to AXTO! Choose a plan to unlock your apps — activation is instant with card, PayPal or crypto.",
     paid: "Payment received — your plan is active and any licences have been issued. 🎉", canceled: "Payment was cancelled. You can try again anytime.",
     current: "Your plan", none: "Free account — no apps unlocked yet.", until: "Active until", renew: "Renew / extend",
+    bankSteps: "Write {id} in the transfer note if you can, then press “I've transferred” below. We confirm within one business day and e-mail you — your plan and licences activate right away.",
+    cryptoSteps: "Send EXACTLY the amount shown, on the network shown. USDT/USDC payments are detected and confirmed automatically within minutes; for BTC, ETH or SOL paste your transaction hash after sending. Your plan and licences activate automatically.",
+    uniqueNote: "Transfer this EXACT amount, including the last 3 digits ({code}) — they are your unique order code, so we can match your transfer. Please do not round it.",
     monthly: "Monthly", yearly: "Yearly", save: "2 months free", perMo: "/mo", perYr: "/yr", popular: "Most popular", choose: "Choose", chosen: "Selected",
     step2: "Choose how to pay", pickApps: "Choose your self-hosted apps", pickAppsHint: "Business includes any 3 — licences are issued the moment payment confirms.",
     pay: "Pay", paying: "Starting payment…", noMethods: "Online payment is being set up. Please contact us in the chat to pay by bank transfer.",
@@ -44,6 +47,9 @@ const L = {
     welcome: "Selamat datang di AXTO! Pilih paket untuk membuka aplikasi — aktivasi instan dengan kartu, PayPal, atau kripto.",
     paid: "Pembayaran diterima — paket Anda aktif dan lisensi sudah diterbitkan. 🎉", canceled: "Pembayaran dibatalkan. Anda bisa mencoba lagi kapan saja.",
     current: "Paket Anda", none: "Akun gratis — belum ada aplikasi yang terbuka.", until: "Aktif sampai", renew: "Perpanjang",
+    bankSteps: "Jika bisa, tulis {id} di berita transfer, lalu tekan “Saya sudah transfer” di bawah. Kami konfirmasi dalam 1 hari kerja dan mengirim email — paket dan lisensi Anda langsung aktif.",
+    cryptoSteps: "Kirim TEPAT sejumlah yang tertera, di jaringan yang tertera. Pembayaran USDT/USDC terdeteksi dan terkonfirmasi otomatis dalam hitungan menit; untuk BTC, ETH, atau SOL tempel hash transaksi setelah mengirim. Paket dan lisensi Anda aktif otomatis.",
+    uniqueNote: "Transfer TEPAT sejumlah ini, termasuk 3 digit terakhir ({code}) — itu kode unik pesanan Anda agar transfer Anda bisa kami cocokkan. Mohon jangan dibulatkan.",
     monthly: "Bulanan", yearly: "Tahunan", save: "Gratis 2 bulan", perMo: "/bln", perYr: "/thn", popular: "Paling populer", choose: "Pilih", chosen: "Dipilih",
     step2: "Pilih cara bayar", pickApps: "Pilih aplikasi self-hosted Anda", pickAppsHint: "Business mencakup 3 aplikasi bebas pilih — lisensi terbit begitu pembayaran terkonfirmasi.",
     pay: "Bayar", paying: "Memulai pembayaran…", noMethods: "Pembayaran online sedang disiapkan. Hubungi kami lewat chat untuk bayar via transfer bank.",
@@ -110,8 +116,8 @@ function BillingInner() {
     if (!r.ok) { setErr(r.error); return; }
     if (r.data.url) { window.location.href = r.data.url; return; }
     setOrderStatus("pending");
-    if (r.data.method === "bank") setPay({ kind: "bank", orderId: r.data.orderId, amountUsd: r.data.amountUsd, amountIdr: r.data.amountIdr, bank: r.data.bank, instructions: r.data.instructions });
-    else if (r.data.method === "crypto") { setPay({ kind: "crypto", orderId: r.data.orderId, amountUsd: r.data.amountUsd, wallets: r.data.wallets, instructions: r.data.instructions }); setProof((p) => ({ ...p, network: r.data.wallets[0]?.key || "" })); }
+    if (r.data.method === "bank") setPay({ kind: "bank", orderId: r.data.orderId, amountUsd: r.data.amountUsd, amountIdr: r.data.amountIdr, uniqueCode: r.data.uniqueCode, bank: r.data.bank, note: r.data.note || "" });
+    else if (r.data.method === "crypto") { setPay({ kind: "crypto", orderId: r.data.orderId, amountUsd: r.data.amountUsd, wallets: r.data.wallets, note: r.data.note || "" }); setProof((p) => ({ ...p, network: r.data.wallets[0]?.key || "" })); }
     loadOv();
     setTimeout(() => document.getElementById("pay-panel")?.scrollIntoView({ behavior: "smooth" }), 50);
   }
@@ -240,7 +246,11 @@ function BillingInner() {
                         </div>
                       ))}
                     </dl>
-                  ) : (
+                  ) : null}
+                  {pay.kind === "bank" && pay.uniqueCode ? (
+                    <div className="mt-3"><Alert tone="warn">{t.uniqueNote.replace("{code}", String(pay.uniqueCode).padStart(3, "0"))}</Alert></div>
+                  ) : null}
+                  {pay.kind === "bank" ? null : (
                     <div className="space-y-3">
                       {pay.wallets.map((w) => (
                         <div key={w.key} className="rounded-xl border border-slate-200 p-4">
@@ -256,7 +266,8 @@ function BillingInner() {
                       ))}
                     </div>
                   )}
-                  <p className="mt-4 text-sm text-slate-600">{pay.instructions}</p>
+                  <p className="mt-4 text-sm text-slate-600">{pay.kind === "bank" ? t.bankSteps.replace("{id}", pay.orderId) : t.cryptoSteps}</p>
+                  {pay.note ? <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{pay.note}</p> : null}
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <div className="font-semibold text-slate-900">{pay.kind === "bank" ? t.sentTitle : t.manualHash}</div>
                     {pay.kind === "bank" ? <p className="text-xs text-slate-500">{t.sentHint}</p> : null}

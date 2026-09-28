@@ -39,12 +39,12 @@ function OrdersInner() {
 
   return (
     <>
-      <PageHeader title="Orders & payments" description="Automatic methods activate by themselves. Approve bank transfers here after checking your BNI mutation." />
+      <PageHeader title="Orders & payments" description="Automatic methods activate by themselves. When a BNI transfer arrives in your bank app, paste its amount into the search box — the unique last 3 digits find the exact order — then approve it." />
       <div className="mb-4 flex flex-wrap gap-2">
         {["", "pending", "paid", "failed", "refunded"].map((s) => (
           <button key={s} onClick={() => setStatus(s)} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${status === s ? "bg-ink-900 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200"}`}>{s || "All"}</button>
         ))}
-        <input className="input ml-auto max-w-xs" placeholder="Search e-mail, order, invoice, tx…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input className="input ml-auto max-w-xs" placeholder="E-mail, order, invoice, tx — or paste a transfer amount (Rp 3.284.517)" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       {msg ? <div className="mb-4"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
       {!data ? <LoadingBlock /> : (

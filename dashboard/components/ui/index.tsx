@@ -6,6 +6,7 @@
  * ============================================================================ */
 "use client";
 import { useEffect, useState, type ReactNode } from "react";
+import { useI18n } from "@/lib/i18n";
 
 export function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -90,8 +91,10 @@ export function Field({ label, hint, error, children, htmlFor }: { label?: React
 
 export function Alert({ tone = "info", children, title }: { tone?: "info" | "success" | "warn" | "error"; children: ReactNode; title?: ReactNode }) {
   const icon = { info: "ℹ️", success: "✅", warn: "⚠️", error: "⛔" }[tone];
+  // Literal class names so Tailwind keeps every tone in the CSS bundle.
+  const cls = { info: "alert-info", success: "alert-success", warn: "alert-warn", error: "alert-error" }[tone];
   return (
-    <div className={`alert-${tone}`} role={tone === "error" ? "alert" : "status"}>
+    <div className={cls} role={tone === "error" ? "alert" : "status"}>
       <span aria-hidden="true">{icon}</span>
       <div className="min-w-0">
         {title ? <div className="font-semibold">{title}</div> : null}
@@ -101,13 +104,14 @@ export function Alert({ tone = "info", children, title }: { tone?: "info" | "suc
   );
 }
 
-export function CopyButton({ text, label = "Copy", done = "Copied", className = "btn-secondary btn-sm" }: { text: string; label?: string; done?: string; className?: string }) {
+export function CopyButton({ text, label, done, className = "btn-secondary btn-sm" }: { text: string; label?: string; done?: string; className?: string }) {
+  const { t } = useI18n();
   const [ok, setOk] = useState(false);
   return (
     <button type="button" className={className} onClick={async () => {
       try { await navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 1600); } catch {}
     }}>
-      {ok ? `✓ ${done}` : label}
+      {ok ? `✓ ${done || t("common.copied")}` : label || t("common.copy")}
     </button>
   );
 }

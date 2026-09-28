@@ -176,7 +176,8 @@ test("checkout → admin marks paid → plan active, invoice, idempotent", async
   assert.equal(c.status, 200, c.text);
   assert.equal(c.json.manual, true);
   assert.equal(c.json.amountUsd, 49, "price comes from the server, never the browser");
-  assert.equal(c.json.instructions, "Bank Test 123");
+  assert.match(c.json.instructions, /Bank Test 123$/, "the admin's own instructions are kept");
+  assert.match(c.json.instructions, /unique order code/, "…after the unique-code line");
   firstOrderId = c.json.orderId;
 
   const list = await admin.get("/api/admin/orders?status=pending");

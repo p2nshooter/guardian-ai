@@ -6,6 +6,7 @@ import { detect, redact, restore, luhn, summarize, PII_TYPES, type MaskStyle } f
 import { FRAMEWORKS, COMP_MODES, getFramework, isFramework, isCompMode } from "../lib/compliance/frameworks";
 import { PLATFORMS, getPlatform, transcriptForModel, parseClips, buildCaptions } from "../lib/clipper/options";
 import { getTask } from "../lib/ai/tasks";
+import { parseIdrQuery } from "../lib/billing/unique-amount";
 import "../lib/ai/register";
 
 /* ── Security: IOC extraction ─────────────────────────────────────────────── */
@@ -134,4 +135,15 @@ test("clipper: platforms + handler need a real transcript", () => {
   assert.ok("error" in bad, "too-short transcript rejected");
   const ok = h!.build({ messages: [{ role: "user", content: "[0.0] a fairly long transcript line with real content to analyse for clips" }], options: { platform: "tiktok", count: "5" } }, "starter");
   assert.ok("system" in ok && /ONLY valid JSON/.test(ok.system), "JSON-only instruction present");
+});
+
+/* ── Bank transfer unique amount ──────────────────────────────────────────── */
+test("billing: pasted transfer amounts parse to rupiah; other queries don't", () => {
+  assert.equal(parseIdrQuery("Rp 3.284.517"), 3284517);
+  assert.equal(parseIdrQuery("3,284,517.00"), 3284517);
+  assert.equal(parseIdrQuery("rp3284517"), 3284517);
+  assert.equal(parseIdrQuery("3284517"), 3284517);
+  assert.equal(parseIdrQuery("ord_abc123"), null);
+  assert.equal(parseIdrQuery("someone@example.com"), null);
+  assert.equal(parseIdrQuery("12"), null, "too small to be an amount");
 });
