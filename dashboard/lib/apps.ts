@@ -47,7 +47,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["legal AI", "AI lawyer", "AI legal research", "AI contract review", "case analysis AI", "legal document drafting AI", "due diligence AI", "AI hukum Indonesia"],
   },
   {
-    slug: "prompts", live: false, name: "Prompt Library", icon: "📚", color: "#7c3aed",
+    slug: "prompts", live: true, name: "Prompt Library", icon: "📚", color: "#7c3aed",
     short: "Premium, ready-to-run prompts for 24 professions — from quick tasks to global-scale strategy.",
     hero: "Hundreds of expert prompts organised by profession and level — Basic, Pro, Premium and Elite. Fill in the blanks, copy to any AI, or run instantly inside AXTO.",
     steps: [

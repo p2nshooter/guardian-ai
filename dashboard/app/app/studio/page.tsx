@@ -58,6 +58,9 @@ export default function StudioApp() {
 
   const reload = useCallback(async () => { const r = await api<{ items: Entry[] }>("/api/history/studio"); if (r.ok) setItems(r.data.items); }, []);
   useEffect(() => { if (access) reload(); }, [access, reload]);
+  useEffect(() => {
+    try { const pre = sessionStorage.getItem("axto_studio_prefill"); if (pre) { setInput(pre); sessionStorage.removeItem("axto_studio_prefill"); } } catch {}
+  }, []);
   useEffect(() => { setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 40); }, [thread, live]);
 
   async function open(cid: string) {
