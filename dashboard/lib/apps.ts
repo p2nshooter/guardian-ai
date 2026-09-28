@@ -84,7 +84,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["AI studio", "multi-model AI chat", "BYOK AI chat", "Claude and GPT in one place"],
   },
   {
-    slug: "clipper", live: false, name: "Clipper", icon: "🎬", color: "#db2777",
+    slug: "clipper", live: true, name: "Clipper", icon: "🎬", color: "#db2777",
     short: "Turn long videos into short viral clips with captions — using your own AI keys.",
     hero: "Upload a podcast, webinar or interview and get the best moments as ready-to-post vertical clips: transcribed, captioned, reframed and titled. Video is processed on your own device; transcription and highlight detection run on your own AI keys.",
     steps: [

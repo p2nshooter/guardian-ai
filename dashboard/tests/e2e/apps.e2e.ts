@@ -104,3 +104,36 @@ test("vault: Starter can store redacted output (PII-free) in history", async () 
   assert.equal(list.json.items.length, 1);
   assert.equal(list.json.items[0].title, "Redacted 1");
 });
+
+test("clipper: highlight detection runs on the member's chat key (Starter has Clipper)", async () => {
+  const transcript = "[0.0] this is a sufficiently long transcript line about a fascinating topic worth clipping into shorts";
+  const r = await starter.post("/api/byox/run", { app: "clipper", messages: [{ role: "user", content: transcript }], provider: "custom", options: { platform: "tiktok", count: "3" } });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.headers.get("x-ai-mode"), "byox");
+});
+
+test("clipper: transcribe needs a speech-to-text key (412) and does not run without one", async () => {
+  const fd = new FormData();
+  fd.append("audio", new Blob([new Uint8Array([1, 2, 3, 4])], { type: "audio/mpeg" }), "a.mp3");
+  const res = await fetch(BASE + "/api/clipper/transcribe", { method: "POST", body: fd, headers: { "cf-connecting-ip": starter.ip, ...(starter.cookie ? { Cookie: starter.cookie } : {}) } });
+  const j: any = await res.json().catch(() => ({}));
+  assert.equal(res.status, 412, JSON.stringify(j));
+  assert.equal(j.needKey, true);
+});
+
+test("clipper: history persists (encrypted, CRUD) on Starter", async () => {
+  const s = await starter.post("/api/history/clipper", { title: "Podcast ep 1", body: { platform: "tiktok", count: 3, transcript: "t", words: [], duration: 60, clips: [{ title: "c", start: 1, end: 20 }] } });
+  assert.equal(s.status, 200, s.text);
+  assert.equal((await starter.get("/api/history/clipper")).json.items.length, 1);
+});
+
+test("clipper: no plan → app is gated (402) for run and transcribe", async () => {
+  const np = new Client();
+  await np.post("/api/auth/register", { email: `anoplan-${RUN}@example.com`, name: "NoPlan", password: "abcdefgh1", acceptTerms: true });
+  const run = await np.post("/api/byox/run", { app: "clipper", messages: [{ role: "user", content: "[0.0] long enough transcript content for clipper handler to accept it as input" }], provider: "custom", options: { platform: "tiktok" } });
+  assert.equal(run.status, 402, run.text);
+  const fd = new FormData();
+  fd.append("audio", new Blob([new Uint8Array([1, 2, 3])], { type: "audio/mpeg" }), "a.mp3");
+  const tr = await fetch(BASE + "/api/clipper/transcribe", { method: "POST", body: fd, headers: { "cf-connecting-ip": np.ip, ...(np.cookie ? { Cookie: np.cookie } : {}) } });
+  assert.equal(tr.status, 402, await tr.text());
+});

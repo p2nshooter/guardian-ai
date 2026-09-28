@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { extractIocs, iocCount, iocBlock, refang, SEC_MODES, isSecMode } from "../lib/security/modes";
 import { detect, redact, restore, luhn, summarize, PII_TYPES, type MaskStyle } from "../lib/vault/pii";
 import { FRAMEWORKS, COMP_MODES, getFramework, isFramework, isCompMode } from "../lib/compliance/frameworks";
+import { PLATFORMS, getPlatform, transcriptForModel, parseClips, buildCaptions } from "../lib/clipper/options";
 import { getTask } from "../lib/ai/tasks";
 import "../lib/ai/register";
 
@@ -91,4 +92,46 @@ test("compliance: 7 frameworks + modes; handler requires a valid framework", () 
   assert.ok("error" in bad, "missing framework rejected");
   const ok = h!.build({ task: "gap", messages: [{ role: "user", content: "assess us" }], options: { framework: "soc2", mode: "gap", org: "SaaS" } }, "pro");
   assert.ok("system" in ok && /SOC 2/.test(ok.system) && /not legal advice/i.test(ok.system));
+});
+
+/* ── Clipper ──────────────────────────────────────────────────────────────── */
+test("clipper: transcript builder groups words with timestamps", () => {
+  const words = Array.from({ length: 20 }, (_, i) => ({ word: `w${i}`, start: i * 1.0, end: i * 1.0 + 0.9 }));
+  const t = transcriptForModel(words, 6);
+  assert.match(t, /^\[0\.0\] /, "starts with a timestamp");
+  assert.ok(t.split("\n").length >= 3, "chunked into multiple lines");
+});
+
+test("clipper: parse clips from fenced JSON, clamp to duration, rank by score", () => {
+  const out = "```json\n{\"clips\":[{\"title\":\"A\",\"start\":5,\"end\":25,\"score\":80,\"hashtags\":[\"#x\",\"y\"]},{\"title\":\"B\",\"start\":10,\"end\":9999,\"score\":95}]}\n```";
+  const clips = parseClips(out, 120);
+  assert.equal(clips.length, 2);
+  assert.equal(clips[0].title, "B", "highest score first");
+  assert.equal(clips[0].end, 120, "clamped to duration");
+  assert.deepEqual(clips[1].hashtags, ["x", "y"], "hashtags stripped of #");
+});
+
+test("clipper: parse tolerates raw JSON and drops invalid ranges", () => {
+  const clips = parseClips('prose {"clips":[{"title":"ok","start":2,"end":8},{"title":"bad","start":9,"end":9}]} trailing');
+  assert.equal(clips.length, 1);
+  assert.equal(clips[0].title, "ok");
+});
+
+test("clipper: SRT/VTT captions built from word timings, offset to clip start", () => {
+  const words = [{ word: "hello", start: 10, end: 10.5 }, { word: "world", start: 10.6, end: 11.2 }, { word: "again", start: 30, end: 30.4 }];
+  const srt = buildCaptions(words, 10, 12, "srt");
+  assert.match(srt, /00:00:00,000 --> /, "first cue offset to clip start");
+  assert.match(srt, /hello world/);
+  assert.ok(!srt.includes("again"), "words outside the window excluded");
+  assert.match(buildCaptions(words, 10, 12, "vtt"), /^WEBVTT/);
+});
+
+test("clipper: platforms + handler need a real transcript", () => {
+  assert.ok(PLATFORMS.length >= 5 && getPlatform("shorts").aspect === "9:16");
+  const h = getTask("clipper");
+  assert.ok(h, "clipper task registered");
+  const bad = h!.build({ messages: [{ role: "user", content: "hi" }], options: { platform: "tiktok" } }, "starter");
+  assert.ok("error" in bad, "too-short transcript rejected");
+  const ok = h!.build({ messages: [{ role: "user", content: "[0.0] a fairly long transcript line with real content to analyse for clips" }], options: { platform: "tiktok", count: "5" } }, "starter");
+  assert.ok("system" in ok && /ONLY valid JSON/.test(ok.system), "JSON-only instruction present");
 });
