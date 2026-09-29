@@ -19,7 +19,7 @@
 // fault, not a security boundary) so a KV outage cannot become an
 // availability outage for legitimate customers. The real security boundary
 // for license-validate is the signed-response + offline-grace design in
-// license-signing.ts and every product's license.py — rate limiting here is
+// license-sign.ts and every product's license.py — rate limiting here is
 // defense-in-depth against brute-force / enumeration / volumetric abuse,
 // not the primary control.
 // ═══════════════════════════════════════════════════════════════════════════

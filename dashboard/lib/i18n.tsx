@@ -8,6 +8,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { EXTRA_DICTS } from "./i18n-dicts";
+import { V32_EN, V32 } from "./i18n-v32";
 
 export { LANGS, LANG_CODES, isLang, dirOf, type Lang } from "./i18n-shared";
 import { LOCALE, isLang, LANG_COOKIE, dirOf, type Lang } from "./i18n-shared";
@@ -218,6 +219,7 @@ const EN = {
   "auth.resetTitle": "Choose a new password", "auth.newPassword": "New password", "auth.confirmPassword": "Confirm new password",
   "auth.mismatch": "The passwords don't match.", "auth.setPassword": "Save and sign in", "auth.noToken": "This reset link is incomplete. Request a new one.",
   "auth.backToSignin": "Back to sign in", "auth.working": "Please wait…", "auth.secure": "Protected by encryption. We never share your data.",
+  ...V32_EN,
 };
 
 export type Key = keyof typeof EN;
@@ -419,9 +421,13 @@ const ID: Record<Key, string> = {
   "auth.resetTitle": "Buat kata sandi baru", "auth.newPassword": "Kata sandi baru", "auth.confirmPassword": "Ulangi kata sandi baru",
   "auth.mismatch": "Kata sandi tidak sama.", "auth.setPassword": "Simpan dan masuk", "auth.noToken": "Tautan reset tidak lengkap. Minta tautan baru.",
   "auth.backToSignin": "Kembali ke halaman masuk", "auth.working": "Mohon tunggu…", "auth.secure": "Dilindungi enkripsi. Data Anda tidak pernah dibagikan.",
+  ...V32.id,
 };
 
-const DICTS: Record<Lang, Partial<Record<Key, string>>> = { en: EN, id: ID, ...EXTRA_DICTS };
+const DICTS: Record<Lang, Partial<Record<Key, string>>> = {
+  en: EN, id: ID,
+  ...(Object.fromEntries(Object.entries(EXTRA_DICTS).map(([l, d]) => [l, { ...d, ...V32[l as keyof typeof V32] }])) as Record<keyof typeof EXTRA_DICTS, Partial<Record<Key, string>>>),
+};
 
 function detect(): Lang {
   if (typeof document === "undefined") return "en";

@@ -13,7 +13,7 @@
 #   3. Dashboard: http://YOUR_SERVER:8084
 # ============================================================
 compliance:
-  license_key: "CMPL-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "CMPL-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
   port: 8093

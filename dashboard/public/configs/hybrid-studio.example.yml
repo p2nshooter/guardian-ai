@@ -6,7 +6,7 @@
 # ==============================================================================
 # AXTO Hybrid Studio — Configuration
 hybrid_studio:
-  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   host: "0.0.0.0"
   port: 8093
   log_retention_days: 30

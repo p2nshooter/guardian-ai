@@ -216,12 +216,8 @@ jobs:
             echo "💾 Packaging ${name}..."
             docker save "axto/${name}:${TAG}" | gzip -9 > "${name}.tar.gz"
             echo "   Size: $(du -sh ${name}.tar.gz | cut -f1)"
-            aws s3 cp "${name}.tar.gz" \
-              "s3://${R2_BUCKET}/${BASE_KEY}/raw/${name}.tar.gz" \
-              --endpoint-url "$R2_ENDPOINT" --no-progress
-            aws s3 cp "${name}.tar.gz" \
-              "s3://${R2_BUCKET}/builds/latest/raw/${name}.tar.gz" \
-              --endpoint-url "$R2_ENDPOINT" --no-progress
+            bash scripts/ci/r2-put.sh "${name}.tar.gz" "${R2_BUCKET}/${BASE_KEY}/raw/${name}.tar.gz" application/gzip
+            bash scripts/ci/r2-put.sh "${name}.tar.gz" "${R2_BUCKET}/builds/latest/raw/${name}.tar.gz" application/gzip
             echo "   ✅ ${name} → R2"
           }
           
@@ -346,13 +342,8 @@ jobs:
           BASE_KEY="${{ inputs.r2_upload_key }}"
           [ -z "$BASE_KEY" ] && BASE_KEY="builds/${BUILD_ID}"
           
-          aws s3 cp "dist/${EXE_NAME}.exe" \
-            "s3://${R2_BUCKET}/${BASE_KEY}/exe/${PRODUCT}-windows.exe" \
-            --endpoint-url "$R2_ENDPOINT" --no-progress
-          
-          aws s3 cp "dist/${EXE_NAME}.exe" \
-            "s3://${R2_BUCKET}/builds/latest/exe/${PRODUCT}-windows.exe" \
-            --endpoint-url "$R2_ENDPOINT" --no-progress
+          bash scripts/ci/r2-put.sh "dist/${EXE_NAME}.exe" "${R2_BUCKET}/${BASE_KEY}/exe/${PRODUCT}-windows.exe"
+          bash scripts/ci/r2-put.sh "dist/${EXE_NAME}.exe" "${R2_BUCKET}/builds/latest/exe/${PRODUCT}-windows.exe"
           
           echo "✅ EXE uploaded → R2 ${BASE_KEY}/exe/${PRODUCT}-windows.exe"
 

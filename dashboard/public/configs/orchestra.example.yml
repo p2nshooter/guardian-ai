@@ -5,11 +5,11 @@
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 # AXTO Orchestra — AI eXecution & Tools Orchestration | Config Template
-# 1. Isi license_key dari AXTO portal (Self-Hosted) (https://axto.io/app/self-hosted)
+# 1. Paste your licence key (Business or Enterprise plan) from https://axto.io/app/self-hosted
 # 2. Tambahkan minimal 1 AI vendor key (BYOK — key Anda, di server Anda)
 # 3. Jalankan: docker compose -f orchestra-compose.yml up -d
 orchestra:
-  license_key: "ORCH-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "ORCH-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
   console_password: "CHANGE_ME_STRONG_PASSWORD"
   worker_token: "CHANGE_ME_WORKER_SECRET_TOKEN"

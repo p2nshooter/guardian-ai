@@ -56,24 +56,6 @@ jobs:
           docker save axto/${{ inputs.image_name }}:latest | gzip -9 > ${{ inputs.image_name }}.tar.gz
           SIZE=$(du -sh ${{ inputs.image_name }}.tar.gz | cut -f1)
           echo "✅ ${{ inputs.image_name }}.tar.gz — ${SIZE}"
-          pip install -q "awscli>=1.32"
-          aws s3 cp ${{ inputs.image_name }}.tar.gz \
-            "s3://${R2_BUCKET}/builds/latest/raw/${{ inputs.image_name }}.tar.gz" \
-            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --no-progress
-          echo "☁️ → R2 builds/latest/raw/${{ inputs.image_name }}.tar.gz"
+          bash scripts/ci/r2-put.sh ${{ inputs.image_name }}.tar.gz \
+            "${R2_BUCKET}/builds/latest/raw/${{ inputs.image_name }}.tar.gz" application/gzip
 
-      - name: Notify dashboard
-        if: always()
-        env:
-          AXTO_APP_URL: ${{ secrets.AXTO_APP_URL }}
-          BUILD_WEBHOOK_SECRET: ${{ secrets.BUILD_WEBHOOK_SECRET }}
-        run: |
-          if [ -n "$AXTO_APP_URL" ]; then
-            STATUS="${{ job.status == 'success' && 'success' || 'failed' }}"
-            curl -sf -X POST "${AXTO_APP_URL}/api/admin/engine-builder" \
-              -H "Content-Type: application/json" \
-              -H "X-Webhook-Secret: ${BUILD_WEBHOOK_SECRET}" \
-              -d "{\"action\":\"build_callback\",\"product\":\"${{ inputs.image_name }}\",\"type\":\"image\",\"status\":\"${STATUS}\",\"commit\":\"${{ github.sha }}\"}" \
-              || true
-          fi

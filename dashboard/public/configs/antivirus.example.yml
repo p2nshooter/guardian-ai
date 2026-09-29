@@ -8,7 +8,7 @@
 # AXTO Guardian Antivirus — Client Configuration
 #
 # CARA PAKAI / HOW TO USE:
-#   1. Isi license_key dari / Get license_key from: https://axto.io/app/self-hosted
+#   1. Paste your licence key (Business or Enterprise plan) from https://axto.io/app/self-hosted
 #   2. (Opsional) Isi 1 AI vendor key untuk analisa file mencurigakan berbasis AI
 #      (Optional) Add 1 AI vendor key for AI-assisted suspicious-file analysis
 #   3. docker compose -f antivirus-compose.yml up -d
@@ -22,7 +22,7 @@
 antivirus:
 
   # ── License ──────────────────────────────────────────────
-  license_key: "AV-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "AV-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
 
   # ── ClamAV Engine ────────────────────────────────────────

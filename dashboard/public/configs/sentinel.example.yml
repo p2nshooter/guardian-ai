@@ -13,7 +13,7 @@
 #   3. Dashboard: http://YOUR_SERVER:8085
 # ============================================================
 sentinel:
-  license_key: "SNTL-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "SNTL-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
   host: "0.0.0.0"
   port: 8095

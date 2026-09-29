@@ -11,7 +11,7 @@
 
 ai_studio:
   # Your license key from axto.io/app/self-hosted
-  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
 
   # Server settings (when running as exe/standalone)
   host: "0.0.0.0"

@@ -71,9 +71,5 @@ jobs:
             docker save axto/orchestra-worker-gpu:latest | gzip -6 > orchestra-worker-gpu.tar.gz
           fi
           echo "✅ size: $(du -sh orchestra-worker-gpu.tar.gz | cut -f1)"
-          pip install -q "awscli>=1.32"
-          aws s3 cp orchestra-worker-gpu.tar.gz \
-            "s3://${R2_BUCKET}/builds/latest/raw/orchestra-worker-gpu.tar.gz" \
-            --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" \
-            --no-progress
-          echo "☁️ → R2 builds/latest/raw/orchestra-worker-gpu.tar.gz"
+          bash scripts/ci/r2-put.sh orchestra-worker-gpu.tar.gz \
+            "${R2_BUCKET}/builds/latest/raw/orchestra-worker-gpu.tar.gz" application/gzip

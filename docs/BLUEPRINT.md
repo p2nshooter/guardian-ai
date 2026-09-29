@@ -440,6 +440,7 @@ Hasil dasar: typecheck ✅ · unit 45/45 ✅ · build ✅ · E2E 57/59 ✅ (2 di
 | E5 | 49 PDF playbook premium masih ada di repo **publik** + langkah "Seed Playbooks" masih mengunggahnya ke R2 setiap deploy (temuan Kritis #4 belum ditutup) | Konten berbayar bocor | PDF & langkah seed dihapus dari pohon kerja. *Catatan pemilik:* file tetap ada di riwayat git — pembersihan riwayat (force-push) butuh keputusan Anda |
 | E6 | Menu member **Managed AI** → `/app/managed` = **404** | Tautan mati di setiap halaman portal | Halaman Managed AI (terkunci, status dari `/api/managed/status`) |
 | E7 | `public/configs/*.example.yml` yang diunduh member **basi** (12 file beda dari sumber di root) | Instruksi konfigurasi usang | `scripts/vendor.mjs` menyalin dari root saat build + uji unit kesamaan |
+| E8 | Isi template Prompt Library (termasuk Premium/Elite) dan prompt server Legal AI tersimpan **polos** di repo **publik** (§7 menuntut repo hanya berisi ciphertext) | Konten berbayar bisa dibaca siapa pun di GitHub | **Keputusan pemilik:** jadikan repo GitHub privat (menutup E5 + E8 sekaligus, termasuk riwayat). Enkripsi konten di repo butuh secret `CONTENT_KEY` yang hanya bisa dipasang pemilik |
 
 ### 19b. BELUM ADA (celah blueprint)
 | # | Blueprint | Kondisi | v3.2 |

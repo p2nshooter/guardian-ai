@@ -92,6 +92,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4          # for scripts/ci/r2-put.sh
       - uses: actions/download-artifact@v4
         with: { name: axto-setup, path: dist }
       - name: Upload
@@ -106,7 +107,7 @@ jobs:
           for f in dist/*; do
             n=$(basename "$f")
             for p in "builds/latest/installer/$n" "builds/v${VERSION}/installer/$n"; do
-              aws s3 cp "$f" "s3://${R2_BUCKET}/$p" --endpoint-url "https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com" --no-progress
+              bash scripts/ci/r2-put.sh "$f" "${R2_BUCKET}/$p"
             done
           done
           cat dist/SHA256SUMS.txt

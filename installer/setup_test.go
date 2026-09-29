@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -110,7 +111,11 @@ func TestWriteFilesKeepsCustomerEdits(t *testing.T) {
 	if !strings.Contains(string(b), "# my edit") || !strings.Contains(string(b), o.Key) || strings.Contains(string(b), "0A1B2C3D") {
 		t.Fatalf("update must keep edits and swap the key:\n%s", b)
 	}
-	if st, _ := os.Stat(cfg); st.Mode().Perm() != 0o600 {
-		t.Fatalf("config must be private, got %v", st.Mode().Perm())
+	// Unix permission bits only exist on Unix; on Windows Go reports every
+	// writable file as rw-rw-rw- and privacy comes from the user-profile ACL.
+	if runtime.GOOS != "windows" {
+		if st, _ := os.Stat(cfg); st.Mode().Perm() != 0o600 {
+			t.Fatalf("config must be private, got %v", st.Mode().Perm())
+		}
 	}
 }

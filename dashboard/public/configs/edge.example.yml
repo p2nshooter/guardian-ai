@@ -8,7 +8,7 @@
 # Copy to edge.yml and fill in your values.
 
 edge:
-  license_key: "EDGE-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "EDGE-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
   ai_pool:
     vendors:

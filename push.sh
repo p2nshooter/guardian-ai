@@ -55,21 +55,9 @@ else
 fi
 cd ..
 
-# ── Step 2: Upload PDFs ke R2 ──────────────────────────────────────────────
-info "Step 2/4 — Upload playbook PDFs → R2 axto-storage..."
-PDF_COUNT=0
-if ls playbooks-pdf/*.pdf 1>/dev/null 2>&1; then
-  for f in playbooks-pdf/*.pdf; do
-    KEY="playbooks/$(basename "$f")"
-    wrangler r2 object put "axto-storage/${KEY}" \
-      --file="$f" \
-      --content-type="application/pdf" 2>/dev/null && PDF_COUNT=$((PDF_COUNT+1)) || true
-  done
-  ok "PDFs uploaded ($PDF_COUNT files)"
-else
-  warn "Folder playbooks-pdf/ kosong atau tidak ada PDF"
-fi
-
+# ── Step 2: Upload threat feed ke R2 ─────────────────────────────────────
+# (Playbook PDF v2 tidak lagi diunggah — isi premium kini di Prompt Library, terenkripsi.)
+info "Step 2/4 — Upload threat feed → R2..."
 # Upload threat feed ke R2
 info "  Upload threat feed → R2 guardian-threat-feed..."
 for f in threat-feed/*.json; do

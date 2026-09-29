@@ -8,7 +8,7 @@
 # AXTO Studio — Self-Hosted AI & GPU Pool Platform
 #
 # CARA PAKAI / HOW TO USE:
-#   1. Isi license_key dari: https://axto.io/app/self-hosted
+#   1. Paste your licence key (Business or Enterprise plan) from https://axto.io/app/self-hosted
 #   2. Tambahkan AI provider API key Anda (minimal 1)
 #   3. docker compose -f studio-compose.yml up -d
 #   4. Buka: http://YOUR_SERVER:8090
@@ -26,7 +26,7 @@
 studio:
 
   # ── License ──────────────────────────────────────────────
-  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "STUD-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
 
   # ── AI Provider Pool (BYOK — Bring Your Own Keys) ────────

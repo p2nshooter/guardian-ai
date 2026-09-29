@@ -8,7 +8,7 @@
 # AXTO Vault — AI Privacy Layer | Client Configuration
 #
 # CARA PAKAI / HOW TO USE:
-#   1. Isi license_key dari / Get license_key from: https://axto.io/app/self-hosted
+#   1. Paste your licence key (Business or Enterprise plan) from https://axto.io/app/self-hosted
 #   2. Isi minimal 1 AI vendor key / Add at least 1 AI vendor key
 #   3. docker compose -f vault-compose.yml up -d
 #   4. Buka / Open: http://YOUR_SERVER:8081
@@ -23,7 +23,7 @@
 vault:
 
   # ── License ──────────────────────────────────────────────
-  license_key: "VAULT-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"
+  license_key: "VAULT-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"   # paste your key from https://axto.io/app/self-hosted
   license_validate_url: "https://axto.io/api/license-validate"
 
   # ── AI Vendor Pool (BYOK — Bring Your Own Keys) ───────────
