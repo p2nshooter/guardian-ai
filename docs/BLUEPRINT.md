@@ -1,8 +1,8 @@
 # AXTO v3 — Blueprint Rombak Total
 
-> Status: **disetujui untuk dikerjakan** (rombak total, bertahap).
-> Branch kerja: `claude/app-consistency-paid-model-5hjkqo`.
-> Deploy produksi terjadi otomatis saat branch ini di-merge ke `main`
+> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§19 (v3.2, 29 Sep 2026)**.
+> Branch kerja v3.2: `ccr-e9111ca5-n0fcha` (sebelumnya `claude/app-consistency-paid-model-5hjkqo`, sudah di-merge).
+> Deploy produksi terjadi otomatis saat branch kerja di-merge ke `main`
 > (GitHub Actions → Cloudflare Pages + migrasi D1 + sinkron konten R2).
 
 ---
@@ -250,15 +250,15 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 | Tahap | Isi | Status |
 |---|---|---|
 | 0 | Audit + blueprint + hapus data klien uji | ✅ |
-| 1 | Fondasi: paket, migrasi D1 v3, auth, checkout & 5 webhook, BYOX vs Managed (terkunci), lisensi berbayar (server + 13 engine) | ⏳ |
-| 2 | Design system + Portal Member + Portal Admin + halaman publik inti (beranda, harga, legal) — diuji E2E | ⏳ |
-| 2b | Self-hosted: Lifetime offline (harga, checkout, file aktivasi, dukungan offline di 13 engine), EXE Windows, panduan instalasi | ⏳ |
-| 3 | Aplikasi 1: **Legal AI** (paling sering dipakai) | ⏳ |
-| 4 | Aplikasi 2: **Prompt Library** (konten + enkripsi + R2) | ⏳ |
-| 5 | Aplikasi 3: **AI Studio** | ⏳ |
-| 6 | Aplikasi 4: **Clipper** | ⏳ |
-| 7 | Aplikasi 5–7: Privacy Vault, Compliance Center, Security Analyst | ⏳ |
-| 8 | SEO lengkap + blog + sitemap + optimasi R2/D1 + pembersihan tabel lama (opsional) | ⏳ |
+| 1 | Fondasi: paket, migrasi D1 v3, auth, checkout & 5 webhook, BYOX vs Managed (terkunci), lisensi berbayar (server + 13 engine) | ✅ (E2E) |
+| 2 | Design system + Portal Member + Portal Admin + halaman publik inti (beranda, harga, legal) — diuji E2E | ✅ — celah ditutup di v3.2 (§19) |
+| 2b | Self-hosted: Lifetime offline (harga, checkout, file aktivasi, dukungan offline di 13 engine), EXE Windows, panduan instalasi | ⏳ → dikerjakan di v3.2 (§19c) |
+| 3 | Aplikasi 1: **Legal AI** (paling sering dipakai) | ✅ (E2E) |
+| 4 | Aplikasi 2: **Prompt Library** (konten + enkripsi + R2) | ✅ 51 prompt kurasi (target ≥2.000 = roadmap konten) |
+| 5 | Aplikasi 3: **AI Studio** | ✅ (E2E) |
+| 6 | Aplikasi 4: **Clipper** | ✅ inti (fitur §12c lanjutan = roadmap) |
+| 7 | Aplikasi 5–7: Privacy Vault, Compliance Center, Security Analyst | ✅ (E2E) |
+| 8 | SEO lengkap + blog + sitemap + optimasi R2/D1 + pembersihan tabel lama (opsional) | ⏳ → sisa celah dikerjakan di v3.2 (§19d) |
 
 ---
 
@@ -422,3 +422,56 @@ Prinsip hemat (revisi permintaan pemilik): **jangan mengunduh & menyimpan aset p
 
 ## 18. Urutan setelah blueprint final
 Setelah blueprint ini disepakati: (1) pustaka prompt premium + golden tests, (2) pipeline dataset→R2 (antivirus/Clipper dulu), (3) app berikutnya (Studio ✓, Prompt Library, Clipper, Vault, Compliance, Security), (4) SSO/enterprise & halaman kepercayaan, (5) rollout integrity + Cython ke semua engine dengan uji docker-smoke berulang.
+
+---
+
+## 19. Audit v3.2 — yang belum, yang error, yang tidak konsisten (29 Sep 2026)
+
+Metode: typecheck, 45 uji unit, build produksi (351 halaman), E2E penuh di runtime Cloudflare lokal (D1/KV/R2), pemeriksa tautan statis atas semua `href`, log GitHub Actions, dan pencocokan baris-per-baris blueprint §1–§18 dengan kode.
+Hasil dasar: typecheck ✅ · unit 45/45 ✅ · build ✅ · E2E 57/59 ✅ (2 dilewati karena butuh Docker — di v3.2 dijalankan dengan Docker).
+
+### 19a. ERROR (wajib diperbaiki dulu)
+| # | Temuan | Dampak | Perbaikan v3.2 |
+|---|---|---|---|
+| E1 | `next@15.1.6` terkena **CVE-2025-66478** (RCE lewat React Server Components) | Situs produksi bisa diambil alih | Naik ke `next@15.1.12` (patch terbaru di minor yang sama, kompatibel next-on-pages) |
+| E2 | CI **AXTO Setup (installer)** merah setiap malam: `TestWriteFilesKeepsCustomerEdits` menguji izin file Unix `0600` di runner Windows (Go selalu melaporkan `rw-rw-rw-`) | Rilis installer terblokir | Asersi izin hanya di OS yang punya izin Unix |
+| E3 | CI **Auto Build All Images**: unggah multipart R2 gagal (`InvalidPart`) | Image SOC tidak terbit | Checksum AWS CLI mode kompatibel R2 + retry 3× |
+| E4 | `deploy.yml` (AXTO CI/CD) menjalankan `tests/test-*.mjs` yang sudah **dihapus**; job PDF panduan bergantung padanya dan `render-guides.mjs` mengimpor `lib/product-guides.ts` yang **tidak ada** | Workflow nonaktif; PDF panduan (§5d) tidak pernah terbit | Uji diganti ke `npm test`; `lib/product-guides.ts` dibuat (satu sumber untuk halaman & PDF) |
+| E5 | 49 PDF playbook premium masih ada di repo **publik** + langkah "Seed Playbooks" masih mengunggahnya ke R2 setiap deploy (temuan Kritis #4 belum ditutup) | Konten berbayar bocor | PDF & langkah seed dihapus dari pohon kerja. *Catatan pemilik:* file tetap ada di riwayat git — pembersihan riwayat (force-push) butuh keputusan Anda |
+| E6 | Menu member **Managed AI** → `/app/managed` = **404** | Tautan mati di setiap halaman portal | Halaman Managed AI (terkunci, status dari `/api/managed/status`) |
+| E7 | `public/configs/*.example.yml` yang diunduh member **basi** (12 file beda dari sumber di root) | Instruksi konfigurasi usang | `scripts/vendor.mjs` menyalin dari root saat build + uji unit kesamaan |
+
+### 19b. BELUM ADA (celah blueprint)
+| # | Blueprint | Kondisi | v3.2 |
+|---|---|---|---|
+| G1 | §4b Lifetime (tabel, checkout, file aktivasi offline, admin, 13 engine) | Hanya daftar harga + chat | **Dibangun penuh — lihat §19c** |
+| G2 | §6 Portal member `File Saya` | Kunci i18n ada, halaman tidak ada | `/app/files`: semua hasil kerja tersimpan (7 app) + meteran penyimpanan, buka/ganti nama/hapus/ekspor |
+| G3 | §5d `/self-hosted/<produk>/guide` + PDF di R2 | Tidak ada | Panduan per produk (Docker, EXE Windows, aktivasi online & offline, port, konfigurasi, pemecahan masalah) + PDF via CI |
+| G4 | §9 halaman 404 yang benar, RSS blog, `security.txt` | Tidak ada | `not-found.tsx`, `error.tsx`, `/blog/rss.xml`, `/.well-known/security.txt` |
+| G5 | §14 halaman kepercayaan `/dpa`, `/subprocessors`, status page | Tidak ada | `/dpa`, `/subprocessors`, `/status` (cek langsung `/api/health`) |
+| G6 | §10 gerbang kualitas "E2E penuh setiap push + setiap malam" | E2E tidak dijalankan di CI | Workflow `e2e.yml` (push + malam, dengan Docker untuk uji 13 engine) |
+| G7 | §4b tabel harga Lifetime di `/pricing` | `/self-hosted` menulis "See lifetime pricing" tetapi `/pricing` tidak memuatnya | Tabel Lifetime di `/pricing` (dibaca dari harga admin) |
+
+### 19c. Desain Lifetime (offline, super-enterprise)
+- **Data D1** (`0057_lifetime.sql`): `lifetime_licenses` (id `LT-…`, member, pesanan, cakupan `app`/`suite`, produk, jumlah perangkat 1–100, versi mayor, `updates_until`, status) + `lifetime_activations` (lisensi, produk, ID mesin, label, dicabut). Batas perangkat berlaku **per aplikasi**: Suite 5 perangkat = setiap aplikasi dari 10 aplikasi boleh aktif di ≤ 5 perangkat.
+- **Harga**: default `lib/lifetime.ts`, dapat diubah admin (`platform_config.lifetime_prices`) di **Admin → Paket & Harga → Lifetime**. Server selalu menghitung ulang harga — browser tidak pernah menentukan nominal.
+- **Beli**: Portal → *Lisensi Lifetime* → pilih aplikasi/suite + perangkat → pesanan `kind = lifetime` lewat gateway yang sama (transfer bank/wire, crypto, kartu ≤ $999.999; di atas itu otomatis wire). Saat pesanan lunas → lisensi terbit otomatis (zero-touch). Admin juga bisa menerbitkan lisensi hasil negosiasi langsung.
+- **File aktivasi `.axto-license`** (JSON): `payload` pipa-terkanonik `axto-lifetime-1|<id>|<produk>|<id-mesin>|<cakupan>|<perangkat>|<mayor>|<updates_until>|<issued_at>` + `signature` Ed25519 dengan kunci penandatangan lisensi yang sama (engine sudah membawa public key-nya). Terikat ke **satu produk × satu ID mesin**.
+- **Engine (13 modul)**: sebelum cek online, engine mencari `AXTO_LICENSE_FILE` atau `$AXTO_STATE_DIR/<produk>.axto-license`; jika tanda tangan sah + produk cocok + ID mesin cocok + versi mayor engine ≤ mayor lisensi → **valid tanpa jaringan**, tanpa heartbeat, tanpa batas waktu. File yang salah mesin/palsu ditolak dan jatuh ke jalur kunci online biasa. ID mesin dicetak di log engine agar member bisa mengaktifkan.
+- **Uji**: unit (kanonik & harga), E2E server (beli → lunas → aktivasi → batas perangkat → cabut), E2E engine (file asli valid offline; file dipalsu/mesin lain/produk lain ditolak) di ke-13 modul.
+
+### 19d. TIDAK KONSISTEN
+| # | Temuan | v3.2 |
+|---|---|---|
+| I1 | Teks AI Studio: "Built-in model included" & "tidak mengurangi AI runs bulanan" — bertentangan dengan BYOX murni (§5b) | Teks diselaraskan: BYOX, 14 penyedia, tanpa kuota |
+| I2 | 33 teks portal ditulis `id ? "…" : "…"` → hanya EN/ID; 8 bahasa lain tampil Inggris (bertentangan §14 "10 bahasa") | Dipindah ke kunci i18n, diterjemahkan ke 10 bahasa |
+| I3 | Versi: `package.json` 2.2.0, `/api/health` 3.0.0 | Satu konstanta versi `3.2.0` |
+| I4 | Kode mati v2: `lib/license-signing.ts`, `lib/product-docs.ts` (690 baris, tidak diimpor) | Dihapus |
+| I5 | README hanya menyebut 2 produk & URL `YOUR_ORG` | README v3: 7 aplikasi web + 10 edisi self-hosted |
+| I6 | Status fase §10 semua ⏳ padahal sebagian besar lulus E2E | Diperbarui |
+
+### 19e. Roadmap setelah v3.2 (tidak dikerjakan di rilis ini, dicatat agar tidak hilang)
+- Konten Prompt Library menuju ≥ 2.000 prompt (§15) — butuh kurasi konten, bukan kode.
+- Clipper lanjutan (§12c): deteksi wajah, brand kit, terjemahan caption.
+- SSO/SAML/OIDC + SCIM (§14, Fase E1); 2FA/passkey.
+- Pembersihan riwayat git untuk PDF lama (keputusan pemilik).
