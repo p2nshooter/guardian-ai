@@ -1,5 +1,7 @@
 /* AXTO — GET /api/selfhosted/download?product=…&file=<image|exe> · stream a build from R2
- * (axto-builds) to a member who holds an active licence for that product. */
+ * (axto-builds) to a member who holds an active licence for that product: a
+ * subscription licence (Business/Enterprise) or a lifetime licence whose
+ * included-updates period has not ended. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, getR2Builds, dbFirst } from "@/lib/db";
@@ -7,6 +9,7 @@ import { loadSession, effectiveTier } from "@/lib/auth";
 import { getSelfHosted } from "@/lib/selfhosted";
 import { limitsFor } from "@/lib/plans";
 import { audit } from "@/lib/http";
+import { lifetimeCovers } from "@/lib/lifetime-service";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest) {
   if (!p) return new NextResponse("Unknown product", { status: 404 });
   const s = ctx.session;
   const db = getDB(req);
-  if (s.role !== "admin") {
+  if (s.role !== "admin" && !(await lifetimeCovers(db, s.sub, p.slug))) {
     if (limitsFor(effectiveTier(s)).selfHostedApps === 0) return new NextResponse("Your plan does not include self-hosted apps.", { status: 402 });
     const lic = await dbFirst(db, `SELECT id FROM sh_licenses WHERE user_id = ? AND product = ? AND status = 'active'`, [s.sub, p.slug]);
     if (!lic) return new NextResponse("Issue a licence for this app first.", { status: 403 });

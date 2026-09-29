@@ -90,6 +90,11 @@ async function signString(db: any, payload: string): Promise<string> {
   return btoa(bin);
 }
 
+/** Signs an arbitrary canonical payload (Lifetime activation files) with the licence key. */
+export async function signPayload(db: any, payload: string): Promise<string> {
+  return signString(db, payload);
+}
+
 /** Accepts an engine nonce only in a strict, delimiter-free form. */
 export function requestNonce(v: unknown): string {
   return typeof v === "string" && /^[A-Za-z0-9]{16,64}$/.test(v) ? v : "";

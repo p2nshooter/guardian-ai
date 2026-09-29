@@ -133,6 +133,7 @@ export default function SelfHostedPage() {
                       <div className="flex flex-wrap gap-2 sm:col-span-2">
                         {l.bound_machine_id ? <button className="btn-ghost btn-sm" onClick={() => act(p.slug, "reset")} disabled={!!busy}>↻ {t.reset}</button> : null}
                         <button className="btn-ghost btn-sm" onClick={() => setOpen(open === p.slug ? "" : p.slug)}>🐳 {t.manual}</button>
+                        <Link href={`/self-hosted/${p.slug}/guide`} className="btn-ghost btn-sm">📘 {t.guide}</Link>
                         {d.allowance > 0 ? <button className="btn-ghost btn-sm text-rose-600" onClick={() => act(p.slug, "release")} disabled={!!busy}>{t.release}</button> : null}
                       </div>
                     </div>

@@ -58,8 +58,8 @@ async def lifespan(app: FastAPI):
     # Initialize database
     await db.init_db()
 
-    # Validate license
-    if license_key:
+    # Validate license (a Lifetime offline activation file works without a key)
+    if license_key or lic.offline_activation():
         state = await lic.validate_license(license_key)
         if state.valid:
             log.info(f"🧠 AXTO Studio Engine started — Plan: {state.plan} — License: {license_key[:12]}...")

@@ -184,6 +184,73 @@ def _verify_signature(signed_payload: str, signature_b64: str) -> bool:
         return False
 
 
+
+# ── Lifetime (offline) activation — AXTO v3.2 ────────────────────────────────
+# A Lifetime licence is activated per device with a `.axto-license` file that
+# axto.io signs with the SAME Ed25519 key as its online answers. It is bound to
+# one app and to THIS installation's machine id, so it verifies with no network
+# at all (air-gapped) and never expires. Field order must match
+# activationPayload() in dashboard/lib/lifetime.ts byte for byte.
+OFFLINE_FORMAT = "axto-lifetime-1"
+OFFLINE_FIELDS = [
+    "format", "license_id", "product", "machine_id", "scope",
+    "devices", "major", "updates_until", "issued_at", "entitlements",
+]
+
+
+def _offline_file() -> str:
+    return os.environ.get("AXTO_LICENSE_FILE", "").strip() or os.path.join(_state_dir(), f"{PRODUCT_CODE}.axto-license")
+
+
+def offline_activation() -> Optional[dict]:
+    """The verified Lifetime activation for this app on this machine, or None.
+    Any problem (missing, unreadable, forged, other app or machine, newer major
+    version) means "no offline licence" — it never raises."""
+    import json as _json
+    path = _offline_file()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            doc = _json.load(fh)
+        payload, sig = str(doc.get("payload", "")), str(doc.get("signature", ""))
+    except FileNotFoundError:
+        return None
+    except Exception:
+        logger.error(f"Lifetime licence file {path} is unreadable — ignored")
+        return None
+    if not _verify_signature(payload, sig):
+        logger.critical(f"Lifetime licence file {path} has an INVALID signature — ignored")
+        return None
+    parts = payload.split("|")
+    if len(parts) != len(OFFLINE_FIELDS):
+        return None
+    f = dict(zip(OFFLINE_FIELDS, parts))
+    if f["format"] != OFFLINE_FORMAT or f["product"] != PRODUCT_CODE:
+        logger.error(f"Lifetime licence file {path} is for '{f.get('product')}', not '{PRODUCT_CODE}' — ignored")
+        return None
+    if f["machine_id"] != machine_id():
+        logger.error(f"Lifetime licence file {path} belongs to another machine — ignored. {offline_hint()}")
+        return None
+    try:
+        if int(str(PRODUCT_VERSION).split(".")[0]) > int(f["major"]):
+            logger.error(f"Lifetime licence {f['license_id']} covers major version {f['major']}; this build is {PRODUCT_VERSION} — ignored")
+            return None
+    except ValueError:
+        return None
+    ent: dict = {}
+    for kv in f["entitlements"].split(";"):
+        if "=" in kv:
+            k, v = (x.strip() for x in kv.split("=", 1))
+            ent[k] = (v == "true") if v in ("true", "false") else (int(v) if v.lstrip("-").isdigit() else v)
+    f["ent"] = ent
+    return f
+
+
+def offline_hint() -> str:
+    """How the operator activates this device without a network connection."""
+    return (f"Lifetime / offline activation: this machine ID is {machine_id()} — activate it at "
+            f"https://axto.io/app/lifetime and save the file as {_offline_file()}")
+
+
 def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
     try:
         parts = signed_payload.split("|")
@@ -332,7 +399,7 @@ def _parse_entitlements(s: str) -> dict:
 
 
 # Field order of the separately-signed entitlements payload — must match
-# buildEntitlementsPayload() in dashboard/lib/license-signing.ts byte-for-byte.
+# buildEntitlementsPayload() in dashboard/lib/license-sign.ts byte-for-byte.
 ENTITLEMENTS_FIELDS = ["license_key", "machine_id", "product", "entitlements", "issued_at", "nonce"]
 
 
@@ -434,8 +501,26 @@ def _parse_response(data: dict, key: str = "", mid: str = "", nonce=None) -> Lic
 async def validate(license_key: str) -> LicenseState:
     global _state, _last_validated
 
+    # ── Lifetime (offline) licence — verified locally, no network ────────────
+    off = offline_activation()
+    if off:
+        ent = off["ent"]
+        num = lambda k, d: ent[k] if isinstance(ent.get(k), int) else d
+        if not (_state and _state.status == "lifetime_offline"):
+            logger.info("✅ AXTO Legal — lifetime licence %s verified offline", off["license_id"])
+        _state = LicenseState(
+            True, "lifetime_offline", plan=str(ent.get("package", "")) or "legal_enterprise",
+            package=str(ent.get("package", "")), client_name="", expires_at="",
+            max_users=num("max_users", -1), max_countries=num("max_countries", -1),
+            max_frameworks=num("max_frameworks", -1), edition=str(ent.get("edition", "enterprise")),
+            workspaces=num("workspaces", -1),
+        )
+        return _state
+
     key = (license_key or "").strip()
     if not key or not key.upper().startswith(PRODUCT_PREFIX + "-"):
+        if not key:
+            logger.warning(offline_hint())
         return LicenseState(False, "invalid_key_prefix")
 
     _check_watermark(key)

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -116,6 +117,37 @@ func TestWriteFilesKeepsCustomerEdits(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		if st, _ := os.Stat(cfg); st.Mode().Perm() != 0o600 {
 			t.Fatalf("config must be private, got %v", st.Mode().Perm())
+		}
+	}
+}
+
+func TestActivationFileChecks(t *testing.T) {
+	mid := "0123456789abcdef0123456789abcdef"
+	file := func(product, machine string) []byte {
+		payload := strings.Join([]string{"axto-lifetime-1", "LT-ABCDEF123456", product, machine, "app", "5", "3", "2027-09-29", "2026-09-29T10:00:00.000Z", "package=vault_enterprise;max_nodes=5"}, "|")
+		b, _ := json.Marshal(map[string]string{"format": "axto-lifetime-1", "payload": payload, "signature": "c2ln"})
+		return b
+	}
+	if got, err := checkActivationFile(file("vault", mid), "vault"); err != nil || got != mid {
+		t.Fatalf("genuine file: %v %q", err, got)
+	}
+	if _, err := checkActivationFile(file("legal", mid), "vault"); err == nil || !strings.Contains(err.Error(), "for legal") {
+		t.Fatalf("other app must be refused: %v", err)
+	}
+	if _, err := checkActivationFile(file("vault", "nope"), "vault"); err == nil {
+		t.Fatal("bad machine id must be refused")
+	}
+	for _, junk := range []string{"", "{}", `{"format":"axto-lifetime-1","payload":"a|b","signature":"x"}`, "not json"} {
+		if _, err := checkActivationFile([]byte(junk), "vault"); err == nil {
+			t.Fatalf("junk %q must be refused", junk)
+		}
+	}
+}
+
+func TestEveryProductHasAStateDir(t *testing.T) {
+	for _, p := range Products {
+		if !strings.HasPrefix(p.StateDir, "/") {
+			t.Fatalf("%s has no state dir", p.Slug)
 		}
 	}
 }

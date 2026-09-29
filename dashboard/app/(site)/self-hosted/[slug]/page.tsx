@@ -41,7 +41,8 @@ export default async function SelfHostedProduct({ params }: { params: Promise<{ 
           <p className="mt-2 text-lg font-medium text-white/70">{p.tagline}</p>
           <p className="lead mt-4 max-w-3xl text-white/85">{p.hero}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/pricing" className="btn-primary btn-lg">Lifetime pricing</Link>
+            <Link href="/pricing#lifetime" className="btn-primary btn-lg">Lifetime pricing</Link>
+            <Link href={`/self-hosted/${p.slug}/guide`} className="btn-lg rounded-xl border border-white/25 px-6 font-semibold text-white hover:bg-white/10">Installation guide</Link>
             <Link href="/register" className="btn-lg rounded-xl border border-white/25 px-6 font-semibold text-white hover:bg-white/10">Get started</Link>
           </div>
         </div>

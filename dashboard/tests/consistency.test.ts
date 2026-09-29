@@ -50,3 +50,23 @@ test("i18n v3.2: every language keeps every placeholder", () => {
     }
   }
 });
+
+test("installer and portal agree on every self-hosted product (key prefix, port, files, service, state dir)", () => {
+  const go = fs.readFileSync(path.join(REPO, "installer/products.go"), "utf8");
+  const field = (block: string, name: string) => block.match(new RegExp(`${name}: "?([^",}]+)"?`))?.[1];
+  const list = go.slice(go.indexOf("var Products = []Product{"), go.indexOf("func ProductBySlug"));
+  const blocks = list.split("{Slug: ").slice(1);
+  assert.equal(blocks.length, SELF_HOSTED.length);
+  for (const b of blocks) {
+    const slug = b.match(/^"([a-z-]+)"/)![1];
+    const p = SELF_HOSTED.find((x) => x.slug === slug);
+    assert.ok(p, `installer product ${slug} is not in lib/selfhosted.ts`);
+    assert.equal(field(b, "KeyPrefix"), p!.keyPrefix, `${slug} key prefix`);
+    assert.equal(Number(field(b, "Port")), p!.port, `${slug} port`);
+    assert.equal(field(b, "Service"), p!.service, `${slug} service`);
+    assert.equal(field(b, "StateDir"), p!.stateDir, `${slug} state dir`);
+    assert.equal(field(b, "Compose"), p!.compose, `${slug} compose`);
+    assert.equal(field(b, "Config"), p!.config, `${slug} config`);
+    assert.equal(field(b, "ConfigAs"), p!.configTarget, `${slug} config target`);
+  }
+});

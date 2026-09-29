@@ -18,6 +18,7 @@ import { dbFirst, dbRun, dbQuery, dbBatch, getR2, now } from "../db";
 import { PLANS, addPeriod, isPlanId, isCycle, formatUsd, type PlanId, type Cycle } from "../plans";
 import { sendMail, mails } from "../mail";
 import { SITE } from "../site";
+import { issueForOrder, productName } from "../lifetime-service";
 
 export interface OrderRow {
   id: string; invoice_no: string; user_id: string; email: string; plan: string; cycle: string;
@@ -84,8 +85,18 @@ export async function syncLicenses(db: any, userId: string, plan: string, period
   }
 }
 
+/** Invoice line for an order: a subscription period, or a lifetime licence. */
+function invoiceLine(o: OrderRow): string {
+  if (o.plan === "lifetime") {
+    let m: any = {};
+    try { m = JSON.parse(o.meta || "{}").lifetime || {}; } catch {}
+    const devices = Number(m.devices) || 0;
+    return `${SITE.name} Lifetime licence — ${productName(m.scope === "suite" ? "suite" : String(m.product || ""))}, up to ${devices} device${devices === 1 ? "" : "s"}${m.scope === "suite" ? " per app" : ""}`;
+  }
+  return `${SITE.name} ${isPlanId(o.plan) ? PLANS[o.plan].name : o.plan} plan — ${o.cycle}`;
+}
+
 export function renderInvoice(o: OrderRow, extra: { name?: string; until?: string } = {}): string {
-  const plan = isPlanId(o.plan) ? PLANS[o.plan].name : o.plan;
   const esc = (s: string) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
   const local = o.currency !== "USD" && o.amount_local ? `<tr><td>Charged</td><td style="text-align:right">${o.currency} ${Number(o.amount_local).toLocaleString("en-US")}</td></tr>` : "";
   return `<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${esc(o.invoice_no)}</title>
@@ -96,7 +107,7 @@ h1{font-size:22px;margin:0}table{width:100%;border-collapse:collapse;margin-top:
 <div style="text-align:right"><h1>Invoice</h1><div class="muted">${esc(o.invoice_no)}<br>Paid ${esc((o.paid_at || o.created_at).slice(0, 10))}</div></div></div>
 <p style="margin-top:28px"><b>Billed to</b><br>${esc(extra.name || "")}${extra.name ? "<br>" : ""}${esc(o.email)}</p>
 <table><tr><td><b>Description</b></td><td style="text-align:right"><b>Amount</b></td></tr>
-<tr><td>${esc(SITE.name)} ${esc(plan)} plan — ${esc(o.cycle)}${extra.until ? `<div class="muted">Service period until ${esc(extra.until)}</div>` : ""}</td><td style="text-align:right">${formatUsd(o.amount_usd)}</td></tr>
+<tr><td>${esc(invoiceLine(o))}${extra.until ? `<div class="muted">${o.plan === "lifetime" ? "Updates included until" : "Service period until"} ${esc(extra.until)}</div>` : ""}</td><td style="text-align:right">${formatUsd(o.amount_usd)}</td></tr>
 ${local}<tr class="tot"><td>Total paid (USD)</td><td style="text-align:right">${formatUsd(o.amount_usd)}</td></tr></table>
 <p class="muted">Payment method: ${esc(o.gateway)}${o.gateway_ref ? ` · Ref ${esc(o.gateway_ref)}` : ""}</p>
 <p class="muted">Order ${esc(o.id)}</p><button onclick="print()" style="margin-top:20px;padding:10px 18px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;cursor:pointer">Print / Save as PDF</button>
@@ -111,11 +122,11 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   const o = await dbFirst<OrderRow>(db, `SELECT * FROM orders WHERE id = ?`, [orderId]);
   if (!o) return { ok: false, reason: "order_not_found" };
   if (o.status === "paid") return { ok: true, reason: "already_paid" };
-  if (!isPlanId(o.plan) || !isCycle(o.cycle)) return { ok: false, reason: "bad_order" };
-
   // Amount check (1% tolerance for FX/rounding on the gateway side).
   if (typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
+  if (o.plan === "lifetime") return markLifetimePaid(db, o, opts);
+  if (!isPlanId(o.plan) || !isCycle(o.cycle)) return { ok: false, reason: "bad_order" };
 
   // Claim the order and extend the subscription in ONE transaction. The upsert
   // only runs if this call's claim token landed, so concurrent webhooks for
@@ -163,4 +174,26 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   try { chosen = JSON.parse(o.meta || "{}").apps || []; } catch {}
   await autoIssueAfterPayment(db, o.user_id, o.email, o.plan, endIso, Array.isArray(chosen) ? chosen.map(String) : []);
   return { ok: true };
+}
+
+/** Lifetime order paid → claim it once, invoice it, issue the licence (zero-touch). */
+async function markLifetimePaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
+  const claim = await dbRun(db,
+    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status != 'paid'`,
+    [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
+  if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
+  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
+  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
+  const lic = await issueForOrder(db, o);
+  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
+  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
+  try {
+    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name, until: lic?.updates_until.slice(0, 10) }), {
+      httpMetadata: { contentType: "text/html; charset=utf-8" },
+    });
+  } catch {}
+  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
+    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "order.paid", "order", o.id,
+     JSON.stringify({ plan: "lifetime", amount_usd: o.amount_usd, gateway: o.gateway, license: lic?.id || "" }), now()]).catch(() => {});
+  return lic ? { ok: true } : { ok: false, reason: "bad_order" };
 }

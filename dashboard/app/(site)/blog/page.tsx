@@ -14,6 +14,7 @@ export const metadata: Metadata = pageMeta({
   path: "/blog",
   keywords: ["AI security blog", "self-hosted AI", "BYOK", "cybersecurity articles", "AI infrastructure"],
 });
+metadata.alternates = { ...(metadata.alternates || {}), types: { "application/rss+xml": [{ url: "/blog/rss.xml", title: "AXTO Blog" }] } };
 
 const posts = [...BLOG_POSTS].sort((a, b) => b.date.localeCompare(a.date));
 const fmt = (d: string) => new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });

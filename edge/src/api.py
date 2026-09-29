@@ -99,13 +99,15 @@ async def activate(req: Request):
     if not key.startswith("EDGE-"):
         raise HTTPException(400, "Invalid key format. Key must start with EDGE-")
     core = EdgeCore.get()
+    previous = core.license_validator._key
     info = await core.license_validator.validate(force=True, key_override=key)
     if not info.valid:
+        core.license_validator._key = previous     # keep running on the key that worked
         raise HTTPException(403, info.reason or "Invalid license key")
     (core.cfg.data_dir / "license.key").write_text(key)
     core.license_info = info
     return {"ok": True, "product": info.product, "package": info.package,
-            "expires_at": info.expires_at, "max_customers": info.max_customers}
+            "expires_at": info.expires_at, "max_customers": info.features.get("max_customers", info.max_nodes)}
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

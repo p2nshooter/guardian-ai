@@ -36,8 +36,10 @@ function memberNav(): { section: Key; items: NavItem[] }[] {
     { section: "nav.section.workspace", items: [
       { href: "/app", label: "nav.home", icon: "🏠" },
       { href: "/app/apps", label: "nav.apps", icon: "🧩", match: "/app/apps" },
+      { href: "/app/files", label: "nav.files", icon: "🗂️" },
       ...CLOUD_APPS.map((a) => ({ href: `/app/${a.slug}`, label: a.name, icon: a.icon, badge: a.live ? undefined : "soon" })),
       { href: "/app/self-hosted", label: "nav.selfhosted", icon: "🖥️" },
+      { href: "/app/lifetime", label: "nav.lifetime", icon: "♾️" },
       { href: "/app/managed", label: "nav.managed", icon: "☁️", badge: "locked" },
     ] },
     { section: "nav.section.account", items: [
@@ -55,6 +57,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/members", label: "Members", icon: "👥", match: "/admin/members" },
       { href: "/admin/orders", label: "Orders & payments", icon: "🧾" },
       { href: "/admin/licenses", label: "Licences", icon: "🔑" },
+      { href: "/admin/lifetime", label: "Lifetime licences", icon: "♾️" },
       { href: "/admin/support", label: "Support inbox", icon: "💬" },
     ] },
     { section: "Configuration", items: [

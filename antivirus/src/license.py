@@ -173,11 +173,78 @@ def _verify_signature(signed_payload: str, signature_b64: str) -> bool:
         return False
 
 
+
+# ── Lifetime (offline) activation — AXTO v3.2 ────────────────────────────────
+# A Lifetime licence is activated per device with a `.axto-license` file that
+# axto.io signs with the SAME Ed25519 key as its online answers. It is bound to
+# one app and to THIS installation's machine id, so it verifies with no network
+# at all (air-gapped) and never expires. Field order must match
+# activationPayload() in dashboard/lib/lifetime.ts byte for byte.
+OFFLINE_FORMAT = "axto-lifetime-1"
+OFFLINE_FIELDS = [
+    "format", "license_id", "product", "machine_id", "scope",
+    "devices", "major", "updates_until", "issued_at", "entitlements",
+]
+
+
+def _offline_file() -> str:
+    return os.environ.get("AXTO_LICENSE_FILE", "").strip() or os.path.join(_state_dir(), f"{PRODUCT}.axto-license")
+
+
+def offline_activation() -> Optional[dict]:
+    """The verified Lifetime activation for this app on this machine, or None.
+    Any problem (missing, unreadable, forged, other app or machine, newer major
+    version) means "no offline licence" — it never raises."""
+    import json as _json
+    path = _offline_file()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            doc = _json.load(fh)
+        payload, sig = str(doc.get("payload", "")), str(doc.get("signature", ""))
+    except FileNotFoundError:
+        return None
+    except Exception:
+        log.error(f"Lifetime licence file {path} is unreadable — ignored")
+        return None
+    if not _verify_signature(payload, sig):
+        log.critical(f"Lifetime licence file {path} has an INVALID signature — ignored")
+        return None
+    parts = payload.split("|")
+    if len(parts) != len(OFFLINE_FIELDS):
+        return None
+    f = dict(zip(OFFLINE_FIELDS, parts))
+    if f["format"] != OFFLINE_FORMAT or f["product"] != PRODUCT:
+        log.error(f"Lifetime licence file {path} is for '{f.get('product')}', not '{PRODUCT}' — ignored")
+        return None
+    if f["machine_id"] != machine_id():
+        log.error(f"Lifetime licence file {path} belongs to another machine — ignored. {offline_hint()}")
+        return None
+    try:
+        if int(str(VERSION).split(".")[0]) > int(f["major"]):
+            log.error(f"Lifetime licence {f['license_id']} covers major version {f['major']}; this build is {VERSION} — ignored")
+            return None
+    except ValueError:
+        return None
+    ent: dict = {}
+    for kv in f["entitlements"].split(";"):
+        if "=" in kv:
+            k, v = (x.strip() for x in kv.split("=", 1))
+            ent[k] = (v == "true") if v in ("true", "false") else (int(v) if v.lstrip("-").isdigit() else v)
+    f["ent"] = ent
+    return f
+
+
+def offline_hint() -> str:
+    """How the operator activates this device without a network connection."""
+    return (f"Lifetime / offline activation: this machine ID is {machine_id()} — activate it at "
+            f"https://axto.io/app/lifetime and save the file as {_offline_file()}")
+
+
 def _parse_signed_payload(signed_payload: str) -> Optional[dict]:
     """
     Splits the pipe-delimited canonical payload into named fields. Field
     order MUST stay byte-for-byte in sync with buildCanonicalPayload() in
-    dashboard/lib/license-signing.ts. Returns None if malformed.
+    dashboard/lib/license-sign.ts. Returns None if malformed.
     """
     parts = (signed_payload or "").split("|")
     if len(parts) < len(SIGNED_PAYLOAD_FIELDS):
@@ -485,6 +552,29 @@ class LicenseValidator:
         if self._info and not force and (now - self._last) < CACHE_SECONDS:
             return self._info
 
+        # ── Lifetime (offline) licence — verified locally, no network ────────
+        _off = offline_activation()
+        if _off:
+            _ent = _off["ent"]
+            state = LicenseState(
+                valid              = True,
+                reason             = "lifetime_offline",
+                product            = PRODUCT,
+                package            = str(_ent.get("package", "")),
+                days_until_expiry  = -1,
+                max_nodes          = _ent.get("max_nodes", _ent.get("max_workers", _ent.get("max_devices", 1))),
+                max_requests_daily = _ent.get("max_requests_daily", 10000),
+                max_sources        = _ent.get("max_sources", 10),
+                max_devices        = _ent.get("max_devices", 100),
+                features           = {k: v for k, v in _ent.items() if k != "package"},
+                message            = f"Lifetime licence {_off['license_id']} (offline activation)",
+                last_validated     = now,
+            )
+            if not (self._info and self._info.reason == "lifetime_offline"):
+                log.info(f"✅ AXTO {PRODUCT.upper()} — lifetime licence {_off['license_id']} verified offline | package={state.package}")
+            self._info = state; self._last = now
+            return state
+
         # ── No license key ────────────────────────────────────────────────────
         if not self._key or self._key.upper().startswith(f"AV-XXXX"):
             state = LicenseState(
@@ -502,6 +592,7 @@ class LicenseValidator:
                 f"AXTO ANTIVIRUS — NO LICENSE KEY. "
                 f"Purchase at https://axto.io and set license_key in {PRODUCT}.yml"
             )
+            log.warning(offline_hint())
             self._info = state; self._last = now
             return state
 

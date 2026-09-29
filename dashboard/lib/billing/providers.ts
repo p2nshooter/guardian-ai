@@ -18,6 +18,7 @@ export interface OrderForPayment {
   description: string;   // e.g. "AXTO Pro — yearly"
   amountUsd: number;
   amountIdr: number;
+  returnPath?: string;   // portal page to come back to (default /app/billing)
 }
 
 const enc = (s: string) => new TextEncoder().encode(s);
@@ -37,8 +38,8 @@ function safeEqual(a: string, b: string): boolean {
   return d === 0;
 }
 
-const successUrl = (id: string) => absoluteUrl(`/app/billing?paid=${encodeURIComponent(id)}`);
-const cancelUrl = () => absoluteUrl(`/app/billing?canceled=1`);
+const successUrl = (o: OrderForPayment) => absoluteUrl(`${o.returnPath || "/app/billing"}?paid=${encodeURIComponent(o.id)}`);
+const cancelUrl = (o: OrderForPayment) => absoluteUrl(`${o.returnPath || "/app/billing"}?canceled=1`);
 
 // ── Stripe ────────────────────────────────────────────────────────────────
 export async function stripeCreate(c: Record<string, string>, o: OrderForPayment): Promise<string> {
@@ -46,8 +47,8 @@ export async function stripeCreate(c: Record<string, string>, o: OrderForPayment
     mode: "payment",
     customer_email: o.email,
     client_reference_id: o.id,
-    success_url: successUrl(o.id),
-    cancel_url: cancelUrl(),
+    success_url: successUrl(o),
+    cancel_url: cancelUrl(o),
     "metadata[order_id]": o.id,
     "payment_intent_data[metadata][order_id]": o.id,
     "line_items[0][quantity]": "1",
@@ -102,7 +103,7 @@ export async function paypalCreate(c: Record<string, string>, o: OrderForPayment
       application_context: {
         brand_name: SITE.name, user_action: "PAY_NOW", shipping_preference: "NO_SHIPPING",
         return_url: absoluteUrl(`/api/billing/paypal-return?order=${encodeURIComponent(o.id)}`),
-        cancel_url: cancelUrl(),
+        cancel_url: cancelUrl(o),
       },
     }),
   });
@@ -159,7 +160,7 @@ export async function xenditCreate(c: Record<string, string>, o: OrderForPayment
     headers: { Authorization: `Basic ${btoa(`${c.secret_key}:`)}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       external_id: o.id, amount: o.amountIdr, currency: "IDR", payer_email: o.email, description: o.description,
-      invoice_duration: 86400, success_redirect_url: successUrl(o.id), failure_redirect_url: cancelUrl(),
+      invoice_duration: 86400, success_redirect_url: successUrl(o), failure_redirect_url: cancelUrl(o),
     }),
   });
   const j: any = await r.json();
@@ -183,7 +184,7 @@ export async function midtransCreate(c: Record<string, string>, o: OrderForPayme
       transaction_details: { order_id: o.id, gross_amount: o.amountIdr },
       item_details: [{ id: o.id, price: o.amountIdr, quantity: 1, name: o.description.slice(0, 50) }],
       customer_details: { email: o.email },
-      callbacks: { finish: successUrl(o.id) },
+      callbacks: { finish: successUrl(o) },
     }),
   });
   const j: any = await r.json();
@@ -205,7 +206,7 @@ export async function nowpaymentsCreate(c: Record<string, string>, o: OrderForPa
     headers: { "x-api-key": c.api_key, "Content-Type": "application/json" },
     body: JSON.stringify({
       price_amount: o.amountUsd, price_currency: "usd", order_id: o.id, order_description: o.description,
-      ipn_callback_url: absoluteUrl("/api/webhooks/nowpayments"), success_url: successUrl(o.id), cancel_url: cancelUrl(),
+      ipn_callback_url: absoluteUrl("/api/webhooks/nowpayments"), success_url: successUrl(o), cancel_url: cancelUrl(o),
     }),
   });
   const j: any = await r.json();

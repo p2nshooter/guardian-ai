@@ -138,6 +138,9 @@ export default function LegalApp() {
       if (r.data.access) {
         const m = await api<{ matters: MatterEntry[] }>("/api/legal/matters");
         if (m.ok) setMatters(m.data.matters);
+        // Deep link from My files: /app/legal?open=<matter id>
+        const oid = new URLSearchParams(window.location.search).get("open");
+        if (oid) openMatter(oid);
       }
     })();
   }, []);

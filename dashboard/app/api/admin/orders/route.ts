@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
     if (o.status !== "paid") return fail("Only paid orders can be refunded.");
     await dbRun(db, `UPDATE orders SET status = 'refunded', meta = json_set(meta, '$.refund_note', ?) WHERE id = ?`, [note, o.id]);
     const sub = await dbFirst<{ last_order_id: string }>(db, `SELECT last_order_id FROM subscriptions WHERE user_id = ?`, [o.user_id]);
+    if (o.plan === "lifetime" && b?.endAccess) {
+      // New activations and downloads stop; devices already activated offline cannot be reached.
+      await dbRun(db, `UPDATE lifetime_licenses SET status = 'revoked', updated_at = ? WHERE order_id = ?`, [now(), o.id]);
+    }
     if (sub?.last_order_id === o.id && b?.endAccess) {
       await dbRun(db, `UPDATE subscriptions SET status = 'canceled', current_period_end = ?, updated_at = ? WHERE user_id = ?`, [now(), now(), o.user_id]);
       await syncLicenses(db, o.user_id, "none", now());

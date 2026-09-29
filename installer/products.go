@@ -13,6 +13,7 @@ type Product struct {
 	KeyPrefix   string   // licence key prefix
 	Port        int      // default host port of the web UI
 	Service     string   // compose service that serves the UI on Port
+	StateDir    string   // AXTO_STATE_DIR inside Service (machine id + Lifetime activation file)
 	Compose     string   // compose file in bundle/
 	Config      string   // example config in bundle/ ("" = none)
 	ConfigAs    string   // file name the compose file mounts
@@ -25,36 +26,36 @@ type Product struct {
 }
 
 var Products = []Product{
-	{Slug: "guardian", Name: "AXTO Guardian AI", KeyPrefix: "GUARD", Port: 8080, Service: "guardian-core",
+	{Slug: "guardian", Name: "AXTO Guardian AI", KeyPrefix: "GUARD", Port: 8080, Service: "guardian-core", StateDir: "/guardian/data/.axto",
 		Compose: "docker-compose.yml", Config: "guardian.example.yml", ConfigAs: "guardian.yml", Dirs: []string{"certs"},
 		WindowsOnly: []string{"guardian-core"},
 		Note:        "Security dashboard + node agent that protects this Linux host.",
 		WindowsNote: "On Windows the dashboard runs locally; install the node agent on the Linux servers you want to protect."},
-	{Slug: "orchestra", Name: "AXTO Orchestra AI", KeyPrefix: "ORCH", Port: 8088, Service: "orchestra-core",
+	{Slug: "orchestra", Name: "AXTO Orchestra AI", KeyPrefix: "ORCH", Port: 8088, Service: "orchestra-core", StateDir: "/app/data/.axto",
 		Compose: "orchestra-compose.yml", Config: "orchestra.example.yml", ConfigAs: "orchestra.yml",
 		Note: "AI orchestration core + CPU worker. Your own AI vendor keys stay on this machine."},
-	{Slug: "vault", Name: "AXTO Vault", KeyPrefix: "VAULT", Port: 8081, Service: "vault-core",
+	{Slug: "vault", Name: "AXTO Vault", KeyPrefix: "VAULT", Port: 8081, Service: "vault-core", StateDir: "/vault/data/.axto",
 		Compose: "vault-compose.yml", Config: "vault.example.yml", ConfigAs: "vault.yml",
 		Note: "Privacy proxy: redacts personal data before prompts leave your network."},
-	{Slug: "edge", Name: "AXTO Edge", KeyPrefix: "EDGE", Port: 8082, Service: "edge-core",
+	{Slug: "edge", Name: "AXTO Edge", KeyPrefix: "EDGE", Port: 8082, Service: "edge-core", StateDir: "/edge/data/.axto",
 		Compose: "edge-compose.yml", Config: "edge.example.yml", ConfigAs: "edge.yml",
 		Note: "AI API gateway with keys, quotas and metering for your own customers."},
-	{Slug: "soc", Name: "AXTO SOC", KeyPrefix: "SOC", Port: 8083, Service: "soc-core",
+	{Slug: "soc", Name: "AXTO SOC", KeyPrefix: "SOC", Port: 8083, Service: "soc-core", StateDir: "/soc/data/.axto",
 		Compose: "soc-compose.yml", Config: "soc.example.yml", ConfigAs: "soc.yml",
 		Note: "Security operations: alerts, correlation, incidents and threat hunting."},
-	{Slug: "compliance", Name: "AXTO Compliance", KeyPrefix: "CMPL", Port: 8084, Service: "compliance-core",
+	{Slug: "compliance", Name: "AXTO Compliance", KeyPrefix: "CMPL", Port: 8084, Service: "compliance-core", StateDir: "/compliance/data/.axto",
 		Compose: "compliance-compose.yml", Config: "compliance.example.yml", ConfigAs: "compliance.yml",
 		Note: "Continuous compliance: SOC 2, ISO 27001, HIPAA, PCI DSS, GDPR evidence and reports."},
-	{Slug: "sentinel", Name: "AXTO Sentinel", KeyPrefix: "SNTL", Port: 8085, Service: "sentinel-core",
+	{Slug: "sentinel", Name: "AXTO Sentinel", KeyPrefix: "SNTL", Port: 8085, Service: "sentinel-core", StateDir: "/sentinel/data/.axto",
 		Compose: "sentinel-compose.yml", Config: "sentinel.example.yml", ConfigAs: "sentinel.yml",
 		Note: "IoT / OT security: device discovery, industrial protocols, CVE risk."},
-	{Slug: "antivirus", Name: "AXTO Antivirus", KeyPrefix: "AV", Port: 8086, Service: "antivirus",
+	{Slug: "antivirus", Name: "AXTO Antivirus", KeyPrefix: "AV", Port: 8086, Service: "antivirus", StateDir: "/guardian/data/.axto",
 		Compose: "antivirus-compose.yml", Config: "antivirus.example.yml", ConfigAs: "antivirus.yml",
 		Note: "ClamAV + YARA + ML scanning API with a dashboard."},
-	{Slug: "studio", Name: "AXTO Studio", KeyPrefix: "STUD", Port: 8090, Service: "studio-core",
+	{Slug: "studio", Name: "AXTO Studio", KeyPrefix: "STUD", Port: 8090, Service: "studio-core", StateDir: "/axto-state",
 		Compose: "studio-compose.yml", Config: "studio.example.yml", ConfigAs: "studio.yml",
 		Note: "Private AI studio on your own models and keys."},
-	{Slug: "legal", Name: "AXTO Legal", KeyPrefix: "LEGL", Port: 8096, Service: "legal-core",
+	{Slug: "legal", Name: "AXTO Legal", KeyPrefix: "LEGL", Port: 8096, Service: "legal-core", StateDir: "/legal/data/.axto",
 		Compose: "legal-compose.yml", Config: "legal.env.example", ConfigAs: "legal.env",
 		Note: "Legal AI workspaces, fully on-premise."},
 }

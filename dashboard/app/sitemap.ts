@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...PROMPTS.map((p) => page(`/prompts/${p.field}/${p.id}`, 0.6, "monthly")),
     page("/self-hosted", 0.8),
     ...PRODUCT_CATALOG.map((p) => page(`/self-hosted/${p.slug}`, 0.7)),
+    ...PRODUCT_CATALOG.map((p) => page(`/self-hosted/${p.slug}/guide`, 0.6, "monthly")),
     page("/blog", 0.7, "daily"),
     ...BLOG_POSTS.map((p) => page(`/blog/${p.slug}`, 0.6, "monthly")),
     page("/help", 0.6, "monthly"),
@@ -32,5 +33,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/terms", 0.3, "monthly"),
     page("/privacy", 0.3, "monthly"),
     page("/refund", 0.3, "monthly"),
+    page("/dpa", 0.3, "monthly"),
+    page("/subprocessors", 0.3, "monthly"),
+    page("/status", 0.3, "daily"),
   ];
 }

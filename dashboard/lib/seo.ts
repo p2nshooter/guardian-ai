@@ -75,3 +75,13 @@ export function softwareJsonLd(o: { name: string; description: string; path: str
     } : {}),
   };
 }
+
+/** Step-by-step instructions (installation guides) as schema.org HowTo. */
+export const howToJsonLd = (o: { name: string; description: string; path: string; steps: { name: string; text: string }[] }) => ({
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: o.name,
+  description: o.description,
+  url: absoluteUrl(o.path),
+  step: o.steps.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s.name, text: s.text })),
+});

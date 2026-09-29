@@ -2,8 +2,10 @@
  * AXTO v3 — the REAL engine licence code against the LOCAL licence server.
  * Issues an Enterprise licence for every self-hosted app through the member
  * portal API, then runs each engine's own license.py (Python, in Docker —
- * see engine_licence.py) for: genuine answer, MITM tampering, replay, and a
- * stable installation id. Skipped when Docker is not available.
+ * see engine_licence.py) for: genuine answer, MITM tampering, replay, a
+ * stable installation id, and Lifetime OFFLINE activation files issued by the
+ * real portal flow (valid with no server; refused on another machine, when
+ * tampered, or for another app). Skipped when Docker is not available.
  * ============================================================================ */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -94,10 +96,27 @@ test("engines: every licence family validates, resists tampering and replay", { 
     keys[product] = r.json.license.license_key;
   }
 
+  // Lifetime: a 2-device suite licence; each app is activated on its own machine
+  // id, plus once on the NEXT app's machine id (→ an "other app, same machine" file).
+  const mid = (product: string) => createHash("sha256").update(`${RUN}:${product}`).digest("hex").slice(0, 32);
+  const lt = await call("POST", "/api/admin/lifetime", { action: "issue", email: `engines-${RUN}@example.com`, scope: "suite", devices: 2 }, admin.cookie);
+  assert.equal(lt.status, 200, JSON.stringify(lt.json));
+  const products = [...new Set(ENGINES.map((e) => e.product))];
+  const files: Record<string, string> = {}, borrowed: Record<string, string> = {};
+  for (const [i, product] of products.entries()) {
+    const next = products[(i + 1) % products.length];
+    const own = await call("POST", "/api/lifetime", { action: "activate", licenseId: lt.json.license.id, product, machineId: mid(product), label: "e2e" }, member.cookie);
+    assert.equal(own.status, 200, JSON.stringify(own.json));
+    files[product] = own.json.file;
+    const other = await call("POST", "/api/lifetime", { action: "activate", licenseId: lt.json.license.id, product, machineId: mid(next), label: "e2e-other" }, member.cookie);
+    assert.equal(other.status, 200, JSON.stringify(other.json));
+    borrowed[next] = other.json.file;          // right machine for `next`, wrong app
+  }
+
   ensureImage();
   const spec = ENGINES.map((e) => ({
-    name: e.name, path: e.path, key: keys[e.product],
-    machine_id: createHash("sha256").update(`${RUN}:${e.product}`).digest("hex").slice(0, 32),
+    name: e.name, path: e.path, key: keys[e.product], product: e.product,
+    machine_id: mid(e.product), offline_file: files[e.product], other_file: borrowed[e.product],
   }));
   const run = docker("run", "--rm", "--network", "host", "-v", `${REPO}:/repo:ro`,
     "-e", `AXTO_TEST_SERVER=${BASE}/api/license-validate`, "-e", "NO_PROXY=127.0.0.1,localhost", "-e", "no_proxy=127.0.0.1,localhost",

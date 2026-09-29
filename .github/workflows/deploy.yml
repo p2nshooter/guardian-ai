@@ -22,74 +22,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ── 1. Deterministic test harnesses (no network) ──────────────────────────
+  # ── 1. The dashboard's own gate: types + unit tests (no network) ─────────
+  # (Installation-guide PDFs are published by deploy-dashboard.yml on every
+  # production deploy, from the same source as the /self-hosted/<slug>/guide pages.)
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "22" }
-      - name: Run test harnesses
+        with: { node-version: "22", cache: "npm", cache-dependency-path: dashboard/package-lock.json }
+      - name: Types + unit tests
         working-directory: dashboard
-        run: |
-          set -e
-          for t in test-trial-design test-reviews test-invoice test-disclaimer \
-                   test-crypto-multichain test-payments; do
-            node --experimental-strip-types "tests/$t.mjs"
-          done
-          node tests/test-lifecycle.mjs
-          node tests/test-license-logic.mjs
+        run: npm ci --prefer-offline && npx tsc --noEmit -p . && npm test
 
-  # ── 2. Build branded guide PDFs and publish to Cloudflare R2 ──────────────
-  guides-pdf:
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: "22" }
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - name: Render + build PDFs
-        run: |
-          pip install --quiet reportlab
-          node --experimental-strip-types scripts/ci/render-guides.mjs dist/guides
-          python3 scripts/ci/build-guide-pdfs.py dist/guides dist/guides
-      - name: Upload PDFs to R2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
-          # Public R2 account id = the endpoint host (not a secret; already
-          # hardcoded in auto-build-exe.yml / _build-image.yml, which upload
-          # successfully). The CF_R2_ACCOUNT_ID secret was holding a malformed
-          # value, producing an invalid endpoint host and SSL handshake errors,
-          # so we pin the known-good id and only fall back to the secret form.
-          CF_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
-        run: |
-          if [ -z "$AWS_ACCESS_KEY_ID" ]; then echo "R2 not configured — skipping upload."; exit 0; fi
-          ENDPOINT="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
-          # The render+build steps above already validated the guides and the PDFs
-          # are also kept as a durable build artifact, so a transient CDN-publish
-          # blip must not red the whole pipeline. Retry, then warn (non-fatal).
-          fail=0
-          for f in dist/guides/*.pdf; do
-            ok=0
-            for attempt in 1 2 3; do
-              if aws s3 cp "$f" "s3://axto-builds/builds/latest/guides/$(basename "$f")" \
-                   --endpoint-url "$ENDPOINT" --content-type application/pdf --only-show-errors; then
-                ok=1; break
-              fi
-              echo "::warning::R2 upload attempt $attempt failed for $(basename "$f"); retrying…"
-              sleep $((attempt * 3))
-            done
-            [ "$ok" = 1 ] || { fail=1; echo "::warning::R2 upload ultimately failed for $(basename "$f")"; }
-          done
-          [ "$fail" = 0 ] && echo "✅ All guide PDFs published to R2." \
-            || echo "::warning::Some guide PDFs were not published to R2 (kept as build artifact)."
-      - uses: actions/upload-artifact@v4
-        with: { name: guide-pdfs, path: dist/guides/*.pdf }
-
-  # ── 3. Build the dashboard and deploy to Cloudflare Pages ─────────────────
+  # ── 2. Build the dashboard and deploy to Cloudflare Pages ─────────────────
   # NOTE: Automatic Pages deploys are owned by deploy-dashboard.yml (push to main).
   # This job is a MANUAL fallback only (workflow_dispatch) to avoid double-deploys.
   deploy:

@@ -54,7 +54,8 @@ async def lifespan(app: FastAPI):
     cfg = load_config()
     key = cfg.get("gpu_studio", {}).get("license_key", os.environ.get("GPU_STUDIO_LICENSE_KEY", ""))
     await db.init_db()
-    if key:
+    # A Lifetime (offline) activation file works without any key.
+    if key or lic.offline_activation():
         state = await lic.validate_license(key)
         if state.valid:
             log.info(f"🎨 GPU Studio ready — Plan: {state.plan}")

@@ -51,7 +51,8 @@ async def lifespan(app: FastAPI):
     cfg = load_config()
     key = cfg.get("hybrid_studio", {}).get("license_key", os.environ.get("HYBRID_STUDIO_LICENSE_KEY", ""))
     await db.init_db()
-    if key:
+    # A Lifetime (offline) activation file works without any key.
+    if key or lic.offline_activation():
         state = await lic.validate_license(key)
         if state.valid:
             log.info(f"⚡ Hybrid Studio ready — Plan: {state.plan}")

@@ -9,6 +9,8 @@ dashboard:
   2. MITM rewrites plain JSON  → still valid, but the tampered limits are ignored
   3. replayed old answer       → refused (request nonce not echoed) on a fresh install
   4. installation id           → stable across restarts (persisted in AXTO_STATE_DIR)
+  5. Lifetime activation file  → valid with NO key and NO reachable server
+  6. …on another machine, tampered, or for another app → refused
 
 Prints one JSON line per engine; exit code 0 only when every check passes.
 """
@@ -78,6 +80,18 @@ def load(path: str, state_dir: str, tag: str):
     return mod
 
 
+def offline_env(state_dir: str, mid: str, file_text: str, product: str) -> None:
+    """A fresh installation holding a Lifetime activation file, with no server."""
+    open(os.path.join(state_dir, "machine-id"), "w").write(mid)
+    if file_text is not None:
+        open(os.path.join(state_dir, f"{product}.axto-license"), "w").write(file_text)
+    os.environ["AXTO_LICENSE_SERVER"] = "http://127.0.0.1:9/api/license-validate"   # nothing listens here
+
+
+def is_lifetime(r: dict) -> bool:
+    return bool(r["valid"]) and ("lifetime" in str(r.get("reason", "")) or str(r.get("package", "")).startswith("lifetime"))
+
+
 async def check(mod, key: str) -> dict:
     """Runs whichever validator API this engine family exposes."""
     if hasattr(mod, "LicenseValidator"):
@@ -133,6 +147,24 @@ async def run(engine: dict, proxy_url: str) -> dict:
     r = await check(load(path, state2, name + "2"), key)
     res["checks"]["replay_refused"] = not r["valid"]
     Proxy.mode = "pass"
+
+    # 5./6. Lifetime (offline) activation file — no key, no server
+    if engine.get("offline_file"):
+        product = engine["product"]
+        genuine = engine["offline_file"]
+        s5 = tempfile.mkdtemp(); offline_env(s5, engine["machine_id"], genuine, product)
+        o = await check(load(path, s5, name + "5"), "")
+        res["checks"]["offline_valid"] = is_lifetime(o)
+        res["offline"] = {k: o[k] for k in ("reason", "package", "max_nodes")}
+        s6 = tempfile.mkdtemp(); offline_env(s6, "f" * 32, genuine, product)
+        res["checks"]["offline_other_machine_refused"] = not (await check(load(path, s6, name + "6"), ""))["valid"]
+        doc = json.loads(genuine)
+        doc["payload"] = doc["payload"].replace("|max_nodes=", "|max_nodes=9") if "|max_nodes=" in doc["payload"] else doc["payload"].replace(";max_nodes=", ";max_nodes=9")
+        s7 = tempfile.mkdtemp(); offline_env(s7, engine["machine_id"], json.dumps(doc), product)
+        res["checks"]["offline_tamper_refused"] = not (await check(load(path, s7, name + "7"), ""))["valid"]
+        s8 = tempfile.mkdtemp(); offline_env(s8, engine["machine_id"], engine["other_file"], product)
+        res["checks"]["offline_other_app_refused"] = not (await check(load(path, s8, name + "8"), ""))["valid"]
+        os.environ["AXTO_LICENSE_SERVER"] = proxy_url
 
     res["ok"] = all(res["checks"].values())
     return res

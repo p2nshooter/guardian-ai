@@ -50,6 +50,8 @@ Usage:
   axto-setup uninstall <app> [--keep-data]
   axto-setup doctor                        check Docker / WSL 2
   axto-setup list                          installed apps
+  axto-setup machine-id <app>              machine ID for a Lifetime (offline) activation
+  axto-setup activate <app> <file>         install a .axto-license file and restart the app
 
 Apps: %s
 Your licence key is in https://axto.io/app/self-hosted
@@ -156,6 +158,21 @@ func main() {
 			fail(err)
 		}
 		fmt.Printf("✔ %s removed%s\n", st.Name, map[bool]string{true: " (data kept)", false: ""}[*keepData])
+	case "machine-id":
+		id, err := MachineID(ctx, app())
+		if err != nil {
+			fail(err)
+		}
+		fmt.Println(id)
+	case "activate":
+		st := app()
+		if len(pos) < 2 {
+			fail(fmt.Errorf("which file? axto-setup activate %s <%s.axto-license>", st.Slug, st.Slug))
+		}
+		if err := ActivateOffline(ctx, st, pos[1]); err != nil {
+			fail(err)
+		}
+		fmt.Printf("✔ %s is activated offline (Lifetime licence) and restarted — http://localhost:%d\n", st.Name, st.Port)
 	case "doctor":
 		d := CheckDocker(ctx)
 		fmt.Printf("OS: %s\nDocker installed: %v\nDocker running: %v (%s)\nCompose: %v (%s)\nResources: %d GB RAM, %d CPUs\n", d.OS, d.Installed, d.Running, d.Version, d.Compose, d.ComposeVersion, d.MemoryGB, d.CPUs)

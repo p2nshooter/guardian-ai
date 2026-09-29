@@ -62,6 +62,8 @@ export default function SecurityApp() {
   const liveIocs = useMemo(() => iocCount(extractIocs(input)), [input]);
   const reload = useCallback(async () => { const r = await api<{ items: Entry[] }>("/api/history/security"); if (r.ok) setItems(r.data.items); }, []);
   useEffect(() => { if (access) reload(); }, [access, reload]);
+  // Deep link from My files: /app/security?open=<id>
+  useEffect(() => { const oid = new URLSearchParams(window.location.search).get("open"); if (access && oid) open(oid); }, [access]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 40); }, [thread, live]);
 
   async function open(cid: string) {

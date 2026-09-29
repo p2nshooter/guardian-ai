@@ -113,7 +113,7 @@ def get_enforcement_state() -> dict:
         "error":         None,
         "reason":        state.reason,              # "offline_grace" while axto.io is unreachable
         "license_id":    configured_key()[:14],
-        "license_mode":  "subscription",
+        "license_mode":  "lifetime" if state.reason == "lifetime_offline" else "subscription",
         "tier":          state.package or "orchestra_unlimited",
         "expires_at":    state.expires_at,
         "client_name":   "",
@@ -175,10 +175,11 @@ async def _heartbeat_loop():
 async def start() -> dict:
     """Called once at startup."""
     key = configured_key()
-    if not key:
+    if not key and not _lic.offline_activation():
         log.warning(_pending_error)
+        log.warning(_lic.offline_hint())
         return get_enforcement_state()
-    return await _use_key(key)
+    return await _use_key(key)   # "" = Lifetime offline activation file
 
 
 async def activate(key: str) -> dict:

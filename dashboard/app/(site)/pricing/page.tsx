@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import PricingTable from "@/components/site/PricingTable";
+import LifetimePricing from "@/components/site/LifetimePricing";
 import Faq from "@/components/site/Faq";
 import { JsonLd } from "@/components/JsonLd";
 import { pageMeta, faqJsonLd, softwareJsonLd, breadcrumbJsonLd } from "@/lib/seo";
@@ -61,8 +62,17 @@ export default function PricingPage() {
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <div className="card-pad"><div className="font-semibold">💳 Pay your way</div><p className="mt-1 text-sm text-slate-600">Card (Stripe), PayPal, Indonesian QRIS / virtual account / e-wallet (Xendit, Midtrans), crypto (NOWPayments) or bank transfer.</p></div>
             <div className="card-pad"><div className="font-semibold">🔁 Change anytime</div><p className="mt-1 text-sm text-slate-600">Upgrade or downgrade whenever you like — unused time is converted into extra days on the new plan.</p></div>
-            <div className="card-pad"><div className="font-semibold">🏢 Lifetime & volume</div><p className="mt-1 text-sm text-slate-600">Perpetual offline licences for 1–100 devices and custom enterprise terms. <Link href="/contact">Talk to sales →</Link></p></div>
+            <div className="card-pad"><div className="font-semibold">🏢 Lifetime & volume</div><p className="mt-1 text-sm text-slate-600">Perpetual offline licences for 1–100 devices and custom enterprise terms. <Link href="#lifetime">See lifetime prices →</Link></p></div>
           </div>
+        </div>
+      </section>
+
+      <section id="lifetime" className="border-t border-slate-200 py-16">
+        <div className="container-page">
+          <p className="eyebrow">Self-hosted · offline</p>
+          <h2 className="mt-2 text-2xl font-bold">Lifetime licences</h2>
+          <p className="mt-2 max-w-3xl text-slate-600">Buy a self-hosted app once and run it forever — fully offline, air-gapped if you like. Each device is activated with a signed file that the app checks locally, so it never needs to reach axto.io.</p>
+          <div className="mt-6"><LifetimePricing /></div>
         </div>
       </section>
 

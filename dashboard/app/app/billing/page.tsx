@@ -11,14 +11,12 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
 import { useI18n, formatDate, formatMoney, pick } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
-import { Alert, CopyButton, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
+import { Alert, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
+import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
 
 interface Options { plans: { id: PlanId; name: string; monthly: number; yearly: number }[]; gateways: { id: string; label: string; methods: string; currency: string }[]; usdIdr: number }
 interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; status: string; created_at: string; paid_at: string }[] }
-type Pay =
-  | { kind: "bank"; orderId: string; amountUsd: number; amountIdr: number; uniqueCode?: number; bank: Record<string, string>; note: string }
-  | { kind: "crypto"; orderId: string; amountUsd: number; wallets: { key: string; asset: string; network: string; address: string; amount: string; auto: boolean }[]; note: string };
 
 const SH_APPS: [string, string][] = [["guardian", "Guardian AI"], ["orchestra", "Orchestra AI"], ["vault", "Vault"], ["edge", "Edge"], ["soc", "SOC"], ["compliance", "Compliance"], ["sentinel", "Sentinel"], ["antivirus", "Antivirus"], ["studio", "Studio"], ["legal", "Legal (self-hosted)"]];
 
@@ -28,38 +26,24 @@ const L = {
     welcome: "Welcome to AXTO! Choose a plan to unlock your apps — activation is instant with card, PayPal or crypto.",
     paid: "Payment received — your plan is active and any licences have been issued. 🎉", canceled: "Payment was cancelled. You can try again anytime.",
     current: "Your plan", none: "Free account — no apps unlocked yet.", until: "Active until", renew: "Renew / extend",
-    bankSteps: "Write {id} in the transfer note if you can, then press “I've transferred” below. We confirm within one business day and e-mail you — your plan and licences activate right away.",
-    cryptoSteps: "Send EXACTLY the amount shown, on the network shown. USDT/USDC payments are detected and confirmed automatically within minutes; for BTC, ETH or SOL paste your transaction hash after sending. Your plan and licences activate automatically.",
-    uniqueNote: "Transfer this EXACT amount, including the last 3 digits ({code}) — they are your unique order code, so we can match your transfer. Please do not round it.",
     monthly: "Monthly", yearly: "Yearly", save: "2 months free", perMo: "/mo", perYr: "/yr", popular: "Most popular", choose: "Choose", chosen: "Selected",
     step2: "Choose how to pay", pickApps: "Choose your self-hosted apps", pickAppsHint: "Business includes any 3 — licences are issued the moment payment confirms.",
     pay: "Pay", paying: "Starting payment…", noMethods: "Online payment is being set up. Please contact us in the chat to pay by bank transfer.",
     trust: ["🔒 Secure checkout", "⚡ Instant activation", "🧾 Tax invoice", "💬 Human support"],
-    bankTitle: "Bank transfer (BNI)", amount: "Amount", bankName: "Bank", accNo: "Account number", accName: "Account name", branch: "Branch", swift: "SWIFT", ref: "Transfer note / reference",
-    sentTitle: "Already transferred?", sentHint: "Tell us the sender name or bank reference — we confirm within one business day and e-mail you.", sentBtn: "I've transferred", refPh: "e.g. BNI 998877 a.n. Budi",
-    cryptoTitle: "Pay with crypto", sendExact: "Send exactly", to: "to", network: "Network", auto: "Detected automatically", manualHash: "After sending, paste the transaction hash",
-    hashPh: "Transaction hash (TXID)", verify: "Verify payment", waiting: "Waiting for your payment… this page updates by itself.",
     history: "Payment history", invoice: "Invoice", noOrders: "No payments yet.", date: "Date", plan: "Plan", total: "Total", status: "Status", method: "Method",
-    back: "← Choose another method", compare: "Compare all features",
+    compare: "Compare all features", lifetime: "Lifetime licence", once: "one-time",
   },
   id: {
     title: "Paket & tagihan", sub: "Pilih paket, bayar dengan cara favorit Anda, semuanya aktif otomatis.",
     welcome: "Selamat datang di AXTO! Pilih paket untuk membuka aplikasi — aktivasi instan dengan kartu, PayPal, atau kripto.",
     paid: "Pembayaran diterima — paket Anda aktif dan lisensi sudah diterbitkan. 🎉", canceled: "Pembayaran dibatalkan. Anda bisa mencoba lagi kapan saja.",
     current: "Paket Anda", none: "Akun gratis — belum ada aplikasi yang terbuka.", until: "Aktif sampai", renew: "Perpanjang",
-    bankSteps: "Jika bisa, tulis {id} di berita transfer, lalu tekan “Saya sudah transfer” di bawah. Kami konfirmasi dalam 1 hari kerja dan mengirim email — paket dan lisensi Anda langsung aktif.",
-    cryptoSteps: "Kirim TEPAT sejumlah yang tertera, di jaringan yang tertera. Pembayaran USDT/USDC terdeteksi dan terkonfirmasi otomatis dalam hitungan menit; untuk BTC, ETH, atau SOL tempel hash transaksi setelah mengirim. Paket dan lisensi Anda aktif otomatis.",
-    uniqueNote: "Transfer TEPAT sejumlah ini, termasuk 3 digit terakhir ({code}) — itu kode unik pesanan Anda agar transfer Anda bisa kami cocokkan. Mohon jangan dibulatkan.",
     monthly: "Bulanan", yearly: "Tahunan", save: "Gratis 2 bulan", perMo: "/bln", perYr: "/thn", popular: "Paling populer", choose: "Pilih", chosen: "Dipilih",
     step2: "Pilih cara bayar", pickApps: "Pilih aplikasi self-hosted Anda", pickAppsHint: "Business mencakup 3 aplikasi bebas pilih — lisensi terbit begitu pembayaran terkonfirmasi.",
     pay: "Bayar", paying: "Memulai pembayaran…", noMethods: "Pembayaran online sedang disiapkan. Hubungi kami lewat chat untuk bayar via transfer bank.",
     trust: ["🔒 Checkout aman", "⚡ Aktivasi instan", "🧾 Faktur resmi", "💬 Dukungan manusia"],
-    bankTitle: "Transfer bank (BNI)", amount: "Jumlah", bankName: "Bank", accNo: "Nomor rekening", accName: "Atas nama", branch: "Cabang", swift: "SWIFT", ref: "Berita transfer / referensi",
-    sentTitle: "Sudah transfer?", sentHint: "Tuliskan nama pengirim atau referensi bank — kami konfirmasi dalam 1 hari kerja dan kirim email.", sentBtn: "Saya sudah transfer", refPh: "mis. BNI 998877 a.n. Budi",
-    cryptoTitle: "Bayar dengan kripto", sendExact: "Kirim tepat", to: "ke", network: "Jaringan", auto: "Terdeteksi otomatis", manualHash: "Setelah mengirim, tempel hash transaksinya",
-    hashPh: "Hash transaksi (TXID)", verify: "Verifikasi pembayaran", waiting: "Menunggu pembayaran Anda… halaman ini diperbarui otomatis.",
     history: "Riwayat pembayaran", invoice: "Faktur", noOrders: "Belum ada pembayaran.", date: "Tanggal", plan: "Paket", total: "Total", status: "Status", method: "Metode",
-    back: "← Pilih metode lain", compare: "Bandingkan semua fitur",
+    compare: "Bandingkan semua fitur", lifetime: "Lisensi lifetime", once: "sekali bayar",
   },
 };
 
@@ -77,9 +61,6 @@ function BillingInner() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [pay, setPay] = useState<Pay | null>(null);
-  const [orderStatus, setOrderStatus] = useState("pending");
-  const [proof, setProof] = useState({ reference: "", network: "", tx: "" });
-  const [proofMsg, setProofMsg] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
 
   const loadOv = useCallback(async () => { const r = await api<Overview>("/api/billing/overview"); if (r.ok) setOv(r.data); }, []);
   useEffect(() => {
@@ -88,18 +69,7 @@ function BillingInner() {
     if (q.get("paid")) reload();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Poll the open order until it is paid (crypto is confirmed on-chain by the platform).
-  useEffect(() => {
-    if (!pay || orderStatus === "paid") return;
-    const iv = setInterval(async () => {
-      const r = await api<{ order: { status: string } }>(`/api/billing/orders/${pay.orderId}`);
-      if (r.ok && r.data.order.status !== orderStatus) {
-        setOrderStatus(r.data.order.status);
-        if (r.data.order.status === "paid") { reload(); loadOv(); }
-      }
-    }, 15000);
-    return () => clearInterval(iv);
-  }, [pay, orderStatus, reload, loadOv]);
+  const onPaid = useCallback(() => { reload(); loadOv(); }, [reload, loadOv]);
 
   const price = (id: PlanId) => opts?.plans.find((p) => p.id === id) || { monthly: PLANS[id].monthly, yearly: PLANS[id].yearly };
   const selected = plan ? PLANS[plan] : null;
@@ -115,22 +85,9 @@ function BillingInner() {
     setBusy(false);
     if (!r.ok) { setErr(r.error); return; }
     if (r.data.url) { window.location.href = r.data.url; return; }
-    setOrderStatus("pending");
-    if (r.data.method === "bank") setPay({ kind: "bank", orderId: r.data.orderId, amountUsd: r.data.amountUsd, amountIdr: r.data.amountIdr, uniqueCode: r.data.uniqueCode, bank: r.data.bank, note: r.data.note || "" });
-    else if (r.data.method === "crypto") { setPay({ kind: "crypto", orderId: r.data.orderId, amountUsd: r.data.amountUsd, wallets: r.data.wallets, note: r.data.note || "" }); setProof((p) => ({ ...p, network: r.data.wallets[0]?.key || "" })); }
+    setPay(payFromCheckout(r.data));
     loadOv();
     setTimeout(() => document.getElementById("pay-panel")?.scrollIntoView({ behavior: "smooth" }), 50);
-  }
-
-  async function sendProof() {
-    if (!pay) return;
-    setBusy(true); setProofMsg(null);
-    const body = pay.kind === "bank" ? { action: "bank_proof", reference: proof.reference } : { action: "crypto_proof", network: proof.network, tx: proof.tx };
-    const r = await api<{ status: string; message: string }>(`/api/billing/orders/${pay.orderId}`, { body });
-    setBusy(false);
-    if (!r.ok) { setProofMsg({ tone: "error", text: r.error }); return; }
-    setProofMsg({ tone: r.data.status === "paid" ? "success" : "info", text: r.data.message });
-    if (r.data.status === "paid") { setOrderStatus("paid"); reload(); loadOv(); }
   }
 
   if (!opts || !me) return <LoadingBlock />;
@@ -232,63 +189,7 @@ function BillingInner() {
           </div>
         ) : null}
 
-        {pay ? (
-          <div id="pay-panel">
-            <Section title={pay.kind === "bank" ? `🏦 ${t.bankTitle}` : `🪙 ${t.cryptoTitle}`} actions={<button className="btn-ghost btn-sm" onClick={() => setPay(null)}>{t.back}</button>}>
-              {orderStatus === "paid" ? <Alert tone="success">{t.paid}</Alert> : (
-                <>
-                  {pay.kind === "bank" ? (
-                    <dl className="grid gap-3 sm:grid-cols-2">
-                      {[[t.amount, formatMoney(pay.amountIdr, "IDR", lang), String(pay.amountIdr)], [t.bankName, pay.bank.bank_name], [t.accNo, pay.bank.account_number, pay.bank.account_number], [t.accName, pay.bank.account_name], [t.ref, pay.orderId, pay.orderId], ...(pay.bank.branch ? [[t.branch, pay.bank.branch]] : []), ...(pay.bank.swift_code ? [[t.swift, pay.bank.swift_code]] : [])].map(([k, v, copy]) => (
-                        <div key={k} className="rounded-lg border border-slate-200 p-3">
-                          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{k}</dt>
-                          <dd className="mt-1 flex items-center justify-between gap-2 font-mono text-base font-semibold text-slate-900">{v}{copy ? <CopyButton text={copy} /> : null}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  ) : null}
-                  {pay.kind === "bank" && pay.uniqueCode ? (
-                    <div className="mt-3"><Alert tone="warn">{t.uniqueNote.replace("{code}", String(pay.uniqueCode).padStart(3, "0"))}</Alert></div>
-                  ) : null}
-                  {pay.kind === "bank" ? null : (
-                    <div className="space-y-3">
-                      {pay.wallets.map((w) => (
-                        <div key={w.key} className="rounded-xl border border-slate-200 p-4">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-slate-900">{w.asset}</span><span className="badge-gray">{t.network}: {w.network}</span>
-                            {w.auto ? <span className="badge-green">⚡ {t.auto}</span> : null}
-                          </div>
-                          <div className="mt-2 text-sm text-slate-600">{t.sendExact}</div>
-                          <div className="flex items-center gap-2 font-mono text-lg font-bold text-slate-900">{w.amount} {w.asset}<CopyButton text={w.amount} /></div>
-                          <div className="mt-2 text-sm text-slate-600">{t.to}</div>
-                          <div className="flex items-center gap-2 break-all font-mono text-sm text-slate-900">{w.address}<CopyButton text={w.address} /></div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p className="mt-4 text-sm text-slate-600">{pay.kind === "bank" ? t.bankSteps.replace("{id}", pay.orderId) : t.cryptoSteps}</p>
-                  {pay.note ? <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{pay.note}</p> : null}
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="font-semibold text-slate-900">{pay.kind === "bank" ? t.sentTitle : t.manualHash}</div>
-                    {pay.kind === "bank" ? <p className="text-xs text-slate-500">{t.sentHint}</p> : null}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {pay.kind === "crypto" ? (
-                        <select className="select w-auto" value={proof.network} onChange={(e) => setProof({ ...proof, network: e.target.value })}>
-                          {pay.wallets.map((w) => <option key={w.key} value={w.key}>{w.asset} · {w.network}</option>)}
-                        </select>
-                      ) : null}
-                      <input className="input min-w-[220px] flex-1" placeholder={pay.kind === "bank" ? t.refPh : t.hashPh}
-                        value={pay.kind === "bank" ? proof.reference : proof.tx} onChange={(e) => setProof(pay.kind === "bank" ? { ...proof, reference: e.target.value } : { ...proof, tx: e.target.value })} />
-                      <button className="btn-primary" onClick={sendProof} disabled={busy || (pay.kind === "bank" ? !proof.reference.trim() : proof.tx.trim().length < 32)}>{busy ? <Spinner /> : null} {pay.kind === "bank" ? t.sentBtn : t.verify}</button>
-                    </div>
-                    {proofMsg ? <div className="mt-3"><Alert tone={proofMsg.tone}>{proofMsg.text}</Alert></div> : null}
-                  </div>
-                  <p className="mt-3 flex items-center gap-2 text-xs text-slate-500"><Spinner className="h-3 w-3" /> {t.waiting}</p>
-                </>
-              )}
-            </Section>
-          </div>
-        ) : null}
+        {pay ? <PayPanel pay={pay} onBack={() => setPay(null)} onPaid={onPaid} paidText={t.paid} /> : null}
 
         <Section title={t.history}>
           {ov?.orders.length ? (
@@ -299,7 +200,7 @@ function BillingInner() {
                   {ov.orders.map((o) => (
                     <tr key={o.id}>
                       <td>{formatDate(o.created_at, lang)}</td>
-                      <td>{PLANS[o.plan as PlanId]?.name || o.plan} · {o.cycle === "yearly" ? t.yearly : t.monthly}</td>
+                      <td>{o.plan === "lifetime" ? `${t.lifetime} · ${t.once}` : `${PLANS[o.plan as PlanId]?.name || o.plan} · ${o.cycle === "yearly" ? t.yearly : t.monthly}`}</td>
                       <td>{opts.gateways.find((g) => g.id === o.gateway)?.label || o.gateway}</td>
                       <td>{formatMoney(o.amount_usd, "USD", lang)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR", lang)}</span> : null}</td>
                       <td><StatusBadge status={o.status} /></td>

@@ -22,8 +22,7 @@ BODY = ParagraphStyle("Body", parent=ss["Normal"], fontSize=9.7, leading=14, tex
 QUOTE = ParagraphStyle("Quote", parent=BODY, textColor=GREY, leftIndent=8, fontName="Helvetica-Oblique")
 LI = ParagraphStyle("LI", parent=BODY, leftIndent=12, bulletIndent=2, spaceAfter=1)
 CODE = ParagraphStyle("Code", parent=ss["Code"], fontSize=8.3, leading=11.5,
-                      textColor=colors.HexColor("#E6EDF6"), backColor=CODEBG,
-                      borderPadding=(7, 7, 7, 7), spaceBefore=3, spaceAfter=7)
+                      textColor=colors.HexColor("#E6EDF6"))
 
 
 def inline(text):
@@ -31,6 +30,17 @@ def inline(text):
     text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
     text = re.sub(r"`(.+?)`", r'<font face="Courier" size="8.5">\1</font>', text)
     return text
+
+
+def code_block(text):
+    """Dark, wrapped code panel. Preformatted does not paint backColor, so the
+    panel is a one-cell table; long commands wrap instead of running off the page."""
+    pre = Preformatted(text, CODE, maxLineLength=88, newLineChars="  ")
+    box = Table([[pre]], colWidths=[166 * mm])
+    box.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), CODEBG),
+                             ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                             ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    return box
 
 
 def md_to_flowables(md):
@@ -44,7 +54,7 @@ def md_to_flowables(md):
             i += 1
             while i < len(lines) and not lines[i].startswith("```"):
                 buf.append(lines[i]); i += 1
-            flow.append(Preformatted("\n".join(buf), CODE)); i += 1; continue
+            flow.append(code_block("\n".join(buf))); i += 1; continue
         if ln.startswith("# "):
             flow.append(Paragraph(inline(ln[2:]), H1))
         elif ln.startswith("## "):

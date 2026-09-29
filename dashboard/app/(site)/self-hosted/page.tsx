@@ -29,7 +29,7 @@ export default function SelfHostedIndex() {
           <h1 className="h-display mt-4 max-w-3xl text-white">Run it all on your own infrastructure</h1>
           <p className="lead mt-4 max-w-3xl text-white/80">Ten AI editions packaged as Docker containers — cloud, on-prem or air-gapped. Your keys, your models, your data. No telemetry, no call-home.</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/pricing" className="btn-primary btn-lg">See lifetime pricing</Link>
+            <Link href="/pricing#lifetime" className="btn-primary btn-lg">See lifetime pricing</Link>
             <Link href="/register" className="btn-lg rounded-xl border border-white/20 px-6 font-semibold text-white hover:bg-white/10">Get started</Link>
           </div>
         </div>
