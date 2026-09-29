@@ -19,6 +19,7 @@ import { api } from "@/lib/client";
 import { Alert, LoadingBlock, Spinner } from "@/components/ui";
 import ModelPicker, { type AiChoice } from "@/components/ai/ModelPicker";
 import { PLATFORMS, getPlatform, type Aspect, type Clip, type Word, fmtTime, transcriptForModel, parseClips, buildCaptions } from "@/lib/clipper/options";
+import { L } from "@/lib/i18n-pages/clipper";
 
 interface Entry { id: string; title: string; updatedAt: string }
 type Step = "idle" | "loading" | "extracting" | "transcribing" | "detecting" | "ready" | "exporting";
@@ -27,29 +28,6 @@ const DIRECT_LIMIT = 24 * 1024 * 1024; // send video straight to STT below this;
 const FF_MAIN = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js";
 const FF_UTIL = "https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js";
 const FF_CORE = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm";
-
-const L = {
-  en: { title: "Clipper", sub: "Long video → short viral clips, on your own keys.",
-    upload: "Upload a video", drop: "MP4, MOV or WebM · processed on your device", platform: "Platform", clips: "Clips to find",
-    newProj: "New project", history: "Saved projects", empty: "No saved projects yet.",
-    loading: "Loading video engine…", extracting: "Extracting audio…", transcribing: "Transcribing on your key…", detecting: "Finding the best moments…", exporting: "Exporting clip…",
-    transcript: "Transcript", srt: "Captions (.srt)", vtt: "Captions (.vtt)", copyCap: "Copy caption", copied: "Copied", exportMp4: "Export MP4", download: "Download",
-    score: "Score", noKeyStt: "Add a speech-to-text key (OpenAI, Groq or Deepgram) in Settings.", noKeyAi: "Add an AI key in Settings to find clips.", addKey: "Add a key",
-    save: "Save project", saved: "Saved ✓", del: "Delete", rename: "Rename", confirmDel: "Delete this project?", renamePrompt: "New title:",
-    noPlan: "Clipper is included from the Starter plan.", upgrade: "See plans", tooBig: "This video is too large to process in the browser. Try a shorter clip.",
-    ffFail: "In-browser video processing isn't available in this browser. You can still transcribe smaller videos and download captions & timestamps.",
-    reframe: "Aspect", again: "Re-detect", quota: "videos left this month", onDevice: "Your video stays on your device — only the audio is sent to your transcription provider." },
-  id: { title: "Clipper", sub: "Video panjang → klip viral pendek, pakai kunci Anda.",
-    upload: "Unggah video", drop: "MP4, MOV atau WebM · diproses di perangkat Anda", platform: "Platform", clips: "Jumlah klip",
-    newProj: "Proyek baru", history: "Proyek tersimpan", empty: "Belum ada proyek tersimpan.",
-    loading: "Memuat mesin video…", extracting: "Mengekstrak audio…", transcribing: "Transkripsi dengan kunci Anda…", detecting: "Mencari momen terbaik…", exporting: "Mengekspor klip…",
-    transcript: "Transkrip", srt: "Teks (.srt)", vtt: "Teks (.vtt)", copyCap: "Salin caption", copied: "Tersalin", exportMp4: "Ekspor MP4", download: "Unduh",
-    score: "Skor", noKeyStt: "Tambahkan kunci speech-to-text (OpenAI, Groq, atau Deepgram) di Pengaturan.", noKeyAi: "Tambahkan kunci AI di Pengaturan untuk mencari klip.", addKey: "Tambah kunci",
-    save: "Simpan proyek", saved: "Tersimpan ✓", del: "Hapus", rename: "Ganti nama", confirmDel: "Hapus proyek ini?", renamePrompt: "Judul baru:",
-    noPlan: "Clipper termasuk mulai paket Starter.", upgrade: "Lihat paket", tooBig: "Video ini terlalu besar untuk diproses di browser. Coba klip lebih pendek.",
-    ffFail: "Pemrosesan video di browser tidak tersedia. Anda tetap bisa mentranskrip video kecil dan mengunduh teks & timestamp.",
-    reframe: "Rasio", again: "Deteksi ulang", quota: "video tersisa bulan ini", onDevice: "Video Anda tetap di perangkat — hanya audio yang dikirim ke penyedia transkripsi." },
-};
 
 function download(name: string, data: Blob | string, mime = "text/plain") {
   const blob = typeof data === "string" ? new Blob([data], { type: mime }) : data;

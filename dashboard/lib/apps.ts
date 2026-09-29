@@ -67,17 +67,17 @@ export const CLOUD_APPS: CloudApp[] = [
   {
     slug: "studio", live: true, name: "AI Studio", icon: "🧠", color: "#0f766e",
     short: "Chat with leading AI models, save conversations and reuse your best prompts.",
-    hero: "One workspace for many AI models. Chat, set a system role, keep your history, and bring your own API keys for unlimited use.",
+    hero: "One workspace for many AI models. Chat, set a system role and keep your history — on your own API keys or your own model server, with no usage limits on our side.",
     steps: [
       "Choose a model (or keep the recommended default).",
       "Optionally set a role, e.g. “You are a senior financial analyst”.",
       "Chat — conversations are saved to your private storage.",
     ],
     features: [
-      { title: "Multiple models", desc: "Built-in model included; connect Anthropic, OpenAI, Google, Groq or OpenRouter keys for more." },
+      { title: "Every major model", desc: "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity and more — or your own endpoint (Ollama, vLLM, LM Studio)." },
       { title: "Private history", desc: "Conversations are stored in your own encrypted storage space, never used for training." },
       { title: "Prompt integration", desc: "Launch any Prompt Library item straight into a chat." },
-      { title: "Bring your own key", desc: "Runs with your own key do not count against your monthly AI runs." },
+      { title: "Bring your own key", desc: "You pay your provider directly at their price — no markup and no usage cap from AXTO. Free tiers (Gemini, Groq) work too." },
     ],
     useCases: ["Writing & editing", "Research & summaries", "Brainstorming", "Code help", "Translation"],
     selfHosted: "studio",

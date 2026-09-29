@@ -5,13 +5,13 @@
 # A SEPARATE Cloudflare Pages project with its own D1 / KV / R2
 # (dashboard/deploy/preview.wrangler.toml). It never touches the production
 # project "axto-dashboard", its database "axto-db" or its buckets.
-# Runs on every push to a claude/** development branch that changes the site.
+# Runs on every push to a development branch (claude/**, ccr-**) that changes the site.
 # ==============================================================================
 name: Deploy Preview
 
 on:
   push:
-    branches: ['claude/**']
+    branches: ['claude/**', 'ccr-**']
     paths:
       - 'dashboard/**'
       - '.github/workflows/deploy-preview.yml'

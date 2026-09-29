@@ -13,6 +13,7 @@ import { useI18n, pick } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { Alert, CopyButton, LoadingBlock, Modal, PageHeader, Spinner } from "@/components/ui";
+import { L } from "@/lib/i18n-pages/prompts";
 
 interface Var { key: string; label: string; placeholder?: string }
 interface PPrompt { id: string; field: string; level: "basic" | "pro" | "premium" | "elite"; title: string; summary: string; variables: Var[]; locked?: boolean }
@@ -20,14 +21,6 @@ interface Field { id: string; name: string; icon: string; blurb: string }
 interface Level { id: string; name: string; blurb: string }
 interface Catalog { fields: Field[]; levels: Level[]; prompts: PPrompt[]; unlocked: string[] }
 
-const L = {
-  en: { title: "Prompt Library", sub: "Premium, ready-to-run prompts for every profession.", search: "Search prompts…", all: "All fields",
-    fill: "Fill in and use", copy: "Copy prompt", copied: "Copied", run: "Run in AI Studio", save: "Save", saved: "Saved ✓", locked: "Upgrade to unlock", upgrade: "See plans",
-    none: "No prompts match.", level: "Level", result: "Your prompt", close: "Close", favs: "Saved prompts", byLevel: "by level" },
-  id: { title: "Perpustakaan Prompt", sub: "Prompt premium siap pakai untuk setiap profesi.", search: "Cari prompt…", all: "Semua bidang",
-    fill: "Isi & pakai", copy: "Salin prompt", copied: "Tersalin", run: "Jalankan di AI Studio", save: "Simpan", saved: "Tersimpan ✓", locked: "Upgrade untuk membuka", upgrade: "Lihat paket",
-    none: "Tidak ada prompt yang cocok.", level: "Level", result: "Prompt Anda", close: "Tutup", favs: "Prompt tersimpan", byLevel: "per level" },
-};
 const LEVEL_BADGE: Record<string, string> = { basic: "badge-gray", pro: "badge-brand", premium: "badge-amber", elite: "badge-green" };
 
 function fill(template: string, values: Record<string, string>) {

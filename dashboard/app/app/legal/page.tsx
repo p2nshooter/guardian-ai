@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n, pick } from "@/lib/i18n";
+import { LOCALE } from "@/lib/i18n-shared";
 import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { Alert, LoadingBlock, Modal, Spinner } from "@/components/ui";
@@ -21,6 +22,7 @@ import { stripStatus } from "@/lib/markdown";
 import { markdownToDocx } from "@/lib/export/docx";
 import { estimateTokens } from "@/lib/legal/extract";
 import { flag, type Country, type Subdivision } from "@/lib/legal/jurisdictions";
+import { L } from "@/lib/i18n-pages/legal";
 
 interface WsField { id: string; label: string; labelId: string; type: "text" | "textarea" | "select"; options?: [string, string, string][]; placeholder?: string }
 interface Ws { id: string; group: string; icon: string; core: boolean; name: string; nameId: string; desc: string; descId: string; docs: string; fields: WsField[]; starters: [string, string][] }
@@ -32,43 +34,6 @@ interface Catalog {
 interface Msg { role: "user" | "assistant"; content: string }
 interface MatterEntry { id: string; title: string; client: string; country: string; status: string; updatedAt: string; docs: number; runs: number }
 interface Matter { id: string; title: string; client: string; opponent: string; reference: string; jurisdiction: JurValue; area: string; status: string; notes: string; docs: { id: string; name: string; pages?: number; chars: number }[]; runs: { id: string; workspace: string; title: string; provider: string; model: string; research: boolean; createdAt: string }[] }
-
-const L = {
-  en: {
-    title: "Legal AI", sub: "36 expert workspaces · 200+ jurisdictions · your own AI", workspaces: "Workspaces", search: "Search workspaces…",
-    context: "Jurisdiction & context", jurLock: "Lock", jurLocked: "Locked", jurLockHint: "Lock the jurisdiction so it stays fixed until you unlock it", jurUnlockHint: "Unlock to change the jurisdiction", area: "Practice area", advanced: "Advanced options", audience: "Audience", depth: "Depth", outLang: "Answer language",
-    asOf: "Law as of", factsDate: "When did the facts happen?", citation: "Citation style", auto: "Same as my request",
-    aud: { lawyer: "Lawyers", client: "Client (plain language)", court: "Court / tribunal", board: "Board / management" },
-    dep: { brief: "Brief", standard: "Standard", exhaustive: "Exhaustive" },
-    inputs: "Matter details", request: "Your request", requestPh: "Describe the matter and what you need. Be specific: parties, dates, amounts, what you want to achieve…",
-    run: "Run analysis", stop: "Stop", running: "Working…", followUp: "Ask a follow-up or request changes…", send: "Send",
-    copy: "Copy", copied: "Copied", word: "Word", pdf: "PDF / print", md: "Markdown", saveRun: "Save to matter", savedRun: "Saved ✓", newRun: "New analysis",
-    locked: "Pro", lockedTitle: "Unlock all 36 workspaces", lockedBody: "Your plan includes the 6 core workspaces. Pro unlocks Case Builder's companions — pleadings, due diligence, arbitration, criminal analysis, privacy, AML, tax, multi-jurisdiction comparison and more.", upgrade: "See plans",
-    noPlan: "Legal AI is included in every plan", noPlanBody: "Start with Starter (6 core workspaces) or go Pro for all 36 — research, case building, contracts, litigation and compliance across 200+ jurisdictions, on your own AI keys.",
-    matter: "Matter", noMatter: "No matter (quick run)", newMatter: "New matter", matterTitle: "Matter title", client: "Client", opponent: "Opposing party", reference: "Reference", create: "Create matter", cancel: "Cancel",
-    results: "Saved results", noResults: "No saved results yet.", del: "Delete", delMatter: "Delete matter", confirmDel: "Delete this matter, its documents and results? This cannot be undone.",
-    how: "How to use Legal AI", steps: ["Choose the jurisdiction — country, then state/province and city when local law matters.", "Pick a workspace. Case Builder rebuilds a whole case file; Contract Review goes clause by clause.", "Upload documents (PDF, Word, e-mails). Text is extracted in your browser.", "Switch on 🌐 Live research (Anthropic, OpenRouter or Perplexity key) to check current law with sources.", "Run, then ask follow-ups. Save the result to a matter or export it to Word/PDF."],
-    tokens: "Request size", starters: "Try:", answeredBy: "Answered by", withResearch: "with live research", disclaimer: "AI-generated legal information for professional review — verify before relying on it.",
-    errKey: "Add your AI key", tooBig: "The documents are too large for one run. Untick some documents.", needDocs: "This workspace needs at least one document.",
-  },
-  id: {
-    title: "Legal AI", sub: "36 workspace ahli · 200+ yurisdiksi · AI milik Anda", workspaces: "Workspace", search: "Cari workspace…",
-    context: "Yurisdiksi & konteks", jurLock: "Kunci", jurLocked: "Terkunci", jurLockHint: "Kunci yurisdiksi agar tetap sama sampai Anda buka kunci", jurUnlockHint: "Buka kunci untuk mengubah yurisdiksi", area: "Bidang hukum", advanced: "Opsi lanjutan", audience: "Audiens", depth: "Kedalaman", outLang: "Bahasa jawaban",
-    asOf: "Hukum per tanggal", factsDate: "Kapan fakta terjadi?", citation: "Gaya sitasi", auto: "Sama dengan permintaan saya",
-    aud: { lawyer: "Praktisi hukum", client: "Klien (bahasa awam)", court: "Pengadilan / majelis", board: "Direksi / manajemen" },
-    dep: { brief: "Ringkas", standard: "Standar", exhaustive: "Menyeluruh" },
-    inputs: "Detail perkara", request: "Permintaan Anda", requestPh: "Jelaskan perkaranya dan kebutuhan Anda. Sebutkan para pihak, tanggal, nilai, dan tujuan yang ingin dicapai…",
-    run: "Jalankan analisis", stop: "Berhenti", running: "Sedang bekerja…", followUp: "Ajukan pertanyaan lanjutan atau minta perubahan…", send: "Kirim",
-    copy: "Salin", copied: "Tersalin", word: "Word", pdf: "PDF / cetak", md: "Markdown", saveRun: "Simpan ke perkara", savedRun: "Tersimpan ✓", newRun: "Analisis baru",
-    locked: "Pro", lockedTitle: "Buka semua 36 workspace", lockedBody: "Paket Anda mencakup 6 workspace inti. Pro membuka semuanya — gugatan & memori, due diligence, arbitrase, analisis pidana, privasi, APU-PPT, pajak, perbandingan multi-yurisdiksi, dan lainnya.", upgrade: "Lihat paket",
-    noPlan: "Legal AI ada di setiap paket", noPlanBody: "Mulai dari Starter (6 workspace inti) atau Pro untuk semua 36 — riset, penyusunan perkara, kontrak, litigasi, dan kepatuhan di 200+ yurisdiksi, dengan kunci AI Anda sendiri.",
-    matter: "Perkara", noMatter: "Tanpa perkara (jalan cepat)", newMatter: "Perkara baru", matterTitle: "Judul perkara", client: "Klien", opponent: "Pihak lawan", reference: "Nomor referensi", create: "Buat perkara", cancel: "Batal",
-    results: "Hasil tersimpan", noResults: "Belum ada hasil tersimpan.", del: "Hapus", delMatter: "Hapus perkara", confirmDel: "Hapus perkara ini beserta dokumen dan hasilnya? Tidak dapat dibatalkan.",
-    how: "Cara memakai Legal AI", steps: ["Pilih yurisdiksi — negara, lalu provinsi/negara bagian dan kota jika hukum daerah relevan.", "Pilih workspace. Case Builder menyusun ulang seluruh berkas perkara; Review Kontrak memeriksa pasal demi pasal.", "Unggah dokumen (PDF, Word, e-mail). Teks diekstrak di browser Anda.", "Aktifkan 🌐 Riset langsung (kunci Anthropic, OpenRouter atau Perplexity) untuk mengecek hukum terbaru beserta sumbernya.", "Jalankan, lalu ajukan pertanyaan lanjutan. Simpan hasil ke perkara atau ekspor ke Word/PDF."],
-    tokens: "Ukuran permintaan", starters: "Coba:", answeredBy: "Dijawab oleh", withResearch: "dengan riset langsung", disclaimer: "Informasi hukum hasil AI untuk ditinjau profesional — verifikasi sebelum digunakan.",
-    errKey: "Tambah kunci AI", tooBig: "Dokumen terlalu besar untuk satu kali jalan. Hapus centang beberapa dokumen.", needDocs: "Workspace ini memerlukan minimal satu dokumen.",
-  },
-};
 
 const LANGS = ["auto", "English", "Bahasa Indonesia", "Bahasa Melayu", "中文", "日本語", "한국어", "Español", "Português", "Français", "Deutsch", "Italiano", "Nederlands", "العربية", "Türkçe", "Русский", "हिन्दी", "ไทย", "Tiếng Việt", "Filipino"];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -88,7 +53,7 @@ function download(name: string, blob: Blob) {
 const fileSafe = (s: string) => s.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "legal-ai";
 
 export default function LegalApp() {
-  const { lang } = useI18n();
+  const { lang, t: tg } = useI18n();
   const { me } = useMe();
   const t = pick(L, lang);
   const [cat, setCat] = useState<Catalog | null>(null);
@@ -209,7 +174,7 @@ export default function LegalApp() {
         if (Date.now() - last > 60) { setLive(acc); last = Date.now(); }
       }
     } catch (e: any) {
-      if (e?.name === "AbortError") acc += lang === "id" ? "\n\n_(dihentikan)_" : "\n\n_(stopped)_";
+      if (e?.name === "AbortError") acc += `\n\n_${tg("legal.stopped")}_`;
       else acc += `\n\n⚠️ ${String(e?.message || e)}`;
     }
     setThread([...messages, { role: "assistant", content: acc }]);
@@ -303,7 +268,7 @@ export default function LegalApp() {
   const docTitle = matter?.title || meta?.title || ws?.name || "Legal AI";
   const subtitle = () => {
     const c = cat?.countries.find((x) => x.code === jur.country);
-    return [ws?.name, c ? countryName(c, lang) : "", jur.city, new Date().toLocaleDateString(lang === "id" ? "id-ID" : "en-GB", { day: "numeric", month: "long", year: "numeric" })].filter(Boolean).join(" · ");
+    return [ws?.name, c ? countryName(c, lang) : "", jur.city, new Date().toLocaleDateString(LOCALE[lang], { day: "numeric", month: "long", year: "numeric" })].filter(Boolean).join(" · ");
   };
   function exportWord(text: string) { download(`${fileSafe(docTitle)}.docx`, markdownToDocx(text, { title: docTitle, subtitle: subtitle(), footer: t.disclaimer })); }
   function exportMd(text: string) { download(`${fileSafe(docTitle)}.md`, new Blob([`# ${docTitle}\n_${subtitle()}_\n\n${stripStatus(text)}\n`], { type: "text/markdown" })); }
@@ -435,7 +400,7 @@ export default function LegalApp() {
               </label>
               <label>
                 <span className="label">{t.factsDate}</span>
-                <input className="input" value={adv.factsDate} maxLength={120} onChange={(e) => setAdv({ ...adv, factsDate: e.target.value })} placeholder={lang === "id" ? "mis. Maret 2024 – Jan 2025" : "e.g. March 2024 – Jan 2025"} />
+                <input className="input" value={adv.factsDate} maxLength={120} onChange={(e) => setAdv({ ...adv, factsDate: e.target.value })} placeholder={tg("legal.factsPh")} />
               </label>
             </div>
             <button type="button" className="mt-3 text-sm font-semibold text-brand-700" onClick={() => setShowAdv((s) => !s)}>{showAdv ? "▾" : "▸"} {t.advanced}</button>
@@ -585,7 +550,7 @@ export default function LegalApp() {
                   {matter.runs.map((r) => (
                     <li key={r.id} className="flex items-center gap-3 px-3 py-2 text-sm">
                       <button className="min-w-0 flex-1 truncate text-left font-medium text-brand-800 hover:underline" onClick={() => openRun(r.id)}>{r.title}</button>
-                      <span className="hidden text-xs text-slate-500 sm:inline">{new Date(r.createdAt).toLocaleString(lang === "id" ? "id-ID" : "en-GB")}</span>
+                      <span className="hidden text-xs text-slate-500 sm:inline">{new Date(r.createdAt).toLocaleString(LOCALE[lang])}</span>
                       <button className="btn-ghost btn-sm text-rose-600" onClick={() => deleteRun(r.id)} aria-label={t.del}>✕</button>
                     </li>
                   ))}
@@ -606,7 +571,7 @@ export default function LegalApp() {
               <label className="block"><span className="label">{t.opponent}</span><input className="input" value={newMatter.opponent} maxLength={160} onChange={(e) => setNewMatter({ ...newMatter, opponent: e.target.value })} /></label>
             </div>
             <label className="block"><span className="label">{t.reference}</span><input className="input" value={newMatter.reference} maxLength={80} onChange={(e) => setNewMatter({ ...newMatter, reference: e.target.value })} /></label>
-            <p className="text-xs text-slate-500">🔒 {lang === "id" ? "Dokumen dan hasil perkara dienkripsi dengan kunci unik akun Anda." : "Matter documents and results are encrypted with a key unique to your account."}</p>
+            <p className="text-xs text-slate-500">🔒 {tg("legal.encrypted")}</p>
           </div>
         ) : null}
       </Modal>

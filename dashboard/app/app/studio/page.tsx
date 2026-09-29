@@ -15,26 +15,10 @@ import { Alert, LoadingBlock, Spinner } from "@/components/ui";
 import Markdown from "@/components/Markdown";
 import ModelPicker, { type AiChoice } from "@/components/ai/ModelPicker";
 import { stripStatus } from "@/lib/markdown";
+import { L } from "@/lib/i18n-pages/studio";
 
 interface Msg { role: "user" | "assistant"; content: string }
 interface Entry { id: string; title: string; updatedAt: string }
-
-const L = {
-  en: {
-    title: "AI Studio", sub: "Chat with any model on your own keys — saved automatically.", role: "System role (optional)",
-    rolePh: "e.g. You are a senior financial analyst. Be concise and cite assumptions.", newChat: "New chat", history: "Saved chats", empty: "No saved chats yet.",
-    ask: "Ask anything…", send: "Send", stop: "Stop", thinking: "Thinking…", rename: "Rename", duplicate: "Duplicate", del: "Delete", copy: "Copy", copied: "Copied",
-    confirmDel: "Delete this chat?", noKey: "Add your own AI key to start.", addKey: "Add an AI key", answeredBy: "via", saved: "Saved", renamePrompt: "New title:",
-    noPlan: "AI Studio is included from the Starter plan.", upgrade: "See plans",
-  },
-  id: {
-    title: "AI Studio", sub: "Ngobrol dengan model apa pun pakai kunci Anda sendiri — tersimpan otomatis.", role: "Peran sistem (opsional)",
-    rolePh: "mis. Anda analis keuangan senior. Ringkas dan sebutkan asumsinya.", newChat: "Chat baru", history: "Chat tersimpan", empty: "Belum ada chat tersimpan.",
-    ask: "Tanya apa saja…", send: "Kirim", stop: "Berhenti", thinking: "Berpikir…", rename: "Ganti nama", duplicate: "Duplikat", del: "Hapus", copy: "Salin", copied: "Tersalin",
-    confirmDel: "Hapus chat ini?", noKey: "Tambahkan kunci AI Anda untuk mulai.", addKey: "Tambah kunci AI", answeredBy: "via", saved: "Tersimpan", renamePrompt: "Judul baru:",
-    noPlan: "AI Studio termasuk mulai paket Starter.", upgrade: "Lihat paket",
-  },
-};
 
 export default function StudioApp() {
   const { lang } = useI18n();

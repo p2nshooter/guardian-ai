@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
-import { useI18n, formatDate, formatMoney } from "@/lib/i18n";
+import { useI18n, formatDate, formatMoney, statusLabel } from "@/lib/i18n";
 import { Alert, EmptyState, Field, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
 import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { openSupport } from "@/components/support/ChatWidget";
@@ -53,8 +53,8 @@ function LicenceCard({ lic, onChange }: { lic: Licence; onChange: () => void }) 
     <article className="rounded-xl border border-slate-200 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-sm font-bold text-slate-900">{lic.id}</span>
-        <span className="font-semibold text-slate-900">· {lic.name}</span>
-        <StatusBadge status={lic.status} />
+        <span className="font-semibold text-slate-900">· {lic.scope === "suite" ? t("lt.scopeSuite") : lic.name}</span>
+        <StatusBadge status={lic.status} label={statusLabel(t, lic.status)} />
       </div>
       <div className="mt-1 text-sm text-slate-600">
         {lic.scope === "suite" ? t("lt.devicesSuite", { n: lic.devices }) : t("lt.devicesApp", { n: lic.devices })} ·{" "}

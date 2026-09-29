@@ -251,14 +251,14 @@ Dihapus: Program Akses Gratis, Create License (digabung ke Lisensi), Trial Batch
 |---|---|---|
 | 0 | Audit + blueprint + hapus data klien uji | ✅ |
 | 1 | Fondasi: paket, migrasi D1 v3, auth, checkout & 5 webhook, BYOX vs Managed (terkunci), lisensi berbayar (server + 13 engine) | ✅ (E2E) |
-| 2 | Design system + Portal Member + Portal Admin + halaman publik inti (beranda, harga, legal) — diuji E2E | ✅ — celah ditutup di v3.2 (§19) |
-| 2b | Self-hosted: Lifetime offline (harga, checkout, file aktivasi, dukungan offline di 13 engine), EXE Windows, panduan instalasi | ⏳ → dikerjakan di v3.2 (§19c) |
+| 2 | Design system + Portal Member + Portal Admin + halaman publik inti (beranda, harga, legal) — diuji E2E | ✅ — celah ditutup di v3.2 (§19): File Saya, Managed AI, 10 bahasa penuh |
+| 2b | Self-hosted: Lifetime offline (harga, checkout, file aktivasi, dukungan offline di 13 engine), EXE Windows, panduan instalasi | ✅ v3.2 (§19c, E2E + 13 engine) |
 | 3 | Aplikasi 1: **Legal AI** (paling sering dipakai) | ✅ (E2E) |
 | 4 | Aplikasi 2: **Prompt Library** (konten + enkripsi + R2) | ✅ 51 prompt kurasi (target ≥2.000 = roadmap konten) |
 | 5 | Aplikasi 3: **AI Studio** | ✅ (E2E) |
 | 6 | Aplikasi 4: **Clipper** | ✅ inti (fitur §12c lanjutan = roadmap) |
 | 7 | Aplikasi 5–7: Privacy Vault, Compliance Center, Security Analyst | ✅ (E2E) |
-| 8 | SEO lengkap + blog + sitemap + optimasi R2/D1 + pembersihan tabel lama (opsional) | ⏳ → sisa celah dikerjakan di v3.2 (§19d) |
+| 8 | SEO lengkap + blog + sitemap + optimasi R2/D1 + pembersihan tabel lama (opsional) | ✅ v3.2 (RSS, 404, security.txt, panduan, halaman kepercayaan); pembersihan tabel lama tetap opsional |
 
 ---
 
@@ -465,14 +465,33 @@ Hasil dasar: typecheck ✅ · unit 45/45 ✅ · build ✅ · E2E 57/59 ✅ (2 di
 | # | Temuan | v3.2 |
 |---|---|---|
 | I1 | Teks AI Studio: "Built-in model included" & "tidak mengurangi AI runs bulanan" — bertentangan dengan BYOX murni (§5b) | Teks diselaraskan: BYOX, 14 penyedia, tanpa kuota |
-| I2 | 33 teks portal ditulis `id ? "…" : "…"` → hanya EN/ID; 8 bahasa lain tampil Inggris (bertentangan §14 "10 bahasa") | Dipindah ke kunci i18n, diterjemahkan ke 10 bahasa |
+| I2 | 33 teks portal ditulis `id ? "…" : "…"` **dan** 17 kamus halaman (±650 teks: Legal, Clipper, Billing, Settings, …) hanya EN/ID → 8 bahasa lain tampil campur Inggris (bertentangan §14 "10 bahasa") | Kamus dipindah ke `lib/i18n-pages/*` bertipe `Record<Lang, …>` + uji kelengkapan; semua teks antarmuka kini 10 bahasa (kecuali katalog workspace Legal — lihat §19e); widget chat & topik support mengikuti bahasa pengunjung |
 | I3 | Versi: `package.json` 2.2.0, `/api/health` 3.0.0 | Satu konstanta versi `3.2.0` |
 | I4 | Kode mati v2: `lib/license-signing.ts`, `lib/product-docs.ts` (690 baris, tidak diimpor) | Dihapus |
 | I5 | README hanya menyebut 2 produk & URL `YOUR_ORG` | README v3: 7 aplikasi web + 10 edisi self-hosted |
 | I6 | Status fase §10 semua ⏳ padahal sebagian besar lulus E2E | Diperbarui |
+| I7 | Uji visual (Chromium, DE/AR/JA, desktop + mobile): kartu paket di Billing, deskripsi & fitur aplikasi (Beranda, Apps), tagline self-hosted, label status (`active`, `paid`…) dan nama "Suite" tetap Inggris; "Öffnen Legal AI" salah urutan kata; panduan instalasi melebar 897 px di layar 390 px | Semua memakai kamus 10 bahasa (`plan.*`, `app.short.*`, `lib/i18n-pages/appfeatures.ts`, `shtaglines.ts`, `status.*`, `apps.openApp`); kolom artikel panduan `min-w-0` — 0 overflow di 31 halaman publik & portal |
 
 ### 19e. Roadmap setelah v3.2 (tidak dikerjakan di rilis ini, dicatat agar tidak hilang)
 - Konten Prompt Library menuju ≥ 2.000 prompt (§15) — butuh kurasi konten, bukan kode.
 - Clipper lanjutan (§12c): deteksi wajah, brand kit, terjemahan caption.
 - SSO/SAML/OIDC + SCIM (§14, Fase E1); 2FA/passkey.
 - Pembersihan riwayat git untuk PDF lama (keputusan pemilik).
+- Katalog 36 workspace Legal AI (nama, deskripsi, isian formulir, contoh) masih EN/ID seperti rancangan awal (`lib/legal/workspaces.ts`: `name`/`nameId`); 8 bahasa lain menampilkan versi Inggris. Terjemahan istilah hukum perlu ditinjau ahli hukum per bahasa sebelum dirilis — jangan hasil mesin saja.
+
+### 19f. Status pengerjaan v3.2
+| Item | Status | Bukti |
+|---|---|---|
+| E1–E8 (error) | ✅ E1–E7 selesai · E8 = keputusan pemilik (repo privat) | CI hijau lokal: Go test Linux + kompilasi Windows, YAML valid, 61 uji unit |
+| G1 Lifetime | ✅ | `tests/lifetime.test.ts`, `tests/e2e/lifetime.e2e.ts`, `engines.e2e.ts` (13 modul: valid offline; mesin lain / dipalsu / aplikasi lain ditolak) |
+| G2 File Saya | ✅ | `/app/files` + `/api/files`; aplikasi menerima `?open=<id>` |
+| G3 Panduan | ✅ | `/self-hosted/<slug>/guide` ×10, PDF EN/ID via `deploy-dashboard.yml`, `tests/guides.test.ts` |
+| G4–G5 SEO & kepercayaan | ✅ | `not-found`, `error`, RSS, `security.txt`, `/dpa`, `/subprocessors`, `/status`, sitemap |
+| G6 E2E di CI | ✅ | `.github/workflows/e2e.yml` (push + malam, Docker + Go) |
+| G7 Harga Lifetime publik | ✅ | `/pricing#lifetime` (harga live dari admin) |
+| I1–I7 | ✅ | uji `consistency.test.ts`, `i18n-pages.test.ts` (19 kamus × 10 bahasa), uji visual Chromium |
+
+**Tindakan pemilik (tidak bisa dilakukan dari kode):**
+1. Jadikan repo GitHub **privat** (E5/E8) — atau hapus riwayat PDF dengan force-push.
+2. Aktifkan kembali workflow **AXTO CI/CD** (`deploy.yml`) di tab Actions bila ingin uji malam juga dari workflow itu (GitHub menonaktifkannya karena tidak aktif; `e2e.yml` baru sudah menutup kebutuhan uji malam).
+3. Merge branch kerja ke `main` → migrasi D1 `0057_lifetime.sql` berjalan otomatis.

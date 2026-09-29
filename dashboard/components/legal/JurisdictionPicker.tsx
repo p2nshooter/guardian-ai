@@ -4,6 +4,7 @@
 import { pick, type Lang } from "@/lib/i18n";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flag, type Country, type Subdivision } from "@/lib/legal/jurisdictions";
+import { T } from "@/lib/i18n-pages/jurisdiction";
 
 export interface JurValue { country: string; sub?: string; city?: string }
 
@@ -11,15 +12,10 @@ const REGIONS: Record<string, [string, string]> = {
   supranational: ["International & EU", "Internasional & UE"], asia: ["Asia", "Asia"], "middle-east": ["Middle East", "Timur Tengah"],
   europe: ["Europe", "Eropa"], americas: ["Americas", "Amerika"], africa: ["Africa", "Afrika"], oceania: ["Oceania", "Oseania"],
 };
-const T = {
-  en: { country: "Country / legal order", search: "Search a country…", sub: "State / province / special regime", allSub: "Whole country (national law)", city: "City / regency / municipality", cityPh: "optional, e.g. Surabaya, Kab. Bogor, Los Angeles County", none: "No match", locked: "Jurisdiction locked — unlock to change", current: "Current jurisdiction" },
-  id: { country: "Negara / tatanan hukum", search: "Cari negara…", sub: "Negara bagian / provinsi / rezim khusus", allSub: "Seluruh negara (hukum nasional)", city: "Kota / kabupaten / kotamadya", cityPh: "opsional, mis. Surabaya, Kab. Bogor, Los Angeles County", none: "Tidak ditemukan", locked: "Yurisdiksi dikunci — buka kunci untuk mengubah", current: "Yurisdiksi saat ini" },
-};
-
 export function countryName(c: Country, lang: Lang): string {
   if (c.code.length !== 2 || c.code === "XK" && lang === "en") return c.name;
   try {
-    const n = new Intl.DisplayNames([lang === "id" ? "id" : "en"], { type: "region" }).of(c.code);
+    const n = new Intl.DisplayNames([lang], { type: "region" }).of(c.code);
     return n && n !== c.code ? n : c.name;
   } catch { return c.name; }
 }

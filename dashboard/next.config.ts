@@ -34,6 +34,10 @@ const nextConfig: NextConfig = {
       { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
     ];
   },
+  async rewrites() {
+    // Public guide URL → its static page (see app/(site)/self-hosted-guide/[slug]).
+    return [{ source: "/self-hosted/:slug/guide", destination: "/self-hosted-guide/:slug" }];
+  },
   async redirects() {
     // Old URLs → their v3 homes (permanent, so search engines transfer ranking).
     return [

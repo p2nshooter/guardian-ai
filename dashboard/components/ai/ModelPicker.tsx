@@ -9,15 +9,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { Spinner } from "@/components/ui";
+import { T } from "@/lib/i18n-pages/modelpicker";
 
 export interface ProviderEntry { id: string; name: string; chat: boolean; stt: boolean; defaultModel: string; models: string[]; research: boolean; freeTier: string }
 export interface SavedKey { provider: string; hint: string; model: string; baseUrl: string }
 export interface AiChoice { provider: string; model: string; research: boolean }
-
-const T = {
-  en: { provider: "AI provider", model: "Model", load: "Load my models", loading: "Loading…", research: "Live research", researchHint: "Checks current law on the web and lists its sources.", noResearch: "This provider has no live research — add an Anthropic, OpenRouter or Perplexity key for it.", noKey: "Add your own AI key to run this app.", addKey: "Add an AI key", manage: "Manage keys", custom: "Type a model name…" },
-  id: { provider: "Penyedia AI", model: "Model", load: "Muat model saya", loading: "Memuat…", research: "Riset langsung", researchHint: "Mengecek hukum terbaru di web dan mencantumkan sumbernya.", noResearch: "Penyedia ini tidak punya riset langsung — tambahkan kunci Anthropic, OpenRouter atau Perplexity.", noKey: "Tambahkan kunci AI Anda sendiri untuk menjalankan aplikasi ini.", addKey: "Tambah kunci AI", manage: "Kelola kunci", custom: "Ketik nama model…" },
-};
 
 export function useAiKeys() {
   const [state, setState] = useState<{ loading: boolean; keys: SavedKey[]; preferred: string; providers: ProviderEntry[] }>({ loading: true, keys: [], preferred: "", providers: [] });

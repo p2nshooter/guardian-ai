@@ -168,7 +168,7 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
           <div className="grid grid-cols-5">
             {(variant === "admin"
               ? [["/admin", "📊", "Overview"], ["/admin/members", "👥", "Members"], ["/admin/orders", "🧾", "Orders"], ["/admin/support", "💬", "Support"], ["menu", "☰", "Menu"]]
-              : [["/app", "🏠", t("nav.home")], ["/app/legal", "⚖️", "Legal"], ["/app/apps", "🧩", t("nav.apps")], ["/app/billing", "💳", lang === "id" ? "Paket" : "Plan"], ["menu", "☰", "Menu"]]
+              : [["/app", "🏠", t("nav.home")], ["/app/legal", "⚖️", "Legal"], ["/app/apps", "🧩", t("nav.apps")], ["/app/billing", "💳", t("nav.plan")], ["menu", "☰", "Menu"]]
             ).map(([href, icon, label]) => href === "menu" ? (
               <button key={href} onClick={() => setOpen(true)} className="flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-600">
                 <span className="text-lg leading-none" aria-hidden="true">{icon}</span>{label}

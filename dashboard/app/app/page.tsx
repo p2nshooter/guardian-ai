@@ -3,7 +3,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useI18n, formatBytes } from "@/lib/i18n";
+import { useI18n, formatBytes, type Key } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { CLOUD_APPS } from "@/lib/apps";
@@ -19,7 +19,6 @@ export default function MemberHome() {
 
   const paid = me.tier !== "none";
   const unlimited = (n: number) => (n < 0 ? t("home.unlimited") : String(n));
-  const id = lang === "id";
 
   return (
     <div className="space-y-6">
@@ -42,8 +41,8 @@ export default function MemberHome() {
           <h2 className="mb-4 text-base font-semibold">{t("home.start")}</h2>
           <Steps steps={[
             { title: t("home.step1"), done: paid, body: paid ? undefined : <Link href="/app/billing" className="btn-primary btn-sm mt-2">{t("plan.choose")} →</Link> },
-            { title: t("home.step2"), done: !!hasKey, body: hasKey ? undefined : <><span>{t("home.noKey")}</span><br /><Link href="/app/settings?tab=ai" className="btn-secondary btn-sm mt-2">🔑 {id ? "Tambah kunci AI" : "Add an AI key"}</Link></> },
-            { title: t("home.step3"), done: false, body: <Link href="/app/legal" className="btn-ghost btn-sm mt-1">{id ? "Buka Legal AI" : "Open Legal AI"} →</Link> },
+            { title: t("home.step2"), done: !!hasKey, body: hasKey ? undefined : <><span>{t("home.noKey")}</span><br /><Link href="/app/settings?tab=ai" className="btn-secondary btn-sm mt-2">🔑 {t("home.addKey")}</Link></> },
+            { title: t("home.step3"), done: false, body: <Link href="/app/legal" className="btn-ghost btn-sm mt-1">{t("home.openLegal")} →</Link> },
           ]} />
         </section>
       ) : null}
@@ -60,7 +59,7 @@ export default function MemberHome() {
                   <span className="flex items-center gap-2 font-semibold text-slate-900">{a.name}
                     {!a.live ? <span className="badge-gray">{t("common.comingSoon")}</span> : !unlocked ? <span className="badge-amber">🔒</span> : null}
                   </span>
-                  <span className="mt-0.5 line-clamp-2 block text-sm text-slate-600">{a.short}</span>
+                  <span className="mt-0.5 line-clamp-2 block text-sm text-slate-600">{t(`app.short.${a.slug}` as Key)}</span>
                 </span>
               </Link>
             );
@@ -84,8 +83,8 @@ export default function MemberHome() {
       {me.tier === "starter" || me.tier === "pro" ? (
         <section className="card-pad flex flex-col gap-3 border-brand-200 bg-brand-50/40 sm:flex-row sm:items-center">
           <div className="flex-1">
-            <div className="font-semibold text-slate-900">{me.tier === "starter" ? (id ? "Buka semua 36 workspace Legal AI, Compliance & Security" : "Unlock all 36 Legal AI workspaces, Compliance & Security") : (id ? "Jalankan aplikasi di server Anda sendiri" : "Run the apps on your own servers")}</div>
-            <div className="text-sm text-slate-600">{me.tier === "starter" ? (id ? "Upgrade ke Pro — sisa masa paket Anda dihitung otomatis." : "Upgrade to Pro — unused time on your plan is credited automatically.") : (id ? "Business mencakup 3 aplikasi self-hosted dengan lisensi bertanda tangan." : "Business includes 3 self-hosted apps with signed licences.")}</div>
+            <div className="font-semibold text-slate-900">{me.tier === "starter" ? t("home.upStarterT") : t("home.upProT")}</div>
+            <div className="text-sm text-slate-600">{me.tier === "starter" ? t("home.upStarterD") : t("home.upProD")}</div>
           </div>
           <Link href={`/app/billing?plan=${me.tier === "starter" ? "pro" : "business"}`} className="btn-primary">{t("plan.upgrade")} →</Link>
         </section>

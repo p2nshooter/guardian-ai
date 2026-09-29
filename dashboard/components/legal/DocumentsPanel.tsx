@@ -5,13 +5,9 @@ import { pick, type Lang } from "@/lib/i18n";
 import { useRef, useState } from "react";
 import { ACCEPT, extractFile, estimateTokens } from "@/lib/legal/extract";
 import { Spinner } from "@/components/ui";
+import { T } from "@/lib/i18n-pages/documents";
 
 export interface RunDoc { key: string; name: string; text: string; pages?: number; kind: string; warning?: string; status: "reading" | "ready" | "error"; error?: string; savedId?: string; include: boolean; progress?: number }
-
-const T = {
-  en: { title: "Documents", hint: "PDF, Word, ODT, e-mails, text — read inside your browser; only the text goes to your own AI.", drop: "Drop files here or", pick: "choose files", paste: "Paste text", pasteTitle: "Name", pasteBody: "Paste the text of a document…", add: "Add", cancel: "Cancel", remove: "Remove", save: "Save to matter", saved: "Saved in matter", reading: "Reading…", pages: "pages", chars: "characters", tokens: "Approx. size", limit: "of ~150k tokens", over: "Too large for one run — untick some documents.", include: "Include", none: "No documents yet." },
-  id: { title: "Dokumen", hint: "PDF, Word, ODT, e-mail, teks — dibaca di browser Anda; hanya teksnya yang dikirim ke AI milik Anda.", drop: "Tarik berkas ke sini atau", pick: "pilih berkas", paste: "Tempel teks", pasteTitle: "Nama", pasteBody: "Tempel teks dokumen…", add: "Tambah", cancel: "Batal", remove: "Hapus", save: "Simpan ke perkara", saved: "Tersimpan di perkara", reading: "Membaca…", pages: "halaman", chars: "karakter", tokens: "Perkiraan ukuran", limit: "dari ~150rb token", over: "Terlalu besar untuk satu kali jalan — hapus centang beberapa dokumen.", include: "Sertakan", none: "Belum ada dokumen." },
-};
 
 export const MAX_RUN_TOKENS = 145_000;
 

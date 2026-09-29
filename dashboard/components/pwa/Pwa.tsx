@@ -6,6 +6,7 @@
 "use client";
 import { pick, type Lang } from "@/lib/i18n";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { T } from "@/lib/i18n-pages/pwa";
 
 type Prompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 let deferred: Prompt | null = null;
@@ -61,11 +62,6 @@ export function usePwaInstall() {
     },
   };
 }
-
-const T = {
-  en: { install: "Install app", title: "Install AXTO on your phone", ios1: "Tap the Share button", ios2: "Choose “Add to Home Screen”", ios3: "Open AXTO from your home screen — full screen, no browser bar.", close: "Got it" },
-  id: { install: "Install aplikasi", title: "Pasang AXTO di HP Anda", ios1: "Ketuk tombol Bagikan (Share)", ios2: "Pilih “Tambahkan ke Layar Utama”", ios3: "Buka AXTO dari layar utama — layar penuh, tanpa bilah browser.", close: "Mengerti" },
-};
 
 /** Button that installs the app, or explains how on iOS. Renders nothing when not installable. */
 export function InstallButton({ lang = "en", className = "btn-secondary btn-sm" }: { lang?: Lang; className?: string }) {

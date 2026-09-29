@@ -1,7 +1,10 @@
 /* /self-hosted/<slug>/guide — installation guide for one self-hosted edition:
  * AXTO Setup, Docker by hand (air-gapped), online and offline (Lifetime)
  * activation, updates, data and troubleshooting. Static, indexable, and the
- * same content as the PDF guide (lib/product-guides.ts). */
+ * same content as the PDF guide (lib/product-guides.ts).
+ * Lives at /self-hosted-guide/<slug> and is served at the public URL by a
+ * rewrite in next.config.ts: Cloudflare's next-on-pages only accepts static
+ * dynamic routes whose LAST segment is the dynamic one. */
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -50,7 +53,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             {g.sections.map((s, i) => <li key={s.id}><a href={`#${s.id}`} className="text-slate-600 no-underline hover:text-slate-900">{i + 1}. {s.title}</a></li>)}
           </ol>
         </nav>
-        <article className="space-y-10">
+        <article className="min-w-0 space-y-10">
           {g.sections.map((s, i) => (
             <section key={s.id} id={s.id} className="scroll-mt-24">
               <h2 className="text-xl font-bold text-slate-900">{i + 1}. {s.title}</h2>

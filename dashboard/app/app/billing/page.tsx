@@ -9,46 +9,20 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
-import { useI18n, formatDate, formatMoney, pick } from "@/lib/i18n";
+import { useI18n, formatDate, formatMoney, pick, statusLabel, type Key } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { Alert, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
 import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
+import { L } from "@/lib/i18n-pages/billing";
 
 interface Options { plans: { id: PlanId; name: string; monthly: number; yearly: number }[]; gateways: { id: string; label: string; methods: string; currency: string }[]; usdIdr: number }
 interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; status: string; created_at: string; paid_at: string }[] }
 
 const SH_APPS: [string, string][] = [["guardian", "Guardian AI"], ["orchestra", "Orchestra AI"], ["vault", "Vault"], ["edge", "Edge"], ["soc", "SOC"], ["compliance", "Compliance"], ["sentinel", "Sentinel"], ["antivirus", "Antivirus"], ["studio", "Studio"], ["legal", "Legal (self-hosted)"]];
 
-const L = {
-  en: {
-    title: "Plan & billing", sub: "Pick a plan, pay the way you like, and everything activates automatically.",
-    welcome: "Welcome to AXTO! Choose a plan to unlock your apps — activation is instant with card, PayPal or crypto.",
-    paid: "Payment received — your plan is active and any licences have been issued. 🎉", canceled: "Payment was cancelled. You can try again anytime.",
-    current: "Your plan", none: "Free account — no apps unlocked yet.", until: "Active until", renew: "Renew / extend",
-    monthly: "Monthly", yearly: "Yearly", save: "2 months free", perMo: "/mo", perYr: "/yr", popular: "Most popular", choose: "Choose", chosen: "Selected",
-    step2: "Choose how to pay", pickApps: "Choose your self-hosted apps", pickAppsHint: "Business includes any 3 — licences are issued the moment payment confirms.",
-    pay: "Pay", paying: "Starting payment…", noMethods: "Online payment is being set up. Please contact us in the chat to pay by bank transfer.",
-    trust: ["🔒 Secure checkout", "⚡ Instant activation", "🧾 Tax invoice", "💬 Human support"],
-    history: "Payment history", invoice: "Invoice", noOrders: "No payments yet.", date: "Date", plan: "Plan", total: "Total", status: "Status", method: "Method",
-    compare: "Compare all features", lifetime: "Lifetime licence", once: "one-time",
-  },
-  id: {
-    title: "Paket & tagihan", sub: "Pilih paket, bayar dengan cara favorit Anda, semuanya aktif otomatis.",
-    welcome: "Selamat datang di AXTO! Pilih paket untuk membuka aplikasi — aktivasi instan dengan kartu, PayPal, atau kripto.",
-    paid: "Pembayaran diterima — paket Anda aktif dan lisensi sudah diterbitkan. 🎉", canceled: "Pembayaran dibatalkan. Anda bisa mencoba lagi kapan saja.",
-    current: "Paket Anda", none: "Akun gratis — belum ada aplikasi yang terbuka.", until: "Aktif sampai", renew: "Perpanjang",
-    monthly: "Bulanan", yearly: "Tahunan", save: "Gratis 2 bulan", perMo: "/bln", perYr: "/thn", popular: "Paling populer", choose: "Pilih", chosen: "Dipilih",
-    step2: "Pilih cara bayar", pickApps: "Pilih aplikasi self-hosted Anda", pickAppsHint: "Business mencakup 3 aplikasi bebas pilih — lisensi terbit begitu pembayaran terkonfirmasi.",
-    pay: "Bayar", paying: "Memulai pembayaran…", noMethods: "Pembayaran online sedang disiapkan. Hubungi kami lewat chat untuk bayar via transfer bank.",
-    trust: ["🔒 Checkout aman", "⚡ Aktivasi instan", "🧾 Faktur resmi", "💬 Dukungan manusia"],
-    history: "Riwayat pembayaran", invoice: "Faktur", noOrders: "Belum ada pembayaran.", date: "Tanggal", plan: "Paket", total: "Total", status: "Status", method: "Metode",
-    compare: "Bandingkan semua fitur", lifetime: "Lisensi lifetime", once: "sekali bayar",
-  },
-};
-
 function BillingInner() {
-  const { lang } = useI18n();
+  const { lang, t: tg } = useI18n();
   const t = pick(L, lang);
   const { me, reload } = useMe();
   const q = useSearchParams();
@@ -105,7 +79,7 @@ function BillingInner() {
           {sub && sub.status === "active" ? (
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-xl font-bold">{PLANS[sub.plan as PlanId]?.name || sub.plan}</span>
-              <StatusBadge status={sub.status} />
+              <StatusBadge status={sub.status} label={statusLabel(tg, sub.status)} />
               <span className="text-sm text-slate-600">{t.until} <strong>{formatDate(sub.current_period_end, lang)}</strong> · {sub.cycle === "yearly" ? t.yearly : t.monthly}</span>
               <button className="btn-secondary btn-sm ml-auto" onClick={() => { setPlan(sub.plan as PlanId); document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" }); }}>{t.renew}</button>
             </div>
@@ -133,14 +107,14 @@ function BillingInner() {
                   className={`relative flex flex-col rounded-2xl border bg-white p-5 text-left shadow-card transition ${active ? "border-brand-500 ring-2 ring-brand-500" : p.highlight ? "border-brand-300" : "border-slate-200 hover:border-slate-300"}`}>
                   {p.highlight ? <span className="absolute -top-2.5 left-5 rounded-full bg-brand-600 px-2.5 py-0.5 text-[11px] font-bold text-white">{t.popular}</span> : null}
                   <div className="text-lg font-bold text-slate-900">{p.name}</div>
-                  <div className="text-xs text-slate-500">{p.bestFor}</div>
+                  <div className="text-xs text-slate-500">{tg(`plan.${id}.bestFor` as Key)}</div>
                   <div className="mt-3">
                     <span className="text-3xl font-extrabold text-slate-900">{formatMoney(cycle === "yearly" ? Math.round((pr.yearly / 12) * 100) / 100 : pr.monthly, "USD", lang)}</span>
                     <span className="text-sm text-slate-500">{t.perMo}</span>
                     {cycle === "yearly" ? <div className="text-xs text-slate-500">{formatMoney(pr.yearly, "USD", lang)}{t.perYr}</div> : null}
                   </div>
-                  <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-700">{p.features.slice(0, 7).map((f) => <li key={f} className="flex gap-2"><span className="text-brand-600">✓</span>{f}</li>)}</ul>
-                  <span className={`mt-5 w-full ${active ? "btn-primary" : p.highlight ? "btn-primary" : "btn-secondary"}`}>{active ? `✓ ${t.chosen}` : `${t.choose} ${p.name}`}</span>
+                  <ul className="mt-4 flex-1 space-y-1.5 text-sm text-slate-700">{p.features.slice(0, 7).map((f, i) => <li key={f} className="flex gap-2"><span className="text-brand-600">✓</span>{tg(`plan.${id}.f${i + 1}` as Key)}</li>)}</ul>
+                  <span className={`mt-5 w-full ${active ? "btn-primary" : p.highlight ? "btn-primary" : "btn-secondary"}`}>{active ? `✓ ${t.chosen}` : tg("price.choose", { name: p.name })}</span>
                 </button>
               );
             })}
@@ -203,7 +177,7 @@ function BillingInner() {
                       <td>{o.plan === "lifetime" ? `${t.lifetime} · ${t.once}` : `${PLANS[o.plan as PlanId]?.name || o.plan} · ${o.cycle === "yearly" ? t.yearly : t.monthly}`}</td>
                       <td>{opts.gateways.find((g) => g.id === o.gateway)?.label || o.gateway}</td>
                       <td>{formatMoney(o.amount_usd, "USD", lang)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR", lang)}</span> : null}</td>
-                      <td><StatusBadge status={o.status} /></td>
+                      <td><StatusBadge status={o.status} label={statusLabel(tg, o.status)} /></td>
                       <td>{o.status === "paid" ? <a href={`/api/billing/invoice/${o.id}`} target="_blank" rel="noopener" className="text-sm font-semibold">{t.invoice}</a> : null}</td>
                     </tr>
                   ))}

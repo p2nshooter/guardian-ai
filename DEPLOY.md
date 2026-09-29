@@ -4,112 +4,56 @@
 [//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
-# AXTO — AI eXecution & Tools Orchestration — Deploy Guide
+# AXTO v3 — Panduan Deploy axto.io
 
-## Arsitektur
+## Alur
 
 ```
-GitHub → push ke main
-  ├── GitHub Actions
-  │     ├── D1 migrations (wrangler)
-  │     ├── Guardian Engine → GitLab Registry
-  │     ├── Orchestra Engine → GitLab Registry
-  │     ├── Threat Feed → R2 (wrangler)
-  │     └── CF Workers deploy (wrangler)
-  │
-  └── Cloudflare Pages (Git Integration)
-        └── Build Next.js natively → deploy axto.io
+push / merge ke main
+  ├── deploy-dashboard.yml   typecheck + unit test → migrasi D1 → build (next-on-pages) → Cloudflare Pages "axto-dashboard"
+  │                          → PDF panduan instalasi (EN/ID) → R2 axto-builds/builds/latest/guides/
+  ├── auto-build-all.yml     image Docker 10 produk → R2 axto-builds/builds/latest/raw/
+  ├── build-installer.yml    AXTO Setup (Windows/Linux/macOS), uji Linux + Windows → R2 (setiap malam juga)
+  ├── docker-smoke.yml       setiap image dijalankan + aktivasi lisensi
+  └── e2e.yml                E2E penuh di runtime Cloudflare lokal (+ 13 engine & installer di Docker), juga setiap malam
+
+push ke branch pengembangan (claude/**, ccr-**)
+  └── deploy-preview.yml     proyek TERPISAH "axto-preview" (D1/KV/R2 sendiri) → https://axto-preview.pages.dev
 ```
 
-## Stack 100% Cloudflare
+## Secret Cloudflare Pages (`axto-dashboard`)
 
-| Layer       | Service              |
-|-------------|----------------------|
-| Frontend    | Cloudflare Pages     |
-| Database    | Cloudflare D1        |
-| Cache       | Cloudflare KV        |
-| Storage     | Cloudflare R2        |
-| Cron        | Cloudflare Workers   |
-| DNS/CDN     | Cloudflare           |
+`wrangler pages secret put <NAMA> --project-name axto-dashboard`
 
-Docker images → GitLab Registry (untuk client self-host Guardian & Orchestra)
+| Secret | Wajib | Fungsi |
+|---|---|---|
+| `JWT_SECRET` | ✅ | Tanda tangan sesi |
+| `ENCRYPTION_KEY` | ✅ | 64 hex — enkripsi kunci AI member & data per member |
+| `ADMIN_PASSWORD` | ✅ | Login admin |
+| `CRON_SECRET` | ✅ | Otorisasi `/api/cron/*` |
+| `LICENSE_SIGNING_PRIVATE_KEY_B64` | ✅* | Seed Ed25519 penandatangan lisensi online **dan** file aktivasi Lifetime (*atau `platform_config.license_signing_key` di D1 — yang di D1 didahulukan) |
+| `SETTINGS_ENCRYPTION_KEY` | – | Kunci terpisah untuk pengaturan rahasia di R2 (default: `ENCRYPTION_KEY`) |
+| `DOWNLOAD_SIGNING_SECRET` | – | Tautan unduhan image bertanda tangan untuk installer |
+| `LICENSE_KEY_HMAC_SECRET` | – | Segmen HMAC pada kunci lisensi |
+| `RESEND_API_KEY`, `EMAIL_FROM`, `ADMIN_NOTIFY_EMAIL` | – | Email (bisa juga diisi di Admin → Payment & email) |
 
----
+Variabel publik: `NEXT_PUBLIC_APP_URL` (default `https://axto.io`), `NEXT_PUBLIC_GSC_VERIFICATION`, `NEXT_PUBLIC_BING_VERIFICATION`.
 
-## Setup Awal (sekali saja)
+## Secret GitHub Actions
 
-### 1. Clone & setup CF resources
+`CLOUDFLARE_API_TOKEN` (Pages:Edit, D1:Edit) · `CF_R2_ACCESS_KEY_ID` + `CF_R2_SECRET_ACCESS_KEY` (unggah build & PDF ke R2).
+
+## Setelah deploy pertama
+
+1. Admin → **Payment & email**: aktifkan gateway (Stripe, PayPal, Xendit, Midtrans, NOWPayments, crypto langsung, transfer BNI).
+2. Admin → **Plans & pricing** dan **Lifetime licences**: sesuaikan harga bila perlu.
+3. Managed AI tetap terkunci sampai dibuka di Admin → **Managed AI**.
+4. Google Search Console: verifikasi domain (DNS TXT di Cloudflare), kirim `https://axto.io/sitemap.xml`.
+
+## Lokal
 
 ```bash
-git clone https://github.com/your-org/guardian-ai.git
-cd guardian-ai
-
-export CF_API_TOKEN=your_token
-export CF_ACCOUNT_ID=your_account_id
-./setup.sh
-```
-
-### 2. Isi wrangler.toml
-
-Setelah `setup.sh` selesai, copy `database_id` dan KV `id` ke `dashboard/wrangler.toml`.
-
-### 3. Connect CF Pages ke GitHub
-
-1. Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git**
-2. Pilih repo ini
-3. Konfigurasi:
-   - **Framework preset**: Next.js
-   - **Root directory**: `dashboard`
-   - **Build command**: `npm run build`
-4. Klik **Save and Deploy**
-
-CF Pages akan build dan deploy otomatis setiap push ke `main`.
-
-### 4. Set GitHub Secrets
-
-Di repo → Settings → Secrets → Actions:
-
-| Secret | Cara dapat |
-|--------|-----------|
-| `CF_API_TOKEN` | Cloudflare → My Profile → API Tokens |
-| `CF_ACCOUNT_ID` | Cloudflare → Overview (kanan atas) |
-| `JWT_SECRET` | `openssl rand -hex 32` |
-| `ENCRYPTION_KEY` | `openssl rand -hex 32` |
-| `RESEND_API_KEY` | resend.com → API Keys |
-| `CRON_SECRET` | String random bebas |
-
-### 5. Set CF Pages secrets
-
-```bash
-wrangler pages secret put JWT_SECRET        --project-name=axto-dashboard
-wrangler pages secret put ENCRYPTION_KEY    --project-name=axto-dashboard
-wrangler pages secret put RESEND_API_KEY    --project-name=axto-dashboard
-wrangler pages secret put CRON_SECRET       --project-name=axto-dashboard
-```
-
-### 6. Buat admin user pertama
-
-```bash
-wrangler d1 execute axto-db --remote --command="
-  INSERT INTO users (id, email, role, created_at)
-  VALUES (lower(hex(randomblob(16))), 'hello@axto.io', 'admin', datetime('now'))
-"
-```
-
----
-
-## Deploy Manual (opsional)
-
-```bash
-export CF_API_TOKEN=your_token
-export CF_ACCOUNT_ID=your_account_id
-
-# D1 migrations saja
-./deploy.sh --db-only
-
-# Workers saja
-./deploy.sh --workers-only
-
-# Semua (kecuali Docker)
-./deploy.sh --skip-docker
+cd dashboard && npm ci
+npm run typecheck && npm test
+bash tests/e2e/run.sh          # build + D1/KV/R2 lokal + semua E2E
 ```

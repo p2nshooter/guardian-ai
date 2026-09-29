@@ -6,8 +6,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/client";
-import { useI18n, formatDate, pick } from "@/lib/i18n";
+import { useI18n, formatDate, pick, statusLabel } from "@/lib/i18n";
 import { Alert, CopyButton, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
+import { L } from "@/lib/i18n-pages/selfhosted";
+import { SH_TAGLINES } from "@/lib/i18n-pages/shtaglines";
 
 interface Product {
   slug: string; name: string; emoji: string; tagline: string; port: number; compose: string; config: string; configTarget: string; licenseField: string;
@@ -16,39 +18,8 @@ interface Product {
 }
 interface Data { tier: string; planName: string; allowance: number; nodes: number; used: number; periodEnd: string; products: Product[] }
 
-const L = {
-  en: {
-    title: "Self-hosted apps", sub: "Run AXTO on your own servers — Windows (Docker Desktop) or Linux — with a signed licence.",
-    none: "Self-hosted apps are included in Business (any 3 apps) and Enterprise (all 10, unlimited servers).", upgrade: "See Business & Enterprise",
-    allowance: "Licences in use", unlimited: "all apps", nodes: "Servers per licence", validUntil: "Valid until",
-    setupTitle: "1. Install with AXTO Setup (recommended)", setupBody: "One program checks Docker/WSL 2, asks for your licence key, downloads the signed images, and starts the app with health checks — plus start/stop/update/uninstall later.",
-    win: "Download for Windows", linux: "Linux (x86-64)", arm: "Linux (ARM64)", mac: "macOS (Apple silicon)", sums: "SHA-256 checksums",
-    linuxCmd: "Linux / macOS in a terminal:",
-    appsTitle: "2. Your licences", issue: "Activate licence", issuing: "Activating…", reset: "Move to another server", release: "Release slot",
-    key: "Licence key", status: "Status", server: "Bound server", lastSeen: "Last check-in", never: "not yet", noSlots: "All licence slots are in use — release one or upgrade to Enterprise.",
-    manual: "Manual Docker install", images: "Images", configs: "Config files", port: "Opens on port",
-    manualSteps: ["Download the image(s) and load them: docker load -i <file>.tar.gz", "Download the compose file and the example config, save the config as", "Put your licence key in", "Start it: docker compose -f <compose file> up -d — then open http://localhost:"],
-    confirmRelease: "Release this licence? The app stops working on your server until you activate it again.", done: "Done.",
-    guide: "Step-by-step guide",
-  },
-  id: {
-    title: "Aplikasi self-hosted", sub: "Jalankan AXTO di server Anda sendiri — Windows (Docker Desktop) atau Linux — dengan lisensi bertanda tangan.",
-    none: "Aplikasi self-hosted termasuk di paket Business (3 aplikasi bebas pilih) dan Enterprise (semua 10, server tanpa batas).", upgrade: "Lihat Business & Enterprise",
-    allowance: "Lisensi terpakai", unlimited: "semua aplikasi", nodes: "Server per lisensi", validUntil: "Berlaku sampai",
-    setupTitle: "1. Pasang dengan AXTO Setup (disarankan)", setupBody: "Satu program mengecek Docker/WSL 2, meminta kunci lisensi, mengunduh image bertanda tangan, lalu menjalankan aplikasi dengan cek kesehatan — plus start/stop/update/uninstall.",
-    win: "Unduh untuk Windows", linux: "Linux (x86-64)", arm: "Linux (ARM64)", mac: "macOS (Apple silicon)", sums: "Checksum SHA-256",
-    linuxCmd: "Linux / macOS lewat terminal:",
-    appsTitle: "2. Lisensi Anda", issue: "Aktifkan lisensi", issuing: "Mengaktifkan…", reset: "Pindah ke server lain", release: "Lepas slot",
-    key: "Kunci lisensi", status: "Status", server: "Server terikat", lastSeen: "Terakhir cek", never: "belum", noSlots: "Semua slot lisensi terpakai — lepas satu atau upgrade ke Enterprise.",
-    manual: "Instal manual dengan Docker", images: "Image", configs: "Berkas konfigurasi", port: "Terbuka di port",
-    manualSteps: ["Unduh image lalu muat: docker load -i <berkas>.tar.gz", "Unduh berkas compose dan contoh konfigurasi, simpan konfigurasi sebagai", "Isi kunci lisensi Anda di", "Jalankan: docker compose -f <berkas compose> up -d — lalu buka http://localhost:"],
-    confirmRelease: "Lepas lisensi ini? Aplikasi berhenti di server Anda sampai diaktifkan lagi.", done: "Selesai.",
-    guide: "Panduan langkah demi langkah",
-  },
-};
-
 export default function SelfHostedPage() {
-  const { lang } = useI18n();
+  const { lang, t: tt } = useI18n();
   const t = pick(L, lang);
   const [d, setD] = useState<Data | null>(null);
   const [busy, setBusy] = useState("");
@@ -120,8 +91,8 @@ export default function SelfHostedPage() {
                 <div key={p.slug} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-2xl" aria-hidden="true">{p.emoji}</span>
-                    <div className="min-w-0 flex-1"><div className="font-semibold text-slate-900">{p.name}</div><div className="text-sm text-slate-500">{p.tagline}</div></div>
-                    {l ? <StatusBadge status={l.status} /> : (
+                    <div className="min-w-0 flex-1"><div className="font-semibold text-slate-900">{p.name}</div><div className="text-sm text-slate-500">{SH_TAGLINES[lang][p.slug] || p.tagline}</div></div>
+                    {l ? <StatusBadge status={l.status} label={statusLabel(tt, l.status)} /> : (
                       <button className="btn-primary btn-sm" onClick={() => act(p.slug, "issue")} disabled={!!busy || slotsLeft <= 0}>{busy === `issue-${p.slug}` ? <><Spinner className="h-3 w-3" /> {t.issuing}</> : t.issue}</button>
                     )}
                   </div>
@@ -141,7 +112,7 @@ export default function SelfHostedPage() {
                   {l && open === p.slug ? (
                     <div className="mt-3 rounded-lg bg-slate-50 p-4 text-sm">
                       <div className="font-semibold">{t.images}</div>
-                      <ul className="mt-1 space-y-1">{p.images.map((i) => <li key={i.name}>{i.available ? <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>{i.label} — {i.name}.tar.gz</a> : <span className="text-slate-400">{i.label} ({lang === "id" ? "sedang disiapkan" : "being prepared"})</span>}{i.optional ? " · optional" : ""}</li>)}</ul>
+                      <ul className="mt-1 space-y-1">{p.images.map((i) => <li key={i.name}>{i.available ? <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>{i.label} — {i.name}.tar.gz</a> : <span className="text-slate-400">{i.label} ({tt("sh.preparing")})</span>}{i.optional ? " · optional" : ""}</li>)}</ul>
                       <div className="mt-3 font-semibold">{t.configs}</div>
                       <ul className="mt-1 space-y-1"><li><a href={`/configs/${p.compose}`} download>{p.compose}</a></li><li><a href={`/configs/${p.config}`} download>{p.config}</a> → <code>{p.configTarget}</code></li></ul>
                       <ol className="mt-3 list-decimal space-y-1 pl-5 text-slate-700">

@@ -12,7 +12,9 @@ import { V32_EN, V32 } from "../lib/i18n-v32";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const REPO = path.resolve(ROOT, "..");
+const REWRITES: [RegExp, string][] = [[/^\/self-hosted\/[^/]+\/guide$/, "/self-hosted-guide/[slug]"]];
 const pageExists = (route: string) => {
+  for (const [re, target] of REWRITES) if (re.test(route)) route = target;
   const dir = path.join(ROOT, "app", ...route.split("/").filter(Boolean));
   return fs.existsSync(path.join(dir, "page.tsx"));
 };

@@ -14,23 +14,7 @@ import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { LoadingBlock } from "@/components/ui";
 import { PII_TYPES, redact, restore, summarize, type MaskStyle } from "@/lib/vault/pii";
-
-const L = {
-  en: { title: "Privacy Vault", sub: "Redact personal data before you share it — 100% in your browser.",
-    input: "Your text", inputPh: "Paste text or a document here. It never leaves your device.",
-    style: "Redaction style", token: "Reversible tokens", full: "Full mask", partial: "Partial (keep last 4)",
-    types: "Data types", found: "Found", none: "No personal data detected yet.", redacted: "Redacted output",
-    copy: "Copy safe text", copied: "Copied ✓", clear: "Clear", save: "Save redacted", saved: "Saved ✓",
-    restoreT: "Restore", restorePh: "Paste the AI's reply that still contains the tokens…", restoreBtn: "Restore originals", restored: "Restored text",
-    onDevice: "Detection runs on your device. Nothing here is uploaded.", noPlan: "Privacy Vault is included from the Starter plan.", upgrade: "See plans", noMap: "Use reversible tokens to be able to restore later." },
-  id: { title: "Privacy Vault", sub: "Redaksi data pribadi sebelum dibagikan — 100% di browser Anda.",
-    input: "Teks Anda", inputPh: "Tempel teks atau dokumen di sini. Tidak pernah keluar dari perangkat Anda.",
-    style: "Gaya redaksi", token: "Token yang bisa dikembalikan", full: "Masker penuh", partial: "Sebagian (sisakan 4 terakhir)",
-    types: "Jenis data", found: "Ditemukan", none: "Belum ada data pribadi terdeteksi.", redacted: "Hasil redaksi",
-    copy: "Salin teks aman", copied: "Tersalin ✓", clear: "Bersihkan", save: "Simpan hasil redaksi", saved: "Tersimpan ✓",
-    restoreT: "Kembalikan", restorePh: "Tempel balasan AI yang masih berisi token…", restoreBtn: "Kembalikan asli", restored: "Teks dikembalikan",
-    onDevice: "Deteksi berjalan di perangkat Anda. Tidak ada yang diunggah.", noPlan: "Privacy Vault termasuk mulai paket Starter.", upgrade: "Lihat paket", noMap: "Gunakan token agar bisa dikembalikan nanti." },
-};
+import { L } from "@/lib/i18n-pages/vault";
 
 export default function VaultApp() {
   const { lang } = useI18n();

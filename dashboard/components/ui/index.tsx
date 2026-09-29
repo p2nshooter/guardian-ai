@@ -175,10 +175,11 @@ export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
   return <div className="flex items-center gap-2 py-10 text-sm text-slate-500"><Spinner /> {label}</div>;
 }
 
-export function StatusBadge({ status }: { status: string }) {
+/** `label` lets member pages show the status in the reader's language. */
+export function StatusBadge({ status, label }: { status: string; label?: string }) {
   const map: Record<string, string> = {
     active: "badge-green", paid: "badge-green", pending: "badge-amber", suspended: "badge-amber", canceled: "badge-gray",
     expired: "badge-gray", failed: "badge-red", refunded: "badge-gray", revoked: "badge-red",
   };
-  return <span className={map[status] || "badge-gray"}>{status}</span>;
+  return <span className={map[status] || "badge-gray"}>{label || status}</span>;
 }

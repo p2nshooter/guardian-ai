@@ -465,6 +465,13 @@ export function I18nProvider({ children, initial }: { children: ReactNode; initi
 
 export const useI18n = () => useContext(I18n);
 
+/** A status value (active, paid, revoked…) in the reader's language; unknown values pass through. */
+export function statusLabel(t: (k: Key) => string, status: string): string {
+  const k = `status.${status}` as Key;
+  const s = t(k);
+  return s === k ? status : s;
+}
+
 /** Local per-page dictionaries ({ en, id, … }) — return the language's copy,
  * falling back to English for any language not yet translated on that page. */
 export function pick<T>(dict: Partial<Record<Lang, T>>, lang: Lang): T {

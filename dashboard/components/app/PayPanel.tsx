@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { useI18n, formatMoney, pick } from "@/lib/i18n";
 import { Alert, CopyButton, Section, Spinner } from "@/components/ui";
+import { L } from "@/lib/i18n-pages/paypanel";
 
 export type Pay =
   | { kind: "bank"; orderId: string; amountUsd: number; amountIdr: number; uniqueCode?: number; bank: Record<string, string>; note: string }
@@ -18,27 +19,6 @@ export function payFromCheckout(d: any): Pay | null {
   if (d?.method === "crypto") return { kind: "crypto", orderId: d.orderId, amountUsd: d.amountUsd, wallets: d.wallets, note: d.note || "" };
   return null;
 }
-
-const L = {
-  en: {
-    bankSteps: "Write {id} in the transfer note if you can, then press “I've transferred” below. We confirm within one business day and e-mail you — your purchase activates right away.",
-    cryptoSteps: "Send EXACTLY the amount shown, on the network shown. USDT/USDC payments are detected and confirmed automatically within minutes; for BTC, ETH or SOL paste your transaction hash after sending. Everything activates automatically.",
-    uniqueNote: "Transfer this EXACT amount, including the last 3 digits ({code}) — they are your unique order code, so we can match your transfer. Please do not round it.",
-    bankTitle: "Bank transfer (BNI)", amount: "Amount", bankName: "Bank", accNo: "Account number", accName: "Account name", branch: "Branch", swift: "SWIFT", ref: "Transfer note / reference",
-    sentTitle: "Already transferred?", sentHint: "Tell us the sender name or bank reference — we confirm within one business day and e-mail you.", sentBtn: "I've transferred", refPh: "e.g. BNI 998877 a.n. Budi",
-    cryptoTitle: "Pay with crypto", sendExact: "Send exactly", to: "to", network: "Network", auto: "Detected automatically", manualHash: "After sending, paste the transaction hash",
-    hashPh: "Transaction hash (TXID)", verify: "Verify payment", waiting: "Waiting for your payment… this page updates by itself.", back: "← Choose another method",
-  },
-  id: {
-    bankSteps: "Jika bisa, tulis {id} di berita transfer, lalu tekan “Saya sudah transfer” di bawah. Kami konfirmasi dalam 1 hari kerja dan mengirim email — pembelian Anda langsung aktif.",
-    cryptoSteps: "Kirim TEPAT sejumlah yang tertera, di jaringan yang tertera. Pembayaran USDT/USDC terdeteksi dan terkonfirmasi otomatis dalam hitungan menit; untuk BTC, ETH, atau SOL tempel hash transaksi setelah mengirim. Semuanya aktif otomatis.",
-    uniqueNote: "Transfer TEPAT sejumlah ini, termasuk 3 digit terakhir ({code}) — itu kode unik pesanan Anda agar transfer Anda bisa kami cocokkan. Mohon jangan dibulatkan.",
-    bankTitle: "Transfer bank (BNI)", amount: "Jumlah", bankName: "Bank", accNo: "Nomor rekening", accName: "Atas nama", branch: "Cabang", swift: "SWIFT", ref: "Berita transfer / referensi",
-    sentTitle: "Sudah transfer?", sentHint: "Tuliskan nama pengirim atau referensi bank — kami konfirmasi dalam 1 hari kerja dan kirim email.", sentBtn: "Saya sudah transfer", refPh: "mis. BNI 998877 a.n. Budi",
-    cryptoTitle: "Bayar dengan kripto", sendExact: "Kirim tepat", to: "ke", network: "Jaringan", auto: "Terdeteksi otomatis", manualHash: "Setelah mengirim, tempel hash transaksinya",
-    hashPh: "Hash transaksi (TXID)", verify: "Verifikasi pembayaran", waiting: "Menunggu pembayaran Anda… halaman ini diperbarui otomatis.", back: "← Pilih metode lain",
-  },
-};
 
 export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; onBack: () => void; onPaid: () => void; paidText: string }) {
   const { lang } = useI18n();

@@ -6,7 +6,7 @@ import { SITE, absoluteUrl } from "@/lib/site";
 export default function robots(): MetadataRoute.Robots {
   if (SITE.isPreview) return { rules: [{ userAgent: "*", disallow: "/" }] };
   return {
-    rules: [{ userAgent: "*", allow: "/", disallow: ["/app/", "/app$", "/admin", "/api/", "/login", "/register", "/forgot-password", "/reset-password", "/offline"] }],
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/app/", "/app$", "/admin", "/api/", "/login", "/register", "/forgot-password", "/reset-password", "/offline", "/self-hosted-guide/"] }],
     sitemap: absoluteUrl("/sitemap.xml"),
     host: SITE.url,
   };

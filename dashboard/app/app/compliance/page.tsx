@@ -16,30 +16,10 @@ import Markdown from "@/components/Markdown";
 import ModelPicker, { type AiChoice } from "@/components/ai/ModelPicker";
 import { stripStatus } from "@/lib/markdown";
 import { FRAMEWORKS, COMP_MODES, type FrameworkId, type CompMode, getFramework } from "@/lib/compliance/frameworks";
+import { L } from "@/lib/i18n-pages/compliance";
 
 interface Msg { role: "user" | "assistant"; content: string }
 interface Entry { id: string; title: string; updatedAt: string }
-
-const L = {
-  en: { title: "Compliance Center", sub: "Gap analysis, remediation & policies for the frameworks you need.",
-    framework: "Framework", mode: "What you need", org: "Your organisation & current controls (optional)",
-    orgPh: "e.g. 25-person SaaS on AWS; SSO via Okta; no formal risk register yet; backups daily.",
-    region: "Region", regionPh: "e.g. EU, US, Indonesia",
-    newCase: "New assessment", history: "Saved assessments", empty: "No saved assessments yet.",
-    ask: "Describe what you need, paste a policy, or list your controls…", run: "Generate", stop: "Stop", thinking: "Working…",
-    copy: "Copy", copied: "Copied", rename: "Rename", duplicate: "Duplicate", del: "Delete", confirmDel: "Delete this assessment?",
-    addKey: "Add an AI key", answeredBy: "via", renamePrompt: "New title:", notAdvice: "Information only — not legal advice or certification.",
-    noPlan: "Compliance Center is included from the Pro plan.", upgrade: "See plans" },
-  id: { title: "Compliance Center", sub: "Analisis gap, remediasi & kebijakan untuk framework yang Anda butuhkan.",
-    framework: "Framework", mode: "Yang Anda butuhkan", org: "Organisasi & kontrol Anda saat ini (opsional)",
-    orgPh: "mis. SaaS 25 orang di AWS; SSO via Okta; belum ada risk register; backup harian.",
-    region: "Wilayah", regionPh: "mis. Uni Eropa, AS, Indonesia",
-    newCase: "Asesmen baru", history: "Asesmen tersimpan", empty: "Belum ada asesmen tersimpan.",
-    ask: "Jelaskan kebutuhan Anda, tempel kebijakan, atau daftar kontrol…", run: "Buat", stop: "Berhenti", thinking: "Memproses…",
-    copy: "Salin", copied: "Tersalin", rename: "Ganti nama", duplicate: "Duplikat", del: "Hapus", confirmDel: "Hapus asesmen ini?",
-    addKey: "Tambah kunci AI", answeredBy: "via", renamePrompt: "Judul baru:", notAdvice: "Informasi saja — bukan nasihat hukum atau sertifikasi.",
-    noPlan: "Compliance Center termasuk mulai paket Pro.", upgrade: "Lihat paket" },
-};
 
 export default function ComplianceApp() {
   const { lang } = useI18n();

@@ -10,37 +10,14 @@ import { useMe } from "@/components/app/Shell";
 import { Alert, Field, LoadingBlock, PageHeader, Section, Spinner, Tabs } from "@/components/ui";
 import { PasswordInput } from "@/components/auth/AuthFrame";
 import type { ProviderEntry } from "@/components/ai/ModelPicker";
+import { L } from "@/lib/i18n-pages/settings";
 
 interface Saved { provider: string; hint: string; model: string; baseUrl: string; createdAt: string }
 interface KeysData { keys: Saved[]; preferred: string; providers: (ProviderEntry & { keyHint: string; keyUrl: string })[] }
 
-const L = {
-  en: {
-    title: "Settings", sub: "Your AI keys, profile and password.", tabAi: "My AI keys", tabProfile: "Profile", tabPw: "Password",
-    aiIntro: "Every AXTO app runs on YOUR OWN AI: bring your own key (BYOK), choose any model on your account (BYOM) or connect your own endpoint (BYOE — Ollama, vLLM, LM Studio, LiteLLM…). AI usage is unlimited on our side; you pay your provider directly.",
-    secure: "Keys are encrypted with AES-256-GCM before they are stored and are never shown again — only the last 4 characters.",
-    saved: "Connected", none: "No AI key yet. Add one below — Google Gemini, Groq and Cerebras have free tiers.",
-    add: "Connect a provider", provider: "Provider", key: "API key", model: "Default model", baseUrl: "Endpoint URL (OpenAI-compatible)", baseHint: "Public HTTPS URL ending in /v1, e.g. https://llm.example.com/v1 (expose a local server with a tunnel).",
-    getKey: "Get a key", save: "Save & connect", test: "Test", testing: "Testing…", def: "Default", makeDef: "Make default", remove: "Remove", models: "Load models", changeModel: "Save model",
-    research: "Live research", free: "Free tier", confirmRemove: "Remove this key?", keyOptional: "optional for local servers",
-    name: "Full name", org: "Company", country: "Country (ISO code, e.g. ID, US)", saveProfile: "Save profile", savedOk: "Saved.",
-    current: "Current password", next: "New password", change: "Change password", changed: "Password changed.",
-  },
-  id: {
-    title: "Pengaturan", sub: "Kunci AI, profil, dan kata sandi Anda.", tabAi: "Kunci AI saya", tabProfile: "Profil", tabPw: "Kata sandi",
-    aiIntro: "Semua aplikasi AXTO berjalan dengan AI MILIK ANDA: bawa kunci sendiri (BYOK), pilih model apa pun di akun Anda (BYOM), atau sambungkan endpoint sendiri (BYOE — Ollama, vLLM, LM Studio, LiteLLM…). Pemakaian AI tanpa batas dari sisi kami; Anda membayar langsung ke penyedia.",
-    secure: "Kunci dienkripsi AES-256-GCM sebelum disimpan dan tidak pernah ditampilkan lagi — hanya 4 karakter terakhir.",
-    saved: "Tersambung", none: "Belum ada kunci AI. Tambahkan di bawah — Google Gemini, Groq, dan Cerebras punya paket gratis.",
-    add: "Sambungkan penyedia", provider: "Penyedia", key: "API key", model: "Model bawaan", baseUrl: "URL endpoint (kompatibel OpenAI)", baseHint: "URL HTTPS publik berakhiran /v1, mis. https://llm.example.com/v1 (buka server lokal dengan tunnel).",
-    getKey: "Ambil kunci", save: "Simpan & sambungkan", test: "Tes", testing: "Menguji…", def: "Bawaan", makeDef: "Jadikan bawaan", remove: "Hapus", models: "Muat model", changeModel: "Simpan model",
-    research: "Riset langsung", free: "Ada paket gratis", confirmRemove: "Hapus kunci ini?", keyOptional: "opsional untuk server lokal",
-    name: "Nama lengkap", org: "Perusahaan", country: "Negara (kode ISO, mis. ID, US)", saveProfile: "Simpan profil", savedOk: "Tersimpan.",
-    current: "Kata sandi saat ini", next: "Kata sandi baru", change: "Ubah kata sandi", changed: "Kata sandi diubah.",
-  },
-};
-
 function AiKeys({ lang }: { lang: Lang }) {
   const t = pick(L, lang);
+  const { t: tg } = useI18n();
   const [data, setData] = useState<KeysData | null>(null);
   const [form, setForm] = useState({ provider: "google", value: "", model: "", baseUrl: "" });
   const [busy, setBusy] = useState("");
@@ -152,7 +129,7 @@ function AiKeys({ lang }: { lang: Lang }) {
               <input id="base" className="input" value={form.baseUrl} placeholder="https://llm.example.com/v1" onChange={(e) => setForm({ ...form, baseUrl: e.target.value })} />
             </Field>
           ) : null}
-          <Field label={t.model} hint={sel?.defaultModel ? `${lang === "id" ? "Kosongkan untuk" : "Leave empty for"} ${sel.defaultModel}` : undefined} htmlFor="model">
+          <Field label={t.model} hint={sel?.defaultModel ? tg("keys.leaveEmpty", { model: sel.defaultModel }) : undefined} htmlFor="model">
             <input id="model" className="input" list="add-models" value={form.model} placeholder={sel?.defaultModel || "llama3.1:70b"} onChange={(e) => setForm({ ...form, model: e.target.value })} />
             <datalist id="add-models">{(sel?.models || []).map((m) => <option key={m} value={m} />)}</datalist>
           </Field>

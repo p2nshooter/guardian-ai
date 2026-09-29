@@ -11,29 +11,13 @@
  * ============================================================================ */
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { pick, isLang, type Lang } from "@/lib/i18n";
+import { pick, useI18n, type Lang } from "@/lib/i18n";
+import { T } from "@/lib/i18n-pages/chat";
 
 interface Topic { id: string; label: Partial<Record<Lang, string>>; hint: Partial<Record<Lang, string>>; handoff: boolean }
 interface Msg { id: string; from: "visitor" | "admin" | "ai" | "system"; name: string; text: string; at: string }
 
 const STORE = "axto_support_v1";
-const T = {
-  en: {
-    open: "Chat with us", title: "AXTO Support", online: "Team online — we reply in minutes", offline: "Assistant answering · team replies by e-mail",
-    topic: "What can we help with?", name: "Your name", email: "E-mail", emailReq: "E-mail (required for offers)", message: "Your message",
-    start: "Start chat", send: "Send", human: "Talk to a person", newChat: "New conversation", typing: "Answering…",
-    ai: "AXTO Assistant", you: "You", team: "AXTO team", err: "Something went wrong — please try again.", close: "Close chat",
-    privacy: "Don't share passwords, card numbers or private keys in chat.",
-  },
-  id: {
-    open: "Chat dengan kami", title: "Dukungan AXTO", online: "Tim online — balasan dalam hitungan menit", offline: "Asisten menjawab · tim membalas via e-mail",
-    topic: "Apa yang bisa kami bantu?", name: "Nama Anda", email: "E-mail", emailReq: "E-mail (wajib untuk penawaran)", message: "Pesan Anda",
-    start: "Mulai chat", send: "Kirim", human: "Bicara dengan tim", newChat: "Percakapan baru", typing: "Menjawab…",
-    ai: "Asisten AXTO", you: "Anda", team: "Tim AXTO", err: "Terjadi kesalahan — silakan coba lagi.", close: "Tutup chat",
-    privacy: "Jangan kirim password, nomor kartu, atau private key lewat chat.",
-  },
-};
-
 function load(): { id: string; token: string } | null {
   try { return JSON.parse(localStorage.getItem(STORE) || "null"); } catch { return null; }
 }
@@ -42,7 +26,8 @@ function save(v: { id: string; token: string } | null) {
 }
 
 export default function ChatWidget({ lang: forced, defaultName = "", defaultEmail = "", raised = false }: { lang?: Lang; defaultName?: string; defaultEmail?: string; raised?: boolean }) {
-  const [lang, setLang] = useState<Lang>(forced || "en");  // content falls back to English beyond en/id
+  const { lang: siteLang } = useI18n();
+  const lang: Lang = forced || siteLang;   // follows the visitor's language (all 10)
   const t = pick(T, lang);
   const [open, setOpen] = useState(false);
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -56,10 +41,7 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
   const etag = useRef("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { if (forced) setLang(forced); }, [forced]);
-
   useEffect(() => {
-    if (!forced && typeof navigator !== "undefined" && /^id\b|^in\b/i.test(navigator.language || "")) setLang("id");
     setConv(load());
     const onOpen = (e: Event) => {
       setOpen(true);
@@ -148,7 +130,6 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
                 <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-400" : "bg-slate-400"}`} />{online ? t.online : t.offline}
               </div>
             </div>
-            <button onClick={() => setLang(lang === "id" ? "en" : "id")} className="rounded px-2 py-1 text-xs font-bold text-slate-300 hover:bg-white/10">{lang === "en" ? "ID" : "EN"}</button>
             <button onClick={() => setOpen(false)} aria-label={t.close} className="rounded px-2 py-1 text-slate-300 hover:bg-white/10">✕</button>
           </header>
 
@@ -156,9 +137,9 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
             <form onSubmit={start} className="flex flex-col gap-3 overflow-y-auto p-4">
               <label className="text-sm font-semibold text-slate-800" htmlFor="sup-topic">{t.topic}</label>
               <select id="sup-topic" className="input" value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })}>
-                {topics.map((x) => <option key={x.id} value={x.id}>{x.label[lang] ?? x.label.en}</option>)}
+                {topics.map((x) => <option key={x.id} value={x.id}>{x.label[lang]}</option>)}
               </select>
-              {topic ? <p className="-mt-1 text-xs text-slate-500">{topic.hint[lang] ?? topic.hint.en}</p> : null}
+              {topic ? <p className="-mt-1 text-xs text-slate-500">{topic.hint[lang]}</p> : null}
               <div className="grid grid-cols-2 gap-2">
                 <input className="input" placeholder={t.name} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} maxLength={80} autoComplete="name" />
                 <input className="input" type="email" placeholder={topic?.handoff ? t.emailReq : t.email} value={form.email} required={!!topic?.handoff}

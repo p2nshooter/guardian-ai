@@ -4,7 +4,31 @@
 [//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
-# Guardian AI — Changelog
+# AXTO — Changelog
+
+## Platform v3.2.0 (2026-09-29) — audit fixes & Lifetime licences
+
+See `docs/BLUEPRINT.md` §19 for the full audit.
+
+### Fixed
+- Next.js 15.1.6 → 15.1.12 (CVE-2025-66478, React Server Components RCE).
+- Nightly **AXTO Setup** CI was red on Windows (Unix-permission assertion); R2 multipart uploads now retry with R2-compatible checksums.
+- `deploy.yml` ran deleted test files and the guide-PDF pipeline imported a missing module — guide PDFs now publish on every production deploy (and their code blocks are readable).
+- 49 premium playbook PDFs removed from the public tree; the deploy step that re-uploaded them is gone.
+- Member menu *Managed AI* no longer 404s; downloadable self-hosted configs are synced from the repo root at build time.
+- The installation guide overflowed phone screens (897 px on a 390 px viewport).
+- Edge `/activate` crashed (unknown `key_override`, missing field); Orchestra pointed buyers to a dead `/buy` URL.
+
+### Added
+- **Lifetime (offline) licences** end to end: checkout at server-side prices (wire / crypto / card ≤ $999,999), zero-touch issuing, per-device Ed25519-signed `.axto-license` files, member & admin pages, `/pricing` table, verification in all 13 engine licence modules, installer `machine-id` / `activate`.
+- Installation guides for all 10 self-hosted editions (`/self-hosted/<slug>/guide`, EN + ID PDFs) from one source.
+- **My files** (`/app/files`), `/dpa`, `/subprocessors`, `/status`, blog RSS, `security.txt`, branded 404 and error pages.
+- Every portal screen in all 10 languages (page dictionaries are type-checked and tested for completeness) — including plan cards, app features, self-hosted taglines and status labels; the Legal AI workspace catalogue stays EN/ID pending legal review of the other languages.
+- E2E workflow (every push + nightly) running the real engine licence code and the installer in Docker.
+
+---
+
+# Guardian AI — Engine changelog
 
 ## v2.1.0 — Tier 2 Production (2026-03-15)
 

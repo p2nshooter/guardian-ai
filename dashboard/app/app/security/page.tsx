@@ -17,26 +17,10 @@ import Markdown from "@/components/Markdown";
 import ModelPicker, { type AiChoice } from "@/components/ai/ModelPicker";
 import { stripStatus } from "@/lib/markdown";
 import { SEC_MODES, type SecMode, extractIocs, iocBlock, iocCount } from "@/lib/security/modes";
+import { L } from "@/lib/i18n-pages/security";
 
 interface Msg { role: "user" | "assistant"; content: string }
 interface Entry { id: string; title: string; updatedAt: string }
-
-const L = {
-  en: { title: "Security Analyst", sub: "Triage, IOCs, MITRE mapping & incident reports — on your own keys.",
-    mode: "Analysis", context: "Context (optional)", contextPh: "e.g. Windows server, external-facing, SOC tier-1 alert",
-    newCase: "New investigation", history: "Saved investigations", empty: "No saved investigations yet.",
-    paste: "Paste logs, an alert, a command or a suspicious script…", run: "Analyze", stop: "Stop", thinking: "Analyzing…",
-    copy: "Copy", copied: "Copied", rename: "Rename", duplicate: "Duplicate", del: "Delete", confirmDel: "Delete this investigation?",
-    addKey: "Add an AI key", answeredBy: "via", iocsFound: "indicators found locally", renamePrompt: "New title:",
-    noPlan: "Security Analyst is included from the Pro plan.", upgrade: "See plans", defensive: "Defensive use only. Analyze systems you are authorised to." },
-  id: { title: "Security Analyst", sub: "Triase, IOC, pemetaan MITRE & laporan insiden — pakai kunci Anda.",
-    mode: "Analisis", context: "Konteks (opsional)", contextPh: "mis. server Windows, terekspos internet, alert SOC tier-1",
-    newCase: "Investigasi baru", history: "Investigasi tersimpan", empty: "Belum ada investigasi tersimpan.",
-    paste: "Tempel log, alert, perintah, atau skrip mencurigakan…", run: "Analisis", stop: "Berhenti", thinking: "Menganalisis…",
-    copy: "Salin", copied: "Tersalin", rename: "Ganti nama", duplicate: "Duplikat", del: "Hapus", confirmDel: "Hapus investigasi ini?",
-    addKey: "Tambah kunci AI", answeredBy: "via", iocsFound: "indikator ditemukan lokal", renamePrompt: "Judul baru:",
-    noPlan: "Security Analyst termasuk mulai paket Pro.", upgrade: "Lihat paket", defensive: "Hanya untuk pertahanan. Analisis sistem yang Anda berwenang." },
-};
 
 export default function SecurityApp() {
   const { lang } = useI18n();

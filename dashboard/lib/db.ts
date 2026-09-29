@@ -13,7 +13,7 @@
  *   R2         R2   axto-storage    — platform content (encrypted prompts, invoices, archives)
  *   USER_FILES R2   axto-documents  — member uploads & saved work (u/<userId>/…)
  *   R2_BUILDS  R2   axto-builds     — self-hosted Docker images, EXEs, guide PDFs
- *   AI         Workers AI            — built-in model fallback (no API key needed)
+ *   AI         Workers AI            — used ONLY by the locked Managed AI path and the support assistant (never by BYOX apps)
  * ============================================================================ */
 
 import type { NextRequest } from "next/server";
