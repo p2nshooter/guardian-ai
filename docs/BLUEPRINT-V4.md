@@ -198,7 +198,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 1 | Clipper v4 | ✅ selesai | 13 unit test (`tests/clipper.test.ts`); E2E kuota multi-bagian (`apps.e2e.ts`); uji browser 21/21 (lihat §10) |
 | 2 | AI Studio v4 | ✅ selesai | 8 unit test (`tests/studio.test.ts`); uji browser 23/23; E2E penuh 81 tes (79 lulus, 2 dilewati: Docker) |
 | 3 | Privacy Vault v4 | ✅ selesai | 22 unit test (`tests/vault.test.ts`); uji browser 40/40 (teks, tinjauan, AI Aman, kunci terenkripsi, aturan, DOCX/XLSX in-place, PDF image-only, OCR gambar, ZIP, laporan audit) |
-| 4 | Security Analyst v4 | ⏳ | — |
+| 4 | Security Analyst v4 | ✅ selesai | 9 unit test (`tests/security-v4.test.ts`); E2E briefing + kasus v4 (`apps.e2e.ts`); uji browser 66/66 (lihat §11); E2E penuh 91 tes (89 lulus, 0 gagal, 2 dilewati: Docker) |
 | 5 | Compliance Center v4 | ⏳ | — |
 | 6 | Prompt Library v4 (≥ 240 prompt) | ⏳ | — |
 | 7 | Legal AI v4 (redline, playbook, klausa) | ⏳ | — |
@@ -239,3 +239,30 @@ Setiap fase: kode → unit test → E2E lokal penuh → commit & push → baris 
 - 0 error JavaScript.
 
 **E2E API:** satu video panjang = satu slot kuota lintas semua bagian; bagian tanpa job ditolak (409); id job dan nomor bagian divalidasi.
+
+---
+
+## 11. Security Analyst v4 — yang dibangun & buktinya (30 Sep 2026)
+
+**Model kerja:** semua berpusat pada **kasus** (judul, status, tingkat keparahan, tag, ringkasan, catatan, bukti, putusan IOC, temuan ATT&CK analis, percakapan AI). Kasus tersimpan otomatis (±1,2 detik setelah perubahan) ke riwayat terenkripsi per member, bisa dicari, diganti nama, diduplikasi, dihapus, dan dibuka lewat `?open=<id>` (juga dari **My files**). Kasus format lama (v3) tetap terbuka: percakapannya dipertahankan, konteksnya jadi catatan.
+
+**Yang berjalan di perangkat (browser):**
+
+| Bagian | Isi | File |
+|---|---|---|
+| Parser log | JSON/JSONL, CloudTrail, Windows Event XML, syslog 3164/5424, CEF, LEEF, Apache/Nginx, CSV (+ teks) → satu tabel event ternormalisasi, timeline, top host/user/IP/event, deteksi brute force (gagal lalu berhasil) | `lib/security/parse.ts` |
+| Deteksi & ATT&CK | 46 rule perilaku, 14 taktik, 132 teknik; severity event dinaikkan mengikuti deteksi terburuk; matriks menandai sumber (rule / analis / AI) | `lib/security/attack.ts` |
+| IOC | ekstraksi (IPv4/IPv6, domain, URL, e-mail, hash, CVE, file, registry), defang/refang, IP privat & dokumentasi ditandai, putusan analis, tautan enrichment, CSV / blocklist / STIX 2.1 | `lib/security/ioc.ts` |
+| Phishing | parse `.eml` (MIME, QP/base64, encoded-word), jalur Received, SPF/DKIM/DMARC, From ≠ Reply-To / Return-Path, tautan menipu, peniruan merek, lampiran berisiko + SHA-256; e-mail mentah **tidak** disimpan | `lib/security/eml.ts` |
+| Dekoder | 22 operasi ala CyberChef + Magic (Base64, hex, URL, HTML, PowerShell `-enc`, UTF-16LE, gzip/deflate, XOR, ROT, JWT, hash…); hasil bisa dijadikan bukti | `lib/security/decode.ts` |
+| Rule deteksi | Sigma, KQL, SPL, YARA, Suricata dari IOC publik + deteksi | `lib/security/rules.ts` |
+| Laporan | Markdown, Word, STIX, cetak / PDF; IOC di-defang | `lib/security/case.ts` |
+
+**AI:** model milik member (BYOX) hanya menerima **ringkasan kasus** (deteksi, indikator, event kunci, catatan; maks. 16.000 karakter) — bukan log mentah. Diuji: permintaan ke model tidak memuat `<EventData>` atau isi MIME e-mail.
+
+**Batas jujur:** satu kasus maks. 4 juta karakter teks bukti (satu item riwayat ≤ 5 MB); file biner hanya di-hash, tidak dianalisis isinya.
+
+**Portal:** member — aplikasi, daftar fitur di Apps (10 bahasa), My files; admin — kelayakan paket ikut matriks paket (`/admin/plans`); publik — `/apps/security` dengan JSON-LD `SoftwareApplication` (featureList, penawaran) + `HowTo` + breadcrumb.
+
+**Uji browser (Chromium, runtime lokal Cloudflare): 66/66 lulus** — gating paket, kasus v3, sampel insiden (23 event, 16 deteksi, 19 teknik), autosave + deep link + reload, filter deteksi, detail event, IOC + STIX, matriks, phishing, Magic PowerShell, bukti dari dekoder, 4 bahasa rule, AI (briefing, bukan log mentah), laporan MD/DOCX, status/tag bertahan, CEF tempel, hash file biner, hapus kasus, ponsel tanpa overflow, UI ID/AR/JA/DE, SEO halaman publik.
+

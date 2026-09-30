@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   const messages = sanitizeMessages(b?.messages);
   if (!messages.length || messages[messages.length - 1].role !== "user") return fail("Write a request first.");
-  const options = typeof b?.options === "object" && b.options ? Object.fromEntries(Object.entries(b.options).map(([k, v]) => [k, String(v).slice(0, 8000)])) : {};
+  const options = typeof b?.options === "object" && b.options ? Object.fromEntries(Object.entries(b.options).map(([k, v]) => [k, String(v).slice(0, k === "briefing" ? 16000 : 8000)])) : {};
   const wantResearch = options.research === "1";
   const input = { task: b?.task ? String(b.task) : undefined, messages, options, documents: b?.documents };
 

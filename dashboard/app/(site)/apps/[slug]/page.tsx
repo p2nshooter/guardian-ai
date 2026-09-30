@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { CLOUD_APPS, getCloudApp } from "@/lib/apps";
 import { PLANS, planForApp, isPlanId } from "@/lib/plans";
-import { pageMeta, breadcrumbJsonLd, softwareJsonLd } from "@/lib/seo";
+import { pageMeta, breadcrumbJsonLd, howToJsonLd, softwareJsonLd } from "@/lib/seo";
 import { catalogEntry } from "@/lib/selfhosted";
 import Reveal from "@/components/site/Reveal";
 
@@ -28,7 +28,9 @@ export default async function AppPage({ params }: { params: Promise<{ slug: stri
   return (
     <>
       <JsonLd data={[
-        softwareJsonLd({ name: `AXTO ${a.name}`, description: a.hero, path: `/apps/${a.slug}`, offers: isPlanId(min) ? [{ name: `${PLANS[min].name} plan`, price: PLANS[min].monthly, period: "month" }] : [] }),
+        softwareJsonLd({ name: `AXTO ${a.name}`, description: a.hero, path: `/apps/${a.slug}`, category: a.slug === "security" ? "SecurityApplication" : undefined,
+          features: a.features.map((f) => `${f.title}: ${f.desc}`), offers: isPlanId(min) ? [{ name: `${PLANS[min].name} plan`, price: PLANS[min].monthly, period: "month" }] : [] }),
+        howToJsonLd({ name: `How to use AXTO ${a.name}`, description: a.short, path: `/apps/${a.slug}`, steps: a.steps.map((s, i) => ({ name: `Step ${i + 1}`, text: s })) }),
         breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Apps", path: "/apps" }, { name: a.name, path: `/apps/${a.slug}` }]),
       ]} />
       <section className="border-b border-slate-200 py-16" style={{ background: `linear-gradient(180deg, ${a.color}10, #fff)` }}>

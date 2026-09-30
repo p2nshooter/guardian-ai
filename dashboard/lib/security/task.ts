@@ -34,7 +34,10 @@ registerTask({
     const mode: SecMode = isSecMode(String(input.task || input.options?.mode || "")) ? (input.task || input.options!.mode) as SecMode : "triage";
     const extra = (input.options?.context || "").trim().slice(0, 4000);
     const iocs = (input.options?.iocs || "").trim().slice(0, 12000); // block prepared client-side by extractIocs/iocBlock
-    const system = [BASE, "", MODE_PROMPT[mode], extra ? `\nAnalyst context: ${extra}` : ""].join("\n");
+    // v4: a case briefing computed on the analyst's device (detections, indicators, key events) — never raw evidence.
+    const briefing = (input.options?.briefing || "").trim().slice(0, 16000);
+    const system = [BASE, "", MODE_PROMPT[mode], extra ? `\nAnalyst context: ${extra}` : "",
+      briefing ? `\nCASE BRIEFING — computed locally by the AXTO rule engine and parsers on the analyst's device. Treat it as the verified evidence summary; ask for specific raw lines if you need more.\n${briefing}` : ""].join("\n");
     const messages = input.messages.map((m) => ({ ...m }));
     const firstUser = messages.findIndex((m) => m.role === "user");
     if (iocs && firstUser >= 0) messages[firstUser].content = iocs + messages[firstUser].content;

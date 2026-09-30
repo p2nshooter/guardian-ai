@@ -41,10 +41,12 @@ const admin = new Client();
 const pro = new Client();
 const starter = new Client();
 let mock: http.Server;
+let lastBody = "";
 
 before(async () => {
   mock = http.createServer((req, res) => {
     if (req.url === "/v1/chat/completions") {
+      let b = ""; req.on("data", (c) => (b += c)); req.on("end", () => { lastBody = b; });
       res.writeHead(200, { "Content-Type": "text/event-stream" });
       for (const t of ["## Verdict\n", "Suspicious. ", "MITRE T1110."]) res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: t } }] })}\n\n`);
       res.end("data: [DONE]\n\n");
@@ -96,6 +98,32 @@ test("history: security & compliance persist for Pro (encrypted, CRUD)", async (
   assert.equal((await pro.get("/api/history/compliance")).json.items[0].title, "SOC2 renamed");
   await pro.del(`/api/history/compliance/${cid}`);
   assert.equal((await pro.get("/api/history/compliance")).json.items.length, 0);
+});
+
+test("security v4: the case briefing reaches the model's system prompt (capped at 16k)", async () => {
+  const briefing = "CASE: e2e · status open · severity high\nLocal detections (rule engine):\n- [critical] LSASS credential dumping — T1003.001\n" + "x".repeat(20_000);
+  const r = await pro.post("/api/byox/run", { app: "security", task: "triage", messages: [{ role: "user", content: "What happened?" }], provider: "custom", options: { mode: "triage", briefing } });
+  assert.equal(r.status, 200, r.text);
+  const sys = JSON.parse(lastBody).messages.find((m: any) => m.role === "system").content as string;
+  assert.match(sys, /CASE BRIEFING/);
+  assert.match(sys, /LSASS credential dumping/);
+  assert.ok(!sys.includes("x".repeat(16_500)), "briefing is capped");
+});
+
+test("security v4: a case (status, severity, evidence) saves, reopens and is size-limited", async () => {
+  const body = { v: 4, title: "RDP brute force", status: "investigating", severity: "critical", tags: ["rdp"], summary: "", notes: [], iocState: {}, attackManual: ["T1110"], mode: "triage", messages: [], createdAt: new Date().toISOString(),
+    artifacts: [{ id: "a1", name: "dc01.xml", kind: "log", size: 20, addedAt: new Date().toISOString(), text: "<Event>4625</Event>", format: "winxml" }] };
+  const s = await pro.post("/api/history/security", { title: "RDP brute force", body, meta: { status: "investigating", severity: "critical", evidence: 1 } });
+  assert.equal(s.status, 200, s.text);
+  const g = await pro.get(`/api/history/security/${s.json.item.id}`);
+  assert.equal(g.json.item.body.v, 4);
+  assert.equal(g.json.item.body.artifacts[0].format, "winxml");
+  assert.equal(g.json.item.meta.severity, "critical");
+  const listed = (await pro.get("/api/history/security")).json.items.find((x: any) => x.id === s.json.item.id);
+  assert.equal(listed.meta.status, "investigating", "the sidebar gets status / severity without opening the case");
+  const big = await pro.post("/api/history/security", { title: "too big", body: { ...body, artifacts: [{ ...body.artifacts[0], text: "A".repeat(5_200_000) }] } });
+  assert.equal(big.status, 400, "cases over the 5 MB item limit are refused");
+  await pro.del(`/api/history/security/${s.json.item.id}`);
 });
 
 test("vault: Starter can store redacted output (PII-free) in history", async () => {

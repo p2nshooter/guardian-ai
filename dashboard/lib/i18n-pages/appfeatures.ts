@@ -51,10 +51,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Pembuat kebijakan", "Draf kebijakan keamanan informasi, privasi, kontrol akses dan respons insiden."],
     ],
     security: [
-      ["Triase alert", "Putusan (aman / mencurigakan / berbahaya), tingkat keparahan dan alasannya dalam bahasa sederhana."],
-      ["Pemetaan MITRE ATT&CK", "Taktik dan ID teknik untuk setiap temuan."],
-      ["Ekstraksi IOC", "IP, domain, URL, hash dan email diambil otomatis — bahkan sebelum AI berjalan."],
-      ["Laporan insiden", "Ringkasan eksekutif, lini masa, dampak dan langkah berikutnya, siap dibagikan."],
+      ["Analitik log di perangkat Anda", "Sembilan format log di-parse di browser menjadi satu tabel event dengan linimasa, host, pengguna dan sumber teratas, filter tingkat keparahan, dan deteksi brute force."],
+      ["Matriks MITRE ATT&CK", "46 rule perilaku memetakan aktivitas ke 14 taktik dan 130+ teknik; tambahkan temuan Anda sendiri, plus teknik yang disebut AI Anda."],
+      ["IOC dan analisis phishing", "IP, domain, URL, hash dan e-mail diekstrak dan di-defang, dengan putusan dan tautan cek; analisis .eml memeriksa SPF, DKIM, DMARC, tautan dan lampiran."],
+      ["Laporan dan rule deteksi", "Laporan insiden (Markdown, Word, PDF), bundle STIX 2.1, blocklist, serta rule Sigma, KQL, SPL, YARA dan Suricata yang dibuat dari kasus."],
     ],
   },
   ms: {
@@ -95,10 +95,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Penjana dasar", "Draf dasar keselamatan maklumat, privasi, kawalan akses dan tindak balas insiden."],
     ],
     security: [
-      ["Triaj amaran", "Keputusan (selamat / mencurigakan / berniat jahat), tahap keterukan dan alasan dalam bahasa mudah."],
-      ["Pemetaan MITRE ATT&CK", "Taktik dan ID teknik untuk setiap dapatan."],
-      ["Pengekstrakan IOC", "IP, domain, URL, hash dan e-mel diekstrak secara automatik — malah sebelum AI berjalan."],
-      ["Laporan insiden", "Ringkasan eksekutif, garis masa, impak dan langkah seterusnya, sedia untuk dikongsi."],
+      ["Analitik log pada peranti anda", "Sembilan format log dihurai dalam pelayar menjadi satu jadual peristiwa dengan garis masa, hos, pengguna dan sumber teratas, penapis keterukan dan pengesanan brute force."],
+      ["Matriks MITRE ATT&CK", "46 peraturan tingkah laku memetakan aktiviti kepada 14 taktik dan 130+ teknik; tambah dapatan anda sendiri, serta teknik yang dinamakan oleh AI anda."],
+      ["IOC dan analisis phishing", "IP, domain, URL, cincangan dan e-mel diekstrak dan di-defang, dengan keputusan dan semakan; analisis .eml menyemak SPF, DKIM, DMARC, pautan dan lampiran."],
+      ["Laporan dan peraturan pengesanan", "Laporan insiden (Markdown, Word, PDF), bundle STIX 2.1, senarai sekatan serta peraturan Sigma, KQL, SPL, YARA dan Suricata yang dijana daripada kes."],
     ],
   },
   de: {
@@ -139,10 +139,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Richtlinien-Generator", "Entwürfe für Informationssicherheits-, Datenschutz-, Zugriffs- und Incident-Response-Richtlinien."],
     ],
     security: [
-      ["Alarm-Triage", "Urteil (harmlos / verdächtig / bösartig), Schweregrad und Begründung in verständlicher Sprache."],
-      ["MITRE ATT&CK-Zuordnung", "Taktiken und Technik-IDs für jede Feststellung."],
-      ["IOC-Extraktion", "IPs, Domains, URLs, Hashes und E-Mails werden automatisch herausgezogen – schon bevor die KI läuft."],
-      ["Vorfallberichte", "Management-Zusammenfassung, Zeitleiste, Auswirkungen und nächste Schritte, bereit zum Teilen."],
+      ["Log-Analyse auf Ihrem Gerät", "Neun Log-Formate werden im Browser zu einer Ereignistabelle mit Zeitachse, Top-Hosts, -Benutzern und -Quellen, Schweregradfiltern und Brute-Force-Erkennung verarbeitet."],
+      ["MITRE-ATT&CK-Matrix", "46 Verhaltensregeln ordnen Aktivitäten 14 Taktiken und über 130 Techniken zu; ergänzen Sie eigene Befunde sowie die Techniken, die Ihre KI nennt."],
+      ["IOCs und Phishing-Analyse", "IPs, Domains, URLs, Hashes und E-Mail-Adressen werden extrahiert und entschärft, mit Bewertungen und Nachschlagen; die .eml-Analyse prüft SPF, DKIM, DMARC, Links und Anhänge."],
+      ["Berichte und Erkennungsregeln", "Vorfallbericht (Markdown, Word, PDF), STIX-2.1-Bundle, Sperrlisten sowie Sigma-, KQL-, SPL-, YARA- und Suricata-Regeln aus dem Fall."],
     ],
   },
   fr: {
@@ -183,10 +183,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Générateur de politiques", "Projets de politiques de sécurité de l'information, de confidentialité, de contrôle d'accès et de réponse aux incidents."],
     ],
     security: [
-      ["Tri des alertes", "Verdict (bénin / suspect / malveillant), gravité et raisonnement en langage clair."],
-      ["Correspondance MITRE ATT&CK", "Tactiques et identifiants de techniques pour chaque constat."],
-      ["Extraction d'IOC", "IP, domaines, URL, hachages et e-mails extraits automatiquement — avant même le lancement de l'IA."],
-      ["Rapports d'incident", "Synthèse, chronologie, impact et prochaines étapes, prêts à partager."],
+      ["Analyse de logs sur votre appareil", "Neuf formats de logs analysés dans le navigateur en une seule table d’événements avec chronologie, principaux hôtes, utilisateurs et sources, filtres de gravité et détection de force brute."],
+      ["Matrice MITRE ATT&CK", "46 règles comportementales relient l’activité à 14 tactiques et plus de 130 techniques ; ajoutez vos propres constats et les techniques citées par votre IA."],
+      ["IOC et analyse de phishing", "IP, domaines, URL, empreintes et e-mails extraits et neutralisés, avec verdicts et recherches ; l’analyse .eml vérifie SPF, DKIM, DMARC, liens et pièces jointes."],
+      ["Rapports et règles de détection", "Rapport d’incident (Markdown, Word, PDF), bundle STIX 2.1, listes de blocage et règles Sigma, KQL, SPL, YARA et Suricata générées à partir du dossier."],
     ],
   },
   it: {
@@ -227,10 +227,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Generatore di policy", "Bozze di policy su sicurezza delle informazioni, privacy, controllo degli accessi e risposta agli incidenti."],
     ],
     security: [
-      ["Triage degli alert", "Verdetto (benigno / sospetto / malevolo), gravità e motivazione in linguaggio semplice."],
-      ["Mappatura MITRE ATT&CK", "Tattiche e ID delle tecniche per ogni rilievo."],
-      ["Estrazione IOC", "IP, domini, URL, hash ed e-mail estratti automaticamente — ancora prima che parta l'IA."],
-      ["Report sugli incidenti", "Sintesi per il management, cronologia, impatto e prossimi passi, pronti da condividere."],
+      ["Analisi dei log sul tuo dispositivo", "Nove formati di log elaborati nel browser in un’unica tabella di eventi con cronologia, host, utenti e sorgenti principali, filtri di gravità e rilevamento brute force."],
+      ["Matrice MITRE ATT&CK", "46 regole comportamentali collegano l’attività a 14 tattiche e oltre 130 tecniche; aggiungi i tuoi rilievi e le tecniche indicate dalla tua IA."],
+      ["IOC e analisi del phishing", "IP, domini, URL, hash ed e-mail estratti e disinnescati, con verdetti e verifiche; l’analisi .eml controlla SPF, DKIM, DMARC, link e allegati."],
+      ["Report e regole di rilevamento", "Report d’incidente (Markdown, Word, PDF), bundle STIX 2.1, blocklist e regole Sigma, KQL, SPL, YARA e Suricata generate dal caso."],
     ],
   },
   zh: {
@@ -271,10 +271,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["政策生成器", "起草信息安全、隐私、访问控制和事件响应政策。"],
     ],
     security: [
-      ["告警分诊", "以通俗语言给出结论（良性 / 可疑 / 恶意）、严重程度和理由。"],
-      ["MITRE ATT&CK 映射", "为每项发现标注战术和技术 ID。"],
-      ["IOC 提取", "自动提取 IP、域名、URL、哈希和电子邮件——甚至在 AI 运行之前。"],
-      ["事件报告", "管理层摘要、时间线、影响和后续步骤，可直接分享。"],
+      ["在您的设备上分析日志", "在浏览器中将九种日志格式解析为统一的事件表，提供时间线、主要主机/用户/来源、严重程度筛选和暴力破解检测。"],
+      ["MITRE ATT&CK 矩阵", "46 条行为规则将活动映射到 14 个战术和 130 多项技术；可添加您自己的结论，以及 AI 提到的技术。"],
+      ["IOC 与钓鱼邮件分析", "提取并去活化 IP、域名、URL、哈希和邮箱地址，支持判定与查询；.eml 分析会检查 SPF、DKIM、DMARC、链接和附件。"],
+      ["报告与检测规则", "根据案件生成事件报告（Markdown、Word、PDF）、STIX 2.1 数据包、阻止列表，以及 Sigma、KQL、SPL、YARA 和 Suricata 规则。"],
     ],
   },
   ja: {
@@ -315,10 +315,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["ポリシー生成", "情報セキュリティ、プライバシー、アクセス制御、インシデント対応のポリシー草案を作成。"],
     ],
     security: [
-      ["アラートのトリアージ", "判定（無害 / 不審 / 悪意あり）、重大度、その理由をわかりやすく説明。"],
-      ["MITRE ATT&CK マッピング", "すべての指摘に戦術とテクニック ID を付与。"],
-      ["IOC 抽出", "IP、ドメイン、URL、ハッシュ、メールを自動抽出。AI の実行前から行います。"],
-      ["インシデントレポート", "エグゼクティブサマリー、タイムライン、影響、次のステップをすぐ共有できる形で。"],
+      ["デバイス上でのログ分析", "9 種類のログ形式をブラウザ内で 1 つのイベント表に変換。タイムライン、上位ホスト・ユーザー・送信元、重大度フィルター、ブルートフォース検知付き。"],
+      ["MITRE ATT&CK マトリクス", "46 の振る舞いルールが活動を 14 の戦術と 130 以上のテクニックに対応付け。独自の所見や AI が挙げたテクニックも追加できます。"],
+      ["IOC とフィッシング分析", "IP、ドメイン、URL、ハッシュ、メールアドレスを抽出・無害化し、判定と照会が可能。.eml 分析では SPF、DKIM、DMARC、リンク、添付を確認します。"],
+      ["レポートと検知ルール", "ケースからインシデントレポート（Markdown、Word、PDF）、STIX 2.1 バンドル、ブロックリスト、Sigma・KQL・SPL・YARA・Suricata ルールを生成。"],
     ],
   },
   hi: {
@@ -359,10 +359,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["नीति जनरेटर", "सूचना सुरक्षा, गोपनीयता, एक्सेस-नियंत्रण और घटना-प्रतिक्रिया नीतियों के ड्राफ़्ट।"],
     ],
     security: [
-      ["अलर्ट ट्राइएज", "निर्णय (हानिरहित / संदिग्ध / दुर्भावनापूर्ण), गंभीरता और तर्क, सरल भाषा में।"],
-      ["MITRE ATT&CK मैपिंग", "हर निष्कर्ष के लिए टैक्टिक्स और तकनीक ID।"],
-      ["IOC निष्कर्षण", "IP, डोमेन, URL, हैश और ईमेल अपने-आप निकाले जाते हैं — AI चलने से पहले ही।"],
-      ["घटना रिपोर्ट", "कार्यकारी सारांश, समयरेखा, प्रभाव और अगले कदम, साझा करने के लिए तैयार।"],
+      ["आपके डिवाइस पर लॉग एनालिटिक्स", "नौ लॉग फ़ॉर्मैट ब्राउज़र में ही एक इवेंट टेबल में बदले जाते हैं — टाइमलाइन, शीर्ष होस्ट, उपयोगकर्ता और स्रोत, गंभीरता फ़िल्टर और ब्रूट-फ़ोर्स डिटेक्शन के साथ।"],
+      ["MITRE ATT&CK मैट्रिक्स", "46 व्यवहार नियम गतिविधि को 14 टैक्टिक्स और 130+ तकनीकों से जोड़ते हैं; अपने निष्कर्ष और आपके AI द्वारा बताई गई तकनीकें भी जोड़ें।"],
+      ["IOC और फ़िशिंग विश्लेषण", "IP, डोमेन, URL, हैश और ई-मेल निकाले और डीफ़ैंग किए जाते हैं, निर्णय और जाँच के साथ; .eml विश्लेषण SPF, DKIM, DMARC, लिंक और अटैचमेंट जाँचता है।"],
+      ["रिपोर्ट और डिटेक्शन नियम", "केस से घटना रिपोर्ट (Markdown, Word, PDF), STIX 2.1 बंडल, ब्लॉकलिस्ट और Sigma, KQL, SPL, YARA तथा Suricata नियम बनते हैं।"],
     ],
   },
   ar: {
@@ -403,10 +403,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["مولّد السياسات", "مسودات سياسات أمن المعلومات والخصوصية والتحكم في الوصول والاستجابة للحوادث."],
     ],
     security: [
-      ["فرز التنبيهات", "الحكم (سليم / مشبوه / خبيث) ودرجة الخطورة والتعليل بلغة واضحة."],
-      ["مطابقة MITRE ATT&CK", "التكتيكات ومعرّفات التقنيات لكل نتيجة."],
-      ["استخراج مؤشرات الاختراق", "تُستخرج عناوين IP والنطاقات والروابط والبصمات والبريد الإلكتروني تلقائيًا — حتى قبل تشغيل الذكاء الاصطناعي."],
-      ["تقارير الحوادث", "ملخص تنفيذي وجدول زمني والأثر والخطوات التالية، جاهزة للمشاركة."],
+      ["تحليل السجلات على جهازك", "تسعة تنسيقات سجلات تُحلَّل في المتصفح ضمن جدول أحداث واحد مع خط زمني، وأكثر الأجهزة والمستخدمين والمصادر، ومرشحات الخطورة، وكشف هجمات التخمين."],
+      ["مصفوفة MITRE ATT&CK", "46 قاعدة سلوكية تربط النشاط بـ 14 تكتيكًا وأكثر من 130 تقنية؛ أضف استنتاجاتك والتقنيات التي يذكرها الذكاء الاصطناعي."],
+      ["المؤشرات وتحليل التصيّد", "استخراج عناوين IP والنطاقات والروابط والبصمات والعناوين البريدية وتعطيلها، مع الأحكام والبحث؛ ويفحص تحليل ‎.eml ‏SPF وDKIM وDMARC والروابط والمرفقات."],
+      ["التقارير وقواعد الكشف", "تقرير حادثة (Markdown وWord وPDF)، وحزمة STIX 2.1، وقوائم حظر، وقواعد Sigma وKQL وSPL وYARA وSuricata مولَّدة من القضية."],
     ],
   },
 };

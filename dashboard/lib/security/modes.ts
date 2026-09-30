@@ -27,7 +27,7 @@ export function refang(s: string): string {
     .replace(/\bh(?:xx|XX)?p(s?)(?::|\[:\])\/\//gi, "http$1://")
     .replace(/\[:\]/g, ":")
     .replace(/\((?:dot|DOT)\)|\[(?:dot|DOT)\]/g, ".")
-    .replace(/\[(?:at|AT)\]|\((?:at|AT)\)|\s(?:at)\s/g, "@")
+    .replace(/\[(?:at|AT|@)\]|\((?:at|AT|@)\)|\s(?:at)\s/g, "@")
     .replace(/\[\/\]/g, "/");
 }
 

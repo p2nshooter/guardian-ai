@@ -57,7 +57,7 @@ export const faqJsonLd = (qa: { q: string; a: string }[]) => ({
   mainEntity: qa.map((x) => ({ "@type": "Question", name: x.q, acceptedAnswer: { "@type": "Answer", text: x.a } })),
 });
 
-export function softwareJsonLd(o: { name: string; description: string; path: string; category?: string; offers?: { name: string; price: number; period?: "month" | "year" }[] }) {
+export function softwareJsonLd(o: { name: string; description: string; path: string; category?: string; features?: string[]; offers?: { name: string; price: number; period?: "month" | "year" }[] }) {
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -67,6 +67,7 @@ export function softwareJsonLd(o: { name: string; description: string; path: str
     applicationCategory: o.category || "BusinessApplication",
     operatingSystem: "Web browser",
     publisher: { "@id": `${SITE.url}/#organization` },
+    ...(o.features?.length ? { featureList: o.features } : {}),
     ...(o.offers?.length ? {
       offers: o.offers.map((f) => ({
         "@type": "Offer", name: f.name, price: f.price.toFixed(2), priceCurrency: "USD", availability: "https://schema.org/InStock", url: absoluteUrl("/pricing"),

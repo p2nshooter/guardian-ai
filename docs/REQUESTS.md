@@ -17,5 +17,6 @@ Every request for a new feature or change is recorded here with its status. Rule
 | 11 | Use an AI API key from ulyah.com for testing | ⛔ not done — reading credentials from another repository was blocked by the session's safety policy; add a key in Settings → AI keys instead | — |
 | 12 | Standing rules: record every feature request; SEO on every feature incl. the offer; never leak company secrets; zero-touch & non-custodial like Trust Wallet; world-class, re-tested; every feature reflected in the admin and member portals | ✅ recorded | `/CLAUDE.md` |
 | 13 | Credit / debit card payments that settle automatically to the owner's BNI account (in the charged currency or at the USD rate) | ✅ done — via Xendit / Midtrans settlement to BNI (IDR at the USD rate, or USD on Xendit) | `docs/admin/CARD_PAYMENTS.md`, Admin → Payment & email → Credit / debit card |
-| 14 | Security Analyst v4, Compliance Center v4, Prompt Library v4, Legal AI v4, Local Mode | 🔄 in progress | `docs/BLUEPRINT-V4.md` §9 |
+| 14 | Security Analyst v4 | ✅ done | `app/app/security`, `lib/security`, `docs/BLUEPRINT-V4.md` §11 |
 | 15 | Merge everything and leave GitHub clean (no pending merges / PRs) | 🔄 pending | — |
+| 16 | Compliance Center v4, Prompt Library v4, Legal AI v4, Local Mode | 🔄 in progress | `docs/BLUEPRINT-V4.md` §9 |
