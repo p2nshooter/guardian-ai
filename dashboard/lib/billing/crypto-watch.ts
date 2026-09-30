@@ -77,7 +77,7 @@ function acceptable(order: any, q: CryptoQuote, t: Transfer, livePrice?: number)
 
 async function settle(db: any, order: any, t: Transfer): Promise<boolean> {
   if (!(await claimTx(db, t, order.id))) return false;         // already paid another order
-  const r = await markOrderPaid(db, order.id, { gatewayRef: `${t.network}:${t.tx}`, actor: `chain:${t.network}` });
+  const r = await markOrderPaid(db, order.id, { gatewayRef: `${t.network}:${t.tx}`, actor: `chain:${t.network}`, gateway: "crypto" });
   return r.ok;
 }
 

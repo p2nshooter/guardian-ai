@@ -17,7 +17,7 @@ interface Tier { devices: number; label: string; app: number; suite: number }
 interface Activation { id: string; product: string; machine_id: string; label: string; created_at: string; revoked_at: string }
 interface Licence {
   id: string; scope: "app" | "suite"; product: string; name: string; devices: number; updates_until: string; status: string; created_at: string;
-  updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number }[];
+  updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; exe: boolean } }[];
 }
 interface Data { licenses: Licence[]; tiers: Tier[]; cardMaxUsd: number }
 interface Options { gateways: { id: string; label: string; methods: string; currency: string }[]; lifetime: { gateways: string[]; cardMaxUsd: number } }
@@ -105,10 +105,11 @@ function LicenceCard({ lic, onChange }: { lic: Licence; onChange: () => void }) 
               {lic.updatesActive && lic.status === "active" ? (
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                   <span className="text-slate-500">{t("lt.downloads")}:</span>
-                  {(SELF_HOSTED.find((x) => x.slug === p.slug)?.images || []).map((i) => (
-                    <a key={i.name} href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>🐳 {i.name}.tar.gz</a>
+                  {(p.files?.images || []).map((name) => (
+                    <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz</a>
                   ))}
-                  {SELF_HOSTED.find((x) => x.slug === p.slug)?.exe ? <a href={`/api/selfhosted/download?product=${p.slug}&file=exe`}>🪟 EXE</a> : null}
+                  {p.files?.exe ? <a href={`/api/selfhosted/download?product=${p.slug}&file=exe`}>🪟 EXE</a> : null}
+                  {!p.files?.images.length && !p.files?.exe ? <span className="text-slate-400">{t("sh.preparing")}</span> : null}
                 </div>
               ) : null}
             </div>
@@ -156,6 +157,8 @@ function LifetimeInner() {
       <PageHeader title={t("lt.title")} description={t("lt.sub")} />
       <div className="space-y-5">
         {q.get("paid") ? <Alert tone="success">{t("lt.paid")}</Alert> : null}
+        {q.get("canceled") ? <Alert tone="warn">{t("pay.canceled")}</Alert> : null}
+        {q.get("error") ? <Alert tone="error">{t("pay.error")}</Alert> : null}
 
         <Section title={t("lt.mine")}>
           {d.licenses.length ? (

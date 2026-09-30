@@ -12,7 +12,7 @@
  * loadSession().
  * ============================================================================ */
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, secret } from "./db";
+import { getDB, dbFirst, dbRun, secret } from "./db";
 import { isPlanId, type Tier } from "./plans";
 
 export const COOKIE_NAME = "axto_session";
@@ -133,14 +133,23 @@ export function isEmail(e: string): boolean {
 }
 
 // ── Entitlement loading ───────────────────────────────────────────────────
-interface UserRow { id: string; email: string; role: string; name: string | null; status: string | null; plan: string | null; sstatus: string | null; period_end: string | null }
+interface UserRow { id: string; email: string; role: string; name: string | null; status: string | null; plan: string | null; sstatus: string | null; period_end: string | null; valid_after: string | null }
 
-export async function loadEntitlement(db: any, userId: string): Promise<Omit<Session, "iat" | "exp"> | null> {
-  const r = await dbFirst<UserRow>(db,
-    `SELECT u.id, u.email, u.role, u.name, u.status, s.plan, s.status AS sstatus, s.current_period_end AS period_end
+/**
+ * Current entitlement of a user, or null when the account is gone or suspended.
+ * With `issuedAt` (the token's iat) it is also null for a session issued before
+ * the last password change — that is how a reset signs out every other device.
+ */
+export async function loadEntitlement(db: any, userId: string, issuedAt?: number): Promise<Omit<Session, "iat" | "exp"> | null> {
+  const sql = (epoch: string) =>
+    `SELECT u.id, u.email, u.role, u.name, u.status, ${epoch} AS valid_after, s.plan, s.status AS sstatus, s.current_period_end AS period_end
        FROM users u LEFT JOIN subscriptions s ON s.user_id = u.id
-      WHERE u.id = ?`, [userId]);
+      WHERE u.id = ?`;
+  // Until migration 0058 has run, sign-in keeps working without the epoch column.
+  const r = await dbFirst<UserRow>(db, sql("u.sessions_valid_after"), [userId])
+    .catch(() => dbFirst<UserRow>(db, sql("''"), [userId]));
   if (!r || (r.status && r.status !== "active")) return null;
+  if (issuedAt !== undefined && Number(r.valid_after) > 0 && issuedAt < Number(r.valid_after)) return null;
   const role: Role = r.role === "admin" ? "admin" : "member";
   const endMs = r.period_end ? Date.parse(r.period_end) : 0;
   const paid = r.sstatus === "active" && isPlanId(r.plan) && endMs > Date.now();
@@ -150,6 +159,11 @@ export async function loadEntitlement(db: any, userId: string): Promise<Omit<Ses
     until: paid ? Math.floor(endMs / 1000) : 0,
     ent: Math.floor(Date.now() / 1000),
   };
+}
+
+/** Every session issued before now is refused from now on (password change / reset). Best effort before migration 0058. */
+export async function signOutOtherSessions(db: any, userId: string): Promise<void> {
+  await dbRun(db, `UPDATE users SET sessions_valid_after = ? WHERE id = ?`, [String(Math.floor(Date.now() / 1000)), userId]).catch(() => {});
 }
 
 /** Effective tier right now (expires the moment the paid period ends, even mid-token). */
@@ -184,8 +198,8 @@ export async function loadSession(req: NextRequest, opts: { fresh?: boolean } = 
   const stale = opts.fresh || Date.now() / 1000 - s.ent > ENT_TTL;
   if (!stale) return { session: s, refreshed: null };
   try {
-    const ent = await loadEntitlement(getDB(req), s.sub);
-    if (!ent) return null; // deleted or suspended account
+    const ent = await loadEntitlement(getDB(req), s.sub, s.iat);
+    if (!ent) return null; // deleted or suspended account, or signed out by a password change
     const token = await signSession(ent);
     const session = (await verifySession(token))!;
     return { session, refreshed: token };
@@ -216,8 +230,9 @@ export function respond(data: unknown, ctx: { refreshed: string | null } | null,
 export const unauthorized = () => NextResponse.json({ error: "Please sign in." }, { status: 401 });
 export const forbidden = (msg = "You do not have access to this.") => NextResponse.json({ error: msg }, { status: 403 });
 
+/** Admin routes re-read the account on every call: a demoted, suspended or signed-out admin loses access at once. */
 export async function requireAdmin(req: NextRequest) {
-  const ctx = await loadSession(req);
+  const ctx = await loadSession(req, { fresh: true });
   if (!ctx || ctx.session.role !== "admin") return null;
   return ctx;
 }

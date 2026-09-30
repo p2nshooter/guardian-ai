@@ -1,6 +1,6 @@
 # AXTO v3 — Blueprint Rombak Total
 
-> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§19 (v3.2, 29 Sep 2026)**.
+> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§20 (v3.2.1, 30 Sep 2026)** — sebelumnya §19 (v3.2).
 > Branch kerja v3.2: `ccr-e9111ca5-n0fcha` (sebelumnya `claude/app-consistency-paid-model-5hjkqo`, sudah di-merge).
 > Deploy produksi terjadi otomatis saat branch kerja di-merge ke `main`
 > (GitHub Actions → Cloudflare Pages + migrasi D1 + sinkron konten R2).
@@ -494,4 +494,59 @@ Hasil dasar: typecheck ✅ · unit 45/45 ✅ · build ✅ · E2E 57/59 ✅ (2 di
 **Tindakan pemilik (tidak bisa dilakukan dari kode):**
 1. Jadikan repo GitHub **privat** (E5/E8) — atau hapus riwayat PDF dengan force-push.
 2. Aktifkan kembali workflow **AXTO CI/CD** (`deploy.yml`) di tab Actions bila ingin uji malam juga dari workflow itu (GitHub menonaktifkannya karena tidak aktif; `e2e.yml` baru sudah menutup kebutuhan uji malam).
-3. Merge branch kerja ke `main` → migrasi D1 `0057_lifetime.sql` berjalan otomatis.
+3. Merge branch kerja ke `main` → migrasi D1 `0057_lifetime.sql` dan `0058_session_epoch.sql` berjalan otomatis.
+
+---
+
+## 20. Audit v3.2.1 — seluruh portal member & admin, lisensi, pembayaran (30 Sep 2026)
+
+Cara audit: seluruh alur uang dan lisensi dibaca baris demi baris (checkout → 5 gateway + transfer bank + kripto
+langsung → webhook → aktivasi → invoice → refund; terbit/validasi/reset/lepas lisensi; Lifetime), setiap API admin
+dan member dicek aksesnya, lalu **crawl browser** Chromium: 52 halaman (15 member, 13 admin, 24 publik) × desktop
+dan HP × EN/ID/FR, plus 357 tautan internal.
+
+### 20a. Pembayaran
+| # | Temuan | Dampak | Perbaikan |
+|---|---|---|---|
+| P1 | `markOrderPaid` mengklaim order berstatus apa pun selain `paid` — termasuk **`refunded`** | Webhook yang diulang, atau membuka lagi tautan PayPal-return, **mengaktifkan kembali paket/lisensi setelah uang dikembalikan** (Lifetime: lisensi kedua) | Refund bersifat final; admin juga tidak bisa "mark paid" order yang sudah di-refund; webhook menjawab 200 agar gateway tidak mengulang |
+| P2 | Webhook tidak mencocokkan gateway order | Notifikasi satu gateway bisa melunasi order gateway lain; cek nominal IDR terlewati pada order USD | `gateway` wajib sama (`gateway_mismatch`) |
+| P3 | PayPal untuk Lifetime kembali ke `/app/billing` | Pembeli Lifetime melihat pesan "paket aktif" di halaman yang salah | Kembali ke `/app/lifetime` |
+| P4 | `?error=` dari PayPal-return tidak ditampilkan di mana pun | Pembayaran gagal/ditolak kembali tanpa pesan apa pun | Pesan jelas di Billing & Lifetime (10 bahasa); "dibatalkan" juga di Lifetime |
+| P5 | Checkbox **Test mode** di Admin → Payments disimpan tetapi tidak dipakai | Admin mengira sandbox, padahal transaksi live | PayPal / Midtrans / NOWPayments ke API sandbox; Stripe & Xendit: petunjuk kunci test (mode ditentukan kunci) |
+| P6 | MRR = harga daftar × langganan aktif | Akun komplimen ($0) menaikkan MRR; harga yang diubah admin diabaikan | MRR dari nominal yang benar-benar dibayar untuk periode berjalan |
+| P7 | Badge gateway nonaktif bertuliskan "suspended"; URL webhook melebar di HP | Membingungkan; layar admin 413 px di HP 390 px | "off" / "offered at checkout" / "test mode"; URL dibungkus |
+
+### 20b. Lisensi
+| # | Temuan | Dampak | Perbaikan |
+|---|---|---|---|
+| L1 | Suspend/revoke oleh admin hanya mengubah status | Member cukup klik **Issue** → kunci baru aktif lagi; pembayaran perpanjangan otomatis mengaktifkan kembali lisensi yang di-suspend admin | **Admin lock** (`sh_licenses.notes = admin_hold`): hanya admin yang membuka (Activate/Restore); portal member menampilkan 🔒 "Dikunci oleh AXTO" |
+| L2 | Lisensi revoked tanpa tombol apa pun di admin; filter "Expired" selalu kosong (status itu tidak pernah disimpan) | Salah revoke tidak bisa dipulihkan; filter menyesatkan | Tombol **Restore**; "Expired" = aktif tetapi lewat tanggal |
+| L3 | Binding mesin: dua server yang memvalidasi kunci baru bersamaan sama-sama mendapat `valid` | Satu kunci jalan di dua server | Setelah bind dibaca ulang — hanya pemenang yang valid |
+| L4 | Halaman Lifetime menautkan image/EXE yang belum dibuild | Klik → halaman 404 teks polos | Hanya file yang ada di R2; lainnya "sedang disiapkan" |
+
+### 20c. Akses & sesi
+| # | Temuan | Dampak | Perbaikan |
+|---|---|---|---|
+| A1 | Ganti/reset password tidak mengakhiri sesi lain (token 7 hari) | Penyerang yang mencuri sesi tetap masuk setelah korban mereset password | `users.sessions_valid_after` (migrasi 0058): sesi lama ditolak seketika di rute sensitif (checkout, lisensi, Lifetime, admin) dan ≤ 1 jam di rute lain |
+| A2 | Tautan reset dipakai 2× bersamaan → keduanya berhasil | Token tidak benar-benar sekali pakai | Klaim token atomik |
+| A3 | Hak admin di-cache 1 jam dalam token | Admin yang diturunkan/di-suspend tetap admin hingga 1 jam | Setiap request admin membaca ulang akun |
+
+Diperiksa dan **sudah benar**: ke-15 rute admin memakai `requireAdmin`; data member (perkara Legal, order, invoice,
+file, riwayat, Lifetime) terisolasi per akun; tanda tangan kelima webhook diverifikasi; harga selalu dari server;
+batas perangkat Lifetime atomik; transaksi kripto tidak bisa melunasi dua order.
+
+### 20d. Crawl browser
+0 error JavaScript, 0 respons 5xx, 0 halaman error di 104 tampilan (satu-satunya pesan konsol: prefetch `/app` dari halaman 404 yang diarahkan lintas host — hanya terjadi lokal karena 127.0.0.1 ≠ localhost); 357 tautan internal: tidak ada yang rusak selain
+unduhan build yang memang belum ada di lingkungan lokal (installer: pesan "sedang disiapkan"; Lifetime: diperbaiki L4).
+Satu overflow di HP (Admin → Payments, P7).
+
+### 20e. Status
+| Item | Status | Bukti |
+|---|---|---|
+| P1–P7 | ✅ | `tests/e2e/security.e2e.ts` (refund final, gateway cocok, Stripe bertanda tangan asli sekali aktif, MRR) |
+| L1–L4 | ✅ | idem (admin lock vs member & perpanjangan, race binding, file Lifetime yang ditautkan bisa diunduh) |
+| A1–A3 | ✅ | idem (ganti password mengeluarkan perangkat lain, reset race, admin diturunkan langsung 403) + isolasi data antar-member |
+
+Sisa (dicatat, bukan bug): tombol "keluar dari semua perangkat" tanpa ganti password; di rute non-sensitif sesi lama
+masih bisa bertahan hingga 1 jam setelah ganti password (cache hak akses di token, disengaja agar D1 hemat).
+

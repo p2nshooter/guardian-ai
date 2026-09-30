@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
         id: g.id, label: g.label, methods: g.methods, currency: g.currency, confirmation: g.confirmation,
         fields: g.fields, values: view(g.fields, cur?.creds),
         configured: isConfigured(g, cur?.creds), active: !!cur?.active, testMode: !!cur?.testMode, updatedAt: cur?.updatedAt || "",
+        sandbox: !!g.sandbox, testHint: g.testHint || "",
         webhookUrl: g.webhookPath ? absoluteUrl(g.webhookPath) : "",
       };
     });

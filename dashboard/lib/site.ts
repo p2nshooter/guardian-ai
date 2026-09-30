@@ -8,7 +8,7 @@
  * ============================================================================ */
 
 /** Platform release — shown by /api/health and the status page. Keep in step with package.json. */
-export const VERSION = "3.2.0";
+export const VERSION = "3.2.1";
 
 export const SITE = {
   name: "AXTO",

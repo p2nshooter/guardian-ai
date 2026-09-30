@@ -74,6 +74,7 @@ function BillingInner() {
         {q.get("welcome") ? <Alert tone="info">{t.welcome}</Alert> : null}
         {q.get("paid") ? <Alert tone="success">{t.paid}</Alert> : null}
         {q.get("canceled") ? <Alert tone="warn">{t.canceled}</Alert> : null}
+        {q.get("error") ? <Alert tone="error">{tg("pay.error")}</Alert> : null}
 
         <Section title={t.current}>
           {sub && sub.status === "active" ? (

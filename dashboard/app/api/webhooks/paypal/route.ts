@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
     const cap = event.resource || {};
     const orderId = cap.custom_id || "";
-    if (orderId) await markOrderPaid(db, orderId, { gatewayRef: cap.id, paidUsd: Number(cap.amount?.value || 0) });
+    if (orderId) await markOrderPaid(db, orderId, { gatewayRef: cap.id, paidUsd: Number(cap.amount?.value || 0), gateway: "paypal" });
   }
   return NextResponse.json({ received: true });
 }

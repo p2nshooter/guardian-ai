@@ -9,33 +9,15 @@
  * ============================================================================ */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getEnv, getR2Builds, dbFirst, dbQuery, dbRun, newId, now, secret } from "@/lib/db";
+import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
+import { availableBuilds, imageKey, exeKey } from "@/lib/builds";
 import { loadSession, unauthorized, respond, effectiveTier, loadSessionFor } from "@/lib/auth";
 import { limitsFor, PLANS, isPlanId } from "@/lib/plans";
 import { SELF_HOSTED, getSelfHosted, catalogEntry, generateLicenseKey } from "@/lib/selfhosted";
 import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendMail } from "@/lib/mail";
-import { issueLicence, licencesMail } from "@/lib/licences";
-
-/** Names of build files present in R2 (cached in KV for 10 minutes). */
-async function availableBuilds(req: NextRequest): Promise<Set<string>> {
-  const kv = getEnv(req).KV;
-  try {
-    const hit = kv ? await kv.get("builds:available") : null;
-    if (hit) return new Set(JSON.parse(hit));
-  } catch {}
-  const names: string[] = [];
-  try {
-    const r2 = getR2Builds(req);
-    for (const prefix of ["builds/latest/raw/", "builds/latest/exe/"]) {
-      const res = await r2.list({ prefix, limit: 500 });
-      for (const o of res.objects || []) names.push(o.key);
-    }
-  } catch {}
-  try { if (kv) await kv.put("builds:available", JSON.stringify(names), { expirationTtl: 600 }); } catch {}
-  return new Set(names);
-}
+import { issueLicence, licencesMail, ADMIN_HOLD, HOLD_MESSAGE } from "@/lib/licences";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSessionFor(req, (tier) => limitsFor(tier).selfHostedApps !== 0);
@@ -44,8 +26,9 @@ export async function GET(req: NextRequest) {
   const lim = limitsFor(tier);
   const db = getDB(req);
   const [lics, sub, builds] = await Promise.all([
-    dbQuery<any>(db, `SELECT product, license_key, status, expires_at, max_nodes, bound_machine_id, last_seen_at, last_version, created_at
-                        FROM sh_licenses WHERE user_id = ? AND status != 'revoked'`, [ctx.session.sub]),
+    dbQuery<any>(db, `SELECT product, license_key, status, expires_at, max_nodes, bound_machine_id, last_seen_at, last_version, created_at,
+                             CASE WHEN notes = 'admin_hold' THEN 1 ELSE 0 END AS held
+                        FROM sh_licenses WHERE user_id = ? AND (status != 'revoked' OR notes = 'admin_hold')`, [ctx.session.sub]),
     dbFirst<any>(db, `SELECT current_period_end FROM subscriptions WHERE user_id = ?`, [ctx.session.sub]),
     availableBuilds(req),
   ]);
@@ -56,8 +39,8 @@ export async function GET(req: NextRequest) {
     return {
       slug: p.slug, name: c?.name || p.slug, emoji: c?.emoji || "📦", tagline: c?.tagline || "", port: p.port,
       compose: p.compose, config: p.config, configTarget: p.configTarget, licenseField: p.licenseField,
-      images: p.images.map((i) => ({ ...i, available: builds.has(`builds/latest/raw/${i.name}.tar.gz`) })),
-      exeAvailable: !!p.exe && builds.has(`builds/latest/exe/${p.exe}-windows.exe`),
+      images: p.images.map((i) => ({ ...i, available: builds.has(imageKey(i.name)) })),
+      exeAvailable: !!p.exe && builds.has(exeKey(p.exe)),
       license: lic,
     };
   });
@@ -97,6 +80,7 @@ export async function POST(req: NextRequest) {
     return respond({ ok: true, license }, ctx);
   }
 
+  if (existing?.notes === ADMIN_HOLD) return fail(HOLD_MESSAGE, 403);
   if (!existing || existing.status === "revoked") return fail("You don't have a licence for this app yet.");
 
   if (b?.action === "reset") {

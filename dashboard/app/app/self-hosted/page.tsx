@@ -14,7 +14,7 @@ import { SH_TAGLINES } from "@/lib/i18n-pages/shtaglines";
 interface Product {
   slug: string; name: string; emoji: string; tagline: string; port: number; compose: string; config: string; configTarget: string; licenseField: string;
   images: { name: string; label: string; optional?: boolean; available: boolean }[];
-  license: { license_key: string; status: string; expires_at: string; max_nodes: number; bound_machine_id: string; last_seen_at: string; last_version: string } | null;
+  license: { license_key: string; status: string; expires_at: string; max_nodes: number; bound_machine_id: string; last_seen_at: string; last_version: string; held?: number } | null;
 }
 interface Data { tier: string; planName: string; allowance: number; nodes: number; used: number; periodEnd: string; products: Product[] }
 
@@ -86,13 +86,14 @@ export default function SelfHostedPage() {
           {slotsLeft <= 0 ? <div className="mb-3"><Alert tone="info">{t.noSlots}</Alert></div> : null}
           <div className="space-y-3">
             {d.products.map((p) => {
-              const l = p.license && p.license.status !== "revoked" ? p.license : null;
+              const held = !!p.license?.held;   // locked by an admin: no key, no actions
+              const l = p.license && p.license.status !== "revoked" && !held ? p.license : null;
               return (
                 <div key={p.slug} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-2xl" aria-hidden="true">{p.emoji}</span>
                     <div className="min-w-0 flex-1"><div className="font-semibold text-slate-900">{p.name}</div><div className="text-sm text-slate-500">{SH_TAGLINES[lang][p.slug] || p.tagline}</div></div>
-                    {l ? <StatusBadge status={l.status} label={statusLabel(tt, l.status)} /> : (
+                    {held ? <span className="badge-red">🔒 {tt("sh.held")}</span> : l ? <StatusBadge status={l.status} label={statusLabel(tt, l.status)} /> : (
                       <button className="btn-primary btn-sm" onClick={() => act(p.slug, "issue")} disabled={!!busy || slotsLeft <= 0}>{busy === `issue-${p.slug}` ? <><Spinner className="h-3 w-3" /> {t.issuing}</> : t.issue}</button>
                     )}
                   </div>

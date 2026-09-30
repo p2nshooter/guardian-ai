@@ -16,6 +16,11 @@ import { absoluteUrl } from "./site";
 
 export interface IssuedLicence { product: string; name: string; key: string }
 
+/** sh_licenses.notes marker: suspended or revoked by an admin. Only an admin can lift it
+ * (Admin → Licences → Activate) — not the member, and not a renewal payment. */
+export const ADMIN_HOLD = "admin_hold";
+export const HOLD_MESSAGE = "This licence was locked by AXTO. Contact support to restore it.";
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
 /** Issue (or re-activate) one app's licence. Returns null when the plan doesn't allow it. */
@@ -25,6 +30,7 @@ export async function issueLicence(db: any, userId: string, slug: string, lim: P
   if (lim.selfHostedApps === 0) return { error: "Self-hosted apps are included in the Business and Enterprise plans." };
   const existing = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ?`, [userId, slug]);
   if (existing && existing.status === "active") return null;
+  if (existing?.notes === ADMIN_HOLD) return { error: HOLD_MESSAGE };
   if (lim.selfHostedApps > 0) {
     const n = await dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active'`, [userId]);
     if ((n?.n ?? 0) >= lim.selfHostedApps) return { error: `Your plan includes ${lim.selfHostedApps} self-hosted apps. Release one first, or upgrade to Enterprise for all of them.` };

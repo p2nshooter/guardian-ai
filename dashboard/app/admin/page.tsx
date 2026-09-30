@@ -25,8 +25,8 @@ export default function AdminHome() {
       <PageHeader title="Overview" description="Everything runs automatically — this is what happened." actions={<Link href="/admin/orders?status=pending" className="btn-secondary">Pending payments ({s.pendingOrders})</Link>} />
       {s.pendingOrders ? <div className="mb-5"><Alert tone="warn" title={`${s.pendingOrders} payment(s) pending`}>Card, PayPal and crypto confirm themselves. Bank transfers wait for your approval in <Link href="/admin/orders?status=pending" className="font-semibold underline">Orders</Link> or the <Link href="/admin/support" className="font-semibold underline">Support inbox</Link>.</Alert></div> : null}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="MRR" value={formatMoney(s.mrr)} hint={`${s.activeSubscriptions} active subscriptions`} />
-        <Stat label="Revenue · 30 days" value={formatMoney(s.revenue30d)} hint={`${s.orders30d} paid orders`} />
+        <Stat label="MRR" value={formatMoney(s.mrr)} hint={`${s.activeSubscriptions} active subscription${s.activeSubscriptions === 1 ? "" : "s"} · as paid`} />
+        <Stat label="Revenue · 30 days" value={formatMoney(s.revenue30d)} hint={`${s.orders30d} paid order${s.orders30d === 1 ? "" : "s"}`} />
         <Stat label="Members" value={s.members.toLocaleString()} hint={`+${s.newMembers30d} in 30 days`} />
         <Stat label="Active licences" value={s.activeLicenses.toLocaleString()} hint={`All-time revenue ${formatMoney(s.revenueAll)}`} />
       </div>

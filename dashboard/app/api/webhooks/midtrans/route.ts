@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbRun } from "@/lib/db";
 import { gatewayCreds } from "@/lib/billing/gateways";
 import { midtransVerify } from "@/lib/billing/providers";
-import { markOrderPaid } from "@/lib/billing/activate";
+import { markOrderPaid, isFinal } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
   const n: any = await req.json().catch(() => null);
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
   const st = n.transaction_status;
   const paid = st === "settlement" || (st === "capture" && n.fraud_status === "accept");
   if (paid) {
-    const r = await markOrderPaid(db, n.order_id, { gatewayRef: n.transaction_id, paidLocal: Number(n.gross_amount || 0) });
-    if (!r.ok) return NextResponse.json({ error: r.reason }, { status: 422 });
+    const r = await markOrderPaid(db, n.order_id, { gatewayRef: n.transaction_id, paidLocal: Number(n.gross_amount || 0), gateway: "midtrans" });
+    if (!isFinal(r)) return NextResponse.json({ error: r.reason }, { status: 422 });
   } else if (st === "expire" || st === "cancel" || st === "deny") {
     await dbRun(db, `UPDATE orders SET status = ? WHERE id = ? AND status = 'pending'`, [st === "expire" ? "expired" : "failed", n.order_id]);
   }

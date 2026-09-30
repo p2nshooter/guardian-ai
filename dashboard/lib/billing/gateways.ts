@@ -26,24 +26,30 @@ export interface GatewayInfo {
   requires: string[][];
   confirmation: "automatic" | "admin";
   webhookPath?: string;   // to paste into the gateway dashboard
+  /** Admin → Payments "Test mode" switches this gateway to its sandbox API. */
+  sandbox?: boolean;
+  /** Gateways whose test mode is chosen by the key itself (shown instead of the switch). */
+  testHint?: string;
 }
 
 export const GATEWAYS: GatewayInfo[] = [
   { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic",
     fields: [{ key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…" }, { key: "webhook_secret", label: "Webhook signing secret", secret: true, placeholder: "whsec_…" }],
-    requires: [["secret_key", "webhook_secret"]], webhookPath: "/api/webhooks/stripe" },
+    requires: [["secret_key", "webhook_secret"]], webhookPath: "/api/webhooks/stripe",
+    testHint: "Test payments: paste your test keys (sk_test_… and the test webhook secret)." },
   { id: "paypal", label: "PayPal", methods: "PayPal balance or card", currency: "USD", confirmation: "automatic",
     fields: [{ key: "client_id", label: "Client ID" }, { key: "client_secret", label: "Client secret", secret: true }, { key: "mode", label: "Mode (live / sandbox)", placeholder: "live" }, { key: "webhook_id", label: "Webhook ID (optional)" }],
-    requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal" },
+    requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal", sandbox: true },
   { id: "xendit", label: "Indonesia — QRIS, VA, e-wallet (Xendit)", methods: "QRIS, bank virtual account, OVO, DANA, ShopeePay", currency: "IDR", confirmation: "automatic",
     fields: [{ key: "secret_key", label: "Secret key", secret: true, placeholder: "xnd_production_…" }, { key: "webhook_token", label: "Callback verification token", secret: true }],
-    requires: [["secret_key", "webhook_token"]], webhookPath: "/api/webhooks/xendit" },
+    requires: [["secret_key", "webhook_token"]], webhookPath: "/api/webhooks/xendit",
+    testHint: "Test payments: paste a development key (xnd_development_…)." },
   { id: "midtrans", label: "Indonesia — QRIS, VA, GoPay (Midtrans)", methods: "QRIS, bank transfer, GoPay, card", currency: "IDR", confirmation: "automatic",
     fields: [{ key: "server_key", label: "Server key", secret: true, placeholder: "Mid-server-…" }, { key: "client_key", label: "Client key" }, { key: "is_production", label: "Production (true / false)", placeholder: "true" }],
-    requires: [["server_key"]], webhookPath: "/api/webhooks/midtrans" },
+    requires: [["server_key"]], webhookPath: "/api/webhooks/midtrans", sandbox: true },
   { id: "nowpayments", label: "Crypto — automatic (NOWPayments)", methods: "USDT, BTC, ETH and 150+ coins, confirmed automatically", currency: "USD", confirmation: "automatic",
     fields: [{ key: "api_key", label: "API key", secret: true }, { key: "ipn_secret", label: "IPN secret", secret: true }],
-    requires: [["api_key", "ipn_secret"]], webhookPath: "/api/webhooks/nowpayments" },
+    requires: [["api_key", "ipn_secret"]], webhookPath: "/api/webhooks/nowpayments", sandbox: true },
   { id: "crypto", label: "Crypto — direct wallet transfer", methods: "USDT / USDC / BTC / ETH / SOL straight to our wallet, confirmed on-chain automatically", currency: "USD", confirmation: "automatic",
     fields: [
       { key: "usdt_trc20", label: "USDT · TRC20 (Tron) address", secret: true },
@@ -131,13 +137,17 @@ export async function migrateLegacyPayments(db: any): Promise<number> {
   return Object.keys(settings.gateways).length;
 }
 
+/** Set on the credentials of a gateway in Test mode (read by lib/billing/providers.ts). */
+export const TEST_FLAG = "__test";
+
 /** Credentials of an ACTIVE, fully configured gateway (else null). `_db` kept for call-site compatibility. */
 export async function gatewayCreds(_db: any, id: GatewayId): Promise<Record<string, string> | null> {
   const g = gatewayInfo(id);
   if (!g) return null;
   try {
     const cur = (await paymentSettings({ fresh: true })).gateways[id];
-    return cur?.active && isConfigured(g, cur.creds) ? cur.creds : null;
+    if (!cur?.active || !isConfigured(g, cur.creds)) return null;
+    return g.sandbox && cur.testMode ? { ...cur.creds, [TEST_FLAG]: "1" } : cur.creds;
   } catch {
     return null;
   }

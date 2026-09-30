@@ -13,7 +13,7 @@
  * the current period is converted into extra days on the new plan, so
  * upgrades, downgrades and renewals all use one fair rule.
  * ============================================================================ */
-import { autoIssueAfterPayment } from "../licences";
+import { autoIssueAfterPayment, ADMIN_HOLD } from "../licences";
 import { dbFirst, dbRun, dbQuery, dbBatch, getR2, now } from "../db";
 import { PLANS, addPeriod, isPlanId, isCycle, formatUsd, type PlanId, type Cycle } from "../plans";
 import { sendMail, mails } from "../mail";
@@ -74,9 +74,9 @@ export async function syncLicenses(db: any, userId: string, plan: string, period
     return;
   }
   await dbRun(db,
-    `UPDATE sh_licenses SET expires_at = ?, max_nodes = ?, status = CASE WHEN status = 'suspended' THEN 'active' ELSE status END, updated_at = ?
+    `UPDATE sh_licenses SET expires_at = ?, max_nodes = ?, status = CASE WHEN status = 'suspended' AND notes != ? THEN 'active' ELSE status END, updated_at = ?
       WHERE user_id = ? AND status != 'revoked'`,
-    [periodEnd, lim.selfHostedNodes, now(), userId]);
+    [periodEnd, lim.selfHostedNodes, ADMIN_HOLD, now(), userId]);
   if (lim.selfHostedApps > 0) {
     const rows = await dbQuery<{ id: string }>(db,
       `SELECT id FROM sh_licenses WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC`, [userId]);
@@ -116,12 +116,19 @@ ${local}<tr class="tot"><td>Total paid (USD)</td><td style="text-align:right">${
 
 /**
  * Mark an order paid and grant/extend the plan. Returns false if the order is
- * unknown or the paid amount does not match (never grants on a short payment).
+ * unknown, was refunded, belongs to another gateway, or the paid amount does
+ * not match (never grants on a short payment).
+ *
+ * A refunded order is final: a replayed webhook or a revisited PayPal return
+ * link must never grant access again (webhooks acknowledge it, see isFinal).
  */
-export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string } = {}): Promise<{ ok: boolean; reason?: string }> {
+export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string } = {}): Promise<{ ok: boolean; reason?: string }> {
   const o = await dbFirst<OrderRow>(db, `SELECT * FROM orders WHERE id = ?`, [orderId]);
   if (!o) return { ok: false, reason: "order_not_found" };
   if (o.status === "paid") return { ok: true, reason: "already_paid" };
+  if (o.status === "refunded") return { ok: false, reason: "refunded" };
+  // A gateway can only settle its own orders (the amount checks below assume its currency).
+  if (opts.gateway && o.gateway !== opts.gateway) return { ok: false, reason: "gateway_mismatch" };
   // Amount check (1% tolerance for FX/rounding on the gateway side).
   if (typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
@@ -139,7 +146,7 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   const [claimRes] = await dbBatch(db, [
     [`UPDATE orders SET status = 'paid', paid_at = ?, meta = json_set(COALESCE(NULLIF(meta, ''), '{}'), '$.claim', ?),
         gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END
-      WHERE id = ? AND status != 'paid'`, [ts, claim, opts.gatewayRef || "", opts.gatewayRef || "", o.id]],
+      WHERE id = ? AND status NOT IN ('paid', 'refunded')`, [ts, claim, opts.gatewayRef || "", opts.gatewayRef || "", o.id]],
     [`INSERT INTO subscriptions (user_id, plan, cycle, status, current_period_start, current_period_end, last_order_id, reminded_at, created_at, updated_at)
       SELECT ?, ?, ?, 'active', ?, ?, ?, '', ?, ?
        WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND json_extract(meta, '$.claim') = ?)
@@ -176,10 +183,13 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   return { ok: true };
 }
 
+/** Webhook answer: done (paid now or before), or final (refunded) — nothing for the gateway to retry. */
+export const isFinal = (r: { ok: boolean; reason?: string }) => r.ok || r.reason === "refunded";
+
 /** Lifetime order paid → claim it once, invoice it, issue the licence (zero-touch). */
 async function markLifetimePaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
   const claim = await dbRun(db,
-    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status != 'paid'`,
+    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
     [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
   if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
   const invoiceNo = o.invoice_no || await nextInvoiceNo(db);

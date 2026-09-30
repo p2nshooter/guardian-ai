@@ -11,6 +11,10 @@
  * The PRICE always comes from our own order row, never from the browser.
  * ============================================================================ */
 import { absoluteUrl, SITE } from "../site";
+import { TEST_FLAG } from "./gateways";
+
+/** Admin → Payments "Test mode" (sandbox APIs for PayPal, Midtrans, NOWPayments). */
+const isTest = (c: Record<string, string>) => c[TEST_FLAG] === "1";
 
 export interface OrderForPayment {
   id: string;
@@ -78,7 +82,7 @@ export async function stripeVerify(payload: string, header: string | null, whsec
 
 // ── PayPal ────────────────────────────────────────────────────────────────
 const paypalBase = (c: Record<string, string>) =>
-  (c.mode || "live").toLowerCase() === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+  isTest(c) || (c.mode || "live").toLowerCase() === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
 async function paypalToken(c: Record<string, string>): Promise<string> {
   const r = await fetch(`${paypalBase(c)}/v1/oauth2/token`, {
@@ -174,7 +178,7 @@ export function xenditVerify(headerToken: string | null, c: Record<string, strin
 
 // ── Midtrans Snap (IDR) ───────────────────────────────────────────────────
 const midtransBase = (c: Record<string, string>) =>
-  String(c.is_production).toLowerCase() === "true" ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com";
+  !isTest(c) && String(c.is_production).toLowerCase() === "true" ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com";
 
 export async function midtransCreate(c: Record<string, string>, o: OrderForPayment): Promise<string> {
   const r = await fetch(`${midtransBase(c)}/snap/v1/transactions`, {
@@ -201,7 +205,7 @@ export async function midtransVerify(n: any, c: Record<string, string>): Promise
 
 // ── NOWPayments (crypto) ──────────────────────────────────────────────────
 export async function nowpaymentsCreate(c: Record<string, string>, o: OrderForPayment): Promise<{ url: string; ref: string }> {
-  const r = await fetch("https://api.nowpayments.io/v1/invoice", {
+  const r = await fetch(`${isTest(c) ? "https://api-sandbox.nowpayments.io" : "https://api.nowpayments.io"}/v1/invoice`, {
     method: "POST",
     headers: { "x-api-key": c.api_key, "Content-Type": "application/json" },
     body: JSON.stringify({

@@ -3,12 +3,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
-import { PageHeader, Alert, LoadingBlock, CopyButton, StatusBadge } from "@/components/ui";
+import { PageHeader, Alert, LoadingBlock, CopyButton } from "@/components/ui";
 
 interface Field { key: string; label: string; secret?: boolean; placeholder?: string; multiline?: boolean }
 interface Gateway {
   id: string; label: string; methods: string; currency: string; confirmation: "automatic" | "admin";
-  fields: Field[]; values: Record<string, string>; configured: boolean; active: boolean; testMode: boolean; updatedAt: string; webhookUrl: string;
+  fields: Field[]; values: Record<string, string>; configured: boolean; active: boolean; testMode: boolean; sandbox: boolean; testHint: string; updatedAt: string; webhookUrl: string;
 }
 
 export default function PaymentsPage() {
@@ -48,13 +48,14 @@ function GatewayCard({ g, onSaved }: { g: Gateway; onSaved: () => void }) {
   return (
     <section className="card-pad">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-base font-semibold">{g.label}</h2>
           <p className="mt-0.5 text-sm text-slate-500">{g.methods} · charged in {g.currency} · {g.confirmation === "automatic" ? "confirmed automatically" : "you confirm the payment (Admin → Orders → Mark paid)"}</p>
         </div>
         <div className="flex items-center gap-2">
           {g.configured ? <span className="badge-green">configured</span> : <span className="badge-gray">not configured</span>}
-          <StatusBadge status={g.active ? "active" : "suspended"} />
+          {g.active ? <span className="badge-green">offered at checkout</span> : <span className="badge-gray">off</span>}
+          {g.active && g.sandbox && g.testMode ? <span className="badge-amber">test mode</span> : null}
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -72,12 +73,13 @@ function GatewayCard({ g, onSaved }: { g: Gateway; onSaved: () => void }) {
       </div>
       {g.webhookUrl ? (
         <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          Webhook URL for the {g.label.split(" (")[0]} dashboard: <code className="font-mono text-slate-800">{g.webhookUrl}</code> <CopyButton text={g.webhookUrl} className="btn-ghost btn-sm" />
+          Webhook URL for the {g.label.split(" (")[0]} dashboard: <code className="break-all font-mono text-slate-800">{g.webhookUrl}</code> <CopyButton text={g.webhookUrl} className="btn-ghost btn-sm" />
         </div>
       ) : null}
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Offer at checkout</label>
-        {g.confirmation === "automatic" ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} /> Test mode</label> : null}
+        {g.sandbox ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={testMode} onChange={(e) => setTestMode(e.target.checked)} /> Test mode (sandbox — no real money)</label>
+          : g.testHint ? <span className="text-xs text-slate-500">{g.testHint}</span> : null}
         <button className="btn-primary btn-sm ml-auto" disabled={busy} onClick={save}>{busy ? "Saving…" : "Save"}</button>
       </div>
       {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}

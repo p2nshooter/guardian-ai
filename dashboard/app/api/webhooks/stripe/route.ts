@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB } from "@/lib/db";
 import { gatewayCreds } from "@/lib/billing/gateways";
 import { stripeVerify } from "@/lib/billing/providers";
-import { markOrderPaid } from "@/lib/billing/activate";
+import { markOrderPaid, isFinal } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
   const payload = await req.text();
@@ -18,8 +18,8 @@ export async function POST(req: NextRequest) {
     const s = ev.data?.object || {};
     const orderId = s.client_reference_id || s.metadata?.order_id;
     if (orderId && s.payment_status === "paid") {
-      const r = await markOrderPaid(db, orderId, { gatewayRef: s.payment_intent || s.id, paidUsd: Number(s.amount_total || 0) / 100 });
-      if (!r.ok) return NextResponse.json({ error: r.reason }, { status: 422 });
+      const r = await markOrderPaid(db, orderId, { gatewayRef: s.payment_intent || s.id, paidUsd: Number(s.amount_total || 0) / 100, gateway: "stripe" });
+      if (!isFinal(r)) return NextResponse.json({ error: r.reason }, { status: 422 });
     }
   }
   return NextResponse.json({ received: true });

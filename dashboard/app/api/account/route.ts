@@ -5,7 +5,7 @@
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbRun, now } from "@/lib/db";
-import { loadSession, unauthorized, respond, verifyPassword, hashPassword, passwordProblem, loadEntitlement, issueSession } from "@/lib/auth";
+import { loadSession, unauthorized, respond, verifyPassword, hashPassword, passwordProblem, loadEntitlement, issueSession, signOutOtherSessions } from "@/lib/auth";
 import { readJson, fail, str, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   const problem = passwordProblem(next);
   if (problem) return fail(problem);
   await dbRun(db, `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`, [await hashPassword(next), now(), ctx.session.sub]);
+  await signOutOtherSessions(db, ctx.session.sub);   // this device gets a fresh token below
   await audit(db, ctx.session, "user.password_changed", "user", ctx.session.sub, {}, req);
   const ent = await loadEntitlement(db, ctx.session.sub);
   return issueSession(NextResponse.json({ ok: true }), ent!);

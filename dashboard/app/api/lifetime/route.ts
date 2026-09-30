@@ -11,17 +11,27 @@ import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { SigningUnavailable } from "@/lib/license-sign";
 import { getLifetimePrices, productsOf, LIFETIME_INCLUDES, CARD_MAX_USD } from "@/lib/lifetime";
+import { availableBuilds, imageKey, exeKey } from "@/lib/builds";
+import { getSelfHosted } from "@/lib/selfhosted";
 import { licensesFor, activateDevice, productName } from "@/lib/lifetime-service";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
   const db = getDB(req);
-  const [licenses, tiers] = await Promise.all([licensesFor(db, ctx.session.sub), getLifetimePrices(db)]);
+  const [licenses, tiers, builds] = await Promise.all([licensesFor(db, ctx.session.sub), getLifetimePrices(db), availableBuilds(req)]);
+  // Only files that exist are linked (a build can still be in preparation).
+  const files = (slug: string) => {
+    const p = getSelfHosted(slug);
+    return {
+      images: (p?.images || []).filter((i) => builds.has(imageKey(i.name))).map((i) => i.name),
+      exe: !!p?.exe && builds.has(exeKey(p.exe)),
+    };
+  };
   return respond({
     licenses: licenses.map((l) => ({
       ...l, name: productName(l.product),
-      products: productsOf(l).map((slug) => ({ slug, name: productName(slug), used: l.activations.filter((a) => a.product === slug && !a.revoked_at).length })),
+      products: productsOf(l).map((slug) => ({ slug, name: productName(slug), used: l.activations.filter((a) => a.product === slug && !a.revoked_at).length, files: files(slug) })),
       updatesActive: l.updates_until > new Date().toISOString(),
     })),
     tiers, includes: LIFETIME_INCLUDES, cardMaxUsd: CARD_MAX_USD,

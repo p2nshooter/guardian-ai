@@ -112,6 +112,9 @@ export const V32_EN = {
   "status.refunded": "Refunded",
   "status.revoked": "Revoked",
   "apps.openApp": "Open {name}",
+  "sh.held": "Locked by AXTO — contact support",
+  "pay.error": "We could not confirm this payment. If money left your account, contact support with your order number — nothing is lost.",
+  "pay.canceled": "Payment canceled — nothing was charged.",
 } as const;
 
 export type K32 = keyof typeof V32_EN;
@@ -215,6 +218,9 @@ const id: D = {
   "status.refunded": "Dikembalikan",
   "status.revoked": "Dicabut",
   "apps.openApp": "Buka {name}",
+  "sh.held": "Dikunci oleh AXTO — hubungi dukungan",
+  "pay.error": "Pembayaran ini belum bisa kami konfirmasi. Jika dana sudah terpotong, hubungi dukungan dengan nomor pesanan Anda — tidak ada yang hilang.",
+  "pay.canceled": "Pembayaran dibatalkan — tidak ada yang ditagih.",
 };
 
 const ms: D = {
@@ -315,6 +321,9 @@ const ms: D = {
   "status.refunded": "Dipulangkan",
   "status.revoked": "Dibatalkan",
   "apps.openApp": "Buka {name}",
+  "sh.held": "Dikunci oleh AXTO — hubungi sokongan",
+  "pay.error": "Kami tidak dapat mengesahkan pembayaran ini. Jika wang telah ditolak, hubungi sokongan dengan nombor pesanan anda — tiada apa yang hilang.",
+  "pay.canceled": "Pembayaran dibatalkan — tiada caj dikenakan.",
 };
 
 const de: D = {
@@ -415,6 +424,9 @@ const de: D = {
   "status.refunded": "Erstattet",
   "status.revoked": "Widerrufen",
   "apps.openApp": "{name} öffnen",
+  "sh.held": "Von AXTO gesperrt – Support kontaktieren",
+  "pay.error": "Wir konnten diese Zahlung nicht bestätigen. Falls Geld abgebucht wurde, kontaktieren Sie den Support mit Ihrer Bestellnummer – es geht nichts verloren.",
+  "pay.canceled": "Zahlung abgebrochen – es wurde nichts belastet.",
 };
 
 const fr: D = {
@@ -515,6 +527,9 @@ const fr: D = {
   "status.refunded": "Remboursé",
   "status.revoked": "Révoqué",
   "apps.openApp": "Ouvrir {name}",
+  "sh.held": "Verrouillée par AXTO — contactez le support",
+  "pay.error": "Nous n'avons pas pu confirmer ce paiement. Si vous avez été débité, contactez le support avec votre numéro de commande — rien n'est perdu.",
+  "pay.canceled": "Paiement annulé — rien n'a été débité.",
 };
 
 const it: D = {
@@ -615,6 +630,9 @@ const it: D = {
   "status.refunded": "Rimborsato",
   "status.revoked": "Revocato",
   "apps.openApp": "Apri {name}",
+  "sh.held": "Bloccata da AXTO — contatta il supporto",
+  "pay.error": "Non siamo riusciti a confermare questo pagamento. Se ti è stato addebitato, contatta il supporto con il numero d'ordine: nulla va perso.",
+  "pay.canceled": "Pagamento annullato: nessun addebito.",
 };
 
 const zh: D = {
@@ -715,6 +733,9 @@ const zh: D = {
   "status.refunded": "已退款",
   "status.revoked": "已撤销",
   "apps.openApp": "打开 {name}",
+  "sh.held": "已被 AXTO 锁定——请联系支持",
+  "pay.error": "我们无法确认这笔付款。如果已扣款，请携订单号联系支持——不会有任何损失。",
+  "pay.canceled": "付款已取消——未产生任何扣款。",
 };
 
 const ja: D = {
@@ -815,6 +836,9 @@ const ja: D = {
   "status.refunded": "返金済み",
   "status.revoked": "取り消し済み",
   "apps.openApp": "{name} を開く",
+  "sh.held": "AXTO によりロック中 — サポートにご連絡ください",
+  "pay.error": "このお支払いを確認できませんでした。引き落としがあった場合は、注文番号を添えてサポートにご連絡ください。失われるものはありません。",
+  "pay.canceled": "お支払いはキャンセルされました。請求はありません。",
 };
 
 const hi: D = {
@@ -915,6 +939,9 @@ const hi: D = {
   "status.refunded": "धनवापसी हुई",
   "status.revoked": "निरस्त",
   "apps.openApp": "{name} खोलें",
+  "sh.held": "AXTO द्वारा लॉक — सहायता से संपर्क करें",
+  "pay.error": "हम इस भुगतान की पुष्टि नहीं कर सके। यदि पैसे कट गए हैं, तो अपने ऑर्डर नंबर के साथ सहायता से संपर्क करें — कुछ भी नहीं खोएगा।",
+  "pay.canceled": "भुगतान रद्द — कोई शुल्क नहीं लिया गया।",
 };
 
 const ar: D = {
@@ -1015,6 +1042,9 @@ const ar: D = {
   "status.refunded": "مسترد",
   "status.revoked": "ملغى نهائيًا",
   "apps.openApp": "افتح {name}",
+  "sh.held": "مقفلة من AXTO — تواصل مع الدعم",
+  "pay.error": "تعذّر علينا تأكيد هذه الدفعة. إذا خُصم المبلغ، تواصل مع الدعم مع رقم طلبك — لن يضيع شيء.",
+  "pay.canceled": "أُلغيت الدفعة — لم يُخصم أي مبلغ.",
 };
 
 export const V32: Record<Exclude<Lang, "en">, D> = { id, ms, de, fr, it, zh, ja, hi, ar };

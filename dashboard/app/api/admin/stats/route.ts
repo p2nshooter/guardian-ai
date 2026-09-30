@@ -11,11 +11,16 @@ export async function GET(req: NextRequest) {
   const db = getDB(req);
   const nowIso = new Date().toISOString();
   const d30 = new Date(Date.now() - 30 * 86_400_000).toISOString();
-  const [members, newMembers, subs, rev30, revAll, pending, lic, byox, recent, monthly] = await Promise.all([
+  const [members, newMembers, subs, paying, rev30, revAll, pending, lic, byox, recent, monthly] = await Promise.all([
     dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM users WHERE role = 'client'`),
     dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM users WHERE role = 'client' AND created_at >= ?`, [d30]),
     dbQuery<{ plan: string; cycle: string; n: number }>(db,
       `SELECT plan, cycle, COUNT(*) AS n FROM subscriptions WHERE status = 'active' AND current_period_end > ? GROUP BY plan, cycle`, [nowIso]),
+    // MRR from what each active subscriber actually paid for the current period
+    // (admin-edited prices, discounts; complimentary grants count as $0).
+    dbQuery<{ cycle: string; amount: number }>(db,
+      `SELECT s.cycle, COALESCE(o.amount_usd, 0) AS amount FROM subscriptions s LEFT JOIN orders o ON o.id = s.last_order_id AND o.status = 'paid'
+        WHERE s.status = 'active' AND s.current_period_end > ?`, [nowIso]),
     dbFirst<{ s: number; n: number }>(db, `SELECT COALESCE(SUM(amount_usd), 0) AS s, COUNT(*) AS n FROM orders WHERE status = 'paid' AND paid_at >= ?`, [d30]),
     dbFirst<{ s: number; n: number }>(db, `SELECT COALESCE(SUM(amount_usd), 0) AS s, COUNT(*) AS n FROM orders WHERE status = 'paid'`),
     dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`),
@@ -26,9 +31,8 @@ export async function GET(req: NextRequest) {
       `SELECT substr(paid_at, 1, 7) AS m, SUM(amount_usd) AS s FROM orders WHERE status = 'paid' AND paid_at >= ? GROUP BY m ORDER BY m`,
       [new Date(Date.now() - 365 * 86_400_000).toISOString()]),
   ]);
-  const { PLANS, isPlanId } = await import("@/lib/plans");
   let mrr = 0;
-  for (const r of subs) if (isPlanId(r.plan)) mrr += r.n * (r.cycle === "yearly" ? PLANS[r.plan].yearly / 12 : PLANS[r.plan].monthly);
+  for (const r of paying) mrr += r.cycle === "yearly" ? Number(r.amount) / 12 : Number(r.amount);
   return respond({
     members: members?.n ?? 0, newMembers30d: newMembers?.n ?? 0,
     activeSubscriptions: subs.reduce((a, r) => a + r.n, 0), byPlan: subs,

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDB } from "@/lib/db";
 import { gatewayCreds } from "@/lib/billing/gateways";
 import { xenditVerify } from "@/lib/billing/providers";
-import { markOrderPaid } from "@/lib/billing/activate";
+import { markOrderPaid, isFinal } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
   const db = getDB(req);
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
   }
   const b: any = await req.json().catch(() => ({}));
   if ((b.status === "PAID" || b.status === "SETTLED") && b.external_id) {
-    const r = await markOrderPaid(db, b.external_id, { gatewayRef: b.id, paidLocal: Number(b.paid_amount ?? b.amount ?? 0) });
-    if (!r.ok) return NextResponse.json({ error: r.reason }, { status: 422 });
+    const r = await markOrderPaid(db, b.external_id, { gatewayRef: b.id, paidLocal: Number(b.paid_amount ?? b.amount ?? 0), gateway: "xendit" });
+    if (!isFinal(r)) return NextResponse.json({ error: r.reason }, { status: 422 });
   }
   return NextResponse.json({ received: true });
 }

@@ -35,12 +35,13 @@ export default function AdminLicenses() {
                 <td className="capitalize">{l.product}</td>
                 <td><code className="text-xs">{l.license_key}</code></td>
                 <td className="text-xs">{l.email}</td>
-                <td><StatusBadge status={l.status} /></td>
+                <td><StatusBadge status={l.status} />{l.notes === "admin_hold" ? <div className="mt-1 text-[11px] font-semibold text-rose-600" title="Set by an admin — the member cannot re-issue it and renewals don't lift it">🔒 admin lock</div> : null}</td>
                 <td>{formatDate(l.expires_at)}</td>
                 <td className="max-w-[120px] truncate text-xs">{l.bound_machine_id || "—"}{l.reset_count ? ` (reset ×${l.reset_count})` : ""}</td>
                 <td className="text-xs">{l.last_seen_at ? `${formatDate(l.last_seen_at)} · v${l.last_version || "?"} · ${l.last_ip || ""}` : "never"}</td>
                 <td className="whitespace-nowrap text-right">
-                  {l.status === "active" ? <button className="btn-ghost btn-sm" onClick={() => act(l.id, "suspend")}>Suspend</button> : l.status !== "revoked" ? <button className="btn-ghost btn-sm" onClick={() => act(l.id, "activate")}>Activate</button> : null}
+                  {l.status === "active" ? <button className="btn-ghost btn-sm" onClick={() => act(l.id, "suspend")}>Suspend</button>
+                    : <button className="btn-ghost btn-sm" onClick={() => act(l.id, "activate")}>{l.status === "revoked" ? "Restore" : "Activate"}</button>}
                   {l.bound_machine_id ? <button className="btn-ghost btn-sm" onClick={() => act(l.id, "reset")}>Reset machine</button> : null}
                   {l.status !== "revoked" ? <button className="btn-ghost btn-sm text-rose-600" onClick={() => act(l.id, "revoke")}>Revoke</button> : null}
                 </td>

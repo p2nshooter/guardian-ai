@@ -126,9 +126,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (mid) {
-    if (!lic.bound_machine_id) {
+    let bound = lic.bound_machine_id;
+    if (!bound) {
+      // First machine wins; a second server racing for the same key sees the winner and is refused.
       await dbRun(db, `UPDATE sh_licenses SET bound_machine_id = ?, updated_at = ? WHERE id = ? AND bound_machine_id = ''`, [mid, now(), lic.id]).catch(() => {});
-    } else if (lic.bound_machine_id !== mid) {
+      bound = (await dbFirst<{ m: string }>(db, `SELECT bound_machine_id AS m FROM sh_licenses WHERE id = ?`, [lic.id]).catch(() => null))?.m ?? mid;
+    }
+    if (bound && bound !== mid) {
       return signed(db, { valid: false, reason: "machine_mismatch", error: `License is bound to a different server. Reset the binding at ${PORTAL}.`, reset_url: PORTAL }, sign("machine_mismatch"));
     }
   }
