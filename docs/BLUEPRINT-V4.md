@@ -195,8 +195,8 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 
 | Fase | Aplikasi | Status | Bukti uji |
 |---|---|---|---|
-| 1 | Clipper v4 | ⏳ dikerjakan | — |
-| 2 | AI Studio v4 | ⏳ | — |
+| 1 | Clipper v4 | ✅ selesai | 13 unit test (`tests/clipper.test.ts`); E2E kuota multi-bagian (`apps.e2e.ts`); uji browser 21/21 (lihat §10) |
+| 2 | AI Studio v4 | ⏳ dikerjakan | 8 unit test (`tests/studio.test.ts`) |
 | 3 | Privacy Vault v4 | ⏳ | — |
 | 4 | Security Analyst v4 | ⏳ | — |
 | 5 | Compliance Center v4 | ⏳ | — |
@@ -206,3 +206,36 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 9 | Halaman penawaran situs + serah terima admin otomatis | ⏳ | — |
 
 Setiap fase: kode → unit test → E2E lokal penuh → commit & push → baris ini diperbarui.
+
+---
+
+## 10. Clipper v4 — yang dibangun & buktinya (30 Sep 2026)
+
+**Bug produksi yang ditemukan sebelum rombak:** ffmpeg.wasm dimuat dari CDN, padahal worker-nya wajib berasal dari origin yang sama. Akibatnya ekstraksi audio dan ekspor MP4 **gagal di semua browser** ("ffFail"). Perbaikannya: JS ffmpeg disajikan dari `/vendor/ffmpeg`, sedangkan core 31 MB tetap dari CDN (jsdelivr → unpkg) lewat blob URL.
+
+**Arsitektur:**
+
+| Bagian | File |
+|---|---|
+| Logika murni (dengan unit test) | `lib/clipper/edit.ts`: potong filler/jeda/manual, pemetaan waktu sumber ↔ klip, halaman caption, emoji, jalur kamera (dead zone, batas kecepatan, cut), crop, chunk audio, impor SRT/VTT |
+| Renderer kanvas tunggal (preview = ekspor) | `lib/clipper/render.ts` |
+| Media di perangkat | `lib/clipper/media.ts`: ffmpeg.wasm (WORKERFS), MediaPipe multi-skala (frame penuh + ubin, NMS), MediaRecorder + WebAudio, konversi MP4, thumbnail, poster |
+
+**Temuan penting — pelacakan wajah:** BlazeFace short-range saja tidak menemukan wajah berukuran podcast (≈30% tinggi frame). Model full-range juga tidak didukung FaceDetector MediaPipe (crash 2304 vs 896 anchor). Solusinya deteksi multi-skala dengan ubin: wajah ditemukan di **100% frame** pada video uji.
+
+**Uji browser (Chromium, runtime lokal Cloudflare): 21/21 lulus**
+- Pipeline: transkripsi (1× kuota) → deteksi klip dengan sub-skor.
+- Autosave.
+- Preview menggambar dan berjalan.
+- Pelacakan wajah di perangkat menemukan wajah di 100% frame.
+- Terjemahan caption.
+- Potongan manual memendekkan klip.
+- Render MP4 di perangkat (klip 11 dtk, 6,7 MB, real time).
+- ffmpeg.wasm mengekstrak trek suara.
+- SRT pada jam klip hasil ekspor, thumbnail PNG.
+- Repurpose → bab.
+- Proyek dibuka ulang dengan editnya utuh.
+- Layar HP tanpa overflow.
+- 0 error JavaScript.
+
+**E2E API:** satu video panjang = satu slot kuota lintas semua bagian; bagian tanpa job ditolak (409); id job dan nomor bagian divalidasi.

@@ -128,6 +128,35 @@ test("clipper: history persists (encrypted, CRUD) on Starter", async () => {
   assert.equal((await starter.get("/api/history/clipper")).json.items.length, 1);
 });
 
+test("clipper: a long video is ONE quota slot across its parts; parts need an open job", async () => {
+  // A (fake) Groq key: the provider call itself fails here, but the quota logic runs first.
+  assert.equal((await pro.post("/api/byox/keys", { provider: "groq", value: "gsk_e2e_fake_speech_key_0001" })).status, 200);
+  const [u] = d1(`SELECT id FROM users WHERE email = 'aproo-${RUN}@example.com'`);
+  const used = () => Number(d1(`SELECT COALESCE(SUM(clipper_videos), 0) AS n FROM byox_usage WHERE user_id = '${u.id}'`)[0].n);
+  const send = async (fields: Record<string, string>) => {
+    const fd = new FormData();
+    fd.append("audio", new Blob([new Uint8Array([1, 2, 3, 4])], { type: "audio/mpeg" }), "part.mp3");
+    for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+    const res = await fetch(BASE + "/api/clipper/transcribe", { method: "POST", body: fd, headers: { "cf-connecting-ip": pro.ip, Cookie: pro.cookie }, signal: AbortSignal.timeout(60_000) });
+    return { status: res.status, json: await res.json().catch(() => ({})) as any };
+  };
+  const job = `job${RUN}`.replace(/[^a-z0-9]/g, "").padEnd(10, "0").slice(0, 30);
+  const start = used();
+  const orphan = await send({ job: job + "x", part: "1", parts: "3" });
+  assert.equal(orphan.status, 409, "a later part without an open job is refused");
+  assert.equal(used(), start, "…and costs nothing");
+  assert.equal((await send({ job: "BAD!", part: "0", parts: "2" })).status, 400, "job ids are validated");
+  const first = await send({ job, part: "0", parts: "3" });
+  assert.notEqual(first.status, 409);
+  assert.equal(used(), start + 1, "part 0 counts the video once");
+  for (const part of ["1", "2"]) {
+    const r = await send({ job, part, parts: "3" });
+    assert.notEqual(r.status, 409, `part ${part} belongs to the open job`);
+  }
+  assert.equal(used(), start + 1, "the other parts are free");
+  assert.equal((await send({ job, part: "3", parts: "3" })).status, 400, "part number out of range");
+});
+
 test("clipper: no plan → app is gated (402) for run and transcribe", async () => {
   const np = new Client();
   await np.post("/api/auth/register", { email: `anoplan-${RUN}@example.com`, name: "NoPlan", password: "abcdefgh1", acceptTerms: true });

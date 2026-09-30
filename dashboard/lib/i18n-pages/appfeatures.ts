@@ -33,10 +33,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Kunci Anda sendiri", "Anda membayar penyedia langsung dengan harga mereka — tanpa markup dan tanpa batas pemakaian dari AXTO. Tier gratis (Gemini, Groq) juga bisa."],
     ],
     clipper: [
-      ["Deteksi highlight dengan AI", "Setiap momen dinilai dari hook, kejelasan dan potensi dibagikan, lengkap dengan saran judul dan hashtag."],
-      ["Teks animasi", "Teks kata demi kata dari stempel waktu yang presisi, dalam beberapa gaya."],
-      ["Reframing cerdas", "Keluaran 9:16, 1:1 atau 16:9 dengan pembingkaian yang bisa diatur."],
-      ["Privat sejak awal", "Video Anda tidak pernah meninggalkan perangkat, kecuali trek audio yang dikirim ke penyedia transkripsi Anda sendiri."],
+      ["Skor viral dengan empat sub-skor", "Setiap momen dinilai dari hook, alur, nilai dan tren, lengkap dengan alasan, judul penghenti scroll, caption dan hashtag."],
+      ["8 gaya caption animasi", "Bold Pop, Karaoke, Highlight Box, Neon, Typewriter, Emoji dan lainnya — kata demi kata dari timing presisi, dengan font dan warna Anda."],
+      ["Auto-reframe dengan pelacakan wajah", "Pelacakan wajah di perangkat menjaga pembicara tetap di bingkai untuk 9:16, 4:5, 1:1 atau 16:9 — plus layar terbagi untuk dua pembicara dan mode utuh dengan latar blur."],
+      ["Privat sejak awal", "Video tidak pernah keluar dari perangkat Anda; hanya trek suara terkompresi yang dikirim ke penyedia transkripsi milik Anda."],
     ],
     vault: [
       ["Berjalan di perangkat Anda", "Deteksi dan redaksi berlangsung di browser Anda — teks asli tidak pernah diunggah."],
@@ -77,10 +77,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Kunci anda sendiri", "Anda membayar penyedia terus pada harga mereka — tiada caj tambahan dan tiada had penggunaan daripada AXTO. Peringkat percuma (Gemini, Groq) juga berfungsi."],
     ],
     clipper: [
-      ["Pengesanan sorotan AI", "Setiap detik dinilai dari segi hook, kejelasan dan potensi dikongsi, dengan cadangan tajuk dan hashtag."],
-      ["Kapsyen animasi", "Kapsyen perkataan demi perkataan daripada cap masa yang tepat, dalam beberapa gaya."],
-      ["Pembingkaian pintar", "Output 9:16, 1:1 atau 16:9 dengan pembingkaian boleh laras."],
-      ["Peribadi secara reka bentuk", "Video anda tidak pernah meninggalkan peranti kecuali trek audio yang dihantar kepada penyedia transkripsi anda sendiri."],
+      ["Skor tular dengan empat sub-skor", "Setiap detik dinilai dari cangkuk, aliran, nilai dan trend, berserta sebab, tajuk yang menghentikan tatalan, kapsyen dan tanda pagar."],
+      ["8 gaya kapsyen beranimasi", "Bold Pop, Karaoke, Highlight Box, Neon, Typewriter, Emoji dan lagi — perkataan demi perkataan daripada masa yang tepat, dengan fon dan warna anda."],
+      ["Auto-reframe dengan penjejakan wajah", "Penjejakan wajah pada peranti memastikan penutur kekal dalam bingkai untuk 9:16, 4:5, 1:1 atau 16:9 — serta skrin pisah untuk dua penutur dan mod muat dengan latar kabur."],
+      ["Privasi sejak awal", "Video tidak pernah meninggalkan peranti anda; hanya trek suara termampat dihantar kepada penyedia transkripsi anda sendiri."],
     ],
     vault: [
       ["Berjalan pada peranti anda", "Pengesanan dan redaksi berlaku dalam pelayar anda — teks asal tidak pernah dimuat naik."],
@@ -121,10 +121,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Eigener Schlüssel", "Sie zahlen Ihren Anbieter direkt zu dessen Preis – ohne Aufschlag und ohne Nutzungslimit von AXTO. Kostenlose Kontingente (Gemini, Groq) funktionieren auch."],
     ],
     clipper: [
-      ["KI-Highlight-Erkennung", "Momente werden nach Hook, Klarheit und Teilbarkeit bewertet, jeweils mit Titel- und Hashtag-Vorschlag."],
-      ["Animierte Untertitel", "Wort-für-Wort-Untertitel aus präzisen Zeitstempeln, in mehreren Stilen."],
-      ["Intelligenter Bildausschnitt", "Ausgabe in 9:16, 1:1 oder 16:9 mit einstellbarem Ausschnitt."],
-      ["Privat by Design", "Ihr Video verlässt Ihr Gerät nie – nur die Tonspur geht an Ihren eigenen Transkriptionsanbieter."],
+      ["Viralitäts-Score mit vier Teilwerten", "Jeder Moment wird nach Hook, Fluss, Nutzen und Trend bewertet — mit Begründung, einem Titel, der das Scrollen stoppt, Beitragstext und Hashtags."],
+      ["8 animierte Untertitelstile", "Bold Pop, Karaoke, Highlight Box, Neon, Typewriter, Emoji und mehr — Wort für Wort nach exakten Zeitmarken, in Ihren Schriften und Farben."],
+      ["Auto-Reframe mit Gesichtsverfolgung", "Gesichtsverfolgung auf dem Gerät hält den Sprecher im Bild für 9:16, 4:5, 1:1 oder 16:9 — plus Splitscreen für zwei Sprecher und Einpassen mit unscharfem Hintergrund."],
+      ["Privat von Grund auf", "Das Video verlässt Ihr Gerät nie; nur eine komprimierte Sprachspur geht an Ihren eigenen Transkriptionsanbieter."],
     ],
     vault: [
       ["Läuft auf Ihrem Gerät", "Erkennung und Schwärzung passieren in Ihrem Browser – der Originaltext wird nie hochgeladen."],
@@ -165,10 +165,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Votre propre clé", "Vous payez votre fournisseur directement à son prix — sans marge ni plafond d'usage de la part d'AXTO. Les offres gratuites (Gemini, Groq) fonctionnent aussi."],
     ],
     clipper: [
-      ["Détection des temps forts par IA", "Chaque moment est noté selon l'accroche, la clarté et le potentiel de partage, avec un titre et des hashtags suggérés."],
-      ["Sous-titres animés", "Sous-titres mot à mot à partir d'horodatages précis, en plusieurs styles."],
-      ["Recadrage intelligent", "Sortie en 9:16, 1:1 ou 16:9 avec cadrage ajustable."],
-      ["Privé par conception", "Votre vidéo ne quitte jamais votre appareil, sauf la piste audio envoyée à votre propre fournisseur de transcription."],
+      ["Score de viralité avec quatre sous-scores", "Chaque moment est noté pour l'accroche, la fluidité, la valeur et la tendance, avec la raison, un titre qui arrête le défilement, une légende et des hashtags."],
+      ["8 styles de sous-titres animés", "Bold Pop, Karaoké, Highlight Box, Néon, Typewriter, Emoji et plus — mot à mot à partir de minutages précis, avec vos polices et couleurs."],
+      ["Recadrage auto avec suivi du visage", "Le suivi du visage sur l'appareil garde l'intervenant dans le cadre en 9:16, 4:5, 1:1 ou 16:9 — plus l'écran scindé pour deux intervenants et l'ajustement sur fond flouté."],
+      ["Privé par conception", "La vidéo ne quitte jamais votre appareil ; seule une piste vocale compressée est envoyée à votre propre fournisseur de transcription."],
     ],
     vault: [
       ["Fonctionne sur votre appareil", "La détection et l'anonymisation se font dans votre navigateur — le texte original n'est jamais envoyé."],
@@ -209,10 +209,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["La tua chiave", "Paghi direttamente il tuo provider al suo prezzo — nessun ricarico e nessun limite d'uso da parte di AXTO. Funzionano anche i piani gratuiti (Gemini, Groq)."],
     ],
     clipper: [
-      ["Rilevamento dei momenti salienti con IA", "Ogni momento riceve un punteggio per hook, chiarezza e condivisibilità, con titolo e hashtag suggeriti."],
-      ["Sottotitoli animati", "Sottotitoli parola per parola da timestamp precisi, in diversi stili."],
-      ["Reframing intelligente", "Output 9:16, 1:1 o 16:9 con inquadratura regolabile."],
-      ["Privato per progettazione", "Il tuo video non lascia mai il dispositivo, tranne la traccia audio inviata al tuo provider di trascrizione."],
+      ["Punteggio di viralità con quattro sotto-punteggi", "Ogni momento è valutato per gancio, flusso, valore e tendenza, con il motivo, un titolo che ferma lo scroll, una didascalia e gli hashtag."],
+      ["8 stili di sottotitoli animati", "Bold Pop, Karaoke, Highlight Box, Neon, Typewriter, Emoji e altri — parola per parola da tempi precisi, con i tuoi font e colori."],
+      ["Auto-reframe con tracciamento del volto", "Il tracciamento del volto sul dispositivo tiene l'oratore nell'inquadratura in 9:16, 4:5, 1:1 o 16:9 — più lo schermo diviso per due oratori e l'adattamento con sfondo sfocato."],
+      ["Privato per progettazione", "Il video non lascia mai il tuo dispositivo; solo una traccia vocale compressa va al tuo fornitore di trascrizione."],
     ],
     vault: [
       ["Funziona sul tuo dispositivo", "Rilevamento e oscuramento avvengono nel browser — il testo originale non viene mai caricato."],
@@ -253,10 +253,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["自带密钥", "您按服务商价格直接付费——AXTO 不加价、不限用量。免费额度（Gemini、Groq）同样可用。"],
     ],
     clipper: [
-      ["AI 精彩片段识别", "按吸引力、清晰度和传播性为每个片段打分，并给出建议标题和话题标签。"],
-      ["动态字幕", "基于精确时间戳的逐字字幕，多种样式可选。"],
-      ["智能重构画面", "输出 9:16、1:1 或 16:9，构图可调。"],
-      ["隐私优先设计", "视频始终留在您的设备上，只有音轨会发送给您自己的转写服务商。"],
+      ["带四项子评分的爆款指数", "每个片段都按开场、连贯、价值和热度打分，并附上理由、让人停下滑动的标题、文案和话题标签。"],
+      ["8 种动态字幕样式", "Bold Pop、卡拉 OK、高亮框、霓虹、打字机、表情等——基于精确时间逐词显示，使用您的字体和颜色。"],
+      ["人脸追踪自动重构画面", "设备端人脸追踪让发言人始终在 9:16、4:5、1:1 或 16:9 画面中——另有双人分屏和模糊背景完整画面。"],
+      ["隐私为先", "视频永远不会离开您的设备；只有压缩的语音轨会发送到您自己的转写服务商。"],
     ],
     vault: [
       ["在您的设备上运行", "检测与脱敏都在浏览器中完成——原文绝不会上传。"],
@@ -297,10 +297,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["ご自身のキー", "プロバイダーにその価格で直接お支払い。AXTO による上乗せや利用上限はありません。無料枠（Gemini、Groq）も使えます。"],
     ],
     clipper: [
-      ["AI ハイライト検出", "各シーンをフック・わかりやすさ・拡散性で採点し、タイトルとハッシュタグを提案します。"],
-      ["アニメーション字幕", "正確なタイムスタンプに基づく単語ごとの字幕。複数のスタイルに対応。"],
-      ["スマートリフレーム", "9:16、1:1、16:9 で出力。構図は調整可能です。"],
-      ["プライバシー重視の設計", "動画は端末から出ません。ご自身の文字起こしプロバイダーに送るのは音声トラックだけです。"],
+      ["4 つの内訳付きバイラルスコア", "各場面をフック・流れ・価値・トレンドで採点し、理由、スクロールを止めるタイトル、キャプション、ハッシュタグを添えます。"],
+      ["8 種類のアニメーション字幕", "Bold Pop、カラオケ、ハイライトボックス、ネオン、タイプライター、絵文字など——正確なタイミングで単語ごとに、お好みのフォントと色で。"],
+      ["顔追跡による自動リフレーム", "端末上の顔追跡で話者を 9:16・4:5・1:1・16:9 の画面内に保ちます——2 人用の分割画面や、ぼかし背景のフィットも。"],
+      ["設計段階からプライベート", "動画は端末から出ません。圧縮した音声トラックだけが、ご自身の文字起こしプロバイダーに送られます。"],
     ],
     vault: [
       ["お使いの端末で実行", "検出と墨消しはブラウザ内で行われ、元のテキストはアップロードされません。"],
@@ -341,10 +341,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["अपनी कुंजी", "आप प्रदाता को सीधे उनकी कीमत पर भुगतान करते हैं — AXTO की ओर से कोई मार्कअप या उपयोग-सीमा नहीं। मुफ़्त टियर (Gemini, Groq) भी काम करते हैं।"],
     ],
     clipper: [
-      ["AI हाइलाइट पहचान", "हर पल को हुक, स्पष्टता और शेयर-योग्यता पर अंक मिलते हैं, साथ में सुझाया गया शीर्षक और हैशटैग।"],
-      ["एनिमेटेड कैप्शन", "सटीक टाइमस्टैम्प से शब्द-दर-शब्द कैप्शन, कई शैलियों में।"],
-      ["स्मार्ट रीफ़्रेमिंग", "9:16, 1:1 या 16:9 आउटपुट, समायोज्य फ़्रेमिंग के साथ।"],
-      ["डिज़ाइन से निजी", "आपका वीडियो कभी आपके डिवाइस से बाहर नहीं जाता — केवल ऑडियो ट्रैक आपके अपने ट्रांसक्रिप्शन प्रदाता को भेजा जाता है।"],
+      ["चार उप-स्कोर के साथ वायरल स्कोर", "हर पल को हुक, प्रवाह, मूल्य और ट्रेंड पर आँका जाता है — कारण, स्क्रॉल रोकने वाला शीर्षक, कैप्शन और हैशटैग के साथ।"],
+      ["8 एनिमेटेड कैप्शन स्टाइल", "Bold Pop, Karaoke, Highlight Box, Neon, Typewriter, Emoji और भी — सटीक समय से शब्द-दर-शब्द, आपके फ़ॉन्ट और रंगों में।"],
+      ["चेहरा ट्रैकिंग से ऑटो-रीफ़्रेम", "डिवाइस पर चेहरा ट्रैकिंग वक्ता को 9:16, 4:5, 1:1 या 16:9 फ़्रेम में रखती है — साथ ही दो वक्ताओं के लिए स्प्लिट-स्क्रीन और धुंधली पृष्ठभूमि वाला फ़िट।"],
+      ["शुरू से निजी", "वीडियो कभी आपके डिवाइस से बाहर नहीं जाता; केवल संपीड़ित आवाज़ ट्रैक आपके अपने ट्रांसक्रिप्शन प्रदाता को जाता है।"],
     ],
     vault: [
       ["आपके डिवाइस पर चलता है", "पहचान और रिडैक्शन आपके ब्राउज़र में होते हैं — मूल टेक्स्ट कभी अपलोड नहीं होता।"],
@@ -385,10 +385,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["مفتاحك الخاص", "تدفع لمزوّدك مباشرةً بسعره — بلا هامش ربح ولا حد استخدام من AXTO. الباقات المجانية (Gemini وGroq) تعمل أيضًا."],
     ],
     clipper: [
-      ["اكتشاف اللقطات المميزة بالذكاء الاصطناعي", "تُقيَّم كل لحظة حسب قوة الجذب والوضوح وقابلية المشاركة، مع عنوان ووسوم مقترحة."],
-      ["ترجمة نصية متحركة", "ترجمة كلمة بكلمة من طوابع زمنية دقيقة، بأنماط متعددة."],
-      ["إعادة تأطير ذكية", "إخراج بنسبة 9:16 أو 1:1 أو 16:9 مع تأطير قابل للضبط."],
-      ["خصوصية منذ التصميم", "لا يغادر الفيديو جهازك أبدًا، باستثناء المسار الصوتي المُرسل إلى مزوّد النسخ الخاص بك."],
+      ["مؤشر انتشار مع أربعة مؤشرات فرعية", "تُقيَّم كل لحظة حسب الافتتاح والتسلسل والقيمة والرواج، مع السبب وعنوان يوقف التمرير ونص للمنشور ووسوم."],
+      ["8 أنماط ترجمة نصية متحركة", "Bold Pop وKaraoke وHighlight Box وNeon وTypewriter وEmoji وغيرها — كلمة بكلمة وفق توقيت دقيق، بخطوطك وألوانك."],
+      ["إعادة تأطير تلقائية بتتبع الوجه", "يُبقي تتبع الوجه على الجهاز المتحدث داخل الإطار بمقاسات 9:16 و4:5 و1:1 و16:9 — مع شاشة مقسومة لمتحدثين واحتواء فوق خلفية ضبابية."],
+      ["الخصوصية أولًا", "لا يغادر الفيديو جهازك أبدًا؛ يُرسَل فقط مسار صوتي مضغوط إلى مزوّد التفريغ الخاص بك."],
     ],
     vault: [
       ["يعمل على جهازك", "يتم الاكتشاف والحجب داخل متصفحك — ولا يُرفع النص الأصلي أبدًا."],
