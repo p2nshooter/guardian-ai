@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
   const db = getDB(req);
   const [subscription, orders] = await Promise.all([
     dbFirst(db, `SELECT plan, cycle, status, current_period_start, current_period_end FROM subscriptions WHERE user_id = ?`, [ctx.session.sub]),
-    dbQuery(db, `SELECT id, invoice_no, plan, cycle, amount_usd, currency, amount_local, gateway, status, created_at, paid_at
+    dbQuery(db, `SELECT id, invoice_no, plan, cycle, amount_usd, currency, amount_local, gateway, status, created_at, paid_at,
+                        COALESCE(json_extract(meta, '$.method'), '') AS method
                    FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`, [ctx.session.sub]),
   ]);
   return respond({ subscription, orders }, ctx);

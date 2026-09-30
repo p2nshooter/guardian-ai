@@ -11,7 +11,7 @@
  * The PRICE always comes from our own order row, never from the browser.
  * ============================================================================ */
 import { absoluteUrl, SITE } from "../site";
-import { ENV_KEY, CRYPTO_ASSETS, type GatewayId } from "./gateways";
+import { ENV_KEY, CRYPTO_ASSETS, cardRoute, gatewayCredsFor, type GatewayId } from "./gateways";
 
 /** The credential set's environment (Admin → Payments → Sandbox / Live): sandbox = the provider's test API. */
 const isSandbox = (c: Record<string, string>) => c[ENV_KEY] === "sandbox";
@@ -158,13 +158,15 @@ export async function paypalVerifyWebhook(c: Record<string, string>, headers: He
 }
 
 // ── Xendit (IDR) ──────────────────────────────────────────────────────────
-export async function xenditCreate(c: Record<string, string>, o: OrderForPayment): Promise<{ url: string; ref: string }> {
+export async function xenditCreate(c: Record<string, string>, o: OrderForPayment, opts: { paymentMethods?: string[]; currency?: "IDR" | "USD" } = {}): Promise<{ url: string; ref: string }> {
+  const usd = opts.currency === "USD";
   const r = await fetch("https://api.xendit.co/v2/invoices", {
     method: "POST",
     headers: { Authorization: `Basic ${btoa(`${c.secret_key}:`)}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      external_id: o.id, amount: o.amountIdr, currency: "IDR", payer_email: o.email, description: o.description,
+      external_id: o.id, amount: usd ? Number(o.amountUsd.toFixed(2)) : o.amountIdr, currency: usd ? "USD" : "IDR", payer_email: o.email, description: o.description,
       invoice_duration: 86400, success_redirect_url: successUrl(o), failure_redirect_url: cancelUrl(o),
+      ...(opts.paymentMethods?.length ? { payment_methods: opts.paymentMethods } : {}),
     }),
   });
   const j: any = await r.json();
@@ -181,7 +183,7 @@ const midtransBase = (c: Record<string, string>) =>
   isSandbox(c) ? "https://app.sandbox.midtrans.com" : "https://app.midtrans.com";
 const midtransApi = (c: Record<string, string>) => (isSandbox(c) ? "https://api.sandbox.midtrans.com" : "https://api.midtrans.com");
 
-export async function midtransCreate(c: Record<string, string>, o: OrderForPayment): Promise<string> {
+export async function midtransCreate(c: Record<string, string>, o: OrderForPayment, opts: { enabledPayments?: string[] } = {}): Promise<string> {
   const r = await fetch(`${midtransBase(c)}/snap/v1/transactions`, {
     method: "POST",
     headers: { Authorization: `Basic ${btoa(`${c.server_key}:`)}`, "Content-Type": "application/json", Accept: "application/json" },
@@ -190,6 +192,7 @@ export async function midtransCreate(c: Record<string, string>, o: OrderForPayme
       item_details: [{ id: o.id, price: o.amountIdr, quantity: 1, name: o.description.slice(0, 50) }],
       customer_details: { email: o.email },
       callbacks: { finish: successUrl(o) },
+      ...(opts.enabledPayments?.length ? { enabled_payments: opts.enabledPayments, credit_card: { secure: true } } : {}),
     }),
   });
   const j: any = await r.json();
@@ -279,6 +282,14 @@ export async function testConnection(id: GatewayId, c: Record<string, string>): 
         const bad = CRYPTO_ASSETS.filter((a) => c[a.key] && !ADDRESS[a.key]?.test(String(c[a.key]).trim())).map((a) => `${a.asset} ${a.network}`);
         const set = CRYPTO_ASSETS.filter((a) => c[a.key]).length;
         return bad.length ? { ok: false, message: `These addresses don't look valid: ${bad.join(", ")}.` } : { ok: true, message: `${set} wallet address${set === 1 ? "" : "es"} look valid. Send a small test transfer before going live.` };
+      }
+      case "card": {
+        const route = cardRoute(c);
+        if (!route) return { ok: false, message: "Set the processor to xendit or midtrans." };
+        const pc = await gatewayCredsFor(route.processor, isSandbox(c) ? "sandbox" : "live");
+        if (!pc) return { ok: false, message: `Add the ${route.processor === "xendit" ? "Xendit" : "Midtrans"} ${env} credentials first (its own card on this page).` };
+        const t = await testConnection(route.processor, pc);
+        return { ok: t.ok, message: `Cards run through ${route.processor === "xendit" ? "Xendit" : "Midtrans"} in ${route.currency}. ${t.message}${t.ok ? " Make sure card payments are enabled and your BNI account is the settlement account in that dashboard." : ""}` };
       }
       case "manual":
         return c.account_number && c.account_name

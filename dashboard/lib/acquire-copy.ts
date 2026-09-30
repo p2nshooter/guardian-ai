@@ -36,7 +36,7 @@ const en = {
   selfHostedLead: "Docker images for x86-64 and ARM64, the AXTO Setup installer for Windows, macOS and Linux, signed licences and offline activation.",
   engineTitle: "The business engine",
   engine: [
-    ["Payments, worldwide", "PayPal, card (Stripe), Indonesian QRIS / virtual accounts / e-wallets (Xendit, Midtrans), crypto via NOWPayments, direct wallet transfers confirmed on-chain, and bank transfer — each with separate live and sandbox credentials, encrypted."],
+    ["Payments, worldwide", "PayPal, credit / debit cards processed in Indonesia and paid out to the company's bank account (Xendit or Midtrans; Stripe too where available), Indonesian QRIS / virtual accounts / e-wallets, crypto via NOWPayments, direct wallet transfers confirmed on-chain, and bank transfer — each with separate live and sandbox credentials, encrypted."],
     ["Subscriptions and lifetime licences", "Four plans with time-based pro-rating, invoices, renewal reminders; perpetual licences for 1–100 devices with Ed25519-signed offline activation."],
     ["Admin portal", "Members, orders and payments, licences, lifetime licences, support inbox with AI assistant, plans and pricing, payment and e-mail settings, releases and a full audit log."],
     ["Growth", "Public site with SEO pages for every app and jurisdiction, a blog, help guides, structured data, installable PWA and ad-ready public pages."],
@@ -147,7 +147,7 @@ const id: AcqCopy = {
   selfHostedLead: "Image Docker untuk x86-64 dan ARM64, installer AXTO Setup untuk Windows, macOS dan Linux, lisensi bertanda tangan dan aktivasi offline.",
   engineTitle: "Mesin bisnisnya",
   engine: [
-    ["Pembayaran, dari seluruh dunia", "PayPal, kartu (Stripe), QRIS / virtual account / e-wallet Indonesia (Xendit, Midtrans), kripto via NOWPayments, transfer dompet langsung yang dikonfirmasi on-chain, dan transfer bank — masing-masing dengan kredensial live dan sandbox terpisah, terenkripsi."],
+    ["Pembayaran, dari seluruh dunia", "PayPal, kartu kredit / debit yang diproses di Indonesia dan dicairkan ke rekening bank perusahaan (Xendit atau Midtrans; juga Stripe bila tersedia), QRIS / virtual account / e-wallet Indonesia, kripto via NOWPayments, transfer dompet langsung yang dikonfirmasi on-chain, dan transfer bank — masing-masing dengan kredensial live dan sandbox terpisah, terenkripsi."],
     ["Langganan dan lisensi seumur hidup", "Empat paket dengan pro-rata berbasis waktu, invoice, pengingat perpanjangan; lisensi permanen untuk 1–100 perangkat dengan aktivasi offline bertanda tangan Ed25519."],
     ["Portal admin", "Anggota, pesanan dan pembayaran, lisensi, lisensi seumur hidup, kotak masuk dukungan dengan asisten AI, paket dan harga, pengaturan pembayaran dan email, rilis, serta log audit lengkap."],
     ["Pertumbuhan", "Situs publik dengan halaman SEO untuk setiap aplikasi dan yurisdiksi, blog, panduan bantuan, data terstruktur, PWA yang bisa dipasang, dan halaman publik siap iklan."],

@@ -11,10 +11,10 @@ export const metadata: Metadata = pageMeta({ title: "Sub-processors", descriptio
 const ROWS: { name: string; purpose: string; data: string; where: string; when: string }[] = [
   { name: "Cloudflare, Inc.", purpose: "Hosting, database (D1), encrypted file storage (R2), caching and network security", data: "Account data, encrypted saved work, operational logs", where: "Global edge network", when: "Always" },
   { name: "Resend, Inc.", purpose: "Transactional e-mail (sign-in, receipts, reminders, support replies)", data: "E-mail address, name, message content", where: "United States", when: "Always" },
-  { name: "Stripe, Inc.", purpose: "Card payments", data: "Name, e-mail, payment details (held by Stripe)", where: "United States / global", when: "Only if you pay by card" },
+  { name: "Stripe, Inc.", purpose: "Card payments", data: "Name, e-mail, payment details (held by Stripe)", where: "United States / global", when: "Only if you pay by card through Stripe" },
   { name: "PayPal Holdings, Inc.", purpose: "PayPal payments", data: "Name, e-mail, payment details (held by PayPal)", where: "Global", when: "Only if you pay with PayPal" },
-  { name: "PT Xendit Teknologi Indonesia", purpose: "Indonesian payments (QRIS, virtual account, e-wallet)", data: "Name, e-mail, payment details", where: "Indonesia", when: "Only if you pay with Xendit" },
-  { name: "PT Midtrans", purpose: "Indonesian payments", data: "Name, e-mail, payment details", where: "Indonesia", when: "Only if you pay with Midtrans" },
+  { name: "PT Xendit Teknologi Indonesia", purpose: "Indonesian payments (QRIS, virtual account, e-wallet) and credit / debit cards", data: "Name, e-mail, payment details (card data is held by Xendit, never by AXTO)", where: "Indonesia", when: "Only if you pay with Xendit or by card through Xendit" },
+  { name: "PT Midtrans", purpose: "Indonesian payments and credit / debit cards", data: "Name, e-mail, payment details (card data is held by Midtrans, never by AXTO)", where: "Indonesia", when: "Only if you pay with Midtrans or by card through Midtrans" },
   { name: "NOWPayments", purpose: "Crypto payments", data: "Order reference, amount, wallet transaction", where: "Global", when: "Only if you pay with NOWPayments" },
 ];
 

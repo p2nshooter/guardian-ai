@@ -61,7 +61,7 @@ function OrdersInner() {
                   <td>{o.email}</td>
                   <td className="capitalize">{o.plan} · {o.cycle}</td>
                   <td className="whitespace-nowrap">{formatMoney(o.amount_usd)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR")}</span> : null}</td>
-                  <td>{o.gateway}{isTest(o) ? <span className="badge-amber ml-1" title="Paid in the provider's sandbox — not revenue">TEST</span> : null}</td>
+                  <td>{o.gateway}{/"method"\s*:\s*"card"/.test(o.meta || "") ? <span className="badge-gray ml-1">card</span> : null}{isTest(o) ? <span className="badge-amber ml-1" title="Paid in the provider's sandbox — not revenue">TEST</span> : null}</td>
                   <td className="max-w-[200px] truncate text-xs">{proof(o) || o.gateway_ref || "—"}</td>
                   <td><StatusBadge status={o.status} />{o.invoice_no ? <span className="block text-[11px] text-slate-400">{o.invoice_no}</span> : null}</td>
                   <td className="whitespace-nowrap text-right">

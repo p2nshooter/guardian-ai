@@ -13,7 +13,7 @@ import { dbFirst, dbQuery, getR2, now } from "../db";
 import { readSecure, writeSecure } from "../secure-store";
 import { decryptObj } from "../gateway-crypto";
 
-export type GatewayId = "stripe" | "paypal" | "xendit" | "midtrans" | "nowpayments" | "manual" | "crypto";
+export type GatewayId = "stripe" | "paypal" | "card" | "xendit" | "midtrans" | "nowpayments" | "manual" | "crypto";
 
 /** Every automatic gateway keeps TWO separate credential sets. "sandbox" = the
  * provider's test environment (no real money), "live" = real payments. */
@@ -55,6 +55,14 @@ export const GATEWAYS: GatewayInfo[] = [
     ],
     requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal", events: "PAYMENT.CAPTURE.COMPLETED",
     keysAt: "developer.paypal.com → Apps & Credentials (Sandbox / Live tabs) → your app" },
+  { id: "card", label: "Credit / debit card", methods: "Visa, Mastercard, JCB, Amex — processed in Indonesia and paid out to our BNI account", currency: "IDR", confirmation: "automatic", envs: ["live", "sandbox"],
+    fields: [
+      { key: "processor", label: "Card processor: xendit or midtrans", placeholder: "xendit", hint: "Uses that processor's credentials from its own card on this page (same Live / Sandbox tab)." },
+      { key: "charge_currency", label: "Charge currency: IDR, or USD (Xendit accounts with USD cards enabled)", placeholder: "IDR" },
+      { key: "settlement_account", label: "Settlement account (shown to admins only)", placeholder: "BNI · IDR 2090571484 · a.n. YUSRON EFENDI" },
+    ],
+    requires: [["processor"]],
+    keysAt: "In the Xendit / Midtrans dashboard: enable card payments and set your BNI account as the settlement (withdrawal) account — the processor then pays card revenue into BNI automatically." },
   { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
     fields: [
       { key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…", sandboxPlaceholder: "sk_test_…", prefix: { live: ["sk_live_", "rk_live_"], sandbox: ["sk_test_", "rk_test_"] } },
@@ -106,6 +114,16 @@ export const GATEWAYS: GatewayInfo[] = [
     ],
     requires: [["account_number", "account_name"], ["instructions"]] },
 ];
+
+/** The Indonesian processor that runs card payments, and its charge currency. */
+export const CARD_PROCESSORS = ["xendit", "midtrans"] as const;
+export type CardProcessor = (typeof CARD_PROCESSORS)[number];
+export function cardRoute(c: Record<string, string> | null | undefined): { processor: CardProcessor; currency: "IDR" | "USD" } | null {
+  const p = String(c?.processor || "").trim().toLowerCase();
+  if (!(CARD_PROCESSORS as readonly string[]).includes(p)) return null;
+  const currency = p === "xendit" && String(c?.charge_currency || "").trim().toUpperCase() === "USD" ? "USD" : "IDR";
+  return { processor: p as CardProcessor, currency };
+}
 
 export const CRYPTO_ASSETS: { key: string; asset: string; network: string }[] = [
   { key: "usdt_trc20", asset: "USDT", network: "TRC20 (Tron)" },
@@ -261,7 +279,14 @@ export async function activeGateways(_db: any, opts: { fresh?: boolean } = {}): 
     const s = await paymentSettings(opts);
     return GATEWAYS.flatMap((g) => {
       const st = s.gateways[g.id];
-      return st?.active && isConfigured(g, st[st.mode]) ? [{ ...g, mode: st.mode }] : [];
+      if (!st?.active || !isConfigured(g, st[st.mode])) return [];
+      if (g.id === "card") {
+        const route = cardRoute(st[st.mode]);
+        const pInfo = route ? gatewayInfo(route.processor) : undefined;
+        const pSt = route ? s.gateways[route.processor] : undefined;
+        if (!route || !pInfo || !pSt || !isConfigured(pInfo, pSt[st.mode])) return [];
+      }
+      return [{ ...g, mode: st.mode }];
     });
   } catch {
     return [];

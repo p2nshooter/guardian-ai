@@ -2,13 +2,15 @@
  *   {plan, cycle, gateway, apps?}                        subscription period
  *   {kind:"lifetime", scope, product?, devices, gateway} lifetime licence (one-time)
  * Creates an order at OUR price (never the browser's) and returns the hosted
- * payment page URL. Manual bank transfer and crypto return instructions instead. */
+ * payment page URL. Manual bank transfer and crypto return instructions instead.
+ * "card" runs through Xendit or Midtrans (Admin → Payment & email → Credit /
+ * debit card), which pay card revenue out to our BNI account. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { getDB, getEnv, dbRun, newId, now } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS } from "@/lib/plans";
-import { gatewayCreds, gatewayInfo, usdIdrRate, toIdr, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
+import { gatewayCreds, gatewayCredsFor, gatewayInfo, cardRoute, usdIdrRate, toIdr, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
 import { stripeCreate, paypalCreate, xenditCreate, midtransCreate, nowpaymentsCreate, type OrderForPayment } from "@/lib/billing/providers";
 import { readJson, fail, audit } from "@/lib/http";
 import { SITE } from "@/lib/site";
@@ -38,6 +40,17 @@ export async function POST(req: NextRequest) {
   if (!creds) return fail("That payment method is not available right now. Please choose another.", 503);
   // Sandbox = the provider's test environment: the order is a TEST order (never revenue).
   const env = creds[ENV_KEY] === "sandbox" ? "sandbox" : "live";
+  // Cards run through an Indonesian processor (Xendit / Midtrans) that settles to our BNI account;
+  // the order is filed under that processor so its webhook confirms it.
+  const card = gateway === "card" ? cardRoute(creds) : null;
+  let payCreds = creds;
+  if (gateway === "card") {
+    const pc = card ? await gatewayCredsFor(card.processor, env) : null;
+    if (!card || !pc) return fail("Card payments are not available right now. Please choose another method.", 503);
+    payCreds = pc;
+  }
+  const orderGateway = card ? card.processor : gateway;
+  const orderCurrency = card ? card.currency : info.currency;
 
   // Lifetime: the price comes from the (admin-editable) tier table — the browser only picks a tier.
   let amountUsd: number;
@@ -54,8 +67,8 @@ export async function POST(req: NextRequest) {
   } else {
     amountUsd = priceFor(await getPlanPrices(db), plan, cycle);
   }
-  const rate = info.currency === "IDR" ? await usdIdrRate(db, getEnv(req).KV) : 0;
-  const baseIdr = info.currency === "IDR" ? toIdr(amountUsd, rate) : 0;
+  const rate = orderCurrency === "IDR" ? await usdIdrRate(db, getEnv(req).KV) : 0;
+  const baseIdr = orderCurrency === "IDR" ? toIdr(amountUsd, rate) : 0;
   // Manual bank transfers get a unique 3-digit code so each transfer identifies its order.
   const unique = gateway === "manual" && baseIdr ? await uniqueIdrAmount(db, baseIdr) : null;
   const amountIdr = unique ? unique.amount : baseIdr;
@@ -72,9 +85,9 @@ export async function POST(req: NextRequest) {
   await dbRun(db,
     `INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
      VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)`,
-    [id, ctx.session.sub, ctx.session.email, lifetime ? "lifetime" : plan, lifetime ? "once" : cycle, amountUsd, info.currency, amountIdr, gateway,
-     JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta }), now()]);
-  await audit(db, ctx.session, "order.created", "order", id, { plan: lifetime ? "lifetime" : plan, cycle: lifetime ? "once" : cycle, gateway, env, amountUsd, lifetime: lifetimeMeta }, req);
+    [id, ctx.session.sub, ctx.session.email, lifetime ? "lifetime" : plan, lifetime ? "once" : cycle, amountUsd, orderCurrency, amountIdr, orderGateway,
+     JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, method: card ? "card" : undefined }), now()]);
+  await audit(db, ctx.session, "order.created", "order", id, { plan: lifetime ? "lifetime" : plan, cycle: lifetime ? "once" : cycle, gateway, processor: card?.processor, env, amountUsd, lifetime: lifetimeMeta }, req);
 
   const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: lifetime ? "/app/lifetime" : undefined };
   try {
@@ -82,6 +95,10 @@ export async function POST(req: NextRequest) {
     switch (gateway) {
       case "stripe": url = await stripeCreate(creds, o); break;
       case "paypal": ({ url, ref } = await paypalCreate(creds, o)); break;
+      case "card":
+        if (card!.processor === "xendit") ({ url, ref } = await xenditCreate(payCreds, o, { paymentMethods: ["CREDIT_CARD"], currency: card!.currency }));
+        else url = await midtransCreate(payCreds, o, { enabledPayments: ["credit_card"] });
+        break;
       case "xendit": ({ url, ref } = await xenditCreate(creds, o)); break;
       case "midtrans": url = await midtransCreate(creds, o); break;
       case "nowpayments": ({ url, ref } = await nowpaymentsCreate(creds, o)); break;

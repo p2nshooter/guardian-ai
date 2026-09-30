@@ -18,7 +18,7 @@ import { PM } from "@/lib/i18n-pages/planmatrix";
 import PlanMatrix from "@/components/plans/PlanMatrix";
 
 interface Options { plans: { id: PlanId; name: string; monthly: number; yearly: number }[]; gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; usdIdr: number }
-interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; status: string; created_at: string; paid_at: string }[] }
+interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; method?: string; status: string; created_at: string; paid_at: string }[] }
 
 const SH_APPS: [string, string][] = [["guardian", "Guardian AI"], ["orchestra", "Orchestra AI"], ["vault", "Vault"], ["edge", "Edge"], ["soc", "SOC"], ["compliance", "Compliance"], ["sentinel", "Sentinel"], ["antivirus", "Antivirus"], ["studio", "Studio"], ["legal", "Legal (self-hosted)"]];
 
@@ -184,7 +184,7 @@ function BillingInner() {
                     <tr key={o.id}>
                       <td>{formatDate(o.created_at, lang)}</td>
                       <td>{o.plan === "lifetime" ? `${t.lifetime} · ${t.once}` : `${PLANS[o.plan as PlanId]?.name || o.plan} · ${o.cycle === "yearly" ? t.yearly : t.monthly}`}</td>
-                      <td>{opts.gateways.find((g) => g.id === o.gateway)?.label || o.gateway}</td>
+                      <td>{opts.gateways.find((g) => g.id === (o.method === "card" ? "card" : o.gateway))?.label || (o.method === "card" ? "Credit / debit card" : o.gateway)}</td>
                       <td>{formatMoney(o.amount_usd, "USD", lang)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR", lang)}</span> : null}</td>
                       <td><StatusBadge status={o.status} label={statusLabel(tg, o.status)} /></td>
                       <td>{o.status === "paid" ? <a href={`/api/billing/invoice/${o.id}`} target="_blank" rel="noopener" className="text-sm font-semibold">{t.invoice}</a> : null}</td>

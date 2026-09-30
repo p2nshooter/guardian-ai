@@ -38,7 +38,7 @@ export default function PricingPage() {
         <div className="container-page">
           <PlanMatrix t={PM.en} />
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="card-pad"><div className="font-semibold">💳 Pay your way</div><p className="mt-1 text-sm text-slate-600">Card (Stripe), PayPal, Indonesian QRIS / virtual account / e-wallet (Xendit, Midtrans), crypto (NOWPayments) or bank transfer.</p></div>
+            <div className="card-pad"><div className="font-semibold">💳 Pay your way</div><p className="mt-1 text-sm text-slate-600">PayPal, credit / debit card (Visa, Mastercard, JCB, Amex), Indonesian QRIS / virtual account / e-wallet (Xendit, Midtrans), crypto (NOWPayments or direct wallets) or bank transfer.</p></div>
             <div className="card-pad"><div className="font-semibold">🔁 Change anytime</div><p className="mt-1 text-sm text-slate-600">Upgrade or downgrade whenever you like — unused time is converted into extra days on the new plan.</p></div>
             <div className="card-pad"><div className="font-semibold">🏢 Lifetime & volume</div><p className="mt-1 text-sm text-slate-600">Perpetual offline licences for 1–100 devices and custom enterprise terms. <Link href="#lifetime">See lifetime prices →</Link></p></div>
           </div>
