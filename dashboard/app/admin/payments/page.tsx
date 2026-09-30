@@ -19,6 +19,10 @@ interface Gateway {
 }
 type Msg = { tone: "success" | "error" | "info" | "warn"; text: string } | null;
 const ENV_LABEL: Record<Env, string> = { live: "Live", sandbox: "Sandbox" };
+/** Words that fit the method: API keys, bank details or wallet addresses. */
+const nouns = (g: Gateway, env: Env) => g.id === "manual" ? { thing: "bank details", check: "Check details" }
+  : g.id === "crypto" ? { thing: "wallet addresses", check: "Check addresses" }
+  : { thing: `${ENV_LABEL[env]} credentials`, check: "Test connection" };
 
 export default function PaymentsPage() {
   const [data, setData] = useState<{ gateways: Gateway[]; email: { fields: Field[]; values: Record<string, string>; configured: boolean } } | null>(null);
@@ -119,7 +123,7 @@ function GatewayCard({ g, onChange }: { g: Gateway; onChange: () => void }) {
           </label>
         </div>
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Keys checkout uses</div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{hasSandbox ? "Keys checkout uses" : "Environment"}</div>
           {hasSandbox ? (
             <div className="mt-2 inline-flex rounded-lg border border-slate-200 bg-white p-0.5" role="radiogroup" aria-label="Environment">
               {(["live", "sandbox"] as Env[]).map((e) => (
@@ -172,13 +176,14 @@ function EnvForm({ g, env, onChange }: { g: Gateway; env: Env; onChange: () => v
   const [values, setValues] = useState<Record<string, string | null>>(saved);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
-  const name = g.envs.includes("sandbox") ? `${ENV_LABEL[env]} ` : "";
+  const { thing, check } = nouns(g, env);
+  const Thing = thing[0].toUpperCase() + thing.slice(1);
 
   async function save() {
     setBusy("save"); setMsg(null);
     const r = await api("/api/admin/gateways", { method: "PUT", body: { gateway: g.id, env, credentials: values } });
     setBusy("");
-    if (r.ok) { setMsg({ tone: "success", text: `${name}credentials saved.` }); onChange(); } else setMsg({ tone: "error", text: r.error || "Could not save." });
+    if (r.ok) { setMsg({ tone: "success", text: `${Thing} saved.` }); onChange(); } else setMsg({ tone: "error", text: r.error || "Could not save." });
   }
   async function test() {
     setBusy("test"); setMsg(null);
@@ -188,11 +193,11 @@ function EnvForm({ g, env, onChange }: { g: Gateway; env: Env; onChange: () => v
   }
   async function clear() {
     const inUse = g.active && g.mode === env;
-    if (!confirm(`Delete every saved ${name}credential of ${g.label}?${inUse ? " It is in use at checkout, so it will be switched off." : ""} This cannot be undone.`)) return;
+    if (!confirm(`Delete all saved ${thing} of ${g.label}?${inUse ? " They are in use at checkout, so the method will be switched off." : ""} This cannot be undone.`)) return;
     setBusy("clear"); setMsg(null);
     const r = await api<{ switchedOff: boolean }>("/api/admin/gateways", { method: "DELETE", body: { gateway: g.id, env } });
     setBusy("");
-    if (r.ok) { setMsg({ tone: "info", text: `${name}credentials deleted${r.data.switchedOff ? " and the method switched off" : ""}.` }); onChange(); } else setMsg({ tone: "error", text: r.error || "Could not delete." });
+    if (r.ok) { setMsg({ tone: "info", text: `${Thing} deleted${r.data.switchedOff ? " and the method switched off" : ""}.` }); onChange(); } else setMsg({ tone: "error", text: r.error || "Could not delete." });
   }
 
   return (
@@ -221,9 +226,9 @@ function EnvForm({ g, env, onChange }: { g: Gateway; env: Env; onChange: () => v
         })}
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button className="btn-primary btn-sm" disabled={!!busy} onClick={save}>{busy === "save" ? "Saving…" : `Save ${name}credentials`}</button>
-        <button className="btn-secondary btn-sm" disabled={!!busy || !g[env].configured} onClick={test} title={g[env].configured ? "" : "Save the credentials first"}>{busy === "test" ? "Testing…" : "Test connection"}</button>
-        {g[env].configured ? <button className="btn-ghost btn-sm ml-auto text-rose-600" disabled={!!busy} onClick={clear}>Delete {name}credentials</button> : null}
+        <button className="btn-primary btn-sm" disabled={!!busy} onClick={save}>{busy === "save" ? "Saving…" : `Save ${thing}`}</button>
+        <button className="btn-secondary btn-sm" disabled={!!busy || !g[env].configured} onClick={test} title={g[env].configured ? "" : `Save the ${thing} first`}>{busy === "test" ? "Checking…" : check}</button>
+        {g[env].configured ? <button className="btn-ghost btn-sm ml-auto text-rose-600" disabled={!!busy} onClick={clear}>Delete {thing}</button> : null}
       </div>
       {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
     </div>
