@@ -1,5 +1,5 @@
 /* AXTO — GET /api/billing/paypal-return?order=…&token=… · capture the approved PayPal
- * payment server-side, then send the member back to Billing (or Lifetime licences). */
+ * payment server-side, then send the member back to Billing (or Lifetime licences, or /acquire). */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst } from "@/lib/db";
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const token = url.searchParams.get("token") || "";
   const db = getDB(req);
   const o = await dbFirst<{ id: string; gateway_ref: string; amount_usd: number; plan: string; meta: string }>(db, `SELECT id, gateway_ref, amount_usd, plan, meta FROM orders WHERE id = ? AND gateway = 'paypal'`, [orderId]);
-  const page = o?.plan === "lifetime" ? "/app/lifetime" : "/app/billing";
+  const page = o?.plan === "lifetime" ? "/app/lifetime" : o?.plan === "acquisition" ? "/acquire" : "/app/billing";
   const back = (q: string) => NextResponse.redirect(new URL(`${page}?${q}`, req.url));
   if (!o || !token || (o.gateway_ref && o.gateway_ref !== token)) return back("canceled=1");
   // Capture with the credentials of the environment the order was created in.

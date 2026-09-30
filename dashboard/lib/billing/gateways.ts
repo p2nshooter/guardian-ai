@@ -45,15 +45,8 @@ export interface GatewayInfo {
   keysAt?: string;        // where the admin finds the keys
 }
 
+/** Checkout order = this order: PayPal is the primary method (Stripe does not onboard Indonesian merchants). */
 export const GATEWAYS: GatewayInfo[] = [
-  { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
-    fields: [
-      { key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…", sandboxPlaceholder: "sk_test_…", prefix: { live: ["sk_live_", "rk_live_"], sandbox: ["sk_test_", "rk_test_"] } },
-      { key: "webhook_secret", label: "Webhook signing secret", secret: true, placeholder: "whsec_…", prefix: { live: ["whsec_"], sandbox: ["whsec_"] } },
-    ],
-    requires: [["secret_key", "webhook_secret"]], webhookPath: "/api/webhooks/stripe",
-    events: "checkout.session.completed, checkout.session.async_payment_succeeded",
-    keysAt: "Stripe Dashboard → Developers → API keys (Test mode toggle for sandbox) · Webhooks → Add endpoint" },
   { id: "paypal", label: "PayPal", methods: "PayPal balance or card", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
     fields: [
       { key: "client_id", label: "Client ID" },
@@ -62,6 +55,14 @@ export const GATEWAYS: GatewayInfo[] = [
     ],
     requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal", events: "PAYMENT.CAPTURE.COMPLETED",
     keysAt: "developer.paypal.com → Apps & Credentials (Sandbox / Live tabs) → your app" },
+  { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
+    fields: [
+      { key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…", sandboxPlaceholder: "sk_test_…", prefix: { live: ["sk_live_", "rk_live_"], sandbox: ["sk_test_", "rk_test_"] } },
+      { key: "webhook_secret", label: "Webhook signing secret", secret: true, placeholder: "whsec_…", prefix: { live: ["whsec_"], sandbox: ["whsec_"] } },
+    ],
+    requires: [["secret_key", "webhook_secret"]], webhookPath: "/api/webhooks/stripe",
+    events: "checkout.session.completed, checkout.session.async_payment_succeeded",
+    keysAt: "Stripe Dashboard → Developers → API keys (Test mode toggle for sandbox) · Webhooks → Add endpoint" },
   { id: "xendit", label: "Indonesia — QRIS, VA, e-wallet (Xendit)", methods: "QRIS, bank virtual account, OVO, DANA, ShopeePay", currency: "IDR", confirmation: "automatic", envs: ["live", "sandbox"],
     fields: [
       { key: "secret_key", label: "Secret key", secret: true, placeholder: "xnd_production_…", sandboxPlaceholder: "xnd_development_…", prefix: { live: ["xnd_production_"], sandbox: ["xnd_development_"] } },

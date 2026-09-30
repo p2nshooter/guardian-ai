@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
@@ -11,7 +12,7 @@ function RegisterForm() {
   const { t } = useI18n();
   const q = useSearchParams();
   const plan = q.get("plan") || "";
-  const redirect = q.get("redirect") || q.get("next") || "";
+  const redirect = safeRedirect(q.get("redirect") || q.get("next"), "");
   const [f, setF] = useState({ name: "", email: "", organization: "", password: "" });
   const [accept, setAccept] = useState(false);
   const [busy, setBusy] = useState(false);

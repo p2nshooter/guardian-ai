@@ -15,7 +15,7 @@ import { SITE } from "@/lib/site";
 import { getSelfHosted } from "@/lib/selfhosted";
 import { quoteCrypto } from "@/lib/billing/crypto-watch";
 import { uniqueIdrAmount } from "@/lib/billing/unique-amount";
-import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, type LifetimeScope } from "@/lib/lifetime";
+import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, PAYPAL_MAX_USD, type LifetimeScope } from "@/lib/lifetime";
 import { lifetimeChoiceProblem, productName } from "@/lib/lifetime-service";
 
 export async function POST(req: NextRequest) {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const scope = b.scope as LifetimeScope;
     amountUsd = tier[scope];
     if (!gatewayAllowed(gateway, amountUsd)) {
-      return fail(`For a lifetime licence please pay by bank/wire transfer or crypto${amountUsd <= CARD_MAX_USD ? " or card" : ""}.`);
+      return fail(`For a lifetime licence of this size please pay by bank/wire transfer or crypto${amountUsd <= CARD_MAX_USD ? " or card" : ""}${amountUsd <= PAYPAL_MAX_USD ? " or PayPal" : ""}.`);
     }
     lifetimeMeta = { scope, product: scope === "suite" ? "suite" : String(b.product), devices: tier.devices };
   } else {

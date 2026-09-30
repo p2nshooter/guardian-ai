@@ -12,6 +12,7 @@ import { verifyCryptoProof, CRYPTO_NETWORKS } from "@/lib/billing/crypto-watch";
 import { createThread, getThreadRow, cleanText } from "@/lib/support/store";
 import { notifyAdmin } from "@/lib/support/service";
 import type { Network } from "@/lib/billing/chain";
+import { getSale } from "@/lib/acquisition";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -75,6 +76,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     const row = await getThreadRow(db, threadId);
     if (row) await notifyAdmin(row, text, "Payment to confirm").catch(() => {});
     await audit(db, ctx.session, "order.bank_proof", "order", o.id, {}, req);
+    if (o.plan === "acquisition") {
+      const sale = await getSale(db);
+      return respond({ ok: true, status: "pending", whatsapp: sale.whatsapp, message: `Thanks — the owner verifies the wire (usually within one business day) and your administrator access is granted the moment it is confirmed. Please also send the transfer receipt on WhatsApp ${sale.whatsapp}.` }, ctx);
+    }
     return respond({ ok: true, status: "pending", message: "Thanks — our team confirms bank transfers within one business day. You'll get an e-mail the moment your plan is active." }, ctx);
   }
   return fail("Unknown action.");

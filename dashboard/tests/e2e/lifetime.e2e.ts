@@ -79,7 +79,9 @@ test("lifetime: live prices are public; checkout validates the choice and charge
   assert.equal(o.status, 200);
   assert.equal(o.json.lifetime.tiers.length, 6);
   assert.deepEqual(o.json.lifetime.tiers[0], { devices: 1, label: "1 device", app: 24900, suite: 149000 });
-  assert.ok(o.json.lifetime.gateways.includes("manual") && !o.json.lifetime.gateways.includes("paypal"));
+  assert.ok(o.json.lifetime.gateways.includes("manual"));
+  assert.equal(o.json.lifetime.gateways[0], "paypal", "PayPal first — offered only up to its single-payment ceiling");
+  assert.equal(o.json.lifetime.paypalMaxUsd, 10_000);
 
   assert.equal((await new Client().post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" })).status, 401);
   assert.equal((await admin.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" })).status, 400, "admins don't buy");

@@ -59,6 +59,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/licenses", label: "Licences", icon: "🔑" },
       { href: "/admin/lifetime", label: "Lifetime licences", icon: "♾️" },
       { href: "/admin/support", label: "Support inbox", icon: "💬" },
+      { href: "/admin/acquisition", label: "Site sale", icon: "🏛️" },
     ] },
     { section: "Configuration", items: [
       { href: "/admin/plans", label: "Plans & pricing", icon: "🏷️" },

@@ -19,7 +19,7 @@ import T from "@/components/site/T";
 export const metadata: Metadata = {
   ...pageMeta({
     title: `${SITE.name} — AI workspace for legal, security & business teams`,
-    description: "Legal AI with 36 expert workspaces for 200+ jurisdictions, a premium prompt library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst — in your browser, on your own AI keys. Self-hosted Docker & Windows editions for Business and Enterprise.",
+    description: "Legal AI with 36 expert workspaces for 200+ jurisdictions, a premium prompt library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst — in your browser, on your own AI keys. Self-hosted Docker editions for Business and Enterprise.",
     path: "/",
     keywords: ["AI workspace", "legal AI", "BYOK AI", "AI prompt library", "AI video clipper", "PII redaction", "compliance gap analysis", "AI security analyst", "self-hosted AI"],
   }),
@@ -75,6 +75,18 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* The site is for sale — the special offer menu */}
+      <section className="border-b border-amber-200 bg-gradient-to-r from-amber-50 via-white to-amber-50" data-testid="home-sale">
+        <div className="container-page flex flex-wrap items-center gap-4 py-5">
+          <span className="text-2xl">🏛️</span>
+          <div className="min-w-0 flex-1">
+            <div className="font-extrabold text-slate-900"><T k="lp.sale" /></div>
+            <div className="text-sm text-slate-600"><T k="lp.saleSub" /></div>
+          </div>
+          <Link href="/acquire" className="rounded-xl bg-ink-950 px-5 py-2.5 text-sm font-bold text-amber-300 no-underline hover:bg-ink-900"><T k="lp.saleCta" /> →</Link>
         </div>
       </section>
 

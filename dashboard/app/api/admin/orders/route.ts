@@ -7,6 +7,7 @@ import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import { parseIdrQuery } from "@/lib/billing/unique-amount";
 import { markOrderPaid, syncLicenses } from "@/lib/billing/activate";
+import { getSale, saveSale } from "@/lib/acquisition";
 import { readJson, fail, audit } from "@/lib/http";
 
 const PAGE = 50;
@@ -51,6 +52,13 @@ export async function POST(req: NextRequest) {
     if (o.plan === "lifetime" && b?.endAccess) {
       // New activations and downloads stop; devices already activated offline cannot be reached.
       await dbRun(db, `UPDATE lifetime_licenses SET status = 'revoked', updated_at = ? WHERE order_id = ?`, [now(), o.id]);
+    }
+    if (o.plan === "acquisition" && b?.endAccess) {
+      // A refunded site purchase: the buyer's administrator role ends and the offer reopens.
+      if (o.user_id === ctx.session.sub) return fail("You cannot remove your own administrator role.");
+      await dbRun(db, `UPDATE users SET role = 'client', updated_at = ? WHERE id = ?`, [now(), o.user_id]);   // 'client' = member in the users table
+      const sale = await getSale(db);
+      if (sale.soldTo?.orderId === o.id) await saveSale(db, { ...sale, status: "open", soldTo: undefined });
     }
     if (sub?.last_order_id === o.id && b?.endAccess) {
       await dbRun(db, `UPDATE subscriptions SET status = 'canceled', current_period_end = ?, updated_at = ? WHERE user_id = ?`, [now(), now(), o.user_id]);

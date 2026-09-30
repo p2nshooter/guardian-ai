@@ -40,8 +40,10 @@ export const LIFETIME_MAJOR = 3;
 export const UPDATE_MONTHS = 12;
 /** Stripe's per-charge ceiling. Above it, card is not offered — wire or crypto only. */
 export const CARD_MAX_USD = 999_999;
-/** Gateways that can carry a lifetime amount (IDR wallets / QRIS and PayPal cap far lower). */
-export const LIFETIME_GATEWAYS = ["manual", "crypto", "nowpayments", "stripe"] as const;
+/** PayPal's usual ceiling for one payment; above it PayPal is not offered for a lifetime licence. */
+export const PAYPAL_MAX_USD = 10_000;
+/** Gateways that can carry a lifetime amount, PayPal first (IDR wallets / QRIS cap far lower). */
+export const LIFETIME_GATEWAYS = ["paypal", "manual", "crypto", "nowpayments", "stripe"] as const;
 export const ACTIVATION_FORMAT = "axto-lifetime-1";
 
 export const isScope = (x: unknown): x is LifetimeScope => x === "app" || x === "suite";
@@ -85,6 +87,7 @@ export function tierFor(devices: number, tiers: LifetimeTier[] = LIFETIME_TIERS)
 
 export function gatewayAllowed(gateway: string, amountUsd: number): boolean {
   if (!(LIFETIME_GATEWAYS as readonly string[]).includes(gateway)) return false;
+  if (gateway === "paypal") return amountUsd <= PAYPAL_MAX_USD;
   return gateway !== "stripe" || amountUsd <= CARD_MAX_USD;
 }
 

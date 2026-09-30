@@ -6,7 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   LIFETIME_TIERS, mergeLifetimePrices, lifetimePrice, tierFor, gatewayAllowed, productsOf, activationPayload,
-  isMachineId, newLicenseId, ACTIVATION_FORMAT, CARD_MAX_USD, LIFETIME_MAJOR,
+  isMachineId, newLicenseId, ACTIVATION_FORMAT, CARD_MAX_USD, PAYPAL_MAX_USD, LIFETIME_MAJOR,
 } from "../lib/lifetime";
 import { buildFeatures, serializeEntitlements } from "../lib/entitlements";
 import { SELF_HOSTED, SELF_HOSTED_SLUGS } from "../lib/selfhosted";
@@ -42,6 +42,7 @@ test("payment rules: only wire/crypto/card; card only up to Stripe's ceiling", (
   assert.ok(gatewayAllowed("stripe", CARD_MAX_USD));
   assert.ok(!gatewayAllowed("stripe", CARD_MAX_USD + 1));
   for (const g of ["paypal", "xendit", "midtrans", "bogus"]) assert.ok(!gatewayAllowed(g, 24_900), g);
+  assert.ok(gatewayAllowed("paypal", PAYPAL_MAX_USD) && !gatewayAllowed("paypal", PAYPAL_MAX_USD + 1), "PayPal up to its single-payment ceiling");
 });
 
 test("coverage: a suite covers every self-hosted app; an app covers only itself", () => {

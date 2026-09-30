@@ -20,7 +20,7 @@ interface Licence {
   updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; arm64?: string[] } }[];
 }
 interface Data { licenses: Licence[]; tiers: Tier[]; cardMaxUsd: number }
-interface Options { gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; lifetime: { gateways: string[]; cardMaxUsd: number } }
+interface Options { gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; lifetime: { gateways: string[]; cardMaxUsd: number; paypalMaxUsd?: number } }
 
 const APPS = SELF_HOSTED.map((p) => ({ slug: p.slug, name: catalogEntry(p.slug)?.name || p.slug }));
 
@@ -153,7 +153,7 @@ function LifetimeInner() {
 
   const tier = d?.tiers.find((x) => x.devices === devices) || d?.tiers[0];
   const amount = tier ? tier[scope] : 0;
-  const methods = useMemo(() => (opts?.gateways || []).filter((g) => opts!.lifetime.gateways.includes(g.id) && (g.id !== "stripe" || amount <= opts!.lifetime.cardMaxUsd)), [opts, amount]);
+  const methods = useMemo(() => (opts?.gateways || []).filter((g) => opts!.lifetime.gateways.includes(g.id) && (g.id !== "stripe" || amount <= opts!.lifetime.cardMaxUsd) && (g.id !== "paypal" || amount <= (opts!.lifetime.paypalMaxUsd ?? 0))), [opts, amount]);
   useEffect(() => { if (!methods.some((m) => m.id === gateway)) setGateway(methods[0]?.id || ""); }, [methods, gateway]);
 
   async function checkout() {

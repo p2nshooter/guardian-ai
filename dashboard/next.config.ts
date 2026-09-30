@@ -50,7 +50,6 @@ const nextConfig: NextConfig = {
       { source: "/playbooks/:slug", destination: "/prompts", permanent: true },
       { source: "/guide", destination: "/self-hosted", permanent: true },
       { source: "/promo", destination: "/pricing", permanent: true },
-      { source: "/acquire", destination: "/", permanent: true },
       { source: "/reseller/:path*", destination: "/contact", permanent: true },
     ];
   },

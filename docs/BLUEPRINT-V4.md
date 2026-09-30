@@ -203,7 +203,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 6 | Prompt Library v4 (≥ 240 prompt) | ⏳ | — |
 | 7 | Legal AI v4 (redline, playbook, klausa) | ⏳ | — |
 | 8 | Mode Lokal (on-device AI) | ⏳ | — |
-| 9 | Halaman penawaran situs + serah terima admin otomatis | ⏳ | — |
+| 9 | Halaman penawaran situs + serah terima admin otomatis | ✅ selesai | `/acquire` (EN/ID), `/admin/acquisition`; E2E `acquisition.e2e.ts` 6/6; uji browser 11/11; panduan `docs/admin/SITE_SALE.md` |
 
 Setiap fase: kode → unit test → E2E lokal penuh → commit & push → baris ini diperbarui.
 

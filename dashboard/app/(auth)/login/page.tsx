@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
@@ -10,7 +11,7 @@ import { PasswordInput } from "@/components/auth/AuthFrame";
 function LoginForm() {
   const { t } = useI18n();
   const q = useSearchParams();
-  const redirect = q.get("redirect") || "";
+  const redirect = safeRedirect(q.get("redirect"), "");
   const admin = q.get("admin") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

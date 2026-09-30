@@ -25,7 +25,7 @@ export default function SiteFooter() {
         </div>
         {col(<T k="foot.apps" />, CLOUD_APPS.map((a) => ({ href: `/apps/${a.slug}`, label: a.name })))}
         {col(<T k="foot.selfhosted" />, SELF_HOSTED.slice(0, 7).map((p): { href: string; label: React.ReactNode } => ({ href: `/self-hosted/${p.slug}`, label: catalogEntry(p.slug)?.name || p.slug })).concat([{ href: "/self-hosted", label: <T k="foot.allEditions" /> }]))}
-        {col(<T k="foot.resources" />, [{ href: "/pricing", label: <T k="site.pricing" /> }, { href: "/pricing#lifetime", label: <T k="foot.lifetime" /> }, { href: "/help", label: <T k="foot.guides" /> }, { href: "/blog", label: <T k="site.blog" /> }, { href: "/status", label: <T k="foot.status" /> }, { href: "/contact", label: <T k="foot.contact" /> }])}
+        {col(<T k="foot.resources" />, [{ href: "/pricing", label: <T k="site.pricing" /> }, { href: "/pricing#lifetime", label: <T k="foot.lifetime" /> }, { href: "/acquire", label: <T k="site.acquire" /> }, { href: "/help", label: <T k="foot.guides" /> }, { href: "/blog", label: <T k="site.blog" /> }, { href: "/status", label: <T k="foot.status" /> }, { href: "/contact", label: <T k="foot.contact" /> }])}
         {col(<T k="foot.legal" />, [{ href: "/terms", label: <T k="foot.terms" /> }, { href: "/privacy", label: <T k="foot.privacy" /> }, { href: "/dpa", label: <T k="foot.dpa" /> }, { href: "/subprocessors", label: <T k="foot.subprocessors" /> }, { href: "/refund", label: <T k="foot.refund" /> }, { href: "/security", label: <T k="foot.security" /> }])}
       </div>
       <div className="border-t border-white/5">

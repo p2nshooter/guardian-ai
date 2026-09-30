@@ -1,13 +1,12 @@
 /* AXTO — POST /api/auth/login · email + password sign-in for members and admins. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { getDB, dbFirst, dbRun, now, secret } from "@/lib/db";
 import { verifyPassword, normEmail, issueSession, loadEntitlement } from "@/lib/auth";
 import { readJson, fail, ipOf, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 
-const safeRedirect = (r: unknown, fallback: string) =>
-  typeof r === "string" && r.startsWith("/") && !r.startsWith("//") ? r : fallback;
 
 export async function POST(req: NextRequest) {
   const b = await readJson(req);

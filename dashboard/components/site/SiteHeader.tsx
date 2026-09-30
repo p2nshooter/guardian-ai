@@ -65,6 +65,7 @@ export default function SiteHeader() {
           {LINKS.map((l) => (
             <Link key={l.href} href={l.href} className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 no-underline hover:bg-slate-100 hover:text-slate-900">{l.label}</Link>
           ))}
+          <Link href="/acquire" className="ml-1 rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-900 no-underline hover:bg-amber-100" data-testid="nav-acquire">🏛️ {t("site.acquire")}</Link>
         </nav>
         <div className="ml-auto hidden items-center gap-2 md:flex">
           <LangSelect />
@@ -90,6 +91,7 @@ export default function SiteHeader() {
               {LINKS.map((l) => (
                 <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-800 no-underline hover:bg-slate-100">{l.label}</Link>
               ))}
+              <Link href="/acquire" onClick={() => setOpen(false)} className="mt-1 block rounded-md bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-900 no-underline">🏛️ {t("site.acquire")}</Link>
               <div className="mt-2 grid gap-2 border-t border-slate-200 pt-2">
                 <Link href="/login" onClick={() => setOpen(false)} className="btn-secondary">{t("site.signin")}</Link>
                 <Link href="/register" onClick={() => setOpen(false)} className="btn-primary">{t("site.getstarted")}</Link>

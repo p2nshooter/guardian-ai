@@ -16,8 +16,9 @@
 import { autoIssueAfterPayment, ADMIN_HOLD } from "../licences";
 import { dbFirst, dbRun, dbQuery, dbBatch, getR2, now } from "../db";
 import { PLANS, addPeriod, isPlanId, isCycle, formatUsd, type PlanId, type Cycle } from "../plans";
-import { sendMail, mails } from "../mail";
-import { SITE } from "../site";
+import { sendMail, mails, mailLayout, adminInbox } from "../mail";
+import { getSale, saveSale } from "../acquisition";
+import { SITE, absoluteUrl } from "../site";
 import { issueForOrder, productName } from "../lifetime-service";
 
 export interface OrderRow {
@@ -87,6 +88,7 @@ export async function syncLicenses(db: any, userId: string, plan: string, period
 
 /** Invoice line for an order: a subscription period, or a lifetime licence. */
 function invoiceLine(o: OrderRow): string {
+  if (o.plan === "acquisition") return `Acquisition of ${SITE.name} (${SITE.url.replace(/^https?:\/\//, "")}) — website, apps, code, accounts and brand`;
   if (o.plan === "lifetime") {
     let m: any = {};
     try { m = JSON.parse(o.meta || "{}").lifetime || {}; } catch {}
@@ -135,6 +137,7 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   if (typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (o.plan === "lifetime") return markLifetimePaid(db, o, opts);
+  if (o.plan === "acquisition") return markAcquisitionPaid(db, o, opts);
   if (!isPlanId(o.plan) || !isCycle(o.cycle)) return { ok: false, reason: "bad_order" };
 
   // Claim the order and extend the subscription in ONE transaction. The upsert
@@ -192,6 +195,50 @@ export function orderEnv(o: { meta?: string }): "live" | "sandbox" {
 
 /** Webhook answer: done (paid now or before), or final (refunded) — nothing for the gateway to retry. */
 export const isFinal = (r: { ok: boolean; reason?: string }) => r.ok || r.reason === "refunded";
+
+/** Site acquisition paid → claim it once, invoice it, and (live money only, first
+ *  buyer only) make the buyer an administrator and mark the site sold. */
+async function markAcquisitionPaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
+  const claim = await dbRun(db,
+    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
+    [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
+  if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
+  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
+  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
+  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
+  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
+  try {
+    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name }), { httpMetadata: { contentType: "text/html; charset=utf-8" } });
+  } catch {}
+
+  const sale = await getSale(db);
+  let meta: any = {};
+  try { meta = JSON.parse(o.meta || "{}"); } catch {}
+  const test = orderEnv(o) === "sandbox";
+  const duplicate = sale.status === "sold" && sale.soldTo?.orderId && sale.soldTo.orderId !== o.id;
+  const grant = !test && !duplicate && sale.autoGrantAdmin;
+  if (grant) await dbRun(db, `UPDATE users SET role = 'admin', updated_at = ? WHERE id = ?`, [now(), o.user_id]);
+  if (!test && !duplicate) {
+    await saveSale(db, { ...sale, status: "sold", soldTo: { userId: o.user_id, email: o.email, orderId: o.id, paidAt: paid.paid_at, company: String(meta?.buyer?.company || "") || undefined } });
+  }
+  const outcome = test ? "test_payment" : duplicate ? "duplicate_after_sale" : grant ? "admin_granted" : "awaiting_manual_grant";
+  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
+    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "site.sale.paid", "order", o.id,
+     JSON.stringify({ amount_usd: o.amount_usd, gateway: o.gateway, buyer: o.email, outcome }), now()]).catch(() => {});
+
+  const money = formatUsd(o.amount_usd);
+  const buyerMail = test
+    ? { subject: `Test payment received — ${SITE.name}`, body: `<p>This was a <b>test (sandbox) payment</b> of ${money}. No access was changed.</p>` }
+    : duplicate
+      ? { subject: `Payment received — ${SITE.name} was already sold`, body: `<p>We received ${money}, but ${SITE.name} had already been sold to another buyer. Your payment will be refunded in full — our team will contact you.</p>` }
+      : { subject: `Payment received — ${SITE.name} is yours`, body: `<p>We received your payment of <b>${money}</b> (invoice <b>${invoiceNo}</b>).</p>
+          <p>${grant ? "Your account now has <b>administrator access</b> to the whole platform." : "Administrator access will be granted by the owner shortly."} The handover of the domain, Cloudflare, GitHub and payment accounts follows the checklist on the offer page.</p>
+          <p>Send your payment proof and coordinate the handover on WhatsApp: <b>${sale.whatsapp}</b>.</p>` };
+  await sendMail(o.email, buyerMail.subject, mailLayout(buyerMail.subject, buyerMail.body, { label: "Open the admin portal", href: absoluteUrl(grant ? "/admin" : "/acquire") }));
+  await sendMail(await adminInbox(), `${SITE.name} acquisition payment: ${money} from ${o.email} (${outcome})`,
+    mailLayout("Acquisition payment", `<p>Order <b>${o.id}</b> · ${money} via ${o.gateway} · buyer <b>${o.email}</b>${meta?.buyer?.company ? ` (${String(meta.buyer.company).replace(/[<>&"]/g, "")})` : ""}.</p><p>Outcome: <b>${outcome}</b>.</p>`));
+  return { ok: true, reason: outcome };
+}
 
 /** Lifetime order paid → claim it once, invoice it, issue the licence (zero-touch). */
 async function markLifetimePaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
