@@ -512,7 +512,7 @@ dan HP × EN/ID/FR, plus 357 tautan internal.
 | P2 | Webhook tidak mencocokkan gateway order | Notifikasi satu gateway bisa melunasi order gateway lain; cek nominal IDR terlewati pada order USD | `gateway` wajib sama (`gateway_mismatch`) |
 | P3 | PayPal untuk Lifetime kembali ke `/app/billing` | Pembeli Lifetime melihat pesan "paket aktif" di halaman yang salah | Kembali ke `/app/lifetime` |
 | P4 | `?error=` dari PayPal-return tidak ditampilkan di mana pun | Pembayaran gagal/ditolak kembali tanpa pesan apa pun | Pesan jelas di Billing & Lifetime (10 bahasa); "dibatalkan" juga di Lifetime |
-| P5 | Checkbox **Test mode** di Admin → Payments disimpan tetapi tidak dipakai | Admin mengira sandbox, padahal transaksi live | PayPal / Midtrans / NOWPayments ke API sandbox; Stripe & Xendit: petunjuk kunci test (mode ditentukan kunci) |
+| P5 | Checkbox **Test mode** di Admin → Payments disimpan tetapi tidak dipakai | Admin mengira sandbox, padahal transaksi live | Digantikan §22: set kunci Live dan Sandbox terpisah untuk semua gateway otomatis, dengan pilihan lingkungan yang eksplisit |
 | P6 | MRR = harga daftar × langganan aktif | Akun komplimen ($0) menaikkan MRR; harga yang diubah admin diabaikan | MRR dari nominal yang benar-benar dibayar untuk periode berjalan |
 | P7 | Badge gateway nonaktif bertuliskan "suspended"; URL webhook melebar di HP | Membingungkan; layar admin 413 px di HP 390 px | "off" / "offered at checkout" / "test mode"; URL dibungkus |
 | P8 | Secret gateway yang sudah tersimpan tidak bisa dihapus (field kosong = "pertahankan") | Kunci lama/bocor tetap tersimpan terenkripsi; hanya bisa dinonaktifkan | Tombol **remove / undo** per secret; API menerima `null` = hapus |
