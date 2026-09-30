@@ -11,9 +11,9 @@ import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { SigningUnavailable } from "@/lib/license-sign";
 import { getLifetimePrices, productsOf, LIFETIME_INCLUDES, CARD_MAX_USD } from "@/lib/lifetime";
-import { availableBuilds, imageKey, exeKey } from "@/lib/builds";
+import { availableBuilds, imageKey, archImageName } from "@/lib/builds";
 import { getSelfHosted } from "@/lib/selfhosted";
-import { licensesFor, activateDevice, productName } from "@/lib/lifetime-service";
+import { licensesFor, activateDevice, productName, installKeyFor } from "@/lib/lifetime-service";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
@@ -25,12 +25,14 @@ export async function GET(req: NextRequest) {
     const p = getSelfHosted(slug);
     return {
       images: (p?.images || []).filter((i) => builds.has(imageKey(i.name))).map((i) => i.name),
-      exe: !!p?.exe && builds.has(exeKey(p.exe)),
+      arm64: (p?.images || []).filter((i) => builds.has(imageKey(archImageName(i.name, "arm64")))).map((i) => `${i.name}-arm64`),
     };
   };
+  // AXTO Setup key per active licence (created on first view).
+  const keys = await Promise.all(licenses.map((l) => (l.status === "active" ? installKeyFor(db, l.id) : Promise.resolve(""))));
   return respond({
-    licenses: licenses.map((l) => ({
-      ...l, name: productName(l.product),
+    licenses: licenses.map((l, i) => ({
+      ...l, install_key: keys[i], name: productName(l.product),
       products: productsOf(l).map((slug) => ({ slug, name: productName(slug), used: l.activations.filter((a) => a.product === slug && !a.revoked_at).length, files: files(slug) })),
       updatesActive: l.updates_until > new Date().toISOString(),
     })),

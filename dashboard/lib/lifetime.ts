@@ -30,7 +30,7 @@ export const LIFETIME_INCLUDES = [
   "Top-tier features of the chosen app(s), forever, for the purchased major version",
   "Works fully offline — Ed25519-signed activation file per device, no calls to axto.io",
   "12 months of updates included",
-  "Windows installer (EXE) and Docker images",
+  "AXTO Setup for Windows, Linux and macOS, plus Docker images (x86-64 and ARM64)",
   "Payment by bank/wire transfer (invoice), crypto, or card",
 ];
 
@@ -91,6 +91,14 @@ export function gatewayAllowed(gateway: string, amountUsd: number): boolean {
 /** Apps a licence covers. */
 export function productsOf(lic: { scope: string; product: string }): string[] {
   return lic.scope === "suite" ? [...SELF_HOSTED_SLUGS] : SELF_HOSTED_SLUGS.includes(lic.product) ? [lic.product] : [];
+}
+
+/** AXTO Setup credential of a lifetime licence (see cf-migrations/0059). */
+export const INSTALL_KEY_RE = /^LIFE-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}$/;
+export const isInstallKey = (k: string) => INSTALL_KEY_RE.test(k);
+export function newInstallKey(): string {
+  const hex = Array.from(crypto.getRandomValues(new Uint8Array(16))).map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return `LIFE-${hex.slice(0, 8)}-${hex.slice(8, 16)}-${hex.slice(16, 24)}-${hex.slice(24)}`;
 }
 
 export function newLicenseId(): string {

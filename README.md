@@ -16,8 +16,8 @@ The full product and engineering plan is [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md
 |---|---|---|
 | **axto.io** | [`dashboard/`](dashboard) | Next.js 15 on Cloudflare Pages: public site, member portal (`/app`), admin portal (`/admin`) and all APIs |
 | **7 cloud apps** | `dashboard/app/app/*` | Legal AI · Prompt Library · AI Studio · Clipper · Privacy Vault · Compliance Center · Security Analyst — run in the browser on the member's own AI keys (BYOX) |
-| **10 self-hosted editions** | `engine/` `orchestra/` `vault/` `edge/` `soc/` `compliance/` `sentinel/` `antivirus/` `studio/` (+ `ai-studio/` `gpu-studio/` `hybrid-studio/` modules) `legal/` | Docker images (Linux) and Windows installs, licensed online (Business / Enterprise plans) or fully offline (Lifetime licences) |
-| **AXTO Setup** | [`installer/`](installer) | Go installer / manager for the self-hosted editions (`axto-setup install · update · activate · doctor …`) |
+| **10 self-hosted editions** | `engine/` `orchestra/` `vault/` `edge/` `soc/` `compliance/` `sentinel/` `antivirus/` `studio/` (+ `ai-studio/` `gpu-studio/` `hybrid-studio/` modules) `legal/` | Docker images for Linux x86-64 **and ARM64**, installed on Windows (Docker Desktop / WSL 2), Linux or macOS with AXTO Setup; licensed online (Business / Enterprise plans) or fully offline (Lifetime licences) |
+| **AXTO Setup** | [`installer/`](installer) | Go installer / manager for the self-hosted editions — Windows GUI wizard + CLI (`axto-setup install · update · activate · doctor …`); subscription keys and Lifetime installer keys (`LIFE-…`, installs + activates the device) |
 | **CI/CD** | [`.github/workflows/`](.github/workflows) | Deploy to Cloudflare, build images → R2, installer builds, Docker smoke tests, guide PDFs |
 
 ## Plans

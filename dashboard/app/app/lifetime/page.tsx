@@ -8,7 +8,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
 import { useI18n, formatDate, formatMoney, statusLabel } from "@/lib/i18n";
-import { Alert, EmptyState, Field, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
+import { Alert, CopyButton, EmptyState, Field, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
 import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { openSupport } from "@/components/support/ChatWidget";
 import { SELF_HOSTED, catalogEntry } from "@/lib/selfhosted";
@@ -16,8 +16,8 @@ import { SELF_HOSTED, catalogEntry } from "@/lib/selfhosted";
 interface Tier { devices: number; label: string; app: number; suite: number }
 interface Activation { id: string; product: string; machine_id: string; label: string; created_at: string; revoked_at: string }
 interface Licence {
-  id: string; scope: "app" | "suite"; product: string; name: string; devices: number; updates_until: string; status: string; created_at: string;
-  updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; exe: boolean } }[];
+  id: string; scope: "app" | "suite"; product: string; name: string; devices: number; updates_until: string; status: string; created_at: string; install_key?: string;
+  updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; arm64?: string[] } }[];
 }
 interface Data { licenses: Licence[]; tiers: Tier[]; cardMaxUsd: number }
 interface Options { gateways: { id: string; label: string; methods: string; currency: string }[]; lifetime: { gateways: string[]; cardMaxUsd: number } }
@@ -60,6 +60,17 @@ function LicenceCard({ lic, onChange }: { lic: Licence; onChange: () => void }) 
         {lic.scope === "suite" ? t("lt.devicesSuite", { n: lic.devices }) : t("lt.devicesApp", { n: lic.devices })} ·{" "}
         {lic.updatesActive ? t("lt.updatesUntil", { date: formatDate(lic.updates_until, lang) }) : <span className="text-amber-700">{t("lt.updatesEnded")}</span>}
       </div>
+      {lic.install_key && lic.status === "active" ? (
+        <div className="mt-3 rounded-lg border border-brand-200 bg-brand-50/50 p-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-slate-900">{t("lt.installKey")}:</span>
+            <code className="rounded bg-white px-2 py-1 text-xs font-bold">{lic.install_key}</code>
+            <CopyButton text={lic.install_key} />
+          </div>
+          <p className="mt-1 text-xs text-slate-600">{t("lt.installHint")}</p>
+          <code className="mt-1 block break-all text-[11px] text-slate-500">axto-setup install {lic.scope === "suite" ? "<app>" : lic.product} --key {lic.install_key}</code>
+        </div>
+      ) : null}
       {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
       <div className="mt-3 space-y-2">
         {lic.products.map((p) => {
@@ -108,8 +119,12 @@ function LicenceCard({ lic, onChange }: { lic: Licence; onChange: () => void }) 
                   {(p.files?.images || []).map((name) => (
                     <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz</a>
                   ))}
-                  {p.files?.exe ? <a href={`/api/selfhosted/download?product=${p.slug}&file=exe`}>🪟 EXE</a> : null}
-                  {!p.files?.images.length && !p.files?.exe ? <span className="text-slate-400">{t("sh.preparing")}</span> : null}
+                  {(p.files?.arm64 || []).map((name) => (
+                    <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz (ARM64)</a>
+                  ))}
+                  {!p.files?.images.length ? <span className="text-slate-400">{t("sh.preparing")}</span> : null}
+                  {/* Windows: the one installer (runs the same images in Docker Desktop / WSL 2). */}
+                  <a href="/api/download/installer?os=windows">🪟 AXTO Setup (Windows)</a>
                 </div>
               ) : null}
             </div>

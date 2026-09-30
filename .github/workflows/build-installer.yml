@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VERSION: "3.0.0"
+  VERSION: "3.2.1"
 
 jobs:
   linux:
@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p installer/bundle
-          cp docker-compose.yml *-compose.yml *.example.yml legal.env.example installer/bundle/
+          cp *compose*.yml *.example.yml legal.env.example installer/bundle/
       - name: go vet + tests (Windows code paths)
         working-directory: installer
         run: |
@@ -83,8 +83,14 @@ jobs:
           ./axto-cli.exe version
           $list = ./axto-cli.exe list | Out-String
           if ($list -notmatch "No AXTO apps installed yet") { throw "list command failed: $list" }
-          ./axto-cli.exe doctor; if ($LASTEXITCODE -gt 1) { throw "doctor crashed" }
+          # The hosted runner has Docker in Windows-containers mode, so doctor must report
+          # "not ready" (exit 1) with a fix — anything else (crash, panic) fails the job.
+          $doc = ./axto-cli.exe doctor | Out-String; $code = $LASTEXITCODE
+          Write-Output $doc
+          if ($code -gt 1) { throw "doctor crashed" }
+          if ($code -eq 1 -and $doc -notmatch "Docker running") { throw "doctor failed without a report" }
           if ((Get-Item AXTO-Setup.exe).Length -lt 1MB) { throw "GUI binary too small" }
+          $global:LASTEXITCODE = 0
 
   publish:
     name: ☁️ Publish to R2

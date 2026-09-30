@@ -2,11 +2,11 @@
 //
 // AXTO Setup — installs and manages AXTO self-hosted apps on Docker.
 //
-//   Windows: double-click AXTO-Setup.exe → a guided installer opens in the browser
-//            (checks WSL 2 / Docker Desktop, licence, download, start, shortcuts).
-//   Linux:   ./axto-setup install --key GUARD-…            (same pipeline, CLI)
-//            ./axto-setup status | start | stop | update | uninstall | logs <app>
-//            ./axto-setup wizard                           (browser UI on a server with a desktop)
+//	Windows: double-click AXTO-Setup.exe → a guided installer opens in the browser
+//	         (checks WSL 2 / Docker Desktop, licence, download, start, shortcuts).
+//	Linux:   ./axto-setup install --key GUARD-…            (same pipeline, CLI)
+//	         ./axto-setup status | start | stop | update | uninstall | logs <app>
+//	         ./axto-setup wizard                           (browser UI on a server with a desktop)
 package main
 
 import (
@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-var Version = "3.0.0"
+var Version = "3.2.1"
 
 const defaultPortal = "https://axto.io"
 
@@ -45,6 +45,7 @@ func usage() {
 Usage:
   axto-setup                               open the guided installer (Windows default)
   axto-setup install --key KEY [--port N] [--lan] [--dir PATH]
+  axto-setup install <app> --key LIFE-…    lifetime licence: install + activate this device
   axto-setup update  <app>                 download the latest images and restart
   axto-setup status | start | stop | restart | logs  <app>
   axto-setup uninstall <app> [--keep-data]
@@ -54,7 +55,7 @@ Usage:
   axto-setup activate <app> <file>         install a .axto-license file and restart the app
 
 Apps: %s
-Your licence key is in https://axto.io/app/self-hosted
+Your licence key is in https://axto.io/app/self-hosted (lifetime: https://axto.io/app/lifetime)
 `, Version, strings.Join(slugs(), ", "))
 }
 
@@ -130,10 +131,32 @@ func main() {
 				k = readKeyFromConfig(st)
 			}
 		} else {
-			if !ValidKeyShape(k) {
-				fail(fmt.Errorf("enter your licence key with --key (format PREFIX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX)"))
+			switch {
+			case IsLifetimeKey(k):
+				// One lifetime key can cover several apps: name the app (or learn which ones it covers).
+				if len(pos) == 0 {
+					info, err := CheckLicence(ctx, strings.TrimRight(*portal, "/"), k, "", "")
+					if err != nil {
+						fail(err)
+					}
+					if len(info.Choose) > 0 {
+						var names []string
+						for _, c := range info.Choose {
+							names = append(names, c.Slug)
+						}
+						fail(fmt.Errorf("this lifetime licence covers several apps — choose one: axto-setup install <app> --key %s  (apps: %s)", k, strings.Join(names, ", ")))
+					}
+					pos = append(pos, info.Product)
+				}
+				p = ProductBySlug(pos[0])
+				if p == nil {
+					fail(fmt.Errorf("unknown app %q — one of: %s", pos[0], strings.Join(slugs(), ", ")))
+				}
+			case ValidKeyShape(k):
+				p = ProductForKey(k)
+			default:
+				fail(fmt.Errorf("enter your licence key with --key (format PREFIX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX, or LIFE-… for a lifetime licence)"))
 			}
-			p = ProductForKey(k)
 		}
 		o := Options{Product: p, Key: k, Portal: strings.TrimRight(*portal, "/"), LAN: *lan}
 		o.Port = firstNonZero(*port, pick(st, func(s *Installed) int { return s.Port }), p.Port)
@@ -175,7 +198,7 @@ func main() {
 		fmt.Printf("✔ %s is activated offline (Lifetime licence) and restarted — http://localhost:%d\n", st.Name, st.Port)
 	case "doctor":
 		d := CheckDocker(ctx)
-		fmt.Printf("OS: %s\nDocker installed: %v\nDocker running: %v (%s)\nCompose: %v (%s)\nResources: %d GB RAM, %d CPUs\n", d.OS, d.Installed, d.Running, d.Version, d.Compose, d.ComposeVersion, d.MemoryGB, d.CPUs)
+		fmt.Printf("OS: %s\nDocker installed: %v\nDocker running: %v (%s)\nEngine: %s/%s\nCompose: %v (%s)\nResources: %d GB RAM, %d CPUs\n", d.OS, d.Installed, d.Running, d.Version, d.OSType, d.Arch, d.Compose, d.ComposeVersion, d.MemoryGB, d.CPUs)
 		if d.WSL != "" {
 			fmt.Printf("WSL 2: %s\n", d.WSL)
 		}
@@ -245,8 +268,12 @@ func pickS(st *Installed, f func(*Installed) string) string {
 	return f(st)
 }
 
-// readKeyFromConfig recovers the licence key from an installed app's config.
+// readKeyFromConfig recovers the licence key from an installed app's config
+// (or the lifetime installer key kept next to it).
 func readKeyFromConfig(st *Installed) string {
+	if b, err := os.ReadFile(installKeyFile(st.Dir)); err == nil && IsLifetimeKey(string(b)) {
+		return strings.TrimSpace(string(b))
+	}
 	p := ProductBySlug(st.Slug)
 	if p == nil || p.ConfigAs == "" {
 		return ""

@@ -17,7 +17,7 @@ import { catalogEntry, getSelfHosted } from "./selfhosted";
 import { formatUsd } from "./plans";
 import { buildFeatures, serializeEntitlements } from "./entitlements";
 import {
-  activationFile, activationPayload, addMonths, isMachineId, isScope, newLicenseId, productsOf,
+  activationFile, activationPayload, addMonths, isMachineId, isScope, newInstallKey, newLicenseId, productsOf,
   LIFETIME_MAJOR, UPDATE_MONTHS, type LifetimeScope,
 } from "./lifetime";
 
@@ -112,6 +112,25 @@ export async function activateDevice(db: any, userId: string, licenseId: string,
     }
   }
   return { ok: true, activation: act, file: await signedFile(db, lic, act, customer), filename: `${product}.axto-license` };
+}
+
+/** The licence's AXTO Setup key, created on first use ("" until migration 0059 has run). */
+export async function installKeyFor(db: any, licenseId: string): Promise<string> {
+  try {
+    const cur = await dbFirst<{ k: string }>(db, `SELECT install_key AS k FROM lifetime_licenses WHERE id = ?`, [licenseId]);
+    if (cur?.k) return cur.k;
+    await dbRun(db, `UPDATE lifetime_licenses SET install_key = ?, updated_at = ? WHERE id = ? AND install_key = ''`, [newInstallKey(), now(), licenseId]);
+    return (await dbFirst<{ k: string }>(db, `SELECT install_key AS k FROM lifetime_licenses WHERE id = ?`, [licenseId]))?.k || "";
+  } catch {
+    return "";
+  }
+}
+
+type InstallLicence = LifetimeLicense & { user_status: string; email: string; name: string; organization: string };
+export async function licenseByInstallKey(db: any, key: string): Promise<InstallLicence | null> {
+  return dbFirst<InstallLicence>(db,
+    `SELECT l.*, u.status AS user_status, u.email, u.name, u.organization FROM lifetime_licenses l JOIN users u ON u.id = l.user_id
+      WHERE l.install_key = ?`, [key]).catch(() => null);
 }
 
 /** Re-download an existing activation's file (member: own licences only). */

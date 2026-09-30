@@ -1,6 +1,6 @@
 # AXTO v3 — Blueprint Rombak Total
 
-> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§20 (v3.2.1, 30 Sep 2026)** — sebelumnya §19 (v3.2).
+> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§21 (aplikasi self-hosted: Docker, Windows, Linux — 30 Sep 2026)**, §20 (portal, lisensi, pembayaran), §19 (v3.2).
 > Branch kerja v3.2: `ccr-e9111ca5-n0fcha` (sebelumnya `claude/app-consistency-paid-model-5hjkqo`, sudah di-merge).
 > Deploy produksi terjadi otomatis saat branch kerja di-merge ke `main`
 > (GitHub Actions → Cloudflare Pages + migrasi D1 + sinkron konten R2).
@@ -494,7 +494,7 @@ Hasil dasar: typecheck ✅ · unit 45/45 ✅ · build ✅ · E2E 57/59 ✅ (2 di
 **Tindakan pemilik (tidak bisa dilakukan dari kode):**
 1. Jadikan repo GitHub **privat** (E5/E8) — atau hapus riwayat PDF dengan force-push.
 2. Aktifkan kembali workflow **AXTO CI/CD** (`deploy.yml`) di tab Actions bila ingin uji malam juga dari workflow itu (GitHub menonaktifkannya karena tidak aktif; `e2e.yml` baru sudah menutup kebutuhan uji malam).
-3. Merge branch kerja ke `main` → migrasi D1 `0057_lifetime.sql` dan `0058_session_epoch.sql` berjalan otomatis.
+3. Merge branch kerja ke `main` → migrasi D1 `0057_lifetime.sql`, `0058_session_epoch.sql` dan `0059_lifetime_install_key.sql` berjalan otomatis; image ARM64 pertama terbit saat *Auto Build All Images* dijalankan dengan `force_all=true`.
 
 ---
 
@@ -550,4 +550,33 @@ Satu overflow di HP (Admin → Payments, P7).
 
 Sisa (dicatat, bukan bug): tombol "keluar dari semua perangkat" tanpa ganti password; di rute non-sensitif sesi lama
 masih bisa bertahan hingga 1 jam setelah ganti password (cache hak akses di token, disengaja agar D1 hemat).
+
+---
+
+## 21. Aplikasi self-hosted siap produksi — Docker, Windows (AXTO Setup), Linux x86-64 & ARM64 (30 Sep 2026)
+
+Cara cek: log CI GitHub branch ini, kode installer (Go) + route portal yang dipakainya, 15 Dockerfile + compose,
+lalu uji nyata di Docker: installer asli memasang engine Vault asli (image dibangun dari kode terbaru).
+
+### 21a. Temuan & perbaikan
+| # | Temuan | Dampak | Perbaikan |
+|---|---|---|---|
+| D1 | CI **E2E merah**: setiap file tes login admin; batas 10 login/15 menit per e-mail, di runner GitHub suite selesai ±3 menit → 429 | 5 tes gagal di CI (lokal lolos karena lebih lambat) | Satu sesi admin bersama (`tests/e2e/admin-session.ts`) |
+| D2 | CI **AXTO Setup (Windows) merah**: `doctor` keluar kode 1 dan PowerShell menganggap step gagal | Installer tidak pernah terbit dari `main` | Step memeriksa laporan `doctor`, lalu `LASTEXITCODE` di-reset |
+| D3 | Installer menolak mesin yang hanya punya `docker-compose` (v2 standalone) | Instal gagal di server Linux lama | Fallback otomatis ke `docker-compose` v2 |
+| D4 | Docker Desktop di mode **Windows containers** tidak dikenali | Image Linux gagal dimuat dengan error membingungkan | `doctor`/wizard: "Switch to Linux containers…" dengan langkahnya |
+| D5 | Semua image hanya **amd64**, padahal AXTO Setup ditawarkan untuk Linux ARM64 & macOS Apple Silicon | Di server ARM: *exec format error* | Build **linux/arm64** untuk setiap image (kecuali GPU worker NVIDIA yang tetap amd64); portal & installer memilih `<image>-arm64` sesuai arsitektur engine Docker; unduhan manual ARM64 di portal; smoke test ARM64 (QEMU) mingguan/manual; semua dependensi punya wheel ARM64 |
+| D6 | **Pemegang Lifetime tidak bisa memakai AXTO Setup** (installer hanya menerima kunci langganan) | Janji "installer Windows untuk Lifetime" tidak terpenuhi | Kunci installer `LIFE-…` per lisensi (migrasi 0059) di `/app/lifetime`; installer mengunduh image, memasang, membaca machine ID, meminta file aktivasi bertanda tangan ke portal (1 slot perangkat), memasangnya, restart → aplikasi jalan offline; Suite: installer menanyakan aplikasi; update memakai slot yang sama |
+| D7 | Tautan "EXE per aplikasi" (sisa PyInstaller v2) di portal; build-nya hanya ada di workflow manual lama untuk 3 produk | Tautan mati / biner tak terawat | Windows = **AXTO Setup.exe** (satu installer, diuji di runner Windows asli); tautan per-app dihapus; `build-release.yml` dicatat sebagai *legacy* |
+| D8 | Versi installer `3.0.0` | Tidak konsisten dengan platform 3.2.1 | 3.2.1 |
+
+### 21b. Bukti
+- E2E installer (`tests/e2e/installer.e2e.ts`) dengan **engine Vault asli**: kunci langganan (instal, kelola, update, cabut, uninstall) **dan** kunci Lifetime Suite (pilih aplikasi, arm64 → `vault-core-arm64`, instal, aktivasi otomatis, `/health` `valid:true` dari file bertanda tangan, update tanpa slot baru, mesin lain ditolak 409).
+- Go: `IsLifetimeKey`, pemetaan arsitektur, config Lifetime tanpa kunci; TS: bentuk kunci `LIFE-`, nama file per arsitektur.
+- CI GitHub sebelumnya: Docker smoke test 15 image ✅, Deploy Preview ✅.
+
+### 21c. Sisa (dicatat, bukan bug)
+- Container masih berjalan sebagai root (kecuali Legal). Beralih ke user non-root perlu migrasi izin volume yang sudah ada — rencanakan dengan langkah `chown` satu kali di entrypoint.
+- Installer (wizard) berbahasa EN/ID; portal 10 bahasa.
+- `build-release.yml` + `build-scripts/` (EXE PyInstaller per klien, tipe lisensi *trial*) bertentangan dengan kebijakan v3 — hapus bila tidak dipakai lagi (keputusan pemilik).
 

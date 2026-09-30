@@ -6,9 +6,16 @@
 [//]: # (==============================================================================)
 # AXTO — Changelog
 
-## Platform v3.2.1 (2026-09-30) — full audit: payments, licences, sessions, admin
+## Platform v3.2.1 (2026-09-30) — full audit: payments, licences, sessions, admin; self-hosted apps production-ready
 
-See `docs/BLUEPRINT.md` §20.
+See `docs/BLUEPRINT.md` §20 and §21.
+
+### Self-hosted apps (§21)
+- **Lifetime licences install with AXTO Setup**: each lifetime licence has an installer key (LIFE-…); the installer downloads, installs and activates the device automatically (one device slot), for Windows, Linux and macOS.
+- **ARM64 images** for every image except the NVIDIA GPU worker; AXTO Setup and the portal pick the build that matches the Docker engine.
+- AXTO Setup: works with standalone docker-compose v2, detects Docker Desktop in Windows-containers mode with the fix, reports engine architecture; version 3.2.1.
+- CI: E2E no longer trips the sign-in rate limit on fast runners; the Windows installer job passes; weekly ARM64 smoke test.
+- Windows downloads point to AXTO Setup (per-app legacy EXEs removed from the portal).
 
 ### Fixed
 - A refunded order could be re-activated by a replayed webhook or a revisited PayPal return link; refunds are now final.

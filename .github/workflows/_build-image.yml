@@ -5,8 +5,11 @@
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 # ═══════════════════════════════════════════════════════════════
-# Reusable workflow: Build Docker image → upload to CF R2
-# Called by auto-build-all.yml for each product
+# Reusable workflow: Build a Docker image → upload to CF R2
+# Called by auto-build-all.yml for each product, once per architecture:
+#   amd64 → builds/latest/raw/<image>.tar.gz        (x86-64 servers, Windows/WSL 2)
+#   arm64 → builds/latest/raw/<image>-arm64.tar.gz  (ARM servers, Apple Silicon)
+# AXTO Setup asks the portal for the build that matches the Docker engine.
 # ═══════════════════════════════════════════════════════════════
 
 name: Build & Upload Image
@@ -23,12 +26,27 @@ on:
       image_name:
         required: true
         type: string
+      arm64:
+        description: "Also build linux/arm64 (QEMU)"
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build:
+    name: ${{ inputs.image_name }} (${{ matrix.arch }})
     runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJSON(inputs.arm64 && '["amd64","arm64"]' || '["amd64"]') }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+        if: matrix.arch == 'arm64'
+        with: { platforms: arm64 }
 
       - uses: docker/setup-buildx-action@v3
 
@@ -37,11 +55,20 @@ jobs:
         with:
           context: ${{ inputs.context }}
           file: ${{ inputs.dockerfile }}
+          platforms: linux/${{ matrix.arch }}
           push: false
           load: true
           tags: axto/${{ inputs.image_name }}:latest
-          cache-from: type=gha,scope=${{ inputs.image_name }}
-          cache-to: type=gha,mode=max,scope=${{ inputs.image_name }}
+          cache-from: type=gha,scope=${{ inputs.image_name }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.image_name }}-${{ matrix.arch }}
+
+      - name: Check the image architecture and that it starts
+        run: |
+          arch=$(docker image inspect --format '{{.Architecture}}' axto/${{ inputs.image_name }}:latest)
+          echo "architecture: $arch"
+          [ "$arch" = "${{ matrix.arch }}" ] || { echo "❌ expected ${{ matrix.arch }}"; exit 1; }
+          # The interpreter every engine runs on must execute on this architecture.
+          docker run --rm --platform linux/${{ matrix.arch }} --entrypoint python axto/${{ inputs.image_name }}:latest -c "import platform, sys; print(platform.machine(), sys.version.split()[0])"
 
       - name: Save & upload to R2
         env:
@@ -52,10 +79,11 @@ jobs:
           CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
           R2_BUCKET:             axto-builds
         run: |
-          echo "💾 Saving ${{ inputs.image_name }}..."
-          docker save axto/${{ inputs.image_name }}:latest | gzip -9 > ${{ inputs.image_name }}.tar.gz
-          SIZE=$(du -sh ${{ inputs.image_name }}.tar.gz | cut -f1)
-          echo "✅ ${{ inputs.image_name }}.tar.gz — ${SIZE}"
-          bash scripts/ci/r2-put.sh ${{ inputs.image_name }}.tar.gz \
-            "${R2_BUCKET}/builds/latest/raw/${{ inputs.image_name }}.tar.gz" application/gzip
-
+          FILE="${{ inputs.image_name }}"
+          [ "${{ matrix.arch }}" = "arm64" ] && FILE="${FILE}-arm64"
+          echo "💾 Saving ${FILE}..."
+          docker save axto/${{ inputs.image_name }}:latest | gzip -9 > "${FILE}.tar.gz"
+          SIZE=$(du -sh "${FILE}.tar.gz" | cut -f1)
+          echo "✅ ${FILE}.tar.gz — ${SIZE}"
+          bash scripts/ci/r2-put.sh "${FILE}.tar.gz" \
+            "${R2_BUCKET}/builds/latest/raw/${FILE}.tar.gz" application/gzip

@@ -24,7 +24,9 @@ type DockerStatus struct {
 	ComposeVersion string `json:"compose_version"`
 	MemoryGB       int    `json:"memory_gb"`
 	CPUs           int    `json:"cpus"`
-	WSL            string `json:"wsl"` // windows only: "ok" | "missing" | ""
+	WSL            string `json:"wsl"`     // windows only: "ok" | "missing" | ""
+	Arch           string `json:"arch"`    // Docker engine architecture: "amd64" | "arm64"
+	OSType         string `json:"os_type"` // "linux" (required) | "windows" (Windows containers mode)
 	DesktopPath    string `json:"desktop_path"`
 	Ready          bool   `json:"ready"`
 	Problem        string `json:"problem"`
@@ -34,8 +36,16 @@ type DockerStatus struct {
 
 const dockerDesktopURL = "https://www.docker.com/products/docker-desktop/"
 
+// composeStandalone is set when only the standalone docker-compose v2 binary
+// exists (no "docker compose" plugin); compose calls then go to that binary.
+var composeStandalone bool
+
 func dockerCmd(ctx context.Context, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "docker", args...)
+	name := "docker"
+	if composeStandalone && len(args) > 0 && args[0] == "compose" {
+		name, args = "docker-compose", args[1:]
+	}
+	cmd := exec.CommandContext(ctx, name, args...)
 	hideWindow(cmd)
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -57,9 +67,20 @@ func desktopExe() string {
 	return ""
 }
 
+// engineArch maps `docker info` .Architecture to Go / image naming.
+func engineArch(a string) string {
+	switch strings.ToLower(strings.TrimSpace(a)) {
+	case "x86_64", "amd64":
+		return "amd64"
+	case "aarch64", "arm64":
+		return "arm64"
+	}
+	return strings.ToLower(strings.TrimSpace(a))
+}
+
 func CheckDocker(ctx context.Context) DockerStatus {
 	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe()}
-	c, cancel := context.WithTimeout(ctx, 20*time.Second)
+	c, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 
 	if runtime.GOOS == "windows" {
@@ -95,7 +116,34 @@ func CheckDocker(ctx context.Context) DockerStatus {
 	}
 	s.Running = true
 	s.Version = strings.TrimSpace(v)
+	// Engine facts first: AXTO images are Linux images.
+	if info, err := dockerCmd(c, "info", "--format", "{{.OSType}} {{.Architecture}} {{.MemTotal}} {{.NCPU}}"); err == nil {
+		f := strings.Fields(info)
+		if len(f) == 4 {
+			s.OSType = f[0]
+			s.Arch = engineArch(f[1])
+			mem, _ := strconv.ParseInt(f[2], 10, 64)
+			s.MemoryGB = int((mem + (1 << 29)) >> 30)
+			s.CPUs, _ = strconv.Atoi(f[3])
+		}
+	}
+	if s.OSType == "windows" {
+		s.Problem = "Docker Desktop is set to Windows containers."
+		s.Fix = "Right-click the Docker icon in the taskbar → “Switch to Linux containers…”, wait until it restarts, then click “Check again”."
+		s.FixURL = "https://docs.docker.com/desktop/troubleshoot-and-support/faqs/windowsfaqs/"
+		return s
+	}
+	composeStandalone = false
 	cv, err := dockerCmd(c, "compose", "version", "--short")
+	if err != nil {
+		// Older Linux setups: the standalone docker-compose v2 binary works the same way.
+		dc := exec.CommandContext(c, "docker-compose", "version", "--short")
+		hideWindow(dc)
+		if sv, serr := dc.Output(); serr == nil && strings.HasPrefix(strings.TrimPrefix(strings.TrimSpace(string(sv)), "v"), "2") {
+			composeStandalone = true
+			cv, err = string(sv), nil
+		}
+	}
 	if err != nil {
 		s.Problem = "Docker Compose v2 is missing."
 		s.Fix = "Update Docker Desktop / install the docker-compose-plugin package."
@@ -103,15 +151,7 @@ func CheckDocker(ctx context.Context) DockerStatus {
 		return s
 	}
 	s.Compose = true
-	s.ComposeVersion = strings.TrimSpace(cv)
-	if info, err := dockerCmd(c, "info", "--format", "{{.MemTotal}} {{.NCPU}}"); err == nil {
-		f := strings.Fields(info)
-		if len(f) == 2 {
-			mem, _ := strconv.ParseInt(f[0], 10, 64)
-			s.MemoryGB = int((mem + (1 << 29)) >> 30)
-			s.CPUs, _ = strconv.Atoi(f[1])
-		}
-	}
+	s.ComposeVersion = strings.TrimPrefix(strings.TrimSpace(cv), "v")
 	s.Ready = true
 	return s
 }

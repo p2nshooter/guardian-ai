@@ -80,6 +80,36 @@ func ProductForKey(key string) *Product {
 	return nil
 }
 
+// LifetimePrefix starts a lifetime licence's installer key (LIFE-8HEX-8HEX-8HEX-8HEX,
+// shown at https://axto.io/app/lifetime). One key can cover one app or the whole suite.
+const LifetimePrefix = "LIFE"
+
+func hex8(s string) bool {
+	if len(s) != 8 {
+		return false
+	}
+	for _, c := range s {
+		if !strings.ContainsRune("0123456789ABCDEF", c) {
+			return false
+		}
+	}
+	return true
+}
+
+// IsLifetimeKey reports whether key is a lifetime installer key.
+func IsLifetimeKey(key string) bool {
+	parts := strings.Split(strings.ToUpper(strings.TrimSpace(key)), "-")
+	if len(parts) != 5 || parts[0] != LifetimePrefix {
+		return false
+	}
+	for _, p := range parts[1:] {
+		if !hex8(p) {
+			return false
+		}
+	}
+	return true
+}
+
 // ValidKeyShape checks PREFIX-8HEX-8HEX-8HEX-8HEX (last group may be an HMAC).
 func ValidKeyShape(key string) bool {
 	parts := strings.Split(strings.ToUpper(strings.TrimSpace(key)), "-")

@@ -38,6 +38,8 @@
       <p class="muted"><span data-i18n="p2">Find it in your member portal under Self-Hosted:</span> <a href="#" data-open="https://axto.io/app/self-hosted">axto.io/app/self-hosted</a></p>
       <label for="key" data-i18n="keyLabel">Licence key</label>
       <input id="key" class="mono" placeholder="VAULT-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" autocomplete="off" spellcheck="false">
+      <p class="hint" data-i18n="keyHint">Lifetime licence? Paste its installer key (LIFE-…) from axto.io/app/lifetime.</p>
+      <div id="pickBox" class="hidden"><label for="pick" data-i18n="pick">Which app do you want to install?</label><select id="pick"></select></div>
       <div id="keyErr" class="alert error hidden"></div>
       <div id="keyOk" class="alert ok hidden"></div>
       <div class="row"><button class="btn secondary" data-back="1" data-i18n="back">Back</button><button class="btn primary" id="next2" data-i18n="verify">Verify key</button></div>

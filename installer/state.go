@@ -1,9 +1,10 @@
 // Copyright (c) 2024-2026 Axto AI. All rights reserved.
 //
 // Where things live and what is installed.
-//   Windows: %ProgramData%\AXTO (fallback %LOCALAPPDATA%\AXTO)
-//   Linux:   /opt/axto when root, else ~/.axto
-//   macOS:   ~/Library/Application Support/AXTO
+//
+//	Windows: %ProgramData%\AXTO (fallback %LOCALAPPDATA%\AXTO)
+//	Linux:   /opt/axto when root, else ~/.axto
+//	macOS:   ~/Library/Application Support/AXTO
 package main
 
 import (

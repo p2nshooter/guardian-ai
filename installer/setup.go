@@ -113,33 +113,81 @@ type licenceInfo struct {
 	Name      string      `json:"name"`
 	ExpiresAt string      `json:"expires_at"`
 	Images    []imageLink `json:"images"`
+	Arch      string      `json:"arch"`
+	// Lifetime licences: a suite answers Choose (which app?) until one is picked.
+	Lifetime  bool   `json:"lifetime"`
+	LicenseID string `json:"license_id"`
+	Choose    []struct {
+		Slug string `json:"slug"`
+		Name string `json:"name"`
+	} `json:"choose"`
 }
 
 var httpClient = &http.Client{Timeout: 0}
 
-func CheckLicence(ctx context.Context, portal, key string) (*licenceInfo, error) {
-	body, _ := json.Marshal(map[string]string{"license_key": strings.ToUpper(strings.TrimSpace(key))})
+// CheckLicence asks the portal what a key covers. product picks the app of a
+// lifetime suite key ("" otherwise); arch is the Docker engine's architecture.
+func CheckLicence(ctx context.Context, portal, key, product, arch string) (*licenceInfo, error) {
+	var info licenceInfo
+	if err := portalPost(ctx, portal, map[string]string{"license_key": strings.ToUpper(strings.TrimSpace(key)), "product": product, "arch": arch}, &info); err != nil {
+		return nil, err
+	}
+	return &info, nil
+}
+
+// portalPost calls /api/selfhosted/installer and decodes the answer (ok:false → error).
+func portalPost(ctx context.Context, portal string, payload map[string]string, out any) error {
+	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequestWithContext(ctx, "POST", strings.TrimRight(portal, "/")+"/api/selfhosted/installer", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "AXTO-Installer/"+Version)
 	c := &http.Client{Timeout: 45 * time.Second}
 	res, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("cannot reach %s — check your internet connection (%v)", portal, err)
+		return fmt.Errorf("cannot reach %s — check your internet connection (%v)", portal, err)
 	}
 	defer res.Body.Close()
-	var info licenceInfo
-	if err := json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(&info); err != nil {
-		return nil, fmt.Errorf("unexpected answer from %s (HTTP %d)", portal, res.StatusCode)
+	raw, _ := io.ReadAll(io.LimitReader(res.Body, 4<<20))
+	var head struct {
+		OK    bool   `json:"ok"`
+		Error string `json:"error"`
 	}
-	if !info.OK {
-		if info.Error == "" {
-			info.Error = fmt.Sprintf("licence check failed (HTTP %d)", res.StatusCode)
+	if err := json.Unmarshal(raw, &head); err != nil {
+		return fmt.Errorf("unexpected answer from %s (HTTP %d)", portal, res.StatusCode)
+	}
+	if !head.OK {
+		if head.Error == "" {
+			head.Error = fmt.Sprintf("licence check failed (HTTP %d)", res.StatusCode)
 		}
-		return nil, errors.New(info.Error)
+		return errors.New(head.Error)
 	}
-	return &info, nil
+	return json.Unmarshal(raw, out)
 }
+
+// activateLifetime asks the portal for this installation's signed activation file
+// (uses one device slot of the lifetime licence) and returns its path.
+func activateLifetime(ctx context.Context, o Options, machineID string) (string, error) {
+	host, _ := os.Hostname()
+	var r struct {
+		File     string `json:"file"`
+		Filename string `json:"filename"`
+	}
+	if err := portalPost(ctx, o.Portal, map[string]string{"license_key": strings.ToUpper(strings.TrimSpace(o.Key)), "action": "activate",
+		"product": o.Product.Slug, "machine_id": machineID, "label": "AXTO Setup · " + host}, &r); err != nil {
+		return "", err
+	}
+	if r.File == "" {
+		return "", errors.New("the portal returned no activation file")
+	}
+	path := filepath.Join(o.Dir, o.Product.Slug+".axto-license")
+	if err := os.WriteFile(path, []byte(r.File), 0o600); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+// installKeyFile keeps a lifetime installer key next to the app (config has no key then).
+func installKeyFile(dir string) string { return filepath.Join(dir, ".axto-install-key") }
 
 // download fetches url into path, resuming a partial file, reporting progress.
 func download(ctx context.Context, url, path string, expected int64, onBytes func(done, total int64)) error {
@@ -283,7 +331,12 @@ func writeFiles(o Options) error {
 		if err != nil {
 			return err
 		}
-		if err := os.WriteFile(dst, RenderConfig(example, o.Key), 0o600); err != nil {
+		// A lifetime app runs from its activation file: the config gets no licence key.
+		cfgKey := o.Key
+		if IsLifetimeKey(o.Key) {
+			cfgKey = ""
+		}
+		if err := os.WriteFile(dst, RenderConfig(example, cfgKey), 0o600); err != nil {
 			return err
 		}
 	}
@@ -310,18 +363,28 @@ func fmtBytes(n int64) string {
 func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	p := o.Product
 	pr.Step(2, "Checking Docker…")
-	if d := CheckDocker(ctx); !d.Ready {
+	d := CheckDocker(ctx)
+	if !d.Ready {
 		return nil, errors.New(d.Problem)
 	}
+	lifetime := IsLifetimeKey(o.Key)
 	pr.Step(5, "Checking your licence with "+o.Portal+"…")
-	info, err := CheckLicence(ctx, o.Portal, o.Key)
+	want := ""
+	if lifetime {
+		want = p.Slug
+	}
+	info, err := CheckLicence(ctx, o.Portal, o.Key, want, d.Arch)
 	if err != nil {
 		return nil, err
 	}
 	if info.Product != p.Slug {
 		return nil, fmt.Errorf("this key is for %s, not %s", info.Name, p.Name)
 	}
-	pr.Step(8, fmt.Sprintf("Licence OK — %s, valid until %s", info.Name, strings.SplitN(info.ExpiresAt, "T", 2)[0]))
+	if lifetime {
+		pr.Step(8, fmt.Sprintf("Lifetime licence OK — %s, updates included until %s", info.Name, strings.SplitN(info.ExpiresAt, "T", 2)[0]))
+	} else {
+		pr.Step(8, fmt.Sprintf("Licence OK — %s, valid until %s", info.Name, strings.SplitN(info.ExpiresAt, "T", 2)[0]))
+	}
 
 	if err := writeFiles(o); err != nil {
 		return nil, err
@@ -334,6 +397,9 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 			continue
 		}
 		if !im.Available {
+			if info.Arch == "arm64" {
+				return nil, fmt.Errorf("%s is not available for ARM64 computers yet — install it on an x86-64 (Intel/AMD) machine, or try again later", im.Label)
+			}
 			return nil, fmt.Errorf("the %s build is being prepared on our side — please try again in a few minutes", im.Label)
 		}
 		need = append(need, im)
@@ -386,10 +452,46 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 		st.InstalledAt = prev.InstalledAt
 	}
 	SaveInstalled(st)
+	if lifetime {
+		_ = os.WriteFile(installKeyFile(o.Dir), []byte(strings.ToUpper(strings.TrimSpace(o.Key))), 0o600)
+		if err := activateThisDevice(ctx, o, st, pr); err != nil {
+			return nil, err
+		}
+	}
 	pr.Step(95, "Creating shortcuts…")
 	_ = CreateShortcuts(st)
 	pr.Step(100, fmt.Sprintf("%s is running at http://localhost:%d", p.Name, o.Port))
 	return st, nil
+}
+
+// activateThisDevice binds a freshly installed lifetime app to this machine: it reads
+// the machine id the engine generated, gets the signed file from the portal
+// (one device slot) and puts it into the app. Re-installs reuse the same slot.
+func activateThisDevice(ctx context.Context, o Options, st *Installed, pr Progress) error {
+	pr.Step(90, "Activating this device (lifetime licence)…")
+	var mid string
+	var err error
+	for i := 0; i < 30; i++ { // the engine writes its machine id on first start
+		if mid, err = MachineID(ctx, st); err == nil {
+			break
+		}
+		time.Sleep(2 * time.Second)
+	}
+	if err != nil {
+		return err
+	}
+	file, err := activateLifetime(ctx, o, mid)
+	if err != nil {
+		return fmt.Errorf("%s is installed, but this device could not be activated: %v\nMachine ID %s — you can also activate it at https://axto.io/app/lifetime and run: axto-setup activate %s <file>", o.Product.Name, err, mid, o.Product.Slug)
+	}
+	if err := ActivateOffline(ctx, st, file); err != nil {
+		return err
+	}
+	if err := waitHealthy(ctx, o.Port, 4*time.Minute); err != nil {
+		return err
+	}
+	pr.Step(93, "Device activated — "+o.Product.Name+" now runs offline")
+	return nil
 }
 
 func keyTail(k string) string {

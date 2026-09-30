@@ -151,3 +151,40 @@ func TestEveryProductHasAStateDir(t *testing.T) {
 		}
 	}
 }
+
+func TestLifetimeKeys(t *testing.T) {
+	for _, k := range []string{"LIFE-0123ABCD-89EF0123-DEADBEEF-00000000", "life-0123abcd-89ef0123-deadbeef-00000000"} {
+		if !IsLifetimeKey(k) {
+			t.Errorf("%s should be a lifetime key", k)
+		}
+		if ValidKeyShape(k) {
+			t.Errorf("%s must not pass as a subscription key", k)
+		}
+	}
+	for _, k := range []string{"LIFE-0123ABCD-89EF0123-DEADBEEF", "LIFE-0123ABCG-89EF0123-DEADBEEF-00000000", "VAULT-0123ABCD-89EF0123-DEADBEEF-00000000", "LT-0DF810022604"} {
+		if IsLifetimeKey(k) {
+			t.Errorf("%s must not be a lifetime key", k)
+		}
+	}
+}
+
+func TestEngineArch(t *testing.T) {
+	cases := map[string]string{"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64": "arm64", " AARCH64\n": "arm64"}
+	for in, want := range cases {
+		if got := engineArch(in); got != want {
+			t.Errorf("engineArch(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestLifetimeConfigHasNoKey(t *testing.T) {
+	// A lifetime install runs from its activation file: the config must not carry the installer key.
+	example := []byte("vault:\n  license_key: \"VAULT-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX\"\n  secret: CHANGE_ME\n")
+	out := string(RenderConfig(example, ""))
+	if strings.Contains(out, "XXXXXXXX") || strings.Contains(out, "LIFE-") {
+		t.Fatalf("placeholder or installer key left in config:\n%s", out)
+	}
+	if !strings.Contains(out, `license_key: ""`) {
+		t.Fatalf("expected an empty licence key:\n%s", out)
+	}
+}

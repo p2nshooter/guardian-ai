@@ -56,9 +56,22 @@ test("installer: licence → signed download → docker load → run → manage 
   assert.ok(fs.statSync(path.join(REPO, "installer/dist/AXTO-Setup.exe")).size > 3_000_000, "Windows EXE built");
 
   // 2. Publish the vault image to the local builds bucket (real image if present, else a stand-in).
-  if (sh("docker", ["image", "inspect", "axto/vault-core:latest"]).status !== 0) {
+  // A real engine image carries the io.axto.product label; anything else (e.g. an older stand-in) is rebuilt.
+  const label = sh("docker", ["image", "inspect", "--format", '{{index .Config.Labels "io.axto.product"}}', "axto/vault-core:latest"]).stdout.trim();
+  if (label !== "vault") {
+    // Stand-in: answers /health and, like every engine, persists a machine id in its state volume.
     const ctx = fs.mkdtempSync(path.join(os.tmpdir(), "stub-"));
-    fs.writeFileSync(path.join(ctx, "Dockerfile"), `FROM python:3.11-slim-bookworm\nCMD ["python","-c","import http.server as h\\nclass H(h.BaseHTTPRequestHandler):\\n def do_GET(s):\\n  s.send_response(200); s.end_headers(); s.wfile.write(b'{\\"status\\":\\"ok\\"}')\\nh.HTTPServer(('0.0.0.0',8080),H).serve_forever()"]\n`);
+    fs.writeFileSync(path.join(ctx, "stub.py"), [
+      "import http.server as h, os, secrets",
+      "d = os.environ.get('AXTO_STATE_DIR', '/vault/data/.axto'); os.makedirs(d, exist_ok=True)",
+      "p = os.path.join(d, 'machine-id')",
+      "os.path.exists(p) or open(p, 'w').write(secrets.token_hex(16))",
+      "class H(h.BaseHTTPRequestHandler):",
+      "    def do_GET(s):",
+      "        s.send_response(200); s.end_headers(); s.wfile.write(b'{\"status\":\"ok\"}')",
+      "h.HTTPServer(('0.0.0.0', 8080), H).serve_forever()",
+    ].join("\n"));
+    fs.writeFileSync(path.join(ctx, "Dockerfile"), `FROM python:3.11-slim-bookworm\nENV AXTO_STATE_DIR=/vault/data/.axto\nCOPY stub.py /stub.py\nCMD ["python","/stub.py"]\n`);
     assert.equal(sh("docker", ["build", "-t", "axto/vault-core:latest", ctx]).status, 0);
   }
   const tar = path.join(work, "vault-core.tar.gz");
@@ -133,4 +146,47 @@ test("installer: licence → signed download → docker load → run → manage 
   assert.equal(sh("docker", ["inspect", "vault-core"]).status, 1, "container removed");
   assert.equal(fs.existsSync(path.join(baseDir, "vault")), false);
   assert.match(run("list").stdout, /No AXTO apps installed/);
+
+  // 9. Lifetime licence: installer key → install → this device is activated automatically.
+  const lt = await call("POST", "/api/admin/lifetime", { action: "issue", email: `inst-${RUN}@example.com`, scope: "suite", devices: 1 }, admin.cookie);
+  assert.equal(lt.status, 200, JSON.stringify(lt.json));
+  const mine = await call("GET", "/api/lifetime", undefined, member.cookie);
+  const ltLic = mine.json.licenses.find((l: any) => l.id === lt.json.license.id);
+  const installKey: string = ltLic.install_key;
+  assert.match(installKey, /^LIFE-[0-9A-F]{8}(-[0-9A-F]{8}){3}$/);
+  const choose = await call("POST", "/api/selfhosted/installer", { license_key: installKey });
+  assert.equal(choose.json.choose.length, 10, "a suite asks which app");
+  const arm = await call("POST", "/api/selfhosted/installer", { license_key: installKey, product: "vault", arch: "aarch64" });
+  assert.equal(arm.json.arch, "arm64");
+  assert.equal(arm.json.images[0].available, false, "no ARM build uploaded here");
+  assert.match(arm.json.images[0].url, /name=vault-core-arm64/);
+  const noApp = run("install", "--key", installKey);
+  assert.notEqual(noApp.status, 0);
+  assert.match(noApp.stderr, /covers several apps/);
+  const li = run("install", "vault", "--key", installKey, "--port", String(PORT));
+  assert.equal(li.status, 0, li.stdout + li.stderr);
+  assert.match(li.stdout, /Device activated/);
+  assert.ok((await health()) > 0, "lifetime vault answers /health");
+  const e2eKey = sh("docker", ["image", "inspect", "--format", '{{index .Config.Labels "io.axto.e2e-key"}}', "axto/vault-core:latest"]).stdout.trim();
+  if (label === "vault" && e2eKey === "1") {
+    // A real engine built to trust the test signing key verified the file offline and unlocked itself.
+    const h = await (await fetch(`http://127.0.0.1:${PORT}/health`)).json();
+    assert.equal(h.valid, true, JSON.stringify(h));
+  }
+  const ltCfg = fs.readFileSync(path.join(baseDir, "vault", "vault.yml"), "utf8");
+  assert.ok(!ltCfg.includes(installKey) && !ltCfg.includes("XXXXXXXX"), "the installer key is not written into the config");
+  const mid = run("machine-id", "vault").stdout.trim();
+  assert.match(mid, /^[0-9a-f]{32}$/);
+  const acts = (await call("GET", "/api/lifetime", undefined, member.cookie)).json.licenses.find((l: any) => l.id === ltLic.id);
+  assert.deepEqual(acts.activations.filter((a: any) => !a.revoked_at).map((a: any) => [a.product, a.machine_id]), [["vault", mid]], "one slot, this machine");
+  assert.equal(sh("docker", ["exec", "vault-core", "test", "-s", "/vault/data/.axto/vault.axto-license"]).status, 0, "activation file inside the app");
+  // Updating re-uses the same device slot; the key is remembered next to the app.
+  const ltUpd = run("update", "vault");
+  assert.equal(ltUpd.status, 0, ltUpd.stdout + ltUpd.stderr);
+  const again = (await call("GET", "/api/lifetime", undefined, member.cookie)).json.licenses.find((l: any) => l.id === ltLic.id);
+  assert.equal(again.activations.filter((a: any) => !a.revoked_at).length, 1);
+  // Another machine cannot take a second slot of a 1-device licence.
+  const other = await call("POST", "/api/selfhosted/installer", { license_key: installKey, action: "activate", product: "vault", machine_id: "f".repeat(32) });
+  assert.equal(other.status, 409);
+  assert.equal(run("uninstall", "vault").status, 0);
 });

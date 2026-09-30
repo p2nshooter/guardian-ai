@@ -10,6 +10,8 @@
 #   4. the image's own HEALTHCHECK command succeeds inside the container
 # No licence is needed: an unlicensed engine must still start and report
 # itself as locked, never crash.
+# ARM64: every image is also built and probed for linux/arm64 under QEMU on the
+# weekly schedule and on manual runs (what ARM servers / Apple Silicon download).
 # ==============================================================================
 name: Docker smoke test
 
@@ -54,6 +56,8 @@ on:
       - 'legal.env.example'
       - '.github/workflows/docker-smoke.yml'
   workflow_dispatch:
+  schedule:
+    - cron: "41 4 * * 1"   # weekly: amd64 + arm64
 
 concurrency:
   group: docker-smoke-${{ github.ref }}
@@ -75,12 +79,14 @@ jobs:
           exit $fail
 
   image:
-    name: "${{ matrix.name }}"
+    name: "${{ matrix.name }} (${{ matrix.arch }})"
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
+        arch: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '["amd64","arm64"]' || '["amd64"]') }}
+        name: [guardian-core, guardian-node, guardian-antivirus, orchestra-core, orchestra-worker-cpu, vault-core, edge-core, soc-core, compliance-core, sentinel-core, studio-core, ai-studio, gpu-studio, hybrid-studio, legal-core]
         include:
           - { name: guardian-core,        context: engine,        dockerfile: engine/Dockerfile,               port: 8080, mount: "guardian.example.yml:/guardian/config/guardian.yml" }
           - { name: guardian-node,        context: engine,        dockerfile: engine/Dockerfile.node,          port: 0,    mount: "guardian.example.yml:/guardian/config/guardian.yml", args: "-e GUARDIAN_CORE_URL=http://127.0.0.1:9" }
@@ -99,33 +105,40 @@ jobs:
           - { name: legal-core,           context: legal,         dockerfile: legal/Dockerfile,                port: 8096, mount: "", args: "--env-file legal.env.example" }
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        if: matrix.arch == 'arm64'
+        with: { platforms: arm64 }
       - uses: docker/setup-buildx-action@v3
       - name: Build
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
+          platforms: linux/${{ matrix.arch }}
           load: true
           push: false
           tags: smoke/${{ matrix.name }}:test
-          cache-from: type=gha,scope=smoke-${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=smoke-${{ matrix.name }}
+          cache-from: type=gha,scope=smoke-${{ matrix.name }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=smoke-${{ matrix.name }}-${{ matrix.arch }}
       - name: Run and probe
         env:
           NAME: ${{ matrix.name }}
+          ARCH: ${{ matrix.arch }}
           PORT: ${{ matrix.port }}
           MOUNT: ${{ matrix.mount }}
           ARGS: ${{ matrix.args }}
         run: |
           set -u
-          opts=(--name smoke -d)
+          opts=(--name smoke -d --platform "linux/$ARCH")
+          # Emulated ARM starts several times slower.
+          tries=90; [ "$ARCH" = "arm64" ] && tries=240
           if [ -n "$MOUNT" ]; then opts+=(-v "$PWD/${MOUNT%%:*}:${MOUNT#*:}:ro"); fi
           if [ "$PORT" != "0" ]; then opts+=(-p "18080:$PORT"); fi
           # shellcheck disable=SC2206
           extra=($ARGS)
           docker run "${opts[@]}" "${extra[@]}" "smoke/$NAME:test"
           code=000
-          for i in $(seq 1 90); do
+          for i in $(seq 1 "$tries"); do
             sleep 2
             running=$(docker inspect -f '{{.State.Running}}' smoke)
             if [ "$running" != "true" ]; then echo "❌ container exited"; docker logs smoke | tail -80; exit 1; fi
@@ -143,7 +156,7 @@ jobs:
             docker exec smoke sh -c "${hc#CMD-SHELL }" && echo "✅ HEALTHCHECK passes" || { echo "❌ HEALTHCHECK command fails"; exit 1; }
           fi
           docker logs smoke 2>&1 | tail -25
-          echo "✅ $NAME"
+          echo "✅ $NAME ($ARCH)"
       - name: Logs on failure
         if: failure()
         run: docker logs smoke 2>&1 | tail -200 || true

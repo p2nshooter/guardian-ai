@@ -89,3 +89,27 @@ test("engines: all 13 licence modules verify the SAME activation format and fiel
     assert.ok(!src.includes("axto.io/buy"), `${f}: no dead purchase link`);
   }
 });
+
+test("installer keys: LIFE- shape, unique, never a subscription prefix", async () => {
+  const { newInstallKey, isInstallKey } = await import("../lib/lifetime");
+  const { productFromKey } = await import("../lib/selfhosted");
+  const keys = new Set(Array.from({ length: 200 }, () => newInstallKey()));
+  assert.equal(keys.size, 200);
+  for (const k of keys) {
+    assert.ok(isInstallKey(k), k);
+    assert.equal(productFromKey(k), null, "a LIFE key must never look like a product key");
+  }
+  assert.equal(isInstallKey("LIFE-0123ABCD-89EF0123-DEADBEEF"), false);
+  assert.equal(isInstallKey("life-0123abcd-89ef0123-deadbeef-00000000"), false, "the API upper-cases first");
+});
+
+test("builds: engine architecture → image file name", async () => {
+  const { normArch, archImageName } = await import("../lib/builds");
+  assert.equal(normArch(undefined), "amd64");
+  assert.equal(normArch("x86_64"), "amd64");
+  assert.equal(normArch("aarch64"), "arm64");
+  assert.equal(normArch("ARM64"), "arm64");
+  assert.equal(normArch("s390x"), "");
+  assert.equal(archImageName("vault-core", "amd64"), "vault-core");
+  assert.equal(archImageName("vault-core", "arm64"), "vault-core-arm64");
+});

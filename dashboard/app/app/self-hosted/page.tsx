@@ -13,7 +13,7 @@ import { SH_TAGLINES } from "@/lib/i18n-pages/shtaglines";
 
 interface Product {
   slug: string; name: string; emoji: string; tagline: string; port: number; compose: string; config: string; configTarget: string; licenseField: string;
-  images: { name: string; label: string; optional?: boolean; available: boolean }[];
+  images: { name: string; label: string; optional?: boolean; available: boolean; arm64?: boolean }[];
   license: { license_key: string; status: string; expires_at: string; max_nodes: number; bound_machine_id: string; last_seen_at: string; last_version: string; held?: number } | null;
 }
 interface Data { tier: string; planName: string; allowance: number; nodes: number; used: number; periodEnd: string; products: Product[] }
@@ -113,7 +113,7 @@ export default function SelfHostedPage() {
                   {l && open === p.slug ? (
                     <div className="mt-3 rounded-lg bg-slate-50 p-4 text-sm">
                       <div className="font-semibold">{t.images}</div>
-                      <ul className="mt-1 space-y-1">{p.images.map((i) => <li key={i.name}>{i.available ? <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>{i.label} — {i.name}.tar.gz</a> : <span className="text-slate-400">{i.label} ({tt("sh.preparing")})</span>}{i.optional ? " · optional" : ""}</li>)}</ul>
+                      <ul className="mt-1 space-y-1">{p.images.map((i) => <li key={i.name}>{i.available ? <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>{i.label} — {i.name}.tar.gz</a> : <span className="text-slate-400">{i.label} ({tt("sh.preparing")})</span>}{i.arm64 ? <> · <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}-arm64`}>ARM64</a></> : null}{i.optional ? " · optional" : ""}</li>)}</ul>
                       <div className="mt-3 font-semibold">{t.configs}</div>
                       <ul className="mt-1 space-y-1"><li><a href={`/configs/${p.compose}`} download>{p.compose}</a></li><li><a href={`/configs/${p.config}`} download>{p.config}</a> → <code>{p.configTarget}</code></li></ul>
                       <ol className="mt-3 list-decimal space-y-1 pl-5 text-slate-700">

@@ -51,7 +51,7 @@ export const V32_EN = {
   "lt.inc1": "Top-tier features of the chosen app(s), forever, for the purchased major version",
   "lt.inc2": "Works fully offline — a signed activation file per device, no calls to axto.io",
   "lt.inc3": "12 months of updates included",
-  "lt.inc4": "Windows installer (EXE) and Docker images",
+  "lt.inc4": "AXTO Setup for Windows, Linux and macOS, plus Docker images (x86-64 and ARM64)",
   "lt.inc5": "Pay by bank/wire transfer (invoice), crypto or card",
   "lt.payMethod": "Payment method",
   "lt.cardLimit": "Card payments go up to {max}; above that, pay by bank/wire transfer or crypto.",
@@ -115,6 +115,8 @@ export const V32_EN = {
   "sh.held": "Locked by AXTO — contact support",
   "pay.error": "We could not confirm this payment. If money left your account, contact support with your order number — nothing is lost.",
   "pay.canceled": "Payment canceled — nothing was charged.",
+  "lt.installKey": "Installer key",
+  "lt.installHint": "Paste it into AXTO Setup (Windows, Linux or macOS): it downloads the app, installs it and activates this device automatically. Keep it private — it can use your device slots.",
 } as const;
 
 export type K32 = keyof typeof V32_EN;
@@ -160,7 +162,7 @@ const id: D = {
   "lt.inc1": "Fitur tier tertinggi dari aplikasi yang dipilih, selamanya, untuk versi mayor yang dibeli",
   "lt.inc2": "Berjalan sepenuhnya offline — file aktivasi bertanda tangan per perangkat, tanpa koneksi ke axto.io",
   "lt.inc3": "Termasuk pembaruan 12 bulan",
-  "lt.inc4": "Installer Windows (EXE) dan image Docker",
+  "lt.inc4": "AXTO Setup untuk Windows, Linux, dan macOS, plus image Docker (x86-64 dan ARM64)",
   "lt.inc5": "Bayar lewat transfer bank/wire (invoice), kripto, atau kartu",
   "lt.payMethod": "Metode pembayaran",
   "lt.cardLimit": "Pembayaran kartu maksimal {max}; di atas itu, bayar lewat transfer bank/wire atau kripto.",
@@ -221,6 +223,8 @@ const id: D = {
   "sh.held": "Dikunci oleh AXTO — hubungi dukungan",
   "pay.error": "Pembayaran ini belum bisa kami konfirmasi. Jika dana sudah terpotong, hubungi dukungan dengan nomor pesanan Anda — tidak ada yang hilang.",
   "pay.canceled": "Pembayaran dibatalkan — tidak ada yang ditagih.",
+  "lt.installKey": "Kunci installer",
+  "lt.installHint": "Tempel di AXTO Setup (Windows, Linux, atau macOS): aplikasi diunduh, dipasang, dan perangkat ini diaktifkan otomatis. Rahasiakan — kunci ini bisa memakai slot perangkat Anda.",
 };
 
 const ms: D = {
@@ -263,7 +267,7 @@ const ms: D = {
   "lt.inc1": "Ciri peringkat tertinggi aplikasi yang dipilih, selamanya, untuk versi utama yang dibeli",
   "lt.inc2": "Berfungsi sepenuhnya di luar talian — fail pengaktifan bertandatangan bagi setiap peranti, tiada panggilan ke axto.io",
   "lt.inc3": "Kemas kini 12 bulan disertakan",
-  "lt.inc4": "Pemasang Windows (EXE) dan imej Docker",
+  "lt.inc4": "AXTO Setup untuk Windows, Linux dan macOS, serta imej Docker (x86-64 dan ARM64)",
   "lt.inc5": "Bayar melalui pindahan bank/wayar (invois), kripto atau kad",
   "lt.payMethod": "Kaedah pembayaran",
   "lt.cardLimit": "Pembayaran kad sehingga {max}; melebihi itu, bayar melalui pindahan bank/wayar atau kripto.",
@@ -324,6 +328,8 @@ const ms: D = {
   "sh.held": "Dikunci oleh AXTO — hubungi sokongan",
   "pay.error": "Kami tidak dapat mengesahkan pembayaran ini. Jika wang telah ditolak, hubungi sokongan dengan nombor pesanan anda — tiada apa yang hilang.",
   "pay.canceled": "Pembayaran dibatalkan — tiada caj dikenakan.",
+  "lt.installKey": "Kunci pemasang",
+  "lt.installHint": "Tampal dalam AXTO Setup (Windows, Linux atau macOS): aplikasi dimuat turun, dipasang dan peranti ini diaktifkan secara automatik. Rahsiakan — ia boleh menggunakan slot peranti anda.",
 };
 
 const de: D = {
@@ -366,7 +372,7 @@ const de: D = {
   "lt.inc1": "Funktionen der höchsten Stufe der gewählten App(s), dauerhaft, für die gekaufte Hauptversion",
   "lt.inc2": "Funktioniert komplett offline – eine signierte Aktivierungsdatei pro Gerät, keine Verbindung zu axto.io",
   "lt.inc3": "12 Monate Updates inklusive",
-  "lt.inc4": "Windows-Installer (EXE) und Docker-Images",
+  "lt.inc4": "AXTO Setup für Windows, Linux und macOS sowie Docker-Images (x86-64 und ARM64)",
   "lt.inc5": "Zahlung per Bank-/Auslandsüberweisung (Rechnung), Krypto oder Karte",
   "lt.payMethod": "Zahlungsart",
   "lt.cardLimit": "Kartenzahlungen sind bis {max} möglich; darüber per Bank-/Auslandsüberweisung oder Krypto.",
@@ -427,6 +433,8 @@ const de: D = {
   "sh.held": "Von AXTO gesperrt – Support kontaktieren",
   "pay.error": "Wir konnten diese Zahlung nicht bestätigen. Falls Geld abgebucht wurde, kontaktieren Sie den Support mit Ihrer Bestellnummer – es geht nichts verloren.",
   "pay.canceled": "Zahlung abgebrochen – es wurde nichts belastet.",
+  "lt.installKey": "Installationsschlüssel",
+  "lt.installHint": "In AXTO Setup einfügen (Windows, Linux oder macOS): Die App wird heruntergeladen, installiert und dieses Gerät automatisch aktiviert. Geheim halten – der Schlüssel kann Ihre Geräteplätze belegen.",
 };
 
 const fr: D = {
@@ -469,7 +477,7 @@ const fr: D = {
   "lt.inc1": "Fonctionnalités du niveau le plus élevé des applications choisies, pour toujours, pour la version majeure achetée",
   "lt.inc2": "Fonctionne entièrement hors ligne — un fichier d'activation signé par appareil, aucun appel à axto.io",
   "lt.inc3": "12 mois de mises à jour inclus",
-  "lt.inc4": "Installateur Windows (EXE) et images Docker",
+  "lt.inc4": "AXTO Setup pour Windows, Linux et macOS, plus les images Docker (x86-64 et ARM64)",
   "lt.inc5": "Paiement par virement bancaire/international (facture), crypto ou carte",
   "lt.payMethod": "Moyen de paiement",
   "lt.cardLimit": "Les paiements par carte vont jusqu'à {max} ; au-delà, payez par virement bancaire/international ou en crypto.",
@@ -530,6 +538,8 @@ const fr: D = {
   "sh.held": "Verrouillée par AXTO — contactez le support",
   "pay.error": "Nous n'avons pas pu confirmer ce paiement. Si vous avez été débité, contactez le support avec votre numéro de commande — rien n'est perdu.",
   "pay.canceled": "Paiement annulé — rien n'a été débité.",
+  "lt.installKey": "Clé d'installation",
+  "lt.installHint": "Collez-la dans AXTO Setup (Windows, Linux ou macOS) : l'application est téléchargée, installée et cet appareil activé automatiquement. Gardez-la secrète — elle peut utiliser vos emplacements d'appareils.",
 };
 
 const it: D = {
@@ -572,7 +582,7 @@ const it: D = {
   "lt.inc1": "Funzionalità del livello più alto delle app scelte, per sempre, per la versione principale acquistata",
   "lt.inc2": "Funziona completamente offline: un file di attivazione firmato per dispositivo, nessuna connessione ad axto.io",
   "lt.inc3": "12 mesi di aggiornamenti inclusi",
-  "lt.inc4": "Programma di installazione Windows (EXE) e immagini Docker",
+  "lt.inc4": "AXTO Setup per Windows, Linux e macOS, più le immagini Docker (x86-64 e ARM64)",
   "lt.inc5": "Pagamento con bonifico bancario/internazionale (fattura), crypto o carta",
   "lt.payMethod": "Metodo di pagamento",
   "lt.cardLimit": "I pagamenti con carta arrivano fino a {max}; oltre, paga con bonifico bancario/internazionale o crypto.",
@@ -633,6 +643,8 @@ const it: D = {
   "sh.held": "Bloccata da AXTO — contatta il supporto",
   "pay.error": "Non siamo riusciti a confermare questo pagamento. Se ti è stato addebitato, contatta il supporto con il numero d'ordine: nulla va perso.",
   "pay.canceled": "Pagamento annullato: nessun addebito.",
+  "lt.installKey": "Chiave di installazione",
+  "lt.installHint": "Incollala in AXTO Setup (Windows, Linux o macOS): l'app viene scaricata, installata e questo dispositivo attivato automaticamente. Tienila riservata: può usare i tuoi slot dispositivo.",
 };
 
 const zh: D = {
@@ -675,7 +687,7 @@ const zh: D = {
   "lt.inc1": "所选应用的最高级功能，永久可用，适用于所购买的主版本",
   "lt.inc2": "完全离线运行——每台设备一个签名激活文件，不连接 axto.io",
   "lt.inc3": "包含 12 个月更新",
-  "lt.inc4": "Windows 安装程序（EXE）和 Docker 镜像",
+  "lt.inc4": "适用于 Windows、Linux 和 macOS 的 AXTO Setup，以及 Docker 镜像（x86-64 与 ARM64）",
   "lt.inc5": "可通过银行/电汇转账（发票）、加密货币或银行卡付款",
   "lt.payMethod": "付款方式",
   "lt.cardLimit": "银行卡付款最高 {max}；超过此金额请通过银行/电汇转账或加密货币付款。",
@@ -736,6 +748,8 @@ const zh: D = {
   "sh.held": "已被 AXTO 锁定——请联系支持",
   "pay.error": "我们无法确认这笔付款。如果已扣款，请携订单号联系支持——不会有任何损失。",
   "pay.canceled": "付款已取消——未产生任何扣款。",
+  "lt.installKey": "安装密钥",
+  "lt.installHint": "粘贴到 AXTO Setup（Windows、Linux 或 macOS）：自动下载并安装应用，并激活本设备。请妥善保管——它会占用您的设备名额。",
 };
 
 const ja: D = {
@@ -778,7 +792,7 @@ const ja: D = {
   "lt.inc1": "選択したアプリの最上位機能を、購入したメジャーバージョンで永続的に利用可能",
   "lt.inc2": "完全オフラインで動作 — デバイスごとの署名付きアクティベーションファイル、axto.io への通信なし",
   "lt.inc3": "12 か月分のアップデートを含む",
-  "lt.inc4": "Windows インストーラー（EXE）と Docker イメージ",
+  "lt.inc4": "Windows・Linux・macOS 用 AXTO Setup と Docker イメージ（x86-64 / ARM64）",
   "lt.inc5": "銀行振込／海外送金（請求書）、暗号資産、またはカードでお支払い",
   "lt.payMethod": "お支払い方法",
   "lt.cardLimit": "カード払いは {max} までです。それを超える場合は銀行振込／海外送金または暗号資産でお支払いください。",
@@ -839,6 +853,8 @@ const ja: D = {
   "sh.held": "AXTO によりロック中 — サポートにご連絡ください",
   "pay.error": "このお支払いを確認できませんでした。引き落としがあった場合は、注文番号を添えてサポートにご連絡ください。失われるものはありません。",
   "pay.canceled": "お支払いはキャンセルされました。請求はありません。",
+  "lt.installKey": "インストーラーキー",
+  "lt.installHint": "AXTO Setup（Windows・Linux・macOS）に貼り付けると、アプリのダウンロード、インストール、このデバイスの有効化まで自動で行います。デバイス枠を使えるため、他人に教えないでください。",
 };
 
 const hi: D = {
@@ -881,7 +897,7 @@ const hi: D = {
   "lt.inc1": "चुने गए ऐप की सर्वोच्च-स्तरीय सुविधाएँ, हमेशा के लिए, खरीदे गए मुख्य संस्करण के लिए",
   "lt.inc2": "पूरी तरह ऑफ़लाइन काम करता है — हर डिवाइस के लिए हस्ताक्षरित एक्टिवेशन फ़ाइल, axto.io से कोई संपर्क नहीं",
   "lt.inc3": "12 महीने के अपडेट शामिल",
-  "lt.inc4": "Windows इंस्टॉलर (EXE) और Docker इमेज",
+  "lt.inc4": "Windows, Linux और macOS के लिए AXTO Setup, साथ में Docker इमेज (x86-64 और ARM64)",
   "lt.inc5": "बैंक/वायर ट्रांसफ़र (इनवॉइस), क्रिप्टो या कार्ड से भुगतान",
   "lt.payMethod": "भुगतान का तरीका",
   "lt.cardLimit": "कार्ड से भुगतान {max} तक; उससे अधिक होने पर बैंक/वायर ट्रांसफ़र या क्रिप्टो से भुगतान करें।",
@@ -942,6 +958,8 @@ const hi: D = {
   "sh.held": "AXTO द्वारा लॉक — सहायता से संपर्क करें",
   "pay.error": "हम इस भुगतान की पुष्टि नहीं कर सके। यदि पैसे कट गए हैं, तो अपने ऑर्डर नंबर के साथ सहायता से संपर्क करें — कुछ भी नहीं खोएगा।",
   "pay.canceled": "भुगतान रद्द — कोई शुल्क नहीं लिया गया।",
+  "lt.installKey": "इंस्टॉलर कुंजी",
+  "lt.installHint": "इसे AXTO Setup (Windows, Linux या macOS) में पेस्ट करें: ऐप डाउनलोड, इंस्टॉल और यह डिवाइस अपने-आप सक्रिय हो जाता है। इसे गोपनीय रखें — यह आपके डिवाइस स्लॉट उपयोग कर सकती है।",
 };
 
 const ar: D = {
@@ -984,7 +1002,7 @@ const ar: D = {
   "lt.inc1": "ميزات أعلى فئة للتطبيقات المختارة، إلى الأبد، للإصدار الرئيسي المشترى",
   "lt.inc2": "يعمل دون اتصال بالكامل — ملف تفعيل موقَّع لكل جهاز، ولا اتصال بـ axto.io",
   "lt.inc3": "تحديثات لمدة 12 شهرًا مشمولة",
-  "lt.inc4": "مثبّت Windows (EXE) وصور Docker",
+  "lt.inc4": "AXTO Setup لأنظمة Windows وLinux وmacOS، إضافةً إلى صور Docker (x86-64 وARM64)",
   "lt.inc5": "الدفع بالتحويل البنكي/الدولي (فاتورة) أو بالعملات المشفرة أو بالبطاقة",
   "lt.payMethod": "طريقة الدفع",
   "lt.cardLimit": "الدفع بالبطاقة حتى {max}؛ وما يزيد على ذلك يُدفع بالتحويل البنكي/الدولي أو بالعملات المشفرة.",
@@ -1045,6 +1063,8 @@ const ar: D = {
   "sh.held": "مقفلة من AXTO — تواصل مع الدعم",
   "pay.error": "تعذّر علينا تأكيد هذه الدفعة. إذا خُصم المبلغ، تواصل مع الدعم مع رقم طلبك — لن يضيع شيء.",
   "pay.canceled": "أُلغيت الدفعة — لم يُخصم أي مبلغ.",
+  "lt.installKey": "مفتاح المثبّت",
+  "lt.installHint": "الصقه في AXTO Setup (Windows أو Linux أو macOS): يُنزَّل التطبيق ويُثبَّت ويُفعَّل هذا الجهاز تلقائيًا. احتفظ به سرًّا — يمكنه استخدام خانات أجهزتك.",
 };
 
 export const V32: Record<Exclude<Lang, "en">, D> = { id, ms, de, fr, it, zh, ja, hi, ar };

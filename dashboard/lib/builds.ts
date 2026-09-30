@@ -27,3 +27,14 @@ export async function availableBuilds(req: NextRequest): Promise<Set<string>> {
 
 export const imageKey = (name: string) => `builds/latest/raw/${name}.tar.gz`;
 export const exeKey = (exe: string) => `builds/latest/exe/${exe}-windows.exe`;
+
+/** Docker engine architecture as the installer reports it → "amd64" | "arm64" ("" = unsupported). Default amd64. */
+export function normArch(a: unknown): "amd64" | "arm64" | "" {
+  const s = String(a ?? "").trim().toLowerCase();
+  if (!s || s === "amd64" || s === "x86_64") return "amd64";
+  if (s === "arm64" || s === "aarch64") return "arm64";
+  return "";
+}
+
+/** R2 file base for an image: amd64 keeps the historical name, arm64 builds are <name>-arm64. */
+export const archImageName = (name: string, arch: string) => (arch === "arm64" ? `${name}-arm64` : name);

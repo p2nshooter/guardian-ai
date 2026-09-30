@@ -18,7 +18,9 @@ const T = {
     confirmRemove: "Uninstall {app}? Choose OK to also DELETE its data, Cancel to keep the data.", done: "{app} is running at {url}",
     upToDate: "Up to date", reinstall: "Reinstall / repair", valid: "Valid for {app} until {date}.",
     dockerOk: "Docker {v} is running", composeOk: "Docker Compose {v}", wslOk: "WSL 2 is enabled", wslBad: "WSL 2 is not enabled",
-    res: "{gb} GB RAM · {cpu} CPUs available to Docker", lowRes: "Tip: give Docker at least 4 GB RAM (Docker Desktop → Settings → Resources)." },
+    res: "{gb} GB RAM · {cpu} CPUs available to Docker", lowRes: "Tip: give Docker at least 4 GB RAM (Docker Desktop → Settings → Resources).",
+    keyHint: "Lifetime licence? Paste its installer key (LIFE-…) from axto.io/app/lifetime.", pick: "Which app do you want to install?",
+    lifetimeOk: "Lifetime licence for {app} — updates included until {date}. This device is activated automatically." },
   id: { install: "Instal", manage: "Kelola aplikasi", s1: "Cek komputer", s2: "Kunci lisensi", s3: "Opsi", s4: "Instal",
     h1: "Mari jalankan aplikasi AXTO Anda", p1: "Aplikasi AXTO berjalan di Docker. Di Windows itu Docker Desktop dengan WSL 2 — semuanya kami cek untuk Anda.",
     checking: "Memeriksa…", recheck: "Cek lagi", startDocker: "Jalankan Docker Desktop", continue: "Lanjut", h2: "Masukkan kunci lisensi",
@@ -31,7 +33,9 @@ const T = {
     confirmRemove: "Uninstall {app}? Pilih OK untuk juga MENGHAPUS datanya, Cancel untuk menyimpan data.", done: "{app} berjalan di {url}",
     upToDate: "Terbaru", reinstall: "Instal ulang / perbaiki", valid: "Berlaku untuk {app} sampai {date}.",
     dockerOk: "Docker {v} berjalan", composeOk: "Docker Compose {v}", wslOk: "WSL 2 aktif", wslBad: "WSL 2 belum aktif",
-    res: "{gb} GB RAM · {cpu} CPU tersedia untuk Docker", lowRes: "Tips: beri Docker minimal 4 GB RAM (Docker Desktop → Settings → Resources)." },
+    res: "{gb} GB RAM · {cpu} CPU tersedia untuk Docker", lowRes: "Tips: beri Docker minimal 4 GB RAM (Docker Desktop → Settings → Resources).",
+    keyHint: "Lisensi Lifetime? Tempel kunci installer (LIFE-…) dari axto.io/app/lifetime.", pick: "Aplikasi mana yang ingin dipasang?",
+    lifetimeOk: "Lisensi Lifetime untuk {app} — pembaruan termasuk sampai {date}. Perangkat ini diaktifkan otomatis." },
 };
 let lang = localStorage.getItem("axto_lang") || (/^(id|in)\b/i.test(navigator.language) ? "id" : "en");
 const t = (k, v = {}) => (T[lang][k] || T.en[k] || k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
@@ -52,7 +56,7 @@ function applyLang() {
   $("#lang").textContent = lang === "en" ? "ID" : "EN";
 }
 
-let info = null, licence = null, currentKey = "";
+let info = null, licence = null, currentKey = "", currentApp = "";
 function stepTo(n) {
   for (let i = 1; i <= 4; i++) show($(`#step${i}`), i === n);
   document.querySelectorAll("#steps li").forEach((li) => { const s = +li.dataset.step; li.className = s === n ? "on" : s < n ? "done" : ""; });
@@ -87,12 +91,22 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 
 async function verifyKey() {
   show($("#keyErr"), false); show($("#keyOk"), false);
-  currentKey = $("#key").value.trim().toUpperCase();
+  const key = $("#key").value.trim().toUpperCase();
+  if (key !== currentKey) { currentKey = key; currentApp = ""; show($("#pickBox"), false); }
+  if (!$("#pickBox").classList.contains("hidden")) currentApp = $("#pick").value;
   $("#next2").disabled = true;
   try {
-    licence = await api("/api/licence", { key: currentKey });
+    licence = await api("/api/licence", { key: currentKey, app: currentApp });
+    if (licence.choose) {
+      // Lifetime suite: pick the app, then verify again.
+      $("#pick").innerHTML = licence.choose.map((c) => `<option value="${esc(c.slug)}">${esc(c.name)}</option>`).join("");
+      show($("#pickBox"), true);
+      $("#next2").disabled = false;
+      return;
+    }
     const p = licence.product;
-    $("#keyOk").textContent = t("valid", { app: p.Name, date: (licence.expires_at || "").slice(0, 10) });
+    currentApp = p.Slug;
+    $("#keyOk").textContent = t(licence.lifetime ? "lifetimeOk" : "valid", { app: p.Name, date: (licence.expires_at || "").slice(0, 10) });
     show($("#keyOk"), true);
     $("#h3").textContent = p.Name;
     $("#note3").textContent = (info.docker.os === "windows" && p.WindowsNote) ? p.WindowsNote : p.Note;
@@ -125,7 +139,7 @@ async function install() {
   show($("#done"), false); show($("#failed"), false);
   $("#h4").textContent = t("installing"); $("#log").textContent = ""; $("#bar").style.width = "0";
   try {
-    const { job } = await api("/api/install", { key: currentKey, port: +$("#port").value, lan: $("#lan").checked });
+    const { job } = await api("/api/install", { key: currentKey, app: currentApp, port: +$("#port").value, lan: $("#lan").checked });
     await follow(job, $("#log"), (j) => {
       if (j.status === "done") {
         $("#h4").textContent = "✔ " + licence.product.Name;

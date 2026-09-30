@@ -29,9 +29,10 @@ export async function GET(req: NextRequest) {
   let name = "";
   if (file === "exe" && p.exe) { key = `builds/latest/exe/${p.exe}-windows.exe`; name = `${p.exe}-windows.exe`; }
   else {
-    const img = p.images.find((i) => i.name === file);
+    // <image> = x86-64 build, <image>-arm64 = ARM build
+    const img = p.images.find((i) => i.name === file.replace(/-arm64$/, ""));
     if (!img) return new NextResponse("Unknown file", { status: 404 });
-    key = `builds/latest/raw/${img.name}.tar.gz`; name = `${img.name}.tar.gz`;
+    key = `builds/latest/raw/${file}.tar.gz`; name = `${file}.tar.gz`;
   }
   const obj = await getR2Builds(req).get(key);
   if (!obj) return new NextResponse("This build is being prepared. Please try again later.", { status: 404 });

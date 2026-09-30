@@ -191,16 +191,20 @@ func (w *wizard) info(r *http.Request) (any, error) {
 }
 
 func (w *wizard) licence(r *http.Request) (any, error) {
-	var b struct{ Key string }
+	var b struct{ Key, App string }
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		return nil, err
 	}
-	if !ValidKeyShape(b.Key) {
-		return nil, fmt.Errorf("that doesn't look like an AXTO licence key — it has the form PREFIX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX")
+	if !ValidKeyShape(b.Key) && !IsLifetimeKey(b.Key) {
+		return nil, fmt.Errorf("that doesn't look like an AXTO licence key — it has the form PREFIX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX (lifetime: LIFE-…)")
 	}
-	info, err := CheckLicence(r.Context(), w.portal, b.Key)
+	info, err := CheckLicence(r.Context(), w.portal, b.Key, b.App, CheckDocker(r.Context()).Arch)
 	if err != nil {
 		return nil, err
+	}
+	if len(info.Choose) > 0 {
+		// Lifetime suite: the wizard shows an app picker and asks again with App set.
+		return map[string]any{"choose": info.Choose, "lifetime": true}, nil
 	}
 	p := ProductBySlug(info.Product)
 	if p == nil {
@@ -212,20 +216,26 @@ func (w *wizard) licence(r *http.Request) (any, error) {
 			total += im.Size
 		}
 	}
-	return map[string]any{"product": p, "expires_at": info.ExpiresAt, "download_bytes": total, "download": fmtBytes(total), "installed": LoadState()[p.Slug]}, nil
+	return map[string]any{"product": p, "expires_at": info.ExpiresAt, "lifetime": info.Lifetime, "download_bytes": total, "download": fmtBytes(total), "installed": LoadState()[p.Slug]}, nil
 }
 
 func (w *wizard) install(r *http.Request) (any, error) {
 	var b struct {
 		Key  string
+		App  string
 		Port int
 		LAN  bool
 	}
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		return nil, err
 	}
-	p := ProductForKey(b.Key)
-	if p == nil || !ValidKeyShape(b.Key) {
+	var p *Product
+	if IsLifetimeKey(b.Key) {
+		p = ProductBySlug(b.App) // the app the licence check confirmed
+	} else if ValidKeyShape(b.Key) {
+		p = ProductForKey(b.Key)
+	}
+	if p == nil {
 		return nil, fmt.Errorf("invalid licence key")
 	}
 	if b.Port == 0 {
