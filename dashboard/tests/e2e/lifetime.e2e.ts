@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { adminCookie } from "./admin-session";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
@@ -63,7 +64,7 @@ let orderId = "", licenseId = "";
 
 before(async () => {
   d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
-  assert.equal((await admin.post("/api/auth/login", { email: "e2e-admin@axto.io", password: "e2e-admin-Pass-2026" })).status, 200);
+  admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   const g = await admin.get("/api/admin/gateways");
   if (!g.json.gateways.find((x: any) => x.id === "manual")?.active) {
     assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "0123456789", account_name: "AXTO" } })).status, 200);

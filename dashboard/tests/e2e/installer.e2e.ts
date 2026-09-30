@@ -12,6 +12,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { adminCookie } from "./admin-session";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
@@ -69,7 +70,7 @@ test("installer: licence → signed download → docker load → run → manage 
 
   // 3. A Business member with a Vault licence.
   d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
-  const admin = await call("POST", "/api/auth/login", { email: "e2e-admin@axto.io", password: "e2e-admin-Pass-2026" });
+  const admin = { status: 200, cookie: await adminCookie() };   // shared admin session
   const reg = await call("POST", "/api/auth/register", { email: `inst-${RUN}@example.com`, name: "Installer Test", password: "abcdefgh1", acceptTerms: true });
   assert.equal(reg.status, 200);
   const [u] = d1(`SELECT id FROM users WHERE email = 'inst-${RUN}@example.com'`);

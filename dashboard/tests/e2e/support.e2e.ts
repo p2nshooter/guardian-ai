@@ -10,6 +10,7 @@ import http from "node:http";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { adminCookie } from "./admin-session";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
@@ -76,7 +77,7 @@ before(async () => {
     });
   }).listen(MOCK_PORT);
   d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
-  assert.equal((await admin.post("/api/auth/login", { email: "e2e-admin@axto.io", password: "e2e-admin-Pass-2026" })).status, 200);
+  admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
 });
 after(() => mock?.close());
 

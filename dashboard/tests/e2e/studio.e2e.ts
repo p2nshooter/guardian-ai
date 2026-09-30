@@ -6,6 +6,7 @@ import http from "node:http";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { adminCookie } from "./admin-session";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
@@ -48,7 +49,7 @@ before(async () => {
     } else { res.writeHead(404); res.end(); }
   }).listen(MOCK_PORT);
   d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
-  assert.equal((await admin.post("/api/auth/login", { email: "e2e-admin@axto.io", password: "e2e-admin-Pass-2026" })).status, 200);
+  admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   assert.equal((await admin.call("PUT", "/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "1", account_name: "AXTO" } })).status, 200);
   assert.equal((await member.post("/api/auth/register", { email: `studio-${RUN}@example.com`, name: "Studio", password: "abcdefgh1", acceptTerms: true })).status, 200);
   const o = await member.post("/api/billing/checkout", { plan: "starter", cycle: "monthly", gateway: "manual" });

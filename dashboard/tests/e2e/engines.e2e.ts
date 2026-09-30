@@ -13,6 +13,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { adminCookie } from "./admin-session";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
@@ -81,7 +82,7 @@ const dockerAvailable = docker("info").status === 0;
 test("engines: every licence family validates, resists tampering and replay", { skip: !dockerAvailable && "Docker not available", timeout: 600_000 }, async () => {
   // Admin + a member on Enterprise (every app, unlimited nodes).
   d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
-  const admin = await call("POST", "/api/auth/login", { email: "e2e-admin@axto.io", password: "e2e-admin-Pass-2026" });
+  const admin = { status: 200, cookie: await adminCookie() };   // shared admin session
   assert.equal(admin.status, 200);
   const reg = await call("POST", "/api/auth/register", { email: `engines-${RUN}@example.com`, name: "Engine Test", password: "abcdefgh1", acceptTerms: true });
   assert.equal(reg.status, 200);

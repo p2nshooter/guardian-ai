@@ -9,6 +9,7 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { adminCookie } from "./admin-session";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
@@ -70,7 +71,7 @@ async function newMember(tag: string, plan?: string) {
 
 before(async () => {
   d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
-  assert.equal((await admin.post("/api/auth/login", { email: "e2e-admin@axto.io", password: "e2e-admin-Pass-2026" })).status, 200);
+  admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   // Bank transfer (to create orders) + Stripe (to replay signed webhooks). Stripe is switched off again in after().
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", credentials: { instructions: "Bank Test 123" }, is_active: true })).status, 200);
   const s = await admin.put("/api/admin/gateways", { gateway: "stripe", credentials: { secret_key: "sk_test_e2e", webhook_secret: WHSEC }, is_active: true });
