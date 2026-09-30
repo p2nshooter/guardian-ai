@@ -573,7 +573,7 @@ lalu uji nyata di Docker: installer asli memasang engine Vault asli (image diban
 ### 21b. Bukti
 - E2E installer (`tests/e2e/installer.e2e.ts`) dengan **engine Vault asli**: kunci langganan (instal, kelola, update, cabut, uninstall) **dan** kunci Lifetime Suite (pilih aplikasi, arm64 → `vault-core-arm64`, instal, aktivasi otomatis, `/health` `valid:true` dari file bertanda tangan, update tanpa slot baru, mesin lain ditolak 409).
 - Go: `IsLifetimeKey`, pemetaan arsitektur, config Lifetime tanpa kunci; TS: bentuk kunci `LIFE-`, nama file per arsitektur.
-- CI GitHub sebelumnya: Docker smoke test 15 image ✅, Deploy Preview ✅.
+- CI GitHub (branch ini): **Docker smoke test 31/31 ✅ — 15 image amd64 + 15 image ARM64** (build, start, `/health`, HEALTHCHECK; ARM64 lewat QEMU) + semua compose; **AXTO Setup Linux + Windows ✅** (sebelumnya merah); **E2E ✅** (sebelumnya merah karena 429); Deploy Preview ✅.
 
 ### 21c. Sisa (dicatat, bukan bug)
 - Container masih berjalan sebagai root (kecuali Legal). Beralih ke user non-root perlu migrasi izin volume yang sudah ada — rencanakan dengan langkah `chown` satu kali di entrypoint.
