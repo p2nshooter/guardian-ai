@@ -84,7 +84,8 @@ test("lifetime: live prices are public; checkout validates the choice and charge
   assert.equal(o.json.lifetime.paypalMaxUsd, 10_000);
 
   assert.equal((await new Client().post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" })).status, 401);
-  assert.equal((await admin.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" })).status, 400, "admins don't buy");
+  const adminTry = await admin.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" });
+  assert.equal(adminTry.status, 400, `admins don't buy: ${adminTry.text}`);
   assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", devices: 5, gateway: "manual" })).status, 400, "app required");
   assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "galaxy", devices: 5, gateway: "manual" })).status, 400, "scope");
   assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 3, gateway: "manual" })).status, 400, "devices must be a tier");

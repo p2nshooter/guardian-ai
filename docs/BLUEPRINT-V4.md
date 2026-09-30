@@ -200,7 +200,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 3 | Privacy Vault v4 | ✅ selesai | 22 unit test (`tests/vault.test.ts`); uji browser 40/40 (teks, tinjauan, AI Aman, kunci terenkripsi, aturan, DOCX/XLSX in-place, PDF image-only, OCR gambar, ZIP, laporan audit) |
 | 4 | Security Analyst v4 | ✅ selesai | 9 unit test (`tests/security-v4.test.ts`); E2E briefing + kasus v4 (`apps.e2e.ts`); uji browser 66/66 (lihat §11); E2E penuh 91 tes (89 lulus, 0 gagal, 2 dilewati: Docker) |
 | 5 | Compliance Center v4 | ✅ selesai | 8 unit test (`tests/compliance-v4.test.ts`); 2 E2E baru (`apps.e2e.ts`); uji browser 53/53 (lihat §12); E2E penuh 93 tes (91 lulus, 0 gagal, 2 dilewati: Docker) |
-| 6 | Prompt Library v4 (≥ 240 prompt) | ⏳ | — |
+| 6 | Prompt Library v4 (240 prompt) | ✅ selesai | 4 unit test katalog (`tests/prompts-catalog.test.ts`); 3 E2E baru (`prompts.e2e.ts`); uji browser 42/42 (lihat §13); E2E penuh 96 tes (94 lulus, 0 gagal, 2 dilewati: Docker) |
 | 7 | Legal AI v4 (redline, playbook, klausa) | ⏳ | — |
 | 8 | Mode Lokal (on-device AI) | ⏳ | — |
 | 9 | Halaman penawaran situs + serah terima admin otomatis | ✅ selesai | `/acquire` (EN/ID), `/admin/acquisition`; E2E `acquisition.e2e.ts` 6/6; uji browser 11/11; panduan `docs/admin/SITE_SALE.md` |
@@ -289,4 +289,25 @@ Setiap fase: kode → unit test → E2E lokal penuh → commit & push → baris 
 **Portal:** member — aplikasi, fitur di Apps (10 bahasa), My files (program + bukti); admin — kelayakan paket di matriks paket; publik — `/apps/compliance` dengan JSON-LD `SoftwareApplication` (featureList, penawaran) + `HowTo`.
 
 **Uji browser (Chromium, runtime lokal Cloudflare): 53/53 lulus** — program contoh, 4→5 framework, 93 kontrol ISO, cari, detail kontrol, unggah & unduh bukti utuh, pemetaan + salin ke SOC 2 A1.2, AI dengan fokus kontrol (bukti tidak terkirim), risiko + heatmap, 26 templat, draf AI kebijakan, versi, persetujuan wajib nama, Word, vendor 100 % → tier Medium, laporan, CSV (1 + 231 baris), SoA, backup + impor JSON, persistensi setelah reload, laporan v3, bukti tersembunyi dari daftar program, deep link bukti, hapus, ponsel tanpa overflow, UI ID/AR/JA/DE, SEO halaman publik.
+
+---
+
+## 13. Prompt Library v4 — yang dibangun & buktinya (30 Sep 2026)
+
+| Bagian | Isi | File |
+|---|---|---|
+| Katalog | **240 prompt** = 24 bidang × 10 (3 Basic, 3 Pro, 2 Premium, 2 Elite per bidang); setiap `{{variabel}}` terdeklarasi; halaman SEO per prompt otomatis (`/prompts/<bidang>/<id>`, sitemap) | `lib/prompts/part-a…d.ts`, `catalog.ts` |
+| Keamanan isi premium | isi template hanya dikirim untuk level yang dibuka paket; saat dijalankan, **prompt katalog diisi di server** dari id + nilai, dan level dicek lagi di server (akun gratis → 402 untuk Premium) | `lib/prompts/task.ts`, `app/api/prompts` |
+| Jalankan di tempat | streaming dari model member, pertanyaan lanjutan, **bandingkan hingga 3 model** berdampingan, simpan hasil ke riwayat terenkripsi, buka di AI Studio | `components/prompts/Runner.tsx` |
+| Prompt milik sendiri | CRUD, deteksi `{{variabel}}`, duplikat, **optimizer AI** (versi perbaikan bisa langsung dipakai) | `Mine.tsx` |
+| Koleksi & favorit | koleksi bernama + Favorit bawaan, untuk prompt katalog dan milik sendiri | `Collections.tsx` |
+| Workflow | rantai ≤ 12 langkah (prompt katalog, prompt sendiri, atau instruksi tertulis); tiap langkah menerima hasil sebelumnya (`{{previous}}` atau konteks) | `Chains.tsx` |
+| Profil variabel | beberapa profil, satu aktif; nilai mengisi `{{variabel}}` yang cocok otomatis | `Profiles.tsx` |
+| Riwayat & portabilitas | hasil tersimpan; ekspor / impor seluruh pustaka (JSON, digabung tanpa duplikat) | `History.tsx`, `lib/prompts/library.ts` |
+
+**Kebijakan penyimpanan:** pustaka pribadi (favorit, prompt sendiri, koleksi, workflow, profil) adalah satu item terenkripsi ≤ 200 KB yang **boleh disimpan semua akun**, termasuk gratis; menyimpan hasil run tetap memakai kuota penyimpanan paket.
+
+**Uji browser (Chromium, runtime lokal Cloudflare): 42/42 lulus** — gating server (402 Premium untuk akun gratis, Basic diisi di server), 240 prompt, cari, filter bidang & level, favorit, profil mengisi variabel, run streaming, template diisi di server, follow-up, simpan hasil, bandingkan 2 model, prompt sendiri + optimizer, koleksi, workflow contoh 3 langkah dengan `{{previous}}`, riwayat, ekspor/impor, persistensi setelah reload, kartu terkunci untuk akun gratis, ponsel tanpa overflow, UI ID/AR/JA/DE, halaman publik "240 expert prompts".
+
+**E2E penuh:** 96 tes — 94 lulus, 0 gagal, 2 dilewati (Docker). Catatan jujur: satu run sebelumnya sempat gagal di 5 tes `lifetime` (checkout admin menjawab 503, lalu tes berikutnya ikut gagal); tidak terulang saat file itu dijalankan sendiri, bersama `acquisition` + `card-payments`, bersama tujuh file sebelumnya, maupun di run penuh berikutnya. Pesan assert kini memuat isi respons supaya penyebabnya langsung terlihat bila muncul lagi di CI.
 

@@ -21,6 +21,9 @@ import { readJson, fail } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { CORE_WORKSPACES } from "@/lib/legal/workspaces";
 
+/** Longer option budgets: case / programme briefings, a workflow step's previous output, filled prompt values. */
+const OPTION_MAX: Record<string, number> = { briefing: 16000, previous: 24000, values: 16000 };
+
 export async function POST(req: NextRequest) {
   const b = await readJson(req);
   const app = String(b?.app || "");
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
 
   const messages = sanitizeMessages(b?.messages);
   if (!messages.length || messages[messages.length - 1].role !== "user") return fail("Write a request first.");
-  const options = typeof b?.options === "object" && b.options ? Object.fromEntries(Object.entries(b.options).map(([k, v]) => [k, String(v).slice(0, k === "briefing" ? 16000 : 8000)])) : {};
+  const options = typeof b?.options === "object" && b.options ? Object.fromEntries(Object.entries(b.options).map(([k, v]) => [k, String(v).slice(0, OPTION_MAX[k] || 8000)])) : {};
   const wantResearch = options.research === "1";
   const input = { task: b?.task ? String(b.task) : undefined, messages, options, documents: b?.documents };
 

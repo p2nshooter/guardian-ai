@@ -113,3 +113,32 @@ test("starter member: pro unlocked, premium still locked", async () => {
 test("unknown prompt id → 404", async () => {
   assert.equal((await anon.get("/api/prompts/does-not-exist")).status, 404);
 });
+
+test("catalogue v4: 240 prompts, 10 per field", async () => {
+  const r = await anon.get("/api/prompts");
+  assert.equal(r.json.prompts.length, 240);
+  for (const f of r.json.fields) assert.equal(r.json.prompts.filter((p: any) => p.field === f.id).length, 10, f.id);
+});
+
+test("run v4: a catalogue prompt is filled and level-gated on the server", async () => {
+  // Starter: Premium refused by id before any model is called; the body is never needed in the browser.
+  const prem = await starter.post("/api/byox/run", { app: "prompts", task: "run", messages: [{ role: "user", content: "x" }], provider: "custom", options: { mode: "run", promptId: PREMIUM, values: "{}" } });
+  assert.equal(prem.status, 402, prem.text);
+  const bad = await starter.post("/api/byox/run", { app: "prompts", task: "run", messages: [{ role: "user", content: "x" }], provider: "custom", options: { mode: "run", promptId: "nope-nope", values: "{}" } });
+  assert.equal(bad.status, 404, bad.text);
+});
+
+test("library v4: the member's library saves as one encrypted item and reads back", async () => {
+  const state = { v: 4, custom: [{ id: "u1abc", title: "Cold email", field: "sales", body: "Email {{prospect}}", notes: "", createdAt: "", updatedAt: "" }], collections: [{ id: "c1", name: "Kit", items: ["c:biz-swot", "u:u1abc"] }],
+    favorites: ["c:biz-swot"], chains: [{ id: "ch1", name: "Flow", steps: [{ id: "s1", title: "Outline", ref: "c:content-outline" }] }], profiles: [{ id: "default", name: "Default", values: { company: "Acme" } }], activeProfile: "default" };
+  const s = await free.post("/api/history/prompts", { id: "prompts-state-v4", title: "Prompt Library — my library", body: state, meta: { kind: "library" } });
+  assert.equal(s.status, 200, s.text);
+  const g = await free.get("/api/history/prompts/prompts-state-v4");
+  assert.equal(g.json.item.body.custom[0].body, "Email {{prospect}}");
+  assert.deepEqual(g.json.item.body.collections[0].items, ["c:biz-swot", "u:u1abc"]);
+  // …but saving a run result still needs a plan with storage.
+  const run = await free.post("/api/history/prompts", { title: "SWOT", body: { kind: "run", output: "x" }, meta: { kind: "run" } });
+  assert.equal(run.status, 413, run.text);
+  const big = await free.post("/api/history/prompts", { id: "prompts-state-v4", title: "x", body: { ...state, custom: [{ ...state.custom[0], body: "A".repeat(210_000) }] } });
+  assert.equal(big.status, 413, "the free allowance is capped at 200 KB");
+});

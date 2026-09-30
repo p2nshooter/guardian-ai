@@ -21,10 +21,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 workspace ahli", "Memo riset, telaah & penyusunan kontrak, due diligence, gugatan, arbitrase, analisis pidana, kepatuhan, privasi, APU-PPT, ketenagakerjaan, HKI, pajak, ESG, tata kelola AI dan lainnya."],
     ],
     prompts: [
-      ["24 bidang", "Bisnis, pemasaran, penjualan, hukum, keuangan, SDM, perangkat lunak, data, keamanan, kesehatan, pendidikan, properti dan lainnya."],
-      ["4 tingkat", "Basic untuk tugas sehari-hari hingga Elite untuk pekerjaan lintas negara setingkat direksi."],
-      ["Variabel isian", "Setiap prompt punya kolom isian yang jelas, sehingga hasilnya sesuai kebutuhan Anda, bukan teks umum."],
-      ["Bekerja di mana saja", "Gunakan dengan AXTO AI Studio, ChatGPT, Claude, Gemini atau model apa pun."],
+      ["240 prompt, 24 bidang, 4 level", "Sepuluh prompt ahli per bidang, dari tugas harian Basic hingga pekerjaan Elite setingkat direksi dan lintas negara — masing-masing dengan variabel isian yang jelas."],
+      ["Jalankan dan bandingkan di tempat", "Hasil streaming dari model Anda sendiri, pertanyaan lanjutan, dan prompt yang sama di hingga tiga model berdampingan."],
+      ["Prompt milik Anda dan optimizer", "Tulis prompt dengan {{variables}}, simpan di koleksi dan favorit, dan biarkan AI mengoptimalkannya."],
+      ["Workflow dan profil", "Rangkai langkah sehingga tiap langkah memakai hasil sebelumnya, dan simpan profil variabel yang mengisi prompt otomatis; ekspor atau impor semuanya sebagai JSON."],
     ],
     studio: [
       ["Semua model terbaik, berdampingan", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity dan lainnya — atau endpoint Anda sendiri — dan satu pesan ke hingga tiga model sekaligus."],
@@ -65,10 +65,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 ruang kerja pakar", "Memo penyelidikan, semakan & perangkaan kontrak, usaha wajar, pliding, timbang tara, analisis jenayah, pematuhan, privasi, AML, pekerjaan, IP, cukai, ESG, tadbir urus AI dan banyak lagi."],
     ],
     prompts: [
-      ["24 bidang", "Perniagaan, pemasaran, jualan, undang-undang, kewangan, HR, perisian, data, keselamatan, kesihatan, pendidikan, hartanah dan banyak lagi."],
-      ["4 tahap", "Basic untuk tugasan harian hingga Elite untuk kerja pelbagai negara di peringkat lembaga."],
-      ["Pemboleh ubah isian", "Setiap prompt mempunyai input yang jelas supaya hasilnya disesuaikan, bukan teks generik."],
-      ["Berfungsi di mana-mana", "Gunakan dengan AXTO AI Studio, ChatGPT, Claude, Gemini atau mana-mana model."],
+      ["240 prom, 24 bidang, 4 tahap", "Sepuluh prom pakar setiap bidang, daripada tugas harian Basic hingga kerja Elite peringkat lembaga dan pelbagai negara — setiap satu dengan pemboleh ubah isian yang jelas."],
+      ["Jalankan dan bandingkan di tempat", "Hasil penstriman daripada model anda sendiri, soalan susulan, dan prom yang sama pada sehingga tiga model bersebelahan."],
+      ["Prom anda sendiri dan pengoptimum", "Tulis prom dengan {{variables}}, simpan dalam koleksi dan kegemaran, dan biar AI mengoptimumkannya."],
+      ["Aliran kerja dan profil", "Rantaikan langkah supaya setiap satu dibina atas hasil sebelumnya, dan simpan profil pemboleh ubah yang mengisi prom secara automatik; eksport atau import semuanya sebagai JSON."],
     ],
     studio: [
       ["Setiap model terkemuka, bersebelahan", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity dan lagi — atau endpoint anda sendiri — dan satu mesej kepada sehingga tiga model serentak."],
@@ -109,10 +109,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 Experten-Workspaces", "Rechercheberichte, Vertragsprüfung & -entwurf, Due Diligence, Schriftsätze, Schiedsverfahren, Strafrechtsanalyse, Compliance, Datenschutz, Geldwäsche, Arbeitsrecht, IP, Steuern, ESG, AI Governance und mehr."],
     ],
     prompts: [
-      ["24 Fachbereiche", "Business, Marketing, Vertrieb, Recht, Finanzen, HR, Software, Daten, Sicherheit, Gesundheit, Bildung, Immobilien und mehr."],
-      ["4 Stufen", "Basic für alltägliche Aufgaben bis Elite für länderübergreifende Arbeit auf Vorstandsebene."],
-      ["Ausfüllbare Variablen", "Jeder Prompt hat klar markierte Eingaben – so erhalten Sie maßgeschneiderte statt generischer Ergebnisse."],
-      ["Funktioniert überall", "Mit AXTO AI Studio, ChatGPT, Claude, Gemini oder jedem anderen Modell nutzbar."],
+      ["240 Prompts, 24 Bereiche, 4 Stufen", "Zehn Experten-Prompts pro Bereich, von Basic-Alltagsaufgaben bis zu Elite-Arbeit auf Vorstands- und Länderebene — jeweils mit klaren Ausfüllvariablen."],
+      ["Direkt ausführen und vergleichen", "Ergebnisse Ihres eigenen Modells streamen, nachfragen und denselben Prompt auf bis zu drei Modellen nebeneinander ausführen."],
+      ["Eigene Prompts und Optimierer", "Prompts mit {{variables}} schreiben, in Sammlungen und Favoriten ablegen und von der KI optimieren lassen."],
+      ["Workflows und Profile", "Schritte verketten, die auf dem vorherigen Ergebnis aufbauen, und Variablenprofile speichern, die Prompts automatisch ausfüllen; alles als JSON exportieren oder importieren."],
     ],
     studio: [
       ["Alle führenden Modelle, nebeneinander", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity und mehr — oder Ihr eigener Endpunkt — und eine Nachricht an bis zu drei Modelle gleichzeitig."],
@@ -153,10 +153,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 espaces experts", "Notes de recherche, revue et rédaction de contrats, due diligence, actes de procédure, arbitrage, analyse pénale, conformité, vie privée, LCB-FT, droit du travail, PI, fiscalité, ESG, gouvernance de l'IA et plus."],
     ],
     prompts: [
-      ["24 domaines", "Business, marketing, ventes, droit, finance, RH, logiciel, données, sécurité, santé, éducation, immobilier et plus."],
-      ["4 niveaux", "Basic pour les tâches courantes jusqu'à Elite pour un travail multi-pays au niveau du conseil d'administration."],
-      ["Variables à compléter", "Chaque prompt comporte des champs clairement indiqués pour un résultat sur mesure, pas un texte générique."],
-      ["Fonctionne partout", "À utiliser avec AXTO AI Studio, ChatGPT, Claude, Gemini ou tout autre modèle."],
+      ["240 prompts, 24 domaines, 4 niveaux", "Dix prompts experts par domaine, des tâches Basic du quotidien au travail Elite de niveau direction et multi-pays — chacun avec des variables claires à compléter."],
+      ["Exécuter et comparer sur place", "Résultats en streaming depuis votre propre modèle, questions de suivi, et le même prompt sur jusqu’à trois modèles côte à côte."],
+      ["Vos prompts et l’optimiseur", "Écrivez des prompts avec des {{variables}}, rangez-les en collections et favoris, et laissez l’IA les optimiser."],
+      ["Workflows et profils", "Enchaînez des étapes qui s’appuient sur le résultat précédent et enregistrez des profils de variables qui remplissent les prompts automatiquement ; exportez ou importez tout en JSON."],
     ],
     studio: [
       ["Tous les grands modèles, côte à côte", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity et plus — ou votre propre endpoint — et un message à jusqu'à trois modèles à la fois."],
@@ -197,10 +197,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 workspace esperti", "Memo di ricerca, revisione e redazione di contratti, due diligence, atti processuali, arbitrato, analisi penale, compliance, privacy, antiriciclaggio, lavoro, PI, fisco, ESG, governance dell'IA e altro."],
     ],
     prompts: [
-      ["24 settori", "Business, marketing, vendite, legale, finanza, HR, software, dati, sicurezza, sanità, istruzione, immobiliare e altro."],
-      ["4 livelli", "Basic per le attività quotidiane fino a Elite per lavori multinazionali a livello di consiglio di amministrazione."],
-      ["Variabili da compilare", "Ogni prompt ha campi chiaramente indicati, così ottieni un risultato su misura e non un testo generico."],
-      ["Funziona ovunque", "Usalo con AXTO AI Studio, ChatGPT, Claude, Gemini o qualsiasi modello."],
+      ["240 prompt, 24 settori, 4 livelli", "Dieci prompt esperti per settore, dalle attività quotidiane Basic al lavoro Elite da consiglio di amministrazione e multi-paese — ognuno con variabili chiare da compilare."],
+      ["Esegui e confronta sul posto", "Risultati in streaming dal tuo modello, domande di approfondimento e lo stesso prompt su un massimo di tre modelli affiancati."],
+      ["I tuoi prompt e l’ottimizzatore", "Scrivi prompt con {{variables}}, organizzali in raccolte e preferiti e lascia che l’IA li ottimizzi."],
+      ["Workflow e profili", "Concatena passaggi che partono dal risultato precedente e salva profili di variabili che compilano i prompt automaticamente; esporta o importa tutto in JSON."],
     ],
     studio: [
       ["Tutti i principali modelli, affiancati", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity e altri — o il tuo endpoint — e un messaggio fino a tre modelli contemporaneamente."],
@@ -241,10 +241,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 个专家工作区", "研究备忘录、合同审查与起草、尽职调查、诉状、仲裁、刑事分析、合规、隐私、反洗钱、劳动、知识产权、税务、ESG、AI 治理等。"],
     ],
     prompts: [
-      ["24 个领域", "商业、营销、销售、法律、财务、人力资源、软件、数据、安全、医疗、教育、房地产等。"],
-      ["4 个级别", "从日常任务的 Basic 到跨国、董事会级工作的 Elite。"],
-      ["可填写变量", "每个提示词都有清晰标注的输入项，输出贴合需求，而非泛泛而谈。"],
-      ["随处可用", "可配合 AXTO AI Studio、ChatGPT、Claude、Gemini 或任意模型使用。"],
+      ["240 个提示词，24 个领域，4 个级别", "每个领域 10 个专家提示词，从 Basic 日常任务到 Elite 董事会级与跨国工作——每个都有清晰的填空变量。"],
+      ["就地运行与对比", "用您自己的模型流式生成结果、继续追问，并在最多三个模型上并排运行同一提示词。"],
+      ["自有提示词与优化器", "用 {{variables}} 编写提示词，放入合集和收藏，并让 AI 优化它们。"],
+      ["工作流与变量档案", "串联多个步骤，每一步基于上一步的输出；保存可自动填充提示词的变量档案；以 JSON 导出或导入全部内容。"],
     ],
     studio: [
       ["所有主流模型，并排对比", "Anthropic、OpenAI、Google Gemini、Groq、OpenRouter、Mistral、DeepSeek、xAI、Perplexity 等——或您自己的端点——一条消息可同时发给最多三个模型。"],
@@ -285,10 +285,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 の専門ワークスペース", "リサーチメモ、契約書レビュー・作成、デューデリジェンス、訴状、仲裁、刑事分析、コンプライアンス、プライバシー、AML、労働、知財、税務、ESG、AI ガバナンスなど。"],
     ],
     prompts: [
-      ["24 の分野", "ビジネス、マーケティング、営業、法務、財務、人事、ソフトウェア、データ、セキュリティ、医療、教育、不動産など。"],
-      ["4 つのレベル", "日常業務向けの Basic から、多国間・取締役会レベルの Elite まで。"],
-      ["入力変数", "各プロンプトに入力項目が明示されているので、汎用的ではなく状況に合った出力が得られます。"],
-      ["どこでも使える", "AXTO AI Studio、ChatGPT、Claude、Gemini などあらゆるモデルで利用できます。"],
+      ["240 のプロンプト、24 分野、4 レベル", "分野ごとに 10 の専門プロンプト。Basic の日常業務から Elite の取締役会・多国間レベルまで、すべて明確な入力変数付き。"],
+      ["その場で実行・比較", "ご自身のモデルでストリーミング実行し、追加質問も可能。同じプロンプトを最大 3 つのモデルで並べて比較できます。"],
+      ["マイプロンプトと最適化", "{{variables}} 付きのプロンプトを作成し、コレクションやお気に入りに整理、AI に最適化させられます。"],
+      ["ワークフローとプロフィール", "前のステップの出力を次に渡すステップをつなぎ、プロンプトを自動入力する変数プロフィールを保存。すべて JSON で入出力できます。"],
     ],
     studio: [
       ["主要モデルを並べて比較", "Anthropic、OpenAI、Google Gemini、Groq、OpenRouter、Mistral、DeepSeek、xAI、Perplexity など、またはご自身のエンドポイント。1 つのメッセージを最大 3 モデルに同時送信できます。"],
@@ -329,10 +329,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 विशेषज्ञ वर्कस्पेस", "रिसर्च मेमो, अनुबंध समीक्षा व ड्राफ़्टिंग, ड्यू डिलिजेंस, याचिकाएँ, मध्यस्थता, आपराधिक विश्लेषण, अनुपालन, गोपनीयता, AML, रोज़गार, IP, कर, ESG, AI गवर्नेंस और बहुत कुछ।"],
     ],
     prompts: [
-      ["24 क्षेत्र", "व्यवसाय, मार्केटिंग, बिक्री, कानून, वित्त, HR, सॉफ़्टवेयर, डेटा, सुरक्षा, स्वास्थ्य, शिक्षा, रियल एस्टेट और बहुत कुछ।"],
-      ["4 स्तर", "रोज़मर्रा के कामों के लिए Basic से लेकर बहु-देशीय, बोर्ड-स्तरीय काम के लिए Elite तक।"],
-      ["भरने योग्य वेरिएबल", "हर प्रॉम्प्ट में स्पष्ट इनपुट होते हैं, ताकि आपको सामान्य नहीं, अनुकूलित परिणाम मिले।"],
-      ["हर जगह काम करता है", "AXTO AI Studio, ChatGPT, Claude, Gemini या किसी भी मॉडल के साथ उपयोग करें।"],
+      ["240 प्रॉम्प्ट, 24 क्षेत्र, 4 स्तर", "हर क्षेत्र में 10 विशेषज्ञ प्रॉम्प्ट, Basic रोज़मर्रा के कामों से Elite बोर्ड-स्तर और बहु-देशीय काम तक — हर एक में स्पष्ट भरने योग्य वेरिएबल।"],
+      ["यहीं चलाएँ और तुलना करें", "अपने मॉडल से स्ट्रीमिंग परिणाम पाएँ, आगे सवाल पूछें, और एक ही प्रॉम्प्ट को तीन मॉडलों तक साथ-साथ चलाएँ।"],
+      ["आपके अपने प्रॉम्प्ट और ऑप्टिमाइज़र", "{{variables}} के साथ प्रॉम्प्ट लिखें, संग्रह और पसंदीदा में रखें, और AI से उन्हें बेहतर करवाएँ।"],
+      ["वर्कफ़्लो और प्रोफ़ाइल", "चरणों को जोड़ें ताकि हर चरण पिछले परिणाम पर बने, और वेरिएबल प्रोफ़ाइल सहेजें जो प्रॉम्प्ट अपने-आप भरें; सब कुछ JSON में एक्सपोर्ट या इम्पोर्ट करें।"],
     ],
     studio: [
       ["हर प्रमुख मॉडल, साथ-साथ", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity और भी — या आपका अपना एंडपॉइंट — और एक संदेश एक साथ तीन मॉडलों तक।"],
@@ -373,10 +373,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["36 مساحة عمل متخصصة", "مذكرات بحثية، ومراجعة العقود وصياغتها، والعناية الواجبة، واللوائح القضائية، والتحكيم، والتحليل الجنائي، والامتثال، والخصوصية، ومكافحة غسل الأموال، والعمل، والملكية الفكرية، والضرائب، وESG، وحوكمة الذكاء الاصطناعي وغيرها."],
     ],
     prompts: [
-      ["24 مجالًا", "الأعمال، والتسويق، والمبيعات، والقانون، والمالية، والموارد البشرية، والبرمجيات، والبيانات، والأمن، والصحة، والتعليم، والعقارات وغيرها."],
-      ["4 مستويات", "من Basic للمهام اليومية حتى Elite للعمل متعدد الدول على مستوى مجالس الإدارة."],
-      ["متغيرات للتعبئة", "لكل موجّه مدخلات واضحة المعالم لتحصل على نتيجة مخصّصة لا نصًا عامًا."],
-      ["يعمل في كل مكان", "استخدمه مع AXTO AI Studio أو ChatGPT أو Claude أو Gemini أو أي نموذج."],
+      ["240 موجّهًا و24 مجالًا و4 مستويات", "عشرة موجّهات خبيرة لكل مجال، من مهام Basic اليومية إلى أعمال Elite على مستوى مجالس الإدارة وعبر الدول — لكلٍّ منها متغيرات واضحة للتعبئة."],
+      ["التشغيل والمقارنة في المكان", "نتائج متدفقة من نموذجك الخاص، وأسئلة متابعة، وتشغيل الموجّه نفسه على ما يصل إلى ثلاثة نماذج جنبًا إلى جنب."],
+      ["موجّهاتك الخاصة والمُحسِّن", "اكتب موجّهات تحتوي {{variables}}، ونظّمها في مجموعات ومفضلة، ودع الذكاء الاصطناعي يحسّنها."],
+      ["سير العمل والملفات التعريفية", "اربط خطوات يبني كلٌّ منها على نتيجة سابقه، واحفظ ملفات متغيرات تملأ الموجّهات تلقائيًا؛ وصدّر أو استورد كل شيء بصيغة JSON."],
     ],
     studio: [
       ["كل النماذج الرائدة جنبًا إلى جنب", "Anthropic وOpenAI وGoogle Gemini وGroq وOpenRouter وMistral وDeepSeek وxAI وPerplexity وغيرها — أو نقطة النهاية الخاصة بك — ورسالة واحدة إلى ما يصل إلى ثلاثة نماذج معًا."],

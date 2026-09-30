@@ -15,6 +15,7 @@ import { limitsFor } from "@/lib/plans";
 import { getUsage, storageProblem } from "@/lib/usage";
 import { rateLimit } from "@/lib/rate-limit";
 import { History, HistoryError, isHistoryApp } from "@/lib/history";
+import { STATE_ID as PROMPTS_STATE_ID } from "@/lib/prompts/library";
 
 type Params = { params: Promise<{ app: string; slug?: string[] }> };
 
@@ -50,7 +51,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (id && verb === "rename") { await g.hist.rename(id, String(b?.title || "")); return respond({ ok: true }, g.ctx); }
     if (id && verb === "duplicate") return respond({ ok: true, item: await g.hist.duplicate(id) }, g.ctx);
     // create / update
-    const room = storageProblem(await getUsage(getDB(req), g.ctx.session.sub, effectiveTier(g.ctx.session)), Math.ceil(JSON.stringify(b || {}).length * 1.1));
+    // The Prompt Library's own settings item (favourites, own prompts, profiles) is small and
+    // allowed on every account; everything else counts against the plan's storage.
+    const libraryState = app === "prompts" && (id || b?.id) === PROMPTS_STATE_ID && JSON.stringify(b?.body || {}).length <= 200_000;
+    const room = libraryState ? null : storageProblem(await getUsage(getDB(req), g.ctx.session.sub, effectiveTier(g.ctx.session)), Math.ceil(JSON.stringify(b || {}).length * 1.1));
     if (room) return fail(room, 413, { upgrade: true });
     const item = await g.hist.save({ id: id || (typeof b?.id === "string" ? b.id : undefined), title: String(b?.title || ""), body: b?.body, meta: b?.meta });
     return respond({ ok: true, item }, g.ctx);

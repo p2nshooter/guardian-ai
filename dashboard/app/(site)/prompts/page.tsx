@@ -29,7 +29,7 @@ export default function PromptsLanding() {
         { "@context": "https://schema.org", "@type": "CollectionPage", name: "AXTO Prompt Library", url: absoluteUrl("/prompts"),
           hasPart: { "@type": "ItemList", numberOfItems: FIELDS.length, itemListElement: FIELDS.map((f, i) => ({ "@type": "ListItem", position: i + 1, name: `${f.name} prompts`, url: absoluteUrl(`/prompts/${f.id}`) })) } },
         faqJsonLd([
-          { q: "What is the AXTO prompt library?", a: `A curated library of ${PROMPTS.length}+ expert, ready-to-run AI prompts across ${FIELDS.length} professional fields. Each prompt sets the right role, works step by step and specifies a structured output, so you get a professional result on the first try.` },
+          { q: "What is the AXTO prompt library?", a: `A curated library of ${PROMPTS.length} expert, ready-to-run AI prompts across ${FIELDS.length} professional fields. Each prompt sets the right role, works step by step and specifies a structured output, so you get a professional result on the first try.` },
           { q: "Which AI models does it work with?", a: "Any. AXTO runs on your own key (BYOK/BYOM/BYOE) — Claude, GPT, Gemini, Llama, DeepSeek, Mistral and more, or your own custom endpoint. No per-token fees from AXTO." },
           { q: "Are the prompts free?", a: "Basic prompts are free on every account. Pro, Premium and Elite levels unlock with a paid plan and cover deeper, multi-step and enterprise-grade workflows." },
           { q: "Can I save and reuse my prompts?", a: "Yes. Fill a prompt in, run it in AI Studio, and save the result to your encrypted workspace history — browse, rename, duplicate and export it anytime." },
@@ -40,7 +40,7 @@ export default function PromptsLanding() {
         <div className="container-page">
           <span className="badge-brand">Prompt Library</span>
           <h1 className="h-display mt-4 max-w-4xl">Premium AI prompts for every profession</h1>
-          <p className="lead mt-5 max-w-3xl">{PROMPTS.length}+ expert, ready-to-run prompts across {FIELDS.length} fields. Fill in the blanks, run on your own AI, and get a professional result on the first try — no prompt-engineering required.</p>
+          <p className="lead mt-5 max-w-3xl">{PROMPTS.length} expert, ready-to-run prompts across {FIELDS.length} fields. Fill in the blanks, run on your own AI, and get a professional result on the first try — no prompt-engineering required.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/register?next=/app/prompts" className="btn-primary btn-lg">Start free →</Link>
             <Link href="/pricing" className="btn-secondary btn-lg">See pricing</Link>

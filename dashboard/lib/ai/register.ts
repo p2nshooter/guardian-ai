@@ -10,3 +10,4 @@ import "../security/task";
 import "../compliance/task";
 import "../clipper/task";
 import "../vault/task";
+import "../prompts/task";

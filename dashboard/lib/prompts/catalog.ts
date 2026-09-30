@@ -12,13 +12,12 @@
  * is the catalogue + a curated seed set; more prompts are appended over time.
  * ============================================================================ */
 import type { PromptLevel } from "../plans";
-
-export interface Field { id: string; name: string; icon: string; blurb: string; keywords: string[] }
-export interface Variable { key: string; label: string; placeholder?: string }
-export interface Prompt {
-  id: string; field: string; level: PromptLevel; title: string; summary: string;
-  variables: Variable[]; template: string; example?: string; models?: string[]; tags?: string[];
-}
+import type { Field, Prompt } from "./types";
+import { PROMPTS_A } from "./part-a";
+import { PROMPTS_B } from "./part-b";
+import { PROMPTS_C } from "./part-c";
+import { PROMPTS_D } from "./part-d";
+export type { Field, Variable, Prompt } from "./types";
 
 export const LEVELS: { id: PromptLevel; name: string; blurb: string }[] = [
   { id: "basic", name: "Basic", blurb: "Everyday tasks, done fast." },
@@ -60,7 +59,7 @@ export const getField = (id: string) => FIELDS.find((f) => f.id === id);
  * it sets a role, asks clarifying-safe assumptions, works step by step, and
  * specifies the output format. Variables use {{double_braces}}. ───────────── */
 const P = (p: Prompt) => p;
-export const PROMPTS: Prompt[] = [
+const SEED: Prompt[] = [
   // Business
   P({ id: "biz-swot", field: "business", level: "basic", title: "SWOT analysis", summary: "A clear SWOT for any company or product, with prioritised takeaways.",
     variables: [{ key: "company", label: "Company / product" }, { key: "market", label: "Market / segment" }],
@@ -266,6 +265,11 @@ export const PROMPTS: Prompt[] = [
     variables: [{ key: "property", label: "Property / brand" }, { key: "voice", label: "Tone", placeholder: "e.g. warm, upscale" }],
     template: "Act as a guest-experience manager for {{property}}. Write message templates in a {{voice}} tone for: booking confirmation, pre-arrival info, welcome/check-in, a mid-stay check, checkout & review request, and a service-recovery message for a complaint.\nEach: short, personal (use [placeholders]), on-brand, with a clear next step. For the recovery message, acknowledge, apologise sincerely, fix, and offer a gesture without over-promising. Keep them reusable." }),
 ];
+
+/** The full catalogue: the seed set plus the four catalogue parts, ordered by field then level. */
+const LEVEL_ORDER: PromptLevel[] = ["basic", "pro", "premium", "elite"];
+export const PROMPTS: Prompt[] = [...SEED, ...PROMPTS_A, ...PROMPTS_B, ...PROMPTS_C, ...PROMPTS_D]
+  .sort((a, b) => FIELDS.findIndex((f) => f.id === a.field) - FIELDS.findIndex((f) => f.id === b.field) || LEVEL_ORDER.indexOf(a.level) - LEVEL_ORDER.indexOf(b.level));
 
 export const promptsByField = (field: string) => PROMPTS.filter((p) => p.field === field);
 export const getPrompt = (id: string) => PROMPTS.find((p) => p.id === id);

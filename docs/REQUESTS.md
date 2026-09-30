@@ -20,4 +20,5 @@ Every request for a new feature or change is recorded here with its status. Rule
 | 14 | Security Analyst v4 | ✅ done | `app/app/security`, `lib/security`, `docs/BLUEPRINT-V4.md` §11 |
 | 15 | Merge everything and leave GitHub clean (no pending merges / PRs) | 🔄 partly — `main` fast-forwarded (no open PRs); deleting old branches is refused by this session's git proxy, so 7 stale branches remain for the owner to delete in GitHub → Branches | — |
 | 16 | Compliance Center v4 | ✅ done | `app/app/compliance`, `lib/compliance`, `docs/BLUEPRINT-V4.md` §12 |
-| 17 | Prompt Library v4, Legal AI v4, Local Mode | 🔄 in progress | `docs/BLUEPRINT-V4.md` §9 |
+| 17 | Prompt Library v4 (240 prompts; fix the "Hundreds" claim) | ✅ done | `app/app/prompts`, `lib/prompts`, `docs/BLUEPRINT-V4.md` §13 |
+| 18 | Legal AI v4, Local Mode | 🔄 next | `docs/BLUEPRINT-V4.md` §8, §8b |
