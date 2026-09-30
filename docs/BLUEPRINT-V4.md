@@ -197,7 +197,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 |---|---|---|---|
 | 1 | Clipper v4 | ✅ selesai | 13 unit test (`tests/clipper.test.ts`); E2E kuota multi-bagian (`apps.e2e.ts`); uji browser 21/21 (lihat §10) |
 | 2 | AI Studio v4 | ✅ selesai | 8 unit test (`tests/studio.test.ts`); uji browser 23/23; E2E penuh 81 tes (79 lulus, 2 dilewati: Docker) |
-| 3 | Privacy Vault v4 | ⏳ | — |
+| 3 | Privacy Vault v4 | ✅ selesai | 22 unit test (`tests/vault.test.ts`); uji browser 40/40 (teks, tinjauan, AI Aman, kunci terenkripsi, aturan, DOCX/XLSX in-place, PDF image-only, OCR gambar, ZIP, laporan audit) |
 | 4 | Security Analyst v4 | ⏳ | — |
 | 5 | Compliance Center v4 | ⏳ | — |
 | 6 | Prompt Library v4 (≥ 240 prompt) | ⏳ | — |

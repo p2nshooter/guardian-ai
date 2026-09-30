@@ -14,7 +14,7 @@ import { Alert, EmptyState, LoadingBlock, PageHeader, Progress, Section } from "
 interface FileEntry { app: string; id: string; title: string; updatedAt: string; detail: string }
 interface Data { files: FileEntry[]; apps: string[]; storage: { used: number; limit: number } }
 
-const OPENABLE = new Set(["legal", "studio", "clipper", "compliance", "security"]);
+const OPENABLE = new Set(["legal", "studio", "clipper", "compliance", "security", "vault"]);
 const appOf = (slug: string) => CLOUD_APPS.find((a) => a.slug === slug);
 const itemUrl = (f: FileEntry) => (f.app === "legal" ? `/api/legal/matters/${f.id}` : `/api/history/${f.app}/${f.id}`);
 

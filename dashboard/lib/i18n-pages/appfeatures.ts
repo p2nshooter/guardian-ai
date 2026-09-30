@@ -39,10 +39,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Privat sejak awal", "Video tidak pernah keluar dari perangkat Anda; hanya trek suara terkompresi yang dikirim ke penyedia transkripsi milik Anda."],
     ],
     vault: [
-      ["Berjalan di perangkat Anda", "Deteksi dan redaksi berlangsung di browser Anda — teks asli tidak pernah diunggah."],
-      ["20+ jenis data", "Email, telepon, kartu pembayaran (dicek Luhn), IBAN, alamat IP, paspor, SSN AS, NIK & NPWP Indonesia, dan lainnya."],
-      ["Token yang bisa dikembalikan", "Ganti nilai dengan token seperti [EMAIL_1] dan pulihkan setelah AI menjawab."],
-      ["Gaya penyamaran", "Pilih token, penyamaran penuh (•••) atau sebagian (4 digit terakhir terlihat)."],
+      ["65 jenis data, dengan skor", "Email, telepon, kartu dan IBAN (divalidasi checksum), rahasia dan kunci API, serta identitas resmi dari 19 negara — masing-masing dengan skor keyakinan dari validasi dan kata kunci di sekitarnya."],
+      ["Redaksi sejati untuk berkas", "Word dan Excel diredaksi langsung di tempat; PDF dibangun ulang sebagai gambar dengan kotak hitam sehingga tidak ada yang bisa disalin kembali; pindaian dan foto dibaca dengan OCR di perangkat."],
+      ["AI Aman", "Tanyakan AI Anda sendiri tentang teks yang sudah diredaksi — AI hanya melihat placeholder, dan browser Anda mengembalikan data asli ke dalam jawaban."],
+      ["Berjalan di perangkat Anda", "Deteksi, OCR, dan redaksi berlangsung di browser Anda. Hanya versi yang sudah diredaksi yang pernah dikirim atau disimpan."],
     ],
     compliance: [
       ["7 kerangka kerja", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 dan UU PDP."],
@@ -83,10 +83,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Privasi sejak awal", "Video tidak pernah meninggalkan peranti anda; hanya trek suara termampat dihantar kepada penyedia transkripsi anda sendiri."],
     ],
     vault: [
-      ["Berjalan pada peranti anda", "Pengesanan dan redaksi berlaku dalam pelayar anda — teks asal tidak pernah dimuat naik."],
-      ["20+ jenis data", "E-mel, telefon, kad pembayaran (disemak Luhn), IBAN, alamat IP, pasport, SSN AS, NIK & NPWP Indonesia, dan banyak lagi."],
-      ["Token boleh balik", "Gantikan nilai dengan token seperti [EMAIL_1] dan pulihkan selepas AI menjawab."],
-      ["Gaya penyamaran", "Pilih token, penyamaran penuh (•••) atau separa (4 digit terakhir kelihatan)."],
+      ["65 jenis data, berskor", "E-mel, telefon, kad dan IBAN (disahkan checksum), rahsia dan kunci API, serta ID kebangsaan dari 19 negara — setiap satu dengan skor keyakinan daripada pengesahan dan kata kunci berdekatan."],
+      ["Redaksi sebenar untuk fail", "Word dan Excel diredaksi di tempatnya; PDF dibina semula sebagai imej dengan kotak hitam supaya tiada apa boleh disalin semula; imbasan dan foto dibaca dengan OCR pada peranti."],
+      ["AI Selamat", "Tanya AI anda sendiri tentang teks yang diredaksi — ia hanya melihat pemegang tempat, dan pelayar anda memulihkan data asal dalam jawapan."],
+      ["Berjalan pada peranti anda", "Pengesanan, OCR dan redaksi berlaku dalam pelayar anda. Hanya versi yang diredaksi pernah dihantar atau disimpan."],
     ],
     compliance: [
       ["7 rangka kerja", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 dan UU PDP."],
@@ -127,10 +127,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Privat von Grund auf", "Das Video verlässt Ihr Gerät nie; nur eine komprimierte Sprachspur geht an Ihren eigenen Transkriptionsanbieter."],
     ],
     vault: [
-      ["Läuft auf Ihrem Gerät", "Erkennung und Schwärzung passieren in Ihrem Browser – der Originaltext wird nie hochgeladen."],
-      ["20+ Datentypen", "E-Mails, Telefonnummern, Zahlungskarten (Luhn-geprüft), IBAN, IP-Adressen, Reisepässe, US-SSN, indonesische NIK & NPWP und mehr."],
-      ["Umkehrbare Platzhalter", "Werte durch Platzhalter wie [EMAIL_1] ersetzen und nach der KI-Antwort wiederherstellen."],
-      ["Maskierungsarten", "Platzhalter, vollständige Maskierung (•••) oder teilweise Maskierung (letzte 4 Ziffern sichtbar)."],
+      ["65 Datentypen mit Bewertung", "E-Mails, Telefonnummern, Karten und IBANs (prüfsummenvalidiert), Geheimnisse und API-Schlüssel sowie amtliche Kennungen aus 19 Ländern — jeweils mit einem Sicherheitswert aus Validierung und Schlüsselwörtern im Umfeld."],
+      ["Echte Schwärzung für Dateien", "Word und Excel werden direkt geschwärzt; PDFs werden als Bilder mit schwarzen Balken neu aufgebaut, sodass nichts zurückkopiert werden kann; Scans und Fotos werden per OCR auf dem Gerät gelesen."],
+      ["Sichere KI", "Fragen Sie Ihre eigene KI zum geschwärzten Text — sie sieht nur Platzhalter, und Ihr Browser setzt die Originale in die Antwort wieder ein."],
+      ["Läuft auf Ihrem Gerät", "Erkennung, OCR und Schwärzung geschehen in Ihrem Browser. Gesendet oder gespeichert wird immer nur die geschwärzte Fassung."],
     ],
     compliance: [
       ["7 Frameworks", "SOC 2, ISO/IEC 27001, DSGVO, HIPAA, PCI DSS v4, NIST CSF 2.0 und UU PDP."],
@@ -171,10 +171,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Privé par conception", "La vidéo ne quitte jamais votre appareil ; seule une piste vocale compressée est envoyée à votre propre fournisseur de transcription."],
     ],
     vault: [
-      ["Fonctionne sur votre appareil", "La détection et l'anonymisation se font dans votre navigateur — le texte original n'est jamais envoyé."],
-      ["20+ types de données", "E-mails, téléphones, cartes de paiement (vérifiées Luhn), IBAN, adresses IP, passeports, SSN américain, NIK et NPWP indonésiens, et plus."],
-      ["Jetons réversibles", "Remplacez les valeurs par des jetons comme [EMAIL_1] et restaurez-les après la réponse de l'IA."],
-      ["Styles de masquage", "Jetons, masquage complet (•••) ou partiel (4 derniers chiffres visibles)."],
+      ["65 types de données, notés", "E-mails, téléphones, cartes et IBAN (validés par somme de contrôle), secrets et clés d'API, et identifiants officiels de 19 pays — chacun avec un score de confiance issu de la validation et des mots-clés voisins."],
+      ["Un vrai masquage des fichiers", "Word et Excel sont masqués sur place ; les PDF sont reconstruits en images avec des bandes noires pour que rien ne puisse être recopié ; scans et photos sont lus par OCR sur l'appareil."],
+      ["IA sécurisée", "Interrogez votre propre IA sur le texte masqué — elle ne voit que des espaces réservés, et votre navigateur remet les originaux dans la réponse."],
+      ["Fonctionne sur votre appareil", "Détection, OCR et masquage se font dans votre navigateur. Seule la version masquée est jamais envoyée ou enregistrée."],
     ],
     compliance: [
       ["7 référentiels", "SOC 2, ISO/IEC 27001, RGPD, HIPAA, PCI DSS v4, NIST CSF 2.0 et UU PDP."],
@@ -215,10 +215,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Privato per progettazione", "Il video non lascia mai il tuo dispositivo; solo una traccia vocale compressa va al tuo fornitore di trascrizione."],
     ],
     vault: [
-      ["Funziona sul tuo dispositivo", "Rilevamento e oscuramento avvengono nel browser — il testo originale non viene mai caricato."],
-      ["20+ tipi di dati", "E-mail, telefoni, carte di pagamento (verifica Luhn), IBAN, indirizzi IP, passaporti, SSN USA, NIK e NPWP indonesiani e altro."],
-      ["Token reversibili", "Sostituisci i valori con token come [EMAIL_1] e ripristinali dopo la risposta dell'IA."],
-      ["Stili di mascheramento", "Token, mascheramento completo (•••) o parziale (ultime 4 cifre visibili)."],
+      ["65 tipi di dati, con punteggio", "E-mail, telefoni, carte e IBAN (convalidati con checksum), segreti e chiavi API e documenti ufficiali di 19 paesi — ciascuno con un punteggio di affidabilità da convalida e parole chiave vicine."],
+      ["Vero oscuramento dei file", "Word ed Excel vengono oscurati sul posto; i PDF vengono ricostruiti come immagini con riquadri neri, così nulla può essere ricopiato; scansioni e foto vengono lette con OCR sul dispositivo."],
+      ["IA sicura", "Chiedi alla tua IA del testo oscurato — vede solo segnaposto, e il tuo browser rimette gli originali nella risposta."],
+      ["Funziona sul tuo dispositivo", "Rilevamento, OCR e oscuramento avvengono nel tuo browser. Viene inviata o salvata solo la versione oscurata."],
     ],
     compliance: [
       ["7 framework", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 e UU PDP."],
@@ -259,10 +259,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["隐私为先", "视频永远不会离开您的设备；只有压缩的语音轨会发送到您自己的转写服务商。"],
     ],
     vault: [
-      ["在您的设备上运行", "检测与脱敏都在浏览器中完成——原文绝不会上传。"],
-      ["20+ 种数据类型", "电子邮件、电话、支付卡（Luhn 校验）、IBAN、IP 地址、护照、美国 SSN、印尼 NIK 与 NPWP 等。"],
-      ["可还原的令牌", "用 [EMAIL_1] 等令牌替换敏感值，AI 回复后再还原。"],
-      ["遮蔽方式", "可选令牌、完全遮蔽（•••）或部分遮蔽（显示后 4 位）。"],
+      ["65 种数据类型，带评分", "电子邮件、电话、银行卡和 IBAN（经校验和验证）、机密与 API 密钥，以及 19 个国家的官方证件——每项都有基于校验和上下文关键词的置信度评分。"],
+      ["真正的文件脱敏", "Word 和 Excel 原地脱敏；PDF 重建为带黑色遮挡框的图像，任何内容都无法再复制出来；扫描件和照片通过设备端 OCR 识别。"],
+      ["安全 AI", "就脱敏后的文本询问您自己的 AI——它只看到占位符，您的浏览器会把原始内容还原到回答中。"],
+      ["在您的设备上运行", "检测、OCR 和脱敏都在您的浏览器中完成。发送或保存的永远只是脱敏后的版本。"],
     ],
     compliance: [
       ["7 个框架", "SOC 2、ISO/IEC 27001、GDPR、HIPAA、PCI DSS v4、NIST CSF 2.0 和 UU PDP。"],
@@ -303,10 +303,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["設計段階からプライベート", "動画は端末から出ません。圧縮した音声トラックだけが、ご自身の文字起こしプロバイダーに送られます。"],
     ],
     vault: [
-      ["お使いの端末で実行", "検出と墨消しはブラウザ内で行われ、元のテキストはアップロードされません。"],
-      ["20 種類以上のデータ", "メール、電話番号、決済カード（Luhn チェック）、IBAN、IP アドレス、パスポート、米国 SSN、インドネシアの NIK・NPWP など。"],
-      ["元に戻せるトークン", "値を [EMAIL_1] などのトークンに置き換え、AI の回答後に復元します。"],
-      ["マスキング方式", "トークン、完全マスク（•••）、部分マスク（末尾 4 桁を表示）から選べます。"],
+      ["65 種類のデータをスコア付きで", "メール、電話番号、カードや IBAN（チェックサム検証済み）、シークレットや API キー、19 か国の公的 ID — それぞれ検証結果と周辺キーワードから信頼度スコアを算出します。"],
+      ["ファイルの本当の墨消し", "Word と Excel はその場で墨消し。PDF は黒塗りした画像として再構成されるため何もコピーし直せず、スキャンや写真はデバイス上の OCR で読み取ります。"],
+      ["セーフ AI", "墨消ししたテキストについて自分の AI に質問できます。AI が見るのはプレースホルダーだけで、ブラウザが回答に元の値を戻します。"],
+      ["あなたのデバイスで動作", "検出、OCR、墨消しはブラウザ内で行われます。送信・保存されるのは常に墨消し版だけです。"],
     ],
     compliance: [
       ["7 つのフレームワーク", "SOC 2、ISO/IEC 27001、GDPR、HIPAA、PCI DSS v4、NIST CSF 2.0、UU PDP。"],
@@ -347,10 +347,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["शुरू से निजी", "वीडियो कभी आपके डिवाइस से बाहर नहीं जाता; केवल संपीड़ित आवाज़ ट्रैक आपके अपने ट्रांसक्रिप्शन प्रदाता को जाता है।"],
     ],
     vault: [
-      ["आपके डिवाइस पर चलता है", "पहचान और रिडैक्शन आपके ब्राउज़र में होते हैं — मूल टेक्स्ट कभी अपलोड नहीं होता।"],
-      ["20+ डेटा प्रकार", "ईमेल, फ़ोन, भुगतान कार्ड (Luhn-जाँचे), IBAN, IP पते, पासपोर्ट, US SSN, इंडोनेशियाई NIK व NPWP और बहुत कुछ।"],
-      ["वापस बदले जा सकने वाले टोकन", "मानों को [EMAIL_1] जैसे टोकन से बदलें और AI के उत्तर के बाद उन्हें बहाल करें।"],
-      ["मास्किंग शैलियाँ", "टोकन, पूर्ण मास्किंग (•••) या आंशिक मास्किंग (अंतिम 4 अंक दिखें) चुनें।"],
+      ["65 डेटा प्रकार, स्कोर के साथ", "ईमेल, फ़ोन, कार्ड और IBAN (चेकसम से सत्यापित), गोपनीय जानकारी और API कुंजियाँ, और 19 देशों की सरकारी पहचान — हर एक के साथ सत्यापन और आसपास के कीवर्ड से भरोसे का स्कोर।"],
+      ["फ़ाइलों के लिए असली रिडैक्शन", "Word और Excel वहीं छिपाए जाते हैं; PDF को काले बॉक्स वाली छवियों के रूप में दोबारा बनाया जाता है ताकि कुछ भी वापस कॉपी न हो सके; स्कैन और फ़ोटो डिवाइस पर OCR से पढ़े जाते हैं।"],
+      ["सुरक्षित AI", "छिपाए गए टेक्स्ट के बारे में अपने AI से पूछें — उसे केवल प्लेसहोल्डर दिखते हैं, और आपका ब्राउज़र जवाब में मूल मान वापस लगा देता है।"],
+      ["आपके डिवाइस पर चलता है", "पहचान, OCR और रिडैक्शन आपके ब्राउज़र में होते हैं। केवल छिपाया गया संस्करण ही भेजा या सहेजा जाता है।"],
     ],
     compliance: [
       ["7 फ़्रेमवर्क", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 और UU PDP।"],
@@ -391,10 +391,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["الخصوصية أولًا", "لا يغادر الفيديو جهازك أبدًا؛ يُرسَل فقط مسار صوتي مضغوط إلى مزوّد التفريغ الخاص بك."],
     ],
     vault: [
-      ["يعمل على جهازك", "يتم الاكتشاف والحجب داخل متصفحك — ولا يُرفع النص الأصلي أبدًا."],
-      ["أكثر من 20 نوعًا من البيانات", "البريد الإلكتروني، والهواتف، وبطاقات الدفع (بتحقق Luhn)، وIBAN، وعناوين IP، وجوازات السفر، وSSN الأمريكي، وNIK وNPWP الإندونيسيان، وغيرها."],
-      ["رموز قابلة للاسترجاع", "استبدل القيم برموز مثل [EMAIL_1] واستعِدها بعد رد الذكاء الاصطناعي."],
-      ["أنماط الإخفاء", "اختر الرموز، أو الإخفاء الكامل (•••)، أو الجزئي (تظهر آخر 4 أرقام)."],
+      ["65 نوعًا من البيانات مع تقييم", "البريد الإلكتروني والهواتف والبطاقات وأرقام IBAN (مع التحقق بالمجموع الاختباري)، والأسرار ومفاتيح API، والهويات الرسمية من 19 دولة — لكل منها درجة ثقة من التحقق والكلمات المفتاحية المجاورة."],
+      ["إخفاء حقيقي للملفات", "تُخفى ملفات Word وExcel في مكانها؛ ويُعاد بناء ملفات PDF كصور بمربعات سوداء فلا يمكن نسخ أي شيء منها؛ وتُقرأ المستندات الممسوحة والصور بتقنية OCR على الجهاز."],
+      ["ذكاء اصطناعي آمن", "اسأل ذكاءك الاصطناعي عن النص المُخفى — فهو لا يرى إلا العناصر النائبة، ويعيد متصفحك القيم الأصلية إلى الإجابة."],
+      ["يعمل على جهازك", "يجري الكشف وOCR والإخفاء داخل متصفحك. لا يُرسل ولا يُحفظ إلا الإصدار المُخفى."],
     ],
     compliance: [
       ["7 أُطر عمل", "SOC 2 وISO/IEC 27001 وGDPR وHIPAA وPCI DSS v4 وNIST CSF 2.0 وUU PDP."],

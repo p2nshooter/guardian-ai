@@ -1,13 +1,14 @@
 // Copies browser-only libraries into public/vendor so they are served from our
 // own origin (documents are processed in the browser and never leave it).
-import { mkdirSync, copyFileSync, existsSync, readdirSync } from "node:fs";
+import { mkdirSync, copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = [
-  ["node_modules/pdfjs-dist/build/pdf.min.mjs", "public/vendor/pdfjs/pdf.min.mjs"],
-  ["node_modules/pdfjs-dist/build/pdf.worker.min.mjs", "public/vendor/pdfjs/pdf.worker.min.mjs"],
+  ["node_modules/pdfjs-dist/legacy/build/pdf.min.mjs", "public/vendor/pdfjs/pdf.min.mjs"],
+  ["node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs", "public/vendor/pdfjs/pdf.worker.min.mjs"],
   // Clipper: on-device face tracking for auto-reframe (MediaPipe, Apache-2.0).
   ["node_modules/@mediapipe/tasks-vision/vision_bundle.mjs", "public/vendor/mediapipe/vision_bundle.mjs"],
   ["node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.js", "public/vendor/mediapipe/wasm/vision_wasm_internal.js"],
@@ -15,6 +16,10 @@ const files = [
   ["node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.js", "public/vendor/mediapipe/wasm/vision_wasm_nosimd_internal.js"],
   ["node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.wasm", "public/vendor/mediapipe/wasm/vision_wasm_nosimd_internal.wasm"],
   ["assets/models/blaze_face_short_range.tflite", "public/vendor/mediapipe/blaze_face_short_range.tflite"],
+  // Privacy Vault: on-device OCR for image redaction (Apache-2.0) — LSTM cores + English & Indonesian models.
+  ["node_modules/tesseract.js/dist/tesseract.esm.min.js", "public/vendor/tesseract/tesseract.esm.min.js"],
+  ["node_modules/tesseract.js/dist/worker.min.js", "public/vendor/tesseract/worker.min.js"],
+  ...["tesseract-core-lstm.wasm.js", "tesseract-core-simd-lstm.wasm.js", "tesseract-core-relaxedsimd-lstm.wasm.js"].map((f) => [`node_modules/tesseract.js-core/${f}`, `public/vendor/tesseract/core/${f}`]),
   // AI Studio: diagrams in artifact previews (MIT).
   ["node_modules/mermaid/dist/mermaid.min.js", "public/vendor/mermaid/mermaid.min.js"],
   // Clipper: caption fonts drawn on the canvas (SIL Open Font License).
@@ -39,6 +44,16 @@ for (const [from, to] of files) {
   copyFileSync(src, join(root, to));
 }
 console.log(`vendor: copied ${files.length} files`);
+
+// OCR models are stored gunzipped (served with gzip:false) so a CDN that adds
+// Content-Encoding can never double-decode them.
+for (const lang of ["eng", "ind"]) {
+  const src = join(root, `node_modules/@tesseract.js-data/${lang}/4.0.0_best_int/${lang}.traineddata.gz`);
+  if (!existsSync(src)) { console.error(`vendor: missing ${src} — run npm install`); process.exit(1); }
+  const to = join(root, `public/vendor/tesseract/lang/${lang}.traineddata`);
+  mkdirSync(dirname(to), { recursive: true });
+  writeFileSync(to, gunzipSync(readFileSync(src)));
+}
 
 // Self-hosted config files members download from /configs/* — the repo root
 // holds the source of truth (the installer bundles the same files), so copy

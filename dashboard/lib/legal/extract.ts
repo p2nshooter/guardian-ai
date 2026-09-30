@@ -22,7 +22,7 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-async function unzip(buf: ArrayBuffer, wanted: (name: string) => boolean): Promise<Map<string, Uint8Array>> {
+export async function unzip(buf: ArrayBuffer, wanted: (name: string) => boolean): Promise<Map<string, Uint8Array>> {
   const b = new Uint8Array(buf);
   const v = new DataView(buf);
   let eocd = -1;
@@ -132,7 +132,7 @@ async function readOdt(buf: ArrayBuffer): Promise<string> {
 
 // ── PDF ──────────────────────────────────────────────────────────────────────
 let pdfjs: any = null;
-async function loadPdfJs() {
+export async function loadPdfJs() {
   if (pdfjs) return pdfjs;
   // Runtime-computed URL so the bundler leaves it as a real browser import of
   // our self-hosted copy (documents are parsed in the browser, never uploaded).

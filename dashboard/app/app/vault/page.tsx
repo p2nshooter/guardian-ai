@@ -1,45 +1,108 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * ==============================================================================
- * PRIVACY VAULT — find and redact personal data ENTIRELY in the browser. The
- * original text is never uploaded. Redact with reversible tokens or masking,
- * copy the safe version to paste into any AI, then restore the AI's reply.
- * Only the redacted (PII-free) output can be saved to history — never originals.
+ * PRIVACY VAULT v4 — find and redact personal data and secrets ON THE DEVICE:
+ *   text       paste or open a document · 65 data types in 7 categories with a
+ *              confidence score · review highlights in place (keep / redact /
+ *              accept a low-confidence suggestion) · always-redact a selection ·
+ *              exposure level · copy, download, save the redacted version
+ *   files      batch: DOCX / XLSX in place, PDF rebuilt as images (true
+ *              redaction), images and scans via on-device OCR · ZIP · audit report
+ *   safe AI    ask the member's own AI about redacted text; answers are restored
+ *              in the browser — the server and provider only see placeholders
+ *   key        placeholder map: view, export encrypted (password), import, restore
+ *   rules      compliance profiles (GDPR, UU PDP, HIPAA, PCI DSS, secrets) ·
+ *              5 styles · sensitivity · types · custom regex · always/never lists
+ * Only the redacted output and the member's settings are ever saved (encrypted
+ * history); originals and the key never leave the device unencrypted.
  * ============================================================================ */
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useI18n, pick } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { LoadingBlock } from "@/components/ui";
-import { PII_TYPES, redact, restore, summarize, type MaskStyle } from "@/lib/vault/pii";
+import { createRedactor, findingKey, review, summarize, type Finding } from "@/lib/vault/pii";
+import { DEFAULT_SETTINGS, SAMPLE, SETTINGS_ID, applyPreset, engineOptions, exposure, sanitizeSettings, type VaultSettings } from "@/lib/vault/settings";
+import TextTab from "@/components/vault/TextTab";
+import FilesTab from "@/components/vault/FilesTab";
+import SafeAiTab from "@/components/vault/SafeAiTab";
+import KeyTab, { type KeySource } from "@/components/vault/KeyTab";
+import RulesTab from "@/components/vault/RulesTab";
 import { L } from "@/lib/i18n-pages/vault";
+
+type Tab = "text" | "files" | "ai" | "key" | "rules";
+const TAB_ICON: Record<Tab, string> = { text: "📝", files: "🗂️", ai: "🤖", key: "🔑", rules: "⚙️" };
 
 export default function VaultApp() {
   const { lang } = useI18n();
   const { me } = useMe();
   const t = pick(L, lang);
-  const [text, setText] = useState("");
-  const [style, setStyle] = useState<MaskStyle>("token");
-  const [disabled, setDisabled] = useState<Set<string>>(new Set());
-  const [copied, setCopied] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [restoreIn, setRestoreIn] = useState("");
   const access = !!me && me.limits.apps.includes("vault");
 
-  const enabled = useMemo(() => new Set(PII_TYPES.map((t) => t.id).filter((id) => !disabled.has(id))), [disabled]);
-  const result = useMemo(() => redact(text, style, enabled), [text, style, enabled]);
-  const summary = useMemo(() => summarize(result.findings), [result]);
-  const restored = useMemo(() => (restoreIn ? restore(restoreIn, result.map) : ""), [restoreIn, result.map]);
-  useEffect(() => { setCopied(false); setSaved(false); }, [text, style, disabled]);
+  const [tab, setTab] = useState<Tab>("text");
+  const [settings, setSettings] = useState<VaultSettings>(DEFAULT_SETTINGS);
+  const [savedSettings, setSavedSettings] = useState<string>(JSON.stringify(DEFAULT_SETTINGS));
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [text, setText] = useState("");
+  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const [included, setIncluded] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [maps, setMaps] = useState<Record<Exclude<KeySource, "text">, Record<string, string>>>({ files: {}, ai: {}, imported: {} });
+  const setMap = useCallback((k: Exclude<KeySource, "text">) => (m: Record<string, string>) => setMaps((x) => ({ ...x, [k]: m })), []);
 
-  function toggle(id: string) { setDisabled((d) => { const n = new Set(d); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
-  async function copy() { try { await navigator.clipboard.writeText(result.redacted); setCopied(true); } catch {} }
-  async function save() {
+  // Settings live in the member's encrypted history.
+  useEffect(() => {
+    if (!access) return;
+    api<{ item: { body: unknown } }>(`/api/history/vault/${SETTINGS_ID}`).then((r) => {
+      if (r.ok && r.data.item?.body) { const s = sanitizeSettings(r.data.item.body); setSettings(s); setSavedSettings(JSON.stringify(s)); setSettingsSaved(true); }
+    });
+    const oid = new URLSearchParams(window.location.search).get("open");
+    if (oid && oid !== SETTINGS_ID) {
+      api<{ item: { body: any } }>(`/api/history/vault/${oid}`).then((r) => {
+        if (r.ok && typeof r.data.item?.body?.redacted === "string") { setText(r.data.item.body.redacted); setNotice(t.openedSaved); }
+      });
+    }
+  }, [access]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = JSON.stringify(settings) !== savedSettings;
+
+  // Detection → review → redaction, all in this browser.
+  const deferred = useDeferredValue(text);
+  const { enabled, options } = useMemo(() => engineOptions(settings), [settings]);
+  const rv = useMemo(() => (deferred ? review(deferred, enabled, options) : { findings: [], suggestions: [] }), [deferred, enabled, options]);
+  const picked = useMemo<Finding[]>(() => [
+    ...rv.findings.filter((f) => !excluded.has(findingKey(f))),
+    ...rv.suggestions.filter((f) => included.has(findingKey(f))),
+  ].sort((a, b) => a.start - b.start), [rv, excluded, included]);
+  const result = useMemo(() => {
+    const r = createRedactor(settings.style, enabled, options);
+    const out = r.apply(deferred, picked);
+    return { ...out, map: r.map, placeholderOf: (f: Finding) => r.placeholder(f) };
+  }, [deferred, picked, settings.style, enabled, options]);
+  const level = useMemo(() => exposure(picked), [picked]);
+  const aiSource = useMemo(() => (deferred.trim() ? { text: deferred, findings: picked } : null), [deferred, picked]);
+  useEffect(() => { setSaved(false); }, [text, settings, excluded, included]);
+
+  function onText(s: string) { setText(s); if (!s) { setExcluded(new Set()); setIncluded(new Set()); setNotice(""); } }
+  function onToggle(key: string, suggestion: boolean) {
+    const upd = (set: Set<string>) => { const n = new Set(set); n.has(key) ? n.delete(key) : n.add(key); return n; };
+    if (suggestion) setIncluded(upd); else setExcluded(upd);
+  }
+  function changeSettings(s: VaultSettings) { setSettings(s); setSettingsSaved(false); }
+  async function saveSettings() {
+    const r = await api("/api/history/vault", { body: { id: SETTINGS_ID, title: "Privacy Vault settings", body: settings, meta: { kind: "settings" } } });
+    if (r.ok) { setSavedSettings(JSON.stringify(settings)); setSettingsSaved(true); }
+  }
+  async function saveRedacted() {
     if (!result.redacted.trim()) return;
-    const title = `Redacted · ${new Date().toLocaleString()}`;
-    const r = await api("/api/history/vault", { body: { title, body: { redacted: result.redacted, style, types: summary }, meta: { items: String(result.findings.length) } } });
+    const types = summarize(result.findings);
+    const r = await api("/api/history/vault", { body: {
+      title: `Redacted · ${new Date().toLocaleString()}`,
+      body: { kind: "redaction", redacted: result.redacted, style: settings.style, types: types.map(({ type, count }) => ({ type, count })) },
+      meta: { items: String(result.findings.length), style: settings.style },
+    } });
     if (r.ok) setSaved(true);
   }
 
@@ -47,73 +110,52 @@ export default function VaultApp() {
   if (!access) return (
     <div className="surface-ink relative overflow-hidden rounded-2xl p-8"><div className="glow pointer-events-none absolute inset-0" />
       <div className="relative"><div className="text-4xl">🔒</div><h1 className="mt-3 text-2xl font-extrabold text-white">{t.noPlan}</h1>
+        <p className="mt-2 max-w-xl text-slate-300">{t.sub}</p>
         <Link href="/app/billing?plan=starter" className="btn-primary btn-lg mt-5">{t.upgrade} →</Link></div></div>
   );
 
+  const counts: Partial<Record<Tab, number>> = {
+    text: picked.length || undefined,
+    key: Object.keys(result.map).length + Object.keys(maps.files).length + Object.keys(maps.ai).length + Object.keys(maps.imported).length || undefined,
+  };
+
   return (
     <div>
-      <div className="mb-4"><div className="eyebrow">🔒 {t.sub}</div><h1 className="text-2xl font-bold">{t.title}</h1></div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="card-pad">
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-sm font-semibold text-slate-700">{t.input}</label>
-            {text ? <button className="btn-ghost btn-sm" onClick={() => setText("")}>{t.clear}</button> : null}
-          </div>
-          <textarea className="textarea min-h-[280px] w-full font-mono text-xs" placeholder={t.inputPh} value={text} onChange={(e) => setText(e.target.value)} />
-          <p className="mt-2 text-xs text-emerald-700">🛡️ {t.onDevice}</p>
-        </section>
-
-        <section className="card-pad">
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-sm font-semibold text-slate-700">{t.redacted}</label>
-            <div className="flex gap-2">
-              <button className="btn-secondary btn-sm" onClick={copy} disabled={!result.redacted.trim()}>{copied ? t.copied : t.copy}</button>
-              <button className="btn-ghost btn-sm" onClick={save} disabled={!result.redacted.trim()}>{saved ? t.saved : `💾 ${t.save}`}</button>
-            </div>
-          </div>
-          <pre className="min-h-[280px] w-full overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-800">{result.redacted || <span className="text-slate-400">…</span>}</pre>
-        </section>
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="min-w-0">
+          <div className="eyebrow">🔒 {t.onDevice}</div>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
+          <p className="text-sm text-slate-600">{t.sub}</p>
+        </div>
       </div>
 
-      <section className="card-pad mt-4">
-        <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
-          <div>
-            <div className="mb-1 text-sm font-semibold text-slate-700">{t.style}</div>
-            <div className="flex flex-col gap-1">
-              {([["token", t.token], ["full", t.full], ["partial", t.partial]] as [MaskStyle, string][]).map(([id, label]) => (
-                <label key={id} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${style === id ? "border-brand-500 bg-brand-50 font-semibold text-brand-700" : "border-slate-200 text-slate-600"}`}>
-                  <input type="radio" name="style" className="accent-brand-600" checked={style === id} onChange={() => setStyle(id)} />{label}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="mb-1 text-sm font-semibold text-slate-700">{t.types} <span className="font-normal text-slate-400">· {t.found}: {result.findings.length}</span></div>
-            <div className="flex flex-wrap gap-1.5">
-              {PII_TYPES.map((ty) => {
-                const count = summary.find((s) => s.type === ty.id)?.count || 0;
-                const on = !disabled.has(ty.id);
-                return (
-                  <button key={ty.id} onClick={() => toggle(ty.id)}
-                    className={`rounded-full border px-2.5 py-1 text-xs ${!on ? "border-slate-200 text-slate-400 line-through" : count ? "border-brand-300 bg-brand-50 font-semibold text-brand-700" : "border-slate-200 text-slate-500"}`}>
-                    {ty.label}{count ? ` · ${count}` : ""}
-                  </button>
-                );
-              })}
-            </div>
-            {!result.findings.length ? <p className="mt-3 text-sm text-slate-500">{t.none}</p> : null}
-          </div>
-        </div>
-      </section>
+      <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1" role="tablist">
+        {(Object.keys(t.tabs) as Tab[]).map((k) => (
+          <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} data-testid={`vault-tab-${k}`}
+            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition ${tab === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>
+            <span>{TAB_ICON[k]}</span>{t.tabs[k]}
+            {counts[k] ? <span className="rounded-full bg-brand-100 px-1.5 text-[11px] text-brand-800">{counts[k]}</span> : null}
+          </button>
+        ))}
+      </div>
 
-      <section className="card-pad mt-4">
-        <div className="mb-2 text-sm font-semibold text-slate-700">{t.restoreT} {style !== "token" ? <span className="font-normal text-amber-600">· {t.noMap}</span> : null}</div>
-        <div className="grid gap-3 lg:grid-cols-2">
-          <textarea className="textarea min-h-[120px] font-mono text-xs" placeholder={t.restorePh} value={restoreIn} onChange={(e) => setRestoreIn(e.target.value)} />
-          <pre className="min-h-[120px] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-800">{restored || <span className="text-slate-400">{t.restored}…</span>}</pre>
-        </div>
-      </section>
+      <div hidden={tab !== "text"}>
+        <TextTab t={t} text={text} onText={onText} findings={rv.findings} suggestions={rv.suggestions}
+          excluded={excluded} included={included} onToggle={onToggle} onResetChoices={() => { setExcluded(new Set()); setIncluded(new Set()); }}
+          redacted={result.redacted} placeholderOf={result.placeholderOf} exposure={level}
+          settings={settings} onPreset={(id) => changeSettings(applyPreset(settings, id))} onStyle={(style) => changeSettings({ ...settings, style })}
+          onAlwaysRedact={(v) => changeSettings({ ...settings, deny: Array.from(new Set([...settings.deny, v])) })}
+          onSample={() => { setText(SAMPLE); setNotice(""); }} onAsk={() => setTab("ai")} onSave={saveRedacted} saved={saved} notice={notice} />
+      </div>
+      <div hidden={tab !== "files"}><FilesTab t={t} settings={settings} onMap={setMap("files")} /></div>
+      <div hidden={tab !== "ai"}>
+        <SafeAiTab t={t} lang={lang} source={aiSource} settings={settings} onMap={setMap("ai")} onGoText={() => setTab("text")} />
+      </div>
+      {tab === "key" ? <KeyTab t={t} maps={{ text: result.map, files: maps.files, ai: maps.ai, imported: maps.imported }} onImported={setMap("imported")} /> : null}
+      {tab === "rules" ? (
+        <RulesTab t={t} settings={settings} onChange={changeSettings} text={deferred} onSave={saveSettings} saved={settingsSaved} dirty={dirty}
+          onReset={() => changeSettings({ ...DEFAULT_SETTINGS })} />
+      ) : null}
     </div>
   );
 }
