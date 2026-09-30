@@ -209,8 +209,7 @@ axto-vault/
 │       ├── license-validate/route.ts      # Updated: all 7 products
 │       └── admin/create-license/page.tsx  # Updated: all packages
 └── .github/workflows/
-    ├── auto-build-all.yml          # Job 7: Vault Core build
-    └── build-release.yml           # vault-core, vault-bundle support
+    └── auto-build-all.yml          # Job 7: Vault Core build (amd64 + arm64)
 ```
 
 ---

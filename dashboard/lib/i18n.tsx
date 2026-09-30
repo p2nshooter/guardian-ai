@@ -201,7 +201,7 @@ const EN = {
   "sh.title": "Self-hosted apps", "sh.sub": "Run AXTO on your own servers with Docker or Windows. Licences are always the top tier.",
   "sh.included": "{used} of {total} apps in use", "sh.allIncluded": "All apps included", "sh.notIncluded": "Self-hosted apps are included in the Business and Enterprise plans.",
   "sh.issue": "Get licence key", "sh.reset": "Reset server binding", "sh.release": "Release", "sh.key": "Licence key",
-  "sh.downloads": "Downloads", "sh.docker": "Docker image", "sh.exe": "Windows EXE", "sh.config": "Config files", "sh.guide": "Setup guide",
+  "sh.downloads": "Downloads", "sh.docker": "Docker image", "sh.config": "Config files", "sh.guide": "Setup guide",
   "sh.preparing": "Build being prepared", "sh.bound": "Bound to a server", "sh.unbound": "Not activated yet", "sh.lastSeen": "Last seen",
   // Managed
   "managed.title": "Managed AI", "managed.locked": "Managed AI is coming soon", "managed.lockedSub": "With Managed AI, AXTO provides the AI models so you don't need your own keys. Until then, every app works with your own keys (BYOX).",
@@ -406,7 +406,7 @@ const ID: Record<Key, string> = {
   "sh.title": "Aplikasi self-hosted", "sh.sub": "Jalankan AXTO di server Anda sendiri dengan Docker atau Windows. Lisensi selalu tier tertinggi.",
   "sh.included": "{used} dari {total} aplikasi terpakai", "sh.allIncluded": "Semua aplikasi termasuk", "sh.notIncluded": "Aplikasi self-hosted termasuk dalam paket Business dan Enterprise.",
   "sh.issue": "Ambil kunci lisensi", "sh.reset": "Reset ikatan server", "sh.release": "Lepaskan", "sh.key": "Kunci lisensi",
-  "sh.downloads": "Unduhan", "sh.docker": "Image Docker", "sh.exe": "EXE Windows", "sh.config": "File konfigurasi", "sh.guide": "Panduan instalasi",
+  "sh.downloads": "Unduhan", "sh.docker": "Image Docker", "sh.config": "File konfigurasi", "sh.guide": "Panduan instalasi",
   "sh.preparing": "Build sedang disiapkan", "sh.bound": "Terikat ke server", "sh.unbound": "Belum diaktifkan", "sh.lastSeen": "Terakhir aktif",
   "managed.title": "Managed AI", "managed.locked": "Managed AI segera hadir", "managed.lockedSub": "Dengan Managed AI, AXTO menyediakan model AI sehingga Anda tidak perlu kunci sendiri. Sampai saat itu, semua aplikasi berjalan dengan kunci Anda sendiri (BYOX).",
   "apps.title": "Aplikasi", "apps.sub": "Semua berjalan di browser — tanpa instalasi.", "apps.locked": "Termasuk di {plan}",

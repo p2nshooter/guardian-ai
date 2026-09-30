@@ -10,7 +10,7 @@
 export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
-import { availableBuilds, imageKey, exeKey, archImageName } from "@/lib/builds";
+import { availableBuilds, imageKey, archImageName } from "@/lib/builds";
 import { loadSession, unauthorized, respond, effectiveTier, loadSessionFor } from "@/lib/auth";
 import { limitsFor, PLANS, isPlanId } from "@/lib/plans";
 import { SELF_HOSTED, getSelfHosted, catalogEntry, generateLicenseKey } from "@/lib/selfhosted";
@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
       slug: p.slug, name: c?.name || p.slug, emoji: c?.emoji || "📦", tagline: c?.tagline || "", port: p.port,
       compose: p.compose, config: p.config, configTarget: p.configTarget, licenseField: p.licenseField,
       images: p.images.map((i) => ({ ...i, available: builds.has(imageKey(i.name)), arm64: builds.has(imageKey(archImageName(i.name, "arm64"))) })),
-      exeAvailable: !!p.exe && builds.has(exeKey(p.exe)),
       license: lic,
     };
   });

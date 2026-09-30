@@ -567,7 +567,7 @@ lalu uji nyata di Docker: installer asli memasang engine Vault asli (image diban
 | D4 | Docker Desktop di mode **Windows containers** tidak dikenali | Image Linux gagal dimuat dengan error membingungkan | `doctor`/wizard: "Switch to Linux containers…" dengan langkahnya |
 | D5 | Semua image hanya **amd64**, padahal AXTO Setup ditawarkan untuk Linux ARM64 & macOS Apple Silicon | Di server ARM: *exec format error* | Build **linux/arm64** untuk setiap image (kecuali GPU worker NVIDIA yang tetap amd64); portal & installer memilih `<image>-arm64` sesuai arsitektur engine Docker; unduhan manual ARM64 di portal; smoke test ARM64 (QEMU) mingguan/manual; semua dependensi punya wheel ARM64 |
 | D6 | **Pemegang Lifetime tidak bisa memakai AXTO Setup** (installer hanya menerima kunci langganan) | Janji "installer Windows untuk Lifetime" tidak terpenuhi | Kunci installer `LIFE-…` per lisensi (migrasi 0059) di `/app/lifetime`; installer mengunduh image, memasang, membaca machine ID, meminta file aktivasi bertanda tangan ke portal (1 slot perangkat), memasangnya, restart → aplikasi jalan offline; Suite: installer menanyakan aplikasi; update memakai slot yang sama |
-| D7 | Tautan "EXE per aplikasi" (sisa PyInstaller v2) di portal; build-nya hanya ada di workflow manual lama untuk 3 produk | Tautan mati / biner tak terawat | Windows = **AXTO Setup.exe** (satu installer, diuji di runner Windows asli); tautan per-app dihapus; `build-release.yml` dicatat sebagai *legacy* |
+| D7 | Tautan "EXE per aplikasi" (sisa PyInstaller v2) di portal; build-nya hanya ada di workflow manual lama untuk 3 produk | Tautan mati / biner tak terawat | Windows = **AXTO Setup.exe** (satu installer, diuji di runner Windows asli); tautan per-app dihapus; `build-release.yml` + `build-scripts/` dihapus (§23) |
 | D8 | Versi installer `3.0.0` | Tidak konsisten dengan platform 3.2.1 | 3.2.1 |
 
 ### 21b. Bukti
@@ -578,7 +578,7 @@ lalu uji nyata di Docker: installer asli memasang engine Vault asli (image diban
 ### 21c. Sisa (dicatat, bukan bug)
 - Container masih berjalan sebagai root (kecuali Legal). Beralih ke user non-root perlu migrasi izin volume yang sudah ada — rencanakan dengan langkah `chown` satu kali di entrypoint.
 - Installer (wizard) berbahasa EN/ID; portal 10 bahasa.
-- `build-release.yml` + `build-scripts/` (EXE PyInstaller per klien, tipe lisensi *trial*) bertentangan dengan kebijakan v3 — hapus bila tidak dipakai lagi (keputusan pemilik).
+- ~~`build-release.yml` + `build-scripts/` (EXE PyInstaller per klien, tipe lisensi *trial*)~~ — **dihapus** atas keputusan pemilik (§23), termasuk stage `build-exe` di `.gitlab-ci.yml`.
 
 ---
 

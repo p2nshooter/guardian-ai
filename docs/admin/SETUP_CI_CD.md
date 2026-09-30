@@ -130,40 +130,12 @@ gitlab-runner register \
   --description "AXTO Build Runner"
 ```
 
-### 5b. Add Windows Runner — REQUIRED for the build-exe stage (v3.0+)
+### 5b. Windows builds
 
-The `build-exe:*` jobs in `.gitlab-ci.yml` produce real Windows `.exe` files via
-PyInstaller and run on a **Windows** machine with a `windows`-tagged runner.
-Without one registered, every `build-exe:*` job will simply sit **pending**
-forever — it will never silently "skip", it will block the pipeline stage
-until the job times out. If you don't need `.exe` builds yet, you can either
-register a Windows runner (below) or temporarily remove the `build-exe` stage
-from the `stages:` list to avoid pending jobs.
-
-On a Windows Server/VM with Python 3.11+ and PowerShell installed:
-```powershell
-# Download the runner
-Invoke-WebRequest -Uri "https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-windows-amd64.exe" -OutFile "C:\GitLab-Runner\gitlab-runner.exe"
-
-# Register with the shell executor (defaults to PowerShell on Windows) and
-# the "windows" tag — this MUST match the `tags: [windows]` used by every
-# build-exe:* job in .gitlab-ci.yml.
-cd C:\GitLab-Runner
-.\gitlab-runner.exe register `
-  --url "https://gitlab.com" `
-  --token "YOUR_RUNNER_TOKEN" `
-  --executor shell `
-  --tag-list "windows" `
-  --description "AXTO Windows EXE Builder"
-
-# Install and start as a service
-.\gitlab-runner.exe install
-.\gitlab-runner.exe start
-```
-Verify it shows up under **Settings → CI/CD → Runners** with a green dot and
-the `windows` tag before relying on `.exe` builds.
-
-
+No Windows runner is needed. The per-app PyInstaller `.exe` stage of v2 was
+removed in v3.2.1: Windows users install with **AXTO Setup.exe** (`installer/`),
+which GitHub Actions builds and tests on a real Windows runner
+(`.github/workflows/build-installer.yml`).
 
 ## GitHub Actions Setup
 

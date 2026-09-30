@@ -1,4 +1,4 @@
-/* AXTO — GET /api/selfhosted/download?product=…&file=<image|exe> · stream a build from R2
+/* AXTO — GET /api/selfhosted/download?product=…&file=<image>[-arm64] · stream a Docker image from R2
  * (axto-builds) to a member who holds an active licence for that product: a
  * subscription licence (Business/Enterprise) or a lifetime licence whose
  * included-updates period has not ended. */
@@ -25,21 +25,16 @@ export async function GET(req: NextRequest) {
     const lic = await dbFirst(db, `SELECT id FROM sh_licenses WHERE user_id = ? AND product = ? AND status = 'active'`, [s.sub, p.slug]);
     if (!lic) return new NextResponse("Issue a licence for this app first.", { status: 403 });
   }
-  let key = "";
-  let name = "";
-  if (file === "exe" && p.exe) { key = `builds/latest/exe/${p.exe}-windows.exe`; name = `${p.exe}-windows.exe`; }
-  else {
-    // <image> = x86-64 build, <image>-arm64 = ARM build
-    const img = p.images.find((i) => i.name === file.replace(/-arm64$/, ""));
-    if (!img) return new NextResponse("Unknown file", { status: 404 });
-    key = `builds/latest/raw/${file}.tar.gz`; name = `${file}.tar.gz`;
-  }
+  // <image> = x86-64 build, <image>-arm64 = ARM build. Windows installs use AXTO Setup.exe.
+  const img = p.images.find((i) => i.name === file.replace(/-arm64$/, ""));
+  if (!img) return new NextResponse("Unknown file", { status: 404 });
+  const key = `builds/latest/raw/${file}.tar.gz`, name = `${file}.tar.gz`;
   const obj = await getR2Builds(req).get(key);
   if (!obj) return new NextResponse("This build is being prepared. Please try again later.", { status: 404 });
   await audit(db, s, "selfhosted.download", "build", key, {}, req);
   return new NextResponse(obj.body, {
     headers: {
-      "Content-Type": file === "exe" ? "application/vnd.microsoft.portable-executable" : "application/gzip",
+      "Content-Type": "application/gzip",
       "Content-Disposition": `attachment; filename="${name}"`,
       ...(obj.size ? { "Content-Length": String(obj.size) } : {}),
       "Cache-Control": "private, no-store",
