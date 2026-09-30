@@ -5,7 +5,6 @@
  * and issue licences automatically; bank transfers are approved by the team.
  * ============================================================================ */
 "use client";
-import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
@@ -15,6 +14,8 @@ import { Alert, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "
 import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
 import { L } from "@/lib/i18n-pages/billing";
+import { PM } from "@/lib/i18n-pages/planmatrix";
+import PlanMatrix from "@/components/plans/PlanMatrix";
 
 interface Options { plans: { id: PlanId; name: string; monthly: number; yearly: number }[]; gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; usdIdr: number }
 interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; status: string; created_at: string; paid_at: string }[] }
@@ -96,7 +97,7 @@ function BillingInner() {
                 </button>
               ))}
             </div>
-            <Link href="/pricing" className="text-sm font-semibold">{t.compare} →</Link>
+            <a href="#compare" className="text-sm font-semibold" onClick={(e) => { e.preventDefault(); document.getElementById("compare")?.scrollIntoView({ behavior: "smooth" }); }}>{t.compare} ↓</a>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {PLAN_ORDER.map((id) => {
@@ -121,6 +122,13 @@ function BillingInner() {
             })}
           </div>
           <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs font-medium text-slate-500">{t.trust.map((x) => <span key={x}>{x}</span>)}</div>
+        </section>
+
+        <section id="compare" className="scroll-mt-20">
+          <PlanMatrix t={pick(PM, lang)} cycle={cycle} money={(n) => formatMoney(n, "USD", lang)}
+            prices={Object.fromEntries(opts.plans.map((p) => [p.id, { monthly: p.monthly, yearly: p.yearly }]))}
+            current={me.tier !== "none" ? me.tier : null}
+            onChoose={(id) => { setPlan(id); setPay(null); setApps([]); setTimeout(() => document.getElementById("checkout")?.scrollIntoView({ behavior: "smooth" }), 50); }} />
         </section>
 
         {selected ? (

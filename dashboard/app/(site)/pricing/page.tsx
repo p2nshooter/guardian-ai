@@ -8,29 +8,17 @@ import { JsonLd } from "@/components/JsonLd";
 import { pageMeta, faqJsonLd, softwareJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { FAQ } from "@/lib/faq";
 import { PLANS, PLAN_ORDER } from "@/lib/plans";
-import { CLOUD_APPS } from "@/lib/apps";
 import { SITE } from "@/lib/site";
+import PlanMatrix from "@/components/plans/PlanMatrix";
+import { PM } from "@/lib/i18n-pages/planmatrix";
 
 export const metadata: Metadata = pageMeta({
   title: "Pricing — plans from $19/month",
-  description: "AXTO plans: Starter, Pro, Business and Enterprise. Unlimited AI on your own keys, Legal AI, Prompt Library, Clipper, Compliance Center, Security Analyst and self-hosted Docker & Windows editions.",
+  description: "AXTO plans: Starter, Pro, Business and Enterprise. Unlimited AI on your own keys, Legal AI, Prompt Library, Clipper, Compliance Center, Security Analyst, Privacy Vault and self-hosted Docker editions.",
   path: "/pricing",
 });
 
-const yes = <span className="text-brand-600" aria-label="Included">✓</span>;
-const no = <span className="text-slate-300" aria-label="Not included">—</span>;
-
 export default function PricingPage() {
-  const rows: [string, (id: (typeof PLAN_ORDER)[number]) => React.ReactNode][] = [
-    ["AI usage with your own keys", () => "Unlimited"],
-    ...CLOUD_APPS.map((a) => [a.name, (id: (typeof PLAN_ORDER)[number]) => PLANS[id].limits.apps.includes(a.slug)
-      ? (a.slug === "legal" ? (PLANS[id].limits.legalWorkspaces === "all" ? "All 36 workspaces" : "6 core workspaces") : yes) : no] as [string, (id: (typeof PLAN_ORDER)[number]) => React.ReactNode]),
-    ["Prompt levels", (id) => PLANS[id].limits.promptLevels.map((l) => l[0].toUpperCase() + l.slice(1)).join(", ")],
-    ["Clipper videos / month", (id) => (PLANS[id].limits.clipperVideosPerMonth === -1 ? "Unlimited" : String(PLANS[id].limits.clipperVideosPerMonth))],
-    ["Secure file storage", (id) => `${PLANS[id].limits.storageGB} GB`],
-    ["Self-hosted apps (Docker & Windows)", (id) => (PLANS[id].limits.selfHostedApps === -1 ? "All 10" : PLANS[id].limits.selfHostedApps ? `Any ${PLANS[id].limits.selfHostedApps}` : no)],
-    ["Servers per self-hosted app", (id) => (PLANS[id].limits.selfHostedNodes === -1 ? "Unlimited" : PLANS[id].limits.selfHostedNodes ? String(PLANS[id].limits.selfHostedNodes) : no)],
-  ];
   return (
     <>
       <JsonLd data={[
@@ -48,17 +36,7 @@ export default function PricingPage() {
 
       <section className="pb-16">
         <div className="container-page">
-          <h2 className="text-2xl font-bold">Compare plans</h2>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-            <table className="table min-w-[720px]">
-              <thead><tr><th className="w-[34%]">Feature</th>{PLAN_ORDER.map((id) => <th key={id}>{PLANS[id].name}</th>)}</tr></thead>
-              <tbody>
-                {rows.map(([label, cell]) => (
-                  <tr key={label}><td className="font-medium text-slate-900">{label}</td>{PLAN_ORDER.map((id) => <td key={id}>{cell(id)}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PlanMatrix t={PM.en} />
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <div className="card-pad"><div className="font-semibold">💳 Pay your way</div><p className="mt-1 text-sm text-slate-600">Card (Stripe), PayPal, Indonesian QRIS / virtual account / e-wallet (Xendit, Midtrans), crypto (NOWPayments) or bank transfer.</p></div>
             <div className="card-pad"><div className="font-semibold">🔁 Change anytime</div><p className="mt-1 text-sm text-slate-600">Upgrade or downgrade whenever you like — unused time is converted into extra days on the new plan.</p></div>
