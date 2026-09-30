@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < conns.length; i++) {
       const c = conns[i];
       const built = plan(c);
-      const gen = chatStream(c, built.system, built.messages, { research: built.research, maxOutputTokens: built.maxOutputTokens });
+      const gen = chatStream(c, built.system, built.messages, { research: built.research, maxOutputTokens: built.maxOutputTokens, temperature: built.temperature });
       let first: IteratorResult<string>;
       try {
         first = await gen.next();

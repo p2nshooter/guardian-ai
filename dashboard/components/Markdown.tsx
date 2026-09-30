@@ -19,7 +19,9 @@ function inl(c: Inline[], k = ""): ReactNode[] {
 
 const CHIP: Record<string, string> = { search: "🔎", fetch: "📄", note: "ℹ️" };
 
-function blocks(list: Block[], k = ""): ReactNode[] {
+type CodeRenderer = (lang: string, code: string, key: string) => ReactNode;
+
+function blocks(list: Block[], k = "", rc?: CodeRenderer): ReactNode[] {
   return list.map((b, i) => {
     const key = `${k}${i}`;
     switch (b.type) {
@@ -29,15 +31,15 @@ function blocks(list: Block[], k = ""): ReactNode[] {
       }
       case "p": return <p key={key}>{inl(b.c)}</p>;
       case "hr": return <hr key={key} />;
-      case "code": return <pre key={key}><code>{b.v}</code></pre>;
-      case "quote": return <blockquote key={key}>{blocks(b.blocks, key)}</blockquote>;
+      case "code": return rc ? <Fragment key={key}>{rc(b.lang, b.v, key)}</Fragment> : <pre key={key}><code>{b.v}</code></pre>;
+      case "quote": return <blockquote key={key}>{blocks(b.blocks, key, rc)}</blockquote>;
       case "status": return (
         <div key={key} className="not-prose my-1.5 inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600 ring-1 ring-slate-200">
           <span aria-hidden="true">{CHIP[b.kind] || "•"}</span><span className="truncate">{b.v}</span>
         </div>
       );
-      case "ul": return <ul key={key}>{b.items.map((it, j) => <li key={j}>{inl(it.c)}{blocks(it.children, `${key}-${j}-`)}</li>)}</ul>;
-      case "ol": return <ol key={key} start={b.start}>{b.items.map((it, j) => <li key={j}>{inl(it.c)}{blocks(it.children, `${key}-${j}-`)}</li>)}</ol>;
+      case "ul": return <ul key={key}>{b.items.map((it, j) => <li key={j}>{inl(it.c)}{blocks(it.children, `${key}-${j}-`, rc)}</li>)}</ul>;
+      case "ol": return <ol key={key} start={b.start}>{b.items.map((it, j) => <li key={j}>{inl(it.c)}{blocks(it.children, `${key}-${j}-`, rc)}</li>)}</ol>;
       case "table": return (
         <div key={key} className="my-4 overflow-x-auto">
           <table>
@@ -50,8 +52,9 @@ function blocks(list: Block[], k = ""): ReactNode[] {
   });
 }
 
-function MarkdownImpl({ text, className = "" }: { text: string; className?: string }) {
-  return <div className={`prose-axto ${className}`}>{blocks(parseMarkdown(text))}</div>;
+/** `renderCode` lets an app draw fenced code blocks itself (highlighting, copy, previews). */
+function MarkdownImpl({ text, className = "", renderCode }: { text: string; className?: string; renderCode?: CodeRenderer }) {
+  return <div className={`prose-axto ${className}`}>{blocks(parseMarkdown(text), "", renderCode)}</div>;
 }
 
 export default memo(MarkdownImpl);

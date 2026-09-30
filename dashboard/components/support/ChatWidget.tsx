@@ -11,6 +11,7 @@
  * ============================================================================ */
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { pick, useI18n, type Lang } from "@/lib/i18n";
 import { T } from "@/lib/i18n-pages/chat";
 
@@ -108,20 +109,26 @@ export default function ChatWidget({ lang: forced, defaultName = "", defaultEmai
     } catch (err: any) { setError(err.message || t.err); } finally { setBusy(false); }
   }
 
+  // Workspace apps keep a composer at the bottom-right: dock the launcher as a small icon above it.
+  const path = usePathname() || "";
+  const dock = raised && /^\/app\/(studio|legal|compliance|security|clipper|prompts|vault)(\/|$)/.test(path);
+  const btnPos = dock ? "bottom-52 lg:bottom-36 h-11 px-3 opacity-80 hover:opacity-100" : raised ? "bottom-20 lg:bottom-5 h-14 px-5" : "bottom-5 h-14 px-5";
+  const panelPos = dock ? "bottom-[16rem] lg:bottom-48 max-h-[min(560px,calc(100dvh-18rem))]" : raised ? "bottom-36 lg:bottom-24 max-h-[min(640px,calc(100dvh-10rem))]" : "bottom-24 max-h-[min(640px,calc(100dvh-10rem))]";
+
   const who = (m: Msg) => (m.from === "visitor" ? t.you : m.from === "ai" ? t.ai : m.from === "admin" ? `${m.name || t.team} · ${t.team}` : "");
 
   return (
     <>
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-label={open ? t.close : t.open}
         style={{ marginBottom: "env(safe-area-inset-bottom)" }}
-        className={`fixed ${raised ? "bottom-20 lg:bottom-5" : "bottom-5"} right-4 z-[60] inline-flex h-14 items-center gap-2 rounded-full bg-ink-900 px-5 text-sm font-semibold text-white shadow-lift transition hover:bg-ink-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 sm:right-5`}>
+        className={`fixed ${btnPos} right-4 z-[60] inline-flex items-center gap-2 rounded-full bg-ink-900 text-sm font-semibold text-white shadow-lift transition hover:bg-ink-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-300 sm:right-5`}>
         <span aria-hidden="true" className="relative text-lg">💬{online ? <span className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-ink-900" /> : null}</span>
-        <span className="hidden sm:inline">{open ? t.close : t.open}</span>
+        <span className={dock ? "sr-only" : "hidden sm:inline"}>{open ? t.close : t.open}</span>
       </button>
 
       {open ? (
         <section role="dialog" aria-label={t.title}
-          className={`fixed ${raised ? "bottom-36 lg:bottom-24" : "bottom-24"} right-3 z-[60] flex max-h-[min(640px,calc(100dvh-10rem))] w-[calc(100vw-1.5rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lift sm:right-5`}>
+          className={`fixed ${panelPos} right-3 z-[60] flex w-[calc(100vw-1.5rem)] max-w-[400px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lift sm:right-5`}>
           <header className="flex items-center gap-3 bg-ink-900 px-4 py-3 text-white">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 font-bold">A</div>
             <div className="min-w-0 flex-1">

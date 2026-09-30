@@ -196,7 +196,7 @@ function AiSettings() {
   // Mirrors the chat providers in lib/ai/providers.ts (kept here so the SDK never ships to the browser).
   const chat = [
     { id: "custom", name: "OpenAI-compatible gateway (e.g. ulyah.com)", defaultModel: "" },
-    { id: "anthropic", name: "Anthropic Claude", defaultModel: "claude-opus-5" },
+    { id: "anthropic", name: "Anthropic Claude", defaultModel: "claude-opus-5-5" },
     { id: "openai", name: "OpenAI", defaultModel: "gpt-5-mini" },
     { id: "google", name: "Google Gemini", defaultModel: "gemini-2.5-flash" },
     { id: "groq", name: "Groq", defaultModel: "llama-3.3-70b-versatile" },

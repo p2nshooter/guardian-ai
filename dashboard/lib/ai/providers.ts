@@ -34,8 +34,8 @@ export interface ProviderInfo {
 }
 
 export const PROVIDERS: ProviderInfo[] = [
-  { id: "anthropic", name: "Anthropic Claude", chat: true, stt: false, defaultModel: "claude-opus-5", research: true,
-    models: ["claude-opus-5", "claude-sonnet-5", "claude-haiku-4-5", "claude-fable-5-1"],
+  { id: "anthropic", name: "Anthropic Claude", chat: true, stt: false, defaultModel: "claude-opus-5-5", research: true,
+    models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5", "claude-fable-5-1", "claude-opus-5"],
     keyHint: "sk-ant-…", keyUrl: "https://console.anthropic.com/settings/keys" },
   { id: "openai", name: "OpenAI", chat: true, stt: true, defaultModel: "gpt-5-mini", sttModel: "whisper-1",
     models: ["gpt-5", "gpt-5-mini"], keyHint: "sk-…", keyUrl: "https://platform.openai.com/api-keys", baseUrl: "https://api.openai.com/v1" },
@@ -79,10 +79,12 @@ export interface Connection {
   baseUrl?: string;            // required for "custom"
 }
 
-export interface ChatMessage { role: "user" | "assistant"; content: string }
+export interface ChatImage { mime: "image/png" | "image/jpeg" | "image/webp" | "image/gif"; data: string }   // base64, no data: prefix
+export interface ChatMessage { role: "user" | "assistant"; content: string; images?: ChatImage[] }
 
 export interface GenOptions {
   maxOutputTokens?: number;
+  temperature?: number;                                     // sent only where the model accepts it (see acceptsTemperature)
   effort?: "low" | "medium" | "high" | "xhigh" | "max";   // Anthropic only
   research?: boolean;                                       // live web research (see supportsResearch)
 }
@@ -105,7 +107,7 @@ function sourcesFooter(list: { url: string; title?: string }[]): string {
 export const MAX_INPUT_CHARS = 600_000;
 
 export function inputSize(system: string, messages: ChatMessage[]): number {
-  return system.length + messages.reduce((n, m) => n + m.content.length, 0);
+  return system.length + messages.reduce((n, m) => n + m.content.length, 0);   // images are capped separately (sanitizeMessages)
 }
 
 /** Validate a member-supplied endpoint URL (BYOM / BYOI). */
@@ -120,6 +122,19 @@ export function endpointProblem(url: string, allowInsecure = false): string | nu
   return null;
 }
 
+/** Current Claude models reject sampling parameters (400); older ones and other providers accept them. */
+export function acceptsTemperature(c: Pick<Connection, "provider" | "model">): boolean {
+  if (c.provider !== "anthropic") return true;
+  return !/^claude-(fable|mythos|opus-5|sonnet-5|opus-4-[78])/.test(c.model);
+}
+
+const anthropicContent = (m: ChatMessage): any => m.images?.length
+  ? [...m.images.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mime, data: i.data } })), { type: "text", text: m.content }]
+  : m.content;
+const openAIContent = (m: ChatMessage): any => m.images?.length
+  ? [{ type: "text", text: m.content }, ...m.images.map((i) => ({ type: "image_url", image_url: { url: `data:${i.mime};base64,${i.data}` } }))]
+  : m.content;
+
 // ── Stream adapters (async iterators of text) ─────────────────────────────
 function anthropicWebTools(model: string): any[] {
   const dynamic = /^claude-(opus-5|fable-5|sonnet-5|opus-4-[678]|sonnet-4-6)/.test(model);
@@ -133,7 +148,7 @@ async function* anthropicStream(c: Connection, system: string, messages: ChatMes
   // Server-side refusal fallbacks are opted into for the models that support them.
   const supportsFallbacks = /^claude-(opus-5|fable-5)/.test(c.model);
   let research = !!o.research;
-  const convo: any[] = messages.map((m) => ({ role: m.role, content: m.content }));
+  const convo: any[] = messages.map((m) => ({ role: m.role, content: anthropicContent(m) }));
   const sources: { url: string; title?: string }[] = [];
   for (let turn = 0; turn < 6; turn++) {
     const params: any = {
@@ -143,6 +158,7 @@ async function* anthropicStream(c: Connection, system: string, messages: ChatMes
       messages: convo,
       ...(research ? { tools: anthropicWebTools(c.model) } : {}),
       ...(o.effort ? { output_config: { effort: o.effort } } : {}),
+      ...(typeof o.temperature === "number" && acceptsTemperature(c) ? { temperature: Math.min(1, o.temperature) } : {}),
       ...(supportsFallbacks ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" } : {}),
     };
     const stream = client.beta.messages.stream(params);
@@ -226,8 +242,9 @@ async function* openAICompatibleStream(c: Connection, system: string, messages: 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (c.apiKey) headers.Authorization = `Bearer ${c.apiKey}`;
   if (c.provider === "openrouter") { headers["HTTP-Referer"] = "https://axto.io"; headers["X-Title"] = "AXTO"; }
-  const body: any = { model: c.model, stream: true, messages: [{ role: "system", content: system }, ...messages] };
+  const body: any = { model: c.model, stream: true, messages: [{ role: "system", content: system }, ...messages.map((m) => ({ role: m.role, content: openAIContent(m) }))] };
   if (o.maxOutputTokens) body.max_tokens = o.maxOutputTokens;
+  if (typeof o.temperature === "number") body.temperature = o.temperature;
   if (o.research && c.provider === "openrouter") body.plugins = [{ id: "web", max_results: 8 }];
   const r = await fetch(`${baseUrlOf(c)}/chat/completions`, { method: "POST", headers, body: JSON.stringify(body) });
   if (!r.ok || !r.body) {
@@ -330,12 +347,12 @@ export async function collect(gen: AsyncGenerator<string>): Promise<string> {
 }
 
 // ── Speech-to-text (Clipper) ───────────────────────────────────────────────
-export interface Word { word: string; start: number; end: number }
+export interface Word { word: string; start: number; end: number; speaker?: number }
 export interface Transcript { text: string; words: Word[]; language?: string; duration?: number }
 
 export async function transcribe(c: Connection, audio: Blob, filename = "audio.webm", language?: string): Promise<Transcript> {
   if (c.provider === "deepgram") {
-    const qs = new URLSearchParams({ model: c.model || "nova-3", smart_format: "true", punctuate: "true", ...(language ? { language } : { detect_language: "true" }) });
+    const qs = new URLSearchParams({ model: c.model || "nova-3", smart_format: "true", punctuate: "true", diarize: "true", ...(language ? { language } : { detect_language: "true" }) });
     const r = await fetch(`https://api.deepgram.com/v1/listen?${qs}`, {
       method: "POST", headers: { Authorization: `Token ${c.apiKey}`, "Content-Type": audio.type || "audio/webm" }, body: audio,
     });
@@ -344,7 +361,7 @@ export async function transcribe(c: Connection, audio: Blob, filename = "audio.w
     const alt = j?.results?.channels?.[0]?.alternatives?.[0];
     return {
       text: alt?.transcript || "",
-      words: (alt?.words || []).map((w: any) => ({ word: w.punctuated_word || w.word, start: w.start, end: w.end })),
+      words: (alt?.words || []).map((w: any) => ({ word: w.punctuated_word || w.word, start: w.start, end: w.end, ...(typeof w.speaker === "number" ? { speaker: w.speaker } : {}) })),
       language: j?.results?.channels?.[0]?.detected_language, duration: j?.metadata?.duration,
     };
   }

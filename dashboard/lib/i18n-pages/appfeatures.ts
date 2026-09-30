@@ -27,10 +27,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Bekerja di mana saja", "Gunakan dengan AXTO AI Studio, ChatGPT, Claude, Gemini atau model apa pun."],
     ],
     studio: [
-      ["Semua model utama", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity dan lainnya — atau endpoint Anda sendiri (Ollama, vLLM, LM Studio)."],
-      ["Riwayat pribadi", "Percakapan disimpan di ruang penyimpanan terenkripsi milik Anda, tidak pernah dipakai untuk pelatihan."],
-      ["Terhubung ke Prompt Library", "Jalankan item Prompt Library mana pun langsung di chat."],
-      ["Kunci Anda sendiri", "Anda membayar penyedia langsung dengan harga mereka — tanpa markup dan tanpa batas pemakaian dari AXTO. Tier gratis (Gemini, Groq) juga bisa."],
+      ["Semua model terbaik, berdampingan", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity dan lainnya — atau endpoint Anda sendiri — dan satu pesan ke hingga tiga model sekaligus."],
+      ["File, gambar dan suara", "Lampirkan PDF, file Word, kode dan gambar (dibaca di perangkat Anda), tempel atau seret, atau dikte dengan suara."],
+      ["Kode dan artefak langsung", "Kode ber-highlight dengan salin dan unduh; jawaban HTML, SVG dan Mermaid tampil di pratinjau yang terisolasi."],
+      ["Asisten milik Anda", "Persona tersimpan dengan instruksi dan kreativitasnya sendiri, plus template untuk engineering, pemasaran, kontrak, data, tutor dan terjemahan."],
     ],
     clipper: [
       ["Skor viral dengan empat sub-skor", "Setiap momen dinilai dari hook, alur, nilai dan tren, lengkap dengan alasan, judul penghenti scroll, caption dan hashtag."],
@@ -71,10 +71,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Berfungsi di mana-mana", "Gunakan dengan AXTO AI Studio, ChatGPT, Claude, Gemini atau mana-mana model."],
     ],
     studio: [
-      ["Semua model utama", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity dan banyak lagi — atau endpoint anda sendiri (Ollama, vLLM, LM Studio)."],
-      ["Sejarah peribadi", "Perbualan disimpan dalam ruang storan tersulit milik anda, tidak pernah digunakan untuk latihan."],
-      ["Integrasi prompt", "Lancarkan mana-mana item Prompt Library terus ke dalam sembang."],
-      ["Kunci anda sendiri", "Anda membayar penyedia terus pada harga mereka — tiada caj tambahan dan tiada had penggunaan daripada AXTO. Peringkat percuma (Gemini, Groq) juga berfungsi."],
+      ["Setiap model terkemuka, bersebelahan", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity dan lagi — atau endpoint anda sendiri — dan satu mesej kepada sehingga tiga model serentak."],
+      ["Fail, imej dan suara", "Lampirkan PDF, fail Word, kod dan imej (dibaca pada peranti anda), tampal atau seret, atau imlak dengan suara."],
+      ["Kod dan artifak secara langsung", "Kod berwarna dengan salin dan muat turun; jawapan HTML, SVG dan Mermaid dipaparkan dalam pratonton terasing."],
+      ["Pembantu anda sendiri", "Persona tersimpan dengan arahan dan kreativiti tersendiri, serta templat untuk kejuruteraan, pemasaran, kontrak, data, tunjuk ajar dan terjemahan."],
     ],
     clipper: [
       ["Skor tular dengan empat sub-skor", "Setiap detik dinilai dari cangkuk, aliran, nilai dan trend, berserta sebab, tajuk yang menghentikan tatalan, kapsyen dan tanda pagar."],
@@ -115,10 +115,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Funktioniert überall", "Mit AXTO AI Studio, ChatGPT, Claude, Gemini oder jedem anderen Modell nutzbar."],
     ],
     studio: [
-      ["Alle großen Modelle", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity und mehr – oder Ihr eigener Endpunkt (Ollama, vLLM, LM Studio)."],
-      ["Privater Verlauf", "Unterhaltungen werden in Ihrem eigenen verschlüsselten Speicher abgelegt und nie zum Training verwendet."],
-      ["Prompt-Integration", "Starten Sie jeden Eintrag der Prompt Library direkt in einem Chat."],
-      ["Eigener Schlüssel", "Sie zahlen Ihren Anbieter direkt zu dessen Preis – ohne Aufschlag und ohne Nutzungslimit von AXTO. Kostenlose Kontingente (Gemini, Groq) funktionieren auch."],
+      ["Alle führenden Modelle, nebeneinander", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity und mehr — oder Ihr eigener Endpunkt — und eine Nachricht an bis zu drei Modelle gleichzeitig."],
+      ["Dateien, Bilder und Sprache", "Hängen Sie PDFs, Word-Dateien, Code und Bilder an (auf Ihrem Gerät gelesen), fügen Sie sie ein oder ziehen Sie sie hinein, oder diktieren Sie."],
+      ["Live-Code und Artefakte", "Hervorgehobener Code zum Kopieren und Herunterladen; HTML-, SVG- und Mermaid-Antworten erscheinen in einer isolierten Vorschau."],
+      ["Eigene Assistenten", "Gespeicherte Personas mit eigenen Anweisungen und Kreativität, dazu Vorlagen für Entwicklung, Marketing, Verträge, Daten, Nachhilfe und Übersetzung."],
     ],
     clipper: [
       ["Viralitäts-Score mit vier Teilwerten", "Jeder Moment wird nach Hook, Fluss, Nutzen und Trend bewertet — mit Begründung, einem Titel, der das Scrollen stoppt, Beitragstext und Hashtags."],
@@ -159,10 +159,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Fonctionne partout", "À utiliser avec AXTO AI Studio, ChatGPT, Claude, Gemini ou tout autre modèle."],
     ],
     studio: [
-      ["Tous les grands modèles", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity et plus — ou votre propre endpoint (Ollama, vLLM, LM Studio)."],
-      ["Historique privé", "Les conversations sont stockées dans votre propre espace chiffré, jamais utilisées pour l'entraînement."],
-      ["Intégration des prompts", "Lancez n'importe quel élément de la Prompt Library directement dans une discussion."],
-      ["Votre propre clé", "Vous payez votre fournisseur directement à son prix — sans marge ni plafond d'usage de la part d'AXTO. Les offres gratuites (Gemini, Groq) fonctionnent aussi."],
+      ["Tous les grands modèles, côte à côte", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity et plus — ou votre propre endpoint — et un message à jusqu'à trois modèles à la fois."],
+      ["Fichiers, images et voix", "Joignez des PDF, fichiers Word, code et images (lus sur votre appareil), collez-les ou glissez-les, ou dictez à la voix."],
+      ["Code et artefacts en direct", "Code coloré avec copie et téléchargement ; les réponses HTML, SVG et Mermaid s'affichent dans un aperçu isolé."],
+      ["Vos propres assistants", "Des personas enregistrés avec leurs instructions et leur créativité, plus des modèles pour l'ingénierie, le marketing, les contrats, les données, le tutorat et la traduction."],
     ],
     clipper: [
       ["Score de viralité avec quatre sous-scores", "Chaque moment est noté pour l'accroche, la fluidité, la valeur et la tendance, avec la raison, un titre qui arrête le défilement, une légende et des hashtags."],
@@ -203,10 +203,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Funziona ovunque", "Usalo con AXTO AI Studio, ChatGPT, Claude, Gemini o qualsiasi modello."],
     ],
     studio: [
-      ["Tutti i principali modelli", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity e altri — oppure il tuo endpoint (Ollama, vLLM, LM Studio)."],
-      ["Cronologia privata", "Le conversazioni sono salvate nel tuo spazio di archiviazione cifrato, mai usate per l'addestramento."],
-      ["Integrazione dei prompt", "Avvia qualsiasi elemento della Prompt Library direttamente in una chat."],
-      ["La tua chiave", "Paghi direttamente il tuo provider al suo prezzo — nessun ricarico e nessun limite d'uso da parte di AXTO. Funzionano anche i piani gratuiti (Gemini, Groq)."],
+      ["Tutti i principali modelli, affiancati", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity e altri — o il tuo endpoint — e un messaggio fino a tre modelli contemporaneamente."],
+      ["File, immagini e voce", "Allega PDF, file Word, codice e immagini (letti sul tuo dispositivo), incollali o trascinali, oppure detta a voce."],
+      ["Codice e artefatti dal vivo", "Codice evidenziato con copia e download; le risposte HTML, SVG e Mermaid appaiono in un'anteprima isolata."],
+      ["I tuoi assistenti", "Persona salvate con istruzioni e creatività proprie, più modelli per sviluppo, marketing, contratti, dati, tutoraggio e traduzione."],
     ],
     clipper: [
       ["Punteggio di viralità con quattro sotto-punteggi", "Ogni momento è valutato per gancio, flusso, valore e tendenza, con il motivo, un titolo che ferma lo scroll, una didascalia e gli hashtag."],
@@ -247,10 +247,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["随处可用", "可配合 AXTO AI Studio、ChatGPT、Claude、Gemini 或任意模型使用。"],
     ],
     studio: [
-      ["所有主流模型", "Anthropic、OpenAI、Google Gemini、Groq、OpenRouter、Mistral、DeepSeek、xAI、Perplexity 等——或您自己的端点（Ollama、vLLM、LM Studio）。"],
-      ["私密历史", "对话保存在您自己的加密存储空间中，绝不用于训练。"],
-      ["提示词集成", "一键将任意 Prompt Library 条目发送到对话中。"],
-      ["自带密钥", "您按服务商价格直接付费——AXTO 不加价、不限用量。免费额度（Gemini、Groq）同样可用。"],
+      ["所有主流模型，并排对比", "Anthropic、OpenAI、Google Gemini、Groq、OpenRouter、Mistral、DeepSeek、xAI、Perplexity 等——或您自己的端点——一条消息可同时发给最多三个模型。"],
+      ["文件、图片与语音", "附加 PDF、Word 文件、代码和图片（在您的设备上读取），粘贴或拖入，或用语音输入。"],
+      ["实时代码与作品预览", "代码高亮并可复制下载；HTML、SVG 和 Mermaid 回答在隔离的预览中呈现。"],
+      ["您自己的助手", "保存带有专属指令和创造力的角色，并提供工程、营销、合同、数据、辅导和翻译模板。"],
     ],
     clipper: [
       ["带四项子评分的爆款指数", "每个片段都按开场、连贯、价值和热度打分，并附上理由、让人停下滑动的标题、文案和话题标签。"],
@@ -291,10 +291,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["どこでも使える", "AXTO AI Studio、ChatGPT、Claude、Gemini などあらゆるモデルで利用できます。"],
     ],
     studio: [
-      ["主要モデルすべて", "Anthropic、OpenAI、Google Gemini、Groq、OpenRouter、Mistral、DeepSeek、xAI、Perplexity など。独自のエンドポイント（Ollama、vLLM、LM Studio）も利用できます。"],
-      ["プライベートな履歴", "会話はご自身の暗号化ストレージに保存され、学習に使われることはありません。"],
-      ["プロンプト連携", "Prompt Library の項目をそのままチャットで実行できます。"],
-      ["ご自身のキー", "プロバイダーにその価格で直接お支払い。AXTO による上乗せや利用上限はありません。無料枠（Gemini、Groq）も使えます。"],
+      ["主要モデルを並べて比較", "Anthropic、OpenAI、Google Gemini、Groq、OpenRouter、Mistral、DeepSeek、xAI、Perplexity など、またはご自身のエンドポイント。1 つのメッセージを最大 3 モデルに同時送信できます。"],
+      ["ファイル・画像・音声", "PDF、Word、コード、画像を添付（端末上で読み込み）、貼り付けやドラッグ、音声入力にも対応。"],
+      ["コードと成果物をその場で", "ハイライト付きコードをコピー・ダウンロード。HTML・SVG・Mermaid の回答は隔離されたプレビューで表示されます。"],
+      ["自分だけのアシスタント", "独自の指示と創造性を持つペルソナを保存。エンジニアリング、マーケティング、契約、データ、家庭教師、翻訳のテンプレートも用意。"],
     ],
     clipper: [
       ["4 つの内訳付きバイラルスコア", "各場面をフック・流れ・価値・トレンドで採点し、理由、スクロールを止めるタイトル、キャプション、ハッシュタグを添えます。"],
@@ -335,10 +335,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["हर जगह काम करता है", "AXTO AI Studio, ChatGPT, Claude, Gemini या किसी भी मॉडल के साथ उपयोग करें।"],
     ],
     studio: [
-      ["हर प्रमुख मॉडल", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity और अन्य — या आपका अपना एंडपॉइंट (Ollama, vLLM, LM Studio)।"],
-      ["निजी इतिहास", "बातचीत आपके अपने एन्क्रिप्टेड स्टोरेज में रहती है, कभी प्रशिक्षण के लिए उपयोग नहीं होती।"],
-      ["प्रॉम्प्ट एकीकरण", "Prompt Library का कोई भी आइटम सीधे चैट में चलाएँ।"],
-      ["अपनी कुंजी", "आप प्रदाता को सीधे उनकी कीमत पर भुगतान करते हैं — AXTO की ओर से कोई मार्कअप या उपयोग-सीमा नहीं। मुफ़्त टियर (Gemini, Groq) भी काम करते हैं।"],
+      ["हर प्रमुख मॉडल, साथ-साथ", "Anthropic, OpenAI, Google Gemini, Groq, OpenRouter, Mistral, DeepSeek, xAI, Perplexity और भी — या आपका अपना एंडपॉइंट — और एक संदेश एक साथ तीन मॉडलों तक।"],
+      ["फ़ाइलें, चित्र और आवाज़", "PDF, Word फ़ाइलें, कोड और चित्र जोड़ें (आपके डिवाइस पर पढ़े जाते हैं), पेस्ट करें या खींचकर लाएँ, या बोलकर लिखें।"],
+      ["लाइव कोड और आर्टिफ़ैक्ट", "कॉपी और डाउनलोड के साथ हाइलाइट किया गया कोड; HTML, SVG और Mermaid जवाब अलग-थलग प्रीव्यू में दिखते हैं।"],
+      ["आपके अपने सहायक", "अपने निर्देशों और रचनात्मकता वाले सहेजे गए पर्सोना, साथ में इंजीनियरिंग, मार्केटिंग, अनुबंध, डेटा, ट्यूशन और अनुवाद के टेम्पलेट।"],
     ],
     clipper: [
       ["चार उप-स्कोर के साथ वायरल स्कोर", "हर पल को हुक, प्रवाह, मूल्य और ट्रेंड पर आँका जाता है — कारण, स्क्रॉल रोकने वाला शीर्षक, कैप्शन और हैशटैग के साथ।"],
@@ -379,10 +379,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["يعمل في كل مكان", "استخدمه مع AXTO AI Studio أو ChatGPT أو Claude أو Gemini أو أي نموذج."],
     ],
     studio: [
-      ["كل النماذج الرئيسية", "Anthropic وOpenAI وGoogle Gemini وGroq وOpenRouter وMistral وDeepSeek وxAI وPerplexity وغيرها — أو نقطة النهاية الخاصة بك (Ollama وvLLM وLM Studio)."],
-      ["سجل خاص", "تُحفظ المحادثات في مساحة التخزين المشفّرة الخاصة بك، ولا تُستخدم أبدًا للتدريب."],
-      ["تكامل الموجّهات", "شغّل أي عنصر من Prompt Library مباشرةً في محادثة."],
-      ["مفتاحك الخاص", "تدفع لمزوّدك مباشرةً بسعره — بلا هامش ربح ولا حد استخدام من AXTO. الباقات المجانية (Gemini وGroq) تعمل أيضًا."],
+      ["كل النماذج الرائدة جنبًا إلى جنب", "Anthropic وOpenAI وGoogle Gemini وGroq وOpenRouter وMistral وDeepSeek وxAI وPerplexity وغيرها — أو نقطة النهاية الخاصة بك — ورسالة واحدة إلى ما يصل إلى ثلاثة نماذج معًا."],
+      ["ملفات وصور وصوت", "أرفق ملفات PDF وWord وأكوادًا وصورًا (تُقرأ على جهازك)، أو الصقها أو اسحبها، أو أملِها بصوتك."],
+      ["أكواد ومخرجات حية", "أكواد ملوّنة مع النسخ والتنزيل؛ وتظهر إجابات HTML وSVG وMermaid في معاينة معزولة."],
+      ["مساعدوك الخاصون", "شخصيات محفوظة بتعليماتها وإبداعها الخاص، مع قوالب للهندسة والتسويق والعقود والبيانات والتعليم والترجمة."],
     ],
     clipper: [
       ["مؤشر انتشار مع أربعة مؤشرات فرعية", "تُقيَّم كل لحظة حسب الافتتاح والتسلسل والقيمة والرواج، مع السبب وعنوان يوقف التمرير ونص للمنشور ووسوم."],

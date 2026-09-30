@@ -137,3 +137,21 @@
   .anim-float, .anim-pulse-ring, .anim-gradient, .anim-in, .shimmer-text, .scanline { animation: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
+
+/* Syntax highlighting (highlight.js classes) — AI Studio code blocks. */
+@layer components {
+  .hljs-comment, .hljs-quote { color: #8b949e; font-style: italic; }
+  .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-type { color: #ff7b72; }
+  .hljs-string, .hljs-regexp, .hljs-addition, .hljs-attr + .hljs-string { color: #a5d6ff; }
+  .hljs-number, .hljs-symbol, .hljs-bullet { color: #79c0ff; }
+  .hljs-title, .hljs-title.function_, .hljs-section { color: #d2a8ff; }
+  .hljs-attr, .hljs-attribute, .hljs-variable, .hljs-template-variable, .hljs-property { color: #79c0ff; }
+  .hljs-built_in, .hljs-name, .hljs-selector-id, .hljs-selector-class { color: #ffa657; }
+  .hljs-meta, .hljs-deletion { color: #ffa198; }
+  .hljs-tag { color: #7ee787; }
+  .hljs-emphasis { font-style: italic; }
+  .hljs-strong { font-weight: 700; }
+}
+@layer components {
+  .prose-axto .code-card pre { @apply m-0 rounded-none bg-transparent; }
+}
