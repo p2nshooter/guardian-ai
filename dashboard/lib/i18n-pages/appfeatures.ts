@@ -17,8 +17,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ yurisdiksi, hingga tingkat provinsi", "Setiap negara plus hukum Uni Eropa dan internasional; negara bagian, provinsi dan kekhususan daerah (Aceh, Québec, Skotlandia, DIFC, Louisiana…) hingga kota atau kabupaten Anda."],
       ["Case Builder", "Unggah berkas perkara dan dapatkan para pihak, kronologi bersumber, isu hukum, hukum yang berlaku dari konstitusi ke bawah, analisis unsur demi unsur, celah bukti, tenggat dan strategi."],
-      ["Hukum terkini, dengan sumber", "Riset langsung memeriksa setiap undang-undang dan putusan terhadap sumber resmi dan mencantumkan apa yang diambil — serta membandingkan hukum lama dan baru untuk tanggal fakta Anda."],
       ["36 workspace ahli", "Memo riset, telaah & penyusunan kontrak, due diligence, gugatan, arbitrase, analisis pidana, kepatuhan, privasi, APU-PPT, ketenagakerjaan, HKI, pajak, ESG, tata kelola AI dan lainnya."],
+      ["Redline, playbook, klausa, tenggat & sitasi", "Di perangkat Anda: bandingkan versi kontrak kata demi kata, periksa terhadap playbook Anda, isi templat klausa, hitung tenggat dengan hari libur (ekspor .ics), verifikasi setiap sitasi, dan cari di seluruh dokumen perkara."],
     ],
     prompts: [
       ["240 prompt, 24 bidang, 4 level", "Sepuluh prompt ahli per bidang, dari tugas harian Basic hingga pekerjaan Elite setingkat direksi dan lintas negara — masing-masing dengan variabel isian yang jelas."],
@@ -61,8 +61,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ bidang kuasa, hingga peringkat wilayah", "Setiap negara serta undang-undang EU dan antarabangsa; negeri, wilayah dan rejim khas (Aceh, Québec, Scotland, DIFC, Louisiana…) hingga bandar atau daerah anda."],
       ["Case Builder", "Muat naik fail kes dan dapatkan pihak-pihak, kronologi bersumber, isu undang-undang, undang-undang terpakai dari perlembagaan ke bawah, analisis elemen demi elemen, jurang bukti, tarikh akhir dan strategi."],
-      ["Undang-undang terkini, bersumber", "Penyelidikan langsung menyemak setiap statut dan keputusan dengan sumber rasmi dan menyenaraikan apa yang diperoleh — serta membandingkan undang-undang lama dan baharu mengikut tarikh fakta anda."],
       ["36 ruang kerja pakar", "Memo penyelidikan, semakan & perangkaan kontrak, usaha wajar, pliding, timbang tara, analisis jenayah, pematuhan, privasi, AML, pekerjaan, IP, cukai, ESG, tadbir urus AI dan banyak lagi."],
+      ["Redline, playbook, klausa, tarikh akhir & petikan", "Pada peranti anda: bandingkan versi kontrak perkataan demi perkataan, semak berbanding playbook anda, isi templat klausa, kira tarikh akhir dengan cuti umum (eksport .ics), sahkan setiap petikan dan cari merentas dokumen perkara."],
     ],
     prompts: [
       ["240 prom, 24 bidang, 4 tahap", "Sepuluh prom pakar setiap bidang, daripada tugas harian Basic hingga kerja Elite peringkat lembaga dan pelbagai negara — setiap satu dengan pemboleh ubah isian yang jelas."],
@@ -105,8 +105,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ Rechtsordnungen, bis zur Provinz", "Jedes Land plus EU- und Völkerrecht; Bundesstaaten, Provinzen und Sonderregime (Aceh, Québec, Schottland, DIFC, Louisiana…) bis hin zu Ihrer Stadt oder Ihrem Landkreis."],
       ["Case Builder", "Laden Sie eine Fallakte hoch und erhalten Sie Parteien, eine belegte Chronologie, Rechtsfragen, das anwendbare Recht von der Verfassung abwärts, eine Prüfung Tatbestandsmerkmal für Tatbestandsmerkmal, Beweislücken, Fristen und eine Strategie."],
-      ["Aktuelles Recht, mit Quellen", "Die Live-Recherche prüft jedes Gesetz und jede Entscheidung gegen amtliche Quellen und listet auf, was abgerufen wurde — altes und neues Recht wird für den Zeitpunkt Ihres Sachverhalts verglichen."],
       ["36 Experten-Workspaces", "Rechercheberichte, Vertragsprüfung & -entwurf, Due Diligence, Schriftsätze, Schiedsverfahren, Strafrechtsanalyse, Compliance, Datenschutz, Geldwäsche, Arbeitsrecht, IP, Steuern, ESG, AI Governance und mehr."],
+      ["Redline, Playbook, Klauseln, Fristen & Zitate", "Auf Ihrem Gerät: Vertragsfassungen Wort für Wort vergleichen, gegen Ihr Playbook prüfen, Klauselvorlagen ausfüllen, Fristen mit Feiertagen berechnen (.ics-Export), jedes Zitat prüfen und alle Dokumente der Akte durchsuchen."],
     ],
     prompts: [
       ["240 Prompts, 24 Bereiche, 4 Stufen", "Zehn Experten-Prompts pro Bereich, von Basic-Alltagsaufgaben bis zu Elite-Arbeit auf Vorstands- und Länderebene — jeweils mit klaren Ausfüllvariablen."],
@@ -149,8 +149,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ juridictions, jusqu'à la province", "Chaque pays plus le droit européen et international ; États, provinces et régimes spéciaux (Aceh, Québec, Écosse, DIFC, Louisiane…) jusqu'à votre ville ou district."],
       ["Case Builder", "Téléversez un dossier et obtenez les parties, une chronologie sourcée, les questions juridiques, le droit applicable depuis la constitution, une analyse élément par élément, les lacunes de preuve, les délais et une stratégie."],
-      ["Droit en vigueur, sourcé", "La recherche en direct vérifie chaque texte et décision auprès des sources officielles et liste ce qu'elle a récupéré — l'ancien et le nouveau droit sont comparés à la date de vos faits."],
       ["36 espaces experts", "Notes de recherche, revue et rédaction de contrats, due diligence, actes de procédure, arbitrage, analyse pénale, conformité, vie privée, LCB-FT, droit du travail, PI, fiscalité, ESG, gouvernance de l'IA et plus."],
+      ["Comparaison, playbook, clauses, délais et citations", "Sur votre appareil : comparez les versions d'un contrat mot à mot, vérifiez-les par rapport à votre playbook, remplissez des modèles de clauses, calculez les délais avec les jours fériés (export .ics), vérifiez chaque citation et cherchez dans tous les documents du dossier."],
     ],
     prompts: [
       ["240 prompts, 24 domaines, 4 niveaux", "Dix prompts experts par domaine, des tâches Basic du quotidien au travail Elite de niveau direction et multi-pays — chacun avec des variables claires à compléter."],
@@ -193,8 +193,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ giurisdizioni, fino alla provincia", "Ogni paese più il diritto UE e internazionale; stati, province e regimi speciali (Aceh, Québec, Scozia, DIFC, Louisiana…) fino alla tua città o distretto."],
       ["Case Builder", "Carica un fascicolo e ottieni parti, una cronologia con fonti, questioni giuridiche, il diritto applicabile dalla costituzione in giù, un'analisi elemento per elemento, lacune probatorie, scadenze e strategia."],
-      ["Diritto vigente, con fonti", "La ricerca in tempo reale verifica ogni norma e decisione sulle fonti ufficiali ed elenca ciò che ha recuperato — confrontando il diritto vecchio e nuovo alla data dei tuoi fatti."],
       ["36 workspace esperti", "Memo di ricerca, revisione e redazione di contratti, due diligence, atti processuali, arbitrato, analisi penale, compliance, privacy, antiriciclaggio, lavoro, PI, fisco, ESG, governance dell'IA e altro."],
+      ["Confronto, playbook, clausole, scadenze e citazioni", "Sul tuo dispositivo: confronta le versioni di un contratto parola per parola, verificale rispetto al tuo playbook, compila modelli di clausole, calcola le scadenze con le festività (export .ics), verifica ogni citazione e cerca in tutti i documenti della pratica."],
     ],
     prompts: [
       ["240 prompt, 24 settori, 4 livelli", "Dieci prompt esperti per settore, dalle attività quotidiane Basic al lavoro Elite da consiglio di amministrazione e multi-paese — ognuno con variabili chiare da compilare."],
@@ -237,8 +237,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ 司法辖区，细至省级", "覆盖每个国家以及欧盟法和国际法；州、省及特别制度（亚齐、魁北克、苏格兰、DIFC、路易斯安那……），直至您所在的城市或县。"],
       ["Case Builder", "上传案卷，即可获得当事人、附来源的时间线、法律争点、从宪法到下位法的适用法律、逐要件分析、证据缺口、期限与策略。"],
-      ["现行法律，附来源", "实时检索会对照官方来源核验每一部法规和判决，并列出检索到的内容——还会按您的事实发生日期对比新旧法律。"],
       ["36 个专家工作区", "研究备忘录、合同审查与起草、尽职调查、诉状、仲裁、刑事分析、合规、隐私、反洗钱、劳动、知识产权、税务、ESG、AI 治理等。"],
+      ["修订对比、Playbook、条款、期限与引用", "在您的设备上：逐词比较合同版本，按您的 Playbook 审查，填写条款模板，按公众假期计算期限（导出 .ics），核实每条引用，并在案件的全部文件中搜索。"],
     ],
     prompts: [
       ["240 个提示词，24 个领域，4 个级别", "每个领域 10 个专家提示词，从 Basic 日常任务到 Elite 董事会级与跨国工作——每个都有清晰的填空变量。"],
@@ -281,8 +281,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200 以上の法域、州・県レベルまで", "すべての国に加え EU 法・国際法、州・県・特別制度（アチェ、ケベック、スコットランド、DIFC、ルイジアナ…）から市区町村まで。"],
       ["Case Builder", "事件記録をアップロードすると、当事者、出典付き時系列、法的争点、憲法から下位法令までの適用法、要件ごとの分析、証拠の不足、期限、戦略が得られます。"],
-      ["出典付きの現行法", "ライブリサーチが各法令・判例を公式ソースで確認し、取得内容を一覧表示。事実の発生日に合わせて新旧の法律も比較します。"],
       ["36 の専門ワークスペース", "リサーチメモ、契約書レビュー・作成、デューデリジェンス、訴状、仲裁、刑事分析、コンプライアンス、プライバシー、AML、労働、知財、税務、ESG、AI ガバナンスなど。"],
+      ["差分比較・プレイブック・条項・期限・引用", "お使いの端末で：契約の版を語単位で比較し、プレイブックで審査し、条項テンプレートを埋め、祝日を考慮して期限を計算（.ics 出力）し、すべての引用を確認し、案件の全文書を検索できます。"],
     ],
     prompts: [
       ["240 のプロンプト、24 分野、4 レベル", "分野ごとに 10 の専門プロンプト。Basic の日常業務から Elite の取締役会・多国間レベルまで、すべて明確な入力変数付き。"],
@@ -325,8 +325,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["200+ क्षेत्राधिकार, प्रांत स्तर तक", "हर देश के साथ EU और अंतरराष्ट्रीय कानून; राज्य, प्रांत और विशेष व्यवस्थाएँ (आचे, क्यूबेक, स्कॉटलैंड, DIFC, लुइज़ियाना…) और आपका शहर या ज़िला।"],
       ["Case Builder", "केस फ़ाइल अपलोड करें और पाएँ पक्षकार, स्रोत-सहित घटनाक्रम, कानूनी मुद्दे, संविधान से नीचे तक लागू कानून, तत्व-दर-तत्व विश्लेषण, साक्ष्य की कमियाँ, समय-सीमाएँ और रणनीति।"],
-      ["वर्तमान कानून, स्रोतों सहित", "लाइव रिसर्च हर क़ानून और निर्णय को आधिकारिक स्रोतों से जाँचता है और बताता है कि क्या प्राप्त हुआ — आपके तथ्यों की तारीख़ के अनुसार पुराने और नए कानून की तुलना भी करता है।"],
       ["36 विशेषज्ञ वर्कस्पेस", "रिसर्च मेमो, अनुबंध समीक्षा व ड्राफ़्टिंग, ड्यू डिलिजेंस, याचिकाएँ, मध्यस्थता, आपराधिक विश्लेषण, अनुपालन, गोपनीयता, AML, रोज़गार, IP, कर, ESG, AI गवर्नेंस और बहुत कुछ।"],
+      ["रेडलाइन, प्लेबुक, क्लॉज़, समय-सीमाएँ और उद्धरण", "आपके डिवाइस पर: अनुबंध संस्करणों की शब्द-दर-शब्द तुलना करें, अपनी प्लेबुक से जाँचें, क्लॉज़ टेम्पलेट भरें, छुट्टियों सहित समय-सीमा गिनें (.ics निर्यात), हर उद्धरण सत्यापित करें और मामले के सभी दस्तावेज़ों में खोजें।"],
     ],
     prompts: [
       ["240 प्रॉम्प्ट, 24 क्षेत्र, 4 स्तर", "हर क्षेत्र में 10 विशेषज्ञ प्रॉम्प्ट, Basic रोज़मर्रा के कामों से Elite बोर्ड-स्तर और बहु-देशीय काम तक — हर एक में स्पष्ट भरने योग्य वेरिएबल।"],
@@ -369,8 +369,8 @@ export const APP_FEATURES: Record<Lang, Feats> = {
     legal: [
       ["أكثر من 200 ولاية قضائية، حتى مستوى المقاطعة", "كل دولة إضافةً إلى قانون الاتحاد الأوروبي والقانون الدولي؛ الولايات والمقاطعات والأنظمة الخاصة (آتشيه، كيبيك، اسكتلندا، مركز دبي المالي العالمي، لويزيانا…) وصولًا إلى مدينتك أو محافظتك."],
       ["Case Builder", "ارفع ملف القضية واحصل على الأطراف، وتسلسل زمني موثّق المصادر، والمسائل القانونية، والقانون الواجب التطبيق من الدستور نزولًا، وتحليل عنصرًا بعنصر، وثغرات الأدلة، والمواعيد النهائية، والاستراتيجية."],
-      ["القانون الساري، مع المصادر", "يتحقق البحث المباشر من كل نص وحكم مقابل المصادر الرسمية ويعرض ما استرجعه — ويقارن القانون القديم بالجديد وفق تاريخ وقائعك."],
       ["36 مساحة عمل متخصصة", "مذكرات بحثية، ومراجعة العقود وصياغتها، والعناية الواجبة، واللوائح القضائية، والتحكيم، والتحليل الجنائي، والامتثال، والخصوصية، ومكافحة غسل الأموال، والعمل، والملكية الفكرية، والضرائب، وESG، وحوكمة الذكاء الاصطناعي وغيرها."],
+      ["مقارنة النسخ والدليل والبنود والمواعيد والاستشهادات", "على جهازك: قارن نسخ العقد كلمة بكلمة، وافحصها وفق دليلك، واملأ قوالب البنود، واحسب المواعيد مع العطل الرسمية (تصدير .ics)، وتحقّق من كل استشهاد، وابحث في جميع مستندات القضية."],
     ],
     prompts: [
       ["240 موجّهًا و24 مجالًا و4 مستويات", "عشرة موجّهات خبيرة لكل مجال، من مهام Basic اليومية إلى أعمال Elite على مستوى مجالس الإدارة وعبر الدول — لكلٍّ منها متغيرات واضحة للتعبئة."],

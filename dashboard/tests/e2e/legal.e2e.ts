@@ -199,6 +199,59 @@ test("matters: encrypted at rest, documents and results round-trip, storage acco
   assert.ok(afterDel < during, "storage released");
 });
 
+test("legal v4: own playbooks and clauses (validated, encrypted, per member); deadlines and citation checks kept with the matter", async () => {
+  assert.equal((await new Client().get("/api/legal/library")).status, 401);
+  const empty = await member.get("/api/legal/library");
+  assert.equal(empty.status, 200, empty.text);
+  assert.deepEqual(empty.json.library, { v: 1, playbooks: [], clauses: [] });
+  const put = await member.call("PUT", "/api/legal/library", {
+    playbooks: [
+      { id: "pb-mine", name: `Vendor NDA ${SECRET_MARK}`, side: "Customer", positions: [
+        { clause: "liability", required: true, standard: "Cap at least 12 months of fees", fallback: "", redFlags: ["uncapped", ""], checks: [{ kind: "minCapMonths", value: 12 }, { kind: "bogus", value: 1 }] },
+        { clause: "not-a-clause", standard: "x" },
+      ] },
+      { name: "no positions", positions: [] },
+    ],
+    clauses: [
+      { id: "cl-mine", name: "My cap", category: "Risk", notes: "", variants: [{ label: "Balanced", text: "Liability is capped at [12] months of fees." }, { label: "Nope", text: "" }] },
+      { name: "empty", variants: [] },
+    ],
+  });
+  assert.equal(put.status, 200, put.text);
+  const lib = put.json.library;
+  assert.equal(lib.playbooks.length, 1, "a playbook without valid positions is dropped");
+  assert.equal(lib.playbooks[0].positions.length, 1, "unknown clause types are dropped");
+  assert.deepEqual(lib.playbooks[0].positions[0].checks, [{ kind: "minCapMonths", value: 12 }]);
+  assert.deepEqual(lib.playbooks[0].positions[0].redFlags, ["uncapped"]);
+  assert.equal(lib.clauses.length, 1);
+  assert.equal(lib.clauses[0].variants.length, 1);
+  assert.equal((await member.get("/api/legal/library")).json.library.playbooks[0].name, `Vendor NDA ${SECRET_MARK}`);
+  assert.deepEqual((await stranger.get("/api/legal/library")).json.library.playbooks, [], "each member has their own library");
+  const files: string[] = [];
+  const walk = (dir: string) => { for (const f of readdirSync(dir)) { const p = path.join(dir, f); statSync(p).isDirectory() ? walk(p) : files.push(p); } };
+  walk(PERSIST);
+  assert.deepEqual(files.filter((f) => !f.includes("d1") && statSync(f).size < 5_000_000 && readFileSync(f).includes(Buffer.from(SECRET_MARK))), [], "the library is encrypted in R2");
+
+  const c = await member.post("/api/legal/matters", { title: "Deadlines & citations", jurisdiction: { country: "ID" } });
+  assert.equal(c.status, 200, c.text);
+  const id = c.json.matter.id;
+  const p = await member.patch(`/api/legal/matters/${id}`, {
+    deadlines: [
+      { id: "dl_one", title: "Banding", trigger: "2026-08-03", due: "2026-08-18", amount: 14, unit: "days", roll: "following", country: "ID", remind: [7, 1, 900] },
+      { title: "bad", trigger: "nope", due: "2026-01-01" },
+    ],
+    citeChecks: { "ID:pasal1365kuhperdata": { status: "verified", note: "checked on JDIH", text: "Pasal 1365 KUHPerdata" }, bad: { status: "maybe" } },
+  });
+  assert.equal(p.status, 200, p.text);
+  const m = (await member.get(`/api/legal/matters/${id}`)).json.matter;
+  assert.equal(m.deadlines.length, 1, "invalid deadlines are dropped");
+  assert.deepEqual([m.deadlines[0].due, m.deadlines[0].remind], ["2026-08-18", [7, 1]]);
+  assert.deepEqual(Object.keys(m.citeChecks), ["ID:pasal1365kuhperdata"]);
+  assert.equal(m.citeChecks["ID:pasal1365kuhperdata"].status, "verified");
+  assert.equal((await stranger.patch(`/api/legal/matters/${id}`, { deadlines: [] })).status, 404, "another member cannot touch it");
+  assert.equal((await member.del(`/api/legal/matters/${id}`)).status, 200);
+});
+
 test("account: profile update and password change", async () => {
   assert.equal((await member.patch("/api/account", { name: "Legal Member", organization: "Firma X", country: "id" })).status, 200);
   const me = await member.get("/api/auth/me");

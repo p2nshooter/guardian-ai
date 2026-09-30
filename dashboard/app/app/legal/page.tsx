@@ -23,6 +23,16 @@ import { markdownToDocx } from "@/lib/export/docx";
 import { estimateTokens } from "@/lib/legal/extract";
 import { flag, type Country, type Subdivision } from "@/lib/legal/jurisdictions";
 import { L } from "@/lib/i18n-pages/legal";
+import { LT } from "@/lib/i18n-pages/legaltools";
+import type { Deadline } from "@/lib/legal/deadlines";
+import { EMPTY_LIBRARY, type CiteChecks, type LegalLibrary } from "@/lib/legal/library";
+import type { Handoff, ToolDoc } from "@/components/legal/tools/shared";
+import Redline from "@/components/legal/tools/Redline";
+import PlaybookTool from "@/components/legal/tools/Playbook";
+import ClausesTool from "@/components/legal/tools/Clauses";
+import DeadlinesTool from "@/components/legal/tools/Deadlines";
+import CitationsTool from "@/components/legal/tools/Citations";
+import AskMatter from "@/components/legal/tools/AskMatter";
 
 interface WsField { id: string; label: string; labelId: string; type: "text" | "textarea" | "select"; options?: [string, string, string][]; placeholder?: string }
 interface Ws { id: string; group: string; icon: string; core: boolean; name: string; nameId: string; desc: string; descId: string; docs: string; fields: WsField[]; starters: [string, string][] }
@@ -33,7 +43,12 @@ interface Catalog {
 }
 interface Msg { role: "user" | "assistant"; content: string }
 interface MatterEntry { id: string; title: string; client: string; country: string; status: string; updatedAt: string; docs: number; runs: number }
-interface Matter { id: string; title: string; client: string; opponent: string; reference: string; jurisdiction: JurValue; area: string; status: string; notes: string; docs: { id: string; name: string; pages?: number; chars: number }[]; runs: { id: string; workspace: string; title: string; provider: string; model: string; research: boolean; createdAt: string }[] }
+interface Matter { id: string; title: string; client: string; opponent: string; reference: string; jurisdiction: JurValue; area: string; status: string; notes: string; docs: { id: string; name: string; pages?: number; chars: number }[]; runs: { id: string; workspace: string; title: string; provider: string; model: string; research: boolean; createdAt: string }[]; deadlines?: Deadline[]; citeChecks?: CiteChecks }
+const TOOLS = ["ai", "redline", "playbook", "clauses", "deadlines", "citations", "ask"] as const;
+type Tool = (typeof TOOLS)[number];
+const TOOL_ICON: Record<Tool, string> = { ai: "⚡", redline: "🆚", playbook: "📋", clauses: "📚", deadlines: "🗓️", citations: "✅", ask: "💬" };
+const NO_DEADLINES: Deadline[] = [];
+const NO_CHECKS: CiteChecks = {};
 
 const LANGS = ["auto", "English", "Bahasa Indonesia", "Bahasa Melayu", "中文", "日本語", "한국어", "Español", "Português", "Français", "Deutsch", "Italiano", "Nederlands", "العربية", "Türkçe", "Русский", "हिन्दी", "ไทย", "Tiếng Việt", "Filipino"];
 const today = () => new Date().toISOString().slice(0, 10);
@@ -56,6 +71,9 @@ export default function LegalApp() {
   const { lang, t: tg } = useI18n();
   const { me } = useMe();
   const t = pick(L, lang);
+  const lt = pick(LT, lang);
+  const [tool, setTool] = useState<Tool>("ai");
+  const [library, setLibrary] = useState<LegalLibrary>(EMPTY_LIBRARY);
   const [cat, setCat] = useState<Catalog | null>(null);
   const [catErr, setCatErr] = useState("");
   const [wsId, setWsId] = useState("case-builder");
@@ -100,16 +118,21 @@ export default function LegalApp() {
       if (p.area) setArea(p.area);
       if (p.adv) setAdv((a) => ({ ...a, ...p.adv, asOf: today() }));
       if (p.ai?.provider) setAi(p.ai);
+      const deep = new URLSearchParams(window.location.search).get("tool");
+      if (deep && (TOOLS as readonly string[]).includes(deep)) setTool(deep as Tool);
+      else if (p.tool && (TOOLS as readonly string[]).includes(p.tool)) setTool(p.tool);
       if (r.data.access) {
         const m = await api<{ matters: MatterEntry[] }>("/api/legal/matters");
         if (m.ok) setMatters(m.data.matters);
+        const lib = await api<{ library: LegalLibrary }>("/api/legal/library");
+        if (lib.ok) setLibrary(lib.data.library);
         // Deep link from My files: /app/legal?open=<matter id>
         const oid = new URLSearchParams(window.location.search).get("open");
         if (oid) openMatter(oid);
       }
     })();
   }, []);
-  useEffect(() => { if (cat) savePrefs({ wsId, jur, jurLocked, area, adv: { ...adv, asOf: undefined }, ai }); }, [cat, wsId, jur, jurLocked, area, adv, ai]);
+  useEffect(() => { if (cat) savePrefs({ wsId, jur, jurLocked, area, adv: { ...adv, asOf: undefined }, ai, tool }); }, [cat, wsId, jur, jurLocked, area, adv, ai, tool]);
 
   const ws = cat?.workspaces.find((w) => w.id === wsId);
   const unlocked = useCallback((id: string) => !!cat?.unlocked.includes(id), [cat]);
@@ -263,6 +286,48 @@ export default function LegalApp() {
     openMatterRuns();
   }
 
+  // ── v4 tools ──
+  function switchTool(next: Tool) {
+    setTool(next);
+    const u = new URL(window.location.href);
+    if (next === "ai") u.searchParams.delete("tool"); else u.searchParams.set("tool", next);
+    window.history.replaceState(null, "", u.toString());
+  }
+  /** A tool prepares an AI workspace (workspace, inputs, documents, request); the member reviews it and presses Run. */
+  function handoff(h: Handoff) {
+    const target = unlocked(h.ws) ? h.ws : h.fallback && unlocked(h.fallback) ? h.fallback : "";
+    if (!target) { setLockedOpen(true); return; }
+    setWsId(target);
+    setFields(target === h.ws ? h.fields || {} : {});
+    setErr(null); setThread([]); setMeta(null); setSavedRun(false);
+    if (h.docs?.length || h.onlyDocs) {
+      const keep = new Set((h.docs || []).map((d) => d.key).filter(Boolean) as string[]);
+      setDocs((cur) => {
+        const base = cur.filter((d) => !d.key.startsWith("tool-")).map((d) => (h.onlyDocs ? { ...d, include: keep.has(d.key) } : keep.has(d.key) ? { ...d, include: true } : d));
+        const extra = (h.docs || []).filter((d) => !d.key || !cur.some((c) => c.key === d.key))
+          .map((d, i) => ({ key: `tool-${Date.now()}-${i}`, name: d.name, text: d.text, kind: "Tool", status: "ready", include: true } as RunDoc));
+        return [...base, ...extra];
+      });
+    }
+    setRequest(h.request);
+    switchTool("ai");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 30);
+  }
+  async function saveLibrary(next: LegalLibrary): Promise<string | null> {
+    const r = await api<{ library: LegalLibrary }>("/api/legal/library", { method: "PUT", body: next });
+    if (!r.ok) return r.error;
+    setLibrary(r.data.library);
+    return null;
+  }
+  async function patchMatter(body: Record<string, unknown>): Promise<string | null> {
+    if (!matter) return "no matter";
+    const r = await api<{ matter: Matter }>(`/api/legal/matters/${matter.id}`, { method: "PATCH", body });
+    if (!r.ok) return r.error;
+    setMatter(r.data.matter);
+    return null;
+  }
+  const toolDocs: ToolDoc[] = useMemo(() => docs.filter((d) => d.status === "ready" && d.text.trim() && !d.key.startsWith("tool-")).map((d) => ({ key: d.key, name: d.name, text: d.text })), [docs]);
+
   // ── export ──
   const lastAnswer = [...thread].reverse().find((m) => m.role === "assistant")?.content || "";
   const docTitle = matter?.title || meta?.title || ws?.name || "Legal AI";
@@ -333,7 +398,32 @@ export default function LegalApp() {
         </div>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+      {/* v4 tools */}
+      <nav className="no-print -mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:px-0" aria-label={lt.tabs.ai}>
+        <div className="inline-flex min-w-full gap-1 rounded-xl border border-slate-200 bg-white p-1 sm:min-w-0" role="tablist">
+          {TOOLS.map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={tool === k} onClick={() => switchTool(k)} data-testid={`legal-tab-${k}`}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${tool === k ? "bg-ink-900 text-white" : "text-slate-600 hover:bg-slate-50"}`}>
+              <span aria-hidden="true">{TOOL_ICON[k]}</span>{lt.tabs[k]}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {tool === "redline" ? <Redline t={lt} docs={toolDocs} lastAnswer={lastAnswer} onHandoff={handoff} /> : null}
+      {tool === "playbook" ? <PlaybookTool t={lt} docs={toolDocs} lastAnswer={lastAnswer} library={library} saveLibrary={saveLibrary} onHandoff={handoff} /> : null}
+      {tool === "clauses" ? <ClausesTool t={lt} library={library} saveLibrary={saveLibrary} onHandoff={handoff} /> : null}
+      {tool === "deadlines" ? (
+        <DeadlinesTool t={lt} lang={lang} matterTitle={matter?.title} saved={matter?.deadlines || NO_DEADLINES} canSave={!!matter}
+          onSave={(list) => patchMatter({ deadlines: list })} onHandoff={handoff} />
+      ) : null}
+      {tool === "citations" ? (
+        <CitationsTool t={lt} docs={toolDocs} lastAnswer={lastAnswer} saved={matter?.citeChecks || NO_CHECKS} canSave={!!matter}
+          onSave={(checks) => patchMatter({ citeChecks: checks })} onHandoff={handoff} />
+      ) : null}
+      {tool === "ask" ? <AskMatter t={lt} docs={toolDocs} matterTitle={matter?.title} onHandoff={handoff} /> : null}
+
+      <div className={`grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] ${tool === "ai" ? "" : "hidden"}`}>
         {/* Workspace list */}
         <aside className="no-print hidden lg:block">
           <div className="card sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto p-3">

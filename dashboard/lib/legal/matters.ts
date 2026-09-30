@@ -7,6 +7,7 @@
  *   legal/<uid>/m/<mid>/matter.enc        matter details + document/run lists
  *   legal/<uid>/m/<mid>/d/<did>.enc       extracted document text
  *   legal/<uid>/m/<mid>/r/<rid>.enc       one saved result (request + answer)
+ *   legal/<uid>/library.enc               the member's own playbooks and clauses (v4)
  *
  * D1 keeps nothing but the member's storage total (users.storage_bytes).
  * ============================================================================ */
@@ -16,6 +17,8 @@ import { addStorage } from "../usage";
 import { normaliseJurisdiction, type JurisdictionPick } from "./jurisdictions";
 import { getArea } from "./areas";
 import { getWorkspace } from "./workspaces";
+import { sanitizeDeadlines, type Deadline } from "./deadlines";
+import { sanitizeCiteChecks, sanitizeLibrary, EMPTY_LIBRARY, LIBRARY_LIMITS, type CiteChecks, type LegalLibrary } from "./library";
 
 export interface DocMeta { id: string; name: string; pages?: number; chars: number; size: number; addedAt: string }
 export interface RunMeta { id: string; workspace: string; title: string; provider: string; model: string; research: boolean; size: number; createdAt: string }
@@ -23,6 +26,8 @@ export interface Matter {
   id: string; title: string; client: string; opponent: string; reference: string;
   jurisdiction: JurisdictionPick; area: string; status: "open" | "closed"; notes: string;
   createdAt: string; updatedAt: string; docs: DocMeta[]; runs: RunMeta[];
+  /** v4: deadlines computed in the deadline calculator, and the citation verification list. */
+  deadlines?: Deadline[]; citeChecks?: CiteChecks;
 }
 export interface IndexEntry { id: string; title: string; client: string; country: string; status: string; updatedAt: string; docs: number; runs: number }
 
@@ -33,6 +38,7 @@ const kIndex = (uid: string) => `${root(uid)}/index.enc`;
 const kMatter = (uid: string, mid: string) => `${root(uid)}/m/${mid}/matter.enc`;
 const kDoc = (uid: string, mid: string, did: string) => `${root(uid)}/m/${mid}/d/${did}.enc`;
 const kRun = (uid: string, mid: string, rid: string) => `${root(uid)}/m/${mid}/r/${rid}.enc`;
+const kLibrary = (uid: string) => `${root(uid)}/library.enc`;
 const validId = (x: string) => /^[a-zA-Z0-9_-]{6,40}$/.test(x);
 
 const text = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim().slice(0, max);
@@ -88,6 +94,8 @@ function applyFields(m: Matter, b: any) {
   if (b?.notes !== undefined) m.notes = text(b.notes, 20000);
   if (b?.area !== undefined && getArea(b.area)) m.area = b.area;
   if (b?.status === "open" || b?.status === "closed") m.status = b.status;
+  if (b?.deadlines !== undefined) m.deadlines = sanitizeDeadlines(b.deadlines);
+  if (b?.citeChecks !== undefined) m.citeChecks = sanitizeCiteChecks(b.citeChecks);
   if (b?.jurisdiction !== undefined) {
     const j = normaliseJurisdiction(b.jurisdiction);
     if ("error" in j) throw new MatterError(j.error);
@@ -193,4 +201,19 @@ export async function deleteRun(bucket: any, db: any, uid: string, mid: string, 
   await addStorage(db, uid, -r.size);
   matter.runs = matter.runs.filter((x) => x.id !== rid);
   await saveMatter(bucket, db, uid, matter, size);
+}
+
+// ── v4: the member's own playbooks and clauses ──
+export async function getLibrary(bucket: any, uid: string): Promise<LegalLibrary> {
+  const r = await getSealedJson<LegalLibrary>(bucket, uid, kLibrary(uid));
+  return r ? sanitizeLibrary(r.value) : { ...EMPTY_LIBRARY };
+}
+
+export async function saveLibrary(bucket: any, db: any, uid: string, b: any): Promise<LegalLibrary> {
+  const lib = sanitizeLibrary(b);
+  if (JSON.stringify(lib).length > LIBRARY_LIMITS.bytes) throw new MatterError("Your playbooks and clauses are too large to save (400 KB max). Remove some first.", 413);
+  const prev = await getSealedJson<LegalLibrary>(bucket, uid, kLibrary(uid));
+  const size = await putSealedJson(bucket, uid, kLibrary(uid), lib);
+  await addStorage(db, uid, size - (prev?.size || 0));
+  return lib;
 }

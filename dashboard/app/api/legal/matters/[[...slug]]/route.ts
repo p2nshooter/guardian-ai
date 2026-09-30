@@ -2,7 +2,7 @@
  *   GET    /api/legal/matters                          → list
  *   POST   /api/legal/matters                          {title, client, opponent, reference, jurisdiction, area, notes} → create
  *   GET    /api/legal/matters/:id                      → matter (document + result lists)
- *   PATCH  /api/legal/matters/:id                      {…fields, status}
+ *   PATCH  /api/legal/matters/:id                      {…fields, status, deadlines, citeChecks}
  *   DELETE /api/legal/matters/:id                      → matter, documents and results
  *   POST   /api/legal/matters/:id/documents            {name, text, pages}
  *   GET    /api/legal/matters/:id/documents/:doc       → text
@@ -77,11 +77,18 @@ export async function POST(req: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const g = await guard(req);
   if ("res" in g) return g.res;
-  const { ctx } = g;
+  const { ctx, tier } = g;
   const [mid, kind] = (await params).slug || [];
   if (!mid || kind) return fail("Not found.", 404);
+  const b = await readJson(req);
+  const db = getDB(req);
+  // Deadlines and citation checks make a matter grow: they count against the plan's storage.
+  if (b?.deadlines !== undefined || b?.citeChecks !== undefined) {
+    const room = storageProblem(await getUsage(db, ctx.session.sub, tier), Math.ceil(JSON.stringify(b || {}).length * 1.1));
+    if (room) return fail(room, 413, { upgrade: true });
+  }
   try {
-    return respond({ ok: true, matter: await updateMatter(getUserFiles(req), getDB(req), ctx.session.sub, mid, await readJson(req)) }, ctx);
+    return respond({ ok: true, matter: await updateMatter(getUserFiles(req), db, ctx.session.sub, mid, b) }, ctx);
   } catch (e) { return handle(e); }
 }
 

@@ -27,8 +27,8 @@ export interface CloudApp {
 export const CLOUD_APPS: CloudApp[] = [
   {
     slug: "legal", live: true, name: "Legal AI", icon: "⚖️", color: "#4f46e5",
-    short: "36 expert legal workspaces for 200+ jurisdictions — research, case building, contracts, litigation and compliance.",
-    hero: "A private AI legal team in your browser. Pick any country, state or province, upload the case file, and get it rebuilt against current law — from the constitution down to regional regulations — with sources, risk ratings and a strategy. Plus 35 more expert workspaces for research, contracts, litigation and compliance.",
+    short: "36 expert legal workspaces for 200+ jurisdictions, plus redline, playbook review, a clause library, deadline and citation tools.",
+    hero: "A private AI legal team in your browser. Pick any country, state or province, upload the case file, and get it rebuilt against current law — from the constitution down to regional regulations — with sources, risk ratings and a strategy. Plus 35 more expert workspaces for research, contracts, litigation and compliance — and on-device tools to redline contract versions, review them against your playbook, count deadlines and check every citation.",
     steps: [
       "Choose the jurisdiction — country, then state/province and city — and a workspace such as Case Builder or Contract Review.",
       "Upload the documents (PDF, DOCX, TXT, e-mails) or describe the matter. Text is extracted in your browser.",
@@ -37,14 +37,16 @@ export const CLOUD_APPS: CloudApp[] = [
     features: [
       { title: "200+ jurisdictions, down to the province", desc: "Every country plus the EU and international law; states, provinces and special regimes (Aceh, Québec, Scotland, DIFC, Louisiana…) and your city or regency." },
       { title: "Case Builder", desc: "Upload a case file and get parties, a sourced chronology, legal issues, the applicable law from the constitution down, element-by-element analysis, evidence gaps, deadlines and strategy." },
-      { title: "Current law, with sources", desc: "Live research checks each statute and decision against official sources and lists what it retrieved — and old-vs-new law is compared for the date of your facts." },
       { title: "36 expert workspaces", desc: "Research memos, contract review & drafting, due diligence, pleadings, arbitration, criminal analysis, compliance, privacy, AML, employment, IP, tax, ESG, AI governance and more." },
+      { title: "Redline, playbook, clauses, deadlines & citations", desc: "On your device: compare contract versions word by word, check them against your playbook, fill clause templates, count deadlines with public holidays (.ics export), verify every citation and search across the matter's documents." },
+      { title: "Current law, with sources", desc: "Live research checks each statute and decision against official sources and lists what it retrieved — and old-vs-new law is compared for the date of your facts." },
+      { title: "Your own playbooks and clauses", desc: "Build playbooks with standard and fallback positions, red-flag phrases and automatic checks (caps, periods, governing law), and keep your own clause wording — encrypted per account." },
       { title: "Encrypted matters", desc: "Documents and results are saved per matter, encrypted with a key unique to your account." },
       { title: "Export anywhere", desc: "Word (.docx), PDF and Markdown exports, ready for your letterhead." },
     ],
     useCases: ["Rebuilding a case file for trial", "Contract review & redlining", "Legal research memos with sources", "Due diligence red-flag reports", "Pleadings, appeals and legal opinions", "Multi-country compliance surveys"],
     selfHosted: "legal",
-    keywords: ["legal AI", "AI lawyer", "AI legal research", "AI contract review", "case analysis AI", "legal document drafting AI", "due diligence AI", "AI hukum Indonesia"],
+    keywords: ["legal AI", "AI lawyer", "AI legal research", "AI contract review", "contract redline tool", "legal deadline calculator", "case analysis AI", "legal document drafting AI", "due diligence AI", "AI hukum Indonesia"],
   },
   {
     slug: "prompts", live: true, name: "Prompt Library", icon: "📚", color: "#7c3aed",
