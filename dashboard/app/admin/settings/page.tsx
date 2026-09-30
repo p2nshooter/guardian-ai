@@ -1,5 +1,5 @@
-/* Admin → Settings. USD→IDR exchange-rate override for Indonesian payment
- * methods, the list of admin accounts, and changing your own admin password. */
+/* Admin → Settings. The list of admin accounts and changing your own admin
+ * password (the USD→IDR rate is on Admin → Payments). */
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
@@ -10,24 +10,16 @@ interface AdminRow { id: string; email: string; name: string; last_login_at: str
 
 export default function AdminSettingsPage() {
   const [data, setData] = useState<{ usdIdrRate: string; admins: AdminRow[] } | null>(null);
-  const [rate, setRate] = useState("");
   const [cur, setCur] = useState(""); const [next, setNext] = useState("");
-  const [busy, setBusy] = useState<"" | "rate" | "pw">("");
+  const [busy, setBusy] = useState<"" | "pw">("");
   const [msg, setMsg] = useState<{ tone: "success" | "error"; text: string } | null>(null);
 
   const load = async () => {
     const r = await api<{ usdIdrRate: string; admins: AdminRow[] }>("/api/admin/settings");
-    if (r.ok) { setData(r.data); setRate(r.data.usdIdrRate || ""); } else setMsg({ tone: "error", text: r.error || "Could not load settings." });
+    if (r.ok) setData(r.data); else setMsg({ tone: "error", text: r.error || "Could not load settings." });
   };
   useEffect(() => { load(); }, []);
 
-  async function saveRate() {
-    setBusy("rate"); setMsg(null);
-    const r = await api("/api/admin/settings", { method: "PUT", body: { usd_idr_rate: rate.trim() } });
-    setBusy("");
-    setMsg(r.ok ? { tone: "success", text: rate.trim() ? `Rate fixed at Rp${Number(rate).toLocaleString("id-ID")} per USD.` : "Automatic exchange rate restored." } : { tone: "error", text: r.error || "Could not save." });
-    if (r.ok) load();
-  }
   async function changePw() {
     setBusy("pw"); setMsg(null);
     const r = await api("/api/admin/settings", { body: { action: "password", current: cur, next } });
@@ -43,11 +35,7 @@ export default function AdminSettingsPage() {
       {msg ? <div className="mb-4"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
       <div className="grid gap-5 lg:grid-cols-2">
         <Section title="USD → IDR exchange rate">
-          <p className="text-sm text-slate-600">Used to convert plan prices for BNI bank transfer, QRIS and other rupiah methods. Leave empty to use the automatic daily rate.</p>
-          <div className="mt-3 flex gap-2">
-            <input className="input" inputMode="numeric" placeholder="Automatic (e.g. 16400)" value={rate} onChange={(e) => setRate(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="USD to IDR rate" />
-            <button className="btn-primary" disabled={busy !== ""} onClick={saveRate}>{busy === "rate" ? <Spinner /> : "Save"}</button>
-          </div>
+          <p className="text-sm text-slate-600">The rupiah rate lives with the payment methods it affects: <a href="/admin/payments" className="font-semibold">Payments &amp; e-mail → Rupiah conversion</a>. Currently {data.usdIdrRate ? <b>fixed at Rp{Number(data.usdIdrRate).toLocaleString("id-ID")}</b> : <b>automatic</b>}.</p>
         </Section>
         <Section title="Change your password">
           <div className="grid gap-3">

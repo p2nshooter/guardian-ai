@@ -8,12 +8,12 @@ import { getLifetimePrices, LIFETIME_GATEWAYS, CARD_MAX_USD } from "@/lib/lifeti
 
 export async function GET(req: NextRequest) {
   const db = getDB(req);
-  const [prices, gateways, rate, lifetime] = await Promise.all([getPlanPrices(db), activeGateways(db), usdIdrRate(db, getEnv(req).KV), getLifetimePrices(db)]);
+  const [prices, gateways, rate, lifetime] = await Promise.all([getPlanPrices(db), activeGateways(db, { fresh: true }), usdIdrRate(db, getEnv(req).KV), getLifetimePrices(db)]);
   return NextResponse.json({
     plans: PLAN_ORDER.map((id) => ({ id, name: PLANS[id].name, monthly: prices[id].monthly, yearly: prices[id].yearly })),
     // test = the method runs on the provider's sandbox: no real money (shown as TEST MODE at checkout).
     gateways: gateways.map((g) => ({ id: g.id, label: g.label, methods: g.methods, currency: g.currency, test: g.mode === "sandbox" })),
     usdIdr: rate,
     lifetime: { tiers: lifetime, gateways: LIFETIME_GATEWAYS, cardMaxUsd: CARD_MAX_USD },
-  }, { headers: { "Cache-Control": "public, max-age=300" } });
+  }, { headers: { "Cache-Control": "no-store" } });   // admin changes to methods and prices apply at once
 }

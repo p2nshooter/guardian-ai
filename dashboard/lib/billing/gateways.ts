@@ -253,10 +253,11 @@ export async function gatewayCreds(_db: any, id: GatewayId): Promise<Record<stri
   }
 }
 
-/** Gateways a customer can use right now (offered + configured), with the environment in use. */
-export async function activeGateways(_db: any): Promise<(GatewayInfo & { mode: PayEnv })[]> {
+/** Gateways a customer can use right now (offered + configured), with the environment in use.
+ * `fresh` for checkout: an admin's switch shows up at once (route bundles don't share the read cache). */
+export async function activeGateways(_db: any, opts: { fresh?: boolean } = {}): Promise<(GatewayInfo & { mode: PayEnv })[]> {
   try {
-    const s = await paymentSettings();
+    const s = await paymentSettings(opts);
     return GATEWAYS.flatMap((g) => {
       const st = s.gateways[g.id];
       return st?.active && isConfigured(g, st[st.mode]) ? [{ ...g, mode: st.mode }] : [];

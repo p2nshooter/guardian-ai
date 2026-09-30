@@ -39,6 +39,7 @@ export default function PaymentsPage() {
         </Alert></div>
       ) : null}
       <Overview gateways={data.gateways} />
+      <div className="mt-5"><RupiahCard /></div>
       <div className="mt-5 grid gap-5">
         {data.gateways.map((g) => <GatewayCard key={g.id} g={g} onChange={load} />)}
         <EmailCard e={data.email} onSaved={load} />
@@ -226,6 +227,47 @@ function EnvForm({ g, env, onChange }: { g: Gateway; env: Env; onChange: () => v
       </div>
       {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
     </div>
+  );
+}
+
+/** USD → IDR: what every rupiah method (Xendit, Midtrans, bank transfer) charges. */
+function RupiahCard() {
+  const [fixed, setFixed] = useState<string | null>(null);
+  const [effective, setEffective] = useState(0);
+  const [rate, setRate] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+  const load = async () => {
+    const [s, o] = await Promise.all([api<{ usdIdrRate: string }>("/api/admin/settings"), api<{ usdIdr: number }>("/api/billing/options")]);
+    if (s.ok) { setFixed(s.data.usdIdrRate || ""); setRate(s.data.usdIdrRate || ""); }
+    if (o.ok) setEffective(o.data.usdIdr);
+  };
+  useEffect(() => { load(); }, []);
+  async function save(value: string) {
+    setBusy(true); setMsg(null);
+    const r = await api("/api/admin/settings", { method: "PUT", body: { usd_idr_rate: value } });
+    setBusy(false);
+    setMsg(r.ok ? { tone: "success", text: value ? `Fixed at Rp${Number(value).toLocaleString("id-ID")} per USD.` : "Automatic daily rate restored." } : { tone: "error", text: r.error || "Could not save." });
+    if (r.ok) load();
+  }
+  if (fixed === null) return null;
+  return (
+    <section className="card-pad">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold">Rupiah conversion (USD → IDR)</h2>
+          <p className="mt-0.5 text-sm text-slate-500">Prices are set in USD. Xendit, Midtrans and bank transfer charge the rupiah amount at this rate, rounded up to Rp1,000.</p>
+        </div>
+        <span className={fixed ? "badge-brand" : "badge-gray"}>{fixed ? "Fixed rate" : "Automatic (daily market rate)"}</span>
+      </div>
+      <p className="mt-3 text-sm text-slate-700">In use now: <b>Rp{effective.toLocaleString("id-ID")}</b> per USD · e.g. US$49 → <b>Rp{(Math.ceil((49 * effective) / 1000) * 1000).toLocaleString("id-ID")}</b></p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <input className="input w-48" inputMode="numeric" placeholder="e.g. 16400" value={rate} onChange={(e) => setRate(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Fixed USD to IDR rate" />
+        <button className="btn-primary btn-sm" disabled={busy || !rate.trim()} onClick={() => save(rate.trim())}>Fix this rate</button>
+        {fixed ? <button className="btn-secondary btn-sm" disabled={busy} onClick={() => { setRate(""); save(""); }}>Use the automatic rate</button> : null}
+      </div>
+      {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
+    </section>
   );
 }
 
