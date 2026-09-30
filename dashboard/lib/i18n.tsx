@@ -16,7 +16,7 @@ export { LANG_COOKIE };
 
 const EN = {
   // Shell
-  "nav.home": "Home", "nav.apps": "Apps", "nav.files": "My files", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lifetime licences",
+  "nav.home": "Home", "nav.apps": "Apps", "nav.files": "My files", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lifetime licences", "nav.developers": "Developers",
   "nav.billing": "Plan & billing", "nav.settings": "Settings", "nav.help": "Help & guides", "nav.managed": "Managed AI",
   "nav.signout": "Sign out", "nav.language": "Language", "nav.admin": "Admin portal", "nav.member": "Member portal",
   "nav.section.workspace": "Workspace", "nav.section.account": "Account",
@@ -66,6 +66,10 @@ const EN = {
   "plan.enterprise.f4": "Air-gapped & on-premise deployment",
   "plan.enterprise.f5": "500 GB secure file storage",
   "plan.enterprise.f6": "Priority email support",
+  "plan.starter.f8": "Developer API & realtime — 2 keys, 60 requests/min, 1 webhook",
+  "plan.pro.f8": "Developer API & realtime — 5 keys, 300 requests/min, 5 webhooks",
+  "plan.business.f7": "Developer API & realtime — 20 keys, 1,200 requests/min, 20 webhooks",
+  "plan.enterprise.f7": "Developer API & realtime — 100 keys, 6,000 requests/min, 50 webhooks",
   "foot.tagline": "AI workspace for legal, security & business teams. Your keys, your data — in the browser or on your own servers.",
   "foot.apps": "Apps",
   "foot.selfhosted": "Self-hosted",
@@ -73,6 +77,7 @@ const EN = {
   "foot.legal": "Legal",
   "foot.allEditions": "All 10 editions →",
   "foot.guides": "Guides & help",
+  "foot.developers": "Developer API",
   "foot.contact": "Contact sales",
   "foot.terms": "Terms of Service",
   "foot.privacy": "Privacy Policy",
@@ -225,7 +230,7 @@ const EN = {
 export type Key = keyof typeof EN;
 
 const ID: Record<Key, string> = {
-  "nav.home": "Beranda", "nav.apps": "Aplikasi", "nav.files": "File saya", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lisensi lifetime",
+  "nav.home": "Beranda", "nav.apps": "Aplikasi", "nav.files": "File saya", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lisensi lifetime", "nav.developers": "Developer",
   "nav.billing": "Paket & tagihan", "nav.settings": "Pengaturan", "nav.help": "Bantuan & panduan", "nav.managed": "Managed AI",
   "nav.signout": "Keluar", "nav.language": "Bahasa", "nav.admin": "Portal admin", "nav.member": "Portal member",
   "nav.section.workspace": "Ruang kerja", "nav.section.account": "Akun",
@@ -275,6 +280,10 @@ const ID: Record<Key, string> = {
   "plan.enterprise.f4": "Deployment air-gapped & on-premise",
   "plan.enterprise.f5": "Penyimpanan file aman 500 GB",
   "plan.enterprise.f6": "Dukungan email prioritas",
+  "plan.starter.f8": "API developer & realtime — 2 kunci, 60 permintaan/menit, 1 webhook",
+  "plan.pro.f8": "API developer & realtime — 5 kunci, 300 permintaan/menit, 5 webhook",
+  "plan.business.f7": "API developer & realtime — 20 kunci, 1.200 permintaan/menit, 20 webhook",
+  "plan.enterprise.f7": "API developer & realtime — 100 kunci, 6.000 permintaan/menit, 50 webhook",
   "foot.tagline": "Ruang kerja AI untuk tim hukum, keamanan & bisnis. Kunci Anda, data Anda — di browser atau di server Anda sendiri.",
   "foot.apps": "Aplikasi",
   "foot.selfhosted": "Self-hosted",
@@ -282,6 +291,7 @@ const ID: Record<Key, string> = {
   "foot.legal": "Legal",
   "foot.allEditions": "Semua 10 edisi →",
   "foot.guides": "Panduan & bantuan",
+  "foot.developers": "API developer",
   "foot.contact": "Hubungi sales",
   "foot.terms": "Ketentuan Layanan",
   "foot.privacy": "Kebijakan Privasi",

@@ -29,6 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/blog", 0.7, "daily"),
     ...BLOG_POSTS.map((p) => page(`/blog/${p.slug}`, 0.6, "monthly")),
     page("/help", 0.6, "monthly"),
+    page("/developers", 0.7, "monthly"),
     page("/security", 0.5, "monthly"),
     page("/contact", 0.5, "monthly"),
     page("/terms", 0.3, "monthly"),

@@ -204,6 +204,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 7 | Legal AI v4 (redline, playbook, klausa, tenggat, sitasi, tanya perkara) | ✅ selesai | 7 unit test (`tests/legal-v4.test.ts`); 1 E2E baru (`legal.e2e.ts`); uji browser 51/51 (lihat §14); E2E penuh 97 tes (95 lulus, 0 gagal, 2 dilewati: Docker) |
 | 8 | Mode Lokal (on-device AI) | ⏳ | — |
 | 9 | Halaman penawaran situs + serah terima admin otomatis | ✅ selesai | `/acquire` (EN/ID), `/admin/acquisition`; E2E `acquisition.e2e.ts` 6/6; uji browser 11/11; panduan `docs/admin/SITE_SALE.md` |
+| 10 | AXTO Connect — API developer & realtime (REST, SSE, WebSocket, long polling, streaming HTTP/2·3, Connect kompatibel gRPC, WebRTC, webhook, MCP, SDK) | ✅ selesai | 11 unit test (`tests/connect.test.ts`); 9 E2E (`connect.e2e.ts`); uji browser 55/55 (lihat §15) |
 
 Setiap fase: kode → unit test → E2E lokal penuh → commit & push → baris ini diperbarui.
 
@@ -329,4 +330,29 @@ Tujuh tab di `/app/legal`: **Workspace AI** (36 workspace yang sudah ada) + enam
 **Jujur soal batas:** hasil alat adalah bantuan, bukan nasihat hukum; preset tenggat adalah titik awal (aturan dan penetapan pengadilan harus dicek); hari libur keagamaan/lunar dan cuti bersama harus ditambahkan sendiri; tautan sitasi membuka pencarian sumber — verifikasi tetap oleh member.
 
 **Uji browser (Chromium, runtime lokal Cloudflare): 51/51 lulus** — deep link, dokumen perkara bisa dipilih, redline (4 berubah, 1 ditambah, material ditandai, ins/del), ekspor HTML & Word, hand-off ke AI hanya dengan dua versi, playbook (5 tidak ada · 2 menyimpang), playbook sendiri tersimpan, 24+ klausa, placeholder terisi, klausa sendiri, tenggat 14 hari melewati 17 Agustus → 18 Agustus 2026, 5 hari kerja melewati akhir pekan + libur, .ics dengan pengingat, 5 sitasi + tautan Cornell, status tersimpan, tanya perkara lintas 3 dokumen dengan sorotan, hanya kutipan yang ke AI, semua tetap ada setelah reload, ponsel tanpa overflow di 7 tab, UI ID/AR/JA/DE/ZH, halaman publik menyebut redline & tenggat.
+
+---
+
+## 15. AXTO Connect — yang dibangun & buktinya (30 Sep 2026)
+
+Permintaan pemilik: website / aplikasi lain harus bisa terhubung **maksimal dan live** (SSE, WebRTC, long polling, HTTP/2 streaming, gRPC streaming, WebTransport, "tambahkan yang lain"). Pembanding: Pusher / Ably (realtime), Stripe (kunci API, webhook bertanda tangan), Twilio / LiveKit (WebRTC), Buf / connectrpc (gRPC-kompatibel), MCP server (agen AI).
+
+| Transport | Endpoint | Catatan |
+|---|---|---|
+| REST (JSON) | `POST/GET /api/v1/events`, `GET /api/v1/me`, `POST /api/v1/tokens` | CORS per kunci (origin yang diizinkan), batas per menit per paket (`X-RateLimit-*`) |
+| Server-Sent Events | `GET /api/v1/events/stream` | `retry`, heartbeat, lanjut dengan `Last-Event-ID`, koneksi 55 d lalu tersambung ulang otomatis |
+| Long polling | `GET /api/v1/events/poll?wait≤30` | menjawab begitu event tiba; kursor = id event |
+| WebSocket | `GET /api/v1/ws` (subprotokol `axto.v1`, token lewat `axto.token.<t>`) | subscribe / publish / ping dua arah, sesi 10 menit lalu sambung ulang; patch `scripts/patch-worker.mjs` agar router next-on-pages meneruskan respons 101 |
+| Streaming HTTP/2 & HTTP/3 | `POST /api/v1/ai/run` (`sse` / `ndjson` / `json` / `text`) | AI pada kunci model member sendiri (BYOK), memakai inti yang sama dengan AI Studio (`lib/ai/run-core.ts`) |
+| Connect (kompatibel gRPC) | `POST /api/v1/connect/axto.connect.v1.*`, `.proto` di `/api/v1/axto.proto` | unary JSON + server-streaming (envelope 5 byte, end-stream) untuk connect-es / connect-go / Swift / Kotlin |
+| WebRTC | `POST /api/v1/rtc/rooms` | signaling lewat log event, STUN Cloudflare selalu, TURN Cloudflare Realtime bila admin mengisi kunci (kredensial per room, kedaluwarsa) |
+| Webhook | Developers → Webhook | HMAC-SHA256 `X-AXTO-Signature: t=…,v1=…`, hanya HTTPS host publik (tanpa IP, tanpa kredensial, tanpa redirect), coba ulang 1m/5m/30m/2j/6j/24j, dijeda setelah 20 gagal, log pengiriman, kirim uji, rotasi rahasia |
+| MCP | `POST /api/v1/mcp` (Streamable HTTP, 2025-06-18) | 8 alat: ai_run, events_publish, events_list, legal_deadline, legal_citations, contract_redline, pii_scan, prompt_library_search |
+| SDK JS | `/sdk/axto-connect.js` | WebSocket → SSE → long polling otomatis, lanjut dari kursor, `ai.stream`, `rtc.join` |
+
+**Keamanan & non-custodial:** kunci `axto_sk_…` 256-bit hanya ditampilkan sekali, disimpan sebagai SHA-256; token stream `axto_st_…` (HMAC, kunci diturunkan HKDF dari rahasia server) terbatas kanal & kedaluwarsa, untuk browser; kunci rahasia di URL ditolak; isi event dienkripsi per akun (AES-GCM, AAD per member) dan dihapus setelah masa retensi (bawaan 7 hari, admin 1–90); rahasia webhook terenkripsi. Paket: Starter 2 kunci / 60 rpm / 1 webhook · Pro 5 / 300 / 5 · Business 20 / 1.200 / 20 · Enterprise 100 / 6.000 / 50 (di `lib/plans.ts` → matriks paket). Admin → Connect: saklar on/off (503 seketika), retensi, TURN, statistik 24 jam, semua kunci (cabut), webhook gagal (jeda). Portal member: `/app/developers` (Ringkasan, Kunci API, Webhook, Konsol live, Uji WebRTC) dalam 10 bahasa. Publik: `/developers` (EN/ID, JSON-LD, sitemap, tautan footer), OpenAPI 3.1 di `/api/v1/openapi.json`.
+
+**Jujur soal batas:** WebTransport **tidak** ditawarkan — edge Cloudflare belum mendukungnya; SDK memakai WebSocket → SSE → long polling. gRPC native butuh trailer HTTP/2 yang tidak bisa dikirim runtime edge, jadi dipakai protokol Connect (kompatibel gRPC, dari `.proto` yang sama). WebRTC di jaringan sangat ketat butuh TURN, yang aktif setelah admin memasukkan kunci Cloudflare Realtime.
+
+**Uji browser (Chromium, runtime lokal Cloudflare): 55/55 lulus** — akun gratis melihat syarat paket; kunci dibuat & hanya tampil sekali (tidak muncul lagi setelah reload, admin hanya melihat prefiks); webhook dengan rahasia sekali tampil; konsol live SSE & long polling menerima event dari portal dan dari server (filter kanal bekerja); SDK di browser menerima event lewat WebSocket, SSE dan long polling dengan token stream (token tidak bisa publish); dua tab terhubung WebRTC peer-to-peer dan pesan data channel terkirim; UI ID/DE/JA/AR (RTL); ponsel 390 px tanpa overflow di 5 tab, admin dan halaman publik; admin mematikan API → 503 + pemberitahuan di portal, menyalakan lagi → 200; halaman publik: JSON-LD, canonical, tautan footer, sitemap, OpenAPI; tanpa error konsol.
 

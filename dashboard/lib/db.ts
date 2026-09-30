@@ -29,11 +29,17 @@ export interface CfEnv {
   [k: string]: any;
 }
 
+// Bindings and secrets are fixed for the life of an isolate. Keeping the last
+// request's env lets work that outlives its request (WebSocket message
+// handlers, waitUntil tasks) still reach D1, KV, R2 and secrets.
+let lastEnv: CfEnv | null = null;
+
 export function getEnv(_req?: NextRequest): CfEnv {
   try {
     const ctx = getRequestContext();
-    if (ctx?.env) return ctx.env as unknown as CfEnv;
+    if (ctx?.env) { lastEnv = ctx.env as unknown as CfEnv; return lastEnv; }
   } catch {}
+  if (lastEnv) return lastEnv;
   try {
     const pe = (process as any).env;
     if (pe?.DB) return pe as CfEnv;

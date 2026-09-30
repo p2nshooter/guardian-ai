@@ -29,9 +29,10 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [
-      { source: "/:path*", headers: process.env.NEXT_PUBLIC_PREVIEW === "1" ? [...SECURITY_HEADERS, { key: "X-Robots-Tag", value: "noindex, nofollow" }] : SECURITY_HEADERS },
+      // /api/v1/ws is left out: a WebSocket upgrade (101) must reach the client untouched.
+      { source: "/((?!api/v1/ws$).*)", headers: process.env.NEXT_PUBLIC_PREVIEW === "1" ? [...SECURITY_HEADERS, { key: "X-Robots-Tag", value: "noindex, nofollow" }] : SECURITY_HEADERS },
       { source: "/_next/static/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
-      { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
+      { source: "/api/((?!v1/ws$).*)", headers: [{ key: "Cache-Control", value: "no-store" }] },
     ];
   },
   async rewrites() {

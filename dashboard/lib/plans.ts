@@ -25,6 +25,9 @@ export interface PlanLimits {
   apps: string[];                  // cloud app slugs from lib/apps.ts
   selfHostedApps: number;          // how many self-hosted products (0 = none, -1 = all)
   selfHostedNodes: number;         // max nodes per self-hosted licence (-1 = unlimited)
+  apiKeys: number;                 // AXTO Connect developer keys (0 = no developer API)
+  apiRpm: number;                  // Connect requests per minute, per member
+  webhooks: number;                // signed webhook endpoints
 }
 
 export interface Plan {
@@ -57,7 +60,7 @@ export const PLANS: Record<PlanId, Plan> = {
     monthly: 19, yearly: 190,
     limits: {
       clipperVideosPerMonth: 10, storageGB: 1, promptLevels: ["basic", "pro"], legalWorkspaces: "core",
-      apps: CORE_APPS, selfHostedApps: 0, selfHostedNodes: 0,
+      apps: CORE_APPS, selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 2, apiRpm: 60, webhooks: 1,
     },
     features: [
       "Unlimited AI with your own keys (BYOK)",
@@ -67,6 +70,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Clipper — 10 videos per month",
       "Privacy Vault (in-browser redaction)",
       "1 GB secure file storage",
+      "Developer API & realtime — 2 keys, 60 requests/min, 1 webhook",
     ],
   },
   pro: {
@@ -76,7 +80,7 @@ export const PLANS: Record<PlanId, Plan> = {
     monthly: 49, yearly: 490,
     limits: {
       clipperVideosPerMonth: 50, storageGB: 10, promptLevels: ["basic", "pro", "premium"], legalWorkspaces: "all",
-      apps: ALL_APPS, selfHostedApps: 0, selfHostedNodes: 0,
+      apps: ALL_APPS, selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 5, apiRpm: 300, webhooks: 5,
     },
     features: [
       "Unlimited AI with your own keys (BYOK)",
@@ -86,6 +90,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Clipper — 50 videos per month",
       "AI Studio & Privacy Vault",
       "10 GB secure file storage",
+      "Developer API & realtime — 5 keys, 300 requests/min, 5 webhooks",
     ],
   },
   business: {
@@ -95,7 +100,7 @@ export const PLANS: Record<PlanId, Plan> = {
     monthly: 199, yearly: 1990,
     limits: {
       clipperVideosPerMonth: 200, storageGB: 50, promptLevels: ["basic", "pro", "premium", "elite"], legalWorkspaces: "all",
-      apps: ALL_APPS, selfHostedApps: 3, selfHostedNodes: 5,
+      apps: ALL_APPS, selfHostedApps: 3, selfHostedNodes: 5, apiKeys: 20, apiRpm: 1200, webhooks: 20,
     },
     features: [
       "Everything in Pro",
@@ -104,6 +109,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Self-hosted: any 3 apps, top tier, up to 5 nodes each",
       "Docker images & setup guides",
       "50 GB secure file storage",
+      "Developer API & realtime — 20 keys, 1,200 requests/min, 20 webhooks",
     ],
   },
   enterprise: {
@@ -113,7 +119,7 @@ export const PLANS: Record<PlanId, Plan> = {
     monthly: 999, yearly: 9990,
     limits: {
       clipperVideosPerMonth: -1, storageGB: 500, promptLevels: ["basic", "pro", "premium", "elite"], legalWorkspaces: "all",
-      apps: ALL_APPS, selfHostedApps: -1, selfHostedNodes: -1,
+      apps: ALL_APPS, selfHostedApps: -1, selfHostedNodes: -1, apiKeys: 100, apiRpm: 6000, webhooks: 50,
     },
     features: [
       "Everything in Business",
@@ -122,6 +128,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Air-gapped & on-premise deployment",
       "500 GB secure file storage",
       "Priority email support",
+      "Developer API & realtime — 100 keys, 6,000 requests/min, 50 webhooks",
     ],
   },
 };
@@ -137,7 +144,7 @@ export function isCycle(x: unknown): x is Cycle {
 /** Tier → limits. "none" (free account) gets read-only access to Basic prompts. */
 export function limitsFor(tier: Tier): PlanLimits {
   if (tier === "none") {
-    return { clipperVideosPerMonth: 0, storageGB: 0, promptLevels: ["basic"], legalWorkspaces: "core", apps: ["prompts"], selfHostedApps: 0, selfHostedNodes: 0 };
+    return { clipperVideosPerMonth: 0, storageGB: 0, promptLevels: ["basic"], legalWorkspaces: "core", apps: ["prompts"], selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 0, apiRpm: 0, webhooks: 0 };
   }
   return PLANS[tier].limits;
 }

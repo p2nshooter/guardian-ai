@@ -48,7 +48,7 @@ jobs:
       - name: Apply migrations to the PREVIEW database
         run: npx wrangler d1 migrations apply axto-preview-db --remote
       - name: Build
-        run: npx @cloudflare/next-on-pages
+        run: npx @cloudflare/next-on-pages && node scripts/patch-worker.mjs
         env:
           NEXT_PUBLIC_APP_URL: https://axto-preview.pages.dev
           NEXT_PUBLIC_PREVIEW: "1"

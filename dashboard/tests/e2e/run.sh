@@ -8,7 +8,7 @@ set -uo pipefail
 cd "$(dirname "$0")/../.."
 LOG=".e2e-state-serve.log"
 if [ "${1:-}" != "--no-build" ]; then
-  npx @cloudflare/next-on-pages > .e2e-build.log 2>&1 || { tail -40 .e2e-build.log; exit 1; }
+  { npx @cloudflare/next-on-pages && node scripts/patch-worker.mjs; } > .e2e-build.log 2>&1 || { tail -40 .e2e-build.log; exit 1; }
 fi
 bash tests/e2e/stop-local.sh
 rm -rf .e2e-state

@@ -7,7 +7,7 @@ import { PLANS, PLAN_ORDER, type Cycle, type PlanId } from "@/lib/plans";
 import { improves, planMatrix, type Cell, type Row, type RowGroup } from "@/lib/plan-matrix";
 import type { PlanMatrixDict } from "@/lib/i18n-pages/planmatrix";
 
-const GROUPS: RowGroup[] = ["ai", "apps", "limits", "selfHosted", "support"];
+const GROUPS: RowGroup[] = ["ai", "apps", "limits", "dev", "selfHosted", "support"];
 
 function cellText(t: PlanMatrixDict, row: Row, c: Cell): React.ReactNode {
   switch (c.kind) {

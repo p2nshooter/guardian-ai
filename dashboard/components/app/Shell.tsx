@@ -40,6 +40,7 @@ function memberNav(): { section: Key; items: NavItem[] }[] {
       ...CLOUD_APPS.map((a) => ({ href: `/app/${a.slug}`, label: a.name, icon: a.icon, badge: a.live ? undefined : "soon" })),
       { href: "/app/self-hosted", label: "nav.selfhosted", icon: "🖥️" },
       { href: "/app/lifetime", label: "nav.lifetime", icon: "♾️" },
+      { href: "/app/developers", label: "nav.developers", icon: "⚡" },
       { href: "/app/managed", label: "nav.managed", icon: "☁️", badge: "locked" },
     ] },
     { section: "nav.section.account", items: [
@@ -65,6 +66,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/plans", label: "Plans & pricing", icon: "🏷️" },
       { href: "/admin/payments", label: "Payment & email", icon: "💳" },
       { href: "/admin/managed", label: "Managed AI", icon: "☁️", badge: "locked" },
+      { href: "/admin/connect", label: "Connect (developer API)", icon: "⚡" },
       { href: "/admin/releases", label: "Releases", icon: "📦" },
       { href: "/admin/settings", label: "Settings", icon: "⚙️" },
       { href: "/admin/audit", label: "Audit log", icon: "🕵️" },

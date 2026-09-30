@@ -5,7 +5,7 @@ Every request for a new feature or change is recorded here with its status. Rule
 | # | Request (summary) | Status | Where |
 |---|---|---|---|
 | 1 | Remove the legacy per-app EXE pipeline | ✅ done | commit 404d4b6 |
-| 2 | All apps must be world-class, complete and complex (Clipper first) — study every app, benchmark the best, new blueprint | 🔄 in progress | `docs/BLUEPRINT-V4.md` §9 |
+| 2 | All apps must be world-class, complete and complex (Clipper first) — study every app, benchmark the best, new blueprint | 🔄 in progress (all 7 apps + Connect done; Local Mode next) | `docs/BLUEPRINT-V4.md` §9 |
 | 3 | Clipper v4 | ✅ done | `app/app/clipper`, `lib/clipper` |
 | 4 | AI Studio v4 | ✅ done | `app/app/studio`, `lib/studio` |
 | 5 | Privacy Vault v4 | ✅ done | `app/app/vault`, `lib/vault` |
@@ -23,3 +23,8 @@ Every request for a new feature or change is recorded here with its status. Rule
 | 17 | Prompt Library v4 (240 prompts; fix the "Hundreds" claim) | ✅ done | `app/app/prompts`, `lib/prompts`, `docs/BLUEPRINT-V4.md` §13 |
 | 18 | Legal AI v4 (redline, playbook review, clause library, deadlines, citations, ask the matter) | ✅ done | `app/app/legal`, `components/legal/tools`, `lib/legal`, `docs/BLUEPRINT-V4.md` §14 |
 | 19 | Local Mode (on-device AI, so "100% client-side" is true for that mode) | 🔄 next | `docs/BLUEPRINT-V4.md` §8b |
+| 20 | Website shows no changes | ✅ diagnosed — production (axto.io, Pages project `axto-dashboard`) deploys from `main`; the v4 work was on the branch until it was fast-forwarded to `main`; most v4 features are inside the member portal (sign-in needed); `/api/health` now reports the build commit and `production-check.yml` verifies each deploy | `.github/workflows/production-check.yml` |
+| 21 | Delete the stale branches on GitHub | ⛔ blocked — branch deletion was refused by this session's permission check; the owner deletes them in GitHub → Branches | — |
+| 22 | Connect other websites / apps "maximal and live": SSE, WebRTC, long polling, HTTP/2 streaming, gRPC streaming, WebTransport, plus anything else needed | ✅ done — AXTO Connect: REST, SSE, WebSocket, long polling, HTTP/2·3 streaming, Connect (gRPC-compatible), WebRTC, signed webhooks, MCP, JS SDK; WebTransport and native gRPC honestly not offered (Cloudflare edge) | `/developers`, `/app/developers`, `/admin/connect`, `app/api/v1`, `docs/BLUEPRINT-V4.md` §15 |
+| 23 | Check the Sukakarya repo: what are its worker links | ✅ answered in the session (another project; its links are not kept in this repository) | — |
+

@@ -13,10 +13,10 @@ export type Cell =
   | { kind: "yes" }
   | { kind: "no" }
   | { kind: "unlimited" }
-  | { kind: "count"; n: number; unit?: "gb" | "videos" | "nodes" | "apps" | "workspaces" }
+  | { kind: "count"; n: number; unit?: "gb" | "videos" | "nodes" | "apps" | "workspaces" | "keys" | "rpm" | "hooks" }
   | { kind: "levels"; levels: string[] };
 
-export type RowGroup = "ai" | "apps" | "limits" | "selfHosted" | "support";
+export type RowGroup = "ai" | "apps" | "limits" | "dev" | "selfHosted" | "support";
 export interface Row {
   key: string;                 // i18n key (or an app slug for app rows)
   group: RowGroup;
@@ -42,6 +42,10 @@ export function planMatrix(): Row[] {
         : { kind: "yes" }),
     })),
     { key: "storage", group: "limits", cells: per((id) => num(L(id).storageGB, "gb")) },
+    { key: "apiKeys", group: "dev", cells: per((id) => num(L(id).apiKeys, "keys")) },
+    { key: "apiRpm", group: "dev", cells: per((id) => num(L(id).apiRpm, "rpm")) },
+    { key: "webhooks", group: "dev", cells: per((id) => num(L(id).webhooks, "hooks")) },
+    { key: "realtime", group: "dev", cells: per((id) => (L(id).apiKeys > 0 ? { kind: "yes" } : { kind: "no" })) },
     { key: "shApps", group: "selfHosted", cells: per((id) => num(L(id).selfHostedApps, "apps")) },
     { key: "shNodes", group: "selfHosted", cells: per((id) => num(L(id).selfHostedNodes, "nodes")) },
     { key: "shDocker", group: "selfHosted", cells: per((id) => (L(id).selfHostedApps !== 0 ? { kind: "yes" } : { kind: "no" })) },

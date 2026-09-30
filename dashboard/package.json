@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/vendor.mjs && next dev",
     "build": "node scripts/vendor.mjs && next build",
-    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:build": "npx @cloudflare/next-on-pages && node scripts/patch-worker.mjs",
     "start": "next start",
     "preview": "wrangler pages dev",
     "db:migrate": "wrangler d1 migrations apply axto-db",
