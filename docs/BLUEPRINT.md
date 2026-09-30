@@ -515,6 +515,7 @@ dan HP × EN/ID/FR, plus 357 tautan internal.
 | P5 | Checkbox **Test mode** di Admin → Payments disimpan tetapi tidak dipakai | Admin mengira sandbox, padahal transaksi live | PayPal / Midtrans / NOWPayments ke API sandbox; Stripe & Xendit: petunjuk kunci test (mode ditentukan kunci) |
 | P6 | MRR = harga daftar × langganan aktif | Akun komplimen ($0) menaikkan MRR; harga yang diubah admin diabaikan | MRR dari nominal yang benar-benar dibayar untuk periode berjalan |
 | P7 | Badge gateway nonaktif bertuliskan "suspended"; URL webhook melebar di HP | Membingungkan; layar admin 413 px di HP 390 px | "off" / "offered at checkout" / "test mode"; URL dibungkus |
+| P8 | Secret gateway yang sudah tersimpan tidak bisa dihapus (field kosong = "pertahankan") | Kunci lama/bocor tetap tersimpan terenkripsi; hanya bisa dinonaktifkan | Tombol **remove / undo** per secret; API menerima `null` = hapus |
 
 ### 20b. Lisensi
 | # | Temuan | Dampak | Perbaikan |
@@ -543,7 +544,7 @@ Satu overflow di HP (Admin → Payments, P7).
 ### 20e. Status
 | Item | Status | Bukti |
 |---|---|---|
-| P1–P7 | ✅ | `tests/e2e/security.e2e.ts` (refund final, gateway cocok, Stripe bertanda tangan asli sekali aktif, MRR) |
+| P1–P8 | ✅ | `tests/e2e/security.e2e.ts` (refund final, gateway cocok, Stripe bertanda tangan asli sekali aktif, MRR) |
 | L1–L4 | ✅ | idem (admin lock vs member & perpanjangan, race binding, file Lifetime yang ditautkan bisa diunduh) |
 | A1–A3 | ✅ | idem (ganti password mengeluarkan perangkat lain, reset race, admin diturunkan langsung 403) + isolasi data antar-member |
 

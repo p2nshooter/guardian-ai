@@ -32,7 +32,8 @@ export default function PaymentsPage() {
 }
 
 function GatewayCard({ g, onSaved }: { g: Gateway; onSaved: () => void }) {
-  const [values, setValues] = useState<Record<string, string>>(g.values);
+  // null = remove this saved secret on Save (an empty secret field keeps the stored value).
+  const [values, setValues] = useState<Record<string, string | null>>(g.values);
   const [active, setActive] = useState(g.active);
   const [testMode, setTestMode] = useState(g.testMode);
   const [busy, setBusy] = useState(false);
@@ -61,11 +62,15 @@ function GatewayCard({ g, onSaved }: { g: Gateway; onSaved: () => void }) {
       <div className="grid gap-3 sm:grid-cols-2">
         {g.fields.map((f) => (
           <div key={f.key} className={f.multiline ? "sm:col-span-2" : ""}>
-            <label className="label" htmlFor={`${g.id}-${f.key}`}>{f.label}{f.secret ? <span className="ml-1 text-xs font-normal text-slate-400">🔒 encrypted</span> : null}</label>
+            <label className="label" htmlFor={`${g.id}-${f.key}`}>{f.label}{f.secret ? <span className="ml-1 text-xs font-normal text-slate-400">🔒 encrypted</span> : null}
+              {f.secret && g.values[f.key] ? (values[f.key] === null
+                ? <button type="button" className="ml-2 text-xs font-semibold text-slate-500" onClick={() => setValues({ ...values, [f.key]: g.values[f.key] })}>undo</button>
+                : <button type="button" className="ml-2 text-xs font-semibold text-rose-600" onClick={() => setValues({ ...values, [f.key]: null })}>remove</button>) : null}
+            </label>
             {f.multiline ? (
               <textarea id={`${g.id}-${f.key}`} className="input min-h-[80px]" value={values[f.key] || ""} placeholder={f.placeholder} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
             ) : (
-              <input id={`${g.id}-${f.key}`} className="input font-mono text-xs" value={values[f.key] || ""} placeholder={f.placeholder || (f.secret && g.values[f.key] ? "saved — leave as is to keep" : "")}
+              <input id={`${g.id}-${f.key}`} className="input font-mono text-xs" value={values[f.key] || ""} placeholder={values[f.key] === null ? "will be removed when you save" : f.placeholder || (f.secret && g.values[f.key] ? "saved — leave as is to keep" : "")}
                 autoComplete="off" spellCheck={false} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
             )}
           </div>

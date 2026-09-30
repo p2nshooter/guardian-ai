@@ -14,6 +14,7 @@ See `docs/BLUEPRINT.md` §20.
 - A refunded order could be re-activated by a replayed webhook or a revisited PayPal return link; refunds are now final.
 - A webhook could settle another gateway's order; PayPal payments for lifetime licences returned to the wrong page; PayPal errors were never shown.
 - Admin → Payments "Test mode" did nothing — PayPal, Midtrans and NOWPayments now use their sandbox APIs.
+- Saved gateway secrets can now be removed from Admin → Payments (previously they could only be switched off).
 - Admin MRR used list prices (complimentary grants counted); it now uses what subscribers paid.
 - Members could undo an admin licence suspension or revocation, and renewals lifted admin suspensions — admin locks now hold; revoked licences can be restored by an admin; the "Expired" filter works.
 - Two servers validating a fresh key at the same moment could both be accepted.

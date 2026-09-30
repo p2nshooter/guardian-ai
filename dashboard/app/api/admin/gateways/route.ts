@@ -27,10 +27,12 @@ function view(fields: GatewayField[], creds: Record<string, string> = {}) {
   return values;
 }
 
+/** Empty or masked secrets keep the stored value; `null` removes a field. */
 function merge(fields: GatewayField[], submitted: any, stored: Record<string, string> = {}) {
   const next: Record<string, string> = {};
   for (const f of fields) {
     const v = submitted?.[f.key];
+    if (v === null) continue;
     const val = f.secret ? keepSecret(v, stored[f.key]) : (typeof v === "string" ? v.trim() : stored[f.key] || "");
     if (val) next[f.key] = val.slice(0, f.multiline ? 4000 : 500);
   }

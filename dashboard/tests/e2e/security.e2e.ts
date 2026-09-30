@@ -77,7 +77,11 @@ before(async () => {
   assert.equal(s.status, 200, s.text);
 });
 after(async () => {
-  await admin.put("/api/admin/gateways", { gateway: "stripe", credentials: { secret_key: "sk_test_e2e", webhook_secret: WHSEC }, is_active: false });
+  // Leave Stripe exactly as found (unconfigured) for the files that run next.
+  const r = await admin.put("/api/admin/gateways", { gateway: "stripe", credentials: { secret_key: null, webhook_secret: null }, is_active: false });
+  assert.equal(r.status, 200, r.text);
+  const g = (await admin.get("/api/admin/gateways")).json.gateways.find((x: any) => x.id === "stripe");
+  assert.equal(g.configured, false);
 });
 
 test("payments: a refunded order never grants access again", async () => {
