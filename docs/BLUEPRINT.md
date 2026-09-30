@@ -1,5 +1,7 @@
 # AXTO v3 — Blueprint Rombak Total
 
+> **Aplikasi cloud: lihat [`BLUEPRINT-V4.md`](BLUEPRINT-V4.md)** — target kelas dunia per aplikasi (menggantikan target fitur aplikasi di dokumen ini). Infrastruktur, lisensi, pembayaran dan installer di bawah tetap berlaku.
+
 > Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§22 (Payments: Live & Sandbox — 30 Sep 2026)**, §21 (aplikasi self-hosted: Docker, Windows, Linux), §20 (portal, lisensi, pembayaran), §19 (v3.2).
 > Branch kerja v3.2: `ccr-e9111ca5-n0fcha` (sebelumnya `claude/app-consistency-paid-model-5hjkqo`, sudah di-merge).
 > Deploy produksi terjadi otomatis saat branch kerja di-merge ke `main`
