@@ -126,6 +126,35 @@ test("security v4: a case (status, severity, evidence) saves, reopens and is siz
   await pro.del(`/api/history/security/${s.json.item.id}`);
 });
 
+test("compliance v4: programme briefing reaches the model; new AI modes run", async () => {
+  const briefing = "PROGRAMME: e2e · SaaS\nISO/IEC 27001:2022 Annex A: readiness 17% · implemented 10\nFOCUS CONTROL: ISO/IEC 27001:2022 Annex A A.8.13 — Information backup. Status in_progress";
+  for (const task of ["control", "risk", "vendor"]) {
+    const r = await pro.post("/api/byox/run", { app: "compliance", task, messages: [{ role: "user", content: "help" }], provider: "custom", options: { framework: "iso27001", mode: task, briefing } });
+    assert.equal(r.status, 200, `${task}: ${r.text}`);
+  }
+  const sys = JSON.parse(lastBody).messages.find((m: any) => m.role === "system").content as string;
+  assert.match(sys, /PROGRAMME BRIEFING/);
+  assert.match(sys, /FOCUS CONTROL: .*A\.8\.13/);
+  assert.match(sys, /TASK — Vendor risk review/);
+});
+
+test("compliance v4: a programme and its evidence file save as separate encrypted items", async () => {
+  const body = { v: 4, name: "ISO 2027", org: { name: "Acme", industry: "", size: "", country: "", description: "", systems: "", dataTypes: "" }, frameworks: ["iso27001", "soc2"],
+    controls: { "iso27001:A.8.13": { status: "implemented", evidence: [{ id: "placeholder", name: "restore.txt", size: 5, type: "text/plain", addedAt: "" }] } }, risks: [], policies: [], vendors: [], mode: "gap", messages: [], createdAt: new Date().toISOString() };
+  const ev = await pro.post("/api/history/compliance", { title: "Evidence · restore.txt", body: { kind: "evidence", name: "restore.txt", type: "text/plain", size: 5, data: Buffer.from("hello").toString("base64"), control: "iso27001:A.8.13" }, meta: { kind: "evidence", control: "A.8.13" } });
+  assert.equal(ev.status, 200, ev.text);
+  const pg = await pro.post("/api/history/compliance", { title: "ISO 2027", body, meta: { kind: "programme", readiness: "ISO 27001 1%" } });
+  assert.equal(pg.status, 200, pg.text);
+  const got = await pro.get(`/api/history/compliance/${ev.json.item.id}`);
+  assert.equal(Buffer.from(got.json.item.body.data, "base64").toString(), "hello");
+  const items = (await pro.get("/api/history/compliance")).json.items;
+  assert.ok(items.some((x: any) => x.meta?.kind === "evidence") && items.some((x: any) => x.meta?.kind === "programme"));
+  const files = await pro.get("/api/files");
+  assert.ok(files.json.files.some((f: any) => f.app === "compliance" && f.title === "ISO 2027"), "programmes show in My files");
+  await pro.del(`/api/history/compliance/${ev.json.item.id}`);
+  await pro.del(`/api/history/compliance/${pg.json.item.id}`);
+});
+
 test("vault: Starter can store redacted output (PII-free) in history", async () => {
   const r = await starter.post("/api/history/vault", { title: "Redacted 1", body: { redacted: "Email [EMAIL_1] card [CARD_1]", style: "token", types: [] } });
   assert.equal(r.status, 200, r.text);

@@ -199,7 +199,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 2 | AI Studio v4 | ✅ selesai | 8 unit test (`tests/studio.test.ts`); uji browser 23/23; E2E penuh 81 tes (79 lulus, 2 dilewati: Docker) |
 | 3 | Privacy Vault v4 | ✅ selesai | 22 unit test (`tests/vault.test.ts`); uji browser 40/40 (teks, tinjauan, AI Aman, kunci terenkripsi, aturan, DOCX/XLSX in-place, PDF image-only, OCR gambar, ZIP, laporan audit) |
 | 4 | Security Analyst v4 | ✅ selesai | 9 unit test (`tests/security-v4.test.ts`); E2E briefing + kasus v4 (`apps.e2e.ts`); uji browser 66/66 (lihat §11); E2E penuh 91 tes (89 lulus, 0 gagal, 2 dilewati: Docker) |
-| 5 | Compliance Center v4 | ⏳ | — |
+| 5 | Compliance Center v4 | ✅ selesai | 8 unit test (`tests/compliance-v4.test.ts`); 2 E2E baru (`apps.e2e.ts`); uji browser 53/53 (lihat §12); E2E penuh 93 tes (91 lulus, 0 gagal, 2 dilewati: Docker) |
 | 6 | Prompt Library v4 (≥ 240 prompt) | ⏳ | — |
 | 7 | Legal AI v4 (redline, playbook, klausa) | ⏳ | — |
 | 8 | Mode Lokal (on-device AI) | ⏳ | — |
@@ -265,4 +265,28 @@ Setiap fase: kode → unit test → E2E lokal penuh → commit & push → baris 
 **Portal:** member — aplikasi, daftar fitur di Apps (10 bahasa), My files; admin — kelayakan paket ikut matriks paket (`/admin/plans`); publik — `/apps/security` dengan JSON-LD `SoftwareApplication` (featureList, penawaran) + `HowTo` + breadcrumb.
 
 **Uji browser (Chromium, runtime lokal Cloudflare): 66/66 lulus** — gating paket, kasus v3, sampel insiden (23 event, 16 deteksi, 19 teknik), autosave + deep link + reload, filter deteksi, detail event, IOC + STIX, matriks, phishing, Magic PowerShell, bukti dari dekoder, 4 bahasa rule, AI (briefing, bukan log mentah), laporan MD/DOCX, status/tag bertahan, CEF tempel, hash file biner, hapus kasus, ponsel tanpa overflow, UI ID/AR/JA/DE, SEO halaman publik.
+
+---
+
+## 12. Compliance Center v4 — yang dibangun & buktinya (30 Sep 2026)
+
+**Model kerja:** satu **program kepatuhan** per organisasi: profil (organisasi, sistem, data), framework dalam cakupan, status setiap kontrol, risk register, kebijakan, vendor, dan percakapan AI. Tersimpan otomatis ke riwayat terenkripsi (cari, ganti nama, duplikat, hapus, `?open=`); laporan v3 lama tetap terbuka.
+
+| Bagian | Isi | File |
+|---|---|---|
+| Pustaka kontrol | **342 kontrol nyata**: ISO/IEC 27001:2022 Annex A (93, 4 tema), SOC 2 TSC (33 CC + A/C/PI/P), NIST CSF 2.0 (22 kategori, 6 fungsi), PCI DSS v4.0.1 (63 sub-requirement), HIPAA Security Rule + Breach Notification (48), GDPR (29 pasal operatif), UU PDP (26). Judul diringkas — teks resmi tetap milik penerbit | `lib/compliance/controls.ts` |
+| Pemetaan lintas framework | 40+ tema; kontrol setara ditampilkan per kontrol; "salin status & bukti" hanya ke kontrol yang belum dimulai, dan hanya menjadi *Sedang berjalan* (tidak pernah otomatis *Diterapkan*) | `controls.ts`, `workspace.ts` |
+| Workspace | status, pemilik, tenggat, catatan, justifikasi N/A (untuk SoA), file bukti terenkripsi (≤ 3 MB per file, item riwayat tersendiri; AI tidak pernah menerima isinya) | `components/compliance/Controls.tsx` |
+| Skor | kesiapan per framework & domain (diterapkan + ½ berjalan, N/A dikecualikan), bukti, lewat tenggat | `workspace.ts` |
+| Risiko | register + heatmap 5×5 inheren / residual, penanganan, pemilik, tenggat, kontrol terkait | `Risks.tsx` |
+| Kebijakan | **26 templat** dipetakan ke kontrol yang dibuktikannya; draf AI dari profil; versi + catatan; draf → ditinjau → disetujui (nama penyetuju wajib) → dipensiunkan; Word / Markdown | `lib/compliance/library.ts`, `Policies.tsx` |
+| Vendor | kuesioner 20 pertanyaan berbobot, skor, tier inheren & residual, jadwal tinjauan | `Vendors.tsx` |
+| AI | 8 mode (gap, remediasi, kebijakan, kuesioner, jelaskan, **terapkan kontrol**, **penilaian risiko**, **tinjauan vendor**) dengan ringkasan program ≤ 16.000 karakter + kontrol fokus | `lib/compliance/task.ts`, `Advisor.tsx` |
+| Ekspor | laporan kesiapan (MD / Word / cetak-PDF), CSV kontrol (anti formula-injection), **Statement of Applicability ISO 27001** (Word / MD), CSV risiko & vendor, backup / impor JSON | `Reports.tsx` |
+
+**Batas jujur:** penilaian mandiri — bukan opini audit atau sertifikasi; nomor pasal UU PDP perlu diverifikasi terhadap teks resmi (dicatat di aplikasi).
+
+**Portal:** member — aplikasi, fitur di Apps (10 bahasa), My files (program + bukti); admin — kelayakan paket di matriks paket; publik — `/apps/compliance` dengan JSON-LD `SoftwareApplication` (featureList, penawaran) + `HowTo`.
+
+**Uji browser (Chromium, runtime lokal Cloudflare): 53/53 lulus** — program contoh, 4→5 framework, 93 kontrol ISO, cari, detail kontrol, unggah & unduh bukti utuh, pemetaan + salin ke SOC 2 A1.2, AI dengan fokus kontrol (bukti tidak terkirim), risiko + heatmap, 26 templat, draf AI kebijakan, versi, persetujuan wajib nama, Word, vendor 100 % → tier Medium, laporan, CSV (1 + 231 baris), SoA, backup + impor JSON, persistensi setelah reload, laporan v3, bukti tersembunyi dari daftar program, deep link bukti, hapus, ponsel tanpa overflow, UI ID/AR/JA/DE, SEO halaman publik.
 

@@ -22,6 +22,9 @@ const MODE_PROMPT: Record<CompMode, string> = {
   remediation: "TASK — Remediation roadmap.\nTurn the gaps into a prioritised plan. A roadmap table: Action | Control(s) addressed | Priority | Effort (S/M/L) | Owner (role) | Phase (0–30 / 31–60 / 61–90 days) | Definition of done. Sequence by risk-reduction per effort and by dependency. Add the key policies/evidence each phase should produce and a one-line note on residual risk after the plan.",
   policy: "TASK — Policy drafter.\nDraft an audit-ready policy for the topic the user names, mapped to the framework's relevant controls. Include: purpose & scope, roles & responsibilities, the policy statements, the controls/procedures that enforce them, exceptions & approvals, enforcement, related documents, and a review cadence with an owner. Add a control-mapping table (policy section → control ID). Clear, auditable language; mark org-specific values as [placeholders] and jurisdiction-specific points as [REVIEW].",
   questionnaire: "TASK — Security questionnaire helper.\nFor each question the user pastes, draft a clear, defensible answer grounded in what they've told you, note the evidence/artefact that backs it, and flag any answer that would be a red flag to a customer (with how to remediate). Never overstate posture — if a control isn't in place, say so and give the honest 'in progress / roadmap' phrasing. Output a table: Question | Suggested answer | Supporting evidence | Risk flag.",
+  control: "TASK — Implement one control.\nFor the FOCUS CONTROL in the programme briefing: what it requires (in your words), how to implement it for THIS organisation and its systems (concrete steps, tools already in their stack first), the policy/procedure it needs, the evidence an auditor accepts (named artefacts, screenshots, logs, samples and their period), common failure modes, and the mapped controls in the other frameworks in scope that the same work satisfies. End with a short checklist.",
+  risk: "TASK — Risk assessment.\nFrom the organisation, systems, data and current control status, identify the most material information-security and privacy risks. A table: Risk | Category | Likelihood 1–5 | Impact 1–5 | Rationale | Treatment (mitigate/accept/transfer/avoid) | Controls (IDs from the frameworks in scope) | Owner (role). Score conservatively and explain the scale you used.",
+  vendor: "TASK — Vendor risk review.\nReview the vendor information the user gives (questionnaire answers, SOC 2 / ISO scope, DPA terms). List: the data and access the vendor has, gaps and red flags, follow-up questions, the contract clauses to require (security, breach notice, sub-processors, audit rights, deletion, transfers), and a recommended risk tier with reasons.",
   explain: "TASK — Explain a control.\nExplain the control, clause or obligation in plain language: what it requires, why it exists, what 'good' looks like, the evidence an auditor accepts, and common ways organisations fail it. Keep it concrete and framework-accurate; mark any identifier you're unsure of as [VERIFY].",
 };
 
@@ -34,12 +37,15 @@ registerTask({
     const mode: CompMode = isCompMode(String(input.task || input.options?.mode || "")) ? (input.task || input.options!.mode) as CompMode : "gap";
     const org = (input.options?.org || "").trim().slice(0, 4000);
     const region = (input.options?.region || "").trim().slice(0, 200);
+    // v4: a programme briefing computed on the member's device (scores, open controls, risks, policies, vendors) — never evidence files.
+    const briefing = (input.options?.briefing || "").trim().slice(0, 16000);
     const system = [
       BASE, "",
       `FRAMEWORK: ${fw.full}. ${fw.blurb}`,
       `Assess against: ${fw.focus}.`,
       region ? `Operating region / jurisdiction: ${region}.` : "",
       org ? `Organisation context: ${org}` : "",
+      briefing ? `\nPROGRAMME BRIEFING — computed on the member's device from their compliance workspace. Treat statuses as self-reported, not audited.\n${briefing}` : "",
       "", MODE_PROMPT[mode],
     ].filter(Boolean).join("\n");
     const name = COMP_MODES.find((m) => m.id === mode)!.name;

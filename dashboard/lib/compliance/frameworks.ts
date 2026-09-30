@@ -7,7 +7,7 @@
  * ============================================================================ */
 
 export type FrameworkId = "soc2" | "iso27001" | "gdpr" | "hipaa" | "pci" | "nist" | "uupdp";
-export type CompMode = "gap" | "remediation" | "policy" | "questionnaire" | "explain";
+export type CompMode = "gap" | "remediation" | "policy" | "questionnaire" | "explain" | "control" | "risk" | "vendor";
 
 export const FRAMEWORKS: { id: FrameworkId; name: string; full: string; blurb: string; focus: string }[] = [
   { id: "soc2", name: "SOC 2", full: "AICPA SOC 2 (Trust Services Criteria)", blurb: "Security, Availability, Confidentiality, Processing Integrity, Privacy.", focus: "Trust Services Criteria (CC1–CC9 common criteria plus the selected categories)" },
@@ -27,5 +27,8 @@ export const COMP_MODES: { id: CompMode; name: string; icon: string; blurb: stri
   { id: "policy", name: "Policy drafter", icon: "📝", blurb: "Audit-ready policy drafts mapped to the framework's controls." },
   { id: "questionnaire", name: "Questionnaire helper", icon: "✅", blurb: "Draft defensible answers to a vendor security questionnaire." },
   { id: "explain", name: "Explain a control", icon: "💡", blurb: "Plain-language explanation of a control, clause or obligation." },
+  { id: "control", name: "Implement a control", icon: "🛠️", blurb: "How to implement one control in your environment, and the evidence an auditor accepts." },
+  { id: "risk", name: "Risk assessment", icon: "🎯", blurb: "Identify and score risks, and propose treatments mapped to controls." },
+  { id: "vendor", name: "Vendor review", icon: "🤝", blurb: "Review a vendor's answers and documents; list gaps and contract terms to ask for." },
 ];
 export const isCompMode = (x: string): x is CompMode => COMP_MODES.some((m) => m.id === x);

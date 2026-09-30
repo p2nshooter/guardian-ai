@@ -45,10 +45,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Berjalan di perangkat Anda", "Deteksi, OCR, dan redaksi berlangsung di browser Anda. Hanya versi yang sudah diredaksi yang pernah dikirim atau disimpan."],
     ],
     compliance: [
-      ["7 kerangka kerja", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 dan UU PDP."],
-      ["Analisis kesenjangan", "Temuan per kontrol dengan tingkat keparahan dan bukti yang perlu dikumpulkan."],
-      ["Peta jalan perbaikan", "Rencana 30/60/90 hari dengan penanggung jawab dan estimasi upaya."],
-      ["Pembuat kebijakan", "Draf kebijakan keamanan informasi, privasi, kontrol akses dan respons insiden."],
+      ["342 kontrol nyata, 7 framework", "ISO/IEC 27001:2022 Annex A (93), SOC 2 TSC, NIST CSF 2.0 (22 kategori), PCI DSS v4.0.1, HIPAA Security Rule, GDPR dan UU PDP — dengan status, pemilik, tenggat, catatan dan justifikasi N/A."],
+      ["Bukti dan pemetaan lintas framework", "Lampirkan file bukti yang disimpan terenkripsi di akun Anda; kontrol dipetakan antar-framework sehingga pekerjaan yang selesai bisa disalin ke kontrol setara untuk ditinjau."],
+      ["Risiko, kebijakan dan vendor", "Risk register dengan heatmap 5×5 inheren / residual, 26 templat kebijakan dengan draf AI, versi dan persetujuan, serta kuesioner vendor berbobot dengan tier risiko."],
+      ["Laporan kesiapan dan ekspor", "Kesiapan per framework dan domain, kontrol yang lewat tenggat, laporan kesiapan (Markdown, Word, PDF), Statement of Applicability ISO 27001, serta ekspor CSV / JSON."],
     ],
     security: [
       ["Analitik log di perangkat Anda", "Sembilan format log di-parse di browser menjadi satu tabel event dengan linimasa, host, pengguna dan sumber teratas, filter tingkat keparahan, dan deteksi brute force."],
@@ -89,10 +89,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Berjalan pada peranti anda", "Pengesanan, OCR dan redaksi berlaku dalam pelayar anda. Hanya versi yang diredaksi pernah dihantar atau disimpan."],
     ],
     compliance: [
-      ["7 rangka kerja", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 dan UU PDP."],
-      ["Analisis jurang", "Dapatan kawalan demi kawalan dengan tahap keterukan dan bukti untuk dikumpul."],
-      ["Pelan tindakan pemulihan", "Pelan 30/60/90 hari dengan pemilik dan anggaran usaha."],
-      ["Penjana dasar", "Draf dasar keselamatan maklumat, privasi, kawalan akses dan tindak balas insiden."],
+      ["342 kawalan sebenar, 7 rangka kerja", "ISO/IEC 27001:2022 Annex A (93), SOC 2 TSC, NIST CSF 2.0 (22 kategori), PCI DSS v4.0.1, HIPAA Security Rule, GDPR dan UU PDP — dengan status, pemilik, tarikh akhir, nota dan justifikasi N/A."],
+      ["Bukti dan pemetaan rentas rangka kerja", "Lampirkan fail bukti yang disimpan tersulit dalam akaun anda; kawalan dipetakan merentas rangka kerja supaya kerja yang siap boleh disalin ke kawalan setara untuk semakan."],
+      ["Risiko, dasar dan vendor", "Daftar risiko dengan peta haba 5×5 inheren / baki, 26 templat dasar dengan draf AI, versi dan kelulusan, serta soal selidik vendor berpemberat dengan tahap risiko."],
+      ["Laporan kesediaan dan eksport", "Kesediaan setiap rangka kerja dan domain, kawalan tertunggak, laporan kesediaan (Markdown, Word, PDF), Statement of Applicability ISO 27001, dan eksport CSV / JSON."],
     ],
     security: [
       ["Analitik log pada peranti anda", "Sembilan format log dihurai dalam pelayar menjadi satu jadual peristiwa dengan garis masa, hos, pengguna dan sumber teratas, penapis keterukan dan pengesanan brute force."],
@@ -133,10 +133,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Läuft auf Ihrem Gerät", "Erkennung, OCR und Schwärzung geschehen in Ihrem Browser. Gesendet oder gespeichert wird immer nur die geschwärzte Fassung."],
     ],
     compliance: [
-      ["7 Frameworks", "SOC 2, ISO/IEC 27001, DSGVO, HIPAA, PCI DSS v4, NIST CSF 2.0 und UU PDP."],
-      ["Gap-Analyse", "Feststellungen je Kontrolle mit Schweregrad und zu sammelnden Nachweisen."],
-      ["Maßnahmen-Roadmap", "30/60/90-Tage-Plan mit Verantwortlichen und Aufwandsschätzung."],
-      ["Richtlinien-Generator", "Entwürfe für Informationssicherheits-, Datenschutz-, Zugriffs- und Incident-Response-Richtlinien."],
+      ["342 echte Controls, 7 Frameworks", "ISO/IEC 27001:2022 Anhang A (93), SOC 2 TSC, NIST CSF 2.0 (22 Kategorien), PCI DSS v4.0.1, HIPAA Security Rule, DSGVO und UU PDP — mit Status, Verantwortlichem, Fälligkeit, Notizen und N/A-Begründung."],
+      ["Nachweise und Framework-Mapping", "Nachweisdateien anhängen, verschlüsselt in Ihrem Konto gespeichert; Controls sind frameworkübergreifend gemappt, sodass erledigte Arbeit zur Prüfung auf Entsprechungen übertragen werden kann."],
+      ["Risiken, Richtlinien und Lieferanten", "Risikoregister mit 5×5-Heatmap (inhärent / residual), 26 Richtlinienvorlagen mit KI-Entwürfen, Versionen und Freigaben sowie ein gewichteter Lieferantenfragebogen mit Risikostufen."],
+      ["Reifeberichte und Exporte", "Reifegrad je Framework und Domäne, überfällige Controls, ein Reifebericht (Markdown, Word, PDF), eine ISO-27001-Anwendbarkeitserklärung (SoA) sowie CSV- / JSON-Exporte."],
     ],
     security: [
       ["Log-Analyse auf Ihrem Gerät", "Neun Log-Formate werden im Browser zu einer Ereignistabelle mit Zeitachse, Top-Hosts, -Benutzern und -Quellen, Schweregradfiltern und Brute-Force-Erkennung verarbeitet."],
@@ -177,10 +177,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Fonctionne sur votre appareil", "Détection, OCR et masquage se font dans votre navigateur. Seule la version masquée est jamais envoyée ou enregistrée."],
     ],
     compliance: [
-      ["7 référentiels", "SOC 2, ISO/IEC 27001, RGPD, HIPAA, PCI DSS v4, NIST CSF 2.0 et UU PDP."],
-      ["Analyse des écarts", "Constats contrôle par contrôle avec niveau de gravité et preuves à réunir."],
-      ["Feuille de route de remédiation", "Plan à 30/60/90 jours avec responsables et estimations d'effort."],
-      ["Générateur de politiques", "Projets de politiques de sécurité de l'information, de confidentialité, de contrôle d'accès et de réponse aux incidents."],
+      ["342 contrôles réels, 7 référentiels", "ISO/IEC 27001:2022 Annexe A (93), SOC 2 TSC, NIST CSF 2.0 (22 catégories), PCI DSS v4.0.1, HIPAA Security Rule, RGPD et UU PDP — avec statut, responsable, échéance, notes et justification de non-applicabilité."],
+      ["Preuves et correspondances entre référentiels", "Joignez des preuves stockées chiffrées dans votre compte ; les contrôles sont reliés entre référentiels pour reporter le travail fait vers leurs équivalents, à revoir."],
+      ["Risques, politiques et fournisseurs", "Registre des risques avec carte de chaleur 5×5 inhérente / résiduelle, 26 modèles de politiques avec brouillons IA, versions et approbations, et questionnaire fournisseur pondéré avec niveaux de risque."],
+      ["Rapports de maturité et exports", "Maturité par référentiel et domaine, contrôles en retard, rapport de maturité (Markdown, Word, PDF), Déclaration d’applicabilité ISO 27001 et exports CSV / JSON."],
     ],
     security: [
       ["Analyse de logs sur votre appareil", "Neuf formats de logs analysés dans le navigateur en une seule table d’événements avec chronologie, principaux hôtes, utilisateurs et sources, filtres de gravité et détection de force brute."],
@@ -221,10 +221,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["Funziona sul tuo dispositivo", "Rilevamento, OCR e oscuramento avvengono nel tuo browser. Viene inviata o salvata solo la versione oscurata."],
     ],
     compliance: [
-      ["7 framework", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 e UU PDP."],
-      ["Gap analysis", "Rilievi controllo per controllo con gravità ed evidenze da raccogliere."],
-      ["Roadmap di rimedio", "Piano a 30/60/90 giorni con responsabili e stime dell'impegno."],
-      ["Generatore di policy", "Bozze di policy su sicurezza delle informazioni, privacy, controllo degli accessi e risposta agli incidenti."],
+      ["342 controlli reali, 7 framework", "ISO/IEC 27001:2022 Allegato A (93), SOC 2 TSC, NIST CSF 2.0 (22 categorie), PCI DSS v4.0.1, HIPAA Security Rule, GDPR e UU PDP — con stato, responsabile, scadenza, note e giustificazione di non applicabilità."],
+      ["Evidenze e mappatura tra framework", "Allega file di evidenza salvati cifrati nel tuo account; i controlli sono mappati tra framework per copiare il lavoro fatto sui controlli equivalenti, da rivedere."],
+      ["Rischi, policy e fornitori", "Registro dei rischi con heat map 5×5 inerente / residua, 26 modelli di policy con bozze IA, versioni e approvazioni, e questionario fornitori pesato con livelli di rischio."],
+      ["Report di readiness ed esportazioni", "Readiness per framework e dominio, controlli scaduti, report di readiness (Markdown, Word, PDF), Dichiarazione di Applicabilità ISO 27001 ed esportazioni CSV / JSON."],
     ],
     security: [
       ["Analisi dei log sul tuo dispositivo", "Nove formati di log elaborati nel browser in un’unica tabella di eventi con cronologia, host, utenti e sorgenti principali, filtri di gravità e rilevamento brute force."],
@@ -265,10 +265,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["在您的设备上运行", "检测、OCR 和脱敏都在您的浏览器中完成。发送或保存的永远只是脱敏后的版本。"],
     ],
     compliance: [
-      ["7 个框架", "SOC 2、ISO/IEC 27001、GDPR、HIPAA、PCI DSS v4、NIST CSF 2.0 和 UU PDP。"],
-      ["差距分析", "逐项控制的发现，附严重程度和需收集的证据。"],
-      ["整改路线图", "30/60/90 天计划，含负责人和工作量估算。"],
-      ["政策生成器", "起草信息安全、隐私、访问控制和事件响应政策。"],
+      ["342 项真实控制、7 个框架", "ISO/IEC 27001:2022 附录 A（93 项）、SOC 2 TSC、NIST CSF 2.0（22 个类别）、PCI DSS v4.0.1、HIPAA 安全规则、GDPR 和印尼 UU PDP——含状态、负责人、截止日期、备注和不适用理由。"],
+      ["证据与跨框架映射", "附加证据文件并加密保存在您的账户中；控制项在框架之间相互映射，已完成的工作可复制到对应控制项供复核。"],
+      ["风险、政策与供应商", "带 5×5 固有/剩余风险热图的风险登记册，26 个政策模板（AI 起草、版本与审批），以及带风险分级的加权供应商问卷。"],
+      ["就绪报告与导出", "按框架和领域的就绪度、逾期控制项、就绪报告（Markdown、Word、PDF）、ISO 27001 适用性声明，以及 CSV / JSON 导出。"],
     ],
     security: [
       ["在您的设备上分析日志", "在浏览器中将九种日志格式解析为统一的事件表，提供时间线、主要主机/用户/来源、严重程度筛选和暴力破解检测。"],
@@ -309,10 +309,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["あなたのデバイスで動作", "検出、OCR、墨消しはブラウザ内で行われます。送信・保存されるのは常に墨消し版だけです。"],
     ],
     compliance: [
-      ["7 つのフレームワーク", "SOC 2、ISO/IEC 27001、GDPR、HIPAA、PCI DSS v4、NIST CSF 2.0、UU PDP。"],
-      ["ギャップ分析", "管理策ごとの指摘事項を、重大度と収集すべき証跡とともに提示。"],
-      ["是正ロードマップ", "担当者と工数見積もり付きの 30/60/90 日計画。"],
-      ["ポリシー生成", "情報セキュリティ、プライバシー、アクセス制御、インシデント対応のポリシー草案を作成。"],
+      ["342 の実在する管理策、7 フレームワーク", "ISO/IEC 27001:2022 附属書 A（93）、SOC 2 TSC、NIST CSF 2.0（22 カテゴリ）、PCI DSS v4.0.1、HIPAA セキュリティ規則、GDPR、UU PDP — ステータス、担当者、期限、メモ、適用除外の理由付き。"],
+      ["証拠とフレームワーク間マッピング", "証拠ファイルを添付し、アカウント内に暗号化して保存。管理策はフレームワーク間で対応付けられ、完了した作業を同等の管理策へコピーしてレビューできます。"],
+      ["リスク・ポリシー・ベンダー", "5×5 の固有／残存リスクヒートマップ付きリスク台帳、AI 下書き・版管理・承認付きの 26 のポリシーテンプレート、リスク区分付きの重み付けベンダー質問票。"],
+      ["準備状況レポートとエクスポート", "フレームワーク・領域別の準備度、期限超過の管理策、準備状況レポート（Markdown、Word、PDF）、ISO 27001 適用宣言書（SoA）、CSV / JSON エクスポート。"],
     ],
     security: [
       ["デバイス上でのログ分析", "9 種類のログ形式をブラウザ内で 1 つのイベント表に変換。タイムライン、上位ホスト・ユーザー・送信元、重大度フィルター、ブルートフォース検知付き。"],
@@ -353,10 +353,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["आपके डिवाइस पर चलता है", "पहचान, OCR और रिडैक्शन आपके ब्राउज़र में होते हैं। केवल छिपाया गया संस्करण ही भेजा या सहेजा जाता है।"],
     ],
     compliance: [
-      ["7 फ़्रेमवर्क", "SOC 2, ISO/IEC 27001, GDPR, HIPAA, PCI DSS v4, NIST CSF 2.0 और UU PDP।"],
-      ["गैप विश्लेषण", "हर नियंत्रण के निष्कर्ष, गंभीरता और एकत्र करने योग्य साक्ष्य के साथ।"],
-      ["सुधार रोडमैप", "ज़िम्मेदारों और प्रयास अनुमानों के साथ 30/60/90-दिन की योजना।"],
-      ["नीति जनरेटर", "सूचना सुरक्षा, गोपनीयता, एक्सेस-नियंत्रण और घटना-प्रतिक्रिया नीतियों के ड्राफ़्ट।"],
+      ["342 वास्तविक कंट्रोल, 7 फ़्रेमवर्क", "ISO/IEC 27001:2022 Annex A (93), SOC 2 TSC, NIST CSF 2.0 (22 श्रेणियाँ), PCI DSS v4.0.1, HIPAA Security Rule, GDPR और UU PDP — स्थिति, स्वामी, नियत तिथि, नोट्स और N/A औचित्य के साथ।"],
+      ["साक्ष्य और फ़्रेमवर्क-पार मैपिंग", "साक्ष्य फ़ाइलें जोड़ें, जो आपके खाते में एन्क्रिप्टेड रहती हैं; कंट्रोल फ़्रेमवर्क के बीच मैप हैं, इसलिए पूरा काम समीक्षा के लिए समकक्ष कंट्रोल में कॉपी किया जा सकता है।"],
+      ["जोखिम, नीतियाँ और वेंडर", "5×5 अंतर्निहित / अवशिष्ट हीट मैप वाला जोखिम रजिस्टर, AI ड्राफ़्ट, संस्करण और स्वीकृति वाले 26 नीति टेम्पलेट, और जोखिम स्तर वाली भारित वेंडर प्रश्नावली।"],
+      ["तैयारी रिपोर्ट और एक्सपोर्ट", "फ़्रेमवर्क और डोमेन के अनुसार तैयारी, विलंबित कंट्रोल, तैयारी रिपोर्ट (Markdown, Word, PDF), ISO 27001 Statement of Applicability, और CSV / JSON एक्सपोर्ट।"],
     ],
     security: [
       ["आपके डिवाइस पर लॉग एनालिटिक्स", "नौ लॉग फ़ॉर्मैट ब्राउज़र में ही एक इवेंट टेबल में बदले जाते हैं — टाइमलाइन, शीर्ष होस्ट, उपयोगकर्ता और स्रोत, गंभीरता फ़िल्टर और ब्रूट-फ़ोर्स डिटेक्शन के साथ।"],
@@ -397,10 +397,10 @@ export const APP_FEATURES: Record<Lang, Feats> = {
       ["يعمل على جهازك", "يجري الكشف وOCR والإخفاء داخل متصفحك. لا يُرسل ولا يُحفظ إلا الإصدار المُخفى."],
     ],
     compliance: [
-      ["7 أُطر عمل", "SOC 2 وISO/IEC 27001 وGDPR وHIPAA وPCI DSS v4 وNIST CSF 2.0 وUU PDP."],
-      ["تحليل الفجوات", "نتائج لكل ضابط رقابي مع درجة الخطورة والأدلة المطلوب جمعها."],
-      ["خارطة طريق المعالجة", "خطة 30/60/90 يومًا مع المسؤولين وتقديرات الجهد."],
-      ["مولّد السياسات", "مسودات سياسات أمن المعلومات والخصوصية والتحكم في الوصول والاستجابة للحوادث."],
+      ["342 ضابطًا حقيقيًا و7 أُطر", "ISO/IEC 27001:2022 الملحق A ‏(93)، وSOC 2 TSC، وNIST CSF 2.0 ‏(22 فئة)، وPCI DSS v4.0.1، وقاعدة أمن HIPAA، وGDPR، وUU PDP — مع الحالة والمسؤول والموعد والملاحظات ومبرر عدم الانطباق."],
+      ["الأدلة والربط بين الأُطر", "أرفق ملفات الأدلة المخزنة مشفرة في حسابك؛ الضوابط مربوطة بين الأُطر بحيث يمكن نسخ العمل المنجز إلى الضوابط المكافئة لمراجعته."],
+      ["المخاطر والسياسات والموردون", "سجل مخاطر بخريطة حرارية 5×5 للمخاطر الكامنة والمتبقية، و26 قالب سياسة بمسودات ذكاء اصطناعي وإصدارات وموافقات، واستبيان موردين موزون بمستويات مخاطر."],
+      ["تقارير الجاهزية والتصدير", "الجاهزية لكل إطار ومجال، والضوابط المتأخرة، وتقرير جاهزية (Markdown وWord وPDF)، وبيان الانطباق لـ ISO 27001، وتصدير CSV / JSON."],
     ],
     security: [
       ["تحليل السجلات على جهازك", "تسعة تنسيقات سجلات تُحلَّل في المتصفح ضمن جدول أحداث واحد مع خط زمني، وأكثر الأجهزة والمستخدمين والمصادر، ومرشحات الخطورة، وكشف هجمات التخمين."],
