@@ -10,6 +10,8 @@ export async function GET() {
   try { d1 = !!(await dbFirst(env.DB, `SELECT 1 AS ok`)); } catch {}
   return NextResponse.json({
     ok: d1, version: VERSION,
+    // The commit this deployment was built from (public repository; lets anyone check which build a hostname serves).
+    build: (process.env.NEXT_PUBLIC_BUILD_SHA || "dev").slice(0, 12),
     bindings: { d1, kv: !!env.KV, r2: !!env.R2, userFiles: !!env.USER_FILES, builds: !!env.R2_BUILDS },
     // Presence only — never values.
     secrets: { jwt: !!secret("JWT_SECRET"), encryption: !!secret("ENCRYPTION_KEY"), settings: !!(secret("SETTINGS_ENCRYPTION_KEY") || secret("ENCRYPTION_KEY")), cron: !!secret("CRON_SECRET") },

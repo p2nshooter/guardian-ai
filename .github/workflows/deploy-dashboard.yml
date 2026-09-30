@@ -60,6 +60,7 @@ jobs:
         run: npx @cloudflare/next-on-pages
         env:
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'https://axto.io' }}
+          NEXT_PUBLIC_BUILD_SHA: ${{ github.sha }}
           NODE_ENV: production
 
       - name: Deploy

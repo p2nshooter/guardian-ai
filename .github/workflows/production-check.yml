@@ -1,0 +1,65 @@
+# ==============================================================================
+# AXTO — Production check: does axto.io serve the build that was just deployed?
+# Runs after every dashboard deploy (and on demand). Read-only: it fetches the
+# public hostnames and asks the Cloudflare API where each hostname is routed.
+# Secrets are passed as env and never printed.
+# ==============================================================================
+name: Production check (axto.io)
+
+on:
+  workflow_run:
+    workflows: ["Deploy Dashboard → Cloudflare Pages"]
+    types: [completed]
+  workflow_dispatch:
+  push:
+    branches: [ccr-e9111ca5-n0fcha]
+    paths: [".github/workflows/production-check.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      CF_ACCOUNT: ec77c7422c83e094aa03df0b3f94e488
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: What each hostname serves
+        run: |
+          {
+            echo "## What each hostname serves"
+            echo "| URL | HTTP | server | build (/api/health) | '240 expert' on /prompts | /acquire |"
+            echo "|---|---|---|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for base in https://axto.io https://www.axto.io https://axto-dashboard.pages.dev; do
+            code=$(curl -s -o home.html -w '%{http_code}' --max-time 30 -L "$base/" || echo 000)
+            server=$(curl -sI --max-time 30 "$base/" | tr -d '\r' | awk -F': ' 'tolower($1)=="server"{print $2}' | head -1)
+            build=$(curl -s --max-time 30 "$base/api/health" | jq -r '.build // .version // "?"' 2>/dev/null || echo "?")
+            prompts=$(curl -s --max-time 30 "$base/prompts" | grep -c "240 expert" || true)
+            acquire=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$base/acquire" || echo 000)
+            echo "$base → HTTP $code, server=$server, build=$build, prompts240=$prompts, /acquire=$acquire"
+            echo "| $base | $code | $server | $build | $prompts | $acquire |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Where Cloudflare routes axto.io (read-only)
+        if: env.CF_TOKEN != ''
+        run: |
+          api() { curl -s --max-time 30 -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4$1"; }
+          show() { { echo "### $1"; echo '```json'; cat "$2"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; cat "$2"; }
+          echo "## Cloudflare routing" >> "$GITHUB_STEP_SUMMARY"
+          api "/accounts/$CF_ACCOUNT/pages/projects/axto-dashboard" | jq '{success, errors: [.errors[]?.message], production_branch: .result.production_branch, subdomain: .result.subdomain, domains: .result.domains, latest: (.result.latest_deployment | {url, environment, created_on, commit: .deployment_trigger.metadata.commit_hash}), canonical: (.result.canonical_deployment | {url, created_on, commit: .deployment_trigger.metadata.commit_hash})}' > pages.json
+          show "Pages project axto-dashboard" pages.json
+          api "/accounts/$CF_ACCOUNT/pages/projects/axto-dashboard/domains" | jq '{success, errors: [.errors[]?.message], domains: [.result[]? | {name, status, verification: .verification_data.status, validation: .validation_data.status}]}' > domains.json
+          show "Pages custom domains" domains.json
+          api "/accounts/$CF_ACCOUNT/workers/domains" | jq '{success, errors: [.errors[]?.message], domains: [.result[]? | select(.hostname | test("axto")) | {hostname, service, environment}]}' > wdomains.json
+          show "Workers custom domains (axto*)" wdomains.json
+          zone=$(api "/zones?name=axto.io" | jq -r '.result[0].id // empty')
+          if [ -n "$zone" ]; then
+            api "/zones/$zone/workers/routes" | jq '{success, errors: [.errors[]?.message], routes: [.result[]? | {pattern, script}]}' > routes.json
+            show "Worker routes on axto.io" routes.json
+            api "/zones/$zone/dns_records?per_page=200" | jq '{success, errors: [.errors[]?.message], records: [.result[]? | select(.name=="axto.io" or .name=="www.axto.io") | {type, name, content, proxied}]}' > dns.json
+            show "DNS for axto.io and www" dns.json
+          else
+            echo "The deploy token cannot see the axto.io zone (it may be in another Cloudflare account, or the token lacks Zone:Read)." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
