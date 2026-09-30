@@ -1,0 +1,55 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hello@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Vault — AI Privacy Layer | Docker Compose
+#
+# Quick Start:
+#   docker compose up -d
+#   Dashboard: http://localhost:8081
+#   Health:    http://localhost:8081/health
+#
+# Integrate with your app:
+#   Replace: https://api.openai.com
+#   With:    http://YOUR_SERVER:8081
+#   (Vault handles the rest — redacts PII, forwards, re-injects)
+# ============================================================
+
+services:
+
+  vault-core:
+    image: axto/vault-core:latest
+    container_name: vault-core
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./vault.yml:/vault/config/vault.yml:ro
+      - vault-data:/vault/data
+      - vault-logs:/vault/logs
+    environment:
+      - VAULT_CONFIG=/vault/config/vault.yml
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - vault-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  vault-data:
+  vault-logs:
+
+networks:
+  vault-net:
+    driver: bridge

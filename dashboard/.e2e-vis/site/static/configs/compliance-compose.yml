@@ -1,0 +1,46 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hello@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Compliance — Automated Audit Platform
+# docker compose -f compliance-compose.yml up -d
+# ============================================================
+
+services:
+  compliance-core:
+    image: axto/compliance-core:latest
+    container_name: compliance-core
+    restart: unless-stopped
+    ports:
+      - "8084:8093"
+    volumes:
+      - ./compliance.yml:/compliance/config/compliance.yml:ro
+      - compliance-data:/compliance/data
+      - compliance-logs:/compliance/logs
+    environment:
+      - COMPLIANCE_CONFIG=/compliance/config/compliance.yml
+      - COMPLIANCE_PORT=8093
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8093/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    networks:
+      - compliance-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  compliance-data:
+  compliance-logs:
+
+networks:
+  compliance-net:
+    driver: bridge

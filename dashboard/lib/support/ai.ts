@@ -27,7 +27,7 @@ import { SELF_HOSTED, catalogEntry } from "../selfhosted";
 import { LIFETIME_TIERS, LIFETIME_INCLUDES } from "../lifetime";
 import { FAQ } from "../faq";
 import { SITE } from "../site";
-import { activeGateways, paymentSettings } from "../billing/gateways";
+import { activeGateways, allPaymentSecrets } from "../billing/gateways";
 import { emailSettings } from "../mail";
 import { getTopic } from "./topics";
 import type { SupportMessage } from "./store";
@@ -119,10 +119,7 @@ const SECRET_PATTERNS: RegExp[] = [
 async function knownSecrets(ai: SupportAiSettings): Promise<string[]> {
   const out: string[] = [];
   for (const p of ai.providers) out.push(...p.keys);
-  try {
-    const pay = await paymentSettings();
-    for (const g of Object.values(pay.gateways)) for (const v of Object.values(g?.creds || {})) out.push(String(v));
-  } catch {}
+  try { out.push(...await allPaymentSecrets()); } catch {}
   try { const m = await emailSettings(); if (m.api_key) out.push(m.api_key); } catch {}
   return out.filter((s) => s && s.length >= 8);
 }

@@ -1,0 +1,13 @@
+-- ==============================================================================
+-- Copyright (c) 2024-2026 Axto AI. All rights reserved.
+-- Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+-- Maintained by: Axto AI <hello@axto.io>
+-- Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+-- ==============================================================================
+-- ============================================================
+-- Migration 0005: Placeholder (columns handled by 0006)
+-- This migration previously tried ALTER TABLE ADD COLUMN
+-- which fails if columns already exist. All column additions
+-- are now safely handled in 0006 via table recreation.
+-- ============================================================
+SELECT 1;

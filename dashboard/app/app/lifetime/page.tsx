@@ -20,7 +20,7 @@ interface Licence {
   updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; arm64?: string[] } }[];
 }
 interface Data { licenses: Licence[]; tiers: Tier[]; cardMaxUsd: number }
-interface Options { gateways: { id: string; label: string; methods: string; currency: string }[]; lifetime: { gateways: string[]; cardMaxUsd: number } }
+interface Options { gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; lifetime: { gateways: string[]; cardMaxUsd: number } }
 
 const APPS = SELF_HOSTED.map((p) => ({ slug: p.slug, name: catalogEntry(p.slug)?.name || p.slug }));
 
@@ -218,7 +218,7 @@ function LifetimeInner() {
               {methods.map((g) => (
                 <label key={g.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${gateway === g.id ? "border-brand-500 bg-brand-50/50 ring-1 ring-brand-500" : "border-slate-200"}`}>
                   <input type="radio" name="lt-gw" className="mt-1" checked={gateway === g.id} onChange={() => { setGateway(g.id); setPay(null); }} />
-                  <span><span className="block font-semibold text-slate-900">{g.label}</span><span className="block text-xs text-slate-500">{g.methods}</span></span>
+                  <span><span className="block font-semibold text-slate-900">{g.label}</span><span className="block text-xs text-slate-500">{g.methods}</span>{g.test ? <span className="mt-1 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">{t("pay.testMode")}</span> : null}</span>
                 </label>
               ))}
             </div>

@@ -74,13 +74,15 @@ before(async () => {
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   // Bank transfer (to create orders) + Stripe (to replay signed webhooks). Stripe is switched off again in after().
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", credentials: { instructions: "Bank Test 123" }, is_active: true })).status, 200);
-  const s = await admin.put("/api/admin/gateways", { gateway: "stripe", credentials: { secret_key: "sk_test_e2e", webhook_secret: WHSEC }, is_active: true });
+  const s = await admin.put("/api/admin/gateways", { gateway: "stripe", env: "sandbox", credentials: { secret_key: "sk_test_e2e", webhook_secret: WHSEC } });
   assert.equal(s.status, 200, s.text);
+  assert.equal((await admin.call("PATCH", "/api/admin/gateways", { gateway: "stripe", active: true, mode: "sandbox" })).status, 200);
 });
 after(async () => {
   // Leave Stripe exactly as found (unconfigured) for the files that run next.
-  const r = await admin.put("/api/admin/gateways", { gateway: "stripe", credentials: { secret_key: null, webhook_secret: null }, is_active: false });
+  const r = await admin.call("DELETE", "/api/admin/gateways", { gateway: "stripe", env: "sandbox" });
   assert.equal(r.status, 200, r.text);
+  await admin.call("PATCH", "/api/admin/gateways", { gateway: "stripe", active: false, mode: "live" });
   const g = (await admin.get("/api/admin/gateways")).json.gateways.find((x: any) => x.id === "stripe");
   assert.equal(g.configured, false);
 });
@@ -100,7 +102,7 @@ test("payments: a refunded order never grants access again", async () => {
   assert.match(again.json.error, /refunded/);
   // …and a correctly signed, replayed gateway event is acknowledged without granting anything.
   const [o] = d1(`SELECT amount_usd FROM orders WHERE id = '${orderId}'`);
-  d1(`UPDATE orders SET gateway = 'stripe' WHERE id = '${orderId}'`);
+  d1(`UPDATE orders SET gateway = 'stripe', meta = json_set(meta, '$.env', 'sandbox') WHERE id = '${orderId}'`);
   const ev = stripeEvent(orderId, o.amount_usd);
   const w = await new Client().post("/api/webhooks/stripe", ev.payload, { "stripe-signature": ev.header });
   assert.equal(w.status, 200, "final state: no retries from the gateway");
@@ -125,7 +127,7 @@ test("payments: a genuine Stripe event for a Stripe order activates the plan onc
   // Stripe's API is not reachable here, so create the order row as checkout would.
   const id = `ord_sec_${RUN}`;
   d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
-      VALUES ('${id}', '${m.id}', '${m.email}', 'pro', 'monthly', 49, 'USD', 0, 'stripe', 'pending', '{}', datetime('now'))`);
+      VALUES ('${id}', '${m.id}', '${m.email}', 'pro', 'monthly', 49, 'USD', 0, 'stripe', 'pending', '{"env":"sandbox"}', datetime('now'))`);
   const short = stripeEvent(id, 10);
   assert.equal((await new Client().post("/api/webhooks/stripe", short.payload, { "stripe-signature": short.header })).status, 422, "short payment refused");
   const ev = stripeEvent(id, 49);
@@ -252,7 +254,8 @@ test("lifetime: the portal only links builds that exist", async () => {
   const products = r.json.licenses[0].products;
   assert.equal(products.length, 10);
   for (const p of products) {
-    assert.ok(Array.isArray(p.files.images) && typeof p.files.exe === "boolean", p.slug);
+    assert.ok(Array.isArray(p.files.images) && Array.isArray(p.files.arm64), p.slug);
+    assert.equal(p.files.exe, undefined, "Windows installs go through AXTO Setup, not per-app EXEs");
     for (const name of p.files.images) {
       const dl = await m.c.get(`/api/selfhosted/download?product=${p.slug}&file=${name}`);
       assert.equal(dl.status, 200, `${p.slug}/${name} is linked, so it must download`);

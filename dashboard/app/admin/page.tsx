@@ -9,7 +9,7 @@ import { Alert, LoadingBlock, PageHeader, Section, Stat, StatusBadge } from "@/c
 interface Stats {
   members: number; newMembers30d: number; activeSubscriptions: number; byPlan: { plan: string; cycle: string; n: number }[]; mrr: number;
   revenue30d: number; orders30d: number; revenueAll: number; pendingOrders: number; activeLicenses: number; byoxRequestsMonth: number; clipperVideosMonth: number;
-  recentOrders: { id: string; email: string; plan: string; cycle: string; amount_usd: number; gateway: string; status: string; created_at: string }[];
+  recentOrders: { id: string; email: string; plan: string; cycle: string; amount_usd: number; gateway: string; status: string; created_at: string; env?: string }[];
   revenueByMonth: { m: string; s: number }[];
 }
 
@@ -56,7 +56,7 @@ export default function AdminHome() {
             <table className="table">
               <thead><tr><th>Date</th><th>Member</th><th>Plan</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
               <tbody>{s.recentOrders.map((o) => (
-                <tr key={o.id}><td>{formatDate(o.created_at)}</td><td>{o.email}</td><td className="capitalize">{o.plan} · {o.cycle}</td><td>{formatMoney(o.amount_usd)}</td><td>{o.gateway}</td><td><StatusBadge status={o.status} /></td></tr>
+                <tr key={o.id}><td>{formatDate(o.created_at)}</td><td>{o.email}</td><td className="capitalize">{o.plan} · {o.cycle}</td><td>{formatMoney(o.amount_usd)}</td><td>{o.gateway}{o.env === "sandbox" ? <span className="badge-amber ml-1">TEST</span> : null}</td><td><StatusBadge status={o.status} /></td></tr>
               ))}</tbody>
             </table>
           </div>

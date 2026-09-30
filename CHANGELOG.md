@@ -10,6 +10,11 @@
 
 See `docs/BLUEPRINT.md` §20 and §21.
 
+### Payments admin (§22)
+- Every automatic gateway keeps **separate Live and Sandbox credentials**, with one switch for which set checkout uses and one for offering it at all; bank transfer and direct wallets are live only. The ambiguous "Mode" and "Production (true/false)" fields are gone (old settings migrate automatically).
+- Full CRUD per environment: save, remove a secret, delete a whole set, **Test connection**; keys pasted into the wrong environment are refused; every change is audited.
+- Sandbox payments are marked TEST, never count as revenue, and can never pay a live order; checkout shows "TEST MODE".
+
 ### Self-hosted apps (§21)
 - **Lifetime licences install with AXTO Setup**: each lifetime licence has an installer key (LIFE-…); the installer downloads, installs and activates the device automatically (one device slot), for Windows, Linux and macOS.
 - **ARM64 images** for every image except the NVIDIA GPU worker; AXTO Setup and the portal pick the build that matches the Docker engine.

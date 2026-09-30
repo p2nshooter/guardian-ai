@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 import { getDB, getEnv, dbRun, newId, now } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS } from "@/lib/plans";
-import { gatewayCreds, gatewayInfo, usdIdrRate, toIdr, CRYPTO_ASSETS, type GatewayId } from "@/lib/billing/gateways";
+import { gatewayCreds, gatewayInfo, usdIdrRate, toIdr, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
 import { stripeCreate, paypalCreate, xenditCreate, midtransCreate, nowpaymentsCreate, type OrderForPayment } from "@/lib/billing/providers";
 import { readJson, fail, audit } from "@/lib/http";
 import { SITE } from "@/lib/site";
@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
   const db = getDB(req);
   const creds = await gatewayCreds(db, gateway);
   if (!creds) return fail("That payment method is not available right now. Please choose another.", 503);
+  // Sandbox = the provider's test environment: the order is a TEST order (never revenue).
+  const env = creds[ENV_KEY] === "sandbox" ? "sandbox" : "live";
 
   // Lifetime: the price comes from the (admin-editable) tier table — the browser only picks a tier.
   let amountUsd: number;
@@ -71,8 +73,8 @@ export async function POST(req: NextRequest) {
     `INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
      VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)`,
     [id, ctx.session.sub, ctx.session.email, lifetime ? "lifetime" : plan, lifetime ? "once" : cycle, amountUsd, info.currency, amountIdr, gateway,
-     JSON.stringify({ rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta }), now()]);
-  await audit(db, ctx.session, "order.created", "order", id, { plan: lifetime ? "lifetime" : plan, cycle: lifetime ? "once" : cycle, gateway, amountUsd, lifetime: lifetimeMeta }, req);
+     JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta }), now()]);
+  await audit(db, ctx.session, "order.created", "order", id, { plan: lifetime ? "lifetime" : plan, cycle: lifetime ? "once" : cycle, gateway, env, amountUsd, lifetime: lifetimeMeta }, req);
 
   const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: lifetime ? "/app/lifetime" : undefined };
   try {
@@ -108,7 +110,7 @@ export async function POST(req: NextRequest) {
         }, ctx);
     }
     if (ref) await dbRun(db, `UPDATE orders SET gateway_ref = ? WHERE id = ?`, [ref, id]);
-    return respond({ ok: true, orderId: id, url }, ctx);
+    return respond({ ok: true, orderId: id, url, test: env === "sandbox" }, ctx);
   } catch (e: any) {
     await dbRun(db, `UPDATE orders SET status = 'failed', meta = json_set(meta, '$.error', ?) WHERE id = ?`, [String(e?.message || e).slice(0, 300), id]);
     return fail(`Could not start the payment: ${String(e?.message || "unknown error").slice(0, 200)}. Please try another method.`, 502);

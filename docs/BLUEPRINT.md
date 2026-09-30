@@ -1,6 +1,6 @@
 # AXTO v3 — Blueprint Rombak Total
 
-> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§21 (aplikasi self-hosted: Docker, Windows, Linux — 30 Sep 2026)**, §20 (portal, lisensi, pembayaran), §19 (v3.2).
+> Status: **disetujui untuk dikerjakan** (rombak total, bertahap). Audit terbaru: **§22 (Payments: Live & Sandbox — 30 Sep 2026)**, §21 (aplikasi self-hosted: Docker, Windows, Linux), §20 (portal, lisensi, pembayaran), §19 (v3.2).
 > Branch kerja v3.2: `ccr-e9111ca5-n0fcha` (sebelumnya `claude/app-consistency-paid-model-5hjkqo`, sudah di-merge).
 > Deploy produksi terjadi otomatis saat branch kerja di-merge ke `main`
 > (GitHub Actions → Cloudflare Pages + migrasi D1 + sinkron konten R2).
@@ -579,4 +579,46 @@ lalu uji nyata di Docker: installer asli memasang engine Vault asli (image diban
 - Container masih berjalan sebagai root (kecuali Legal). Beralih ke user non-root perlu migrasi izin volume yang sudah ada — rencanakan dengan langkah `chown` satu kali di entrypoint.
 - Installer (wizard) berbahasa EN/ID; portal 10 bahasa.
 - `build-release.yml` + `build-scripts/` (EXE PyInstaller per klien, tipe lisensi *trial*) bertentangan dengan kebijakan v3 — hapus bila tidak dipakai lagi (keputusan pemilik).
+
+---
+
+## 22. Admin → Payments: Live & Sandbox terpisah, CRUD penuh, tanpa ambigu (30 Sep 2026)
+
+**Masalah sebelumnya:** satu set kunci per gateway + checkbox "Test mode" (awalnya tidak berfungsi), ditambah field
+bebas-teks yang ambigu (`Mode (live / sandbox)` di PayPal, `Production (true / false)` di Midtrans). Secret tidak bisa
+dihapus, tidak ada uji koneksi, transaksi uji bercampur dengan pendapatan, dan pembayaran sandbox bisa melunasi order live.
+
+**Desain baru (satu aturan untuk semua metode):**
+| Konsep | Arti | Di mana |
+|---|---|---|
+| **Live keys** | Kunci produksi — uang sungguhan | Tab *Live keys* |
+| **Sandbox keys** | Kunci lingkungan uji penyedia — tanpa uang | Tab *Sandbox keys* |
+| **Keys checkout uses** | Pilihan Live ⇄ Sandbox (hanya bila set itu lengkap) | Sakelar di kartu metode |
+| **Offer at checkout** | Metode tampil/tidak di checkout | Sakelar di kartu metode |
+| Transfer bank & wallet kripto langsung | Rekening/alamat nyata — **hanya Live** (tidak ada sandbox) | Satu formulir |
+
+- **CRUD per lingkungan:** simpan (secret tersimpan tampil tersamar •••• + 4 karakter terakhir; kosong/tersamar = tetap),
+  hapus satu secret (*remove/undo*), hapus seluruh set (*Delete … credentials*; bila sedang dipakai checkout, metode dimatikan),
+  **Test connection** (panggilan aman ke penyedia: Stripe balance, PayPal OAuth, Xendit balance, Midtrans status, NOWPayments
+  coins; bank/kripto: validasi kelengkapan & format alamat). Semua perubahan tercatat di audit log (siapa, kapan).
+- **Validasi awalan kunci**: `sk_live_`/`sk_test_` (Stripe), `xnd_production_`/`xnd_development_` (Xendit),
+  `Mid-server-`/`SB-Mid-server-` (Midtrans) — kunci live di tab Sandbox (atau sebaliknya) ditolak dengan pesan jelas.
+- **Ringkasan** di atas halaman: status checkout (Off / Live / Sandbox·TEST / "On — missing keys"), isi Live/Sandbox,
+  perubahan terakhir; **banner kuning** selama ada metode di Sandbox.
+- **Panduan setup** per metode: tempat mengambil kunci, URL webhook (sama untuk kedua lingkungan; masing-masing diverifikasi
+  dengan secret-nya sendiri), event yang harus diaktifkan.
+
+**Aturan uang:**
+1. Order menyimpan lingkungannya (`orders.meta.env`). Webhook diverifikasi dengan secret **Live dan Sandbox**; lingkungan yang
+   lolos **harus sama** dengan order → pembayaran uji tidak pernah melunasi order live (`env_mismatch`), dan sebaliknya.
+2. PayPal-return meng-capture dengan kredensial lingkungan order.
+3. Order sandbox bertanda **TEST** di Admin (Overview, Orders) dan **tidak dihitung** di pendapatan, MRR, grafik bulanan.
+4. Checkout menampilkan **TEST MODE — tidak ada uang sungguhan** (10 bahasa) untuk metode yang berjalan di Sandbox.
+
+**Migrasi otomatis** pengaturan lama: kunci `sk_test_`/`xnd_development_`/`SB-Mid-…`, PayPal `mode=sandbox`,
+Midtrans `is_production≠true` atau flag test → Sandbox; selain itu → Live. Field `mode`/`is_production` dihapus.
+
+**Bukti:** `tests/payments.test.ts` (migrasi, validasi awalan, lingkungan order) · `tests/e2e/payments-admin.e2e.ts`
+(baca, simpan per lingkungan, tolak kunci salah tempat, tersamar, hapus field, sakelar & mode, uji koneksi, pembayaran
+sandbox ditolak untuk order live, order sandbox lunas tapi bukan pendapatan, hapus set yang dipakai → metode mati, audit log).
 

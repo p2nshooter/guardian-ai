@@ -6,6 +6,9 @@ import { api } from "@/lib/client";
 import { formatDate, formatMoney } from "@/lib/i18n";
 import { Alert, LoadingBlock, Modal, PageHeader, Spinner, StatusBadge } from "@/components/ui";
 
+/** Orders created while a gateway ran in Sandbox mode (test money — excluded from revenue). */
+const isTest = (o: { meta?: string }) => { try { return JSON.parse(o.meta || "{}").env === "sandbox"; } catch { return false; } };
+
 interface Order { id: string; email: string; plan: string; cycle: string; amount_usd: number; amount_local: number; currency: string; gateway: string; gateway_ref: string; status: string; invoice_no: string; created_at: string; paid_at: string; meta: string }
 
 function OrdersInner() {
@@ -58,7 +61,7 @@ function OrdersInner() {
                   <td>{o.email}</td>
                   <td className="capitalize">{o.plan} · {o.cycle}</td>
                   <td className="whitespace-nowrap">{formatMoney(o.amount_usd)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR")}</span> : null}</td>
-                  <td>{o.gateway}</td>
+                  <td>{o.gateway}{isTest(o) ? <span className="badge-amber ml-1" title="Paid in the provider's sandbox — not revenue">TEST</span> : null}</td>
                   <td className="max-w-[200px] truncate text-xs">{proof(o) || o.gateway_ref || "—"}</td>
                   <td><StatusBadge status={o.status} />{o.invoice_no ? <span className="block text-[11px] text-slate-400">{o.invoice_no}</span> : null}</td>
                   <td className="whitespace-nowrap text-right">

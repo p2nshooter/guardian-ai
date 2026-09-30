@@ -11,10 +11,10 @@
  * The PRICE always comes from our own order row, never from the browser.
  * ============================================================================ */
 import { absoluteUrl, SITE } from "../site";
-import { TEST_FLAG } from "./gateways";
+import { ENV_KEY, CRYPTO_ASSETS, type GatewayId } from "./gateways";
 
-/** Admin → Payments "Test mode" (sandbox APIs for PayPal, Midtrans, NOWPayments). */
-const isTest = (c: Record<string, string>) => c[TEST_FLAG] === "1";
+/** The credential set's environment (Admin → Payments → Sandbox / Live): sandbox = the provider's test API. */
+const isSandbox = (c: Record<string, string>) => c[ENV_KEY] === "sandbox";
 
 export interface OrderForPayment {
   id: string;
@@ -82,7 +82,7 @@ export async function stripeVerify(payload: string, header: string | null, whsec
 
 // ── PayPal ────────────────────────────────────────────────────────────────
 const paypalBase = (c: Record<string, string>) =>
-  isTest(c) || (c.mode || "live").toLowerCase() === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+  isSandbox(c) ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
 
 async function paypalToken(c: Record<string, string>): Promise<string> {
   const r = await fetch(`${paypalBase(c)}/v1/oauth2/token`, {
@@ -178,7 +178,8 @@ export function xenditVerify(headerToken: string | null, c: Record<string, strin
 
 // ── Midtrans Snap (IDR) ───────────────────────────────────────────────────
 const midtransBase = (c: Record<string, string>) =>
-  !isTest(c) && String(c.is_production).toLowerCase() === "true" ? "https://app.midtrans.com" : "https://app.sandbox.midtrans.com";
+  isSandbox(c) ? "https://app.sandbox.midtrans.com" : "https://app.midtrans.com";
+const midtransApi = (c: Record<string, string>) => (isSandbox(c) ? "https://api.sandbox.midtrans.com" : "https://api.midtrans.com");
 
 export async function midtransCreate(c: Record<string, string>, o: OrderForPayment): Promise<string> {
   const r = await fetch(`${midtransBase(c)}/snap/v1/transactions`, {
@@ -204,8 +205,9 @@ export async function midtransVerify(n: any, c: Record<string, string>): Promise
 }
 
 // ── NOWPayments (crypto) ──────────────────────────────────────────────────
+const nowBase = (c: Record<string, string>) => (isSandbox(c) ? "https://api-sandbox.nowpayments.io" : "https://api.nowpayments.io");
 export async function nowpaymentsCreate(c: Record<string, string>, o: OrderForPayment): Promise<{ url: string; ref: string }> {
-  const r = await fetch(`${isTest(c) ? "https://api-sandbox.nowpayments.io" : "https://api.nowpayments.io"}/v1/invoice`, {
+  const r = await fetch(`${nowBase(c)}/v1/invoice`, {
     method: "POST",
     headers: { "x-api-key": c.api_key, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -230,3 +232,62 @@ export async function nowpaymentsVerify(body: any, sig: string | null, c: Record
   const expected = await hmacHex("SHA-512", c.ipn_secret, JSON.stringify(sortKeys(body)));
   return safeEqual(sig.toLowerCase(), expected);
 }
+
+// ── Test connection (Admin → Payments) ────────────────────────────────────
+// A harmless authenticated call per provider: nothing is charged or created.
+export interface ConnectionTest { ok: boolean; message: string }
+
+async function probe(url: string, init: RequestInit): Promise<{ status: number; json: any }> {
+  const r = await fetch(url, { ...init, signal: AbortSignal.timeout(12_000) });
+  return { status: r.status, json: await r.json().catch(() => null) };
+}
+
+const ADDRESS: Record<string, RegExp> = {
+  usdt_trc20: /^T[1-9A-HJ-NP-Za-km-z]{33}$/, btc: /^(bc1[0-9a-z]{25,62}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$/,
+  usdt_erc20: /^0x[0-9a-fA-F]{40}$/, usdt_bep20: /^0x[0-9a-fA-F]{40}$/, usdc_erc20: /^0x[0-9a-fA-F]{40}$/, eth: /^0x[0-9a-fA-F]{40}$/,
+  sol: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+};
+
+export async function testConnection(id: GatewayId, c: Record<string, string>): Promise<ConnectionTest> {
+  const env = isSandbox(c) ? "Sandbox" : "Live";
+  try {
+    switch (id) {
+      case "stripe": {
+        const r = await probe("https://api.stripe.com/v1/balance", { headers: { Authorization: `Bearer ${c.secret_key}` } });
+        if (r.status === 200) return { ok: true, message: `${env} key accepted by Stripe${r.json?.livemode === !isSandbox(c) ? "" : " — but Stripe reports a different mode than this tab"}.` };
+        return { ok: false, message: `Stripe refused the key (HTTP ${r.status}): ${r.json?.error?.message || "check the secret key"}.` };
+      }
+      case "paypal": {
+        await paypalToken(c);
+        return { ok: true, message: `${env} client ID and secret accepted by PayPal.${c.webhook_id ? "" : " Add the Webhook ID so PayPal notifications can be verified."}` };
+      }
+      case "xendit": {
+        const r = await probe("https://api.xendit.co/balance", { headers: { Authorization: `Basic ${btoa(`${c.secret_key}:`)}` } });
+        return r.status === 200 ? { ok: true, message: `${env} key accepted by Xendit.` } : { ok: false, message: `Xendit refused the key (HTTP ${r.status}): ${r.json?.message || "check the secret key"}.` };
+      }
+      case "midtrans": {
+        // Status of an order that cannot exist: 404 = authenticated, 401 = wrong key.
+        const r = await probe(`${midtransApi(c)}/v2/axto-connection-test-${Date.now()}/status`, { headers: { Authorization: `Basic ${btoa(`${c.server_key}:`)}`, Accept: "application/json" } });
+        const code = String(r.json?.status_code || r.status);
+        return code === "404" ? { ok: true, message: `${env} server key accepted by Midtrans.` } : { ok: false, message: `Midtrans refused the key (${code}): ${r.json?.status_message || "check the server key"}.` };
+      }
+      case "nowpayments": {
+        const r = await probe(`${nowBase(c)}/v1/merchant/coins`, { headers: { "x-api-key": c.api_key } });
+        return r.status === 200 ? { ok: true, message: `${env} API key accepted by NOWPayments.` } : { ok: false, message: `NOWPayments refused the key (HTTP ${r.status}): ${r.json?.message || "check the API key"}.` };
+      }
+      case "crypto": {
+        const bad = CRYPTO_ASSETS.filter((a) => c[a.key] && !ADDRESS[a.key]?.test(String(c[a.key]).trim())).map((a) => `${a.asset} ${a.network}`);
+        const set = CRYPTO_ASSETS.filter((a) => c[a.key]).length;
+        return bad.length ? { ok: false, message: `These addresses don't look valid: ${bad.join(", ")}.` } : { ok: true, message: `${set} wallet address${set === 1 ? "" : "es"} look valid. Send a small test transfer before going live.` };
+      }
+      case "manual":
+        return c.account_number && c.account_name
+          ? { ok: true, message: "Bank details are complete. Customers see them at checkout; you confirm each transfer in Orders." }
+          : { ok: !!c.instructions, message: c.instructions ? "Custom instructions only — customers see your text at checkout." : "Add the account number and holder name." };
+    }
+  } catch (e: any) {
+    return { ok: false, message: `Could not reach the provider: ${String(e?.message || e).slice(0, 160)}` };
+  }
+  return { ok: false, message: "Unknown payment method." };
+}
+

@@ -15,42 +15,72 @@ import { decryptObj } from "../gateway-crypto";
 
 export type GatewayId = "stripe" | "paypal" | "xendit" | "midtrans" | "nowpayments" | "manual" | "crypto";
 
-export interface GatewayField { key: string; label: string; secret?: boolean; placeholder?: string; multiline?: boolean }
+/** Every automatic gateway keeps TWO separate credential sets. "sandbox" = the
+ * provider's test environment (no real money), "live" = real payments. */
+export type PayEnv = "live" | "sandbox";
+export const PAY_ENVS: PayEnv[] = ["live", "sandbox"];
+export const isPayEnv = (v: unknown): v is PayEnv => v === "live" || v === "sandbox";
+
+export interface GatewayField {
+  key: string; label: string; secret?: boolean; multiline?: boolean;
+  placeholder?: string;              // live example
+  sandboxPlaceholder?: string;       // sandbox example (defaults to placeholder)
+  hint?: string;                     // where to find it
+  /** Required key prefixes per environment — catches a live key pasted into Sandbox and vice versa. */
+  prefix?: Partial<Record<PayEnv, string[]>>;
+}
 export interface GatewayInfo {
   id: GatewayId;
   label: string;          // shown to customers
   methods: string;        // what the customer can pay with
   currency: "USD" | "IDR";
   fields: GatewayField[];
-  /** A gateway can be activated once one of these field groups is complete. */
+  /** A gateway can be offered once one of these field groups is complete (for the chosen environment). */
   requires: string[][];
   confirmation: "automatic" | "admin";
+  /** Environments this method has. Bank transfer and direct wallets are real accounts: live only. */
+  envs: PayEnv[];
   webhookPath?: string;   // to paste into the gateway dashboard
-  /** Admin → Payments "Test mode" switches this gateway to its sandbox API. */
-  sandbox?: boolean;
-  /** Gateways whose test mode is chosen by the key itself (shown instead of the switch). */
-  testHint?: string;
+  events?: string;        // which notifications to enable there
+  keysAt?: string;        // where the admin finds the keys
 }
 
 export const GATEWAYS: GatewayInfo[] = [
-  { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic",
-    fields: [{ key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…" }, { key: "webhook_secret", label: "Webhook signing secret", secret: true, placeholder: "whsec_…" }],
+  { id: "stripe", label: "Card (Stripe)", methods: "Visa, Mastercard, Amex, Apple Pay, Google Pay", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
+    fields: [
+      { key: "secret_key", label: "Secret key", secret: true, placeholder: "sk_live_…", sandboxPlaceholder: "sk_test_…", prefix: { live: ["sk_live_", "rk_live_"], sandbox: ["sk_test_", "rk_test_"] } },
+      { key: "webhook_secret", label: "Webhook signing secret", secret: true, placeholder: "whsec_…", prefix: { live: ["whsec_"], sandbox: ["whsec_"] } },
+    ],
     requires: [["secret_key", "webhook_secret"]], webhookPath: "/api/webhooks/stripe",
-    testHint: "Test payments: paste your test keys (sk_test_… and the test webhook secret)." },
-  { id: "paypal", label: "PayPal", methods: "PayPal balance or card", currency: "USD", confirmation: "automatic",
-    fields: [{ key: "client_id", label: "Client ID" }, { key: "client_secret", label: "Client secret", secret: true }, { key: "mode", label: "Mode (live / sandbox)", placeholder: "live" }, { key: "webhook_id", label: "Webhook ID (optional)" }],
-    requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal", sandbox: true },
-  { id: "xendit", label: "Indonesia — QRIS, VA, e-wallet (Xendit)", methods: "QRIS, bank virtual account, OVO, DANA, ShopeePay", currency: "IDR", confirmation: "automatic",
-    fields: [{ key: "secret_key", label: "Secret key", secret: true, placeholder: "xnd_production_…" }, { key: "webhook_token", label: "Callback verification token", secret: true }],
-    requires: [["secret_key", "webhook_token"]], webhookPath: "/api/webhooks/xendit",
-    testHint: "Test payments: paste a development key (xnd_development_…)." },
-  { id: "midtrans", label: "Indonesia — QRIS, VA, GoPay (Midtrans)", methods: "QRIS, bank transfer, GoPay, card", currency: "IDR", confirmation: "automatic",
-    fields: [{ key: "server_key", label: "Server key", secret: true, placeholder: "Mid-server-…" }, { key: "client_key", label: "Client key" }, { key: "is_production", label: "Production (true / false)", placeholder: "true" }],
-    requires: [["server_key"]], webhookPath: "/api/webhooks/midtrans", sandbox: true },
-  { id: "nowpayments", label: "Crypto — automatic (NOWPayments)", methods: "USDT, BTC, ETH and 150+ coins, confirmed automatically", currency: "USD", confirmation: "automatic",
+    events: "checkout.session.completed, checkout.session.async_payment_succeeded",
+    keysAt: "Stripe Dashboard → Developers → API keys (Test mode toggle for sandbox) · Webhooks → Add endpoint" },
+  { id: "paypal", label: "PayPal", methods: "PayPal balance or card", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
+    fields: [
+      { key: "client_id", label: "Client ID" },
+      { key: "client_secret", label: "Client secret", secret: true },
+      { key: "webhook_id", label: "Webhook ID", hint: "Needed to verify PayPal's notifications; payments also confirm when the buyer returns." },
+    ],
+    requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal", events: "PAYMENT.CAPTURE.COMPLETED",
+    keysAt: "developer.paypal.com → Apps & Credentials (Sandbox / Live tabs) → your app" },
+  { id: "xendit", label: "Indonesia — QRIS, VA, e-wallet (Xendit)", methods: "QRIS, bank virtual account, OVO, DANA, ShopeePay", currency: "IDR", confirmation: "automatic", envs: ["live", "sandbox"],
+    fields: [
+      { key: "secret_key", label: "Secret key", secret: true, placeholder: "xnd_production_…", sandboxPlaceholder: "xnd_development_…", prefix: { live: ["xnd_production_"], sandbox: ["xnd_development_"] } },
+      { key: "webhook_token", label: "Callback verification token", secret: true },
+    ],
+    requires: [["secret_key", "webhook_token"]], webhookPath: "/api/webhooks/xendit", events: "Invoices → Invoice paid",
+    keysAt: "Xendit Dashboard (Test / Live switch) → Settings → API keys · Webhooks" },
+  { id: "midtrans", label: "Indonesia — QRIS, VA, GoPay (Midtrans)", methods: "QRIS, bank transfer, GoPay, card", currency: "IDR", confirmation: "automatic", envs: ["live", "sandbox"],
+    fields: [
+      { key: "server_key", label: "Server key", secret: true, placeholder: "Mid-server-…", sandboxPlaceholder: "SB-Mid-server-…", prefix: { live: ["Mid-server-"], sandbox: ["SB-Mid-server-"] } },
+      { key: "client_key", label: "Client key", placeholder: "Mid-client-…", sandboxPlaceholder: "SB-Mid-client-…", prefix: { live: ["Mid-client-"], sandbox: ["SB-Mid-client-"] } },
+    ],
+    requires: [["server_key"]], webhookPath: "/api/webhooks/midtrans", events: "Payment notification URL",
+    keysAt: "Midtrans Dashboard (Sandbox / Production switch) → Settings → Access keys · Payment → Notification URL" },
+  { id: "nowpayments", label: "Crypto — automatic (NOWPayments)", methods: "USDT, BTC, ETH and 150+ coins, confirmed automatically", currency: "USD", confirmation: "automatic", envs: ["live", "sandbox"],
     fields: [{ key: "api_key", label: "API key", secret: true }, { key: "ipn_secret", label: "IPN secret", secret: true }],
-    requires: [["api_key", "ipn_secret"]], webhookPath: "/api/webhooks/nowpayments", sandbox: true },
-  { id: "crypto", label: "Crypto — direct wallet transfer", methods: "USDT / USDC / BTC / ETH / SOL straight to our wallet, confirmed on-chain automatically", currency: "USD", confirmation: "automatic",
+    requires: [["api_key", "ipn_secret"]], webhookPath: "/api/webhooks/nowpayments", events: "IPN (instant payment notifications)",
+    keysAt: "nowpayments.io (live) or account-sandbox.nowpayments.io (sandbox) → Settings → Payments / IPN" },
+  { id: "crypto", label: "Crypto — direct wallet transfer", methods: "USDT / USDC / BTC / ETH / SOL straight to our wallet, confirmed on-chain automatically", currency: "USD", confirmation: "automatic", envs: ["live"],
     fields: [
       { key: "usdt_trc20", label: "USDT · TRC20 (Tron) address", secret: true },
       { key: "usdt_erc20", label: "USDT · ERC20 (Ethereum) address", secret: true },
@@ -64,7 +94,7 @@ export const GATEWAYS: GatewayInfo[] = [
       { key: "instructions", label: "Extra instructions (optional)", multiline: true },
     ],
     requires: [["usdt_trc20"], ["usdt_erc20"], ["usdt_bep20"], ["usdc_erc20"], ["btc"], ["eth"], ["sol"]] },
-  { id: "manual", label: "Bank transfer (BNI / local bank)", methods: "Transfer to our bank account, confirmed by our team within 1 business day", currency: "IDR", confirmation: "admin",
+  { id: "manual", label: "Bank transfer (BNI / local bank)", methods: "Transfer to our bank account, confirmed by our team within 1 business day", currency: "IDR", confirmation: "admin", envs: ["live"],
     fields: [
       { key: "bank_name", label: "Bank", placeholder: "BNI (Bank Negara Indonesia)" },
       { key: "account_number", label: "Account number", secret: true },
@@ -86,7 +116,14 @@ export const CRYPTO_ASSETS: { key: string; asset: string; network: string }[] = 
   { key: "sol", asset: "SOL", network: "Solana" },
 ];
 
-export interface GatewaySetting { active: boolean; testMode?: boolean; creds: Record<string, string>; updatedAt?: string }
+export interface GatewaySetting {
+  active: boolean;              // offered at checkout
+  mode: PayEnv;                 // which credential set checkout uses
+  live: Record<string, string>;
+  sandbox: Record<string, string>;
+  updatedAt?: string;
+  updatedBy?: string;
+}
 export interface PaymentSettings { gateways: Partial<Record<GatewayId, GatewaySetting>>; updatedAt?: string; updatedBy?: string }
 
 export function gatewayInfo(id: string): GatewayInfo | undefined {
@@ -98,9 +135,48 @@ export function isConfigured(g: GatewayInfo, creds: Record<string, string> | und
   return g.requires.some((group) => group.every((k) => String(creds[k] || "").trim()));
 }
 
+/** A value whose prefix belongs to the OTHER environment ("" = fine). */
+export function prefixProblem(g: GatewayInfo, env: PayEnv, creds: Record<string, string>): string {
+  for (const f of g.fields) {
+    const v = String(creds[f.key] || "");
+    const want = f.prefix?.[env];
+    if (!v || !want || want.some((p) => v.startsWith(p))) continue;
+    const other: PayEnv = env === "live" ? "sandbox" : "live";
+    const isOther = (f.prefix?.[other] || []).some((p) => v.startsWith(p));
+    return isOther
+      ? `${f.label}: this is a ${other} key — paste it under ${other === "live" ? "Live" : "Sandbox"}.`
+      : `${f.label}: a ${env === "live" ? "Live" : "Sandbox"} key starts with ${want.join(" or ")}.`;
+  }
+  return "";
+}
+
+/** Settings written before v3.2.1 had one credential set (+ a test flag): file it under the right environment. */
+function normalize(g: GatewayInfo, raw: any): GatewaySetting {
+  if (raw && (raw.live || raw.sandbox)) {
+    return { active: !!raw.active, mode: isPayEnv(raw.mode) && g.envs.includes(raw.mode) ? raw.mode : "live",
+             live: { ...(raw.live || {}) }, sandbox: g.envs.includes("sandbox") ? { ...(raw.sandbox || {}) } : {}, updatedAt: raw.updatedAt, updatedBy: raw.updatedBy };
+  }
+  const creds: Record<string, string> = { ...(raw?.creds || {}) };
+  let env: PayEnv = "live";
+  if (g.envs.includes("sandbox")) {
+    const k = String(creds.secret_key || creds.server_key || "");
+    if (raw?.testMode || String(creds.mode || "").toLowerCase() === "sandbox" || /^(sk_test_|rk_test_|xnd_development_|SB-Mid-)/.test(k)
+        || (g.id === "midtrans" && String(creds.is_production).toLowerCase() !== "true")) env = "sandbox";
+  }
+  delete creds.mode; delete creds.is_production;          // replaced by the environment itself
+  return { active: !!raw?.active, mode: env, live: env === "live" ? creds : {}, sandbox: env === "sandbox" ? creds : {}, updatedAt: raw?.updatedAt };
+}
+
+export function gatewaySetting(s: PaymentSettings, id: GatewayId): GatewaySetting {
+  const g = gatewayInfo(id)!;
+  return normalize(g, s.gateways[id]);
+}
+
 export async function paymentSettings(opts: { fresh?: boolean } = {}): Promise<PaymentSettings> {
   const s = await readSecure<PaymentSettings>(undefined, "payments", { gateways: {} }, opts);
-  return { ...s, gateways: s.gateways || {} };
+  const gateways: PaymentSettings["gateways"] = {};
+  for (const g of GATEWAYS) if (s.gateways?.[g.id]) gateways[g.id] = normalize(g, s.gateways[g.id]);
+  return { ...s, gateways };
 }
 
 export async function savePaymentSettings(s: PaymentSettings): Promise<void> {
@@ -129,38 +205,71 @@ export async function migrateLegacyPayments(db: any): Promise<number> {
     const g = gatewayInfo(r.gateway);
     if (!g) continue;
     const kept: Record<string, string> = {};
-    for (const f of g.fields) if (creds[f.key]) kept[f.key] = String(creds[f.key]);
-    settings.gateways[g.id] = { active: !!r.is_active && isConfigured(g, kept), testMode: !!r.is_test_mode, creds: kept, updatedAt: now() };
+    for (const f of [...g.fields, { key: "mode" }, { key: "is_production" }]) if (creds[f.key]) kept[f.key] = String(creds[f.key]);
+    const st = normalize(g, { active: !!r.is_active, testMode: !!r.is_test_mode, creds: kept });
+    st.active = st.active && isConfigured(g, st[st.mode]);
+    settings.gateways[g.id] = { ...st, updatedAt: now() };
   }
   await savePaymentSettings(settings);
   if (email?.api_key && !(await getR2().head("secure/email.json.enc"))) await writeSecure(undefined, "email", email);
   return Object.keys(settings.gateways).length;
 }
 
-/** Set on the credentials of a gateway in Test mode (read by lib/billing/providers.ts). */
-export const TEST_FLAG = "__test";
+/** Marker on the credentials handed to providers: which environment they belong to. */
+export const ENV_KEY = "__env";
 
-/** Credentials of an ACTIVE, fully configured gateway (else null). `_db` kept for call-site compatibility. */
-export async function gatewayCreds(_db: any, id: GatewayId): Promise<Record<string, string> | null> {
+/** Credentials of an environment if it is configured (else null) — for webhooks and returns of orders in that environment. */
+export async function gatewayCredsFor(id: GatewayId, env: PayEnv): Promise<Record<string, string> | null> {
   const g = gatewayInfo(id);
-  if (!g) return null;
+  if (!g || !g.envs.includes(env)) return null;
   try {
-    const cur = (await paymentSettings({ fresh: true })).gateways[id];
-    if (!cur?.active || !isConfigured(g, cur.creds)) return null;
-    return g.sandbox && cur.testMode ? { ...cur.creds, [TEST_FLAG]: "1" } : cur.creds;
+    const st = gatewaySetting(await paymentSettings({ fresh: true }), id);
+    return isConfigured(g, st[env]) ? { ...st[env], [ENV_KEY]: env } : null;
   } catch {
     return null;
   }
 }
 
-/** Gateways a customer can use right now (active + configured). */
-export async function activeGateways(_db: any): Promise<GatewayInfo[]> {
+/** Every configured environment of a gateway (webhooks verify against each, then check the order's environment). */
+export async function gatewayCredsAll(id: GatewayId): Promise<Record<string, string>[]> {
+  const out: Record<string, string>[] = [];
+  for (const env of PAY_ENVS) {
+    const c = await gatewayCredsFor(id, env);
+    if (c) out.push(c);
+  }
+  return out;
+}
+
+/** Credentials checkout uses: the gateway must be offered and its chosen environment configured. `_db` kept for call-site compatibility. */
+export async function gatewayCreds(_db: any, id: GatewayId): Promise<Record<string, string> | null> {
+  const g = gatewayInfo(id);
+  if (!g) return null;
+  try {
+    const st = gatewaySetting(await paymentSettings({ fresh: true }), id);
+    if (!st.active || !isConfigured(g, st[st.mode])) return null;
+    return { ...st[st.mode], [ENV_KEY]: st.mode };
+  } catch {
+    return null;
+  }
+}
+
+/** Gateways a customer can use right now (offered + configured), with the environment in use. */
+export async function activeGateways(_db: any): Promise<(GatewayInfo & { mode: PayEnv })[]> {
   try {
     const s = await paymentSettings();
-    return GATEWAYS.filter((g) => s.gateways[g.id]?.active && isConfigured(g, s.gateways[g.id]!.creds));
+    return GATEWAYS.flatMap((g) => {
+      const st = s.gateways[g.id];
+      return st?.active && isConfigured(g, st[st.mode]) ? [{ ...g, mode: st.mode }] : [];
+    });
   } catch {
     return [];
   }
+}
+
+/** Every stored secret value (support AI redaction). */
+export async function allPaymentSecrets(): Promise<string[]> {
+  const s = await paymentSettings();
+  return Object.values(s.gateways).flatMap((st) => [...Object.values(st?.live || {}), ...Object.values(st?.sandbox || {})]).map(String);
 }
 
 // ── USD → IDR ───────────────────────────────────────────────────────────────

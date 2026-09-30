@@ -122,13 +122,15 @@ ${local}<tr class="tot"><td>Total paid (USD)</td><td style="text-align:right">${
  * A refunded order is final: a replayed webhook or a revisited PayPal return
  * link must never grant access again (webhooks acknowledge it, see isFinal).
  */
-export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string } = {}): Promise<{ ok: boolean; reason?: string }> {
+export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string; env?: "live" | "sandbox" } = {}): Promise<{ ok: boolean; reason?: string }> {
   const o = await dbFirst<OrderRow>(db, `SELECT * FROM orders WHERE id = ?`, [orderId]);
   if (!o) return { ok: false, reason: "order_not_found" };
   if (o.status === "paid") return { ok: true, reason: "already_paid" };
   if (o.status === "refunded") return { ok: false, reason: "refunded" };
   // A gateway can only settle its own orders (the amount checks below assume its currency).
   if (opts.gateway && o.gateway !== opts.gateway) return { ok: false, reason: "gateway_mismatch" };
+  // Test money never pays a real order (and a live payment is not filed as a test).
+  if (opts.env && orderEnv(o) !== opts.env) return { ok: false, reason: "env_mismatch" };
   // Amount check (1% tolerance for FX/rounding on the gateway side).
   if (typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
@@ -181,6 +183,11 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   try { chosen = JSON.parse(o.meta || "{}").apps || []; } catch {}
   await autoIssueAfterPayment(db, o.user_id, o.email, o.plan, endIso, Array.isArray(chosen) ? chosen.map(String) : []);
   return { ok: true };
+}
+
+/** The environment an order was created in (orders before v3.2.1: live). */
+export function orderEnv(o: { meta?: string }): "live" | "sandbox" {
+  try { return JSON.parse(o.meta || "{}").env === "sandbox" ? "sandbox" : "live"; } catch { return "live"; }
 }
 
 /** Webhook answer: done (paid now or before), or final (refunded) — nothing for the gateway to retry. */

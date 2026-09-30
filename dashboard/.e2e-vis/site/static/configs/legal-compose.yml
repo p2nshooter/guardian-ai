@@ -1,0 +1,52 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+# Maintained by: Axto AI <hello@axto.io>
+# Proprietary and Confidential. Unauthorized copying is strictly prohibited.
+# ==============================================================================
+# ============================================================
+# AXTO Legal — Enterprise AI Legal & Compliance Platform
+#
+# Quick Start:
+#   1. cp legal.env.example legal.env
+#   2. Isi LEGL_LICENSE_KEY dari AXTO portal (Self-Hosted) / Fill LEGL_LICENSE_KEY from https://axto.io/app/self-hosted
+#   3. Isi minimal 1 LLM provider key (BYOK) / Add at least 1 LLM provider key (BYOK)
+#   4. docker compose -f legal-compose.yml up -d
+#   5. Dashboard: http://YOUR_SERVER:8096
+#
+# Pull image: docker pull axto/legal-core:latest
+# Portal:     https://axto.io/app/self-hosted
+# Docs:       https://axto.io/guide
+# ============================================================
+
+services:
+  legal-core:
+    image: axto/legal-core:latest
+    container_name: legal-core
+    restart: unless-stopped
+    env_file:
+      - ./legal.env
+    ports:
+      - "8096:8096"
+    volumes:
+      - legal-data:/legal/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8096/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - legal-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  legal-data:
+
+networks:
+  legal-net:
+    driver: bridge

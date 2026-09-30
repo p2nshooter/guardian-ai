@@ -117,6 +117,7 @@ export const V32_EN = {
   "pay.canceled": "Payment canceled — nothing was charged.",
   "lt.installKey": "Installer key",
   "lt.installHint": "Paste it into AXTO Setup (Windows, Linux or macOS): it downloads the app, installs it and activates this device automatically. Keep it private — it can use your device slots.",
+  "pay.testMode": "TEST MODE — no real money is charged",
 } as const;
 
 export type K32 = keyof typeof V32_EN;
@@ -225,6 +226,7 @@ const id: D = {
   "pay.canceled": "Pembayaran dibatalkan — tidak ada yang ditagih.",
   "lt.installKey": "Kunci installer",
   "lt.installHint": "Tempel di AXTO Setup (Windows, Linux, atau macOS): aplikasi diunduh, dipasang, dan perangkat ini diaktifkan otomatis. Rahasiakan — kunci ini bisa memakai slot perangkat Anda.",
+  "pay.testMode": "MODE UJI — tidak ada uang sungguhan yang ditagih",
 };
 
 const ms: D = {
@@ -330,6 +332,7 @@ const ms: D = {
   "pay.canceled": "Pembayaran dibatalkan — tiada caj dikenakan.",
   "lt.installKey": "Kunci pemasang",
   "lt.installHint": "Tampal dalam AXTO Setup (Windows, Linux atau macOS): aplikasi dimuat turun, dipasang dan peranti ini diaktifkan secara automatik. Rahsiakan — ia boleh menggunakan slot peranti anda.",
+  "pay.testMode": "MOD UJIAN — tiada wang sebenar dicaj",
 };
 
 const de: D = {
@@ -435,6 +438,7 @@ const de: D = {
   "pay.canceled": "Zahlung abgebrochen – es wurde nichts belastet.",
   "lt.installKey": "Installationsschlüssel",
   "lt.installHint": "In AXTO Setup einfügen (Windows, Linux oder macOS): Die App wird heruntergeladen, installiert und dieses Gerät automatisch aktiviert. Geheim halten – der Schlüssel kann Ihre Geräteplätze belegen.",
+  "pay.testMode": "TESTMODUS – es wird kein echtes Geld belastet",
 };
 
 const fr: D = {
@@ -540,6 +544,7 @@ const fr: D = {
   "pay.canceled": "Paiement annulé — rien n'a été débité.",
   "lt.installKey": "Clé d'installation",
   "lt.installHint": "Collez-la dans AXTO Setup (Windows, Linux ou macOS) : l'application est téléchargée, installée et cet appareil activé automatiquement. Gardez-la secrète — elle peut utiliser vos emplacements d'appareils.",
+  "pay.testMode": "MODE TEST — aucun argent réel n'est débité",
 };
 
 const it: D = {
@@ -645,6 +650,7 @@ const it: D = {
   "pay.canceled": "Pagamento annullato: nessun addebito.",
   "lt.installKey": "Chiave di installazione",
   "lt.installHint": "Incollala in AXTO Setup (Windows, Linux o macOS): l'app viene scaricata, installata e questo dispositivo attivato automaticamente. Tienila riservata: può usare i tuoi slot dispositivo.",
+  "pay.testMode": "MODALITÀ TEST: nessun addebito reale",
 };
 
 const zh: D = {
@@ -750,6 +756,7 @@ const zh: D = {
   "pay.canceled": "付款已取消——未产生任何扣款。",
   "lt.installKey": "安装密钥",
   "lt.installHint": "粘贴到 AXTO Setup（Windows、Linux 或 macOS）：自动下载并安装应用，并激活本设备。请妥善保管——它会占用您的设备名额。",
+  "pay.testMode": "测试模式——不会扣除真实款项",
 };
 
 const ja: D = {
@@ -855,6 +862,7 @@ const ja: D = {
   "pay.canceled": "お支払いはキャンセルされました。請求はありません。",
   "lt.installKey": "インストーラーキー",
   "lt.installHint": "AXTO Setup（Windows・Linux・macOS）に貼り付けると、アプリのダウンロード、インストール、このデバイスの有効化まで自動で行います。デバイス枠を使えるため、他人に教えないでください。",
+  "pay.testMode": "テストモード — 実際の請求は発生しません",
 };
 
 const hi: D = {
@@ -960,6 +968,7 @@ const hi: D = {
   "pay.canceled": "भुगतान रद्द — कोई शुल्क नहीं लिया गया।",
   "lt.installKey": "इंस्टॉलर कुंजी",
   "lt.installHint": "इसे AXTO Setup (Windows, Linux या macOS) में पेस्ट करें: ऐप डाउनलोड, इंस्टॉल और यह डिवाइस अपने-आप सक्रिय हो जाता है। इसे गोपनीय रखें — यह आपके डिवाइस स्लॉट उपयोग कर सकती है।",
+  "pay.testMode": "टेस्ट मोड — कोई असली पैसा नहीं लिया जाता",
 };
 
 const ar: D = {
@@ -1065,6 +1074,7 @@ const ar: D = {
   "pay.canceled": "أُلغيت الدفعة — لم يُخصم أي مبلغ.",
   "lt.installKey": "مفتاح المثبّت",
   "lt.installHint": "الصقه في AXTO Setup (Windows أو Linux أو macOS): يُنزَّل التطبيق ويُثبَّت ويُفعَّل هذا الجهاز تلقائيًا. احتفظ به سرًّا — يمكنه استخدام خانات أجهزتك.",
+  "pay.testMode": "وضع الاختبار — لا تُخصم أموال حقيقية",
 };
 
 export const V32: Record<Exclude<Lang, "en">, D> = { id, ms, de, fr, it, zh, ja, hi, ar };
