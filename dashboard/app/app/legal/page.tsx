@@ -33,6 +33,7 @@ import ClausesTool from "@/components/legal/tools/Clauses";
 import DeadlinesTool from "@/components/legal/tools/Deadlines";
 import CitationsTool from "@/components/legal/tools/Citations";
 import AskMatter from "@/components/legal/tools/AskMatter";
+import { aiFetch } from "@/lib/ai/client-run";
 
 interface WsField { id: string; label: string; labelId: string; type: "text" | "textarea" | "select"; options?: [string, string, string][]; placeholder?: string }
 interface Ws { id: string; group: string; icon: string; core: boolean; name: string; nameId: string; desc: string; descId: string; docs: string; fields: WsField[]; starters: [string, string][] }
@@ -171,9 +172,10 @@ export default function LegalApp() {
     setThread(messages);
     let acc = "";
     try {
-      const res = await fetch("/api/byox/run", {
+      const res = await aiFetch({
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: ctrl.signal,
-        body: JSON.stringify({ app: "legal", task: ws.id, messages, provider: ai.provider, model: ai.model, options, documents: included.map((d) => ({ name: d.name, text: d.text, pages: d.pages })) }),
+        // plain: select-type fields are fixed options, not the member's text (Local Mode sends them in clear; everything else becomes a placeholder)
+        body: JSON.stringify({ app: "legal", task: ws.id, messages, provider: ai.provider, model: ai.model, options, documents: included.map((d) => ({ name: d.name, text: d.text, pages: d.pages })), plain: ws.fields.filter((f) => f.type === "select").map((f) => `f_${f.id}`) }),
       });
       if (!res.ok || !res.body) {
         const j: any = await res.json().catch(() => ({}));

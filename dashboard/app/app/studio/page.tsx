@@ -38,6 +38,7 @@ import {
   type Artifact, type Assistant, type ChatSettings, type FileText, type Img, type Msg, type Version,
 } from "@/lib/studio/model";
 import { L } from "@/lib/i18n-pages/studio";
+import { aiFetch } from "@/lib/ai/client-run";
 
 const ASSISTANTS_ID = "assistants-v1";
 type Err = { msg: string; needKey?: boolean; upgrade?: boolean } | null;
@@ -151,7 +152,7 @@ export default function StudioApp() {
     aborts.current.push(ctrl);
     let acc = "", provider = choice.provider, model = choice.model;
     try {
-      const res = await fetch("/api/byox/run", {
+      const res = await aiFetch({
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: ctrl.signal,
         body: JSON.stringify({ app: "studio", messages: toApi(thread), provider: choice.provider, model: choice.model, options: {
           role: instructions, ...(typeof temperature === "number" ? { temperature: String(temperature) } : {}), ...(settings.maxTokens ? { maxTokens: String(settings.maxTokens) } : {}),

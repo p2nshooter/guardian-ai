@@ -14,6 +14,7 @@ import { POLICY_TEMPLATES } from "@/lib/compliance/library";
 import { aiContext, newId, policyControls, type Policy, type Workspace } from "@/lib/compliance/workspace";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import { download, slugName, type WsUpdate } from "./shared";
+import { aiFetch } from "@/lib/ai/client-run";
 
 export default function Policies({ t, lang, w, onWs }: { t: ComplianceDict; lang: Lang; w: Workspace; onWs: (u: WsUpdate) => void }) {
   const [openId, setOpenId] = useState("");
@@ -82,7 +83,7 @@ function Editor({ t, lang, w, p, onWs, onBack }: { t: ComplianceDict; lang: Lang
     const cc = new AbortController(); ctrl.current = cc;
     let acc = "";
     try {
-      const res = await fetch("/api/byox/run", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: cc.signal,
+      const res = await aiFetch({ method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: cc.signal,
         body: JSON.stringify({ app: "compliance", task: "policy", messages: [{ role: "user", content: ask }], provider: ai.provider, model: ai.model, options: { framework: fw, mode: "policy", briefing: aiContext(w), research: ai.research ? "1" : "0" } }) });
       if (!res.ok || !res.body) { const j: any = await res.json().catch(() => ({})); if (alive.current) { setErr({ msg: j.error || `Request failed (${res.status})`, needKey: j.needKey }); setRunning(false); } return; }
       const reader = res.body.getReader(); const dec = new TextDecoder(); let last = 0;

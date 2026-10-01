@@ -22,9 +22,12 @@ Every request for a new feature or change is recorded here with its status. Rule
 | 16 | Compliance Center v4 | ✅ done | `app/app/compliance`, `lib/compliance`, `docs/BLUEPRINT-V4.md` §12 |
 | 17 | Prompt Library v4 (240 prompts; fix the "Hundreds" claim) | ✅ done | `app/app/prompts`, `lib/prompts`, `docs/BLUEPRINT-V4.md` §13 |
 | 18 | Legal AI v4 (redline, playbook review, clause library, deadlines, citations, ask the matter) | ✅ done | `app/app/legal`, `components/legal/tools`, `lib/legal`, `docs/BLUEPRINT-V4.md` §14 |
-| 19 | Local Mode (on-device AI, so "100% client-side" is true for that mode) | 🔄 next | `docs/BLUEPRINT-V4.md` §8b |
+| 19 | Local Mode (on-device AI, so "100% client-side" is true for that mode) | ✅ done — the AI request goes from the browser to Ollama / LM Studio / any OpenAI-compatible server on the device; Legal AI's instructions are assembled around placeholders | Settings → My AI keys → Local Mode, `lib/ai/local*.ts`, `docs/BLUEPRINT-V4.md` §16 |
 | 20 | Website shows no changes | ✅ diagnosed — production (axto.io, Pages project `axto-dashboard`) deploys from `main`; the v4 work was on the branch until it was fast-forwarded to `main`; most v4 features are inside the member portal (sign-in needed); `/api/health` now reports the build commit and `production-check.yml` verifies each deploy | `.github/workflows/production-check.yml` |
 | 21 | Delete the stale branches on GitHub | ⛔ blocked — branch deletion was refused by this session's permission check; the owner deletes them in GitHub → Branches | — |
 | 22 | Connect other websites / apps "maximal and live": SSE, WebRTC, long polling, HTTP/2 streaming, gRPC streaming, WebTransport, plus anything else needed | ✅ done — AXTO Connect: REST, SSE, WebSocket, long polling, HTTP/2·3 streaming, Connect (gRPC-compatible), WebRTC, signed webhooks, MCP, JS SDK; WebTransport and native gRPC honestly not offered (Cloudflare edge) | `/developers`, `/app/developers`, `/admin/connect`, `app/api/v1`, `docs/BLUEPRINT-V4.md` §15 |
 | 23 | Check the Sukakarya repo: what are its worker links | ✅ answered in the session (another project; its links are not kept in this repository) | — |
-
+| 24 | Member portal translations: Legal AI shows mixed languages — re-check every translation and make it right | 🔄 in progress | `docs/BLUEPRINT-V4.md` §17 A |
+| 25 | Acquisition offer at $10,000,000 (was $2,000,000), consistent everywhere; super-premium, enterprise-grade offer with easy guides, world-class facilities and features, and tasteful animations | 🔄 in progress | `docs/BLUEPRINT-V4.md` §17 B |
+| 26 | The self-hosted Docker editions (Windows & Linux) must have the same capabilities as the upgraded cloud apps — everything consistent | 🔄 in progress | `docs/BLUEPRINT-V4.md` §17 C |
+| 27 | Record the owner's commands as the blueprint and carry them out | ✅ recorded | `docs/BLUEPRINT-V4.md` §17 |

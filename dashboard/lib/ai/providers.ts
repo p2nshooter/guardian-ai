@@ -104,11 +104,7 @@ function sourcesFooter(list: { url: string; title?: string }[]): string {
 }
 
 /** Hard ceiling on prompt size so a member's document is never silently truncated. */
-export const MAX_INPUT_CHARS = 600_000;
-
-export function inputSize(system: string, messages: ChatMessage[]): number {
-  return system.length + messages.reduce((n, m) => n + m.content.length, 0);   // images are capped separately (sanitizeMessages)
-}
+export { MAX_INPUT_CHARS, inputSize } from "./tasks";
 
 /** Validate a member-supplied endpoint URL (BYOM / BYOI). */
 export function endpointProblem(url: string, allowInsecure = false): string | null {

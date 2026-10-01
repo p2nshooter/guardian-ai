@@ -17,6 +17,7 @@ const en = {
   groups: { ai: "AI", apps: "Cloud apps", limits: "Storage", selfHosted: "Self-hosted", support: "Support", dev: "Developer API" },
   rows: {
     aiByok: "AI usage on your own keys",
+    localMode: "Local Mode — AI on your own device",
     storage: "Secure file storage",
     shApps: "Self-hosted apps (Docker)",
     shNodes: "Servers per self-hosted app",
@@ -51,6 +52,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "AI", apps: "Aplikasi cloud", limits: "Penyimpanan", selfHosted: "Self-hosted", support: "Dukungan", dev: "API developer" },
     rows: {
       aiByok: "Pemakaian AI dengan kunci Anda sendiri",
+      localMode: "Mode Lokal — AI di perangkat Anda sendiri",
       storage: "Penyimpanan file aman",
       shApps: "Aplikasi self-hosted (Docker)",
       shNodes: "Server per aplikasi self-hosted",
@@ -80,6 +82,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "AI", apps: "Aplikasi awan", limits: "Storan", selfHosted: "Hos sendiri", support: "Sokongan", dev: "API pembangun" },
     rows: {
       aiByok: "Penggunaan AI dengan kunci anda sendiri",
+      localMode: "Mod Tempatan — AI pada peranti anda sendiri",
       storage: "Storan fail selamat",
       shApps: "Aplikasi hos sendiri (Docker)",
       shNodes: "Pelayan setiap aplikasi hos sendiri",
@@ -109,6 +112,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "KI", apps: "Cloud-Apps", limits: "Speicher", selfHosted: "Selbst gehostet", support: "Support", dev: "Entwickler-API" },
     rows: {
       aiByok: "KI-Nutzung mit eigenen Schlüsseln",
+      localMode: "Lokaler Modus — KI auf Ihrem eigenen Gerät",
       storage: "Sicherer Dateispeicher",
       shApps: "Selbst gehostete Apps (Docker)",
       shNodes: "Server pro selbst gehosteter App",
@@ -138,6 +142,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "IA", apps: "Applis cloud", limits: "Stockage", selfHosted: "Auto-hébergé", support: "Support", dev: "API développeur" },
     rows: {
       aiByok: "Usage de l'IA avec vos propres clés",
+      localMode: "Mode local — l'IA sur votre propre appareil",
       storage: "Stockage de fichiers sécurisé",
       shApps: "Applis auto-hébergées (Docker)",
       shNodes: "Serveurs par appli auto-hébergée",
@@ -167,6 +172,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "IA", apps: "App cloud", limits: "Archiviazione", selfHosted: "Self-hosted", support: "Supporto", dev: "API sviluppatori" },
     rows: {
       aiByok: "Uso dell'IA con le tue chiavi",
+      localMode: "Modalità locale — IA sul tuo dispositivo",
       storage: "Archiviazione file sicura",
       shApps: "App self-hosted (Docker)",
       shNodes: "Server per app self-hosted",
@@ -196,6 +202,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "AI", apps: "云端应用", limits: "存储", selfHosted: "自托管", support: "支持", dev: "开发者 API" },
     rows: {
       aiByok: "使用您自己的密钥调用 AI",
+      localMode: "本地模式 —— 在您自己的设备上运行 AI",
       storage: "安全文件存储",
       shApps: "自托管应用（Docker）",
       shNodes: "每个自托管应用的服务器数",
@@ -225,6 +232,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "AI", apps: "クラウドアプリ", limits: "ストレージ", selfHosted: "セルフホスト", support: "サポート", dev: "開発者 API" },
     rows: {
       aiByok: "自分のキーでの AI 利用",
+      localMode: "ローカルモード — 自分のデバイスで動く AI",
       storage: "安全なファイルストレージ",
       shApps: "セルフホストアプリ（Docker）",
       shNodes: "セルフホストアプリあたりのサーバー数",
@@ -254,6 +262,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "AI", apps: "क्लाउड ऐप", limits: "स्टोरेज", selfHosted: "सेल्फ़-होस्टेड", support: "सहायता", dev: "डेवलपर API" },
     rows: {
       aiByok: "अपनी कुंजियों से AI उपयोग",
+      localMode: "लोकल मोड — अपने ही डिवाइस पर AI",
       storage: "सुरक्षित फ़ाइल स्टोरेज",
       shApps: "सेल्फ़-होस्टेड ऐप (Docker)",
       shNodes: "हर सेल्फ़-होस्टेड ऐप के लिए सर्वर",
@@ -283,6 +292,7 @@ export const PM: Record<Lang, PlanMatrixDict> = {
     groups: { ai: "الذكاء الاصطناعي", apps: "تطبيقات سحابية", limits: "التخزين", selfHosted: "الاستضافة الذاتية", support: "الدعم", dev: "واجهة المطورين" },
     rows: {
       aiByok: "استخدام الذكاء الاصطناعي بمفاتيحك الخاصة",
+      localMode: "الوضع المحلي — الذكاء الاصطناعي على جهازك",
       storage: "تخزين آمن للملفات",
       shApps: "تطبيقات مستضافة ذاتيًا (Docker)",
       shNodes: "الخوادم لكل تطبيق مستضاف ذاتيًا",

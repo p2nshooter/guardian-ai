@@ -24,7 +24,7 @@ import { useI18n, pick } from "@/lib/i18n";
 import { useMe } from "@/components/app/Shell";
 import { api } from "@/lib/client";
 import { Alert, LoadingBlock, Spinner } from "@/components/ui";
-import ModelPicker, { useAiKeys, type AiChoice } from "@/components/ai/ModelPicker";
+import ModelPicker, { useAiKeys, useLocalAi, type AiChoice } from "@/components/ai/ModelPicker";
 import Preview, { type PreviewHandle } from "@/components/clipper/Preview";
 import Inspector, { type ExportState, type InspectorTab } from "@/components/clipper/Inspector";
 import ClipList, { type ClipItem } from "@/components/clipper/ClipList";
@@ -60,6 +60,7 @@ export default function ClipperApp() {
   const t = pick(L, lang);
   const access = !!me && me.limits.apps.includes("clipper");
   const keys = useAiKeys();
+  const localAi = useLocalAi();
   const sttKeys = keys.keys.filter((k) => keys.providers.find((p) => p.id === k.provider)?.stt);
 
   // Projects
@@ -362,7 +363,7 @@ export default function ClipperApp() {
         <Link href="/app/billing?plan=starter" className="btn-primary btn-lg mt-5">{t.upgrade} →</Link></div></div>
   );
   const quotaLeft = me.limits.clipperVideosPerMonth < 0 ? -1 : Math.max(0, me.limits.clipperVideosPerMonth - (me.usage?.clipperVideos || 0));
-  const hasChat = keys.keys.some((k) => keys.providers.find((p) => p.id === k.provider)?.chat);
+  const hasChat = !!localAi || keys.keys.some((k) => keys.providers.find((p) => p.id === k.provider)?.chat);
   const editing = phase === "project" && view === "clips" && !!clip;   // full-width editor: the project list steps aside
 
   const sidebar = (

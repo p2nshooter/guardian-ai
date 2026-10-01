@@ -1,5 +1,6 @@
 /* ==============================================================================
- * Member settings: My AI keys (BYOK / BYOM / BYOE), profile, password.
+ * Member settings: My AI keys (BYOK / BYOM / BYOE) and Local Mode (a model on
+ * this device), profile, password.
  * ============================================================================ */
 "use client";
 import { Suspense, useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import { Alert, Field, LoadingBlock, PageHeader, Section, Spinner, Tabs } from "
 import { PasswordInput } from "@/components/auth/AuthFrame";
 import type { ProviderEntry } from "@/components/ai/ModelPicker";
 import { L } from "@/lib/i18n-pages/settings";
+import LocalModeSettings from "@/components/ai/LocalModeSettings";
 
 interface Saved { provider: string; hint: string; model: string; baseUrl: string; createdAt: string }
 interface KeysData { keys: Saved[]; preferred: string; providers: (ProviderEntry & { keyHint: string; keyUrl: string })[] }
@@ -141,6 +143,7 @@ function AiKeys({ lang }: { lang: Lang }) {
           </button>
         </div>
       </Section>
+      <LocalModeSettings lang={lang} />
     </div>
   );
 }

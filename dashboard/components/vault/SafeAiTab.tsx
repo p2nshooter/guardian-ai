@@ -13,6 +13,7 @@ import { stripStatus } from "@/lib/markdown";
 import { createRedactor, restore, type Finding } from "@/lib/vault/pii";
 import { aiStyle, engineOptions, type VaultSettings } from "@/lib/vault/settings";
 import type { VaultDict } from "@/lib/i18n-pages/vault";
+import { aiFetch } from "@/lib/ai/client-run";
 
 interface Turn { role: "user" | "assistant"; sent: string; shown: string }
 type Redactor = ReturnType<typeof createRedactor>;
@@ -66,7 +67,7 @@ export default function SafeAiTab({ t, lang, source, settings, onMap, onGoText }
     const c = new AbortController(); ctrl.current = c;
     let acc = "";
     try {
-      const res = await fetch("/api/byox/run", {
+      const res = await aiFetch({
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: c.signal,
         body: JSON.stringify({ app: "vault", provider: ai.provider, model: ai.model, messages: history.map((h) => ({ role: h.role, content: h.sent })), options: {} }),
       });

@@ -2,6 +2,7 @@
 "use client";
 import { stripStatus } from "@/lib/markdown";
 import type { AiChoice } from "@/components/ai/ModelPicker";
+import { aiFetch } from "@/lib/ai/client-run";
 
 export interface Msg { role: "user" | "assistant"; content: string }
 export interface RunResult { ok: boolean; text: string; error?: string; needKey?: boolean; meta: string }
@@ -14,7 +15,7 @@ export async function streamRun(o: {
   if (o.previous) options.previous = o.previous;
   let acc = "", meta = "";
   try {
-    const res = await fetch("/api/byox/run", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: o.signal,
+    const res = await aiFetch({ method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: o.signal,
       body: JSON.stringify({ app: "prompts", task: o.mode, messages: o.messages, provider: o.ai.provider, model: o.ai.model, options }) });
     if (!res.ok || !res.body) { const j: any = await res.json().catch(() => ({})); return { ok: false, text: "", error: j.error || `Request failed (${res.status})`, needKey: j.needKey, meta }; }
     meta = `${res.headers.get("X-AI-Provider") || ""} · ${decodeURIComponent(res.headers.get("X-AI-Model") || "")}`;

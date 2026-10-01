@@ -202,7 +202,7 @@ Sudah kuat (36 workspace, 200+ yurisdiksi, matter terenkripsi). Target tambahan 
 | 5 | Compliance Center v4 | ✅ selesai | 8 unit test (`tests/compliance-v4.test.ts`); 2 E2E baru (`apps.e2e.ts`); uji browser 53/53 (lihat §12); E2E penuh 93 tes (91 lulus, 0 gagal, 2 dilewati: Docker) |
 | 6 | Prompt Library v4 (240 prompt) | ✅ selesai | 4 unit test katalog (`tests/prompts-catalog.test.ts`); 3 E2E baru (`prompts.e2e.ts`); uji browser 42/42 (lihat §13); E2E penuh 96 tes (94 lulus, 0 gagal, 2 dilewati: Docker) |
 | 7 | Legal AI v4 (redline, playbook, klausa, tenggat, sitasi, tanya perkara) | ✅ selesai | 7 unit test (`tests/legal-v4.test.ts`); 1 E2E baru (`legal.e2e.ts`); uji browser 51/51 (lihat §14); E2E penuh 97 tes (95 lulus, 0 gagal, 2 dilewati: Docker) |
-| 8 | Mode Lokal (on-device AI) | ⏳ | — |
+| 8 | Mode Lokal (on-device AI) | ✅ selesai | 9 unit test (`tests/local-mode.test.ts`); 4 E2E (`local-mode.e2e.ts`); uji browser 45/45 (lihat §16) |
 | 9 | Halaman penawaran situs + serah terima admin otomatis | ✅ selesai | `/acquire` (EN/ID), `/admin/acquisition`; E2E `acquisition.e2e.ts` 6/6; uji browser 11/11; panduan `docs/admin/SITE_SALE.md` |
 | 10 | AXTO Connect — API developer & realtime (REST, SSE, WebSocket, long polling, streaming HTTP/2·3, Connect kompatibel gRPC, WebRTC, webhook, MCP, SDK) | ✅ selesai | 11 unit test (`tests/connect.test.ts`); 9 E2E (`connect.e2e.ts`); uji browser 55/55 (lihat §15) |
 
@@ -355,4 +355,38 @@ Permintaan pemilik: website / aplikasi lain harus bisa terhubung **maksimal dan 
 **Jujur soal batas:** WebTransport **tidak** ditawarkan — edge Cloudflare belum mendukungnya; SDK memakai WebSocket → SSE → long polling. gRPC native butuh trailer HTTP/2 yang tidak bisa dikirim runtime edge, jadi dipakai protokol Connect (kompatibel gRPC, dari `.proto` yang sama). WebRTC di jaringan sangat ketat butuh TURN, yang aktif setelah admin memasukkan kunci Cloudflare Realtime.
 
 **Uji browser (Chromium, runtime lokal Cloudflare): 55/55 lulus** — akun gratis melihat syarat paket; kunci dibuat & hanya tampil sekali (tidak muncul lagi setelah reload, admin hanya melihat prefiks); webhook dengan rahasia sekali tampil; konsol live SSE & long polling menerima event dari portal dan dari server (filter kanal bekerja); SDK di browser menerima event lewat WebSocket, SSE dan long polling dengan token stream (token tidak bisa publish); dua tab terhubung WebRTC peer-to-peer dan pesan data channel terkirim; UI ID/DE/JA/AR (RTL); ponsel 390 px tanpa overflow di 5 tab, admin dan halaman publik; admin mematikan API → 503 + pemberitahuan di portal, menyalakan lagi → 200; halaman publik: JSON-LD, canonical, tautan footer, sitemap, OpenAPI; tanpa error konsol.
+
+---
+
+## 16. Mode Lokal — yang dibangun & buktinya (1 Okt 2026)
+
+Member menghubungkan **Ollama, LM Studio, atau server lain yang kompatibel OpenAI** (llama.cpp, Jan, LocalAI, vLLM) di komputernya sendiri atau jaringan lokalnya (Settings → My AI keys → Local Mode). Di setiap aplikasi, pemilih model menampilkan **“Perangkat ini (Mode Lokal)”**.
+
+- **Alur:** semua aplikasi memanggil `aiFetch` (`lib/ai/client-run.ts`). Bila penyedia = perangkat ini, prompt dirakit **di browser** dengan task handler yang sama dengan server (`lib/ai/run-build.ts`, `lib/ai/local-run.ts`) lalu dikirim langsung ke `http://localhost…/v1/chat/completions`; jawaban di-stream kembali dalam format yang sama dengan `/api/byox/run`, jadi semua aplikasi bekerja tanpa diubah.
+- **Legal AI:** instruksi ahli 36 workspace tetap di server. Browser mengirim permintaan ke `POST /api/byox/prepare` dengan **semua isi diganti placeholder** (pesan, nama & isi dokumen, kolom teks bebas, kota); hanya konfigurasi (workspace, kode negara/provinsi, area, gaya sitasi, opsi pilihan) yang terkirim. Server merakit instruksi di sekitar placeholder, browser mengembalikan isi aslinya (`lib/ai/local-mask.ts`). Uji unit membuktikan hasilnya **identik** dengan prompt server dan server tidak menerima isi.
+- **Prompt Library:** template katalog diunduh dari `GET /api/prompts/:id` (tetap dijaga level paket), nilai variabel diisi di browser.
+- **Paket & admin:** `localMode` di `lib/plans.ts` (semua paket berbayar) → baris matriks paket + fitur paket (10 bahasa); Admin → Settings: saklar Local Mode (diaudit); `/api/auth/me` melaporkan ketersediaan.
+- **Jujur soal batas:** yang tidak lewat AXTO adalah **permintaan AI**; yang member pilih untuk disimpan (riwayat obrolan, perkara, kasus) tetap tersimpan terenkripsi di akunnya seperti biasa. Riset web langsung tidak tersedia di Mode Lokal; transkripsi audio Clipper tetap memakai kunci transkripsi member. Hanya alamat localhost / jaringan lokal yang diterima.
+
+**Uji browser (Chromium, runtime lokal Cloudflare): 45/45 lulus** — member tanpa kunci cloud sama sekali; alamat internet ditolak; server tanpa CORS → penjelasan jelas; model ditemukan, diuji, disimpan; AI Studio, Legal AI, Prompt Library, Security Analyst menjawab dari model lokal; tidak ada `/api/byox/run`; `/api/byox/prepare` hanya melihat placeholder; server mati → pesan jelas; admin mematikan → pemilih tidak menawarkan lagi; ID/AR/DE; ponsel 390 px tanpa overflow.
+
+---
+
+## 17. Perintah pemilik 1 Okt 2026 — rencana kerja
+
+### A. Terjemahan portal member konsisten (temuan: Legal AI campur bahasa)
+- **Metode:** setiap halaman portal member dirender dalam EN dan 9 bahasa lain; setiap teks yang tetap sama persis dengan EN (selain nama merek, kode, sitasi, angka) dilaporkan sebagai belum diterjemahkan. Legal AI diperiksa per tab, per workspace, per kolom.
+- **Legal AI:** nama & deskripsi 36 workspace, kelompok, kolom (label, petunjuk, opsi), area hukum, yurisdiksi, gaya sitasi, audiens, kedalaman, dan semua alat v4 — dalam 10 bahasa, lewat kamus `lib/i18n-pages/*` yang dicek `tests/i18n-pages.test.ts`.
+- **Selesai bila:** crawler terjemahan 0 temuan di semua halaman member untuk 10 bahasa; uji unit kelengkapan kamus lulus.
+
+### B. Penawaran akuisisi US$10.000.000
+- Harga tunggal di `lib/acquisition.ts` (bawaan US$10.000.000) dipakai di halaman, JSON-LD, checkout, admin, dokumen dan tes — tidak ada angka lain.
+- Halaman `/acquire` kelas enterprise: ringkasan investasi, metrik nyata dari kode (aplikasi, produk self-hosted, bahasa, gateway, tes), apa saja yang diserahkan, **panduan pembeli langkah demi langkah** (LOI → data room → due diligence → pembayaran → serah terima otomatis), jadwal serah terima, keamanan & kepatuhan, FAQ; animasi halus (muncul saat digulir, penghitung angka, kilau gradien) yang menghormati `prefers-reduced-motion`.
+- **Jujur soal pembayaran:** untuk US$10 juta, transfer bank (wire) dan escrow adalah jalur realistis; batas transaksi PayPal dijelaskan apa adanya.
+
+### C. Kesetaraan cloud ↔ Docker (Windows & Linux)
+- **Masalah:** aplikasi cloud v4 (Next.js) dan edisi self-hosted (aplikasi Python terpisah per produk) adalah dua basis kode — fiturnya pasti menyimpang.
+- **Solusi:** edisi Docker **AXTO Workspace** dibangun dari kode yang sama persis dengan cloud (output Cloudflare Pages yang sama, dijalankan di runtime workerd di dalam container dengan D1/KV/R2 lokal yang disimpan di volume). Produk self-hosted Legal / Studio / Vault / Compliance memakai image ini dengan lisensi yang membatasi aplikasi; semua kemampuan v4 (termasuk Connect dan Mode Lokal) otomatis sama.
+- **Windows & Linux:** image Linux amd64 + arm64; Windows lewat Docker Desktop (container Linux) seperti installer yang ada; installer AXTO Setup memasang dan mengaktifkan lisensi.
+- **Selesai bila:** image dibangun di CI, smoke test di dalam container lulus (health, masuk admin, jalankan tiap aplikasi dengan model tiruan), installer memakai image baru, matriks kesetaraan di dokumen ini menunjukkan semua ✅.
 

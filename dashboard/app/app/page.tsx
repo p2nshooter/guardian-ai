@@ -9,11 +9,14 @@ import { api } from "@/lib/client";
 import { CLOUD_APPS } from "@/lib/apps";
 import { LoadingBlock, Progress, Stat, Steps } from "@/components/ui";
 import { InstallButton } from "@/components/pwa/Pwa";
+import { useLocalAi } from "@/components/ai/ModelPicker";
 
 export default function MemberHome() {
   const { t, lang } = useI18n();
   const { me } = useMe();
-  const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [cloudKey, setHasKey] = useState<boolean | null>(null);
+  const localAi = useLocalAi();
+  const hasKey = localAi ? true : cloudKey;     // a model on this device (Local Mode) counts as an AI key
   useEffect(() => { api<{ keys: unknown[] }>("/api/byox/keys").then((r) => setHasKey(r.ok ? r.data.keys.length > 0 : false)); }, []);
   if (!me) return <LoadingBlock />;
 

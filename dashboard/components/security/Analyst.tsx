@@ -13,6 +13,7 @@ import { SEC_MODES, type SecMode } from "@/lib/security/modes";
 import type { Case, Msg } from "@/lib/security/case";
 import type { SecurityDict } from "@/lib/i18n-pages/security";
 import { CopyBtn, type CaseUpdate } from "./shared";
+import { aiFetch } from "@/lib/ai/client-run";
 
 export default function Analyst({ t, lang, c, briefing, onCase, prefill, onPrefillUsed }: {
   t: SecurityDict; lang: Lang; c: Case; briefing: string; onCase: (u: CaseUpdate) => void; prefill: string; onPrefillUsed: () => void;
@@ -42,7 +43,7 @@ export default function Analyst({ t, lang, c, briefing, onCase, prefill, onPrefi
     const cc = new AbortController(); ctrl.current = cc;
     let acc = "";
     try {
-      const res = await fetch("/api/byox/run", {
+      const res = await aiFetch({
         method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: cc.signal,
         body: JSON.stringify({ app: "security", task: mode, messages, provider: ai.provider, model: ai.model, options: { mode, briefing, research: ai.research ? "1" : "0" } }),
       });

@@ -83,7 +83,7 @@ export const CLOUD_APPS: CloudApp[] = [
       { title: "Answer versions", desc: "Regenerate, edit & resend, and flip between every version of an answer." },
       { title: "Organised and private", desc: "Encrypted history with search, pinned chats and folders — never used for training." },
       { title: "Export anywhere", desc: "Markdown, Word, JSON or print to PDF, plus Prompt Library prompts with one keystroke (/)." },
-      { title: "Bring your own key", desc: "You pay your provider directly at their price — no markup and no usage cap from AXTO. Free tiers (Gemini, Groq) work too." },
+      { title: "Your own key — or a model on your device", desc: "You pay your provider directly at their price — no markup and no usage cap from AXTO; free tiers (Gemini, Groq) work too. Or switch on Local Mode and run on Ollama or LM Studio on your own computer: the prompt is built in your browser and the answer comes from your model, so the AI request never goes through AXTO." },
     ],
     useCases: ["Writing & editing", "Research & document summaries", "Model comparison", "Code help & prototypes", "Diagrams & landing pages", "Translation"],
     selfHosted: "studio",

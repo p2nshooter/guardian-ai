@@ -14,6 +14,7 @@ import { LIBRARY } from "@/lib/compliance/controls";
 import { aiContext, type Msg, type Workspace } from "@/lib/compliance/workspace";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import { CopyBtn, type WsUpdate } from "./shared";
+import { aiFetch } from "@/lib/ai/client-run";
 
 export default function Advisor({ t, lang, w, onWs, focus, onClearFocus, prefill, onPrefillUsed }: {
   t: ComplianceDict; lang: Lang; w: Workspace; onWs: (u: WsUpdate) => void; focus: { fw: FrameworkId; id: string } | null; onClearFocus: () => void; prefill: { mode: CompMode; text: string } | null; onPrefillUsed: () => void;
@@ -46,7 +47,7 @@ export default function Advisor({ t, lang, w, onWs, focus, onClearFocus, prefill
     const cc = new AbortController(); ctrl.current = cc;
     let acc = "";
     try {
-      const res = await fetch("/api/byox/run", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: cc.signal,
+      const res = await aiFetch({ method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal: cc.signal,
         body: JSON.stringify({ app: "compliance", task: mode, messages, provider: ai.provider, model: ai.model, options: { framework: fw, mode, briefing, org: w.org.description, region: w.org.country, research: ai.research ? "1" : "0" } }) });
       if (!res.ok || !res.body) {
         const j: any = await res.json().catch(() => ({}));

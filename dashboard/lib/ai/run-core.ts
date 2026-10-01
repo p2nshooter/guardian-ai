@@ -7,18 +7,16 @@
  * the answer with failover to their next key. No AXTO-provided AI is used.
  * ============================================================================ */
 import { resolveChatAll, ByoxMissingKey } from "./byox";
-import { chatStream, inputSize, MAX_INPUT_CHARS, providerInfo, supportsResearch, statusLine, type Connection } from "./providers";
-import { getTask, sanitizeMessages, type BuiltTask } from "./tasks";
+import { chatStream, providerInfo, supportsResearch, statusLine, type Connection } from "./providers";
+import type { BuiltTask } from "./tasks";
 import "./register";
-import { limitsFor, planForApp, PLANS, isPlanId, type Tier } from "../plans";
-import { getCloudApp } from "../apps";
+import { limitsFor, type Tier } from "../plans";
 import { recordByoxRequest } from "../usage";
 import { CORE_WORKSPACES } from "../legal/workspaces";
+import { buildRun, OPTION_MAX, type RunRequest } from "./run-build";
 
-/** Longer option budgets: case / programme briefings, a workflow step's previous output, filled prompt values. */
-export const OPTION_MAX: Record<string, number> = { briefing: 16000, previous: 24000, values: 16000 };
-
-export interface RunRequest { app?: unknown; task?: unknown; messages?: unknown; provider?: unknown; model?: unknown; options?: unknown; documents?: unknown }
+export { OPTION_MAX };
+export type { RunRequest };
 export interface RunMeta { provider: string; model: string; research: boolean; title: string }
 export type RunResult =
   | { ok: false; status: number; error: string; extra?: Record<string, unknown> }
@@ -32,28 +30,10 @@ export function runAllowed(tier: Tier, app: string, task?: string): boolean {
 }
 
 export async function prepareRun(db: any, userId: string, tier: Tier, b: RunRequest): Promise<RunResult> {
-  const app = String(b?.app || "");
-  const handler = getTask(app);
-  if (!handler) return { ok: false, status: 400, error: "Unknown app." };
-  if (!getCloudApp(app)?.live) return { ok: false, status: 503, error: "This app is coming soon." };
-  if (!limitsFor(tier).apps.includes(app)) {
-    const need = planForApp(app);
-    return { ok: false, status: 402, error: `This app needs the ${isPlanId(need) ? PLANS[need].name : "a paid"} plan or higher.`, extra: { upgrade: true } };
-  }
-  const messages = sanitizeMessages(b?.messages);
-  if (!messages.length || messages[messages.length - 1].role !== "user") return { ok: false, status: 400, error: "Write a request first." };
-  const options = typeof b?.options === "object" && b.options
-    ? Object.fromEntries(Object.entries(b.options as Record<string, unknown>).map(([k, v]) => [k, String(v).slice(0, OPTION_MAX[k] || 8000)]))
-    : {};
-  const wantResearch = options.research === "1";
-  const input = { task: b?.task ? String(b.task) : undefined, messages, options, documents: b?.documents };
-
-  // Validate once (plan, workspace, inputs) before touching any key.
-  const probe = handler.build({ ...input, research: false }, tier);
-  if ("error" in probe) return { ok: false, status: probe.status || 400, error: probe.error, extra: probe.status === 402 ? { upgrade: true } : undefined };
-  if (inputSize(probe.system, probe.messages) > MAX_INPUT_CHARS) {
-    return { ok: false, status: 413, error: "This is too long for one request (about 150,000 tokens). Remove some documents or split them into separate runs." };
-  }
+  // Validate the app, plan and inputs and build the prompt once, before touching any key.
+  const v = buildRun(tier, b);
+  if (!v.ok) return v;
+  const { handler, input, probe, wantResearch } = v;
 
   let conns: Connection[];
   try {

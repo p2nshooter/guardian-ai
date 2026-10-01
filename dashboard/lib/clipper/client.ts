@@ -8,6 +8,7 @@
 import { stripStatus } from "@/lib/markdown";
 import { mergeTranscripts } from "./edit";
 import type { Word } from "./options";
+import { aiFetch } from "@/lib/ai/client-run";
 
 export interface AiResult { text: string; error?: string; needKey?: boolean; upgrade?: boolean }
 
@@ -15,7 +16,7 @@ export interface AiResult { text: string; error?: string; needKey?: boolean; upg
 export async function runAi(body: { options: Record<string, string>; content: string; provider: string; model: string }, onText?: (s: string) => void, signal?: AbortSignal): Promise<AiResult> {
   let acc = "";
   try {
-    const res = await fetch("/api/byox/run", {
+    const res = await aiFetch({
       method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", signal,
       body: JSON.stringify({ app: "clipper", messages: [{ role: "user", content: body.content }], provider: body.provider, model: body.model, options: body.options }),
     });

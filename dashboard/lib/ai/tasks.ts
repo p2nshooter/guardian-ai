@@ -17,6 +17,12 @@ export interface TaskInput {
   research?: boolean;          // live web research is available on the resolved connection
 }
 
+/** Largest prompt one request may carry (about 150,000 tokens). */
+export const MAX_INPUT_CHARS = 600_000;
+export function inputSize(system: string, messages: ChatMessage[]): number {
+  return system.length + messages.reduce((n, m) => n + m.content.length, 0);   // images are capped separately (sanitizeMessages)
+}
+
 export interface BuiltTask { system: string; messages: ChatMessage[]; title: string; research?: boolean; maxOutputTokens?: number; temperature?: number }
 
 export interface AppTaskHandler {

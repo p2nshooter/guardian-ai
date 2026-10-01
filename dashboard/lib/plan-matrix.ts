@@ -33,6 +33,7 @@ export function planMatrix(): Row[] {
   const L = (id: PlanId) => PLANS[id].limits;
   const rows: Omit<Row, "differs">[] = [
     { key: "aiByok", group: "ai", cells: per(() => ({ kind: "unlimited" })) },
+    { key: "localMode", group: "ai", cells: per((id) => (L(id).localMode ? { kind: "yes" } : { kind: "no" })) },
     ...CLOUD_APPS.filter((a) => a.live).map((a): Omit<Row, "differs"> => ({
       key: a.slug, group: "apps", label: a.name,
       cells: per((id) => !L(id).apps.includes(a.slug) ? { kind: "no" }

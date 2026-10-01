@@ -22,8 +22,9 @@ export interface Me {
   tier: "none" | "starter" | "pro" | "business" | "enterprise";
   planName: string;
   subscription: { plan: string; cycle: string; status: string; current_period_start: string; current_period_end: string } | null;
-  limits: { clipperVideosPerMonth: number; storageGB: number; promptLevels: string[]; legalWorkspaces: string; apps: string[]; selfHostedApps: number; selfHostedNodes: number };
+  limits: { clipperVideosPerMonth: number; storageGB: number; promptLevels: string[]; legalWorkspaces: string; apps: string[]; selfHostedApps: number; selfHostedNodes: number; localMode?: boolean };
   usage: { month: string; requests: number; clipperVideos: number; clipperLimit: number; storageBytes: number; storageLimit: number };
+  localMode?: boolean;           // Local Mode allowed now (plan + operator switch)
 }
 
 const MeCtx = createContext<{ me: Me | null; reload: () => Promise<void> }>({ me: null, reload: async () => {} });
