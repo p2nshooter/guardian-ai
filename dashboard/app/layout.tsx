@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "AXTO", statusBarStyle: "black-translucent" },
   other: { "mobile-web-app-capable": "yes" },
   ...(SITE.isPreview ? { robots: { index: false, follow: false } } : {}),
-  icons: { icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/apple-touch-icon.png" },
+  icons: { icon: [{ url: "/favicon.svg?v=2", type: "image/svg+xml" }, { url: "/icon-192.png", sizes: "192x192", type: "image/png" }], apple: "/apple-touch-icon.png" },
   openGraph: { type: "website", siteName: SITE.name, url: SITE.url, locale: SITE.locale, images: [{ url: absoluteUrl(SITE.ogImage), width: 1200, height: 630, alt: SITE.name }] },
   twitter: { card: "summary_large_image", site: SITE.twitter, images: [absoluteUrl(SITE.ogImage)] },
   verification: {
