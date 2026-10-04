@@ -1,0 +1,23 @@
+/* Spain, world champion 2026 — the ribbon at the top of every page
+   (owner: "animasi pemenang piala Dunia 2026 Spanyol" on every site).
+   Palace room: Crystal throne room. Decoration only; nothing here is clickable. */
+/* axto.io — crystal throne room: obsidian glass with a prism that splits the
+   light into a rainbow sweeping across the Spanish colours. */
+.prisma26{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;
+  min-height:34px;padding:4px 12px;color:#f4f4ff;background:#07070b;border-bottom:1px solid #22222e;
+  font:600 12.5px/1.2 inherit;letter-spacing:.03em}
+.prisma26::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.55;
+  background:linear-gradient(100deg,transparent 30%,#ff5f6d 40%,#ffc371 45%,#7af0ff 50%,#c08bff 55%,transparent 65%);background-size:250% 100%;animation:prisma26-split 7s ease-in-out infinite}
+@keyframes prisma26-split{from{background-position:120% 0}to{background-position:-120% 0}}
+.prisma26-flag{width:18px;height:12px;background:linear-gradient(#c60b1e 0 25%,#ffc400 25% 75%,#c60b1e 75%);clip-path:polygon(15% 0,100% 0,85% 100%,0 100%)}
+.prisma26-trophy{font-size:15px;filter:drop-shadow(0 0 6px rgba(122,240,255,.55))}
+.prisma26-pitch{position:relative;width:46px;height:20px}
+.prisma26-ballx{position:absolute;left:0;bottom:0;animation:prisma26-x 2.6s ease-in-out infinite}
+.prisma26-ball{display:block;font-size:12px;animation:prisma26-y .65s ease-in infinite alternate}
+@keyframes prisma26-x{50%{transform:translateX(32px)}}
+@keyframes prisma26-y{to{transform:translateY(-9px) rotate(180deg)}}
+.prisma26-chip{padding:2px 7px;border-radius:6px;font:800 10px/1.4 system-ui,sans-serif;color:#07070b;background:linear-gradient(120deg,#7af0ff,#c08bff,#ffc371)}
+
+.prisma26-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:480px){.prisma26-pitch{display:none}.prisma26{font-size:11.5px;gap:7px}}
+@media (prefers-reduced-motion:reduce){.prisma26,.prisma26 *,.prisma26::before,.prisma26::after,.prisma26 *::before,.prisma26 *::after{animation:none!important}}

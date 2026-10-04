@@ -1,6 +1,8 @@
 /* Public website layout: header, footer, site-wide JSON-LD and the AdSense
  * loader (public pages only — never inside the member or admin portals). */
 import SiteHeader from "@/components/site/SiteHeader";
+import { Copa2026 } from "@/components/site/Copa2026";
+import "../copa2026.css";
 import SiteFooter from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/JsonLd";
 import { orgJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -12,6 +14,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   return (
     <I18nProvider>
       <JsonLd data={[orgJsonLd(), websiteJsonLd()]} />
+      <Copa2026 />
       <SiteHeader />
       <main id="main">{children}</main>
       <SiteFooter />
