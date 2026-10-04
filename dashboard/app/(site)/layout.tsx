@@ -1,6 +1,5 @@
 /* Public website layout: header, footer, site-wide JSON-LD and the AdSense
  * loader (public pages only — never inside the member or admin portals). */
-import Script from "next/script";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { JsonLd } from "@/components/JsonLd";
@@ -17,8 +16,12 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main id="main">{children}</main>
       <SiteFooter />
       <ChatWidget />
+      {/* A plain async <script>, not next/script: it must be in the HTML the
+          server sends, because the AdSense verification crawler reads that
+          HTML and does not run JavaScript (afterInteractive scripts are only
+          added in the browser). React 19 hoists it into <head>. */}
       {SITE.isPreview ? null : (
-        <Script id="adsense" async strategy="afterInteractive" crossOrigin="anonymous"
+        <script async crossOrigin="anonymous"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${SITE.adsenseClient}`} />
       )}
     </I18nProvider>
