@@ -10,13 +10,14 @@ import Markdown from "@/components/Markdown";
 import ModelPicker, { type AiChoice } from "@/components/ai/ModelPicker";
 import { stripStatus } from "@/lib/markdown";
 import { markdownToDocx } from "@/lib/export/docx";
-import { POLICY_TEMPLATES } from "@/lib/compliance/library";
+import { useComp } from "./catalog-context";
 import { aiContext, newId, policyControls, type Policy, type Workspace } from "@/lib/compliance/workspace";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import { download, slugName, type WsUpdate } from "./shared";
 import { aiFetch } from "@/lib/ai/client-run";
 
 export default function Policies({ t, lang, w, onWs }: { t: ComplianceDict; lang: Lang; w: Workspace; onWs: (u: WsUpdate) => void }) {
+  const POLICY_TEMPLATES = useComp().policies;
   const [openId, setOpenId] = useState("");
   const p = w.policies.find((x) => x.id === openId);
   function create(tid: string) {
@@ -61,6 +62,7 @@ export default function Policies({ t, lang, w, onWs }: { t: ComplianceDict; lang
 }
 
 function Editor({ t, lang, w, p, onWs, onBack }: { t: ComplianceDict; lang: Lang; w: Workspace; p: Policy; onWs: (u: WsUpdate) => void; onBack: () => void }) {
+  const POLICY_TEMPLATES = useComp().policies;
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [note, setNote] = useState("");
   const [approver, setApprover] = useState(p.approver || "");

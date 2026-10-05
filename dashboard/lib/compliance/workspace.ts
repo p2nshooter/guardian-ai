@@ -9,8 +9,9 @@
  * on the device. Pure: no React, no server imports.
  * ============================================================================ */
 import { FRAMEWORKS, type FrameworkId } from "./frameworks";
-import { LIBRARY, controlKey, findControl, mappedControls } from "./controls";
+import { LIBRARY, controlKey, findControl, mappedControls, type FrameworkControls } from "./controls";
 import { POLICY_TEMPLATES, VENDOR_QUESTIONS, type Answer, type Criticality, type DataAccess, type RiskCategory } from "./library";
+import { SAMPLE_EN, type SampleText } from "./sample-text";
 
 export type ControlStatus = "not_started" | "in_progress" | "implemented" | "not_applicable";
 export const CONTROL_STATUSES: ControlStatus[] = ["not_started", "in_progress", "implemented", "not_applicable"];
@@ -146,55 +147,93 @@ export const policyControls = (w: Workspace, templateId: string) => {
 const csvCell = (v: unknown) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) || /^[=+\-@]/.test(s) ? `"${(/^[=+\-@]/.test(s) ? "'" : "") + s.replace(/"/g, '""')}"` : s; };
 export const toCsv = (rows: unknown[][]) => rows.map((r) => r.map(csvCell).join(",")).join("\n") + "\n";
 
-export function controlsCsv(w: Workspace): string {
-  const rows: unknown[][] = [["framework", "control", "title", "domain", "status", "owner", "due", "evidence", "notes", "justification"]];
-  for (const fw of w.frameworks) for (const c of LIBRARY[fw].controls) {
+/** The words of the reports and CSV exports, in the member's language (English by default). */
+export interface ReportWords {
+  title: string; organisation: string; generated: string; orgLabel: string; summary: string;
+  framework: string; readiness: string; implemented: string; inProgress: string; notStarted: string; na: string; withEvidence: string; overdue: string;
+  domain: string; openControls: string; topRisks: string; risk: string; inherent: string; residual: string; treatment: string; owner: string;
+  policies: string; policy: string; version: string; status: string; approved: string; by: string; reviewDue: string;
+  vendors: string; vendor: string; criticality: string; data: string; score: string; residualTier: string; nextReview: string;
+  soaTitle: string; soaSub: string; control: string; ctrlTitle: string; applicable: string; justification: string; yes: string; no: string;
+  due: string; evidence: string; notes: string; id: string; category: string; likelihood: string; impact: string; rLikelihood: string; rImpact: string;
+  controls: string; service: string; lastReview: string;
+  statuses: Record<ControlStatus, string>; levels: Record<Criticality, string>; treatments: Record<Risk["treatment"], string>;
+  riskStatuses: Record<Risk["status"], string>; policyStatuses: Record<Policy["status"], string>; dataAccess: Record<DataAccess, string>; categories: Record<RiskCategory, string>;
+}
+export const REPORT_WORDS_EN: ReportWords = {
+  title: "Compliance readiness — {org}", organisation: "Organisation",
+  generated: "Generated {date}. Readiness = implemented + half of in-progress, over applicable controls. This is a self-assessment, not an audit opinion.",
+  orgLabel: "Organisation", summary: "Summary", framework: "Framework", readiness: "Readiness", implemented: "Implemented", inProgress: "In progress", notStarted: "Not started",
+  na: "N/A", withEvidence: "With evidence", overdue: "Overdue", domain: "Domain", openControls: "Open controls", topRisks: "Top risks", risk: "Risk", inherent: "Inherent",
+  residual: "Residual", treatment: "Treatment", owner: "Owner", policies: "Policies", policy: "Policy", version: "Version", status: "Status", approved: "Approved", by: "by",
+  reviewDue: "Review due", vendors: "Vendors", vendor: "Vendor", criticality: "Criticality", data: "Data", score: "Score", residualTier: "Residual tier", nextReview: "Next review",
+  soaTitle: "Statement of Applicability — {org}", soaSub: "ISO/IEC 27001:2022 Annex A · generated {date}", control: "Control", ctrlTitle: "Title", applicable: "Applicable",
+  justification: "Justification / implementation", yes: "Yes", no: "No", due: "Due", evidence: "Evidence", notes: "Notes", id: "ID", category: "Category",
+  likelihood: "Likelihood", impact: "Impact", rLikelihood: "Residual likelihood", rImpact: "Residual impact", controls: "Controls", service: "Service", lastReview: "Last review",
+  statuses: { not_started: "not started", in_progress: "in progress", implemented: "implemented", not_applicable: "not applicable" },
+  levels: { low: "low", medium: "medium", high: "high", critical: "critical" },
+  treatments: { mitigate: "mitigate", accept: "accept", transfer: "transfer", avoid: "avoid" },
+  riskStatuses: { open: "open", treating: "treating", accepted: "accepted", closed: "closed" },
+  policyStatuses: { draft: "draft", review: "review", approved: "approved", retired: "retired" },
+  dataAccess: { none: "none", internal: "internal", confidential: "confidential", personal: "personal", sensitive: "sensitive" },
+  categories: { security: "security", privacy: "privacy", operational: "operational", vendor: "vendor", legal: "legal", financial: "financial", strategic: "strategic" },
+};
+/** `lib` = the control library in the member's language (lib/compliance/catalog.ts), `W` = the report words. */
+export interface ReportOpts { lib?: Record<FrameworkId, FrameworkControls>; words?: ReportWords }
+
+export function controlsCsv(w: Workspace, o: ReportOpts = {}): string {
+  const L = o.lib || LIBRARY, W = o.words || REPORT_WORDS_EN;
+  const rows: unknown[][] = [[W.framework, W.control, W.ctrlTitle, W.domain, W.status, W.owner, W.due, W.evidence, W.notes, W.justification]];
+  for (const fw of w.frameworks) for (const c of L[fw].controls) {
     const s = w.controls[controlKey(fw, c.id)];
-    rows.push([LIBRARY[fw].version, c.id, c.title, LIBRARY[fw].domains.find((d) => d.id === c.domain)?.name || c.domain, s?.status || "not_started", s?.owner || "", s?.due || "", (s?.evidence || []).map((e) => e.name).join("; "), s?.notes || "", s?.justification || ""]);
+    rows.push([L[fw].version, c.id, c.title, L[fw].domains.find((d) => d.id === c.domain)?.name || c.domain, W.statuses[s?.status || "not_started"], s?.owner || "", s?.due || "", (s?.evidence || []).map((e) => e.name).join("; "), s?.notes || "", s?.justification || ""]);
   }
   return toCsv(rows);
 }
-export const risksCsv = (w: Workspace) => toCsv([["id", "title", "category", "owner", "likelihood", "impact", "inherent", "treatment", "residual likelihood", "residual impact", "residual", "status", "due", "controls"],
-  ...w.risks.map((r) => [r.id, r.title, r.category, r.owner, r.likelihood, r.impact, riskLevel(r.likelihood, r.impact), r.treatment, r.rLikelihood, r.rImpact, riskLevel(r.rLikelihood, r.rImpact), r.status, r.due || "", r.controls.join("; ")])]);
-export const vendorsCsv = (w: Workspace) => toCsv([["name", "service", "criticality", "data", "score", "inherent", "residual", "last review", "next review"],
-  ...w.vendors.map((v) => { const s = vendorScore(v); return [v.name, v.service, v.criticality, v.data, s.pct, s.inherent, s.residual, v.lastReview || "", v.nextReview || ""]; })]);
+export const risksCsv = (w: Workspace, o: ReportOpts = {}) => { const W = o.words || REPORT_WORDS_EN; return toCsv([[W.id, W.risk, W.category, W.owner, W.likelihood, W.impact, W.inherent, W.treatment, W.rLikelihood, W.rImpact, W.residual, W.status, W.due, W.controls],
+  ...w.risks.map((r) => [r.id, r.title, W.categories[r.category] || r.category, r.owner, r.likelihood, r.impact, W.levels[riskLevel(r.likelihood, r.impact)], W.treatments[r.treatment] || r.treatment, r.rLikelihood, r.rImpact, W.levels[riskLevel(r.rLikelihood, r.rImpact)], W.riskStatuses[r.status] || r.status, r.due || "", r.controls.join("; ")])]); };
+export const vendorsCsv = (w: Workspace, o: ReportOpts = {}) => { const W = o.words || REPORT_WORDS_EN; return toCsv([[W.vendor, W.service, W.criticality, W.data, W.score, W.inherent, W.residual, W.lastReview, W.nextReview],
+  ...w.vendors.map((v) => { const s = vendorScore(v); return [v.name, v.service, W.levels[v.criticality], W.dataAccess[v.data], s.pct, W.levels[s.inherent], W.levels[s.residual], v.lastReview || "", v.nextReview || ""]; })]); };
 
 const esc = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
 /** ISO/IEC 27001 Statement of Applicability (Markdown). */
-export function soaMarkdown(w: Workspace): string {
-  const L = [`# Statement of Applicability — ${w.org.name || w.name || "Organisation"}`, "", `ISO/IEC 27001:2022 Annex A · generated ${new Date().toISOString().slice(0, 10)}`, "",
-    "| Control | Title | Applicable | Status | Justification / implementation |", "|---|---|---|---|---|"];
-  for (const c of LIBRARY.iso27001.controls) {
+export function soaMarkdown(w: Workspace, o: ReportOpts = {}): string {
+  const L0 = o.lib || LIBRARY, W = o.words || REPORT_WORDS_EN;
+  const org = w.org.name || w.name || W.organisation;
+  const L = [`# ${W.soaTitle.replace("{org}", org)}`, "", W.soaSub.replace("{date}", new Date().toISOString().slice(0, 10)), "",
+    `| ${W.control} | ${W.ctrlTitle} | ${W.applicable} | ${W.status} | ${W.justification} |`, "|---|---|---|---|---|"];
+  for (const c of L0.iso27001.controls) {
     const s = w.controls[controlKey("iso27001", c.id)];
     const na = s?.status === "not_applicable";
-    L.push(`| ${c.id} | ${esc(c.title)} | ${na ? "No" : "Yes"} | ${(s?.status || "not_started").replace("_", " ")} | ${esc(na ? s?.justification || "—" : s?.notes || "—").slice(0, 300)} |`);
+    L.push(`| ${c.id} | ${esc(c.title)} | ${na ? W.no : W.yes} | ${W.statuses[s?.status || "not_started"]} | ${esc(na ? s?.justification || "—" : s?.notes || "—").slice(0, 300)} |`);
   }
   return L.join("\n") + "\n";
 }
 
 /** Readiness report (Markdown). */
-export function reportMarkdown(w: Workspace, today = new Date().toISOString().slice(0, 10)): string {
-  const L: string[] = [`# Compliance readiness — ${w.org.name || w.name || "Organisation"}`, "", `Generated ${today}. Readiness = implemented + half of in-progress, over applicable controls. This is a self-assessment, not an audit opinion.`, ""];
-  if (w.org.description) L.push(`**Organisation:** ${w.org.description}`, "");
-  L.push("## Summary", "", "| Framework | Readiness | Implemented | In progress | Not started | N/A | With evidence | Overdue |", "|---|---:|---:|---:|---:|---:|---:|---:|");
-  for (const fw of w.frameworks) { const s = score(w, fw, undefined, today); L.push(`| ${LIBRARY[fw].version} | **${s.pct}%** | ${s.implemented} | ${s.inProgress} | ${s.notStarted} | ${s.na} | ${s.evidence} | ${s.overdue} |`); }
+export function reportMarkdown(w: Workspace, today = new Date().toISOString().slice(0, 10), o: ReportOpts = {}): string {
+  const LB = o.lib || LIBRARY, W = o.words || REPORT_WORDS_EN;
+  const L: string[] = [`# ${W.title.replace("{org}", w.org.name || w.name || W.organisation)}`, "", W.generated.replace("{date}", today), ""];
+  if (w.org.description) L.push(`**${W.orgLabel}:** ${w.org.description}`, "");
+  L.push(`## ${W.summary}`, "", `| ${W.framework} | ${W.readiness} | ${W.implemented} | ${W.inProgress} | ${W.notStarted} | ${W.na} | ${W.withEvidence} | ${W.overdue} |`, "|---|---:|---:|---:|---:|---:|---:|---:|");
+  for (const fw of w.frameworks) { const s = score(w, fw, undefined, today); L.push(`| ${LB[fw].version} | **${s.pct}%** | ${s.implemented} | ${s.inProgress} | ${s.notStarted} | ${s.na} | ${s.evidence} | ${s.overdue} |`); }
   L.push("");
   for (const fw of w.frameworks) {
-    L.push(`## ${LIBRARY[fw].version}`, "", "| Domain | Readiness | Open controls |", "|---|---:|---|");
-    for (const d of LIBRARY[fw].domains) {
+    L.push(`## ${LB[fw].version}`, "", `| ${W.domain} | ${W.readiness} | ${W.openControls} |`, "|---|---:|---|");
+    for (const d of LB[fw].domains) {
       const s = score(w, fw, d.id, today);
-      const open = LIBRARY[fw].controls.filter((c) => c.domain === d.id && !["implemented", "not_applicable"].includes(w.controls[controlKey(fw, c.id)]?.status || "")).map((c) => c.id);
+      const open = LB[fw].controls.filter((c) => c.domain === d.id && !["implemented", "not_applicable"].includes(w.controls[controlKey(fw, c.id)]?.status || "")).map((c) => c.id);
       L.push(`| ${d.name} | ${s.pct}% | ${open.slice(0, 12).join(", ")}${open.length > 12 ? ` +${open.length - 12}` : ""} |`);
     }
     L.push("");
   }
   const openRisks = w.risks.filter((r) => r.status !== "closed").sort((a, b) => b.rLikelihood * b.rImpact - a.rLikelihood * a.rImpact);
-  if (openRisks.length) L.push("## Top risks", "", "| Risk | Inherent | Residual | Treatment | Owner |", "|---|---|---|---|---|",
-    ...openRisks.slice(0, 15).map((r) => `| ${esc(r.title)} | ${riskLevel(r.likelihood, r.impact)} (${r.likelihood}×${r.impact}) | ${riskLevel(r.rLikelihood, r.rImpact)} (${r.rLikelihood}×${r.rImpact}) | ${r.treatment} | ${esc(r.owner || "—")} |`), "");
-  if (w.policies.length) L.push("## Policies", "", "| Policy | Version | Status | Owner | Approved | Review due |", "|---|---:|---|---|---|---|",
-    ...w.policies.map((p) => `| ${esc(p.title)} | v${p.version} | ${p.status} | ${esc(p.owner || "—")} | ${p.approvedAt ? `${p.approvedAt.slice(0, 10)} by ${esc(p.approver || "—")}` : "—"} | ${p.reviewDue || "—"} |`), "");
-  if (w.vendors.length) L.push("## Vendors", "", "| Vendor | Criticality | Data | Score | Residual tier | Next review |", "|---|---|---|---:|---|---|",
-    ...w.vendors.map((v) => { const s = vendorScore(v); return `| ${esc(v.name)} | ${v.criticality} | ${v.data} | ${s.answered ? `${s.pct}%` : "—"} | ${s.residual} | ${v.nextReview || "—"} |`; }), "");
+  if (openRisks.length) L.push(`## ${W.topRisks}`, "", `| ${W.risk} | ${W.inherent} | ${W.residual} | ${W.treatment} | ${W.owner} |`, "|---|---|---|---|---|",
+    ...openRisks.slice(0, 15).map((r) => `| ${esc(r.title)} | ${W.levels[riskLevel(r.likelihood, r.impact)]} (${r.likelihood}×${r.impact}) | ${W.levels[riskLevel(r.rLikelihood, r.rImpact)]} (${r.rLikelihood}×${r.rImpact}) | ${W.treatments[r.treatment] || r.treatment} | ${esc(r.owner || "—")} |`), "");
+  if (w.policies.length) L.push(`## ${W.policies}`, "", `| ${W.policy} | ${W.version} | ${W.status} | ${W.owner} | ${W.approved} | ${W.reviewDue} |`, "|---|---:|---|---|---|---|",
+    ...w.policies.map((p) => `| ${esc(p.title)} | v${p.version} | ${W.policyStatuses[p.status] || p.status} | ${esc(p.owner || "—")} | ${p.approvedAt ? `${p.approvedAt.slice(0, 10)} ${W.by} ${esc(p.approver || "—")}` : "—"} | ${p.reviewDue || "—"} |`), "");
+  if (w.vendors.length) L.push(`## ${W.vendors}`, "", `| ${W.vendor} | ${W.criticality} | ${W.data} | ${W.score} | ${W.residualTier} | ${W.nextReview} |`, "|---|---|---|---:|---|---|",
+    ...w.vendors.map((v) => { const s = vendorScore(v); return `| ${esc(v.name)} | ${W.levels[v.criticality]} | ${W.dataAccess[v.data]} | ${s.answered ? `${s.pct}%` : "—"} | ${W.levels[s.residual]} | ${v.nextReview || "—"} |`; }), "");
   return L.join("\n");
 }
 
@@ -224,30 +263,34 @@ export function aiContext(w: Workspace, focus?: { fw: FrameworkId; id: string },
 }
 
 /** A realistic starting programme for "Load a sample". */
-export function sampleWorkspace(): Workspace {
-  const w = newWorkspace("Sample: 60-person B2B SaaS");
+/** The sample programme, worded in the member's language (`text`, see lib/compliance/catalog.ts). */
+export function sampleWorkspace(text: SampleText = SAMPLE_EN): Workspace {
+  const T = text, O = T.owners;
+  const w = newWorkspace(T.name);
   const now = new Date(); const d = (days: number) => new Date(now.getTime() + days * 864e5).toISOString().slice(0, 10);
-  w.org = { name: "Nusantara Cloud (sample)", industry: "B2B SaaS — HR software", size: "60 employees", country: "Indonesia, customers in the EU", description: "Multi-tenant HR platform hosted on AWS (ap-southeast-3). Customers are mid-size companies in Indonesia and the EU.", systems: "AWS (EKS, RDS PostgreSQL, S3), Google Workspace, GitHub, Okta, Slack, Jira", dataTypes: "Employee personal data incl. payroll, national ID numbers, bank accounts; some health data (sick leave)" };
+  w.org = { name: T.orgName, industry: T.industry, size: T.size, country: T.country, description: T.description, systems: T.systems, dataTypes: T.dataTypes };
   w.frameworks = ["iso27001", "soc2", "gdpr", "uupdp"];
   const set = (fw: FrameworkId, id: string, s: ControlStatus, extra: Partial<ControlState> = {}) => { w.controls[controlKey(fw, id)] = { status: s, updatedAt: now.toISOString(), ...extra }; };
-  for (const id of ["A.5.1", "A.5.2", "A.5.15", "A.5.17", "A.8.5", "A.8.13", "A.8.24", "A.8.15", "A.6.3", "A.8.9"]) set("iso27001", id, "implemented", { owner: "CISO" });
-  for (const id of ["A.5.9", "A.5.19", "A.5.24", "A.8.8", "A.8.25", "A.8.32", "A.5.30"]) set("iso27001", id, "in_progress", { owner: "Head of Engineering", due: d(30) });
-  set("iso27001", "A.8.16", "in_progress", { owner: "SRE lead", due: d(-7), notes: "SIEM rollout slipped." });
-  for (const id of ["A.7.1", "A.7.2", "A.7.3", "A.7.4", "A.7.5", "A.7.6", "A.7.8", "A.7.11", "A.7.12", "A.7.13"]) set("iso27001", id, "not_applicable", { justification: "No own premises or data centre: fully remote company on AWS; physical controls inherited from AWS (see AWS SOC 2 report)." });
-  for (const id of ["CC6.1", "CC6.2", "CC6.3", "CC8.1", "CC1.1"]) set("soc2", id, "implemented", { owner: "CISO" });
+  for (const id of ["A.5.1", "A.5.2", "A.5.15", "A.5.17", "A.8.5", "A.8.13", "A.8.24", "A.8.15", "A.6.3", "A.8.9"]) set("iso27001", id, "implemented", { owner: O.ciso });
+  for (const id of ["A.5.9", "A.5.19", "A.5.24", "A.8.8", "A.8.25", "A.8.32", "A.5.30"]) set("iso27001", id, "in_progress", { owner: O.eng, due: d(30) });
+  set("iso27001", "A.8.16", "in_progress", { owner: O.sre, due: d(-7), notes: T.siemNote });
+  for (const id of ["A.7.1", "A.7.2", "A.7.3", "A.7.4", "A.7.5", "A.7.6", "A.7.8", "A.7.11", "A.7.12", "A.7.13"]) set("iso27001", id, "not_applicable", { justification: T.physicalNa });
+  for (const id of ["CC6.1", "CC6.2", "CC6.3", "CC8.1", "CC1.1"]) set("soc2", id, "implemented", { owner: O.ciso });
   for (const id of ["CC7.2", "CC9.2", "CC3.2"]) set("soc2", id, "in_progress", { due: d(45) });
-  for (const id of ["Art. 30", "Art. 32", "Art. 28"]) set("gdpr", id, "in_progress", { owner: "DPO", due: d(20) });
-  set("gdpr", "Art. 13–14", "implemented", { owner: "DPO" });
-  set("uupdp", "Pasal 46", "not_started", { owner: "DPO", due: d(14) });
+  for (const id of ["Art. 30", "Art. 32", "Art. 28"]) set("gdpr", id, "in_progress", { owner: O.dpo, due: d(20) });
+  set("gdpr", "Art. 13–14", "implemented", { owner: O.dpo });
+  set("uupdp", "Pasal 46", "not_started", { owner: O.dpo, due: d(14) });
+  const R = T.risks;
   w.risks = [
-    { id: newId("r"), title: "Ransomware encrypts production database", description: "Compromised admin credentials used to encrypt RDS snapshots.", category: "security", owner: "CISO", likelihood: 3, impact: 5, treatment: "mitigate", rLikelihood: 2, rImpact: 4, controls: ["iso27001:A.8.13", "iso27001:A.5.30"], status: "treating", due: d(60) },
-    { id: newId("r"), title: "Payroll data exposed through misconfigured S3 bucket", description: "Public bucket or over-broad IAM policy.", category: "privacy", owner: "SRE lead", likelihood: 2, impact: 5, treatment: "mitigate", rLikelihood: 1, rImpact: 5, controls: ["iso27001:A.8.9", "soc2:CC6.1"], status: "treating" },
-    { id: newId("r"), title: "Breach not reported within 3 × 24 hours (UU PDP)", description: "No tested breach-notification procedure.", category: "legal", owner: "DPO", likelihood: 3, impact: 4, treatment: "mitigate", rLikelihood: 2, rImpact: 3, controls: ["uupdp:Pasal 46", "gdpr:Art. 33"], status: "open", due: d(14) },
-    { id: newId("r"), title: "Key engineer leaves; single point of knowledge", description: "", category: "operational", owner: "CTO", likelihood: 3, impact: 3, treatment: "accept", rLikelihood: 3, rImpact: 3, controls: [], status: "accepted" },
+    { id: newId("r"), title: R[0].title, description: R[0].description, category: "security", owner: O.ciso, likelihood: 3, impact: 5, treatment: "mitigate", rLikelihood: 2, rImpact: 4, controls: ["iso27001:A.8.13", "iso27001:A.5.30"], status: "treating", due: d(60) },
+    { id: newId("r"), title: R[1].title, description: R[1].description, category: "privacy", owner: O.sre, likelihood: 2, impact: 5, treatment: "mitigate", rLikelihood: 1, rImpact: 5, controls: ["iso27001:A.8.9", "soc2:CC6.1"], status: "treating" },
+    { id: newId("r"), title: R[2].title, description: R[2].description, category: "legal", owner: O.dpo, likelihood: 3, impact: 4, treatment: "mitigate", rLikelihood: 2, rImpact: 3, controls: ["uupdp:Pasal 46", "gdpr:Art. 33"], status: "open", due: d(14) },
+    { id: newId("r"), title: R[3].title, description: R[3].description, category: "operational", owner: O.cto, likelihood: 3, impact: 3, treatment: "accept", rLikelihood: 3, rImpact: 3, controls: [], status: "accepted" },
   ];
+  const V = T.vendors;
   w.vendors = [
-    { id: newId("v"), name: "Amazon Web Services", service: "Hosting (EKS, RDS, S3)", criticality: "critical", data: "sensitive", answers: Object.fromEntries(VENDOR_QUESTIONS.map((q) => [q.id, q.id === "insurance" ? "na" : "yes"])), lastReview: d(-90), nextReview: d(275) },
-    { id: newId("v"), name: "PayrollConnect (sample)", service: "Payroll file transfer", criticality: "high", data: "personal", answers: { cert: "no", pentest: "partial", dpa: "yes", mfa: "partial", rest: "yes", transit: "yes", ir: "no", backup: "partial" }, nextReview: d(10) },
+    { id: newId("v"), name: V[0].name, service: V[0].service, criticality: "critical", data: "sensitive", answers: Object.fromEntries(VENDOR_QUESTIONS.map((q) => [q.id, q.id === "insurance" ? "na" : "yes"])), lastReview: d(-90), nextReview: d(275) },
+    { id: newId("v"), name: V[1].name, service: V[1].service, criticality: "high", data: "personal", answers: { cert: "no", pentest: "partial", dpa: "yes", mfa: "partial", rest: "yes", transit: "yes", ir: "no", backup: "partial" }, nextReview: d(10) },
   ];
   return w;
 }

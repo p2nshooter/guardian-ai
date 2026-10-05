@@ -6,7 +6,8 @@
 import { useMemo, useRef, useState } from "react";
 import { Spinner } from "@/components/ui";
 import { api } from "@/lib/client";
-import { LIBRARY, controlKey, findControl, mappedControls } from "@/lib/compliance/controls";
+import { controlKey, mappedControls } from "@/lib/compliance/controls";
+import { useComp } from "./catalog-context";
 import { CONTROL_STATUSES, applyToMapped, type ControlState, type ControlStatus, type EvidenceRef, type Workspace } from "@/lib/compliance/workspace";
 import type { FrameworkId } from "@/lib/compliance/frameworks";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
@@ -33,7 +34,8 @@ export default function Controls({ t, w, onWs, fw, setFw, open, setOpen, onAsk }
   const [domain, setDomain] = useState("");
   const [status, setStatus] = useState<ControlStatus | "">("");
   const [q, setQ] = useState("");
-  const lib = LIBRARY[fw];
+  const C = useComp();
+  const lib = C.library[fw];
   const rows = useMemo(() => {
     const n = q.trim().toLowerCase();
     return lib.controls.filter((c) => (!domain || c.domain === domain) && (!status || (w.controls[controlKey(fw, c.id)]?.status || "not_started") === status)
@@ -47,7 +49,7 @@ export default function Controls({ t, w, onWs, fw, setFw, open, setOpen, onAsk }
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap gap-1" role="tablist">
           {w.frameworks.map((f) => <button key={f} type="button" role="tab" aria-selected={fw === f} onClick={() => { setFw(f); setDomain(""); }} data-testid={`comp-ctl-fw-${f}`}
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${fw === f ? "bg-ink-950 text-white" : "bg-slate-100 text-slate-700"}`}>{LIBRARY[f].version.split(" (")[0]}</button>)}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${fw === f ? "bg-ink-950 text-white" : "bg-slate-100 text-slate-700"}`}>{C.library[f].version.split(" (")[0]}</button>)}
         </div>
         <select className="select w-auto py-1 text-sm" value={domain} onChange={(e) => setDomain(e.target.value)} aria-label={t.allDomains}>
           <option value="">{t.allDomains}</option>{lib.domains.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -86,13 +88,14 @@ export default function Controls({ t, w, onWs, fw, setFw, open, setOpen, onAsk }
           </tbody>
         </table>
       </div>
-      {open && findControl(fw, open) ? <ControlDetail t={t} w={w} fw={fw} id={open} onWs={onWs} onClose={() => setOpen("")} onAsk={() => onAsk(fw, open)} /> : null}
+      {open && lib.controls.some((x) => x.id === open) ? <ControlDetail t={t} w={w} fw={fw} id={open} onWs={onWs} onClose={() => setOpen("")} onAsk={() => onAsk(fw, open)} /> : null}
     </div>
   );
 }
 
 function ControlDetail({ t, w, fw, id, onWs, onClose, onAsk }: { t: ComplianceDict; w: Workspace; fw: FrameworkId; id: string; onWs: (u: WsUpdate) => void; onClose: () => void; onAsk: () => void }) {
-  const c = findControl(fw, id)!;
+  const C = useComp();
+  const c = C.library[fw].controls.find((x) => x.id === id)!;
   const k = controlKey(fw, id);
   const s: ControlState = w.controls[k] || { status: "not_started" };
   const [busy, setBusy] = useState("");
@@ -125,8 +128,8 @@ function ControlDetail({ t, w, fw, id, onWs, onClose, onAsk }: { t: ComplianceDi
     <div className="fixed inset-0 z-40 flex justify-end bg-ink-950/30" onClick={onClose}>
       <aside className="h-full w-full max-w-xl overflow-y-auto bg-white p-5 shadow-lift" onClick={(e) => e.stopPropagation()} data-testid="comp-ctl-detail" role="dialog" aria-label={`${c.id} ${c.title}`}>
         <div className="flex items-start gap-2">
-          <div className="min-w-0"><div className="font-mono text-xs text-slate-500">{LIBRARY[fw].version} · {c.id}</div><h3 className="text-lg font-bold text-slate-900">{c.title}</h3>
-            <div className="text-xs text-slate-500">{LIBRARY[fw].domains.find((d) => d.id === c.domain)?.name}</div></div>
+          <div className="min-w-0"><div className="font-mono text-xs text-slate-500">{C.library[fw].version} · {c.id}</div><h3 className="text-lg font-bold text-slate-900">{c.title}</h3>
+            <div className="text-xs text-slate-500">{C.library[fw].domains.find((d) => d.id === c.domain)?.name}</div></div>
           <button type="button" className="btn-ghost btn-sm ml-auto" onClick={onClose} aria-label={t.close}>✕</button>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -166,7 +169,7 @@ function ControlDetail({ t, w, fw, id, onWs, onClose, onAsk }: { t: ComplianceDi
           <h4 className="font-semibold text-slate-900">{t.mapped}</h4>
           {mapped.length ? (
             <ul className="mt-1 space-y-1 text-sm" data-testid="comp-mapped">{mapped.slice(0, 20).map((m) => { const ms = w.controls[controlKey(m.fw, m.control.id)]?.status || "not_started"; return (
-              <li key={`${m.fw}:${m.control.id}`} className="flex items-center gap-2"><span className="w-24 shrink-0 truncate text-xs text-slate-500">{LIBRARY[m.fw].version.split(" ")[0]}</span><span className="font-mono text-xs">{m.control.id}</span><span className="min-w-0 flex-1 truncate text-slate-700">{m.control.title}</span><span className={`rounded px-1.5 text-[10px] ${STATUS_TONE[ms]}`}>{t.statuses[ms]}</span></li>
+              <li key={`${m.fw}:${m.control.id}`} className="flex items-center gap-2"><span className="w-24 shrink-0 truncate text-xs text-slate-500">{C.library[m.fw].version.split(" ")[0]}</span><span className="font-mono text-xs">{m.control.id}</span><span className="min-w-0 flex-1 truncate text-slate-700">{C.library[m.fw].controls.find((x) => x.id === m.control.id)?.title || m.control.title}</span><span className={`rounded px-1.5 text-[10px] ${STATUS_TONE[ms]}`}>{t.statuses[ms]}</span></li>
             ); })}</ul>
           ) : <p className="mt-1 text-sm text-slate-500">{t.noMapped}</p>}
           {(s.status === "implemented" || s.status === "in_progress") && eligible ? (

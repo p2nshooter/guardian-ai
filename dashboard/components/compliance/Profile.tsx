@@ -1,12 +1,13 @@
 /* COMPLIANCE CENTER v4 — Profile: the organisation and the frameworks in scope. */
 "use client";
-import { FRAMEWORKS, type FrameworkId } from "@/lib/compliance/frameworks";
-import { LIBRARY } from "@/lib/compliance/controls";
+import type { FrameworkId } from "@/lib/compliance/frameworks";
+import { useComp } from "./catalog-context";
 import type { OrgProfile, Workspace } from "@/lib/compliance/workspace";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import type { WsUpdate } from "./shared";
 
 export default function Profile({ t, w, onWs }: { t: ComplianceDict; w: Workspace; onWs: (u: WsUpdate) => void }) {
+  const C = useComp(), LIBRARY = C.library, FRAMEWORKS = C.frameworks;
   const set = (k: keyof OrgProfile, v: string) => onWs((p) => ({ ...p, org: { ...p.org, [k]: v.slice(0, k === "description" ? 4000 : 1000) } }));
   const toggle = (fw: FrameworkId) => onWs((p) => ({ ...p, frameworks: p.frameworks.includes(fw) ? p.frameworks.filter((x) => x !== fw) : [...p.frameworks, fw] }));
   const field = (k: keyof OrgProfile, label: string, long = false) => (

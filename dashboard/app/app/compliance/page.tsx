@@ -27,6 +27,7 @@ import { api } from "@/lib/client";
 import { LoadingBlock, Spinner } from "@/components/ui";
 import { FRAMEWORKS, type CompMode, type FrameworkId } from "@/lib/compliance/frameworks";
 import { newWorkspace, sampleWorkspace, score, upgradeWorkspace, type Workspace } from "@/lib/compliance/workspace";
+import { CompCatalogContext, useCompCatalog } from "@/components/compliance/catalog-context";
 import Overview from "@/components/compliance/Overview";
 import Profile from "@/components/compliance/Profile";
 import Controls, { downloadEvidence } from "@/components/compliance/Controls";
@@ -46,6 +47,8 @@ const hasContent = (w: Workspace) => !!(w.name.trim() || w.org.name.trim() || Ob
 
 export default function ComplianceApp() {
   const { lang } = useI18n();
+  // The catalogue (controls, policies, sample …) in the member's language, shared with every screen.
+  const compCat = useCompCatalog(lang);
   const { me } = useMe();
   const t = pick(L, lang);
   const access = !!me && me.limits.apps.includes("compliance");
@@ -142,7 +145,7 @@ export default function ComplianceApp() {
     if (cid === idRef.current) switchTo(newWorkspace(), null);
     reload();
   }
-  function loadSample() { const s = sampleWorkspace(); onWs({ ...s, name: t.sampleName }); setFw(s.frameworks[0]); }
+  function loadSample() { const s = sampleWorkspace(compCat.sample); onWs({ ...s, name: t.sampleName }); setFw(s.frameworks[0]); }
 
   useEffect(() => {
     if (!access) return;
@@ -195,6 +198,7 @@ export default function ComplianceApp() {
   );
 
   return (
+    <CompCatalogContext.Provider value={compCat}>
     <div className="grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
       <aside className="no-print hidden lg:block"><div className="card sticky top-20 h-[calc(100vh-6rem)] p-3">{aside}</div></aside>
       <div className="min-w-0">
@@ -235,5 +239,6 @@ export default function ComplianceApp() {
 
       {sidebar ? <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setSidebar(false)}><div className="absolute inset-0 bg-ink-950/40" /><aside className="absolute inset-y-0 left-0 w-72 bg-white p-3 shadow-lift" onClick={(e) => e.stopPropagation()}>{aside}</aside></div> : null}
     </div>
+    </CompCatalogContext.Provider>
   );
 }

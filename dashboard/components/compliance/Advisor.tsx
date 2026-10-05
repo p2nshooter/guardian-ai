@@ -10,7 +10,7 @@ import Markdown from "@/components/Markdown";
 import ModelPicker, { type AiChoice } from "@/components/ai/ModelPicker";
 import { stripStatus } from "@/lib/markdown";
 import { COMP_MODES, type CompMode, type FrameworkId } from "@/lib/compliance/frameworks";
-import { LIBRARY } from "@/lib/compliance/controls";
+import { useComp } from "./catalog-context";
 import { aiContext, type Msg, type Workspace } from "@/lib/compliance/workspace";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import { CopyBtn, type WsUpdate } from "./shared";
@@ -30,6 +30,7 @@ export default function Advisor({ t, lang, w, onWs, focus, onClearFocus, prefill
   const ctrl = useRef<AbortController | null>(null);
   const alive = useRef(true);
   const end = useRef<HTMLDivElement>(null);
+  const C = useComp();
   const mode = (COMP_MODES.some((m) => m.id === w.mode) ? w.mode : "gap") as CompMode;
   const briefing = aiContext(w, focus || undefined);
   useEffect(() => { alive.current = true; return () => { alive.current = false; ctrl.current?.abort(); }; }, []);
@@ -69,12 +70,12 @@ export default function Advisor({ t, lang, w, onWs, focus, onClearFocus, prefill
       <section className="card-pad flex min-h-[520px] min-w-0 flex-col">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-slate-700">{t.mode}</span>
-          {COMP_MODES.map((m) => <button key={m.id} type="button" title={m.blurb} onClick={() => onWs((p) => ({ ...p, mode: m.id }))} data-testid={`comp-mode-${m.id}`}
+          {C.modes.map((m) => <button key={m.id} type="button" title={m.blurb} onClick={() => onWs((p) => ({ ...p, mode: m.id }))} data-testid={`comp-mode-${m.id}`}
             className={`rounded-lg border px-2.5 py-1 text-xs ${mode === m.id ? "border-brand-500 bg-brand-50 font-semibold text-brand-700" : "border-slate-200 text-slate-600"}`}>{m.icon} {t.modes[m.id]}</button>)}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <select className="select w-auto py-1 text-sm" value={fw} onChange={(e) => setFw(e.target.value as FrameworkId)} aria-label={t.framework}>
-            {(w.frameworks.length ? w.frameworks : (["iso27001"] as FrameworkId[])).map((f) => <option key={f} value={f}>{LIBRARY[f].version}</option>)}
+            {(w.frameworks.length ? w.frameworks : (["iso27001"] as FrameworkId[])).map((f) => <option key={f} value={f}>{C.library[f].version}</option>)}
           </select>
           {focus ? <span className="badge-brand">{t.focus.replace("{id}", `${focus.fw}:${focus.id}`)}<button type="button" className="ml-1" onClick={onClearFocus}>× {t.clearFocus}</button></span> : null}
         </div>

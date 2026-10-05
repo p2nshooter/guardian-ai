@@ -1,15 +1,17 @@
 /* COMPLIANCE CENTER v4 — Overview: readiness per framework and domain,
  * overdue controls, open risks, policy and vendor status. */
 "use client";
-import { LIBRARY, controlKey } from "@/lib/compliance/controls";
+import { controlKey } from "@/lib/compliance/controls";
+import { useComp } from "./catalog-context";
 import { score, riskLevel, type Workspace } from "@/lib/compliance/workspace";
-import { FRAMEWORKS, type FrameworkId } from "@/lib/compliance/frameworks";
+import type { FrameworkId } from "@/lib/compliance/frameworks";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import { Bar, LEVEL_TONE, Ring, today } from "./shared";
 
 export default function Overview({ t, w, onSample, onGo, onOpenControl }: {
   t: ComplianceDict; w: Workspace; onSample: () => void; onGo: (tab: "profile" | "controls" | "risks" | "policies" | "vendors") => void; onOpenControl: (fw: FrameworkId, id: string) => void;
 }) {
+  const C = useComp(), LIBRARY = C.library, FRAMEWORKS = C.frameworks;
   const d = today();
   const started = w.frameworks.length && (Object.keys(w.controls).length || w.risks.length || w.policies.length || w.vendors.length || w.org.name);
   if (!started) {

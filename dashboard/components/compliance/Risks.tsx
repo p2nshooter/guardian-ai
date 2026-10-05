@@ -2,7 +2,8 @@
  * residual), treatments, owners, due dates and linked controls. */
 "use client";
 import { useState } from "react";
-import { LIBRARY, controlKey } from "@/lib/compliance/controls";
+import { controlKey } from "@/lib/compliance/controls";
+import { useComp } from "./catalog-context";
 import { RISK_CATEGORIES } from "@/lib/compliance/library";
 import { newId, riskLevel, type Risk, type Workspace } from "@/lib/compliance/workspace";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
@@ -11,6 +12,7 @@ import { HEAT, LEVEL_TONE, type WsUpdate } from "./shared";
 const blank = (): Risk => ({ id: newId("r"), title: "", description: "", category: "security", owner: "", likelihood: 3, impact: 3, treatment: "mitigate", rLikelihood: 2, rImpact: 3, controls: [], status: "open" });
 
 export default function Risks({ t, w, onWs, onAskAi }: { t: ComplianceDict; w: Workspace; onWs: (u: WsUpdate) => void; onAskAi: () => void }) {
+  const LIBRARY = useComp().library;
   const [edit, setEdit] = useState<Risk | null>(null);
   const [view, setView] = useState<"inherent" | "residual">("residual");
   const [cell, setCell] = useState<[number, number] | null>(null);

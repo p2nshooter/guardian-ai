@@ -5,12 +5,16 @@
 import { useMemo, useRef, useState } from "react";
 import Markdown from "@/components/Markdown";
 import { markdownToDocx } from "@/lib/export/docx";
-import { controlsCsv, reportMarkdown, risksCsv, soaMarkdown, upgradeWorkspace, vendorsCsv, type Workspace } from "@/lib/compliance/workspace";
+import { controlsCsv, reportMarkdown, risksCsv, soaMarkdown, upgradeWorkspace, vendorsCsv, type ReportOpts, type Workspace } from "@/lib/compliance/workspace";
+import { useComp } from "./catalog-context";
 import type { ComplianceDict } from "@/lib/i18n-pages/compliance";
 import { download, slugName, type WsUpdate } from "./shared";
 
 export default function Reports({ t, w, onWs }: { t: ComplianceDict; w: Workspace; onWs: (u: WsUpdate) => void }) {
-  const md = useMemo(() => reportMarkdown(w), [w]);
+  // Reports and exports in the member's language: the localised control library and the report words.
+  const C = useComp();
+  const o: ReportOpts = useMemo(() => ({ lib: C.library, words: { ...t.rep, statuses: t.statuses, levels: t.levels, treatments: t.treatments, riskStatuses: t.riskStatuses, policyStatuses: t.policyStatuses, dataAccess: t.data, categories: t.categories } }), [C, t]);
+  const md = useMemo(() => reportMarkdown(w, undefined, o), [w, o]);
   const name = slugName(w.org.name || w.name);
   const file = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState("");
@@ -43,11 +47,11 @@ export default function Reports({ t, w, onWs }: { t: ComplianceDict; w: Workspac
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${name}-controls.csv`, controlsCsv(w), "text/csv")} data-testid="comp-csv-controls">⬇️ {t.csvControls}</button>
-          <button type="button" className="btn-secondary btn-sm" disabled={!hasIso} title={hasIso ? "" : t.soaNeedsIso} onClick={() => download(`${name}-soa.docx`, markdownToDocx(soaMarkdown(w), { title: t.soa, subtitle: title }))} data-testid="comp-soa">⬇️ {t.soa} (Word)</button>
-          <button type="button" className="btn-secondary btn-sm" disabled={!hasIso} onClick={() => download(`${name}-soa.md`, soaMarkdown(w), "text/markdown;charset=utf-8")}>⬇️ {t.soa} (MD)</button>
-          <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${name}-risks.csv`, risksCsv(w), "text/csv")} data-testid="comp-csv-risks">⬇️ {t.csvRisks}</button>
-          <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${name}-vendors.csv`, vendorsCsv(w), "text/csv")}>⬇️ {t.csvVendors}</button>
+          <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${name}-controls.csv`, controlsCsv(w, o), "text/csv")} data-testid="comp-csv-controls">⬇️ {t.csvControls}</button>
+          <button type="button" className="btn-secondary btn-sm" disabled={!hasIso} title={hasIso ? "" : t.soaNeedsIso} onClick={() => download(`${name}-soa.docx`, markdownToDocx(soaMarkdown(w, o), { title: t.soa, subtitle: title }))} data-testid="comp-soa">⬇️ {t.soa} (Word)</button>
+          <button type="button" className="btn-secondary btn-sm" disabled={!hasIso} onClick={() => download(`${name}-soa.md`, soaMarkdown(w, o), "text/markdown;charset=utf-8")}>⬇️ {t.soa} (MD)</button>
+          <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${name}-risks.csv`, risksCsv(w, o), "text/csv")} data-testid="comp-csv-risks">⬇️ {t.csvRisks}</button>
+          <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${name}-vendors.csv`, vendorsCsv(w, o), "text/csv")}>⬇️ {t.csvVendors}</button>
           <button type="button" className="btn-ghost btn-sm" onClick={() => download(`${name}-programme.json`, JSON.stringify(w, null, 1), "application/json")} data-testid="comp-backup">⬇️ {t.backup}</button>
           <button type="button" className="btn-ghost btn-sm" onClick={() => file.current?.click()}>⬆️ {t.importJson}</button>
           <input ref={file} type="file" accept="application/json,.json" className="hidden" data-testid="comp-import" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); e.target.value = ""; }} />
