@@ -390,3 +390,95 @@ Member menghubungkan **Ollama, LM Studio, atau server lain yang kompatibel OpenA
 - **Windows & Linux:** image Linux amd64 + arm64; Windows lewat Docker Desktop (container Linux) seperti installer yang ada; installer AXTO Setup memasang dan mengaktifkan lisensi.
 - **Selesai bila:** image dibangun di CI, smoke test di dalam container lulus (health, masuk admin, jalankan tiap aplikasi dengan model tiruan), installer memakai image baru, matriks kesetaraan di dokumen ini menunjukkan semua ✅.
 
+
+---
+
+## 18. Perintah pemilik 5 Okt 2026 — desain “Istana Kristal” (super premium, super enterprise)
+
+> „Harga akuisisi nya di rubah, dari $2jt jadi $10jt … karena ini adalah website bernilai $10jt maka
+> website ini harus berkelas, super premium, super enterprice, selain memiliki fitur dan fasilitas
+> berkelas tinggi, harus ada animasi menarik dan elegan untuk memudahkan client & owner serta admin
+> untuk menggunakan seluruh website ini … pastikan semua 100% konsisten, siap produksi, berkelas super
+> premium enterprice & website nya mewah seperti istana raja sulaiman … Bukanya sy minta di tulis dulu
+> di blueprint, kembangkan dulu hingga mewah … Jgn asumsi, lihat perintah, jgn mengarang, selalu lihat
+> blue print“
+
+**Acuan visual (bukan karangan):** (1) gambar pemilik „AXTO Digital Global — One Ecosystem. Endless
+Possibilities.“: latar luar angkasa biru-tua, bola dunia bercahaya, kartu tiap aplikasi dengan warna
+sendiri, lencana „100 Trial License“; (2) istana Nabi Sulaiman yang lantainya kaca bening seperti air
+(QS An-Naml 27:44) — gaya **“Istana Kristal”** yang sudah dipakai pita juara Piala Dunia di situs ini
+(`app/copa2026.css`: „crystal throne room: obsidian glass with a prism“). Satu bahasa desain untuk
+**situs publik, portal member (`/app`), portal admin (`/admin`) dan halaman akuisisi**.
+
+### 18.1 Token desain (satu sumber: `tailwind.config.js` + `app/globals.css`)
+| Token | Nilai | Dipakai untuk |
+|---|---|---|
+| Obsidian | `#05070d` → `#0b1220` | latar situs publik & hero portal |
+| Safir (dari gambar pemilik) | `#1e6bff` → `#38bdf8` | aksen utama, cahaya, tautan aktif |
+| Emas kerajaan | `#c9a24a` → `#f3d98b` | garis tepi kartu premium, angka harga, lencana edisi Enterprise |
+| Kristal | putih 4–12 % + blur 16 px | kartu kaca, header, menu |
+| Warna per aplikasi (gambar pemilik) | Guardian biru · Orchestra ungu · Vault hijau · Edge biru langit · SOC merah · Compliance oranye · Sentinel OT merah bata · Antivirus hijau limau · Studio merah muda · Legal biru kerajaan | ikon, garis atas kartu, grafik aplikasi itu |
+| Huruf | Inter (variabel, di-host sendiri) untuk teks; Playfair Display hanya untuk judul besar publik & akuisisi | keterbacaan + kesan mewah |
+| Mode | gelap untuk publik & akuisisi; portal member/admin terang **dan** gelap (pilihan member, ikut sistem) | |
+
+### 18.2 Sistem gerak (animasi yang **membantu**, bukan hiasan)
+- **Durasi & kurva:** 150 ms (hover), 250 ms (tab/menu), 400 ms (panel/modal), 700 ms (masuk halaman);
+  `cubic-bezier(.2,.8,.2,1)`. Hanya `transform`/`opacity` (60 fps, tanpa geser tata letak).
+- **Pola:** halaman masuk *fade-up*; daftar muncul berurutan (*stagger* 40 ms); kartu terangkat + kilau
+  tepi emas saat hover; angka statistik menghitung naik; *skeleton* berkilau saat memuat; garis bawah
+  tab meluncur; modal membesar halus; toast meluncur; lencana „berhasil“ dengan percikan kecil sekali.
+- **Membantu klien, pemilik, admin:** tur kenalan pertama kali per aplikasi (sorotan langkah demi
+  langkah, bisa dilewati, diingat per akun), daftar periksa „mulai di sini“ di beranda portal, panduan
+  langkah bergambar di checkout/akuisisi/aktivasi lisensi, palet perintah ⌘K / Ctrl K untuk lompat ke
+  menu mana pun di portal & admin, keadaan kosong dengan ilustrasi beranimasi + tombol aksi pertama.
+- **Wajib:** `prefers-reduced-motion` mematikan semua gerak; tidak ada animasi yang menghalangi klik;
+  tidak ada perulangan tanpa henti di area kerja (hanya di hero publik).
+
+### 18.3 Halaman yang dibangun ulang dengan gaya ini
+| Area | Isi |
+|---|---|
+| Beranda publik | Hero „One Ecosystem. Endless Possibilities.“ dengan bola dunia beranimasi (SVG/canvas ringan); **semua 10 aplikasi self-hosted + 7 aplikasi cloud** dalam kartu berwarna seperti gambar pemilik, dengan edisi dan lencana trial (data dari `docs/AXTO-APPS-BLUEPRINT.md` §3–§4) |
+| Header & footer | kaca kristal; menu besar (*mega menu*) yang menampilkan **semua** aplikasi (footer saat ini hanya 7 dari 10) |
+| `/self-hosted`, `/self-hosted/[slug]`, `/apps/[slug]`, `/pricing` | kartu edisi bertingkat, perbandingan, tombol trial & beli, animasi masuk |
+| `/acquire` | sudah bergaya premium (§17 B); diselaraskan ke token §18.1 |
+| Portal member `/app` | beranda dengan sapaan, statistik beranimasi, daftar periksa mulai, kartu aplikasi; header aplikasi seragam; tur pertama kali; ⌘K |
+| Portal admin `/admin` | pusat aksi (wire menunggu verifikasi, permintaan trial, tiket), KPI beranimasi, grafik, runbook langkah demi langkah, garis waktu audit; ⌘K |
+| Email transaksi | kop & warna yang sama |
+
+### 18.4 Selesai bila
+- Token & komponen bersama (kartu kristal, tombol kerajaan, lencana edisi, stepper, tur, palet ⌘K,
+  skeleton, toast) dipakai di semua area — tidak ada gaya lama tersisa (dicek dengan grep kelas lama).
+- Uji browser nyata (Playwright) **setiap** halaman publik, member dan admin: desktop 1440 px & ponsel
+  390 px, 10 bahasa, tanpa error console, tanpa scroll horizontal; versi `reduced-motion` tanpa animasi.
+- Lighthouse halaman publik: Performance ≥ 90, Accessibility ≥ 95, CLS < 0,05.
+- Tangkapan layar sebelum/sesudah disimpan di `docs/design/`.
+
+---
+
+## 19. Urutan kerja gabungan & persentase progres (diperbarui setiap commit)
+
+Sumber perintah: `docs/REQUESTS.md`. Sumber rencana: dokumen ini (§9, §17, §18) dan
+`docs/AXTO-APPS-BLUEPRINT.md` (§9 fase A–E). Persentase dihitung dari fase yang **selesai dan teruji**,
+bukan dari perkiraan.
+
+| # | Aliran kerja | Fase | Selesai | Progres |
+|---|---|---|---|---|
+| 1 | Aplikasi cloud v4 (Clipper, Studio, Vault, Security, Compliance, Prompt Library, Legal, Mode Lokal, Akuisisi, Connect) | §9 fase 1–10 | 10/10 | **100 %** |
+| 2 | Penawaran akuisisi US$10.000.000 (§17 B) | harga · halaman premium · 10 bahasa · uji · tayang di axto.io | 4/5 | **80 %** |
+| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) · Legal (alat) · Compliance · Security · Prompt Library · halaman kecil · crawler 0 | 1/7 | **15 %** |
+| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 A2 A3 A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 | 0/13 (blueprint ✅) | **0 %** |
+| 5 | Desain Istana Kristal (§18) | token · komponen · publik · portal member · admin · uji visual | 0/6 (blueprint ✅) | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **15/41** | **≈ 36 %** |
+
+**Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
+1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
+2. A1 — nama 10 aplikasi = gambar pemilik di semua tempat; footer & menu memuat semua 10 aplikasi.
+3. §18 token + komponen + beranda „One Ecosystem“ dengan 10 aplikasi.
+4. A2 edisi per aplikasi → A3 program 100 trial per aplikasi (zero-touch).
+5. §17 A sisa terjemahan (crawler sampai 0).
+6. §18 portal member & admin (tur, ⌘K, pusat aksi).
+7. A4, E1 (AXTO Workspace = kesetaraan cloud ↔ Docker), lalu B/C/D sesuai `AXTO-APPS-BLUEPRINT.md`.
+
+**Yang butuh pemilik (tidak bisa dikerjakan AI):** sertifikat code signing EV untuk `.exe`/`.msi`,
+pentest independen, audit SOC 2 / ISO 27001, pelanggan & pendapatan nyata, keputusan harga final per
+edisi dan lifetime (Admin → Plans).
