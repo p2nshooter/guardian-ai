@@ -16,7 +16,7 @@
 import { dbFirst, dbRun, now } from "./db";
 
 export const SALE_KEY = "site_sale";
-export const DEFAULT_PRICE_USD = 2_000_000;
+export const DEFAULT_PRICE_USD = 10_000_000;
 /** Gateways that may carry the sale, in the order buyers see them (PayPal first). */
 export const SALE_GATEWAYS = ["paypal", "nowpayments", "crypto", "manual", "stripe"] as const;
 export type SaleGateway = (typeof SALE_GATEWAYS)[number];

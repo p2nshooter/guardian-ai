@@ -20,8 +20,8 @@ export function countryName(c: Country, lang: Lang): string {
   } catch { return c.name; }
 }
 
-export default function JurisdictionPicker({ countries, subdivisions, value, onChange, lang, locked = false }: {
-  countries: Country[]; subdivisions: Record<string, Subdivision[]>; value: JurValue; onChange: (v: JurValue) => void; lang: Lang; locked?: boolean;
+export default function JurisdictionPicker({ countries, subdivisions, regions, value, onChange, lang, locked = false }: {
+  countries: Country[]; subdivisions: Record<string, Subdivision[]>; regions?: Record<string, string>; value: JurValue; onChange: (v: JurValue) => void; lang: Lang; locked?: boolean;
 }) {
   const t = pick(T, lang);
   const [open, setOpen] = useState(false);
@@ -43,8 +43,8 @@ export default function JurisdictionPicker({ countries, subdivisions, value, onC
     const hits = needle ? named.filter((x) => x.label.toLowerCase().includes(needle) || x.c.name.toLowerCase().includes(needle) || x.c.code.toLowerCase() === needle) : named;
     const by: Record<string, typeof hits> = {};
     for (const h of hits) (by[h.c.region] ||= []).push(h);
-    return Object.entries(REGIONS).map(([id, names]) => ({ id, name: names[lang === "id" ? 1 : 0], items: (by[id] || []).sort((a, b) => a.label.localeCompare(b.label)) })).filter((g) => g.items.length);
-  }, [countries, q, lang]);
+    return Object.entries(REGIONS).map(([id, names]) => ({ id, name: regions?.[id] || names[lang === "id" ? 1 : 0], items: (by[id] || []).sort((a, b) => a.label.localeCompare(b.label)) })).filter((g) => g.items.length);
+  }, [countries, q, lang, regions]);
 
   if (locked) {
     const label = [value.city, sub?.name, current ? countryName(current, lang) : value.country].filter(Boolean).join(", ");

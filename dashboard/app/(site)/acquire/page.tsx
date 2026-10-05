@@ -12,15 +12,16 @@ import { PRODUCT_CATALOG } from "@/lib/product-catalog";
 import { GATEWAYS } from "@/lib/billing/gateways";
 import { LANGS } from "@/lib/i18n-shared";
 import { DEFAULT_PRICE_USD } from "@/lib/acquisition";
-import { ACQ } from "@/lib/acquire-copy";
+import { ACQ_EN } from "@/lib/acquire-copy";
+import { DEVCOPY } from "@/lib/developers-copy";
 
-const DESCRIPTION = "Buy AXTO outright: the axto.io domain, full source code, seven live cloud AI apps (Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst, Prompt Library), ten self-hosted products, worldwide payments and licensing, ten languages and the brand. Administrator access is granted the moment the payment is verified.";
+const DESCRIPTION = "Acquire AXTO outright: the axto.io domain, full source code, seven live cloud AI apps (Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst, Prompt Library), ten self-hosted products, the AXTO Connect real-time developer platform, Local Mode, worldwide payments and licensing, ten languages and the brand — with a buyer's guide, escrow option and an automatic administrator handover.";
 
 export const metadata: Metadata = pageMeta({
-  title: "Acquire AXTO — the whole AI software company is for sale",
+  title: "Acquire AXTO — an enterprise-grade AI platform for sale (US$10M)",
   description: DESCRIPTION,
   path: "/acquire",
-  keywords: ["buy AI SaaS business", "AI startup for sale", "SaaS acquisition", "buy software company", "AI platform for sale", "turnkey AI business", "jual beli website AI", "akuisisi startup AI"],
+  keywords: ["buy AI SaaS business", "AI platform for sale", "AI startup acquisition", "SaaS acquisition", "buy software company", "enterprise AI platform", "legal AI platform for sale", "turnkey AI business", "jual beli website AI", "akuisisi startup AI"],
 });
 
 export default function AcquirePage() {
@@ -41,9 +42,9 @@ export default function AcquirePage() {
   };
   return (
     <>
-      <JsonLd data={[product, faqJsonLd(ACQ.en.faq.map(([q, a]) => ({ q, a }))), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Acquire AXTO", path: "/acquire" }])]} />
+      <JsonLd data={[product, faqJsonLd(ACQ_EN.faq.map(([q, a]) => ({ q, a }))), breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "Acquire AXTO", path: "/acquire" }])]} />
       <AcquireOffer apps={apps} products={products}
-        stats={{ apps: apps.length, selfHosted: products.length, langs: LANGS.length, gateways: GATEWAYS.length, jurisdictions: "200+", tests: "190+" }} />
+        stats={{ apps: apps.length, selfHosted: products.length, langs: LANGS.length, gateways: GATEWAYS.length, jurisdictions: "200+", tests: "270+", transports: DEVCOPY.en.transports.length }} />
     </>
   );
 }

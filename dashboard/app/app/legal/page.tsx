@@ -35,12 +35,13 @@ import CitationsTool from "@/components/legal/tools/Citations";
 import AskMatter from "@/components/legal/tools/AskMatter";
 import { aiFetch } from "@/lib/ai/client-run";
 
-interface WsField { id: string; label: string; labelId: string; type: "text" | "textarea" | "select"; options?: [string, string, string][]; placeholder?: string }
-interface Ws { id: string; group: string; icon: string; core: boolean; name: string; nameId: string; desc: string; descId: string; docs: string; fields: WsField[]; starters: [string, string][] }
+// The catalogue arrives already in the member's language (/api/legal/catalog?lang=…).
+interface WsField { id: string; label: string; type: "text" | "textarea" | "select"; options?: [string, string][]; placeholder?: string }
+interface Ws { id: string; group: string; icon: string; core: boolean; name: string; nameEn: string; desc: string; docs: string; fields: WsField[]; starters: string[] }
 interface Catalog {
-  access: boolean; unlocked: string[]; groups: { id: string; name: string; nameId: string }[]; workspaces: Ws[];
-  areas: { id: string; name: string; nameId: string; group: string }[]; countries: Country[]; subdivisions: Record<string, Subdivision[]>;
-  citationStyles: { id: string; name: string }[];
+  access: boolean; unlocked: string[]; lang: string; groups: { id: string; name: string }[]; workspaces: Ws[];
+  areas: { id: string; name: string; nameEn: string; group: string; groupName: string }[]; countries: Country[]; subdivisions: Record<string, Subdivision[]>;
+  citationStyles: { id: string; name: string }[]; regions: Record<string, string>;
 }
 interface Msg { role: "user" | "assistant"; content: string }
 interface MatterEntry { id: string; title: string; client: string; country: string; status: string; updatedAt: string; docs: number; runs: number }
@@ -109,7 +110,7 @@ export default function LegalApp() {
   // ── load catalogue + preferences ──
   useEffect(() => {
     (async () => {
-      const r = await api<Catalog>("/api/legal/catalog");
+      const r = await api<Catalog>(`/api/legal/catalog?lang=${lang}`);
       if (!r.ok) { setCatErr(r.error); return; }
       setCat(r.data);
       const p = loadPrefs();
@@ -133,6 +134,11 @@ export default function LegalApp() {
       }
     })();
   }, []);
+  // The member switched language: fetch the catalogue again in that language (selections stay).
+  useEffect(() => {
+    if (!cat || cat.lang === lang) return;
+    api<Catalog>(`/api/legal/catalog?lang=${lang}`).then((r) => { if (r.ok) setCat(r.data); });
+  }, [lang]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (cat) savePrefs({ wsId, jur, jurLocked, area, adv: { ...adv, asOf: undefined }, ai, tool }); }, [cat, wsId, jur, jurLocked, area, adv, ai, tool]);
 
   const ws = cat?.workspaces.find((w) => w.id === wsId);
@@ -145,7 +151,7 @@ export default function LegalApp() {
     const q = wsQuery.trim().toLowerCase();
     return cat.groups.map((g) => ({
       ...g,
-      items: cat.workspaces.filter((w) => w.group === g.id && (!q || `${w.name} ${w.nameId} ${w.desc} ${w.descId}`.toLowerCase().includes(q))),
+      items: cat.workspaces.filter((w) => w.group === g.id && (!q || `${w.name} ${w.nameEn} ${w.desc}`.toLowerCase().includes(q))),
     })).filter((g) => g.items.length);
   }, [cat, wsQuery]);
 
@@ -210,7 +216,7 @@ export default function LegalApp() {
   }
 
   function start() {
-    const text = request.trim() || ws?.starters[0]?.[lang === "id" ? 1 : 0] || "";
+    const text = request.trim() || ws?.starters[0] || "";
     if (!text) return;
     setRequest("");
     run([{ role: "user", content: text }]);
@@ -370,7 +376,7 @@ export default function LegalApp() {
     );
   }
 
-  const wsName = (w: Ws) => (lang === "id" ? w.nameId : w.name);
+  const wsName = (w: Ws) => w.name;
 
   return (
     <div className="legal-app">
@@ -432,7 +438,7 @@ export default function LegalApp() {
             <input className="input mb-3" placeholder={t.search} value={wsQuery} onChange={(e) => setWsQuery(e.target.value)} />
             {wsGroups.map((g) => (
               <div key={g.id} className="mb-3">
-                <div className="px-1.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{lang === "id" ? g.nameId : g.name}</div>
+                <div className="px-1.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{g.name}</div>
                 {g.items.map((w) => (
                   <button key={w.id} onClick={() => pickWorkspace(w.id)}
                     className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${w.id === wsId ? "bg-brand-50 font-semibold text-brand-800" : "text-slate-700 hover:bg-slate-50"}`}>
@@ -454,7 +460,7 @@ export default function LegalApp() {
                 <span className="label">{t.workspaces}</span>
                 <select className="select" value={wsId} onChange={(e) => pickWorkspace(e.target.value)}>
                   {wsGroups.map((g) => (
-                    <optgroup key={g.id} label={lang === "id" ? g.nameId : g.name}>
+                    <optgroup key={g.id} label={g.name}>
                       {g.items.map((w) => <option key={w.id} value={w.id}>{w.icon} {wsName(w)}{unlocked(w.id) ? "" : " 🔒"}</option>)}
                     </optgroup>
                   ))}
@@ -463,7 +469,7 @@ export default function LegalApp() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="text-lg font-bold">{ws.icon} {wsName(ws)}</h2>
-                  <p className="mt-1 max-w-3xl text-sm text-slate-600">{lang === "id" ? ws.descId : ws.desc}</p>
+                  <p className="mt-1 max-w-3xl text-sm text-slate-600">{ws.desc}</p>
                 </div>
               </div>
               <div className="mt-4 border-t border-slate-100 pt-4"><ModelPicker lang={lang} value={ai} onChange={setAi} /></div>
@@ -480,13 +486,13 @@ export default function LegalApp() {
                 {jurLocked ? `🔒 ${t.jurLocked}` : `🔓 ${t.jurLock}`}
               </button>
             </div>
-            <JurisdictionPicker countries={cat.countries} subdivisions={cat.subdivisions} value={jur} onChange={setJur} lang={lang} locked={jurLocked} />
+            <JurisdictionPicker countries={cat.countries} subdivisions={cat.subdivisions} regions={cat.regions} value={jur} onChange={setJur} lang={lang} locked={jurLocked} />
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="sm:col-span-2">
                 <span className="label">{t.area}</span>
                 <select className="select" value={area} onChange={(e) => setArea(e.target.value)}>
                   {Array.from(new Set(cat.areas.map((a) => a.group))).map((g) => (
-                    <optgroup key={g} label={g}>{cat.areas.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{lang === "id" ? a.nameId : a.name}</option>)}</optgroup>
+                    <optgroup key={g} label={cat.areas.find((a) => a.group === g)?.groupName || g}>{cat.areas.filter((a) => a.group === g).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</optgroup>
                   ))}
                 </select>
               </label>
@@ -527,11 +533,11 @@ export default function LegalApp() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {ws.fields.map((f) => (
                   <label key={f.id} className={f.type === "textarea" ? "sm:col-span-2" : ""}>
-                    <span className="label">{lang === "id" ? f.labelId : f.label}</span>
+                    <span className="label">{f.label}</span>
                     {f.type === "select" ? (
                       <select className="select" value={fields[f.id] || ""} onChange={(e) => setFields({ ...fields, [f.id]: e.target.value })}>
                         <option value="">—</option>
-                        {f.options!.map(([v, en, id]) => <option key={v} value={v}>{lang === "id" ? id : en}</option>)}
+                        {f.options!.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
                       </select>
                     ) : f.type === "textarea" ? (
                       <textarea className="textarea min-h-[90px]" value={fields[f.id] || ""} placeholder={f.placeholder} maxLength={4000} onChange={(e) => setFields({ ...fields, [f.id]: e.target.value })} />
@@ -561,8 +567,8 @@ export default function LegalApp() {
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className="text-slate-500">{t.starters}</span>
                   {ws.starters.map((s) => (
-                    <button key={s[0]} type="button" className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-700 hover:border-brand-300 hover:bg-brand-50"
-                      onClick={() => setRequest(lang === "id" ? s[1] : s[0])}>{lang === "id" ? s[1] : s[0]}</button>
+                    <button key={s} type="button" className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-700 hover:border-brand-300 hover:bg-brand-50"
+                      onClick={() => setRequest(s)}>{s}</button>
                   ))}
                 </div>
               ) : null}

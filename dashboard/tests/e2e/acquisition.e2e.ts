@@ -55,7 +55,7 @@ before(async () => {
   const g = await admin.get("/api/admin/acquisition");
   assert.equal(g.status, 200, g.text);
   saved = g.json.settings;
-  // A known state: open, $2,000,000, wire offered.
+  // A known state: open, $10,000,000, wire offered.
   const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open" } });
   assert.equal(r.status, 200, r.text);
   await signUp(buyer, `buyer-${RUN}@example.com`);
@@ -69,7 +69,7 @@ test("acquire: the public offer shows the price, the page and the menu", async (
   const r = await anon.get("/api/acquire");
   assert.equal(r.status, 200);
   assert.equal(r.json.status, "open");
-  assert.equal(r.json.priceUsd, 2_000_000);
+  assert.equal(r.json.priceUsd, 10_000_000);
   assert.ok(r.json.gateways.some((g: any) => g.id === "manual"), "BNI wire is offered");
   assert.ok(!JSON.stringify(r.json).includes("2090571495"), "bank accounts are not public before a checkout");
   const page = await anon.get("/acquire");
@@ -91,7 +91,7 @@ test("acquire: BNI wire checkout → owner's accounts, WhatsApp, proof → admin
   const r = await buyer.post("/api/acquire/checkout", { gateway: "manual", company: "Acme Holdings", name: "Budi", phone: "+62 811 0000", message: "Ready to wire" });
   assert.equal(r.status, 200, r.text);
   assert.equal(r.json.method, "wire");
-  assert.equal(r.json.amountUsd, 2_000_000);
+  assert.equal(r.json.amountUsd, 10_000_000);
   assert.equal(r.json.bank.swift, "BNINIDJA");
   assert.equal(r.json.bank.holder, "YUSRON EFENDI");
   assert.equal(r.json.bank.primary.number, "2090571495");

@@ -49,7 +49,7 @@ Aktifkan kredensial **Live** di **Admin → Payment & email**:
 - **NOWPayments**: API key + IPN secret.
 - **Kripto langsung**: alamat dompet (USDT TRC20/ERC20/BEP20, USDC, BTC, ETH, SOL) + Etherscan API key untuk konfirmasi otomatis.
 
-Catatan jujur tentang PayPal: PayPal membatasi satu kali pembayaran (umumnya US$10.000–60.000 tergantung akun pembayar). Untuk harga penuh US$2.000.000, halaman memberi tahu pembeli agar memakai kripto atau wire BNI bila PayPal menolak. Pembayaran PayPal juga dapat di-chargeback; kripto dan wire tidak.
+Catatan jujur tentang PayPal: PayPal membatasi satu kali pembayaran (umumnya US$10.000–60.000 tergantung akun pembayar). Untuk harga penuh US$10.000.000, jalur yang realistis adalah wire bank (BNI) atau escrow, dan kripto untuk pembeli yang memilihnya; halaman memberi tahu pembeli hal ini dan menyarankan escrow untuk transaksi sebesar ini. Pembayaran PayPal juga dapat di-chargeback; kripto dan wire tidak.
 
 ## Serah terima setelah lunas
 Akses admin otomatis; sisanya dikerjakan bersama pembeli sesuai daftar di halaman: domain axto.io, akun Cloudflare (Pages, D1, KV, R2, Workers, DNS), repositori GitHub, akun penyedia pembayaran, Resend, image Docker & pipeline rilis, merek/konten, dokumentasi.

@@ -133,6 +133,35 @@
   .scanline { position: absolute; inset-inline: 0; height: 40%; background: linear-gradient(180deg, transparent, rgba(31,216,192,.14), transparent); animation: axto-scan 3.2s ease-in-out infinite; }
 }
 
+/* ── /acquire — enterprise offer motion (decorative only) ─────────────────── */
+@layer utilities {
+  @keyframes acq-aurora { 0% { transform: translate3d(-4%, -2%, 0) rotate(0deg) scale(1); } 50% { transform: translate3d(4%, 3%, 0) rotate(8deg) scale(1.08); } 100% { transform: translate3d(-4%, -2%, 0) rotate(0deg) scale(1); } }
+  @keyframes acq-orb { 0%,100% { transform: translate3d(0,0,0); } 50% { transform: translate3d(24px,-28px,0); } }
+  @keyframes acq-price { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+  .acq-aurora { background:
+      radial-gradient(900px 420px at 18% -8%, rgba(245,158,11,.30), transparent 60%),
+      radial-gradient(800px 480px at 88% 6%, rgba(59,130,246,.28), transparent 60%),
+      radial-gradient(700px 500px at 50% 110%, rgba(16,185,129,.18), transparent 60%);
+    animation: acq-aurora 22s ease-in-out infinite; }
+  .acq-grid { background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 56px 56px; mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 75%); }
+  .acq-orb { width: 340px; height: 340px; border-radius: 9999px; filter: blur(70px); opacity: .45; animation: acq-orb 14s ease-in-out infinite; }
+  .acq-orb-a { left: -80px; top: 40%; background: rgba(245,158,11,.45); }
+  .acq-orb-b { right: -60px; top: -60px; background: rgba(99,102,241,.45); animation-delay: -6s; }
+  .acq-price { background: linear-gradient(90deg, #fcd34d, #fbbf24, #fff7d6, #f59e0b, #fcd34d); background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent; animation: acq-price 6s linear infinite; }
+  .acq-card { transition: transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s, border-color .35s; }
+  .acq-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -18px rgba(15,23,42,.28); border-color: rgb(203 213 225); }
+  @media (min-width: 768px) {
+    .acq-timeline::before { content: ""; position: absolute; left: 6px; right: 0; top: 5px; height: 2px; background: linear-gradient(90deg, #10b981, rgba(16,185,129,.15)); transform-origin: left; animation: acq-line 1.6s cubic-bezier(.22,1,.36,1) both; }
+  }
+  @keyframes acq-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acq-aurora, .acq-orb, .acq-price, .acq-timeline::before { animation: none !important; }
+  .acq-card, .acq-card:hover { transition: none !important; transform: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-float, .anim-pulse-ring, .anim-gradient, .anim-in, .shimmer-text, .scanline { animation: none !important; }
   .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
@@ -155,3 +184,4 @@
 @layer components {
   .prose-axto .code-card pre { @apply m-0 rounded-none bg-transparent; }
 }
+

@@ -1,33 +1,46 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * ==============================================================================
- * /acquire — the words of the site-sale offer, in English and Indonesian (other
- * portal languages read the English version; buyers of a company read English).
- * Every claim here is true of the code as shipped — counts come from the source
- * (lib/apps, lib/selfhosted, lib/billing/gateways, lib/i18n-shared), and the
- * privacy promise follows docs/BLUEPRINT-V4.md §1 word for word in substance.
+ * /acquire — the words of the site-sale offer (English; the other nine portal
+ * languages are in lib/i18n-pages/acquire.ts and load on demand). Every claim
+ * here is true of the code as shipped — counts come from the source (lib/apps,
+ * lib/product-catalog, lib/billing/gateways, lib/i18n-shared) and the privacy
+ * promise follows docs/BLUEPRINT-V4.md §1 in substance. No revenue, user or
+ * traffic figures are claimed.
  * ============================================================================ */
-export type AcqLang = "en" | "id";
 
-const en = {
-  eyebrow: "Exclusive acquisition opportunity",
-  title: "Own AXTO — a complete AI software company, ready to run from day one.",
-  lead: "The domain, the code, every live app, the self-hosted product line, the payment and licensing machinery, ten languages of content and the brand — handed over to one buyer. Pay, and your account becomes the administrator the moment the payment is verified.",
+export const ACQ_EN = {
+  eyebrow: "Private acquisition · one buyer · complete transfer",
+  title: "Acquire AXTO — an enterprise-grade AI platform, complete and running.",
+  lead: "Seven live AI applications, a ten-product self-hosted line, a real-time developer platform, worldwide payments and licensing, ten languages and the axto.io brand — transferred to a single owner. Administrator access is granted the moment your payment is verified; everything else follows a documented, step-by-step handover.",
   price: "Asking price",
-  buy: "Acquire AXTO",
+  priceNote: "One-time acquisition of the whole business. Escrow and staged payment can be arranged.",
+  buy: "Start the acquisition",
+  guideCta: "Read the buyer's guide",
   talk: "Talk to the owner",
   sold: "This offer has been accepted — AXTO has been sold.",
   paused: "The offer is paused at the moment. Contact the owner to discuss.",
-  stats: { apps: "live cloud apps", selfHosted: "self-hosted products", langs: "languages", gateways: "payment methods", jurisdictions: "legal jurisdictions", tests: "automated tests" },
+  stats: { apps: "live cloud apps", selfHosted: "self-hosted products", langs: "languages", gateways: "payment methods", jurisdictions: "legal jurisdictions", tests: "automated tests", transports: "ways to connect" },
+
+  highlightsTitle: "Why this platform is worth owning",
+  highlightsLead: "A finished product with the operations around it — not a prototype, not a template.",
+  highlights: [
+    ["🏛️", "Seven flagship AI applications", "Legal AI with 36 expert workspaces and on-device legal tools, Clipper for viral short video, AI Studio, Privacy Vault, Compliance Center, Security Analyst and a 240-prompt expert library — live, on every device."],
+    ["🛡️", "A privacy architecture buyers can verify", "Files are processed on the member's device, AI runs on the member's own keys or on a model on their own computer (Local Mode), and saved work is encrypted per account."],
+    ["⚙️", "Zero-touch operations", "Payments, plan activation, licences, downloads — and this sale itself — complete automatically once a payment is verified. The admin portal covers everything else."],
+    ["⚡", "A real-time developer platform", "AXTO Connect: REST, Server-Sent Events, WebSocket, long polling, HTTP/2 streaming, a gRPC-compatible Connect API, WebRTC, signed webhooks and an MCP server for AI agents."],
+    ["🌍", "Global from day one", "Ten languages, 200+ legal jurisdictions down to state and province, and payment rails from PayPal and cards to QRIS, crypto and bank wire."],
+    ["🐳", "A self-hosted product line", "Docker editions for Windows, macOS and Linux on x86-64 and ARM64, with the AXTO Setup installer and Ed25519-signed offline licences."],
+  ] as [string, string, string][],
 
   promiseTitle: "Client-side by design — our privacy guarantee",
   promiseLead: "AXTO was built so that the member's data stays with the member. This is what is guaranteed today, precisely:",
   promise: [
     ["Files never leave the device", "Documents, PDFs, spreadsheets, images, scans and videos are opened, read (OCR), edited, redacted, rendered and exported in the browser — PDF.js, Tesseract, ffmpeg.wasm and on-device face tracking. Nothing is uploaded for processing."],
     ["Bring your own key, model or endpoint", "BYOK, BYOX and BYOM: every AI request runs on the member's own key and chosen provider (or their own model server). AXTO only relays the request at the edge — it never stores it and never trains on it. Keys are encrypted at rest."],
-    ["Encrypted work, one key per account", "Saved chats, projects, reports and redactions are encrypted with a key unique to each account."],
+    ["Local Mode — AI on the member's own device", "Members can connect Ollama, LM Studio or any OpenAI-compatible server on their computer: the prompt is built in the browser and the AI request never passes through AXTO's servers."],
+    ["Encrypted work, one key per account", "Saved chats, projects, matters, reports and redactions are encrypted with a key unique to each account."],
     ["Managed AI — coming soon", "AXTO-provided models are prepared but locked. They are switched on manually only when the service is ready and perfected — nothing is sold before then."],
-    ["Local Mode — on the roadmap", "Talking to a model on the member's own machine (Ollama, LM Studio, WebGPU) straight from the browser, making the AI path 100% client-side as well."],
   ] as [string, string][],
 
   appsTitle: "Everything that is included",
@@ -37,24 +50,68 @@ const en = {
   engineTitle: "The business engine",
   engine: [
     ["Payments, worldwide", "PayPal, credit / debit cards processed in Indonesia and paid out to the company's bank account (Xendit or Midtrans; Stripe too where available), Indonesian QRIS / virtual accounts / e-wallets, crypto via NOWPayments, direct wallet transfers confirmed on-chain, and bank transfer — each with separate live and sandbox credentials, encrypted."],
-    ["Subscriptions and lifetime licences", "Four plans with time-based pro-rating, invoices, renewal reminders; perpetual licences for 1–100 devices with Ed25519-signed offline activation."],
-    ["Admin portal", "Members, orders and payments, licences, lifetime licences, support inbox with AI assistant, plans and pricing, payment and e-mail settings, releases and a full audit log."],
-    ["Growth", "Public site with SEO pages for every app and jurisdiction, a blog, help guides, structured data, installable PWA and ad-ready public pages."],
-    ["Engineering quality", "Typed end to end, unit and end-to-end test suites in CI, security hardening, rate limits, and a written architecture blueprint."],
+    ["Subscriptions and lifetime licences", "Four plans with time-based pro-rating, invoices and renewal reminders; perpetual licences for 1–100 devices with Ed25519-signed offline activation."],
+    ["Developer platform", "AXTO Connect gives every paid plan API keys, live event channels, AI streaming, WebRTC rooms, signed webhooks and MCP tools — with plan limits, encryption and an admin switch."],
+    ["Admin portal", "Members, orders and payments, licences, lifetime licences, support inbox with AI assistant, plans and pricing, developer API, payment and e-mail settings, releases and a full audit log."],
+    ["Growth", "Public site with SEO pages for every app and jurisdiction, a blog, help guides, structured data, an installable PWA and ad-ready public pages."],
+    ["Engineering quality", "Typed end to end, unit and end-to-end test suites in CI on every change, security hardening, rate limits, and a written architecture blueprint."],
   ] as [string, string][],
   stackTitle: "Technology",
-  stack: "Next.js 15 on Cloudflare's global edge (Pages, Workers, D1, KV, R2) · TypeScript · Go installer · Docker (multi-arch) · browser-side AI tooling (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe).",
+  stack: "Next.js 15 on Cloudflare's global edge (Pages, Workers, D1, KV, R2) · TypeScript · Go installer · Docker (multi-arch) · browser-side AI tooling (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · WebRTC and WebSocket realtime.",
 
-  handoverTitle: "The handover",
+  guideTitle: "Buyer's guide — from first call to full ownership",
+  guideLead: "A clear path for a transaction of this size. Every step can be accelerated; none is skipped on safety.",
+  guide: [
+    ["Introductory call", "Meet the owner on WhatsApp or video. Agree on scope, timeline and how you want to pay.", "Day 1"],
+    ["Review the platform", "The repositories, the architecture blueprint, the test history and the list of accounts that transfer are made available for your review; a mutual NDA can be signed first.", "Days 1–3"],
+    ["Technical due diligence", "Run it yourself: the code builds, its unit and end-to-end suites run in CI, and a full local copy starts with one command.", "Days 3–14"],
+    ["Agreement and escrow", "Sign the purchase agreement. For a transaction of this size we recommend a licensed escrow agent or staged payments.", "Days 7–21"],
+    ["Payment", "Bank wire to BNI (SWIFT BNINIDJA), escrow release, crypto, or PayPal for the amounts it allows. The payment is matched to your order automatically.", "Closing day"],
+    ["Automatic handover", "Your account becomes administrator the moment the payment is verified; domain, Cloudflare, GitHub and provider accounts then transfer on the checklist.", "Closing + 1–7 days"],
+  ] as [string, string, string][],
+
+  timelineTitle: "Handover timeline",
+  timeline: [
+    ["Minute 0", "Administrator access", "Granted automatically when the payment is verified, confirmed by e-mail and recorded in the audit log."],
+    ["Day 1", "Code and infrastructure", "GitHub repositories with full history, the Cloudflare account (Pages, D1, KV, R2, DNS) and the domain transfer authorisation."],
+    ["Week 1", "Payments and e-mail", "Payment providers moved to your company or switched to your own accounts; e-mail sending and support inboxes."],
+    ["Weeks 2–4", "Knowledge transfer", "Walk-throughs of the architecture, the release pipeline, the admin runbooks and the self-hosted build, with answers in writing."],
+  ] as [string, string, string][],
+  transitionNote: "Optional transition support after closing can be agreed in the purchase agreement.",
+
+  dataRoomTitle: "Available for your review",
+  dataRoomLead: "Everything a buyer needs to verify the claims on this page:",
+  dataRoom: [
+    "Full source code with history — dashboard, engines, installer, CI/CD",
+    "Architecture blueprint and design decisions, app by app",
+    "Unit and end-to-end test suites with their CI run history",
+    "Security model: per-account encryption, secret handling, rate limits, audit log",
+    "Admin runbooks: payments, site sale, licences, releases, self-hosting",
+    "The complete list of accounts and assets that transfer",
+  ],
+
+  handoverTitle: "What transfers to you",
   handoverLead: "Administrator access is granted automatically the moment your payment is verified. The rest follows in an orderly checklist with the owner:",
-  stepsTitle: "How to acquire AXTO",
+  handover: [
+    "Administrator access to the AXTO portal — automatic when the payment is verified",
+    "Domain axto.io at the registrar",
+    "Cloudflare account / zone: Pages project, D1 database, KV, R2 buckets, Workers and DNS",
+    "GitHub repositories (dashboard, engines, installer, CI/CD) with full history",
+    "Payment provider accounts — or a clean switch to your own (PayPal, Stripe, Xendit, Midtrans, NOWPayments, crypto wallets)",
+    "E-mail sending (Resend) and support inboxes",
+    "Docker images and the release pipeline (x86-64 and ARM64), AXTO Setup installer",
+    "Brand, logo, content, blog, SEO pages and translations (10 languages)",
+    "Documentation: architecture blueprint, admin runbooks, CI/CD and self-hosting guides",
+  ],
+  stepsTitle: "Acquire in three steps",
   steps: [
     ["Create or sign in to your account", "This account becomes the administrator."],
-    ["Pay the asking price", "PayPal, crypto (confirmed automatically) or a bank wire to BNI."],
+    ["Pay the asking price", "Bank wire or escrow is recommended at this size; crypto and PayPal are also available."],
     ["Receive administrator access", "Instantly on verified payment — then the domain, Cloudflare, GitHub and provider accounts are transferred."],
   ] as [string, string][],
 
   checkoutTitle: "Secure checkout",
+  escrowNote: "For a transaction of this size we recommend a bank wire or a licensed escrow agent. PayPal limits single payments.",
   signInFirst: "Sign in or create the account that will own AXTO, then return here to pay.",
   signIn: "Sign in",
   register: "Create account",
@@ -99,6 +156,9 @@ const en = {
   verify: "Verify payment",
   waiting: "Waiting for the payment to be confirmed — this page updates by itself.",
   back: "Choose another method",
+  canceled: "The payment was cancelled — choose a method again.",
+  proofWa: "Hello, I have sent the wire for the AXTO acquisition. Order reference: {id}. Here is the transfer receipt.",
+  handoverWaText: "Hello, my AXTO acquisition payment is verified (order {id}). Let's arrange the handover.",
 
   paidTitle: "Payment verified — welcome, owner of AXTO.",
   paidAdmin: "Your account is now an administrator of the whole platform.",
@@ -111,122 +171,13 @@ const en = {
   faqTitle: "Questions buyers ask",
   faq: [
     ["What exactly do I own after the purchase?", "The whole business as it stands: domain, source code and its history, apps, self-hosted products, brand and content, and the operating accounts listed in the handover checklist. Intellectual property in the code and brand transfers to you."],
-    ["Is the price negotiable, or can we use escrow?", "Talk to the owner on WhatsApp. An escrow service or staged payment can be arranged before paying through this page."],
+    ["Can I review the platform before paying?", "Yes. The code, the architecture blueprint, the test history and the list of transferring accounts are made available for review before you commit, and you can run a full copy yourself."],
+    ["Is the price negotiable, or can we use escrow?", "Talk to the owner on WhatsApp. A licensed escrow agent or staged payment can be arranged before paying through this page."],
+    ["What does it cost to run?", "The platform runs on Cloudflare's serverless edge (pay as you go) plus an e-mail provider. Members pay their own AI providers, so AI usage costs the company nothing."],
     ["What happens to existing members and their data?", "Their accounts, plans and encrypted work stay exactly as they are; you become the operator. Their files were never uploaded, so there is no document archive to migrate."],
-    ["Why does PayPal sometimes decline this amount?", "PayPal caps single payments for most accounts. Crypto (confirmed automatically) or a bank wire to BNI carry the full price."],
-    ["How fast is administrator access?", "Instant for automatically confirmed payments (PayPal capture, card, NOWPayments, stablecoins on-chain). For a bank wire, as soon as the owner verifies the funds."],
+    ["Why does PayPal sometimes decline this amount?", "PayPal caps single payments for most accounts. A bank wire, escrow or crypto carries the full price."],
+    ["How fast is administrator access?", "Instant for automatically confirmed payments (PayPal capture, card, NOWPayments, stablecoins on-chain). For a bank wire or escrow, as soon as the funds are verified."],
   ] as [string, string][],
 };
 
-export type AcqCopy = typeof en;
-
-const id: AcqCopy = {
-  eyebrow: "Peluang akuisisi eksklusif",
-  title: "Miliki AXTO — perusahaan perangkat lunak AI yang lengkap, siap dijalankan sejak hari pertama.",
-  lead: "Domain, kode, seluruh aplikasi yang sudah live, lini produk self-hosted, mesin pembayaran dan lisensi, konten dalam sepuluh bahasa, serta mereknya — diserahkan kepada satu pembeli. Bayar, dan akun Anda langsung menjadi administrator begitu pembayaran terverifikasi.",
-  price: "Harga penawaran",
-  buy: "Akuisisi AXTO",
-  talk: "Bicara dengan pemilik",
-  sold: "Penawaran ini telah diterima — AXTO sudah terjual.",
-  paused: "Penawaran sedang dijeda. Hubungi pemilik untuk berdiskusi.",
-  stats: { apps: "aplikasi cloud live", selfHosted: "produk self-hosted", langs: "bahasa", gateways: "metode pembayaran", jurisdictions: "yurisdiksi hukum", tests: "tes otomatis" },
-
-  promiseTitle: "Berjalan di sisi klien sejak rancangannya — jaminan privasi kami",
-  promiseLead: "AXTO dibangun agar data milik anggota tetap berada di tangan anggota. Inilah yang dijamin hari ini, secara persis:",
-  promise: [
-    ["File tidak pernah meninggalkan perangkat", "Dokumen, PDF, spreadsheet, gambar, hasil pindaian dan video dibuka, dibaca (OCR), diedit, diredaksi, dirender dan diekspor di browser — dengan PDF.js, Tesseract, ffmpeg.wasm dan pelacakan wajah di perangkat. Tidak ada yang diunggah untuk diproses."],
-    ["Kunci, model, atau endpoint milik Anda sendiri", "BYOK, BYOX dan BYOM: setiap permintaan AI berjalan dengan kunci milik anggota ke penyedia pilihannya (atau server modelnya sendiri). AXTO hanya meneruskan permintaan di edge — tidak menyimpannya dan tidak melatih model dengannya. Kunci disimpan terenkripsi."],
-    ["Pekerjaan terenkripsi, satu kunci per akun", "Obrolan, proyek, laporan dan hasil redaksi yang disimpan dienkripsi dengan kunci unik untuk setiap akun."],
-    ["Managed AI — segera hadir", "Model yang disediakan AXTO sudah disiapkan namun masih dikunci. Layanan ini baru diaktifkan secara manual ketika sudah siap dan sempurna — tidak ada yang dijual sebelum itu."],
-    ["Mode Lokal — dalam peta jalan", "Browser berbicara langsung dengan model di perangkat anggota sendiri (Ollama, LM Studio, WebGPU), sehingga jalur AI pun 100% di sisi klien."],
-  ],
-
-  appsTitle: "Semua yang termasuk",
-  appsLead: "Setiap aplikasi di bawah ini sudah live di produksi, di semua perangkat, dalam sepuluh bahasa.",
-  selfHostedTitle: "Lini produk self-hosted",
-  selfHostedLead: "Image Docker untuk x86-64 dan ARM64, installer AXTO Setup untuk Windows, macOS dan Linux, lisensi bertanda tangan dan aktivasi offline.",
-  engineTitle: "Mesin bisnisnya",
-  engine: [
-    ["Pembayaran, dari seluruh dunia", "PayPal, kartu kredit / debit yang diproses di Indonesia dan dicairkan ke rekening bank perusahaan (Xendit atau Midtrans; juga Stripe bila tersedia), QRIS / virtual account / e-wallet Indonesia, kripto via NOWPayments, transfer dompet langsung yang dikonfirmasi on-chain, dan transfer bank — masing-masing dengan kredensial live dan sandbox terpisah, terenkripsi."],
-    ["Langganan dan lisensi seumur hidup", "Empat paket dengan pro-rata berbasis waktu, invoice, pengingat perpanjangan; lisensi permanen untuk 1–100 perangkat dengan aktivasi offline bertanda tangan Ed25519."],
-    ["Portal admin", "Anggota, pesanan dan pembayaran, lisensi, lisensi seumur hidup, kotak masuk dukungan dengan asisten AI, paket dan harga, pengaturan pembayaran dan email, rilis, serta log audit lengkap."],
-    ["Pertumbuhan", "Situs publik dengan halaman SEO untuk setiap aplikasi dan yurisdiksi, blog, panduan bantuan, data terstruktur, PWA yang bisa dipasang, dan halaman publik siap iklan."],
-    ["Kualitas rekayasa", "Bertipe dari ujung ke ujung, rangkaian tes unit dan end-to-end di CI, pengerasan keamanan, pembatasan laju, serta blueprint arsitektur tertulis."],
-  ],
-  stackTitle: "Teknologi",
-  stack: "Next.js 15 di edge global Cloudflare (Pages, Workers, D1, KV, R2) · TypeScript · installer Go · Docker (multi-arsitektur) · perangkat AI di sisi browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe).",
-
-  handoverTitle: "Serah terima",
-  handoverLead: "Akses administrator diberikan otomatis begitu pembayaran Anda terverifikasi. Selebihnya mengikuti daftar periksa yang tertib bersama pemilik:",
-  stepsTitle: "Cara mengakuisisi AXTO",
-  steps: [
-    ["Buat akun atau masuk", "Akun inilah yang akan menjadi administrator."],
-    ["Bayar harga penawaran", "PayPal, kripto (dikonfirmasi otomatis) atau transfer bank ke BNI."],
-    ["Terima akses administrator", "Seketika setelah pembayaran terverifikasi — lalu domain, Cloudflare, GitHub dan akun penyedia dialihkan."],
-  ],
-
-  checkoutTitle: "Pembayaran aman",
-  signInFirst: "Masuk atau buat akun yang akan memiliki AXTO, lalu kembali ke sini untuk membayar.",
-  signIn: "Masuk",
-  register: "Buat akun",
-  company: "Perusahaan (opsional)",
-  name: "Nama Anda",
-  phone: "Telepon / WhatsApp",
-  message: "Pesan untuk pemilik (opsional)",
-  method: "Metode pembayaran",
-  pay: "Bayar {amount}",
-  paying: "Memulai pembayaran aman…",
-  noMethods: "Metode pembayaran online sedang diaktifkan. Hubungi pemilik via WhatsApp untuk melanjutkan dengan transfer bank.",
-  paypalLimit: "PayPal membatasi satu kali pembayaran (umumnya hingga {max}). Jika PayPal menolak jumlah penuh, pilih kripto atau transfer bank.",
-  test: "Mode uji",
-  adminNote: "Anda masuk sebagai administrator — masuklah dengan akun pembeli untuk membeli.",
-
-  wireTitle: "Transfer bank ke BNI — langkah demi langkah",
-  wireIntro: "Transfer tepat sejumlah di bawah ini. Referensi pesanan Anda menandai pembayaran ini.",
-  amount: "Jumlah",
-  bank: "Bank",
-  holder: "Penerima",
-  swift: "SWIFT / BIC",
-  code: "Kode bank (Indonesia)",
-  account: "Nomor rekening",
-  reference: "Referensi / berita transfer",
-  otherCurrencies: "Rekening dalam mata uang lain",
-  wireSteps: [
-    "Buka aplikasi bank atau layanan transfer Anda dan pilih transfer internasional (SWIFT) ke Bank Negara Indonesia (BNI), SWIFT BNINIDJA. Dari bank di Indonesia pilih “Transfer ke Bank BNI” (kode bank 009) dan gunakan rekening IDR.",
-    "Masukkan nomor rekening sesuai mata uang yang Anda kirim (disarankan USD) dan nama penerima persis seperti tertulis.",
-    "Tulis referensi pesanan di berita transfer agar pembayaran cocok dengan pesanan Anda.",
-    "Setelah mengirim, klik “Saya sudah transfer” di bawah dan kirim bukti transfer via WhatsApp kepada pemilik.",
-    "Pemilik memverifikasi dana dan mengonfirmasi pesanan — akun Anda otomatis menjadi administrator dan Anda menerima email.",
-  ],
-  sentBtn: "Saya sudah transfer",
-  sentPh: "Referensi transfer dari bank Anda atau nama pengirim",
-  proofSent: "Terima kasih — pemilik memverifikasi transfer (biasanya dalam satu hari kerja) dan akses administrator Anda diberikan begitu dikonfirmasi. Mohon kirim juga bukti transfer via WhatsApp {wa}.",
-  whatsappProof: "Kirim bukti transfer via WhatsApp",
-  cryptoTitle: "Bayar dengan kripto",
-  cryptoIntro: "Kirim tepat sejumlah yang tertera di jaringan yang tertera. Pembayaran stablecoin (USDT / USDC) terdeteksi dan dikonfirmasi otomatis; untuk BTC, ETH atau SOL tempel hash transaksi setelah mengirim.",
-  sendExact: "Kirim tepat",
-  to: "Ke alamat",
-  txPh: "Hash transaksi (TXID)",
-  verify: "Verifikasi pembayaran",
-  waiting: "Menunggu konfirmasi pembayaran — halaman ini diperbarui dengan sendirinya.",
-  back: "Pilih metode lain",
-
-  paidTitle: "Pembayaran terverifikasi — selamat datang, pemilik AXTO.",
-  paidAdmin: "Akun Anda kini menjadi administrator seluruh platform.",
-  paidPending: "Pembayaran Anda tercatat. Akses administrator sedang diberikan oleh pemilik.",
-  paidTest: "Ini pembayaran uji (sandbox) — tidak ada akses yang berubah.",
-  openAdmin: "Buka portal admin",
-  handoverWa: "Koordinasikan serah terima via WhatsApp",
-  invoice: "Invoice",
-
-  faqTitle: "Pertanyaan yang sering diajukan pembeli",
-  faq: [
-    ["Apa persisnya yang saya miliki setelah membeli?", "Seluruh bisnis sebagaimana adanya: domain, kode sumber beserta riwayatnya, aplikasi, produk self-hosted, merek dan konten, serta akun operasional yang tercantum dalam daftar serah terima. Hak kekayaan intelektual atas kode dan merek beralih kepada Anda."],
-    ["Apakah harga bisa dinegosiasikan, atau memakai escrow?", "Bicarakan dengan pemilik via WhatsApp. Layanan escrow atau pembayaran bertahap dapat diatur sebelum membayar melalui halaman ini."],
-    ["Bagaimana dengan anggota yang sudah ada dan datanya?", "Akun, paket dan pekerjaan terenkripsi mereka tetap seperti semula; Anda menjadi operatornya. File mereka tidak pernah diunggah, jadi tidak ada arsip dokumen yang perlu dipindahkan."],
-    ["Mengapa PayPal kadang menolak jumlah ini?", "PayPal membatasi satu kali pembayaran untuk sebagian besar akun. Kripto (dikonfirmasi otomatis) atau transfer bank ke BNI dapat menampung harga penuh."],
-    ["Seberapa cepat akses administrator diberikan?", "Seketika untuk pembayaran yang terkonfirmasi otomatis (capture PayPal, kartu, NOWPayments, stablecoin on-chain). Untuk transfer bank, segera setelah pemilik memverifikasi dana."],
-  ],
-};
-
-export const ACQ: Record<AcqLang, AcqCopy> = { en, id };
+export type AcqCopy = typeof ACQ_EN;
