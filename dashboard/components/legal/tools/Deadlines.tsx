@@ -8,12 +8,13 @@ import {
   RULES, UNITS, ROLLS, HOLIDAY_COUNTRIES, compute, daysUntil, deadlinesCsv, getRule, parseIso, ruleCalendar, toIcs,
   type Deadline, type Direction, type HolidayCountry, type Roll, type Unit,
 } from "@/lib/legal/deadlines";
+import { localRule } from "@/lib/legal/catalog";
+import { useLegalCatalog } from "@/lib/legal/use-catalog";
 import { Alert } from "@/components/ui";
 import { AiButton, ToolIntro, badge, download, fileSafe, type Handoff } from "./shared";
 
 const HOLIDAYS_KEY = "axto_legal_holidays_v1";
 const today = () => new Date().toISOString().slice(0, 10);
-const COUNTRY_NAMES: Record<string, string> = { ID: "Indonesia", US: "United States", GB: "England & Wales", SG: "Singapore", EU: "European Union" };
 
 /** "2026-03-20 Idul Fitri" lines → { date: name } (invalid lines are ignored). */
 function parseCustom(s: string): Record<string, string> {
@@ -38,7 +39,10 @@ export default function Deadlines({ t, lang, matterTitle, saved, canSave, onSave
   useEffect(() => { try { setCustomText(localStorage.getItem(HOLIDAYS_KEY) || ""); } catch {} }, []);
   useEffect(() => { try { localStorage.setItem(HOLIDAYS_KEY, customText); } catch {} }, [customText]);
   const custom = useMemo(() => parseCustom(customText), [customText]);
-  const rule = getRule(ruleId);
+  // Rule names, triggers and notes in the member's language (the statute references stay as cited).
+  const cat = useLegalCatalog(lang);
+  const ruleOf = (id: string) => { const r = getRule(id); return r ? localRule(r, cat) : undefined; };
+  const rule = ruleOf(ruleId);
 
   const result = useMemo(() => compute({
     trigger: f.unit === "hours" ? `${f.trigger}T${f.time || "00:00"}` : f.trigger,
@@ -48,7 +52,7 @@ export default function Deadlines({ t, lang, matterTitle, saved, canSave, onSave
 
   function pickRule(id: string) {
     setRuleId(id);
-    const r = getRule(id);
+    const r = ruleOf(id);
     if (r) setF((x) => ({ ...x, title: r.name, amount: r.amount, unit: r.unit, direction: r.direction, roll: r.roll, country: ruleCalendar(r), source: r.source }));
   }
   const fmt = (due: string) => {
@@ -102,7 +106,7 @@ export default function Deadlines({ t, lang, matterTitle, saved, canSave, onSave
           <label className="block"><span className="label">{t.deadlines.preset}</span>
             <select className="select" value={ruleId} onChange={(e) => pickRule(e.target.value)} data-testid="dl-rule">
               <option value="">{t.deadlines.presetNone}</option>
-              {byCountry.map((c) => <optgroup key={c} label={COUNTRY_NAMES[c] || c}>{RULES.filter((r) => r.country === c).map((r) => <option key={r.id} value={r.id}>{r.name} — {r.amount} {unitName(r.unit)}</option>)}</optgroup>)}
+              {byCountry.map((c) => <optgroup key={c} label={t.deadlines.regions[c as keyof typeof t.deadlines.regions] || c}>{RULES.filter((r) => r.country === c).map((r) => <option key={r.id} value={r.id}>{localRule(r, cat).name} — {r.amount} {unitName(r.unit)}</option>)}</optgroup>)}
             </select></label>
           {rule ? <p className="rounded-lg bg-slate-50 p-2 text-xs text-slate-600">📜 {rule.source}<br />⏱ {rule.trigger}{rule.note ? <><br />ℹ️ {rule.note}</> : null}</p> : null}
           <p className="text-[11px] text-slate-500">{t.deadlines.presetHint}</p>
@@ -135,7 +139,7 @@ export default function Deadlines({ t, lang, matterTitle, saved, canSave, onSave
               <div className="text-[11px] font-semibold uppercase tracking-wide text-brand-700">{t.deadlines.due}</div>
               <div className="mt-1 text-xl font-extrabold text-slate-900 sm:text-2xl" data-testid="dl-due">{fmt(result.due)}</div>
               <div className="mt-0.5 font-mono text-xs text-slate-500">{result.due}</div>
-              {result.rolled ? <p className="mt-2 text-sm text-amber-900">↪ {t.deadlines.unrolled.replace("{date}", fmt(result.unrolled)).replace("{reason}", result.reason === "Weekend" ? t.deadlines.weekendReason : result.reason || "")}</p> : null}
+              {result.rolled ? <p className="mt-2 text-sm text-amber-900">↪ {t.deadlines.unrolled.replace("{date}", fmt(result.unrolled)).replace("{reason}", result.reason === "Weekend" ? t.deadlines.weekendReason : result.reason === "Holiday" ? t.deadlines.holidayReason : result.reason || "")}</p> : null}
               <p className="mt-2 text-xs text-slate-600">{t.deadlines.counted.replace("{n}", String(result.counted)).replace("{unit}", unitName(f.unit === "weeks" ? "days" : f.unit))}</p>
               <label className="mt-3 block"><span className="label">{t.deadlines.remind}</span><input className="input" value={f.remind} onChange={(e) => setF({ ...f, remind: e.target.value })} /></label>
               <div className="mt-3 flex flex-wrap gap-2">

@@ -465,20 +465,70 @@ bukan dari perkiraan.
 |---|---|---|---|---|
 | 1 | Aplikasi cloud v4 (Clipper, Studio, Vault, Security, Compliance, Prompt Library, Legal, Mode Lokal, Akuisisi, Connect) | §9 fase 1–10 | 10/10 | **100 %** |
 | 2 | Penawaran akuisisi US$10.000.000 (§17 B) | harga · halaman premium · 10 bahasa · uji · tayang di axto.io | 5/5 (`08b72d9` di `main`) | **100 %** |
-| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) ✅ · Legal (alat) · Compliance · Security · Prompt Library · halaman kecil · crawler 0 | 1/7 | **15 %** |
-| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 ✅ A2 A3 A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 | 1/13 | **8 %** |
+| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) ✅ · Legal (alat: playbook, klausul, tenggat) ✅ · Compliance · Security · Prompt Library · halaman kecil · crawler 0 | 2/7 | **29 %** |
+| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 ✅ A2 ✅ A3 ✅ A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 | 3/13 | **23 %** |
 | 5 | Desain Istana Kristal (§18) | token ✅ · komponen ✅ · halaman publik (beranda, header, footer, /apps, /self-hosted ✅; harga, panduan, blog, legal berikutnya) · portal member · admin · uji visual | 2/6 | **33 %** |
-| | **Total** (bobot = jumlah fase) | | **19/41** | **≈ 46 %** |
+| 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
+| 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti · admin terima/tolak · lisensi & email otomatis · uji E2E · tayang | dikerjakan sesi lain di `claude/bni-receipt-approval` | **dipantau** |
+| | **Total** (bobot = jumlah fase, baris 7 dihitung saat masuk `main`) | | **22/46** | **≈ 48 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
 2. A1 — nama 10 aplikasi = gambar pemilik di semua tempat; footer & menu memuat semua 10 aplikasi.
 3. §18 token + komponen + beranda „One Ecosystem“ dengan 10 aplikasi.
 4. A2 edisi per aplikasi → A3 program 100 trial per aplikasi (zero-touch).
-5. §17 A sisa terjemahan (crawler sampai 0).
-6. §18 portal member & admin (tur, ⌘K, pusat aksi).
-7. A4, E1 (AXTO Workspace = kesetaraan cloud ↔ Docker), lalu B/C/D sesuai `AXTO-APPS-BLUEPRINT.md`.
+5. §20 A — CI/deploy hijau terus: setiap run merah diselidiki sampai akar masalah (tidak ada „flake").
+6. §17 A sisa terjemahan (crawler sampai 0).
+7. §20 B — SEO & artikel AdSense; §18 portal member & admin (tur, ⌘K, pusat aksi).
+8. A4, E1 (AXTO Workspace = kesetaraan cloud ↔ Docker Windows/Linux), lalu B/C/D sesuai `AXTO-APPS-BLUEPRINT.md`.
 
 **Yang butuh pemilik (tidak bisa dikerjakan AI):** sertifikat code signing EV untuk `.exe`/`.msi`,
 pentest independen, audit SOC 2 / ISO 27001, pelanggan & pendapatan nyata, keputusan harga final per
 edisi dan lifetime (Admin → Plans).
+
+## 20. Perintah pemilik 5 Okt 2026 (malam) — rencana kerja
+
+Perintah (dicatat apa adanya di `docs/REQUESTS.md` baris 40–47): semua aplikasi mewah dan Docker
+benar-benar berjalan di Windows dan Linux; setiap aplikasi berfitur & berfasilitas tertinggi dengan
+panduan penggunaan dan *smart license*; tidak ada aplikasi „sampah" yang sederhana — kompleks, lengkap,
+bisa terhubung ke apa pun sesuai kebutuhan; SEO diperkuat (bukan abal-abal) dan artikel diterima AdSense;
+fitur website dan Docker sama dan konsisten; CSS super mewah (§18); semua perintah dicatat dan blueprint
+selalu dibaca; bank lokal BNI diaktifkan dulu dengan tombol „Pembayaran diterima" yang langsung mengirim
+lisensi; deploy yang gagal harus diperhatikan.
+
+**A. Deploy & CI tidak boleh gagal tanpa ditangani.**
+- Setiap run merah di GitHub Actions (E2E, Deploy, Docker smoke test, AXTO Setup, Production check)
+  diperiksa pada sesi berikutnya; akar masalah diperbaiki, bukan dijalankan ulang.
+- Temuan 5 Okt: E2E `main` 5486791 (push 09:18) gagal 7 tes karena *worker* lokal di-restart di
+  tengah permintaan („worker restarted mid-request" → 503) setelah satu permintaan menggantung; run
+  terjadwal 10:29 pada commit yang sama hijau. Tindakan: log server E2E kini mencatat setiap permintaan
+  (level info) dan log wrangler diunggah sebagai artefak saat gagal, agar permintaan yang menggantung
+  terlihat dan bisa diperbaiki di sumbernya.
+- Run merah `claude/bni-receipt-approval` 425ae69 (types + unit) sudah diperbaiki oleh sesi pemiliknya
+  di ac98e59 (Deploy Preview hijau).
+
+**B. SEO kuat + artikel yang diterima AdSense** (benchmark: dokumentasi Notion, Vercel, Stripe).
+1. Audit teknis semua halaman publik: `pageMeta()` lengkap, canonical, hreflang 10 bahasa, JSON-LD
+   (Organization, SoftwareApplication + Offer per aplikasi & edisi, FAQ, HowTo, BreadcrumbList, Article),
+   sitemap per bagian, Core Web Vitals (Lighthouse ≥ 90).
+2. Panduan per menu untuk setiap aplikasi (cloud + 10 aplikasi self-hosted): apa fungsinya, langkah
+   demi langkah, tangkapan layar nyata, batas per edisi — satu halaman per menu, ditautkan dari aplikasi.
+3. Artikel orisinal yang bermanfaat (bukan *doorway*, bukan isi tipis, tanpa klaim palsu), penulis &
+   tanggal, kebijakan editorial yang sudah ada (/editorial-policy), tautan internal ke panduan.
+4. Kepatuhan AdSense: halaman wajib ✅ (about, contact, privacy, cookies, terms, disclaimer, editorial),
+   satu akun (`SITE.adsenseClient`), `ads.txt`, iklan tidak pernah di portal member/admin.
+5. Bukti: uji Rich Results, Lighthouse, crawler tautan mati = 0.
+
+**C. BNI lokal dengan persetujuan manual.** Pembeli memilih transfer BNI → melihat rekening di dalam
+checkout (bukan di halaman publik) → mengunggah bukti → admin menekan „Pembayaran diterima" →
+pesanan lunas, lisensi/paket/edisi aktif dan email terkirim saat itu juga (zero-touch setelah satu
+klik); „Tolak" mengirim alasan. Sedang dibangun di `claude/bni-receipt-approval` oleh sesi lain —
+sesi ini tidak membangun ulang agar tidak bentrok; setelah masuk `main`, edisi (A2) dan trial (A3)
+dipastikan ikut aktif lewat jalur yang sama (`markOrderPaid` → `markEditionPaid`).
+
+**D. Aplikasi lengkap, Docker = website, Windows + Linux.** Diteruskan oleh `AXTO-APPS-BLUEPRINT.md`:
+A4 (mesin menegakkan batas edisi & watermark trial), E1 AXTO Workspace (image Docker dari kode cloud
+yang sama → fitur identik), E2 uji instalasi nyata Windows (Docker Desktop/WSL2 + AXTO-Setup.exe) dan
+Linux (amd64/arm64) di CI, B/C/D panduan & konektor (API, webhook, SIEM, SSO) per aplikasi.
+*Smart license* = lisensi bertanda tangan Ed25519 + edisi + trial + pengikatan mesin (sudah ada),
+ditambah pembaruan otomatis dan status lisensi langsung di setiap aplikasi (A4).

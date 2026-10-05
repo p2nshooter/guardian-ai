@@ -96,7 +96,7 @@ export const CLAUSES: LibraryClause[] = [
 export const getClause = (id: string) => CLAUSES.find((c) => c.id === id);
 export const variantById = (id: string) => { for (const c of CLAUSES) { const v = c.variants.find((x) => x.id === id); if (v) return { clause: c, variant: v }; } return null; };
 /** The [placeholders] of a clause (innermost first: "[the greater of [amount] and [24]]" → amount, 24). */
-export const placeholders = (text: string) => Array.from(new Set(Array.from(text.matchAll(/\[([^\[\]]{1,80})\]/g), (m) => m[1])));
+export const placeholders = (text: string) => Array.from(new Set(Array.from(text.matchAll(/\[([^\[\]]{1,120})\]/g), (m) => m[1])));
 /** Replace every filled placeholder; empty ones stay as [name]. */
 export const fillClause = (text: string, values: Record<string, string>) =>
-  text.replace(/\[([^\[\]]{1,80})\]/g, (m, k: string) => (values[k]?.trim() ? values[k].trim() : m));
+  text.replace(/\[([^\[\]]{1,120})\]/g, (m, k: string) => (values[k]?.trim() ? values[k].trim() : m));

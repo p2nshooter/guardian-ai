@@ -419,8 +419,8 @@ export default function LegalApp() {
       </nav>
 
       {tool === "redline" ? <Redline t={lt} docs={toolDocs} lastAnswer={lastAnswer} onHandoff={handoff} /> : null}
-      {tool === "playbook" ? <PlaybookTool t={lt} docs={toolDocs} lastAnswer={lastAnswer} library={library} saveLibrary={saveLibrary} onHandoff={handoff} /> : null}
-      {tool === "clauses" ? <ClausesTool t={lt} library={library} saveLibrary={saveLibrary} onHandoff={handoff} /> : null}
+      {tool === "playbook" ? <PlaybookTool t={lt} lang={lang} docs={toolDocs} lastAnswer={lastAnswer} library={library} saveLibrary={saveLibrary} onHandoff={handoff} /> : null}
+      {tool === "clauses" ? <ClausesTool t={lt} lang={lang} library={library} saveLibrary={saveLibrary} onHandoff={handoff} /> : null}
       {tool === "deadlines" ? (
         <DeadlinesTool t={lt} lang={lang} matterTitle={matter?.title} saved={matter?.deadlines || NO_DEADLINES} canSave={!!matter}
           onSave={(list) => patchMatter({ deadlines: list })} onHandoff={handoff} />

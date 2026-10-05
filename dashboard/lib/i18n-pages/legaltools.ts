@@ -60,6 +60,8 @@ const en = {
     aiRequest: "Compare the original and the revised version. Summarise every change clause by clause, explain the legal and commercial effect of each material change for my side, and recommend a response for each (accept, reject, or a counter-proposal with exact wording).",
   },
   playbook: {
+    msg: {"notFound": "Not found in the document.", "optionalAbsent": "Not present (optional).", "consistent": "Consistent with the standard position.", "redFlags": "Red-flag wording: {text}", "maxYears": "Duration {v} years exceeds {limit}", "maxMonths": "Period {v} months exceeds {limit}", "minDays": "{v} days is shorter than {limit}", "maxDays": "{v} days is longer than {limit}", "capMonths": "Cap covers {v} months of fees (standard: ≥ {limit})", "capUnknown": "Cap amount not found — check it manually", "law": "Governing law: {text}", "wording": "Expected wording not found: {text}"},
+    report: {"playbook": "Playbook", "required": "required", "standard": "Standard", "fallback": "Fallback", "redFlags": "Red flags", "review": "Playbook review", "clause": "Clause", "status": "Status", "severity": "Severity", "detail": "Detail", "evidence": "Evidence"},
     choose: "Playbook",
     builtIn: "Built-in playbooks",
     mine: "My playbooks",
@@ -109,6 +111,8 @@ const en = {
     count: "{n} clauses",
   },
   deadlines: {
+    regions: {"ID": "Indonesia", "US": "United States", "GB": "England & Wales", "SG": "Singapore", "EU": "European Union"},
+    holidayReason: "holiday",
     preset: "Rule (optional)",
     presetNone: "Custom period",
     presetHint: "Presets are common starting points — always check the current rule, any court order and local practice.",
@@ -245,6 +249,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "Bandingkan versi asli dan versi revisi. Ringkas setiap perubahan klausa demi klausa, jelaskan dampak hukum dan komersial setiap perubahan material bagi pihak saya, dan rekomendasikan tanggapan untuk masing-masing (terima, tolak, atau usulan balik dengan rumusan yang persis)."
     },
     "playbook": {
+      "msg": {"notFound": "Tidak ditemukan dalam dokumen.", "optionalAbsent": "Tidak ada (opsional).", "consistent": "Sesuai dengan posisi standar.", "redFlags": "Rumusan berisiko: {text}", "maxYears": "Jangka waktu {v} tahun melebihi {limit}", "maxMonths": "Periode {v} bulan melebihi {limit}", "minDays": "{v} hari lebih pendek dari {limit}", "maxDays": "{v} hari lebih panjang dari {limit}", "capMonths": "Batas mencakup biaya {v} bulan (standar: ≥ {limit})", "capUnknown": "Jumlah batas tidak ditemukan — periksa secara manual", "law": "Hukum yang berlaku: {text}", "wording": "Rumusan yang diharapkan tidak ditemukan: {text}"},
+      "report": {"playbook": "Playbook", "required": "wajib", "standard": "Standar", "fallback": "Alternatif", "redFlags": "Tanda bahaya", "review": "Tinjauan playbook", "clause": "Klausul", "status": "Status", "severity": "Tingkat", "detail": "Rincian", "evidence": "Bukti"},
       "choose": "Playbook",
       "builtIn": "Playbook bawaan",
       "mine": "Playbook saya",
@@ -326,6 +332,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} klausa"
     },
     "deadlines": {
+      "regions": {"ID": "Indonesia", "US": "Amerika Serikat", "GB": "Inggris & Wales", "SG": "Singapura", "EU": "Uni Eropa"},
+      "holidayReason": "hari libur",
       "preset": "Aturan (opsional)",
       "presetNone": "Jangka waktu sendiri",
       "presetHint": "Preset adalah titik awal yang umum — selalu periksa aturan yang berlaku, penetapan pengadilan, dan praktik setempat.",
@@ -490,6 +498,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "Bandingkan versi asal dan versi semakan. Ringkaskan setiap perubahan klausa demi klausa, terangkan kesan undang-undang dan komersial setiap perubahan material bagi pihak saya, dan cadangkan maklum balas untuk setiap satu (terima, tolak, atau cadangan balas dengan perkataan yang tepat)."
     },
     "playbook": {
+      "msg": {"notFound": "Tidak ditemui dalam dokumen.", "optionalAbsent": "Tiada (pilihan).", "consistent": "Selaras dengan kedudukan standard.", "redFlags": "Perkataan berisiko: {text}", "maxYears": "Tempoh {v} tahun melebihi {limit}", "maxMonths": "Tempoh {v} bulan melebihi {limit}", "minDays": "{v} hari lebih pendek daripada {limit}", "maxDays": "{v} hari lebih panjang daripada {limit}", "capMonths": "Had meliputi fi {v} bulan (standard: ≥ {limit})", "capUnknown": "Amaun had tidak ditemui — semak secara manual", "law": "Undang-undang yang mentadbir: {text}", "wording": "Perkataan yang dijangka tidak ditemui: {text}"},
+      "report": {"playbook": "Playbook", "required": "wajib", "standard": "Standard", "fallback": "Alternatif", "redFlags": "Tanda amaran", "review": "Semakan playbook", "clause": "Fasal", "status": "Status", "severity": "Tahap", "detail": "Butiran", "evidence": "Bukti"},
       "choose": "Playbook",
       "builtIn": "Playbook terbina",
       "mine": "Playbook saya",
@@ -571,6 +581,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} klausa"
     },
     "deadlines": {
+      "regions": {"ID": "Indonesia", "US": "Amerika Syarikat", "GB": "England & Wales", "SG": "Singapura", "EU": "Kesatuan Eropah"},
+      "holidayReason": "cuti umum",
       "preset": "Peraturan (pilihan)",
       "presetNone": "Tempoh tersuai",
       "presetHint": "Pratetap ialah titik permulaan biasa — sentiasa semak peraturan semasa, sebarang perintah mahkamah dan amalan tempatan.",
@@ -735,6 +747,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "Vergleiche die ursprüngliche und die überarbeitete Fassung. Fasse jede Änderung Klausel für Klausel zusammen, erkläre die rechtliche und wirtschaftliche Wirkung jeder wesentlichen Änderung für meine Seite und empfiehl jeweils eine Reaktion (annehmen, ablehnen oder Gegenvorschlag mit genauer Formulierung)."
     },
     "playbook": {
+      "msg": {"notFound": "Im Dokument nicht gefunden.", "optionalAbsent": "Nicht vorhanden (optional).", "consistent": "Entspricht der Standardposition.", "redFlags": "Kritische Formulierung: {text}", "maxYears": "Dauer von {v} Jahren überschreitet {limit}", "maxMonths": "Zeitraum von {v} Monaten überschreitet {limit}", "minDays": "{v} Tage sind kürzer als {limit}", "maxDays": "{v} Tage sind länger als {limit}", "capMonths": "Obergrenze deckt {v} Monatsentgelte ab (Standard: ≥ {limit})", "capUnknown": "Höhe der Obergrenze nicht gefunden — bitte manuell prüfen", "law": "Anwendbares Recht: {text}", "wording": "Erwartete Formulierung nicht gefunden: {text}"},
+      "report": {"playbook": "Playbook", "required": "erforderlich", "standard": "Standard", "fallback": "Rückfallposition", "redFlags": "Warnsignale", "review": "Playbook-Prüfung", "clause": "Klausel", "status": "Status", "severity": "Schweregrad", "detail": "Einzelheiten", "evidence": "Fundstelle"},
       "choose": "Playbook",
       "builtIn": "Integrierte Playbooks",
       "mine": "Meine Playbooks",
@@ -816,6 +830,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} Klauseln"
     },
     "deadlines": {
+      "regions": {"ID": "Indonesien", "US": "Vereinigte Staaten", "GB": "England & Wales", "SG": "Singapur", "EU": "Europäische Union"},
+      "holidayReason": "Feiertag",
       "preset": "Regel (optional)",
       "presetNone": "Eigene Frist",
       "presetHint": "Vorgaben sind übliche Ausgangspunkte — prüfen Sie immer die geltende Regel, gerichtliche Anordnungen und die örtliche Praxis.",
@@ -980,6 +996,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "Compare la version d'origine et la version révisée. Résume chaque modification clause par clause, explique l'effet juridique et commercial de chaque changement important pour ma partie et recommande une réponse pour chacun (accepter, refuser ou contre-proposition avec la formulation exacte)."
     },
     "playbook": {
+      "msg": {"notFound": "Absent du document.", "optionalAbsent": "Absent (facultatif).", "consistent": "Conforme à la position standard.", "redFlags": "Formulation à risque : {text}", "maxYears": "Durée de {v} ans supérieure à {limit}", "maxMonths": "Période de {v} mois supérieure à {limit}", "minDays": "{v} jours, soit moins que {limit}", "maxDays": "{v} jours, soit plus que {limit}", "capMonths": "Le plafond couvre {v} mois de redevances (standard : ≥ {limit})", "capUnknown": "Montant du plafond introuvable — à vérifier manuellement", "law": "Droit applicable : {text}", "wording": "Formulation attendue introuvable : {text}"},
+      "report": {"playbook": "Playbook", "required": "obligatoire", "standard": "Position standard", "fallback": "Position de repli", "redFlags": "Signaux d'alerte", "review": "Revue du playbook", "clause": "Clause", "status": "Statut", "severity": "Gravité", "detail": "Détail", "evidence": "Extrait"},
       "choose": "Playbook",
       "builtIn": "Playbooks intégrés",
       "mine": "Mes playbooks",
@@ -1061,6 +1079,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} clauses"
     },
     "deadlines": {
+      "regions": {"ID": "Indonésie", "US": "États-Unis", "GB": "Angleterre et pays de Galles", "SG": "Singapour", "EU": "Union européenne"},
+      "holidayReason": "jour férié",
       "preset": "Règle (facultatif)",
       "presetNone": "Délai personnalisé",
       "presetHint": "Les préréglages sont des points de départ courants — vérifiez toujours la règle en vigueur, toute décision du tribunal et la pratique locale.",
@@ -1225,6 +1245,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "Confronta la versione originale e quella rivista. Riassumi ogni modifica clausola per clausola, spiega l'effetto giuridico e commerciale di ogni modifica rilevante per la mia parte e raccomanda una risposta per ciascuna (accettare, rifiutare o controproposta con la formulazione esatta)."
     },
     "playbook": {
+      "msg": {"notFound": "Non trovato nel documento.", "optionalAbsent": "Assente (facoltativo).", "consistent": "Conforme alla posizione standard.", "redFlags": "Formulazione a rischio: {text}", "maxYears": "Durata di {v} anni superiore a {limit}", "maxMonths": "Periodo di {v} mesi superiore a {limit}", "minDays": "{v} giorni, meno di {limit}", "maxDays": "{v} giorni, più di {limit}", "capMonths": "Il massimale copre {v} mesi di corrispettivi (standard: ≥ {limit})", "capUnknown": "Importo del massimale non trovato — verificare manualmente", "law": "Legge applicabile: {text}", "wording": "Formulazione attesa non trovata: {text}"},
+      "report": {"playbook": "Playbook", "required": "obbligatoria", "standard": "Posizione standard", "fallback": "Posizione di riserva", "redFlags": "Segnali di allarme", "review": "Revisione del playbook", "clause": "Clausola", "status": "Stato", "severity": "Gravità", "detail": "Dettaglio", "evidence": "Estratto"},
       "choose": "Playbook",
       "builtIn": "Playbook integrati",
       "mine": "I miei playbook",
@@ -1306,6 +1328,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} clausole"
     },
     "deadlines": {
+      "regions": {"ID": "Indonesia", "US": "Stati Uniti", "GB": "Inghilterra e Galles", "SG": "Singapore", "EU": "Unione europea"},
+      "holidayReason": "giorno festivo",
       "preset": "Regola (facoltativa)",
       "presetNone": "Termine personalizzato",
       "presetHint": "I preset sono punti di partenza comuni — verifica sempre la regola vigente, eventuali provvedimenti del giudice e la prassi locale.",
@@ -1470,6 +1494,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "比较原始版本和修订版本。逐条总结每项变更，说明每项重大变更对我方的法律和商业影响，并为每项建议回应（接受、拒绝，或附具体措辞的反提案）。"
     },
     "playbook": {
+      "msg": {"notFound": "文档中未找到。", "optionalAbsent": "未出现（可选）。", "consistent": "符合标准立场。", "redFlags": "风险措辞：{text}", "maxYears": "期限 {v} 年，超过 {limit} 年", "maxMonths": "期间 {v} 个月，超过 {limit} 个月", "minDays": "{v} 天，短于 {limit} 天", "maxDays": "{v} 天，长于 {limit} 天", "capMonths": "上限覆盖 {v} 个月费用（标准：≥ {limit}）", "capUnknown": "未找到上限金额——请人工核对", "law": "适用法律：{text}", "wording": "未找到预期措辞：{text}"},
+      "report": {"playbook": "审查手册", "required": "必需", "standard": "标准立场", "fallback": "备选立场", "redFlags": "风险信号", "review": "审查手册对照结果", "clause": "条款", "status": "状态", "severity": "严重程度", "detail": "详情", "evidence": "合同原文"},
       "choose": "Playbook",
       "builtIn": "内置 Playbook",
       "mine": "我的 Playbook",
@@ -1551,6 +1577,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} 条条款"
     },
     "deadlines": {
+      "regions": {"ID": "印度尼西亚", "US": "美国", "GB": "英格兰和威尔士", "SG": "新加坡", "EU": "欧盟"},
+      "holidayReason": "节假日",
       "preset": "规则（可选）",
       "presetNone": "自定义期限",
       "presetHint": "预设只是常见的起点——请务必核对现行规则、法院命令和当地惯例。",
@@ -1715,6 +1743,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "原版と改訂版を比較してください。条項ごとにすべての変更を要約し、各重要変更が当方に与える法的・商業的影響を説明し、それぞれへの対応（受入れ、拒否、または正確な文言による対案）を提案してください。"
     },
     "playbook": {
+      "msg": {"notFound": "文書内に見つかりません。", "optionalAbsent": "記載なし（任意）。", "consistent": "標準ポジションと一致しています。", "redFlags": "要注意の文言：{text}", "maxYears": "期間 {v} 年が上限 {limit} 年を超えています", "maxMonths": "期間 {v} か月が上限 {limit} か月を超えています", "minDays": "{v} 日は下限 {limit} 日より短いです", "maxDays": "{v} 日は上限 {limit} 日より長いです", "capMonths": "上限は利用料 {v} か月分です（標準：{limit} か月分以上）", "capUnknown": "上限額が見つかりません — 手動で確認してください", "law": "準拠法：{text}", "wording": "想定される文言が見つかりません：{text}"},
+      "report": {"playbook": "プレイブック", "required": "必須", "standard": "標準ポジション", "fallback": "代替案", "redFlags": "危険信号", "review": "プレイブック審査", "clause": "条項", "status": "状態", "severity": "重要度", "detail": "詳細", "evidence": "契約書の該当箇所"},
       "choose": "プレイブック",
       "builtIn": "組み込みプレイブック",
       "mine": "マイプレイブック",
@@ -1796,6 +1826,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} 件の条項"
     },
     "deadlines": {
+      "regions": {"ID": "インドネシア", "US": "米国", "GB": "イングランド・ウェールズ", "SG": "シンガポール", "EU": "欧州連合"},
+      "holidayReason": "休日",
       "preset": "ルール（任意）",
       "presetNone": "独自の期間",
       "presetHint": "プリセットは一般的な出発点です — 必ず現行ルール、裁判所の命令、現地の実務を確認してください。",
@@ -1960,6 +1992,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "मूल और संशोधित संस्करण की तुलना करें। हर बदलाव का क्लॉज़-दर-क्लॉज़ सारांश दें, मेरे पक्ष के लिए हर महत्वपूर्ण बदलाव का कानूनी और व्यावसायिक प्रभाव समझाएँ, और हर एक के लिए प्रतिक्रिया सुझाएँ (स्वीकार, अस्वीकार, या सटीक शब्दों के साथ प्रति-प्रस्ताव)।"
     },
     "playbook": {
+      "msg": {"notFound": "दस्तावेज़ में नहीं मिला।", "optionalAbsent": "मौजूद नहीं (वैकल्पिक)।", "consistent": "मानक स्थिति के अनुरूप।", "redFlags": "जोखिम भरी भाषा: {text}", "maxYears": "{v} वर्ष की अवधि {limit} से अधिक है", "maxMonths": "{v} महीने की अवधि {limit} से अधिक है", "minDays": "{v} दिन, {limit} से कम है", "maxDays": "{v} दिन, {limit} से अधिक है", "capMonths": "सीमा {v} महीने के शुल्क को कवर करती है (मानक: ≥ {limit})", "capUnknown": "सीमा की राशि नहीं मिली — मैन्युअल रूप से जाँचें", "law": "शासी कानून: {text}", "wording": "अपेक्षित भाषा नहीं मिली: {text}"},
+      "report": {"playbook": "प्लेबुक", "required": "आवश्यक", "standard": "मानक स्थिति", "fallback": "वैकल्पिक स्थिति", "redFlags": "ख़तरे के संकेत", "review": "प्लेबुक समीक्षा", "clause": "खंड", "status": "स्थिति", "severity": "गंभीरता", "detail": "विवरण", "evidence": "अनुबंध में"},
       "choose": "प्लेबुक",
       "builtIn": "अंतर्निहित प्लेबुक",
       "mine": "मेरी प्लेबुक",
@@ -2041,6 +2075,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} क्लॉज़"
     },
     "deadlines": {
+      "regions": {"ID": "इंडोनेशिया", "US": "संयुक्त राज्य अमेरिका", "GB": "इंग्लैंड और वेल्स", "SG": "सिंगापुर", "EU": "यूरोपीय संघ"},
+      "holidayReason": "अवकाश",
       "preset": "नियम (वैकल्पिक)",
       "presetNone": "अपनी अवधि",
       "presetHint": "प्रीसेट सामान्य शुरुआती बिंदु हैं — हमेशा वर्तमान नियम, किसी भी न्यायालय आदेश और स्थानीय प्रथा की जाँच करें।",
@@ -2205,6 +2241,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "aiRequest": "قارن النسخة الأصلية بالنسخة المعدّلة. لخّص كل تغيير بندًا ببند، واشرح الأثر القانوني والتجاري لكل تغيير جوهري على طرفي، واقترح ردًّا لكل منها (قبول أو رفض أو مقترح مضاد بصياغة دقيقة)."
     },
     "playbook": {
+      "msg": {"notFound": "غير موجود في المستند.", "optionalAbsent": "غير موجود (اختياري).", "consistent": "متوافق مع الموقف المعياري.", "redFlags": "صياغة خطرة: {text}", "maxYears": "مدة {v} سنوات تتجاوز {limit}", "maxMonths": "فترة {v} أشهر تتجاوز {limit}", "minDays": "{v} أيام أقصر من {limit}", "maxDays": "{v} أيام أطول من {limit}", "capMonths": "يغطي السقف رسوم {v} أشهر (المعيار: ≥ {limit})", "capUnknown": "لم يُعثر على مبلغ السقف — تحقّق يدويًا", "law": "القانون الواجب التطبيق: {text}", "wording": "لم يُعثر على الصياغة المتوقعة: {text}"},
+      "report": {"playbook": "دليل المراجعة", "required": "إلزامي", "standard": "الموقف المعياري", "fallback": "الموقف البديل", "redFlags": "مؤشرات الخطر", "review": "مراجعة وفق الدليل", "clause": "البند", "status": "الحالة", "severity": "الخطورة", "detail": "التفاصيل", "evidence": "في العقد"},
       "choose": "الدليل",
       "builtIn": "أدلة مدمجة",
       "mine": "أدلتي",
@@ -2286,6 +2324,8 @@ export const LT: Record<Lang, LegalToolsDict> = {
       "count": "{n} بندًا"
     },
     "deadlines": {
+      "regions": {"ID": "إندونيسيا", "US": "الولايات المتحدة", "GB": "إنجلترا وويلز", "SG": "سنغافورة", "EU": "الاتحاد الأوروبي"},
+      "holidayReason": "عطلة رسمية",
       "preset": "القاعدة (اختياري)",
       "presetNone": "مدة مخصصة",
       "presetHint": "الإعدادات المسبقة نقاط بداية شائعة — تحقّق دائمًا من القاعدة السارية وأي أمر قضائي والممارسة المحلية.",

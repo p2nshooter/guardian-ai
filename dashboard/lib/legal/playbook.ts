@@ -87,7 +87,22 @@ export const PLAYBOOKS: Playbook[] = [
   ] },
 ];
 
-export interface Finding { clause: ClauseType; name: string; status: "ok" | "missing" | "deviation" | "review"; severity: "low" | "medium" | "high"; detail: string; evidence?: string; standard: string; fallback: string }
+/** One reason behind a finding, as a code + values so the portal can word it in the member's language. */
+export type IssueCode = "notFound" | "optionalAbsent" | "consistent" | "redFlags" | "maxYears" | "maxMonths" | "minDays" | "maxDays" | "capMonths" | "capUnknown" | "law" | "wording";
+export interface Issue { code: IssueCode; v?: number; limit?: number; text?: string }
+export type IssueMessages = Record<IssueCode, string>;
+/** English wording (also used for the AI hand-off fallback and the exports when no translation is given). */
+export const ISSUE_EN: IssueMessages = {
+  notFound: "Not found in the document.", optionalAbsent: "Not present (optional).", consistent: "Consistent with the standard position.",
+  redFlags: "Red-flag wording: {text}", maxYears: "Duration {v} years exceeds {limit}", maxMonths: "Period {v} months exceeds {limit}",
+  minDays: "{v} days is shorter than {limit}", maxDays: "{v} days is longer than {limit}", capMonths: "Cap covers {v} months of fees (standard: ≥ {limit})",
+  capUnknown: "Cap amount not found — check it manually", law: "Governing law: {text}", wording: "Expected wording not found: {text}",
+};
+export const issueText = (i: Issue, m: IssueMessages = ISSUE_EN) =>
+  m[i.code].replace("{v}", String(i.v ?? "")).replace("{limit}", String(i.limit ?? "")).replace("{text}", i.text ?? "");
+export const issuesText = (list: Issue[], m: IssueMessages = ISSUE_EN) => list.map((i) => issueText(i, m)).join(" · ");
+
+export interface Finding { clause: ClauseType; name: string; status: "ok" | "missing" | "deviation" | "review"; severity: "low" | "medium" | "high"; detail: string; issues: Issue[]; evidence?: string; standard: string; fallback: string }
 
 const years = (s: string) => Array.from(s.matchAll(/(\d+(?:[.,]\d+)?)\s*(?:\(\w+\)\s*)?(?:years?|tahun)/gi), (m) => parseFloat(m[1].replace(",", ".")));
 const months = (s: string) => Array.from(s.matchAll(/(\d+)\s*(?:\(\w+\)\s*)?(?:months?|bulan)/gi), (m) => Number(m[1]));
@@ -102,41 +117,56 @@ function capMonths(s: string): number | null {
   return null;
 }
 
-/** Review a contract against a playbook — deterministic, explainable findings. */
-export function review(text: string, pb: Playbook): { findings: Finding[]; clauses: Record<string, Clause[]> } {
+/** Review a contract against a playbook — deterministic, explainable findings. `names` words the clause types
+ *  (the member's language); the checks themselves always read the contract text as written. */
+export function review(text: string, pb: Playbook, names?: Partial<Record<ClauseType, string>>): { findings: Finding[]; clauses: Record<string, Clause[]> } {
   const clauses = splitClauses(text);
   const by: Record<string, Clause[]> = {};
   for (const t of CLAUSE_TYPES) by[t.id] = clauses.filter((c) => t.re.test(`${c.heading} ${c.text}`));
   const findings: Finding[] = [];
   for (const p of pb.positions) {
-    const name = CLAUSE_TYPES.find((x) => x.id === p.clause)!.name;
+    const name = names?.[p.clause] || CLAUSE_TYPES.find((x) => x.id === p.clause)!.name;
     const hits = by[p.clause] || [];
     const base = { clause: p.clause, name, standard: p.standard, fallback: p.fallback };
-    if (!hits.length) { findings.push({ ...base, status: p.required ? "missing" : "ok", severity: p.required ? "high" : "low", detail: p.required ? "Not found in the document." : "Not present (optional)." }); continue; }
+    if (!hits.length) { const issues: Issue[] = [{ code: p.required ? "notFound" : "optionalAbsent" }]; findings.push({ ...base, status: p.required ? "missing" : "ok", severity: p.required ? "high" : "low", detail: issuesText(issues), issues }); continue; }
     const body = hits.map((c) => c.text).join("\n");
-    const issues: string[] = [];
+    const issues: Issue[] = [];
     const flags = p.redFlags.filter((f) => body.toLowerCase().includes(f.toLowerCase()));
-    if (flags.length) issues.push(`Red-flag wording: “${flags.join("”, “")}”`);
+    if (flags.length) issues.push({ code: "redFlags", text: `“${flags.join("”, “")}”` });
     for (const ch of p.checks) {
-      if (ch.kind === "maxYears") { const v = years(body); if (v.some((x) => x > ch.value)) issues.push(`Duration ${Math.max(...v)} years exceeds ${ch.value}`); }
-      if (ch.kind === "maxMonths") { const v = [...months(body), ...years(body).map((y) => y * 12)]; if (v.some((x) => x > ch.value)) issues.push(`Period ${Math.max(...v)} months exceeds ${ch.value}`); }
-      if (ch.kind === "minDays") { const v = days(body); if (v.length && Math.min(...v) < ch.value) issues.push(`${Math.min(...v)} days is shorter than ${ch.value}`); }
-      if (ch.kind === "maxDays") { const v = days(body); if (v.length && Math.max(...v) > ch.value) issues.push(`${Math.round(Math.max(...v) * 10) / 10} days is longer than ${ch.value}`); }
-      if (ch.kind === "minCapMonths") { const v = capMonths(body); if (v !== null && v < ch.value) issues.push(`Cap covers ${v} months of fees (standard: ≥ ${ch.value})`); if (v === null && p.clause === "liability") issues.push("Cap amount not found — check it manually"); }
-      if (ch.kind === "lawIn") { const law = body.match(/laws? of (?:the )?([A-Z][\w ]{2,40}?)(?:[,.;]|\s+(?:and|without))|hukum (?:negara )?(?:Republik )?([A-Z]\w+)/); const name2 = (law?.[1] || law?.[2] || "").toLowerCase(); if (name2 && !ch.value.some((x) => name2.includes(x))) issues.push(`Governing law: ${law?.[1] || law?.[2]}`); }
-      if (ch.kind === "mustMention") { const miss = ch.value.filter((w) => !body.toLowerCase().includes(w.toLowerCase())); if (miss.length) issues.push(`Expected wording not found: ${miss.join(", ")}`); }
+      if (ch.kind === "maxYears") { const v = years(body); if (v.some((x) => x > ch.value)) issues.push({ code: "maxYears", v: Math.max(...v), limit: ch.value }); }
+      if (ch.kind === "maxMonths") { const v = [...months(body), ...years(body).map((y) => y * 12)]; if (v.some((x) => x > ch.value)) issues.push({ code: "maxMonths", v: Math.max(...v), limit: ch.value }); }
+      if (ch.kind === "minDays") { const v = days(body); if (v.length && Math.min(...v) < ch.value) issues.push({ code: "minDays", v: Math.min(...v), limit: ch.value }); }
+      if (ch.kind === "maxDays") { const v = days(body); if (v.length && Math.max(...v) > ch.value) issues.push({ code: "maxDays", v: Math.round(Math.max(...v) * 10) / 10, limit: ch.value }); }
+      if (ch.kind === "minCapMonths") { const v = capMonths(body); if (v !== null && v < ch.value) issues.push({ code: "capMonths", v, limit: ch.value }); if (v === null && p.clause === "liability") issues.push({ code: "capUnknown" }); }
+      if (ch.kind === "lawIn") { const law = body.match(/laws? of (?:the )?([A-Z][\w ]{2,40}?)(?:[,.;]|\s+(?:and|without))|hukum (?:negara )?(?:Republik )?([A-Z]\w+)/); const name2 = (law?.[1] || law?.[2] || "").toLowerCase(); if (name2 && !ch.value.some((x) => name2.includes(x))) issues.push({ code: "law", text: law?.[1] || law?.[2] }); }
+      if (ch.kind === "mustMention") { const miss = ch.value.filter((w) => !body.toLowerCase().includes(w.toLowerCase())); if (miss.length) issues.push({ code: "wording", text: miss.join(", ") }); }
     }
-    const high = flags.length > 0 || issues.some((i) => /exceeds|shorter|longer|Cap covers|Governing law/.test(i));
-    findings.push({ ...base, status: issues.length ? (high ? "deviation" : "review") : "ok", severity: issues.length ? (high && p.required ? "high" : "medium") : "low", detail: issues.join(" · ") || "Consistent with the standard position.", evidence: hits[0].text.slice(0, 400) });
+    const high = flags.length > 0 || issues.some((i) => ["maxYears", "maxMonths", "minDays", "maxDays", "capMonths", "law"].includes(i.code));
+    const shown: Issue[] = issues.length ? issues : [{ code: "consistent" }];
+    findings.push({ ...base, status: issues.length ? (high ? "deviation" : "review") : "ok", severity: issues.length ? (high && p.required ? "high" : "medium") : "low", detail: issuesText(shown), issues: shown, evidence: hits[0].text.slice(0, 400) });
   }
   const rank = { missing: 0, deviation: 1, review: 2, ok: 3 };
   findings.sort((a, b) => rank[a.status] - rank[b.status]);
   return { findings, clauses: by };
 }
 
-export function playbookMarkdown(pb: Playbook): string {
-  return [`# Playbook: ${pb.name} (${pb.side})`, "", ...pb.positions.map((p) => `## ${CLAUSE_TYPES.find((x) => x.id === p.clause)!.name}${p.required ? " (required)" : ""}\n- Standard: ${p.standard}\n- Fallback: ${p.fallback}${p.redFlags.length ? `\n- Red flags: ${p.redFlags.join("; ")}` : ""}`)].join("\n");
+/** Words for the exports, in the member's language (English by default). */
+export interface ReportLabels {
+  playbook: string; required: string; standard: string; fallback: string; redFlags: string; review: string;
+  clause: string; status: string; severity: string; detail: string; evidence: string; notAdvice: string;
+  statuses: Record<Finding["status"], string>; severities: Record<Finding["severity"], string>;
 }
-export function findingsMarkdown(fs: Finding[], title: string): string {
-  return [`# Playbook review — ${title}`, "", "| Clause | Status | Severity | Detail |", "|---|---|---|---|", ...fs.map((f) => `| ${f.name} | ${f.status} | ${f.severity} | ${f.detail.replace(/\|/g, "/")} |`), "", "General information, not legal advice."].join("\n");
+export const REPORT_EN: ReportLabels = {
+  playbook: "Playbook", required: "required", standard: "Standard", fallback: "Fallback", redFlags: "Red flags", review: "Playbook review",
+  clause: "Clause", status: "Status", severity: "Severity", detail: "Detail", evidence: "Evidence", notAdvice: "General information, not legal advice.",
+  statuses: { missing: "missing", deviation: "deviation", review: "review", ok: "ok" }, severities: { high: "high", medium: "medium", low: "low" },
+};
+
+export function playbookMarkdown(pb: Playbook, l: ReportLabels = REPORT_EN, names?: Partial<Record<ClauseType, string>>): string {
+  const nm = (c: ClauseType) => names?.[c] || CLAUSE_TYPES.find((x) => x.id === c)!.name;
+  return [`# ${l.playbook}: ${pb.name} (${pb.side})`, "", ...pb.positions.map((p) => `## ${nm(p.clause)}${p.required ? ` (${l.required})` : ""}\n- ${l.standard}: ${p.standard}\n- ${l.fallback}: ${p.fallback}${p.redFlags.length ? `\n- ${l.redFlags}: ${p.redFlags.join("; ")}` : ""}`)].join("\n");
+}
+export function findingsMarkdown(fs: Finding[], title: string, l: ReportLabels = REPORT_EN, detail: (f: Finding) => string = (f) => f.detail): string {
+  return [`# ${l.review} — ${title}`, "", `| ${l.clause} | ${l.status} | ${l.severity} | ${l.detail} |`, "|---|---|---|---|", ...fs.map((f) => `| ${f.name} | ${l.statuses[f.status]} | ${l.severities[f.severity]} | ${detail(f).replace(/\|/g, "/")} |`), "", l.notAdvice].join("\n");
 }

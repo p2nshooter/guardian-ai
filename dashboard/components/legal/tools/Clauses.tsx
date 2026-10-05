@@ -2,7 +2,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import type { LegalToolsDict } from "@/lib/i18n-pages/legaltools";
+import type { Lang } from "@/lib/i18n-shared";
 import { CLAUSES, placeholders, fillClause, type LibraryClause, type ClauseVariant } from "@/lib/legal/clauses";
+import { localClause } from "@/lib/legal/catalog";
+import { useLegalCatalog } from "@/lib/legal/use-catalog";
 import { sanitizeClause, type LegalLibrary } from "@/lib/legal/library";
 import { Alert, Modal, Spinner } from "@/components/ui";
 import { AiButton, CopyText, ToolIntro, badge, type Handoff } from "./shared";
@@ -10,12 +13,14 @@ import { AiButton, CopyText, ToolIntro, badge, type Handoff } from "./shared";
 const CATEGORIES: LibraryClause["category"][] = ["General", "Commercial", "Risk", "Data & IP", "Disputes", "Employment"];
 const LABELS: ClauseVariant["label"][] = ["Balanced", "Pro-supplier", "Pro-customer", "Pro-discloser", "Pro-recipient", "Pro-employer", "Short form"];
 
-export default function Clauses({ t, library, saveLibrary, onHandoff }: {
-  t: LegalToolsDict; library: LegalLibrary; saveLibrary: (next: LegalLibrary) => Promise<string | null>; onHandoff: (h: Handoff) => void;
+export default function Clauses({ t, lang, library, saveLibrary, onHandoff }: {
+  t: LegalToolsDict; lang: Lang; library: LegalLibrary; saveLibrary: (next: LegalLibrary) => Promise<string | null>; onHandoff: (h: Handoff) => void;
 }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
-  const all = useMemo(() => [...library.clauses.map((c) => ({ ...c, mine: true })), ...CLAUSES.map((c) => ({ ...c, mine: false }))], [library]);
+  // Built-in clauses in the member's language (names, notes and wording); their own clauses as they wrote them.
+  const catalog = useLegalCatalog(lang);
+  const all = useMemo(() => [...library.clauses.map((c) => ({ ...c, mine: true })), ...CLAUSES.map((c) => ({ ...localClause(c, catalog), mine: false }))], [library, catalog]);
   const list = useMemo(() => {
     const s = q.trim().toLowerCase();
     return all.filter((c) => (!cat || c.category === cat) && (!s || `${c.name} ${c.notes} ${c.variants.map((v) => v.text).join(" ")}`.toLowerCase().includes(s)));
@@ -111,11 +116,11 @@ export default function Clauses({ t, library, saveLibrary, onHandoff }: {
             ) : null}
             <h4 className="mb-1 mt-4 text-sm font-semibold">{t.clauses.preview}</h4>
             <p className="whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-3 font-serif text-[15px] leading-relaxed text-slate-800" data-testid="cl-text">
-              {filled.split(/(\[[^\[\]]{1,80}\])/g).map((part, i) => /^\[[^\[\]]{1,80}\]$/.test(part) ? <mark key={i} className="rounded bg-amber-100 px-0.5 text-amber-900">{part}</mark> : <span key={i}>{part}</span>)}
+              {filled.split(/(\[[^\[\]]{1,120}\])/g).map((part, i) => /^\[[^\[\]]{1,120}\]$/.test(part) ? <mark key={i} className="rounded bg-amber-100 px-0.5 text-amber-900">{part}</mark> : <span key={i}>{part}</span>)}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <CopyText t={t} text={filled} />
-              <AiButton t={t} onClick={() => onHandoff({ ws: "contract-draft", fallback: "ask", request: `${t.clauses.aiRequest}\n\n${sel.name} (${variant.label}):\n${filled}` })} />
+              <AiButton t={t} onClick={() => onHandoff({ ws: "contract-draft", fallback: "ask", request: `${t.clauses.aiRequest}\n\n${sel.name} (${t.clauses.labels[variant.label]}):\n${filled}` })} />
             </div>
             <p className="mt-3 text-xs text-slate-500">{t.notAdvice}</p>
           </div>

@@ -2,7 +2,10 @@
 "use client";
 import { useMemo, useState } from "react";
 import type { LegalToolsDict } from "@/lib/i18n-pages/legaltools";
-import { CLAUSE_TYPES, PLAYBOOKS, review, playbookMarkdown, findingsMarkdown, type Check, type Finding, type Playbook as PB, type Position } from "@/lib/legal/playbook";
+import type { Lang } from "@/lib/i18n-shared";
+import { CLAUSE_TYPES, PLAYBOOKS, review, playbookMarkdown, findingsMarkdown, issuesText, type Check, type Finding, type Playbook as PB, type Position, type ReportLabels } from "@/lib/legal/playbook";
+import { localPlaybook } from "@/lib/legal/catalog";
+import { useLegalCatalog } from "@/lib/legal/use-catalog";
 import { sanitizePlaybook, type LegalLibrary } from "@/lib/legal/library";
 import { markdownToDocx } from "@/lib/export/docx";
 import { Alert, Modal, Spinner } from "@/components/ui";
@@ -16,13 +19,16 @@ const CHECK_KINDS: Check["kind"][] = ["maxYears", "maxMonths", "minDays", "maxDa
 const isList = (k: Check["kind"]) => k === "lawIn" || k === "mustMention";
 const csvCell = (s: unknown) => { const v = String(s ?? ""); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
 
-export default function Playbook({ t, docs, lastAnswer, library, saveLibrary, onHandoff }: {
-  t: LegalToolsDict; docs: ToolDoc[]; lastAnswer?: string; library: LegalLibrary;
+export default function Playbook({ t, lang, docs, lastAnswer, library, saveLibrary, onHandoff }: {
+  t: LegalToolsDict; lang: Lang; docs: ToolDoc[]; lastAnswer?: string; library: LegalLibrary;
   saveLibrary: (next: LegalLibrary) => Promise<string | null>; onHandoff: (h: Handoff) => void;
 }) {
-  const all = useMemo(() => [...PLAYBOOKS, ...library.playbooks], [library]);
+  // Built-in playbooks in the member's language; their own playbooks as they wrote them.
+  const cat = useLegalCatalog(lang);
+  const builtIn = useMemo(() => PLAYBOOKS.map((p) => localPlaybook(p, cat)), [cat]);
+  const all = useMemo(() => [...builtIn, ...library.playbooks], [builtIn, library]);
   const [pbId, setPbId] = useState(PLAYBOOKS[0].id);
-  const pb = all.find((p) => p.id === pbId) || PLAYBOOKS[0];
+  const pb = all.find((p) => p.id === pbId) || builtIn[0];
   const mine = library.playbooks.some((p) => p.id === pb.id);
   const [doc, setDoc] = useState<DocSel>(EMPTY_SEL);
   const [findings, setFindings] = useState<Finding[] | null>(null);
@@ -31,22 +37,24 @@ export default function Playbook({ t, docs, lastAnswer, library, saveLibrary, on
   const [editing, setEditing] = useState<PB | null>(null);
   const [busy, setBusy] = useState(false);
   const [editErr, setEditErr] = useState("");
-  const clauseName = (id: string) => CLAUSE_TYPES.find((c) => c.id === id)?.name || id;
+  const clauseName = (id: string) => cat.clauseTypes[id as Position["clause"]] || CLAUSE_TYPES.find((c) => c.id === id)?.name || id;
+  const detail = (f: Finding) => (f.issues?.length ? issuesText(f.issues, t.playbook.msg) : f.detail);
+  const labels: ReportLabels = { ...t.playbook.report, notAdvice: t.notAdvice, statuses: t.playbook.status, severities: t.playbook.severity };
 
   function run() {
     if (!doc.text.trim()) { setErr(t.playbook.needDoc); setFindings(null); return; }
     setErr("");
-    setFindings(review(doc.text, pb).findings);
+    setFindings(review(doc.text, pb, cat.clauseTypes).findings);
   }
   const count = (s: Finding["status"]) => (findings || []).filter((f) => f.status === s).length;
   const title = `${pb.name}${doc.name ? ` — ${doc.name}` : ""}`;
 
   function toAi() {
     if (!findings) return;
-    const open = findings.filter((f) => f.status !== "ok").map((f) => `- ${f.name}: ${f.status} — ${f.detail}`).join("\n");
+    const open = findings.filter((f) => f.status !== "ok").map((f) => `- ${clauseName(f.clause)}: ${t.playbook.status[f.status]} — ${detail(f)}`).join("\n");
     onHandoff({
       ws: "contract-review", onlyDocs: true,
-      fields: { playbook: playbookMarkdown(pb).slice(0, 3900), side: pb.side },
+      fields: { playbook: playbookMarkdown(pb, labels, cat.clauseTypes).slice(0, 3900), side: pb.side },
       request: `${t.playbook.aiRequest}\n${open || "- (none)"}`,
       docs: [{ key: doc.key || undefined, name: doc.name || "Contract", text: doc.text }],
     });
@@ -78,7 +86,7 @@ export default function Playbook({ t, docs, lastAnswer, library, saveLibrary, on
         <div>
           <label className="label" htmlFor="pb-pick">{t.playbook.choose}</label>
           <select id="pb-pick" className="select" value={pb.id} onChange={(e) => { setPbId(e.target.value); setFindings(null); }} data-testid="pb-pick">
-            <optgroup label={t.playbook.builtIn}>{PLAYBOOKS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
+            <optgroup label={t.playbook.builtIn}>{builtIn.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
             {library.playbooks.length ? <optgroup label={t.playbook.mine}>{library.playbooks.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup> : null}
           </select>
           <p className="mt-1 text-xs text-slate-500">{pb.side} · {pb.positions.length} {t.playbook.positions.toLowerCase()}</p>
@@ -114,9 +122,9 @@ export default function Playbook({ t, docs, lastAnswer, library, saveLibrary, on
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-semibold" data-testid="pb-summary">{t.playbook.summary.replace("{missing}", String(count("missing"))).replace("{deviation}", String(count("deviation"))).replace("{review}", String(count("review"))).replace("{ok}", String(count("ok")))}</p>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${fileSafe(title)}-playbook.docx`, markdownToDocx(findingsMarkdown(findings, title), { title, subtitle: t.tabs.playbook, footer: t.notAdvice }))}>📝 {t.word}</button>
-              <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${fileSafe(title)}-playbook.md`, findingsMarkdown(findings, title), "text/markdown;charset=utf-8")}>⬇️ {t.md}</button>
-              <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${fileSafe(title)}-playbook.csv`, [["Clause", "Status", "Severity", "Detail", "Standard", "Fallback", "Evidence"], ...findings.map((f) => [f.name, f.status, f.severity, f.detail, f.standard, f.fallback, f.evidence || ""])].map((r) => r.map(csvCell).join(",")).join("\n") + "\n", "text/csv;charset=utf-8")}>⬇️ {t.csv}</button>
+              <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${fileSafe(title)}-playbook.docx`, markdownToDocx(findingsMarkdown(findings, title, labels, detail), { title, subtitle: t.tabs.playbook, footer: t.notAdvice }))}>📝 {t.word}</button>
+              <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${fileSafe(title)}-playbook.md`, findingsMarkdown(findings, title, labels, detail), "text/markdown;charset=utf-8")}>⬇️ {t.md}</button>
+              <button type="button" className="btn-secondary btn-sm" onClick={() => download(`${fileSafe(title)}-playbook.csv`, [[labels.clause, labels.status, labels.severity, labels.detail, labels.standard, labels.fallback, labels.evidence], ...findings.map((f) => [clauseName(f.clause), labels.statuses[f.status], labels.severities[f.severity], detail(f), f.standard, f.fallback, f.evidence || ""])].map((r) => r.map(csvCell).join(",")).join("\n") + "\n", "text/csv;charset=utf-8")}>⬇️ {t.csv}</button>
               <AiButton t={t} onClick={toAi} />
             </div>
           </div>
@@ -124,11 +132,11 @@ export default function Playbook({ t, docs, lastAnswer, library, saveLibrary, on
             {findings.map((f, i) => (
               <article key={i} className="rounded-xl border border-slate-200 p-3 sm:p-4" data-testid="pb-finding">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold">{f.name}</h3>
+                  <h3 className="text-sm font-semibold">{clauseName(f.clause)}</h3>
                   <span className={`${badge} ${STATUS_TONE[f.status]}`}>{t.playbook.status[f.status]}</span>
                   {f.status !== "ok" ? <span className={`text-[11px] font-semibold ${SEV_TONE[f.severity]}`}>● {t.playbook.severity[f.severity]}</span> : null}
                 </div>
-                <p className="mt-1 break-words text-sm text-slate-700">{f.detail}</p>
+                <p className="mt-1 break-words text-sm text-slate-700">{detail(f)}</p>
                 {f.status !== "ok" ? (
                   <div className="mt-2 grid gap-2 text-xs sm:grid-cols-2 [&>*]:min-w-0">
                     <div className="rounded-lg bg-slate-50 p-2"><div className="font-semibold text-slate-600">{t.playbook.standard}</div><div className="mt-0.5 text-slate-700">{f.standard}</div></div>
@@ -156,7 +164,7 @@ export default function Playbook({ t, docs, lastAnswer, library, saveLibrary, on
               <div key={i} className="space-y-2 rounded-xl border border-slate-200 p-3">
                 <div className="flex flex-wrap items-end gap-2">
                   <label className="min-w-[180px] flex-1"><span className="label">{t.playbook.clause}</span>
-                    <select className="select" value={p.clause} onChange={(e) => setPos(i, { clause: e.target.value as Position["clause"] })}>{CLAUSE_TYPES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+                    <select className="select" value={p.clause} onChange={(e) => setPos(i, { clause: e.target.value as Position["clause"] })}>{CLAUSE_TYPES.map((c) => <option key={c.id} value={c.id}>{clauseName(c.id)}</option>)}</select></label>
                   <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={p.required} onChange={(e) => setPos(i, { required: e.target.checked })} /> {t.playbook.required}</label>
                   <button type="button" className="btn-ghost btn-sm pb-2 text-rose-600" onClick={() => setEditing({ ...editing, positions: editing.positions.filter((_, j) => j !== i) })}>✕</button>
                 </div>

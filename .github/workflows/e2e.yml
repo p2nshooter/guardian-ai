@@ -52,4 +52,19 @@ jobs:
         run: bash tests/e2e/run.sh
       - name: Server log on failure
         if: failure()
-        run: tail -200 .e2e-state-serve.log || true
+        run: |
+          # Every request is logged (serve-local.sh, --log-level info): show the ones around a
+          # hung or restarted worker first, then the end of the log.
+          grep -n -B40 -A5 -E "hung|restarted mid-request|Uncaught" .e2e-state-serve.log | head -300 || true
+          echo "──── last 200 lines ────"
+          tail -200 .e2e-state-serve.log || true
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-server-logs
+          path: |
+            dashboard/.e2e-state-serve.log
+            ~/.config/.wrangler/logs/
+          retention-days: 7
+          if-no-files-found: ignore

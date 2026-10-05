@@ -29,7 +29,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:${PORT}
 VARS
 (cd "$CTL" && CI=1 WRANGLER_SEND_METRICS=false npx wrangler d1 migrations apply axto-db --local --persist-to ../persist >/dev/null)
 cd "$WORK"
+# --log-level info logs one line per request, so a request that hangs is named in the CI log.
 # Pass every var explicitly as well (pages dev + wrangler.toml [vars] can shadow .dev.vars).
 BINDINGS=()
 while IFS= read -r line; do [ -n "$line" ] && BINDINGS+=(--binding "$line"); done < .dev.vars
-exec env CI=1 WRANGLER_SEND_METRICS=false npx wrangler pages dev static --port "$PORT" --persist-to ../persist --ip 127.0.0.1 --log-level warn "${BINDINGS[@]}"
+exec env CI=1 WRANGLER_SEND_METRICS=false npx wrangler pages dev static --port "$PORT" --persist-to ../persist --ip 127.0.0.1 --log-level info "${BINDINGS[@]}"
