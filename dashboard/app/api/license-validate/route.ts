@@ -111,8 +111,10 @@ export async function POST(req: NextRequest) {
     return signed(db, { valid: false, reason: "suspended", error: `License is suspended — your plan no longer includes this app. Manage it at ${PORTAL}.`, renew_url: PORTAL }, sign("suspended"));
   }
   const expiresAt = new Date(lic.expires_at);
+  const trial = lic.source === "trial";
   if (!(expiresAt.getTime() > Date.now())) {
-    return signed(db, { valid: false, reason: "expired", error: `License expired. Renew your plan at ${PORTAL} to restore access.`, expired_at: lic.expires_at, renew_url: PORTAL }, sign("expired"));
+    if (trial) return signed(db, { valid: false, reason: "trial_expired", license_type: "trial", error: `Your trial has ended — your data is kept. Buy an edition at ${PORTAL} to continue.`, expired_at: lic.expires_at, renew_url: PORTAL }, sign("expired"));
+    return signed(db, { valid: false, reason: "expired", error: `License expired. Renew at ${PORTAL} to restore access.`, expired_at: lic.expires_at, renew_url: PORTAL }, sign("expired"));
   }
 
   const reqProduct = String(requestedProduct || "").toLowerCase().trim();
@@ -127,6 +129,11 @@ export async function POST(req: NextRequest) {
 
   if (mid) {
     let bound = lic.bound_machine_id;
+    if (!bound && trial) {
+      // One trial per app per machine: a server that already ran a trial of this app cannot start another.
+      const reused = await dbFirst<{ x: number }>(db, `SELECT 1 AS x FROM sh_licenses WHERE source = 'trial' AND product = ? AND bound_machine_id = ? AND id != ?`, [lic.product, mid, lic.id]).catch(() => null);
+      if (reused) return signed(db, { valid: false, reason: "trial_used_on_machine", license_type: "trial", error: `This server has already used a trial of ${lic.product}. Buy an edition at ${PORTAL}.`, renew_url: PORTAL }, sign("trial_used"));
+    }
     if (!bound) {
       // First machine wins; a second server racing for the same key sees the winner and is refused.
       await dbRun(db, `UPDATE sh_licenses SET bound_machine_id = ?, updated_at = ? WHERE id = ? AND bound_machine_id = ''`, [mid, now(), lic.id]).catch(() => {});
@@ -153,14 +160,22 @@ export async function POST(req: NextRequest) {
 
   const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000);
   const features = buildFeatures(licProduct, lic.package_code, maxNodes);
+  // A trial is signed as such so the engine can watermark it and show the buy button.
+  if (trial) features.trial = true;
   const response: Record<string, any> = {
-    valid: true, status: "active", license_key: key, product: lic.product,
+    valid: true, status: "active", license_key: key, product: lic.product, license_type: trial ? "trial" : "paid", source: lic.source || "plan",
     package: lic.package_code, package_code: lic.package_code, expires_at: lic.expires_at,
     days_left: daysLeft, max_nodes: maxNodes, client_name: lic.client_name || "", organization: lic.organization || "",
     features,
   };
-  if (daysLeft <= 14) response.warning = `License renews with your plan in ${daysLeft} day${daysLeft === 1 ? "" : "s"}. Keep your plan active at ${PORTAL}.`;
-  if (daysLeft <= 3) response.critical_warning = `⚠️ License expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}! Renew your plan at ${PORTAL}.`;
+  const plural = daysLeft === 1 ? "" : "s";
+  if (trial) {
+    response.warning = `Trial licence — ${daysLeft} day${plural} left. Buy an edition at ${PORTAL} to keep using it.`;
+  } else {
+    const how = (lic.source || "plan") === "plan" ? "with your plan" : "when you renew the edition";
+    if (daysLeft <= 14) response.warning = `License renews ${how} in ${daysLeft} day${plural}. Manage it at ${PORTAL}.`;
+    if (daysLeft <= 3) response.critical_warning = `⚠️ License expires in ${daysLeft} day${plural}! Renew at ${PORTAL}.`;
+  }
 
   const entitlements = serializeEntitlements(features, lic.package_code);
   try {

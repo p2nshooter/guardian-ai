@@ -7,6 +7,8 @@
  *   • Business:   the apps chosen at checkout (up to 3) are licensed on payment;
  *                 the member can pick the rest any time in the portal.
  * Keys are e-mailed together with the installer link.
+ * Plan licences have source = 'plan'; editions and trials (lib/edition-service.ts,
+ * lib/trials.ts) are separate rows and never count against the plan's slots.
  * ============================================================================ */
 import { dbFirst, dbQuery, dbRun, newId, now, secret } from "./db";
 import { PLANS, isPlanId, type PlanLimits } from "./plans";
@@ -28,11 +30,11 @@ export async function issueLicence(db: any, userId: string, slug: string, lim: P
   const product = getSelfHosted(slug);
   if (!product) return { error: "Unknown product." };
   if (lim.selfHostedApps === 0) return { error: "Self-hosted apps are included in the Business and Enterprise plans." };
-  const existing = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ?`, [userId, slug]);
+  const existing = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ? AND source = 'plan'`, [userId, slug]);
   if (existing && existing.status === "active") return null;
   if (existing?.notes === ADMIN_HOLD) return { error: HOLD_MESSAGE };
   if (lim.selfHostedApps > 0) {
-    const n = await dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active'`, [userId]);
+    const n = await dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active' AND source = 'plan'`, [userId]);
     if ((n?.n ?? 0) >= lim.selfHostedApps) return { error: `Your plan includes ${lim.selfHostedApps} self-hosted apps. Release one first, or upgrade to Enterprise for all of them.` };
   }
   const key = await generateLicenseKey(slug, secret("LICENSE_KEY_HMAC_SECRET") || undefined);
@@ -40,8 +42,8 @@ export async function issueLicence(db: any, userId: string, slug: string, lim: P
     await dbRun(db, `UPDATE sh_licenses SET license_key = ?, package_code = ?, max_nodes = ?, status = 'active', expires_at = ?, bound_machine_id = '', updated_at = ? WHERE id = ?`,
       [key, product.packageCode, lim.selfHostedNodes, periodEnd, now(), existing.id]);
   } else {
-    await dbRun(db, `INSERT INTO sh_licenses (id, user_id, product, license_key, package_code, max_nodes, status, expires_at, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
+    await dbRun(db, `INSERT INTO sh_licenses (id, user_id, product, license_key, package_code, max_nodes, status, expires_at, source, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, 'active', ?, 'plan', ?, ?)`,
       [newId(), userId, slug, key, product.packageCode, lim.selfHostedNodes, periodEnd, now(), now()]);
   }
   return { product: slug, name: catalogEntry(slug)?.name || slug, key };
@@ -85,6 +87,6 @@ export async function autoIssueAfterPayment(db: any, userId: string, email: stri
 }
 
 export async function activeLicenceCount(db: any, userId: string): Promise<number> {
-  const rows = await dbQuery<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active'`, [userId]);
+  const rows = await dbQuery<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active' AND source = 'plan'`, [userId]);
   return rows[0]?.n ?? 0;
 }

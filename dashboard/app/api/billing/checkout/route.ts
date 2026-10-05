@@ -1,6 +1,7 @@
 /* AXTO — POST /api/billing/checkout
  *   {plan, cycle, gateway, apps?}                        subscription period
  *   {kind:"lifetime", scope, product?, devices, gateway} lifetime licence (one-time)
+ *   {kind:"edition", edition, cycle, gateway}            one self-hosted app in an edition (monthly / yearly)
  * Creates an order at OUR price (never the browser's) and returns the hosted
  * payment page URL. Manual bank transfer and crypto return instructions instead.
  * "card" runs through Xendit or Midtrans (Admin → Payment & email → Credit /
@@ -19,6 +20,8 @@ import { quoteCrypto } from "@/lib/billing/crypto-watch";
 import { uniqueIdrAmount } from "@/lib/billing/unique-amount";
 import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, PAYPAL_MAX_USD, type LifetimeScope } from "@/lib/lifetime";
 import { lifetimeChoiceProblem, productName } from "@/lib/lifetime-service";
+import { getEdition, getEditionPrices, editionPrice, type EditionCycle } from "@/lib/editions";
+import { editionChoiceProblem, editionGatewayAllowed, EDITION_ANY_GATEWAY_MAX } from "@/lib/edition-service";
 
 export async function POST(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
@@ -26,8 +29,13 @@ export async function POST(req: NextRequest) {
   if (ctx.session.role === "admin") return fail("Admin accounts already have full access.");
   const b = await readJson(req);
   const lifetime = b?.kind === "lifetime";
+  const edition = b?.kind === "edition";
   const plan = b?.plan, cycle = b?.cycle, gateway = String(b?.gateway || "") as GatewayId;
-  if (!lifetime && (!isPlanId(plan) || !isCycle(cycle))) return fail("Choose a plan and billing period.");
+  if (!lifetime && !edition && (!isPlanId(plan) || !isCycle(cycle))) return fail("Choose a plan and billing period.");
+  if (edition) {
+    const problem = editionChoiceProblem(b?.edition, b?.cycle);
+    if (problem) return fail(problem);
+  }
   if (lifetime) {
     const problem = lifetimeChoiceProblem(b?.scope, b?.product);
     if (problem) return fail(problem);
@@ -36,6 +44,20 @@ export async function POST(req: NextRequest) {
   if (!info) return fail("Choose a payment method.");
 
   const db = getDB(req);
+  // Editions: the price comes from the (admin-editable) edition table — never from the browser —
+  // and decides which payment methods may carry it, before any gateway is contacted.
+  let editionAmount = 0;
+  let editionMeta: { code: string; app: string; cycle: EditionCycle } | undefined;
+  if (edition) {
+    const e = getEdition(String(b.edition))!;
+    const price = editionPrice(e.code, b.cycle as EditionCycle, await getEditionPrices(db));
+    if (price === null) return fail("That edition is not on sale right now.");
+    const planLic = await db.prepare(`SELECT 1 AS x FROM sh_licenses WHERE user_id = ? AND product = ? AND source = 'plan' AND status = 'active'`).bind(ctx.session.sub, e.app).first();
+    if (planLic) return fail("This app is already included in your plan at the top edition.");
+    if (!editionGatewayAllowed(gateway, price, CARD_MAX_USD)) return fail(`For more than $${EDITION_ANY_GATEWAY_MAX.toLocaleString("en-US")} please pay by bank/wire transfer, crypto or card.`);
+    editionAmount = price;
+    editionMeta = { code: e.code, app: e.app, cycle: b.cycle as EditionCycle };
+  }
   const creds = await gatewayCreds(db, gateway);
   if (!creds) return fail("That payment method is not available right now. Please choose another.", 503);
   // Sandbox = the provider's test environment: the order is a TEST order (never revenue).
@@ -55,7 +77,9 @@ export async function POST(req: NextRequest) {
   // Lifetime: the price comes from the (admin-editable) tier table — the browser only picks a tier.
   let amountUsd: number;
   let lifetimeMeta: { scope: LifetimeScope; product: string; devices: number } | undefined;
-  if (lifetime) {
+  if (edition) {
+    amountUsd = editionAmount;
+  } else if (lifetime) {
     const tier = (await getLifetimePrices(db)).find((x) => x.devices === Number(b?.devices));
     if (!tier) return fail("Choose the number of devices.");
     const scope = b.scope as LifetimeScope;
@@ -74,22 +98,24 @@ export async function POST(req: NextRequest) {
   const amountIdr = unique ? unique.amount : baseIdr;
   const id = newId("ord");
   // Business: the self-hosted apps chosen now are licensed the moment payment confirms.
-  const lim = lifetime ? null : PLANS[plan as keyof typeof PLANS].limits;
+  const lim = lifetime || edition ? null : PLANS[plan as keyof typeof PLANS].limits;
   const apps: string[] = Array.isArray(b?.apps) ? Array.from(new Set<string>(b.apps.map(String))).filter((x) => !!getSelfHosted(x)) : [];
   if (lim && lim.selfHostedApps > 0 && apps.length > lim.selfHostedApps) return fail(`${PLANS[plan as keyof typeof PLANS].name} includes ${lim.selfHostedApps} self-hosted apps — choose up to ${lim.selfHostedApps}.`);
   const crypto = gateway === "crypto" ? await quoteCrypto(db, amountUsd, creds) : null;
-  const description = lifetimeMeta
-    ? `${SITE.name} Lifetime licence — ${productName(lifetimeMeta.product)}, up to ${lifetimeMeta.devices} device${lifetimeMeta.devices === 1 ? "" : "s"}`
-    : `${SITE.name} ${PLANS[plan as keyof typeof PLANS].name} — ${cycle === "yearly" ? "1 year" : "1 month"}`;
+  const description = editionMeta
+    ? `${productName(editionMeta.app)} ${getEdition(editionMeta.code)!.name} edition — ${editionMeta.cycle === "yearly" ? "1 year" : "1 month"}`
+    : lifetimeMeta
+      ? `${SITE.name} Lifetime licence — ${productName(lifetimeMeta.product)}, up to ${lifetimeMeta.devices} device${lifetimeMeta.devices === 1 ? "" : "s"}`
+      : `${SITE.name} ${PLANS[plan as keyof typeof PLANS].name} — ${cycle === "yearly" ? "1 year" : "1 month"}`;
 
   await dbRun(db,
     `INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
      VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)`,
-    [id, ctx.session.sub, ctx.session.email, lifetime ? "lifetime" : plan, lifetime ? "once" : cycle, amountUsd, orderCurrency, amountIdr, orderGateway,
-     JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, method: card ? "card" : undefined }), now()]);
-  await audit(db, ctx.session, "order.created", "order", id, { plan: lifetime ? "lifetime" : plan, cycle: lifetime ? "once" : cycle, gateway, processor: card?.processor, env, amountUsd, lifetime: lifetimeMeta }, req);
+    [id, ctx.session.sub, ctx.session.email, edition ? "edition" : lifetime ? "lifetime" : plan, edition ? editionMeta!.cycle : lifetime ? "once" : cycle, amountUsd, orderCurrency, amountIdr, orderGateway,
+     JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, edition: editionMeta, method: card ? "card" : undefined }), now()]);
+  await audit(db, ctx.session, "order.created", "order", id, { plan: edition ? "edition" : lifetime ? "lifetime" : plan, cycle: edition ? editionMeta!.cycle : lifetime ? "once" : cycle, gateway, processor: card?.processor, env, amountUsd, lifetime: lifetimeMeta, edition: editionMeta }, req);
 
-  const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: lifetime ? "/app/lifetime" : undefined };
+  const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: edition ? "/app/self-hosted" : lifetime ? "/app/lifetime" : undefined };
   try {
     let url = "", ref = "";
     switch (gateway) {

@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/JsonLd";
 import Reveal from "@/components/site/Reveal";
 import AppIcon from "@/components/site/AppIcon";
 import ShTagline from "@/components/site/ShTagline";
+import EditionsPublic from "@/components/site/EditionsPublic";
 import T from "@/components/site/T";
 import { APP_COLORS } from "@/lib/ecosystem";
 import { PRODUCT_CATALOG } from "@/lib/product-catalog";
@@ -58,6 +59,8 @@ export default async function SelfHostedProduct({ params }: { params: Promise<{ 
           </div>
         </div>
       </section>
+
+      <EditionsPublic slug={p.slug} name={p.name} color={color} />
 
       <section className="py-14">
         <div className="container-page">

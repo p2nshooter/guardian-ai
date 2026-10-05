@@ -288,8 +288,8 @@ Urut dari dampak terbesar; semuanya harus **nyata**, bukan klaim:
 | Fase | Isi | PR | Status |
 |---|---|---|---|
 | A1 | Nama tampilan 10 aplikasi = gambar pemilik, di semua tempat (§2) | branch `ccr-e9111ca5-n0fcha` | ✅ situs, portal, footer (10 dari 10), menu Aplikasi, FAQ 10 bahasa, `installer/products.go`, panduan klien. Teks banner log di dalam engine Python ikut saat fase D per aplikasi |
-| A2 | `lib/editions.ts` + edisi per aplikasi di `/self-hosted/[slug]`, `/pricing`, checkout, member, admin (§3) | — | ⏳ |
-| A3 | Program 100 trial per aplikasi: tabel, admin `/admin/trials`, klaim member, kartu publik, `license-validate` (§4) | — | ⏳ |
+| A2 | `lib/editions.ts` + edisi per aplikasi di `/self-hosted/[slug]`, `/pricing`, checkout, member, admin (§3) | branch `ccr-e9111ca5-n0fcha` | ✅ 36 edisi dengan kode paket lama; harga default pra-v3 dapat diubah di Admin → App editions (on/off per edisi); checkout `kind:"edition"` bulanan/tahunan (PayPal/IDR hanya ≤ US$10.000); lisensi terbit otomatis (`source = 'edition'`), perpanjangan menumpuk, ganti edisi dikreditkan; refund mencabut lisensi; entitlement bertanda tangan dipersempit sesuai edisi; halaman publik & portal 10 bahasa. `/pricing` belum menampilkan edisi (tabel di halaman tiap aplikasi) |
+| A3 | Program 100 trial per aplikasi: tabel, admin `/admin/trials`, klaim member, kartu publik, `license-validate` (§4) | branch `ccr-e9111ca5-n0fcha` | ✅ tabel `sh_trials`, kolam 100/aplikasi terisi otomatis sekali; klaim zero-touch (lisensi 14 hari edisi Professional + e-mail); batas per akun/e-mail/IP, maks 2 aplikasi, satu trial per server; ditandatangani sebagai trial; kedaluwarsa → tautan beli; konversi saat membeli; rating; admin: setelan, buat/jeda/hapus batch, CSV, akhiri trial. Watermark di UI engine = fase A4 |
 | A4 | Engine menegakkan batas edisi + watermark trial (semua 10 engine) | — | ⏳ |
 | B1 | Rilis bertanda tangan: registry OCI, cosign, SBOM, Trivy, SHA256SUMS (§5) | — | ⏳ |
 | B2 | Installer: Authenticode, MSI, `install.sh`, .deb/.rpm, bundle air-gapped (§5) | — | ⏳ |

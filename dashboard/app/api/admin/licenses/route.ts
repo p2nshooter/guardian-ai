@@ -19,8 +19,10 @@ export async function GET(req: NextRequest) {
   // "expired" is a date, not a stored status: active licences past their end date.
   if (status === "expired") { where.push("l.status = 'active' AND l.expires_at <= ?"); args.push(new Date().toISOString()); }
   else if (status) { where.push("l.status = ?"); args.push(status); }
+  const source = url.searchParams.get("source") || "";
+  if (source === "plan" || source === "edition" || source === "trial") { where.push("l.source = ?"); args.push(source); }
   const rows = await dbQuery(getDB(req),
-    `SELECT l.id, l.product, l.license_key, l.package_code, l.status, l.expires_at, l.max_nodes, l.bound_machine_id,
+    `SELECT l.id, l.product, l.source, l.license_key, l.package_code, l.status, l.expires_at, l.max_nodes, l.bound_machine_id,
             l.last_seen_at, l.last_version, l.last_ip, l.reset_count, l.notes, l.created_at, u.email, u.name
        FROM sh_licenses l LEFT JOIN users u ON u.id = l.user_id
       WHERE ${where.join(" AND ")} ORDER BY l.created_at DESC LIMIT 200`, args);

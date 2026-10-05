@@ -60,11 +60,13 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/orders", label: "Orders & payments", icon: "🧾" },
       { href: "/admin/licenses", label: "Licences", icon: "🔑" },
       { href: "/admin/lifetime", label: "Lifetime licences", icon: "♾️" },
+      { href: "/admin/trials", label: "Trials (100 per app)", icon: "🎟️" },
       { href: "/admin/support", label: "Support inbox", icon: "💬" },
       { href: "/admin/acquisition", label: "Site sale", icon: "🏛️" },
     ] },
     { section: "Configuration", items: [
       { href: "/admin/plans", label: "Plans & pricing", icon: "🏷️" },
+      { href: "/admin/editions", label: "App editions", icon: "🧩" },
       { href: "/admin/payments", label: "Payment & email", icon: "💳" },
       { href: "/admin/managed", label: "Managed AI", icon: "☁️", badge: "locked" },
       { href: "/admin/connect", label: "Connect (developer API)", icon: "⚡" },

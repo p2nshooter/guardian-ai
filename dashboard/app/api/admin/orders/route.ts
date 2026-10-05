@@ -53,6 +53,12 @@ export async function POST(req: NextRequest) {
       // New activations and downloads stop; devices already activated offline cannot be reached.
       await dbRun(db, `UPDATE lifetime_licenses SET status = 'revoked', updated_at = ? WHERE order_id = ?`, [now(), o.id]);
     }
+    if (o.plan === "edition" && b?.endAccess) {
+      // A refunded edition: its licence ends now (the engine stops at its next check-in).
+      let app = "";
+      try { app = String(JSON.parse(o.meta || "{}").edition?.app || ""); } catch {}
+      if (app) await dbRun(db, `UPDATE sh_licenses SET status = 'revoked', expires_at = ?, updated_at = ? WHERE user_id = ? AND product = ? AND source = 'edition'`, [now(), now(), o.user_id, app]);
+    }
     if (o.plan === "acquisition" && b?.endAccess) {
       // A refunded site purchase: the buyer's administrator role ends and the offer reopens.
       if (o.user_id === ctx.session.sub) return fail("You cannot remove your own administrator role.");

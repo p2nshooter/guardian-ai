@@ -4,7 +4,9 @@
  * Top-tier entitlements per self-hosted engine — signed into every online
  * licence answer (/api/license-validate) AND every Lifetime activation file,
  * so an engine always takes its limits from signed data, never from plain JSON.
+ * Lower editions (docs/AXTO-APPS-BLUEPRINT.md §3) narrow the top set.
  * ============================================================================ */
+import { editionEntitlements, getEdition, isTopEdition } from "./editions";
 
 // Deterministic, signable entitlements: "package=<code>;<k>=<v>;…" (keys sorted).
 export function serializeEntitlements(features: Record<string, any>, packageCode: string): string {
@@ -16,9 +18,18 @@ export function serializeEntitlements(features: Record<string, any>, packageCode
   return parts.join(";");
 }
 
+// Feature set for a licence: the top-tier set of the engine, narrowed to the
+// edition when the package code is a lower edition (lib/editions.ts).
+export function buildFeatures(product: string, packageCode: string, maxNodes: number): Record<string, any> {
+  const top = topFeatures(product, maxNodes);
+  const e = getEdition(packageCode);
+  if (!e || e.app !== product || isTopEdition(packageCode)) return top;
+  return { ...top, ...editionEntitlements(e), max_nodes: maxNodes };
+}
+
 // Top-tier feature sets — identical to the v2 server's answers for the top
 // package of each engine, so the engines unlock their most complete version.
-export function buildFeatures(product: string, packageCode: string, maxNodes: number): Record<string, any> {
+function topFeatures(product: string, maxNodes: number): Record<string, any> {
   // max_nodes is in every signed entitlement set, so no engine ever falls back to an unsigned limit.
   const base = { ai_pool: true, support_chat: true, byok: true, self_hosted: true, max_nodes: maxNodes };
   switch (product) {

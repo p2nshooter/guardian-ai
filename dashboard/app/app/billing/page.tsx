@@ -16,6 +16,7 @@ import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
 import { L } from "@/lib/i18n-pages/billing";
 import { PM } from "@/lib/i18n-pages/planmatrix";
 import PlanMatrix from "@/components/plans/PlanMatrix";
+import { ED } from "@/lib/i18n-pages/editions";
 
 interface Options { plans: { id: PlanId; name: string; monthly: number; yearly: number }[]; gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; usdIdr: number }
 interface Overview { subscription: { plan: string; cycle: string; status: string; current_period_end: string } | null; orders: { id: string; invoice_no: string; plan: string; cycle: string; amount_usd: number; currency: string; amount_local: number; gateway: string; method?: string; status: string; created_at: string; paid_at: string }[] }
@@ -183,7 +184,7 @@ function BillingInner() {
                   {ov.orders.map((o) => (
                     <tr key={o.id}>
                       <td>{formatDate(o.created_at, lang)}</td>
-                      <td>{o.plan === "lifetime" ? `${t.lifetime} · ${t.once}` : `${PLANS[o.plan as PlanId]?.name || o.plan} · ${o.cycle === "yearly" ? t.yearly : t.monthly}`}</td>
+                      <td>{o.plan === "lifetime" ? `${t.lifetime} · ${t.once}` : `${o.plan === "edition" ? ED[lang].ui.sourceEdition : PLANS[o.plan as PlanId]?.name || o.plan} · ${o.cycle === "yearly" ? t.yearly : t.monthly}`}</td>
                       <td>{opts.gateways.find((g) => g.id === (o.method === "card" ? "card" : o.gateway))?.label || (o.method === "card" ? "Credit / debit card" : o.gateway)}</td>
                       <td>{formatMoney(o.amount_usd, "USD", lang)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR", lang)}</span> : null}</td>
                       <td><StatusBadge status={o.status} label={statusLabel(tg, o.status)} /></td>

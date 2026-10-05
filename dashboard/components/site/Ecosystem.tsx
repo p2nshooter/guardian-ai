@@ -6,6 +6,7 @@ import AppIcon from "@/components/site/AppIcon";
 import Reveal from "@/components/site/Reveal";
 import ShTagline from "@/components/site/ShTagline";
 import T from "@/components/site/T";
+import TrialBadge from "@/components/site/TrialBadge";
 import { ECOSYSTEM_CLOUD, ECOSYSTEM_SELF, type EcoApp } from "@/lib/ecosystem";
 import { PRODUCT_CATALOG } from "@/lib/product-catalog";
 
@@ -25,6 +26,9 @@ export function EcoTile({ app, i, wide = false }: { app: EcoApp; i: number; wide
         </p>
         {app.kind === "self" ? (
           <span className="relative mt-4 self-start rounded-md border border-white/10 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Docker · Windows · Linux</span>
+        ) : null}
+        {app.kind === "self" ? (
+          <TrialBadge slug={app.slug} />
         ) : (
           <span className="relative mt-4 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400"><T k="lp.eco.inBrowser" /></span>
         )}

@@ -20,6 +20,8 @@ import { sendMail, mails, mailLayout, adminInbox } from "../mail";
 import { getSale, saveSale } from "../acquisition";
 import { SITE, absoluteUrl } from "../site";
 import { issueForOrder, productName } from "../lifetime-service";
+import { issueEdition } from "../edition-service";
+import { getEdition, isEditionCycle } from "../editions";
 
 export interface OrderRow {
   id: string; invoice_no: string; user_id: string; email: string; plan: string; cycle: string;
@@ -71,16 +73,16 @@ async function nextInvoiceNo(db: any): Promise<string> {
 export async function syncLicenses(db: any, userId: string, plan: string, periodEnd: string): Promise<void> {
   const lim = isPlanId(plan) ? PLANS[plan].limits : null;
   if (!lim || lim.selfHostedApps === 0) {
-    await dbRun(db, `UPDATE sh_licenses SET status = 'suspended', updated_at = ? WHERE user_id = ? AND status = 'active'`, [now(), userId]);
+    await dbRun(db, `UPDATE sh_licenses SET status = 'suspended', updated_at = ? WHERE user_id = ? AND status = 'active' AND source = 'plan'`, [now(), userId]);
     return;
   }
   await dbRun(db,
     `UPDATE sh_licenses SET expires_at = ?, max_nodes = ?, status = CASE WHEN status = 'suspended' AND notes != ? THEN 'active' ELSE status END, updated_at = ?
-      WHERE user_id = ? AND status != 'revoked'`,
+      WHERE user_id = ? AND status != 'revoked' AND source = 'plan'`,
     [periodEnd, lim.selfHostedNodes, ADMIN_HOLD, now(), userId]);
   if (lim.selfHostedApps > 0) {
     const rows = await dbQuery<{ id: string }>(db,
-      `SELECT id FROM sh_licenses WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC`, [userId]);
+      `SELECT id FROM sh_licenses WHERE user_id = ? AND status = 'active' AND source = 'plan' ORDER BY created_at DESC`, [userId]);
     const extra = rows.slice(lim.selfHostedApps).map((r) => r.id);
     for (const id of extra) await dbRun(db, `UPDATE sh_licenses SET status = 'suspended', updated_at = ? WHERE id = ?`, [now(), id]);
   }
@@ -94,6 +96,12 @@ function invoiceLine(o: OrderRow): string {
     try { m = JSON.parse(o.meta || "{}").lifetime || {}; } catch {}
     const devices = Number(m.devices) || 0;
     return `${SITE.name} Lifetime licence — ${productName(m.scope === "suite" ? "suite" : String(m.product || ""))}, up to ${devices} device${devices === 1 ? "" : "s"}${m.scope === "suite" ? " per app" : ""}`;
+  }
+  if (o.plan === "edition") {
+    let m: any = {};
+    try { m = JSON.parse(o.meta || "{}").edition || {}; } catch {}
+    const e = getEdition(String(m.code || ""));
+    return `${productName(e?.app || "")} — ${e?.name || "?"} edition, ${o.cycle === "monthly" ? "1 month" : "1 year"} (self-hosted licence)`;
   }
   return `${SITE.name} ${isPlanId(o.plan) ? PLANS[o.plan].name : o.plan} plan — ${o.cycle}`;
 }
@@ -138,6 +146,7 @@ export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef
   if (typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (o.plan === "lifetime") return markLifetimePaid(db, o, opts);
   if (o.plan === "acquisition") return markAcquisitionPaid(db, o, opts);
+  if (o.plan === "edition") return markEditionPaid(db, o, opts);
   if (!isPlanId(o.plan) || !isCycle(o.cycle)) return { ok: false, reason: "bad_order" };
 
   // Claim the order and extend the subscription in ONE transaction. The upsert
@@ -260,4 +269,39 @@ async function markLifetimePaid(db: any, o: OrderRow, opts: { gatewayRef?: strin
     [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "order.paid", "order", o.id,
      JSON.stringify({ plan: "lifetime", amount_usd: o.amount_usd, gateway: o.gateway, license: lic?.id || "" }), now()]).catch(() => {});
   return lic ? { ok: true } : { ok: false, reason: "bad_order" };
+}
+
+/** Edition order paid → claim it once, invoice it, issue or extend the edition licence (zero-touch). */
+async function markEditionPaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
+  let m: any = {};
+  try { m = JSON.parse(o.meta || "{}").edition || {}; } catch {}
+  const e = getEdition(String(m.code || ""));
+  if (!e || !isEditionCycle(o.cycle)) return { ok: false, reason: "bad_order" };
+  const claim = await dbRun(db,
+    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
+    [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
+  if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
+  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
+  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
+  const lic = await issueEdition(db, o.user_id, { code: e.code, app: e.app, cycle: o.cycle });
+  const issued = "key" in lic ? lic : null;
+  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
+  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
+  try {
+    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name, until: issued?.expiresAt.slice(0, 10) }), {
+      httpMetadata: { contentType: "text/html; charset=utf-8" },
+    });
+  } catch {}
+  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
+    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "order.paid", "order", o.id,
+     JSON.stringify({ plan: "edition", edition: e.code, cycle: o.cycle, amount_usd: o.amount_usd, gateway: o.gateway, license: issued?.id || "", error: issued ? undefined : (lic as any).error }), now()]).catch(() => {});
+  if (issued) {
+    const esc = (x: string) => x.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+    await sendMail(o.email, `Your ${issued.name} ${issued.edition} licence`, mailLayout(`${issued.name} — ${issued.edition}`,
+      `<p>Payment confirmed (invoice <b>${esc(invoiceNo)}</b>, ${formatUsd(o.amount_usd)}). Your licence is active until <b>${issued.expiresAt.slice(0, 10)}</b>${issued.creditDays ? ` — including ${issued.creditDays} days carried over from your previous edition` : ""}.</p>
+       <p style="font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:700">${esc(issued.key)}</p>
+       <p><b>Windows:</b> download <b>AXTO Setup</b> from the portal, run it and paste the key.<br><b>Linux:</b> <code>./axto-setup install ${esc(issued.product)} --key ${esc(issued.key)}</code></p>`,
+      { label: "Open Self-Hosted", href: absoluteUrl("/app/self-hosted") }));
+  }
+  return issued ? { ok: true } : { ok: false, reason: "bad_order" };
 }
