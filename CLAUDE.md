@@ -5,6 +5,7 @@ The running log of the owner's requests is in [`docs/REQUESTS.md`](docs/REQUESTS
 
 ## 1. Every feature is complete, not a stub
 - World-class depth: benchmark against the best product in its category (see `docs/BLUEPRINT-V4.md`) — never ship a "simple" version.
+- Self-hosted Docker apps (10 products, Linux + Windows): follow `docs/AXTO-APPS-BLUEPRINT.md` — editions per app, the 100-trial-licence programme, signed releases and the enterprise baseline.
 - **Member portal**: the feature is usable there (translated in all 10 languages — `lib/i18n-pages/*`, enforced by `tests/i18n-pages.test.ts`).
 - **Admin portal**: whatever the feature needs to be operated (settings, prices, limits, lists, actions, audit log entries) is in `/admin`.
 - **Plans**: if it depends on a plan, it is in `lib/plans.ts` limits, so the plan matrix (`lib/plan-matrix.ts`) shows it on /pricing, member billing and admin plans.
