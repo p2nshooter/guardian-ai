@@ -303,7 +303,7 @@ Urut dari dampak terbesar; semuanya harus **nyata**, bukan klaim:
 | F2 | Smart License v5 (§11) | — | ⏳ |
 | F3 | Desain mewah menyeluruh: publik, login, portal member, admin (§13) | — | ⏳ |
 | F4 | Antivirus kelas dunia, tahap 1–4 (§14) | — | ⏳ |
-| F5 | Lifetime: harga baku + tawaran klien (acc manual) + diskon Jumat otomatis 30 % / 50 % (§15) | — | 🔄 |
+| F5 | Lifetime: harga baku + tawaran klien (acc manual) + diskon Jumat otomatis 30 % / 50 % (§15) | 5 Okt | ✅ |
 
 Setiap fase: satu PR, `cd dashboard && npx tsc --noEmit -p . && npm test`, `bash tests/e2e/run.sh`,
 uji browser nyata untuk UI, CI E2E hijau sebelum merge, baris di `docs/REQUESTS.md` diperbarui.
@@ -464,6 +464,18 @@ Jumat mengunci harga Jumat walaupun dibayar sesudahnya (transfer bank).
 
 **Admin:** Admin → Lifetime → *Harga & diskon* (persentase Jumat, Jumat akhir bulan, zona waktu, aktif/tidak,
 batas tawaran minimum %, masa berlaku tawaran) dan *Tawaran* (daftar, filter status, terima/tawar balik/tolak).
+
+**Batas minimum tawaran tidak diumumkan** (kalau diumumkan, semua klien akan menawar tepat di batas itu): klien hanya
+mendapat pesan sopan „terlalu jauh di bawah harga normal“. Percobaan tawaran dibatasi 20 per hari per akun agar batas
+itu tidak bisa ditebak dengan mencoba-coba.
+
+**Implementasi (5 Okt):** kalender & harga terbaik `dashboard/lib/lifetime-deals.ts` (murni, teruji dengan jam tetap);
+tawaran `lib/lifetime-offers.ts` + tabel `lifetime_offers` (`cf-migrations/0063`); harga hari ini `lib/lifetime-pricing.ts`;
+API publik `GET /api/lifetime/deal`, member `/api/lifetime/offers`, admin `/api/admin/lifetime/offers` dan
+`/api/admin/lifetime/deals`; checkout `{kind:"lifetime", offerId}`; faktur mencetak dasar harga (diskon Jumat / tawaran
+disepakati + harga normal); UI `components/lifetime/DealBanner.tsx` (pita + hitung mundur mengikuti jam server),
+`/pricing#lifetime`, `/app/lifetime` (harga hari ini, formulir tawaran, „Penawaran Anda“ + bayar), `/admin/lifetime`
+(antrean tawaran + pengaturan diskon); kamus 10 bahasa `lib/i18n-pages/lifetimedeals.ts`.
 
 **Selesai bila:** tes unit untuk kalender diskon (Jumat biasa, Jumat terakhir, akhir bulan 30/31 hari, Februari,
 zona waktu WIB vs UTC), harga terbaik, batas tawaran; E2E: tawaran → tolak → tawaran → terima → checkout di harga

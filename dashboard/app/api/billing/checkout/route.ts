@@ -1,6 +1,8 @@
 /* AXTO — POST /api/billing/checkout
  *   {plan, cycle, gateway, apps?}                        subscription period
- *   {kind:"lifetime", scope, product?, devices, gateway} lifetime licence (one-time)
+ *   {kind:"lifetime", scope, product?, devices, gateway} lifetime licence (one-time) at the best valid
+ *                                                        price: list, today's Friday deal, or
+ *   {kind:"lifetime", offerId, gateway}                  the price the admin agreed on an offer (never stacked)
  *   {kind:"edition", edition, cycle, gateway}            one self-hosted app in an edition (monthly / yearly)
  * Creates an order at OUR price (never the browser's) and returns the hosted
  * payment page URL. Manual bank transfer and crypto return instructions instead.
@@ -10,7 +12,7 @@ export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { getDB, getEnv, dbRun, newId, now } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
-import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS } from "@/lib/plans";
+import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS, formatUsd } from "@/lib/plans";
 import { gatewayCreds, gatewayCredsFor, gatewayInfo, cardRoute, usdIdrRate, toIdr, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
 import { stripeCreate, paypalCreate, xenditCreate, midtransCreate, nowpaymentsCreate, type OrderForPayment } from "@/lib/billing/providers";
 import { readJson, fail, audit } from "@/lib/http";
@@ -20,6 +22,8 @@ import { quoteCrypto } from "@/lib/billing/crypto-watch";
 import { uniqueIdrAmount } from "@/lib/billing/unique-amount";
 import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, PAYPAL_MAX_USD, type LifetimeScope } from "@/lib/lifetime";
 import { lifetimeChoiceProblem, productName } from "@/lib/lifetime-service";
+import { bestPrice, dealState, getDealConfig, type PriceSource } from "@/lib/lifetime-deals";
+import { payableOffer } from "@/lib/lifetime-offers";
 import { getEdition, getEditionPrices, editionPrice, type EditionCycle } from "@/lib/editions";
 import { editionChoiceProblem, editionGatewayAllowed, EDITION_ANY_GATEWAY_MAX } from "@/lib/edition-service";
 
@@ -36,7 +40,7 @@ export async function POST(req: NextRequest) {
     const problem = editionChoiceProblem(b?.edition, b?.cycle);
     if (problem) return fail(problem);
   }
-  if (lifetime) {
+  if (lifetime && !b?.offerId) {
     const problem = lifetimeChoiceProblem(b?.scope, b?.product);
     if (problem) return fail(problem);
   }
@@ -74,20 +78,31 @@ export async function POST(req: NextRequest) {
   const orderGateway = card ? card.processor : gateway;
   const orderCurrency = card ? card.currency : info.currency;
 
-  // Lifetime: the price comes from the (admin-editable) tier table — the browser only picks a tier.
+  // Lifetime: the price comes from the (admin-editable) tier table — the browser only picks a tier —
+  // then the lowest valid price applies: today's Friday deal or an agreed offer, never both.
+  // The order keeps that price, so a Friday order paid later by transfer still gets the deal.
   let amountUsd: number;
-  let lifetimeMeta: { scope: LifetimeScope; product: string; devices: number } | undefined;
+  let lifetimeMeta: { scope: LifetimeScope; product: string; devices: number; listUsd: number; price: PriceSource; dealPct?: number; dealDate?: string; offerId?: string } | undefined;
   if (edition) {
     amountUsd = editionAmount;
   } else if (lifetime) {
-    const tier = (await getLifetimePrices(db)).find((x) => x.devices === Number(b?.devices));
+    // An agreed offer fixes the licence (scope, app, devices) — the browser only names the offer.
+    const offer = b?.offerId ? await payableOffer(db, ctx.session.sub, String(b.offerId)) : null;
+    if (b?.offerId && !offer) return fail("This offer can no longer be paid — it expired, was withdrawn or is already paid.", 409, { code: "offer_invalid" });
+    const tier = (await getLifetimePrices(db)).find((x) => x.devices === Number(offer ? offer.devices : b?.devices));
     if (!tier) return fail("Choose the number of devices.");
-    const scope = b.scope as LifetimeScope;
-    amountUsd = tier[scope];
+    const scope = (offer ? offer.scope : b.scope) as LifetimeScope;
+    const best = bestPrice(tier[scope], dealState(new Date(), await getDealConfig(db)).active, offer?.agreed_usd);
+    amountUsd = best.amount;
     if (!gatewayAllowed(gateway, amountUsd)) {
       return fail(`For a lifetime licence of this size please pay by bank/wire transfer or crypto${amountUsd <= CARD_MAX_USD ? " or card" : ""}${amountUsd <= PAYPAL_MAX_USD ? " or PayPal" : ""}.`);
     }
-    lifetimeMeta = { scope, product: scope === "suite" ? "suite" : String(b.product), devices: tier.devices };
+    lifetimeMeta = {
+      scope, product: scope === "suite" ? "suite" : String(offer ? offer.product : b.product), devices: tier.devices,
+      listUsd: best.listUsd, price: best.source,
+      ...(best.deal ? { dealPct: best.deal.pct, dealDate: best.deal.date } : {}),
+      ...(offer ? { offerId: offer.id } : {}),
+    };
   } else {
     amountUsd = priceFor(await getPlanPrices(db), plan, cycle);
   }
@@ -105,7 +120,7 @@ export async function POST(req: NextRequest) {
   const description = editionMeta
     ? `${productName(editionMeta.app)} ${getEdition(editionMeta.code)!.name} edition — ${editionMeta.cycle === "yearly" ? "1 year" : "1 month"}`
     : lifetimeMeta
-      ? `${SITE.name} Lifetime licence — ${productName(lifetimeMeta.product)}, up to ${lifetimeMeta.devices} device${lifetimeMeta.devices === 1 ? "" : "s"}`
+      ? `${SITE.name} Lifetime licence — ${productName(lifetimeMeta.product)}, up to ${lifetimeMeta.devices} device${lifetimeMeta.devices === 1 ? "" : "s"}${lifetimeMeta.price === "deal" ? ` (Friday deal −${lifetimeMeta.dealPct}%, list ${formatUsd(lifetimeMeta.listUsd)})` : lifetimeMeta.price === "offer" ? ` (agreed offer, list ${formatUsd(lifetimeMeta.listUsd)})` : ""}`
       : `${SITE.name} ${PLANS[plan as keyof typeof PLANS].name} — ${cycle === "yearly" ? "1 year" : "1 month"}`;
 
   await dbRun(db,

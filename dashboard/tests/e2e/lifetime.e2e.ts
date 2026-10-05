@@ -93,10 +93,12 @@ test("lifetime: live prices are public; checkout validates the choice and charge
   const c = await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual", amount: 1, amountUsd: 1 });
   assert.equal(c.status, 200, c.text);
   assert.equal(c.json.manual, true);
-  assert.equal(c.json.amountUsd, 99000, "the browser never sets the price");
+  // The list price, or today's Friday deal on a Friday (lifetime-offers.e2e.ts covers the deals).
+  const today = (await new Client().get("/api/lifetime/deal")).json.tiers.find((t: any) => t.devices === 5).appDeal;
+  assert.equal(c.json.amountUsd, today, "the browser never sets the price");
   orderId = c.json.orderId;
-  const [row] = d1(`SELECT plan, cycle, amount_usd, status, json_extract(meta, '$.lifetime.product') AS product, json_extract(meta, '$.lifetime.devices') AS devices FROM orders WHERE id = '${orderId}'`);
-  assert.deepEqual(row, { plan: "lifetime", cycle: "once", amount_usd: 99000, status: "pending", product: "vault", devices: 5 });
+  const [row] = d1(`SELECT plan, cycle, amount_usd, status, json_extract(meta, '$.lifetime.product') AS product, json_extract(meta, '$.lifetime.devices') AS devices, json_extract(meta, '$.lifetime.listUsd') AS list FROM orders WHERE id = '${orderId}'`);
+  assert.deepEqual(row, { plan: "lifetime", cycle: "once", amount_usd: today, status: "pending", product: "vault", devices: 5, list: 99000 });
 });
 
 test("lifetime: payment issues the licence with no admin step; idempotent; invoiced", async () => {
@@ -179,7 +181,8 @@ test("lifetime: admin prices flow into checkout; negotiated suite deal; admin-on
   assert.equal((await admin.put("/api/admin/lifetime", { tiers })).status, 200);
   assert.equal((await new Client().get("/api/billing/options")).json.lifetime.tiers[0].app, 30000);
   const c = await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "legal", devices: 1, gateway: "manual" });
-  assert.equal(c.json.amountUsd, 30000);
+  assert.equal(c.json.amountUsd, (await new Client().get("/api/lifetime/deal")).json.tiers[0].appDeal);
+  assert.equal(d1(`SELECT json_extract(meta, '$.lifetime.listUsd') AS list FROM orders WHERE id = '${c.json.orderId}'`)[0].list, 30000);
   assert.equal((await admin.put("/api/admin/lifetime", { tiers: cur.defaults })).status, 200);
 
   assert.equal((await admin.post("/api/admin/lifetime", { action: "issue", email: "nobody@example.com", scope: "suite", devices: 3 })).status, 400);

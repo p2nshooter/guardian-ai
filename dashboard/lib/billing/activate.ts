@@ -20,6 +20,7 @@ import { sendMail, mails, mailLayout, adminInbox } from "../mail";
 import { getSale, saveSale } from "../acquisition";
 import { SITE, absoluteUrl } from "../site";
 import { issueForOrder, productName } from "../lifetime-service";
+import { markOfferPaid } from "../lifetime-offers";
 import { issueEdition } from "../edition-service";
 import { getEdition, isEditionCycle } from "../editions";
 
@@ -95,7 +96,10 @@ function invoiceLine(o: OrderRow): string {
     let m: any = {};
     try { m = JSON.parse(o.meta || "{}").lifetime || {}; } catch {}
     const devices = Number(m.devices) || 0;
-    return `${SITE.name} Lifetime licence — ${productName(m.scope === "suite" ? "suite" : String(m.product || ""))}, up to ${devices} device${devices === 1 ? "" : "s"}${m.scope === "suite" ? " per app" : ""}`;
+    // The price basis is printed so the invoice explains the amount (list price, Friday deal or agreed offer).
+    const list = Number(m.listUsd) > 0 ? `$${Number(m.listUsd).toLocaleString("en-US")}` : "";
+    const basis = m.price === "deal" ? ` — Friday deal −${Number(m.dealPct) || 0}%${list ? ` (list ${list})` : ""}` : m.price === "offer" ? ` — agreed offer${list ? ` (list ${list})` : ""}` : "";
+    return `${SITE.name} Lifetime licence — ${productName(m.scope === "suite" ? "suite" : String(m.product || ""))}, up to ${devices} device${devices === 1 ? "" : "s"}${m.scope === "suite" ? " per app" : ""}${basis}`;
   }
   if (o.plan === "edition") {
     let m: any = {};
@@ -258,6 +262,10 @@ async function markLifetimePaid(db: any, o: OrderRow, opts: { gatewayRef?: strin
   const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
   await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
   const lic = await issueForOrder(db, o);
+  // Paid at an agreed offer price → the offer is closed as paid.
+  let offerId = "";
+  try { offerId = String(JSON.parse(o.meta || "{}").lifetime?.offerId || ""); } catch {}
+  if (lic && offerId) await markOfferPaid(db, offerId, o.id);
   const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
   const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
   try {
