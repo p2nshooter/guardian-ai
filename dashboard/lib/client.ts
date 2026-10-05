@@ -10,10 +10,11 @@ export interface ApiResult<T = any> { ok: boolean; status: number; data: T; erro
 
 export async function api<T = any>(path: string, opts: { method?: string; body?: unknown } = {}): Promise<ApiResult<T>> {
   try {
+    const form = typeof FormData !== "undefined" && opts.body instanceof FormData;   // file uploads: the browser sets the multipart boundary
     const res = await fetch(path, {
       method: opts.method || (opts.body !== undefined ? "POST" : "GET"),
-      headers: opts.body !== undefined ? { "Content-Type": "application/json" } : undefined,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      headers: opts.body !== undefined && !form ? { "Content-Type": "application/json" } : undefined,
+      body: opts.body === undefined ? undefined : form ? (opts.body as FormData) : JSON.stringify(opts.body),
       credentials: "include",
       cache: "no-store",
     });

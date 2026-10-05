@@ -117,6 +117,54 @@ test("bank transfer proof → Support inbox for approval", async () => {
   assert.equal(t.needs_admin, 1);
 });
 
+test("BNI receipt upload → admin rejects with a reason → new receipt → approve → licences in the dashboard", async () => {
+  const m = await member("rcpt");
+  const c = await m.post("/api/billing/checkout", { plan: "enterprise", cycle: "monthly", gateway: "manual" });
+  assert.equal(c.status, 200, c.text);
+  const upload = async (bytes: Uint8Array, name: string, type: string, who = m) => {
+    const fd = new FormData();
+    fd.set("action", "bank_proof");
+    fd.set("receipt", new Blob([bytes as BlobPart], { type }), name);
+    const res = await fetch(`${BASE}/api/billing/orders/${c.json.orderId}`, { method: "POST", body: fd, headers: { Cookie: who.cookie, "cf-connecting-ip": who.ip } });
+    return { status: res.status, json: await res.json().catch(() => null) };
+  };
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...new Array(64).fill(7)]);
+  // Not an image or PDF (the real bytes are checked, not the file name) → refused.
+  assert.equal((await upload(new TextEncoder().encode("<script>alert(1)</script>"), "receipt.png", "image/png")).status, 400);
+  // Another member cannot attach a receipt to this order.
+  assert.equal((await upload(png, "x.png", "image/png", await member("rcpt-other"))).status, 404);
+  const up = await upload(png, "transfer-bni.png", "image/png");
+  assert.equal(up.status, 200, JSON.stringify(up.json));
+  assert.equal(up.json.order.bankProof.receipt.name, "transfer-bni.png");
+  assert.equal(up.json.order.bankProof.receipt.key, undefined, "the storage key is never shown to the member");
+
+  // The admin sees the receipt (members and visitors cannot).
+  const rc = await fetch(`${BASE}/api/admin/orders/receipt?id=${c.json.orderId}`, { headers: { Cookie: admin.cookie } });
+  assert.equal(rc.status, 200);
+  assert.equal(rc.headers.get("content-type"), "image/png");
+  assert.equal(new Uint8Array(await rc.arrayBuffer())[1], 0x50);
+  assert.equal((await m.get(`/api/admin/orders/receipt?id=${c.json.orderId}`)).status, 403);
+
+  // Reject needs a reason; the member then sees it on the payment screen.
+  assert.equal((await admin.post("/api/admin/orders", { action: "reject_proof", id: c.json.orderId })).status, 400);
+  assert.equal((await admin.post("/api/admin/orders", { action: "reject_proof", id: c.json.orderId, note: "Amount does not match" })).status, 200);
+  const seen = await m.get(`/api/billing/orders/${c.json.orderId}`);
+  assert.equal(seen.json.order.status, "pending");
+  assert.equal(seen.json.order.bankProof.rejected.reason, "Amount does not match");
+  assert.deepEqual(licences(`rcpt-${RUN}@example.com`), []);
+
+  // A new receipt clears the rejection; approving activates everything at once.
+  const again = await upload(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 10]), "bukti.pdf", "application/pdf");
+  assert.equal(again.status, 200, JSON.stringify(again.json));
+  assert.equal(again.json.order.bankProof.rejected, null);
+  assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: c.json.orderId })).status, 200);
+  assert.equal((await m.get(`/api/billing/orders/${c.json.orderId}`)).json.order.status, "paid");
+  const l = licences(`rcpt-${RUN}@example.com`);
+  assert.equal(l.length, 10);
+  const sh = await m.get("/api/selfhosted");
+  assert.match(sh.json.products.find((p: any) => p.slug === "antivirus").license.license_key, /^AV-/);
+});
+
 test("cron tick: authenticated, runs the crypto watcher and hourly housekeeping", async () => {
   assert.equal((await new Client().get("/api/cron/tick")).status, 401);
   assert.equal((await new Client().get("/api/cron/tick", { "x-cron-secret": "wrong-secret" })).status, 401);

@@ -1,6 +1,8 @@
 /* AXTO — /api/admin/orders (admin only)
  *   GET ?status=&q=&page=  → orders
- *   POST {action:"mark_paid"|"refund"|"cancel", id, note?} */
+ *   POST {action:"mark_paid"|"reject_proof"|"refund"|"cancel", id, note?}
+ *        reject_proof: the bank receipt does not match — the order stays open, the member sees
+ *        the reason on the payment screen, gets an e-mail and can upload a new receipt. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
@@ -9,6 +11,10 @@ import { parseIdrQuery } from "@/lib/billing/unique-amount";
 import { markOrderPaid, syncLicenses } from "@/lib/billing/activate";
 import { getSale, saveSale } from "@/lib/acquisition";
 import { readJson, fail, audit } from "@/lib/http";
+import { sendMail, mailLayout } from "@/lib/mail";
+import { absoluteUrl } from "@/lib/site";
+
+const esc = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
 const PAGE = 50;
 
@@ -45,6 +51,17 @@ export async function POST(req: NextRequest) {
     if (o.status === "paid") return fail("Already paid.");
     const r = await markOrderPaid(db, o.id, { gatewayRef: note ? `manual:${note}` : "manual", actor: ctx.session.email });
     if (!r.ok) return fail(`Could not activate: ${r.reason}`);
+  } else if (b?.action === "reject_proof") {
+    if (o.status !== "pending") return fail("Only open orders can have their proof rejected.");
+    let m: any = {};
+    try { m = JSON.parse(o.meta || "{}"); } catch {}
+    if (!m.bank_proof) return fail("This order has no transfer proof to reject.");
+    if (!note.trim()) return fail("Write the reason, so the member knows what to fix.");
+    await dbRun(db, `UPDATE orders SET meta = json_set(meta, '$.bank_proof.rejected', json(?)) WHERE id = ?`, [JSON.stringify({ reason: note, at: now() }), o.id]);
+    await sendMail(o.email, `Your transfer proof for order ${o.id} needs another look`,
+      mailLayout("We could not confirm your transfer yet",
+        `<p>We checked the transfer proof for order <strong>${esc(o.id)}</strong> and could not confirm it yet.</p><p><strong>Reason:</strong> ${esc(note)}</p><p>Please open the payment screen and upload a clearer receipt, or the correct one. Your order stays open.</p>`,
+        { label: "Open billing", href: absoluteUrl(o.plan === "lifetime" ? "/app/lifetime" : "/app/billing") })).catch(() => false);
   } else if (b?.action === "refund") {
     if (o.status !== "paid") return fail("Only paid orders can be refunded.");
     await dbRun(db, `UPDATE orders SET status = 'refunded', meta = json_set(meta, '$.refund_note', ?) WHERE id = ?`, [note, o.id]);

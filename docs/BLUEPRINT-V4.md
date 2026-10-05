@@ -465,12 +465,12 @@ bukan dari perkiraan.
 |---|---|---|---|---|
 | 1 | Aplikasi cloud v4 (Clipper, Studio, Vault, Security, Compliance, Prompt Library, Legal, Mode Lokal, Akuisisi, Connect) | §9 fase 1–10 | 10/10 | **100 %** |
 | 2 | Penawaran akuisisi US$10.000.000 (§17 B) | harga · halaman premium · 10 bahasa · uji · tayang di axto.io | 5/5 (`08b72d9` di `main`) | **100 %** |
-| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) ✅ · Legal (alat: playbook, klausul, tenggat) ✅ · Compliance · Security · Prompt Library · halaman kecil · crawler 0 | 2/7 | **29 %** |
-| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 ✅ A2 ✅ A3 ✅ A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 | 3/13 | **23 %** |
+| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) ✅ · Legal (alat: playbook, klausul, tenggat) ✅ · Compliance ✅ · Security · Prompt Library · halaman kecil · crawler 0 | 3/7 | **43 %** |
+| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 ✅ A2 ✅ A3 ✅ A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 · F2 Smart License v5 · F3 desain menyeluruh · F4 Antivirus kelas dunia · F5 lifetime tawaran + diskon Jumat (F1 BNI = baris 7) | 3/17 | **18 %** |
 | 5 | Desain Istana Kristal (§18) | token ✅ · komponen ✅ · halaman publik (beranda, header, footer, /apps, /self-hosted ✅; harga, panduan, blog, legal berikutnya) · portal member · admin · uji visual | 2/6 | **33 %** |
 | 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
-| 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti · admin terima/tolak · lisensi & email otomatis · uji E2E · tayang | dikerjakan sesi lain di `claude/bni-receipt-approval` | **dipantau** |
-| | **Total** (bobot = jumlah fase, baris 7 dihitung saat masuk `main`) | | **22/46** | **≈ 48 %** |
+| 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti ✅ · admin terima/tolak ✅ · lisensi & email otomatis ✅ · uji E2E ✅ · tayang | dibangun sesi lain (`claude/bni-receipt-approval`), digabung ke branch kerja; tayang setelah CI hijau | **80 %** |
+| | **Total** (bobot = jumlah fase) | | **27/55** | **≈ 49 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
