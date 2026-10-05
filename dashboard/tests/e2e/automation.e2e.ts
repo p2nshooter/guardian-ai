@@ -124,7 +124,7 @@ test("BNI receipt upload → admin rejects with a reason → new receipt → app
   const upload = async (bytes: Uint8Array, name: string, type: string, who = m) => {
     const fd = new FormData();
     fd.set("action", "bank_proof");
-    fd.set("receipt", new Blob([bytes], { type }), name);
+    fd.set("receipt", new Blob([bytes as BlobPart], { type }), name);
     const res = await fetch(`${BASE}/api/billing/orders/${c.json.orderId}`, { method: "POST", body: fd, headers: { Cookie: who.cookie, "cf-connecting-ip": who.ip } });
     return { status: res.status, json: await res.json().catch(() => null) };
   };
