@@ -1,5 +1,6 @@
 /* Payment instructions for an open order that does not redirect to a hosted
- * page: BNI bank transfer (unique amount + "I've transferred") and direct
+ * page: BNI bank transfer (unique amount + receipt upload → admin approval →
+ * plan and licences appear in the dashboard at once) and direct
  * crypto (wallets + tx-hash verification). Polls the order until it is paid.
  * Shared by Plan & billing and Lifetime licences. */
 "use client";
@@ -27,13 +28,16 @@ export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; 
   const [busy, setBusy] = useState(false);
   const [proof, setProof] = useState({ reference: "", network: pay.kind === "crypto" ? pay.wallets[0]?.key || "" : "", tx: "" });
   const [msg, setMsg] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [bankProof, setBankProof] = useState<{ receipt: { name: string } | null; rejected: { reason: string } | null } | null>(null);
 
-  useEffect(() => { setStatus("pending"); setMsg(null); }, [pay.orderId]);
+  useEffect(() => { setStatus("pending"); setMsg(null); setReceipt(null); setBankProof(null); }, [pay.orderId]);
   // Poll the open order until it is paid (crypto is confirmed on-chain by the platform).
   useEffect(() => {
     if (status === "paid") return;
     const iv = setInterval(async () => {
-      const r = await api<{ order: { status: string } }>(`/api/billing/orders/${pay.orderId}`);
+      const r = await api<{ order: { status: string; bankProof: typeof bankProof } }>(`/api/billing/orders/${pay.orderId}`);
+      if (r.ok) setBankProof(r.data.order.bankProof || null);
       if (r.ok && r.data.order.status !== status) {
         setStatus(r.data.order.status);
         if (r.data.order.status === "paid") onPaid();
@@ -44,10 +48,19 @@ export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; 
 
   async function sendProof() {
     setBusy(true); setMsg(null);
-    const body = pay.kind === "bank" ? { action: "bank_proof", reference: proof.reference } : { action: "crypto_proof", network: proof.network, tx: proof.tx };
-    const r = await api<{ status: string; message: string }>(`/api/billing/orders/${pay.orderId}`, { body });
+    let body: unknown;
+    if (pay.kind === "bank") {
+      const fd = new FormData();
+      fd.set("action", "bank_proof");
+      fd.set("reference", proof.reference);
+      if (receipt) fd.set("receipt", receipt);
+      body = fd;
+    } else body = { action: "crypto_proof", network: proof.network, tx: proof.tx };
+    const r = await api<{ status: string; message: string; order?: { bankProof: typeof bankProof } }>(`/api/billing/orders/${pay.orderId}`, { body });
     setBusy(false);
     if (!r.ok) { setMsg({ tone: "error", text: r.error }); return; }
+    if (r.data.order) setBankProof(r.data.order.bankProof || null);
+    setReceipt(null);
     setMsg({ tone: r.data.status === "paid" ? "success" : "info", text: r.data.message });
     if (r.data.status === "paid") { setStatus("paid"); onPaid(); }
   }
@@ -90,6 +103,19 @@ export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; 
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="font-semibold text-slate-900">{pay.kind === "bank" ? t.sentTitle : t.manualHash}</div>
               {pay.kind === "bank" ? <p className="text-xs text-slate-500">{t.sentHint}</p> : null}
+              {pay.kind === "bank" && bankProof?.rejected ? (
+                <div className="mt-3"><Alert tone="warn"><strong>{t.rejectedTitle}</strong> {bankProof.rejected.reason} — {t.rejectedHint}</Alert></div>
+              ) : pay.kind === "bank" && bankProof ? (
+                <div className="mt-3"><Alert tone="info">{t.reviewing}{bankProof.receipt ? ` (${bankProof.receipt.name})` : ""}</Alert></div>
+              ) : null}
+              {pay.kind === "bank" ? (
+                <label className="mt-3 block">
+                  <span className="label">{t.receiptLabel}</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="input file:mr-3 file:rounded-md file:border-0 file:bg-ink-900 file:px-3 file:py-1.5 file:text-white"
+                    onChange={(e) => setReceipt(e.target.files?.[0] || null)} />
+                  <span className="mt-1 block text-xs text-slate-500">{t.receiptHint}</span>
+                </label>
+              ) : null}
               <div className="mt-2 flex flex-wrap gap-2">
                 {pay.kind === "crypto" ? (
                   <select className="select w-auto" value={proof.network} onChange={(e) => setProof({ ...proof, network: e.target.value })}>
@@ -98,7 +124,7 @@ export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; 
                 ) : null}
                 <input className="input min-w-[220px] flex-1" placeholder={pay.kind === "bank" ? t.refPh : t.hashPh}
                   value={pay.kind === "bank" ? proof.reference : proof.tx} onChange={(e) => setProof(pay.kind === "bank" ? { ...proof, reference: e.target.value } : { ...proof, tx: e.target.value })} />
-                <button className="btn-primary" onClick={sendProof} disabled={busy || (pay.kind === "bank" ? !proof.reference.trim() : proof.tx.trim().length < 32)}>{busy ? <Spinner /> : null} {pay.kind === "bank" ? t.sentBtn : t.verify}</button>
+                <button className="btn-primary" onClick={sendProof} disabled={busy || (pay.kind === "bank" ? !proof.reference.trim() && !receipt : proof.tx.trim().length < 32)}>{busy ? <Spinner /> : null} {pay.kind === "bank" ? t.sentBtn : t.verify}</button>
               </div>
               {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
             </div>

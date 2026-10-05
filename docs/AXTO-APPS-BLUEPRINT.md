@@ -299,6 +299,10 @@ Urut dari dampak terbesar; semuanya harus **nyata**, bukan klaim:
 | D1–D10 | Celah per aplikasi §7.1–7.10 (satu PR per aplikasi; Antivirus & Studio dahulu) | — | ⏳ |
 | E1 | AXTO Workspace (BLUEPRINT-V4 §17 C) untuk Legal / Studio / Vault / Compliance | — | ⏳ |
 | E2 | Halaman modul Studio, reseller, harga promo (§1) | — | ⏳ |
+| F1 | Pembayaran BNI: upload bukti → admin terima/tolak → lisensi langsung di dashboard (§12) | PR ini | ✅ |
+| F2 | Smart License v5 (§11) | — | ⏳ |
+| F3 | Desain mewah menyeluruh: publik, login, portal member, admin (§13) | — | ⏳ |
+| F4 | Antivirus kelas dunia, tahap 1–4 (§14) | — | ⏳ |
 
 Setiap fase: satu PR, `cd dashboard && npx tsc --noEmit -p . && npm test`, `bash tests/e2e/run.sh`,
 uji browser nyata untuk UI, CI E2E hijau sebelum merge, baris di `docs/REQUESTS.md` diperbarui.
@@ -311,3 +315,113 @@ uji browser nyata untuk UI, CI E2E hijau sebelum merge, baris di `docs/REQUESTS.
 - Jangan klaim sertifikasi, pelanggan, tingkat deteksi atau „100 % aman“ yang tidak terbukti.
 - Jangan membuat trial tanpa batas penyalahgunaan (email + IP + perangkat).
 - Jangan menaruh data besar di D1 (total Cloudflare < 10 GB): image/installer tetap di R2.
+
+## 11. Smart License v5 (perintah pemilik 5 Okt: „smart license yg super canggih“)
+
+Fondasi yang sudah ada: kunci `<PREFIX>-8HEX-8HEX-8HEX-8HEX`, `LIFE-…` (lifetime offline), tanda tangan
+Ed25519, aktivasi offline, `license-validate` dengan heartbeat 1 tulis/jam, `sh_licenses` di D1.
+
+| Kemampuan | Wajib | Catatan desain |
+|---|---|---|
+| Hak (entitlements) per edisi | ✅ | Payload lisensi bertanda tangan memuat `edition`, `limits` (server, worker, req/hari, EPS, perangkat, endpoint, workspace), `features[]`, `expires_at`, `grace_days`. Engine membaca dari payload, bukan dari konfigurasi lokal (tidak bisa diakali dengan mengedit file). |
+| Pengikatan mesin yang toleran | ✅ | Sidik mesin = hash dari beberapa komponen (machine-id, CPU, disk, MAC utama); lisensi tetap valid bila ≤ 1 komponen berubah (ganti NIC/disk tidak memblokir pelanggan). |
+| Kursi & instance | ✅ | Hitung instance aktif per lisensi; batas per edisi; pelanggan bisa melepas instance lama sendiri di portal (rehost) dengan batas wajar per bulan. |
+| Floating / concurrent (Enterprise) | ✅ | Kolam kursi bersama; checkout/checkin dengan lease 24 jam yang diperpanjang heartbeat. |
+| Offline & air-gapped | ✅ | File permintaan aktivasi → file respons bertanda tangan (tanpa internet di sisi pelanggan); masa berlaku offline sesuai edisi. |
+| Masa tenggang | ✅ | Bila server lisensi tak terjangkau: tetap jalan `grace_days` (Starter 7, Pro 14, Business 30, Enterprise 60) lalu mode baca-saja, **tidak pernah menghapus data**. |
+| Pencabutan | ✅ | Daftar cabut (CRL) bertanda tangan yang diunduh engine; pembayaran refund/chargeback → cabut otomatis. |
+| Trial | ✅ | §4: `license_type='trial'`, watermark, kedaluwarsa otomatis. |
+| Upgrade/downgrade di tempat | ✅ | Ganti edisi tanpa instal ulang: engine mengambil lisensi baru saat heartbeat berikutnya. |
+| Deteksi manipulasi | ✅ | Jam mundur (rollback waktu) terdeteksi dari stempel waktu terakhir yang tercatat; payload tanpa tanda tangan valid ditolak; semua kejadian ke log audit. |
+| Portal lisensi member | ✅ | Daftar lisensi + edisi + instance + tanggal berakhir, unduh file lisensi offline, rehost, perpanjang/upgrade, riwayat aktivasi. |
+| Portal lisensi admin | ✅ | Terbitkan manual, perpanjang, cabut, lihat instance & heartbeat terakhir, ekspor CSV, semua aksi masuk audit. |
+| Pelaporan pemakaian | ⚪ opsional | Metering jujur (hanya angka agregat, tanpa data pelanggan) untuk edisi berbasis pemakaian; bisa dimatikan di air-gapped. |
+
+**Selesai bila:** tes unit untuk verifikasi tanda tangan, toleransi sidik mesin, masa tenggang, CRL dan
+jam mundur di setiap engine (pustaka bersama Python), plus E2E portal (terbit → aktivasi → rehost → cabut).
+
+## 12. Pembayaran BNI manual dengan bukti transfer (perintah pemilik 5 Okt) — ✅ dibangun
+
+Semua metode lain tetap otomatis (PayPal, kartu via Xendit/Midtrans, kripto). Khusus transfer BNI:
+
+1. Klien memilih transfer bank → melihat rekening BNI dan **jumlah unik** (3 digit terakhir = kode pesanan).
+2. Klien **mengunggah bukti transfer** (foto/screenshot JPG/PNG/WebP atau PDF, maks. 5 MB) di layar
+   pembayaran; nomor referensi opsional. Jenis file diperiksa dari byte aslinya, bukan dari nama file.
+   File disimpan privat di R2 (`receipts/<orderId>/…`), tidak pernah publik.
+3. Admin mendapat pesan di Support inbox + email. Di **Admin → Orders → „Awaiting approval“** admin membuka
+   bukti (gambar/PDF tampil langsung), mencocokkan dengan aplikasi bank (tempel jumlah di kotak cari),
+   lalu:
+   - **Approve** → paket aktif, lisensi self-hosted terbit dan **langsung tampil di dashboard klien**
+     (layar pembayaran klien berubah sendiri lewat polling), invoice dikirim email.
+   - **Reject proof** + alasan (wajib) → pesanan tetap terbuka, klien melihat alasannya di layar
+     pembayaran dan via email, lalu bisa mengunggah bukti baru (penolakan lama terhapus).
+4. Semua langkah tercatat di log audit (`order.bank_proof`, `admin.order.reject_proof`, `admin.order.mark_paid`).
+
+Kode: `dashboard/lib/billing/receipt.ts`, `app/api/billing/orders/[id]/route.ts`,
+`app/api/admin/orders/route.ts`, `app/api/admin/orders/receipt/route.ts`, `app/admin/orders/page.tsx`,
+`components/app/PayPanel.tsx` (10 bahasa di `lib/i18n-pages/paypanel.ts`). Tes:
+`tests/e2e/automation.e2e.ts` → „BNI receipt upload → …“.
+
+## 13. Desain mewah menyeluruh (perintah pemilik: „CSS super mewahnya jgn hanya index tp menyeluruh“)
+
+Kemewahan harus terasa di **setiap** layar, bukan hanya beranda:
+
+| Area | Halaman | Yang wajib |
+|---|---|---|
+| Publik | `/`, `/apps`, `/apps/[slug]`, `/self-hosted`, `/self-hosted/[slug]`, `/pricing`, `/acquire`, `/developers`, `/legal-ai`, `/prompts`, `/blog`, `/help`, `/security`, `/status`, semua halaman legal | satu sistem desain „AXTO Royal“: token warna (obsidian, violet kerajaan, emas lembut, gading), tipografi display + teks, kartu kaca dengan tepi emas tipis, bayangan berlapis, gradien halus, ikon konsisten, animasi masuk saat digulir, hover yang hidup |
+| Masuk | `/login`, `/register`, `/forgot-password`, `/reset-password` | panel terpisah dengan ilustrasi perisai, formulir premium, status error/sukses yang jelas |
+| Portal member | `/app/*` (dashboard, billing, self-hosted, lifetime, studio, vault, legal, security, compliance, clipper, prompts, files, developers, settings) | sidebar & header premium, kartu statistik, tabel, formulir, modal, badge, toast, kosong-state yang indah — semua lewat komponen `components/ui` sehingga satu perubahan menyebar ke semua halaman |
+| Admin | `/admin/*` | gaya yang sama dengan nuansa „command center“ (lebih gelap), tabel padat yang tetap mewah |
+
+Aturan teknis: token di `app/globals.css` (`:root` + mode gelap), kelas komponen (`.btn-*`, `.card`,
+`.input`, `.badge-*`, `.table`, `.alert-*`) diperbarui sekali sehingga seluruh portal ikut; kontras WCAG 2.2
+AA; `prefers-reduced-motion` dihormati; tidak ada gambar berat (SVG/CSS saja); skor Lighthouse performa
+tetap ≥ 90. **Selesai bila:** screenshot 390 px dan 1440 px untuk setiap halaman di tabel di atas
+diperiksa, tanpa overflow horizontal dan tanpa error konsol.
+
+## 14. Antivirus kelas dunia (perintah pemilik: „maximalin antivirus nya biar seperti anti virus kelas dunia“)
+
+**Keadaan jujur saat ini** (`antivirus/src`, ±2.100 baris): ClamAV (clamd) + `PatternEngine` (pola teks),
+`EntropyEngine`, `HashEngine` (hash yang dipelajari), `LearningEngine` (SQLite), API REST
+(`/v1/scan/*`, karantina, `learn/*`), dashboard HTML. **Belum ada:** YARA sungguhan (paket `yara-python`
+tidak terpasang), model ML yang terlatih, analisis PE/ELF/Office/PDF/arsip, perlindungan real-time di
+endpoint, agen Windows, deteksi ransomware, konsol kebijakan, pembaruan signature yang ditandatangani, tes.
+
+**Pembanding:** Microsoft Defender for Endpoint, ESET PROTECT, Kaspersky Endpoint Security, Sophos
+Intercept X, CrowdStrike Falcon. „Kelas dunia“ hanya boleh diklaim setelah lulus uji independen
+(AV-TEST, AV-Comparatives, SE Labs) — sampai saat itu halaman produk menyebut kemampuan, bukan peringkat.
+
+### Tahap 1 — mesin deteksi berlapis (container, bisa diuji di CI)
+- YARA nyata (`yara-python`) dengan paket aturan bertanda tangan (aturan sendiri + aturan open-source
+  berlisensi yang mengizinkan pemakaian komersial; lisensi tiap paket dicatat).
+- Analisis statis: PE (header, section, import, entropi per section, tanda tangan Authenticode via
+  `pefile`/`lief`), ELF, Mach-O, makro Office (`oletools`), PDF (JavaScript/launch action), skrip
+  (PowerShell/JS/VBS terobfuskasi), arsip bertingkat (zip/7z/rar, batas kedalaman & ukuran — anti zip-bomb).
+- Model ML statis terlatih (fitur EMBER-style, gradient boosting) dengan ambang yang dikalibrasi;
+  dataset & metrik (TPR/FPR) didokumentasikan; model ditandatangani dan bisa diperbarui.
+- Reputasi hash (allowlist file sistem tepercaya + blocklist), cache hasil berbasis SHA-256.
+- Putusan gabungan dengan skor & alasan per mesin (dapat dijelaskan di UI).
+- **Selesai bila:** EICAR + korpus uji aman (file tiruan berpola malware, bukan malware hidup) terdeteksi;
+  korpus file bersih (≥ 1.000 file sistem/umum) → 0 false positive; tes di CI.
+
+### Tahap 2 — agen endpoint real-time
+- **Linux:** agen Go dengan `fanotify` (pemindaian on-access/on-exec), karantina terenkripsi, unit systemd.
+- **Windows:** agen Go sebagai Windows Service: pemindaian saat file ditulis/dieksekusi (ReadDirectoryChangesW
+  + hook eksekusi via ETW), integrasi **AMSI provider** untuk skrip, karantina terenkripsi, koeksistensi
+  dengan Microsoft Defender. (Driver kernel minifilter = tahap lanjut, butuh sertifikat EV + tanda tangan
+  Microsoft — dicatat, tidak dijanjikan.)
+- Perlindungan ransomware: file umpan (canary), deteksi enkripsi massal (entropi tulis + laju rename),
+  hentikan proses, pulihkan dari salinan bayangan bila tersedia.
+- Pembaruan signature/aturan/model bertanda tangan, otomatis tiap jam, rollback bila rusak.
+
+### Tahap 3 — konsol manajemen (di dalam image antivirus + portal axto.io)
+- Kebijakan per grup perangkat (pemindaian terjadwal, eksklusi, tindakan otomatis), daftar perangkat &
+  kesehatan, insiden dengan alur proses, karantina terpusat (pulihkan/hapus), laporan PDF, ekspor ke
+  SOC AI / SIEM (syslog/CEF), RBAC + SSO (§6), batas endpoint per edisi (§3).
+
+### Tahap 4 — pembuktian
+- Uji AMTSO feature settings check, EICAR, korpus internal di CI tiap rilis, tes beban (file/detik).
+- Pendaftaran ke AV-TEST / AV-Comparatives saat agen Windows stabil (biaya & jadwal diputuskan pemilik).
+
+**Larangan khusus antivirus:** jangan menyimpan malware hidup di repo atau R2 publik; korpus uji hanya file
+tiruan aman; jangan klaim „mendeteksi 100 %“ atau peringkat lab yang belum didapat.
