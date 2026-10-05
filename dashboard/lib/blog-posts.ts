@@ -94,7 +94,7 @@ export const BLOG_POSTS: BlogPost[] = [
       "The classic SOC is a room full of analysts watching dashboards in shifts. Almost nobody outside the Fortune 500 can staff that — and almost everybody now faces the same attacks.",
       "The good news: most of what a SOC does is process, and process automates. Detection produces events; triage separates signal from noise; investigation attaches context; escalation wakes a human only when the evidence clears a bar.",
       "## The automated tier",
-      "In the AXTO SOC stack, tier-1 triage is machine work. Every event is enriched — which host, which baseline, which recent changes, which threat-feed matches — and scored. Low scores are archived with their evidence. Mid scores open a case and keep collecting. High scores page you, with the whole chain attached: you wake up to a story, not a beep.",
+      "In the SOC AI stack, tier-1 triage is machine work. Every event is enriched — which host, which baseline, which recent changes, which threat-feed matches — and scored. Low scores are archived with their evidence. Mid scores open a case and keep collecting. High scores page you, with the whole chain attached: you wake up to a story, not a beep.",
       "## The human tier",
       "What remains for the human is judgment: is this deviation a deploy or an intrusion? Is this credential use a contractor or a thief? Automation cannot answer those — but it can make sure that when you sit down, everything needed to answer them is already on the table.",
       "## Why it works at small scale",
@@ -134,7 +134,7 @@ export const BLOG_POSTS: BlogPost[] = [
     body: [
       "Nearly every breach post-mortem contains the same sentence: 'the attacker found credentials.' In a .env file, in a repo, in a CI log, in a Slack message. Secrets sprawl is not a tooling failure — it is the default outcome of not deciding where secrets live.",
       "## The minimum discipline",
-      "One: secrets live in exactly one place — an encrypted store (the AXTO Vault service exists for precisely this), never in code, never in tickets. Two: applications receive secrets at runtime, injected into the environment or fetched over an authenticated channel, so a copy of the codebase is worthless. Three: every secret has an owner and a rotation date; a credential nobody remembers issuing is a credential nobody will remember revoking.",
+      "One: secrets live in exactly one place — an encrypted store (the Vault AI service exists for precisely this), never in code, never in tickets. Two: applications receive secrets at runtime, injected into the environment or fetched over an authenticated channel, so a copy of the codebase is worthless. Three: every secret has an owner and a rotation date; a credential nobody remembers issuing is a credential nobody will remember revoking.",
       "## Encryption at rest is table stakes",
       "A vault that stores secrets encrypted with a key kept next to the ciphertext is a filing cabinet with the key taped to it. Use envelope encryption: data keys encrypt secrets, a master key encrypts data keys, and the master key lives somewhere with real access control.",
       "## Rotation without tears",

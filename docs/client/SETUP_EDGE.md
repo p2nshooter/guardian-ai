@@ -4,7 +4,7 @@
 [//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
-# AXTO Edge — Complete Client Setup & Integration Guide
+# Edge AI — Complete Client Setup & Integration Guide
 ### AI API Gateway & Billing Engine | Version 1.0
 
 > **Turn your AI integration into a monetizable multi-tenant platform — in under 10 minutes.**
@@ -12,7 +12,7 @@
 ---
 
 ## Table of Contents
-1. [What is AXTO Edge?](#what-is-edge)
+1. [What is Edge AI?](#what-is-edge)
 2. [Architecture](#architecture)
 3. [Quick Start — 10 Minutes](#quick-start)
 4. [Customer Management](#customers)
@@ -30,9 +30,9 @@
 
 ---
 
-## 1. What is AXTO Edge? {#what-is-edge}
+## 1. What is Edge AI? {#what-is-edge}
 
-AXTO Edge is an **AI API Gateway & Billing engine** — think "Stripe for AI API billing."
+Edge AI is an **AI API Gateway & Billing engine** — think "Stripe for AI API billing."
 
 You deploy it on your infrastructure. Your SaaS customers call **your** Edge endpoint instead of OpenAI. Edge handles everything in between:
 

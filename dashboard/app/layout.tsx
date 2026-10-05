@@ -7,9 +7,15 @@
  * areas add their own layouts on top.
  * ============================================================================ */
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { SITE, absoluteUrl } from "@/lib/site";
 import { PwaRegister } from "@/components/pwa/Pwa";
+
+// "Crystal Palace" type (docs/BLUEPRINT-V4.md §18.1), served from our own origin:
+// Inter for reading, Playfair Display for the large public headings.
+const sans = localFont({ src: "../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2", variable: "--font-sans", weight: "100 900", display: "swap" });
+const display = localFont({ src: "../node_modules/@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2", variable: "--font-display", weight: "400 900", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
@@ -41,12 +47,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#ffffff" }, { media: "(prefers-color-scheme: dark)", color: "#07090d" }],
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#04060c" }, { media: "(prefers-color-scheme: dark)", color: "#04060c" }],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${sans.variable} ${display.variable}`}>
       <body>
         {SITE.isPreview ? (
           <div className="bg-amber-400 px-4 py-1.5 text-center text-xs font-semibold text-amber-950">

@@ -17,6 +17,7 @@ export default function SiteFooter() {
   );
   return (
     <footer className="surface-ink border-t border-white/5">
+      <div className="gilded-rule" />
       <div className="container-page grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-6">
         <div className="lg:col-span-2">
           <Logo dark />
@@ -24,7 +25,7 @@ export default function SiteFooter() {
           <p className="mt-4 text-sm"><a href={`mailto:${SITE.email}`} className="text-brand-300 no-underline hover:text-brand-200">{SITE.email}</a></p>
         </div>
         {col(<T k="foot.apps" />, CLOUD_APPS.map((a) => ({ href: `/apps/${a.slug}`, label: a.name })))}
-        {col(<T k="foot.selfhosted" />, SELF_HOSTED.slice(0, 7).map((p): { href: string; label: React.ReactNode } => ({ href: `/self-hosted/${p.slug}`, label: catalogEntry(p.slug)?.name || p.slug })).concat([{ href: "/self-hosted", label: <T k="foot.allEditions" /> }]))}
+        {col(<T k="foot.selfhosted" />, SELF_HOSTED.map((p): { href: string; label: React.ReactNode } => ({ href: `/self-hosted/${p.slug}`, label: catalogEntry(p.slug)?.name || p.slug })).concat([{ href: "/self-hosted", label: <T k="foot.allEditions" /> }]))}
         {col(<T k="foot.resources" />, [{ href: "/pricing", label: <T k="site.pricing" /> }, { href: "/pricing#lifetime", label: <T k="foot.lifetime" /> }, { href: "/acquire", label: <T k="site.acquire" /> }, { href: "/help", label: <T k="foot.guides" /> }, { href: "/developers", label: <T k="foot.developers" /> }, { href: "/blog", label: <T k="site.blog" /> }, { href: "/status", label: <T k="foot.status" /> }, { href: "/contact", label: <T k="foot.contact" /> }])}
         {col(<T k="foot.legal" />, [{ href: "/about", label: <T k="foot.about" /> }, { href: "/editorial-policy", label: <T k="foot.editorial" /> }, { href: "/terms", label: <T k="foot.terms" /> }, { href: "/privacy", label: <T k="foot.privacy" /> }, { href: "/cookies", label: <T k="foot.cookies" /> }, { href: "/disclaimer", label: <T k="foot.disclaimer" /> }, { href: "/dpa", label: <T k="foot.dpa" /> }, { href: "/subprocessors", label: <T k="foot.subprocessors" /> }, { href: "/refund", label: <T k="foot.refund" /> }, { href: "/security", label: <T k="foot.security" /> }])}
       </div>

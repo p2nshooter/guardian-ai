@@ -1,16 +1,18 @@
-/* AXTO logo — teal shield mark + wordmark (inline SVG: crisp, no request). */
+/* AXTO logo — the same violet shield with a watchful eye as the favicon
+ * (public/favicon.svg), so the tab, the app icon and the page match. Inline SVG. */
 export function LogoMark({ size = 28, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className={className}>
       <defs>
         <linearGradient id="axto-shield" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1fd8c0" />
-          <stop offset="1" stopColor="#0b5f58" />
+          <stop offset="0" stopColor="#6d5dfc" />
+          <stop offset="1" stopColor="#2a1f7a" />
         </linearGradient>
       </defs>
-      <path d="M32 3 L57 10 L57 36 L44 56 L32 61 L20 56 L7 36 L7 10 Z" fill="url(#axto-shield)" />
-      <path d="M32 3 V61" stroke="rgba(255,255,255,.35)" strokeWidth="1" />
-      <path d="M24 46 L32 16 L40 46 M27 36 H37" stroke="#fff" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M32 3 56 12v18c0 15-10 26-24 31C18 56 8 45 8 30V12Z" fill="url(#axto-shield)" />
+      <path d="M15 32c5-7 11-10 17-10s12 3 17 10c-5 7-11 10-17 10s-12-3-17-10Z" fill="#fff" />
+      <circle cx="32" cy="32" r="6" fill="#2a1f7a" />
+      <circle cx="34" cy="30" r="1.8" fill="#fff" />
     </svg>
   );
 }

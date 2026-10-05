@@ -85,8 +85,8 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     ],
     integrations: [
       { slug: "orchestra", emoji: "🎼", name: "Orchestra AI", desc: "Offload heavy AI analysis to your GPU workers." },
-      { slug: "soc", emoji: "🎯", name: "AXTO SOC", desc: "Stream Guardian events straight into your SIEM." },
-      { slug: "compliance", emoji: "📋", name: "AXTO Compliance", desc: "Map incidents to controls automatically." },
+      { slug: "soc", emoji: "🎯", name: "SOC AI", desc: "Stream Guardian events straight into your SIEM." },
+      { slug: "compliance", emoji: "📋", name: "Compliance AI", desc: "Map incidents to controls automatically." },
     ],
   },
   {
@@ -119,11 +119,11 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     integrations: [
       { slug: "guardian", emoji: "🛡️", name: "Guardian AI", desc: "Run heavy threat-analysis models on Orchestra workers." },
       { slug: "studio", emoji: "🧠", name: "AXTO Studio", desc: "Use Orchestra as the model backend for Studio." },
-      { slug: "vault", emoji: "🔒", name: "AXTO Vault", desc: "Redact sensitive data before it is routed to any model." },
+      { slug: "vault", emoji: "🔒", name: "Vault AI", desc: "Redact sensitive data before it is routed to any model." },
     ],
   },
   {
-    slug: "vault", product: "vault", name: "AXTO Vault", emoji: "🔒", badge: "PRIVACY",
+    slug: "vault", product: "vault", name: "Vault AI", emoji: "🔒", badge: "PRIVACY",
     color: "#6366f1", gradient: "linear-gradient(135deg,#0f1030,#241a52)", anim: "lock",
     tagline: "Redact PII before it reaches any model",
     hero: "A transparent privacy proxy that strips PII, PHI and financial data out of every AI request in milliseconds — then re-injects the real values into the response, so your users see full data and the model never does.",
@@ -151,11 +151,11 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     ],
     integrations: [
       { slug: "orchestra", emoji: "🎼", name: "Orchestra AI", desc: "Redact, then route safely to any provider." },
-      { slug: "compliance", emoji: "📋", name: "AXTO Compliance", desc: "Feed privacy evidence into audits automatically." },
+      { slug: "compliance", emoji: "📋", name: "Compliance AI", desc: "Feed privacy evidence into audits automatically." },
     ],
   },
   {
-    slug: "edge", product: "edge", name: "AXTO Edge", emoji: "🌐", badge: "GATEWAY",
+    slug: "edge", product: "edge", name: "Edge AI", emoji: "🌐", badge: "GATEWAY",
     color: "#0891b2", gradient: "linear-gradient(135deg,#07202b,#0c3a4a)", anim: "gateway",
     tagline: "AI gateway & API management for your customers",
     hero: "Turn your AI capabilities into a product. Edge gives every customer their own API key, routes by cost, meters usage and bills automatically — with a prompt-injection firewall in front of it all.",
@@ -183,11 +183,11 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     ],
     integrations: [
       { slug: "orchestra", emoji: "🎼", name: "Orchestra AI", desc: "Use Orchestra routing under your gateway." },
-      { slug: "vault", emoji: "🔒", name: "AXTO Vault", desc: "Redact customer data at the edge." },
+      { slug: "vault", emoji: "🔒", name: "Vault AI", desc: "Redact customer data at the edge." },
     ],
   },
   {
-    slug: "soc", product: "soc", name: "AXTO SOC", emoji: "🎯", badge: "OPERATIONS",
+    slug: "soc", product: "soc", name: "SOC AI", emoji: "🎯", badge: "OPERATIONS",
     color: "#dc2626", gradient: "linear-gradient(135deg,#2a0a0a,#451414)", anim: "radar",
     tagline: "AI-assisted SIEM + SOAR",
     hero: "A self-hosted security operations center: collect logs, correlate against millions of threat indicators, map to MITRE ATT&CK and respond automatically — with AI triage that uses your own keys.",
@@ -215,11 +215,11 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     ],
     integrations: [
       { slug: "guardian", emoji: "🛡️", name: "Guardian AI", desc: "Guardian nodes feed events straight into the SIEM." },
-      { slug: "sentinel", emoji: "🏭", name: "AXTO Sentinel", desc: "Bring OT/IoT telemetry into unified operations." },
+      { slug: "sentinel", emoji: "🏭", name: "Sentinel OT", desc: "Bring OT/IoT telemetry into unified operations." },
     ],
   },
   {
-    slug: "compliance", product: "compliance", name: "AXTO Compliance", emoji: "📋", badge: "COMPLIANCE",
+    slug: "compliance", product: "compliance", name: "Compliance AI", emoji: "📋", badge: "COMPLIANCE",
     color: "#16a34a", gradient: "linear-gradient(135deg,#07220f,#0d3a1c)", anim: "checklist",
     tagline: "Continuous, automated audit monitoring",
     hero: "Stop scrambling before audits. Compliance continuously checks your controls across up to seven frameworks, collects the evidence for you and turns it into audit-ready reports.",
@@ -247,11 +247,11 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
     ],
     integrations: [
       { slug: "guardian", emoji: "🛡️", name: "Guardian AI", desc: "Pull security evidence directly from Guardian." },
-      { slug: "soc", emoji: "🎯", name: "AXTO SOC", desc: "Map incidents to compliance controls." },
+      { slug: "soc", emoji: "🎯", name: "SOC AI", desc: "Map incidents to compliance controls." },
     ],
   },
   {
-    slug: "sentinel", product: "sentinel", name: "AXTO Sentinel", emoji: "🏭", badge: "INDUSTRIAL",
+    slug: "sentinel", product: "sentinel", name: "Sentinel OT", emoji: "🏭", badge: "INDUSTRIAL",
     color: "#ca8a04", gradient: "linear-gradient(135deg,#241a05,#3d2e08)", anim: "factory",
     tagline: "Security for industrial IoT & OT",
     hero: "Passive, safe security for operational technology. Sentinel discovers every device on your industrial network, watches protocol behaviour for anomalies and maps everything to the Purdue model — without ever disrupting a process.",
@@ -277,11 +277,11 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
       "Safe, non-disruptive monitoring",
     ],
     integrations: [
-      { slug: "soc", emoji: "🎯", name: "AXTO SOC", desc: "Forward OT alerts for unified IT/OT visibility." },
+      { slug: "soc", emoji: "🎯", name: "SOC AI", desc: "Forward OT alerts for unified IT/OT visibility." },
     ],
   },
   {
-    slug: "antivirus", product: "antivirus", name: "AXTO Antivirus", emoji: "🦠", badge: "ENDPOINT",
+    slug: "antivirus", product: "antivirus", name: "Antivirus", emoji: "🦠", badge: "ENDPOINT",
     color: "#ea580c", gradient: "linear-gradient(135deg,#2a1205,#45200a)", anim: "scan",
     tagline: "ClamAV + machine-learning endpoint protection",
     hero: "Proven ClamAV signatures combined with machine-learning detection and automatic quarantine — a lightweight, self-hosted endpoint shield that keeps getting smarter.",
@@ -365,8 +365,8 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
       "Full confidentiality — self-hosted",
     ],
     integrations: [
-      { slug: "vault", emoji: "🔒", name: "AXTO Vault", desc: "Redact client PII before any AI call." },
-      { slug: "compliance", emoji: "📋", name: "AXTO Compliance", desc: "Keep matters aligned to regulatory controls." },
+      { slug: "vault", emoji: "🔒", name: "Vault AI", desc: "Redact client PII before any AI call." },
+      { slug: "compliance", emoji: "📋", name: "Compliance AI", desc: "Keep matters aligned to regulatory controls." },
     ],
   },
 ];

@@ -464,11 +464,11 @@ bukan dari perkiraan.
 | # | Aliran kerja | Fase | Selesai | Progres |
 |---|---|---|---|---|
 | 1 | Aplikasi cloud v4 (Clipper, Studio, Vault, Security, Compliance, Prompt Library, Legal, Mode Lokal, Akuisisi, Connect) | §9 fase 1–10 | 10/10 | **100 %** |
-| 2 | Penawaran akuisisi US$10.000.000 (§17 B) | harga · halaman premium · 10 bahasa · uji · tayang di axto.io | 4/5 | **80 %** |
-| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) · Legal (alat) · Compliance · Security · Prompt Library · halaman kecil · crawler 0 | 1/7 | **15 %** |
-| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 A2 A3 A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 | 0/13 (blueprint ✅) | **0 %** |
-| 5 | Desain Istana Kristal (§18) | token · komponen · publik · portal member · admin · uji visual | 0/6 (blueprint ✅) | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **15/41** | **≈ 36 %** |
+| 2 | Penawaran akuisisi US$10.000.000 (§17 B) | harga · halaman premium · 10 bahasa · uji · tayang di axto.io | 5/5 (`08b72d9` di `main`) | **100 %** |
+| 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) ✅ · Legal (alat) · Compliance · Security · Prompt Library · halaman kecil · crawler 0 | 1/7 | **15 %** |
+| 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 ✅ A2 A3 A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 | 1/13 | **8 %** |
+| 5 | Desain Istana Kristal (§18) | token ✅ · komponen ✅ · halaman publik (beranda, header, footer, /apps, /self-hosted ✅; harga, panduan, blog, legal berikutnya) · portal member · admin · uji visual | 2/6 | **33 %** |
+| | **Total** (bobot = jumlah fase) | | **19/41** | **≈ 46 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.

@@ -1,7 +1,7 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * AXTO v3 — global styles. One design system for the public site, the member
- * portal and the admin portal. Component classes live here so every page
+ * AXTO — global styles: the "Crystal Palace" design system (docs/BLUEPRINT-V4.md
+ * §18) for the public site, the member portal and the admin portal. Component classes live here so every page
  * looks and behaves the same.
  * ============================================================================ */
 @tailwind base;
@@ -92,7 +92,7 @@
   /* Dark marketing surfaces (matches the logo) */
   .surface-ink { @apply bg-ink-950 text-slate-300; }
   .surface-ink h1, .surface-ink h2, .surface-ink h3 { @apply text-white; }
-  .glow { background: radial-gradient(60% 60% at 30% 20%, rgba(31,216,192,.18) 0%, rgba(7,9,13,0) 70%); }
+  .glow { background: radial-gradient(60% 60% at 30% 20%, rgba(47,130,255,.20) 0%, rgba(7,9,13,0) 70%); }
   .grid-lines { background-image: linear-gradient(rgba(148,163,184,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.08) 1px, transparent 1px); background-size: 48px 48px; }
 }
 
@@ -112,7 +112,7 @@
 @layer utilities {
   @keyframes axto-fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
   @keyframes axto-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-  @keyframes axto-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(31,216,192,.45); } 70% { box-shadow: 0 0 0 12px rgba(31,216,192,0); } 100% { box-shadow: 0 0 0 0 rgba(31,216,192,0); } }
+  @keyframes axto-pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(47,130,255,.45); } 70% { box-shadow: 0 0 0 12px rgba(47,130,255,0); } 100% { box-shadow: 0 0 0 0 rgba(47,130,255,0); } }
   @keyframes axto-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
   @keyframes axto-gradient { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
   @keyframes axto-scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(220%); } }
@@ -130,7 +130,7 @@
   .reveal.is-visible { opacity: 1; transform: none; }
 
   .shimmer-text { background: linear-gradient(90deg, currentColor 0%, rgba(255,255,255,.75) 20%, currentColor 40%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: axto-shimmer 3.5s linear infinite; }
-  .scanline { position: absolute; inset-inline: 0; height: 40%; background: linear-gradient(180deg, transparent, rgba(31,216,192,.14), transparent); animation: axto-scan 3.2s ease-in-out infinite; }
+  .scanline { position: absolute; inset-inline: 0; height: 40%; background: linear-gradient(180deg, transparent, rgba(86,164,255,.14), transparent); animation: axto-scan 3.2s ease-in-out infinite; }
 }
 
 /* ── /acquire — enterprise offer motion (decorative only) ─────────────────── */
@@ -185,3 +185,84 @@
   .prose-axto .code-card pre { @apply m-0 rounded-none bg-transparent; }
 }
 
+/* ── Crystal Palace (docs/BLUEPRINT-V4.md §18) ──────────────────────────────
+   Obsidian floor, sapphire light, royal gold, crystal glass. Motion uses only
+   transform/opacity and is switched off under prefers-reduced-motion. */
+@layer components {
+  .palace { @apply relative isolate overflow-hidden bg-ink-950 text-slate-300; }
+  .palace h1, .palace h2, .palace h3 { @apply text-white; }
+  .palace-sky { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(1200px 520px at 50% -10%, rgba(47,130,255,.28), transparent 62%),
+      radial-gradient(700px 420px at 92% 18%, rgba(155,107,255,.18), transparent 60%),
+      radial-gradient(800px 460px at 6% 70%, rgba(201,162,74,.10), transparent 60%),
+      linear-gradient(180deg, #04060c 0%, #070c18 55%, #04060c 100%); }
+  .palace-stars { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 72% 12%, #cfe3ff 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 32% 64%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 86% 54%, #e8dcff 50%, transparent 51%),
+      radial-gradient(1px 1px at 52% 32%, #fff 50%, transparent 51%), radial-gradient(1.4px 1.4px at 22% 86%, #f3d98b 50%, transparent 51%),
+      radial-gradient(1px 1px at 64% 82%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 92% 88%, #cfe3ff 50%, transparent 51%);
+    background-size: 420px 420px; }
+  /* Crystal floor: the reflective line under a hero (Solomon's glass floor). */
+  .palace-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 160px; z-index: -1; pointer-events: none;
+    background: linear-gradient(180deg, transparent, rgba(47,130,255,.08) 60%, rgba(201,162,74,.10));
+    mask-image: linear-gradient(180deg, transparent, #000); -webkit-mask-image: linear-gradient(180deg, transparent, #000); }
+  .palace-floor::before { content: ""; position: absolute; left: 8%; right: 8%; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(243,217,139,.55), rgba(140,197,255,.6), rgba(243,217,139,.55), transparent); }
+
+  .crystal { @apply rounded-2xl border border-white/10 bg-white/[.04] shadow-crystal backdrop-blur-md; }
+  .crystal-card { @apply crystal relative block p-5 no-underline;
+    transition: transform .4s cubic-bezier(.2,.8,.2,1), border-color .4s, background-color .4s, box-shadow .4s; }
+  .crystal-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0;
+    background: linear-gradient(135deg, rgba(243,217,139,.9), rgba(140,197,255,.6) 45%, transparent 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    transition: opacity .4s; }
+  .crystal-card:hover, .crystal-card:focus-visible { transform: translateY(-4px); border-color: rgba(255,255,255,.18); background-color: rgba(255,255,255,.06); }
+  .crystal-card:hover::before, .crystal-card:focus-visible::before { opacity: 1; }
+
+  .btn-royal { @apply btn relative overflow-hidden text-ink-950 shadow-regal hover:text-ink-950;
+    background: linear-gradient(135deg, #f3d98b, #e0b44d 45%, #c9a24a); }
+  .btn-royal::after { content: ""; position: absolute; inset: 0; transform: translateX(-120%);
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%); transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+  .btn-royal:hover::after { transform: translateX(120%); }
+  .btn-crystal { @apply btn border border-white/15 bg-white/5 text-white backdrop-blur hover:bg-white/10 hover:text-white; }
+
+  .gold-text { background: linear-gradient(90deg, #f3d98b, #e0b44d, #fff3cf, #c9a24a, #f3d98b); background-size: 200% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sapphire-text { background: linear-gradient(90deg, #8cc5ff, #56a4ff 40%, #b9a4ff 80%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .gilded-rule { height: 1px; background: linear-gradient(90deg, transparent, rgba(243,217,139,.6), transparent); }
+  .badge-gold { @apply badge bg-gold-50 text-gold-700 ring-1 ring-inset ring-gold-200; }
+  .eyebrow-palace { @apply inline-flex items-center gap-2 rounded-full border border-gold-400/30 bg-gold-400/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-gold-200; }
+}
+
+@layer utilities {
+  @keyframes palace-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes palace-sheen { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+  @keyframes palace-twinkle { 0%,100% { opacity: .55; } 50% { opacity: .3; } }
+  @keyframes palace-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .palace-rise { animation: palace-rise .7s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 60ms); }
+  .gold-text.is-live { animation: palace-sheen 6s linear infinite; }
+  .palace-stars { animation: palace-twinkle 7s ease-in-out infinite; }
+  .palace-float { animation: palace-float 7s ease-in-out infinite; animation-delay: calc(var(--i, 0) * -900ms); }
+
+  /* The globe (components/site/PalaceGlobe.tsx): meridians breathe like a
+     turning sphere, cities travel across the front face, arcs draw. */
+  @keyframes globe-meridian { 0% { transform: scaleX(0); animation-timing-function: cubic-bezier(.39,.575,.565,1); }
+    50% { transform: scaleX(1); animation-timing-function: cubic-bezier(.47,0,.745,.715); } 100% { transform: scaleX(0); } }
+  @keyframes globe-city { 0% { transform: translateX(calc(var(--rx) * -1px)); opacity: 0; animation-timing-function: cubic-bezier(.445,.05,.55,.95); }
+    4% { opacity: 1; } 46% { opacity: 1; } 50% { transform: translateX(calc(var(--rx) * 1px)); opacity: 0; } 100% { transform: translateX(calc(var(--rx) * -1px)); opacity: 0; } }
+  @keyframes globe-orbit { to { stroke-dashoffset: -1; } }
+  @keyframes globe-halo { 0%,100% { opacity: .55; transform: scale(1); } 50% { opacity: .85; transform: scale(1.03); } }
+  .globe-meridian { transform-box: fill-box; transform-origin: center; animation: globe-meridian 18s infinite; }
+  .globe-city { animation: globe-city 36s infinite; }
+  .globe-orbit { stroke-dasharray: .07 .93; animation: globe-orbit 14s linear infinite; }
+  .globe-halo { transform-box: fill-box; transform-origin: center; animation: globe-halo 8s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .palace-rise, .gold-text.is-live, .palace-stars, .palace-float, .globe-meridian, .globe-city, .globe-orbit, .globe-halo { animation: none !important; }
+  .globe-city { opacity: 1 !important; transform: translateX(calc(var(--sx) * 1px)) !important; }
+  .globe-city-back { opacity: 0 !important; }
+  .crystal-card, .crystal-card:hover, .crystal-card:focus-visible { transform: none !important; transition: none !important; }
+  .btn-royal::after { display: none; }
+}

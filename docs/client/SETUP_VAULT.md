@@ -4,7 +4,7 @@
 [//]: # (Maintained by: Axto AI <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
-# AXTO Vault — Complete Client Setup Guide
+# Vault AI — Complete Client Setup Guide
 ### AI Privacy Layer | Version 1.0
 
 ---
@@ -15,7 +15,7 @@
 
 ## Table of Contents
 
-1. [What is AXTO Vault?](#what-is-vault)
+1. [What is Vault AI?](#what-is-vault)
 2. [How It Works](#how-it-works)
 3. [Prerequisites](#prerequisites)
 4. [Quick Start — 5 Minutes](#quick-start)
@@ -46,9 +46,9 @@
 
 ---
 
-## 1. What Is AXTO Vault? {#what-is-vault}
+## 1. What Is Vault AI? {#what-is-vault}
 
-AXTO Vault is a **transparent AI privacy proxy**. It sits between your application and any AI provider (OpenAI, Anthropic, Gemini, Groq, Mistral, DeepSeek, Ollama, Azure OpenAI) and automatically:
+Vault AI is a **transparent AI privacy proxy**. It sits between your application and any AI provider (OpenAI, Anthropic, Gemini, Groq, Mistral, DeepSeek, Ollama, Azure OpenAI) and automatically:
 
 1. **Intercepts** every AI API request from your application
 2. **Redacts** sensitive data (PII, PHI, Financial) by replacing with safe tokens
@@ -309,9 +309,9 @@ docker run --rm -v vault-data:/data -v $(pwd):/backup alpine \
 
 ```powershell
 # Using NSSM (https://nssm.cc/download)
-nssm install "AXTO Vault" "C:\axto-vault\vault-core-windows.exe"
-nssm set "AXTO Vault" AppDirectory "C:\axto-vault"
-nssm start "AXTO Vault"
+nssm install "Vault AI" "C:\axto-vault\vault-core-windows.exe"
+nssm set "Vault AI" AppDirectory "C:\axto-vault"
+nssm start "Vault AI"
 ```
 
 ---

@@ -4,7 +4,7 @@
 "use client";
 import { useI18n } from "@/lib/i18n";
 
-export default function T({ k }: { k: string }) {
+export default function T({ k, vars }: { k: string; vars?: Record<string, string | number> }) {
   const { t } = useI18n();
-  return <>{t(k as never)}</>;
+  return <>{t(k as never, vars)}</>;
 }
