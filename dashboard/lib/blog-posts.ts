@@ -20,7 +20,24 @@ export interface BlogPost {
   body: string[]; // paragraphs; lines starting with "## " render as h2
 }
 
+/** Paragraphs appended to an existing post (same "## " heading rule). */
+export interface BlogExpansion {
+  slug: string;
+  body: string[];
+}
+
 import { BLOG_POSTS_2 } from "./blog-posts-batch2";
+import { BLOG_POSTS_3 } from "./blog-posts-batch3";
+import { BLOG_EXPANSIONS_01 } from "./blog-expansions-01";
+import { BLOG_EXPANSIONS_02 } from "./blog-expansions-02";
+import { BLOG_EXPANSIONS_03 } from "./blog-expansions-03";
+import { BLOG_EXPANSIONS_04 } from "./blog-expansions-04";
+import { BLOG_EXPANSIONS_05 } from "./blog-expansions-05";
+import { BLOG_EXPANSIONS_06 } from "./blog-expansions-06";
+import { BLOG_EXPANSIONS_07 } from "./blog-expansions-07";
+import { BLOG_EXPANSIONS_08 } from "./blog-expansions-08";
+import { BLOG_EXPANSIONS_09 } from "./blog-expansions-09";
+import { BLOG_EXPANSIONS_10 } from "./blog-expansions-10";
 
 export const BLOG_POSTS: BlogPost[] = [
   {
@@ -384,4 +401,14 @@ export function getPost(slug: string): BlogPost | undefined {
   return BLOG_POSTS.find((p) => p.slug === slug);
 }
 
-BLOG_POSTS.push(...BLOG_POSTS_2);
+BLOG_POSTS.push(...BLOG_POSTS_2, ...BLOG_POSTS_3);
+
+// Long-form top-offs: append each expansion to its post and keep the reading
+// time honest (about 220 words a minute).
+for (const exp of [...BLOG_EXPANSIONS_01, ...BLOG_EXPANSIONS_02, ...BLOG_EXPANSIONS_03, ...BLOG_EXPANSIONS_04, ...BLOG_EXPANSIONS_05, ...BLOG_EXPANSIONS_06, ...BLOG_EXPANSIONS_07, ...BLOG_EXPANSIONS_08, ...BLOG_EXPANSIONS_09, ...BLOG_EXPANSIONS_10]) {
+  const post = BLOG_POSTS.find((p) => p.slug === exp.slug);
+  if (!post) continue;
+  post.body.push(...exp.body);
+  const words = post.body.join(" ").split(/\s+/).filter(Boolean).length;
+  post.minutes = Math.max(post.minutes, Math.ceil(words / 220));
+}
