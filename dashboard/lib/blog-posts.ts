@@ -21,6 +21,7 @@ export interface BlogPost {
 }
 
 import { BLOG_POSTS_2 } from "./blog-posts-batch2";
+import { BLOG_EXPANSIONS } from "./blog-expansions";
 
 export const BLOG_POSTS: BlogPost[] = [
   {
@@ -385,3 +386,21 @@ export function getPost(slug: string): BlogPost | undefined {
 }
 
 BLOG_POSTS.push(...BLOG_POSTS_2);
+
+/** Words in a post's body, the same way the article page counts them for JSON-LD. */
+export function postWords(body: string[]): number {
+  return body.join(" ").split(/\s+/).filter(Boolean).length;
+}
+
+/** Honest reading time at 200 words a minute, never zero. */
+export function readingMinutes(body: string[]): number {
+  return Math.max(1, Math.round(postWords(body) / 200));
+}
+
+// Deepen every post with its expansion, then derive the reading time from the
+// text the reader actually gets instead of a hand-typed guess.
+for (const p of BLOG_POSTS) {
+  const extra = BLOG_EXPANSIONS[p.slug];
+  if (extra) p.body.push(...extra);
+  p.minutes = readingMinutes(p.body);
+}
