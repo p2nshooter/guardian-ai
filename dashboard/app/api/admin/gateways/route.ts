@@ -8,6 +8,8 @@
  *   PATCH  {gateway, active?, mode?}           offer at checkout on/off · switch Live ⇄ Sandbox
  *   DELETE {gateway, env}                      clear one environment (switches the method off if in use)
  *   POST   {gateway, env, action:"test"}       test the credentials against the provider
+ *   PayPal: saving or testing a complete key set also creates (or confirms) this site's
+ *   webhook on that PayPal app and stores its id — nothing to do in the PayPal dashboard.
  *   PUT    {gateway:"email", credentials}      e-mail settings
  * Legacy PUT {gateway, credentials, is_active, is_test_mode} (scripts, older tests) = save + switch in one call.
  * Storage: one AES-256-GCM encrypted R2 document per area (lib/secure-store.ts). */
@@ -19,7 +21,7 @@ import {
   GATEWAYS, ENV_KEY, gatewayInfo, gatewaySetting, isConfigured, isPayEnv, migrateLegacyPayments, paymentSettings, prefixProblem, savePaymentSettings,
   type GatewayField, type GatewayInfo, type GatewaySetting, type PayEnv, type PaymentSettings,
 } from "@/lib/billing/gateways";
-import { testConnection } from "@/lib/billing/providers";
+import { paypalEnsureWebhook, testConnection } from "@/lib/billing/providers";
 import { emailSettings, type EmailSettings } from "@/lib/mail";
 import { writeSecure, maskValue, keepSecret, SettingsKeyMissing } from "@/lib/secure-store";
 import { readJson, fail, audit } from "@/lib/http";
@@ -91,6 +93,27 @@ async function write(s: PaymentSettings, id: GatewayInfo["id"], st: GatewaySetti
   await savePaymentSettings(s);
 }
 
+/**
+ * PayPal set-up in one go (owner, 14 Oct 2026): check the keys with PayPal, then
+ * make sure that app has our webhook and remember its id in the same encrypted
+ * document. Runs after every save and test of a complete PayPal key set.
+ */
+async function paypalSetup(s: PaymentSettings, st: GatewaySetting, env: PayEnv, by: string): Promise<{ ok: boolean; message: string }> {
+  const creds = { ...st[env], [ENV_KEY]: env };
+  const t = await testConnection("paypal", creds);
+  if (!t.ok) return t;
+  try {
+    const hook = await paypalEnsureWebhook(creds, absoluteUrl("/api/webhooks/paypal"));
+    if (st[env].webhook_id !== hook.id) {
+      st[env] = { ...st[env], webhook_id: hook.id };
+      await write(s, "paypal", st, by);
+    }
+    return { ok: true, message: `${ENV_NAME[env]} keys accepted by PayPal. Webhook ${hook.created ? "created" : "ready"} on PayPal — notifications are verified automatically.` };
+  } catch (e: any) {
+    return { ok: false, message: `${ENV_NAME[env]} keys accepted by PayPal, but the webhook could not be set up: ${String(e?.message || e).slice(0, 200)}. Payments still confirm when the buyer returns.` };
+  }
+}
+
 export async function GET(req: NextRequest) {
   const ctx = await admin(req);
   if (!ctx) return forbidden();
@@ -137,7 +160,9 @@ export async function PUT(req: NextRequest) {
     }
     await write(s, g.id, st, ctx.session.email);
     await audit(db, ctx.session, "admin.gateway.credentials", "payment_gateway", g.id, { env, configured: isConfigured(g, creds) }, req);
-    return respond({ ok: true, gateway: present(g, st) }, ctx);
+    const setup = g.id === "paypal" && isConfigured(g, creds) ? await paypalSetup(s, st, env, ctx.session.email) : undefined;
+    if (setup) await audit(db, ctx.session, "admin.gateway.paypal_setup", "payment_gateway", g.id, { env, ok: setup.ok }, req);
+    return respond({ ok: true, gateway: present(g, st), ...(setup ? { setup } : {}) }, ctx);
   });
 }
 
@@ -195,9 +220,10 @@ export async function POST(req: NextRequest) {
   if (!isPayEnv(b?.env) || !g.envs.includes(b.env)) return fail("Choose the environment to test.");
   const env: PayEnv = b.env;
   return guard(async () => {
-    const st = gatewaySetting(await paymentSettings({ fresh: true }), g.id);
+    const s = await paymentSettings({ fresh: true });
+    const st = gatewaySetting(s, g.id);
     if (!isConfigured(g, st[env])) return respond({ ok: false, message: `Save the ${ENV_NAME[env]} credentials first (${requirement(g)}).` }, ctx);
-    const r = await testConnection(g.id, { ...st[env], [ENV_KEY]: env });
+    const r = g.id === "paypal" ? await paypalSetup(s, st, env, ctx.session.email) : await testConnection(g.id, { ...st[env], [ENV_KEY]: env });
     await audit(getDB(req), ctx.session, "admin.gateway.tested", "payment_gateway", g.id, { env, ok: r.ok }, req);
     return respond(r, ctx);
   });

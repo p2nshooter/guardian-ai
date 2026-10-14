@@ -11,6 +11,7 @@
  * The PRICE always comes from our own order row, never from the browser.
  * ============================================================================ */
 import { absoluteUrl, SITE } from "../site";
+import { secret } from "../db";
 import { ENV_KEY, CRYPTO_ASSETS, bankAccounts, cardRoute, gatewayCredsFor, type GatewayId } from "./gateways";
 
 /** The credential set's environment (Admin → Payments → Sandbox / Live): sandbox = the provider's test API. */
@@ -81,14 +82,17 @@ export async function stripeVerify(payload: string, header: string | null, whsec
 }
 
 // ── PayPal ────────────────────────────────────────────────────────────────
+// Live is fixed. Sandbox can point at a local stand-in (PAYPAL_SANDBOX_API) — the
+// end-to-end tests run the whole PayPal flow offline that way; Live never can.
 const paypalBase = (c: Record<string, string>) =>
-  isSandbox(c) ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+  isSandbox(c) ? (secret("PAYPAL_SANDBOX_API") || "https://api-m.sandbox.paypal.com").replace(/\/+$/, "") : "https://api-m.paypal.com";
 
 async function paypalToken(c: Record<string, string>): Promise<string> {
   const r = await fetch(`${paypalBase(c)}/v1/oauth2/token`, {
     method: "POST",
     headers: { Authorization: `Basic ${btoa(`${c.client_id}:${c.client_secret}`)}`, "Content-Type": "application/x-www-form-urlencoded" },
     body: "grant_type=client_credentials",
+    signal: AbortSignal.timeout(20_000),
   });
   const j: any = await r.json();
   if (!r.ok || !j.access_token) throw new Error("PayPal authentication failed");
@@ -139,6 +143,48 @@ export async function paypalCapture(c: Record<string, string>, paypalOrderId: st
     orderId: unit?.custom_id || unit?.reference_id || "",
     captureId: cap?.id || paypalOrderId,
   };
+}
+
+/** Events app/api/webhooks/paypal acts on. */
+export const PAYPAL_WEBHOOK_EVENTS = ["PAYMENT.CAPTURE.COMPLETED"];
+
+/**
+ * Make sure the PayPal app behind these credentials has this site's webhook,
+ * so nobody creates one by hand in the PayPal dashboard (owner, 14 Oct 2026).
+ * Reuses a webhook already pointing at the URL (PayPal refuses duplicates) and
+ * adds a missing event to it; otherwise creates one. Returns its id.
+ */
+export async function paypalEnsureWebhook(c: Record<string, string>, url: string): Promise<{ id: string; created: boolean }> {
+  const token = await paypalToken(c);
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const target = url.replace(/\/+$/, "");
+  const list = await fetch(`${paypalBase(c)}/v1/notifications/webhooks`, { headers, signal: AbortSignal.timeout(20_000) });
+  const lj: any = await list.json().catch(() => ({}));
+  if (!list.ok) throw new Error(`PayPal could not list webhooks (HTTP ${list.status})`);
+  const mine = (lj?.webhooks || []).find((w: any) => String(w?.url || "").replace(/\/+$/, "") === target);
+  if (mine?.id) {
+    const have = new Set<string>((mine.event_types || []).map((e: any) => String(e?.name || "")));
+    if (!have.has("*") && PAYPAL_WEBHOOK_EVENTS.some((e) => !have.has(e))) {
+      const value = [...new Set([...have, ...PAYPAL_WEBHOOK_EVENTS])].filter(Boolean).map((name) => ({ name }));
+      const r = await fetch(`${paypalBase(c)}/v1/notifications/webhooks/${encodeURIComponent(mine.id)}`, {
+        method: "PATCH", headers, body: JSON.stringify([{ op: "replace", path: "/event_types", value }]), signal: AbortSignal.timeout(20_000),
+      });
+      if (!r.ok) throw new Error(`PayPal could not update the webhook (HTTP ${r.status})`);
+    }
+    return { id: String(mine.id), created: false };
+  }
+  const r = await fetch(`${paypalBase(c)}/v1/notifications/webhooks`, {
+    method: "POST", headers, signal: AbortSignal.timeout(20_000),
+    body: JSON.stringify({ url: target, event_types: PAYPAL_WEBHOOK_EVENTS.map((name) => ({ name })) }),
+  });
+  const j: any = await r.json().catch(() => ({}));
+  if (!r.ok || !j?.id) {
+    const issue = j?.details?.[0]?.issue || j?.name || "";
+    throw new Error(issue === "WEBHOOK_NUMBER_LIMIT_EXCEEDED"
+      ? "this PayPal app already has 10 webhooks — delete an unused one in the PayPal dashboard, then save again"
+      : `PayPal could not create the webhook (HTTP ${r.status}${issue ? `, ${issue}` : ""})`);
+  }
+  return { id: String(j.id), created: true };
 }
 
 /** Verify a PayPal webhook through PayPal's verification API. */

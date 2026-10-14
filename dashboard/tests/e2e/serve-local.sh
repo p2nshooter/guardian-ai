@@ -26,6 +26,8 @@ ALLOW_INSECURE_ENDPOINTS=1
 # TEST-ONLY Ed25519 key (public half in tests/e2e/api.e2e.ts). Never trusted by engines.
 LICENSE_SIGNING_PRIVATE_KEY_B64=TNo9bCSB4MG26GMf8QyIEqBNHVsHoDeHh15U0xMxpBE=
 NEXT_PUBLIC_APP_URL=http://localhost:${PORT}
+# TEST-ONLY: Sandbox PayPal goes to the local stand-in (tests/e2e/paypal-mock.ts). Live is never redirected.
+PAYPAL_SANDBOX_API=http://127.0.0.1:8899
 VARS
 (cd "$CTL" && CI=1 WRANGLER_SEND_METRICS=false npx wrangler d1 migrations apply axto-db --local --persist-to ../persist >/dev/null)
 cd "$WORK"

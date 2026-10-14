@@ -51,7 +51,7 @@ export const GATEWAYS: GatewayInfo[] = [
     fields: [
       { key: "client_id", label: "Client ID" },
       { key: "client_secret", label: "Client secret", secret: true },
-      { key: "webhook_id", label: "Webhook ID", hint: "Needed to verify PayPal's notifications; payments also confirm when the buyer returns." },
+      { key: "webhook_id", label: "Webhook ID", hint: "Filled in automatically — saving or testing the keys creates this site's webhook on PayPal. Used to verify PayPal's notifications; payments also confirm when the buyer returns." },
     ],
     requires: [["client_id", "client_secret"]], webhookPath: "/api/webhooks/paypal", events: "PAYMENT.CAPTURE.COMPLETED",
     keysAt: "developer.paypal.com → Apps & Credentials (Sandbox / Live tabs) → your app" },

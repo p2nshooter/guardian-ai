@@ -470,8 +470,8 @@ bukan dari perkiraan.
 | 5 | Desain Istana Kristal (§18) | token ✅ · komponen ✅ · halaman publik (beranda, header, footer, /apps, /self-hosted ✅; harga, panduan, blog, legal berikutnya) · portal member · admin · uji visual | 2/6 | **33 %** |
 | 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
 | 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti ✅ · admin terima/tolak ✅ · lisensi & email otomatis ✅ · uji E2E ✅ · tayang | dibangun sesi lain (`claude/bni-receipt-approval`), digabung ke branch kerja; tayang setelah CI hijau | **80 %** |
-| 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 3/5 | **60 %** |
-| | **Total** (bobot = jumlah fase) | | **30/60** | **≈ 50 %** |
+| 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
+| | **Total** (bobot = jumlah fase) | | **32/61** | **≈ 52 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -542,3 +542,46 @@ yang sama → fitur identik), E2 uji instalasi nyata Windows (Docker Desktop/WSL
 Linux (amd64/arm64) di CI, B/C/D panduan & konektor (API, webhook, SIEM, SSO) per aplikasi.
 *Smart license* = lisensi bertanda tangan Ed25519 + edisi + trial + pengikatan mesin (sudah ada),
 ditambah pembaruan otomatis dan status lisensi langsung di setiap aplikasi (A4).
+
+## 21. Perintah pemilik 14 Okt 2026 — modal, jual situs, aplikasi yang belum ada
+
+Dicatat apa adanya di `docs/REQUESTS.md` baris 52–56. Urutan kerja: pembayaran (selesai, #71) →
+webhook PayPal otomatis → **A** portal pemodal → **B** penawaran jual situs → **C** aplikasi.
+
+**A. Penawaran modal gabungan US$2.000.000 (axto.io + xaa.es).**
+- Syarat dari pemilik: pool bagi hasil **30 % dari setiap transaksi pendapatan**, dibagi menurut porsi
+  modal: bagian pemodal = 30 % × modal ÷ US$2.000.000 (US$50.000 = 0,75 %; US$500.000 = 7,5 %;
+  US$2.000.000 = 30 %). Minimum US$50.000; tiket besar US$500.000–2.000.000. Penawaran **tertutup otomatis
+  saat US$2.000.000 terpenuhi**. Bagi hasil dihitung otomatis per transaksi sejak modal terverifikasi,
+  **dibayarkan bulanan**, dan berlaku **sampai akuisisi penuh** (US$5–10 juta) — saat itu modal
+  **dikembalikan 100 %** dan bagi hasil selesai (jawaban pemilik 14 Okt).
+- Pembayaran modal: transfer ke rekening BNI **USD / EUR** (nomor dari Admin → Payments, terenkripsi)
+  lalu unggah bukti → admin memverifikasi satu klik; atau **PayPal** (terverifikasi otomatis saat capture;
+  batas per transaksi PayPal tetap berlaku). Teknis: setiap komitmen adalah order `plan = 'investment'`, jadi
+  memakai jalur yang sudah teruji (PayPal, bukti transfer + kuitansi R2, Admin → Orders, faktur, audit).
+- Pendapatan yang dibagi = order lunas axto.io (tanpa sandbox, tanpa `investment`/`acquisition`) + pembayaran
+  terkonfirmasi xaa.es (termin proyek + template, EUR → USD). D1 xaa.es ada di akun Cloudflare lain, jadi dibaca
+  **read-only** lewat feed pendapatan xaa.es yang dikunci token (`GET /api/revenue` — hanya jumlah & waktu,
+  tanpa data klien; sandbox dan refund PayPal tidak dihitung; token dibuat di xaa.es Settings → Revenue feed,
+  ditempel di axto.io Admin → Investors).
+- Portal pemodal `/app/investor`: hanya pemodal terverifikasi melihat pendapatan bisnis (agregat per bulan,
+  tanpa data pelanggan), porsi mereka, bagi hasil terhitung, yang sudah dibayar dan saldo. Admin → Investors:
+  verifikasi, catat pembayaran bulanan, pengaturan (target, pool, minimum, buka/tutup, tampil di Google).
+- Halaman penawaran `/invest`: kata-kata elegan, 10 bahasa, menjelaskan setiap aplikasi dan fitur **secara
+  jujur** — yang sudah tayang vs yang akan dibangun dengan dana (roadmap §21 C) — dengan pengungkapan risiko
+  (tidak ada jaminan hasil; dituangkan dalam perjanjian tertulis; pemodal memastikan kelayakan menurut hukum
+  negaranya). Bawaan: dapat dibuka lewat tautan, tidak diindeks Google; pemilik bisa mengubahnya di Admin.
+
+**B. Penawaran jual situs.** xaa.es: halaman `/acquire` baru, harga pembuka US$2.000.000 (EN/ES/ID, SEO,
+sitemap, footer), checkout (transfer BNI USD/EUR, PayPal, kripto bila aktif), bukti transfer, akses admin
+otomatis saat lunas terverifikasi, brankas serah-terima (kata sandi e-mail, GitHub, database). axto.io:
+tambahkan poin pemilik ke `/acquire` (10 bahasa): 100 % skrip & aplikasi; e-mail pengumuman perpindahan ke
+seluruh anggota; GitHub; database; akses admin penuh setelah bayar; konfirmasi WhatsApp +6285691234561;
+semua kata sandi diterima; ganti tujuan pembayaran di Admin atau dibantu pemilik sampai selesai; jaminan
+tidak ada situs kedua yang serupa.
+
+**C. Aplikasi yang belum dibangun** (pemilik: Orchestra GPU on-demand & CPU untuk Windows & Linux belum punya
+deteksi GPU otomatis; banyak bagian axto.io dan xaa.es belum ada). Langkah pertama: deteksi GPU otomatis
+(NVIDIA → AMD/ROCm → Intel → CPU) di engine Orchestra + installer/compose Windows & Linux, dengan uji; lalu
+fase `AXTO-APPS-BLUEPRINT.md` §9 berikutnya. Semua yang belum ada ditulis jujur sebagai roadmap di §21 A.
+
