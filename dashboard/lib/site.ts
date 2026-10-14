@@ -24,7 +24,8 @@ export const SITE = {
   ogImage: "/og-image.png",
   locale: "en_US",
   // Google — AdSense publisher (verification meta + loader) and Search Console.
-  adsenseClient: "ca-pub-5693981744147503",
+  // AdSense publisher (owner, 14 Oct 2026): loader, meta tag and public/ads.txt all name this account.
+  adsenseClient: "ca-pub-6908951782430508",
   gscVerification: process.env.NEXT_PUBLIC_GSC_VERIFICATION || "",
   bingVerification: process.env.NEXT_PUBLIC_BING_VERIFICATION || "",
   // Preview deployments (axto-preview.pages.dev): noindex, no ads, visible banner.
