@@ -74,3 +74,34 @@ test("orders remember their environment (old orders are live)", () => {
   assert.equal(orderEnv({ meta: "{}" }), "live");
   assert.equal(orderEnv({ meta: "not json" }), "live");
 });
+
+/* BNI multi-currency (owner, 14 Oct 2026): one bank method, up to three accounts. */
+import { bankAccounts, isConfigured, toEur } from "../lib/billing/gateways";
+
+test("the bank method offers every configured BNI account, rupiah first", () => {
+  const g = gatewayInfo("manual")!;
+  const all = { account_name: "PT X", account_number: "111", usd_account_number: "222", eur_account_number: "333", swift_code: "BNINIDJA" };
+  assert.deepEqual(bankAccounts(all), [
+    { currency: "IDR", number: "111" }, { currency: "USD", number: "222" }, { currency: "EUR", number: "333" },
+  ]);
+  // USD and EUR alone are enough to offer the method — no rupiah account needed.
+  const intl = { account_name: "PT X", usd_account_number: "222", eur_account_number: "333" };
+  assert.ok(isConfigured(g, intl));
+  assert.deepEqual(bankAccounts(intl).map((a) => a.currency), ["USD", "EUR"]);
+  // Without the holder's name a wire cannot be matched: nothing is offered.
+  assert.deepEqual(bankAccounts({ usd_account_number: "222" }), []);
+  assert.ok(!isConfigured(g, { usd_account_number: "222" }));
+  assert.deepEqual(bankAccounts({ account_name: "PT X", usd_account_number: "  " }), []);
+  // The admin form shows all three account fields, encrypted like the rest.
+  for (const k of ["account_number", "usd_account_number", "eur_account_number", "account_name"]) {
+    assert.equal(g.fields.find((f) => f.key === k)?.secret, true, k);
+  }
+});
+
+test("euro amounts are rounded up to the cent, never down", () => {
+  assert.equal(toEur(100, 0.9), 90);            // exact stays exact (no float drift)
+  assert.equal(toEur(9, 0.92), 8.28);
+  assert.equal(toEur(19.99, 0.95), 19);         // 18.9905 → 19.00
+  assert.equal(toEur(49, 0.9234), 45.25);       // 45.2466 → 45.25
+  assert.ok(toEur(10000000, 0.91) >= 10000000 * 0.91);
+});

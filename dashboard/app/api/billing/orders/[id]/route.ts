@@ -27,7 +27,7 @@ function view(o: any) {
     amountLocal: o.amount_local, currency: o.currency, invoiceNo: o.invoice_no, createdAt: o.created_at, paidAt: o.paid_at,
     crypto: m.crypto ? { amount: m.crypto.amount, quotes: m.crypto.quotes, proof: m.crypto.proof || null } : null,
     bankProof: m.bank_proof ? {
-      reference: m.bank_proof.reference || "", at: m.bank_proof.at || "",
+      reference: m.bank_proof.reference || "", at: m.bank_proof.at || "", currency: m.bank_proof.currency || "",
       receipt: m.bank_proof.receipt ? { name: m.bank_proof.receipt.name, type: m.bank_proof.receipt.type, size: m.bank_proof.receipt.size } : null,
       rejected: m.bank_proof.rejected || null,
     } : null,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (multipart) {
     try {
       const fd = await req.formData();
-      b = { action: fd.get("action"), reference: fd.get("reference"), note: fd.get("note") };
+      b = { action: fd.get("action"), reference: fd.get("reference"), note: fd.get("note"), currency: fd.get("currency") };
       const f = fd.get("receipt");
       if (f && typeof f !== "string") receiptFile = f as File;
     } catch { return fail("Could not read the upload — please try again."); }
@@ -91,10 +91,23 @@ export async function POST(req: NextRequest, { params }: Params) {
       if (!st.ok) return fail(st.error);
       receipt = st.receipt;
     }
+    // Which BNI account the buyer wired to (IDR, USD or EUR). The order then
+    // carries that currency and the quoted amount, so Orders, the history and
+    // the invoice all show what was actually sent. Only quotes we issued count.
+    let meta: any = {};
+    try { meta = JSON.parse(o.meta || "{}"); } catch {}
+    const quotes: { currency: string; amount: number }[] = Array.isArray(meta.bank_quotes) ? meta.bank_quotes : [];
+    const chosen = quotes.find((q) => q.currency === String(b?.currency || "").toUpperCase()) || null;
+    if (chosen && (chosen.currency !== o.currency || Number(chosen.amount) !== Number(o.amount_local))) {
+      await dbRun(db, `UPDATE orders SET currency = ?, amount_local = ? WHERE id = ? AND status = 'pending'`, [chosen.currency, chosen.amount, o.id]);
+    }
+    const currency = chosen?.currency || o.currency;
+    const local = chosen ? Number(chosen.amount) : Number(o.amount_local);
     // A new proof replaces the previous one and clears an earlier rejection.
     await dbRun(db, `UPDATE orders SET meta = json_set(COALESCE(NULLIF(meta,''),'{}'), '$.bank_proof', json(?)) WHERE id = ?`,
-      [JSON.stringify({ reference, note, at: now(), ...(receipt ? { receipt } : {}) }), o.id]);
-    const text = `Bank transfer sent for order ${o.id} (${o.plan}, ${o.cycle}, US$${o.amount_usd}${o.amount_local ? ` / Rp${Number(o.amount_local).toLocaleString("id-ID")}` : ""}).${reference ? `\nReference: ${reference}` : ""}${receipt ? `\nReceipt uploaded (${receipt.name}) — open Admin → Orders to view it and approve.` : ""}${note ? `\nNote: ${note}` : ""}`;
+      [JSON.stringify({ reference, note, currency, at: now(), ...(receipt ? { receipt } : {}) }), o.id]);
+    const sent = !local ? "" : currency === "IDR" ? ` / Rp${local.toLocaleString("id-ID")}` : currency === "EUR" ? ` / €${local.toFixed(2)} to the EUR account` : currency === "USD" ? ` to the USD account` : ` / ${currency} ${local}`;
+    const text = `Bank transfer sent for order ${o.id} (${o.plan}, ${o.cycle}, US$${o.amount_usd}${sent}).${reference ? `\nReference: ${reference}` : ""}${receipt ? `\nReceipt uploaded (${receipt.name}) — open Admin → Orders to view it and approve.` : ""}${note ? `\nNote: ${note}` : ""}`;
     const { id: threadId } = await createThread(db, {
       name: ctx.session.name || ctx.session.email, email: ctx.session.email, topic: "bank", source: "payment",
       userId: ctx.session.sub, subject: `Payment to confirm — ${o.id}`, needsAdmin: true, first: { name: ctx.session.name || "Member", text },

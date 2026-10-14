@@ -43,7 +43,8 @@ export default function PaymentsPage() {
         </Alert></div>
       ) : null}
       <Overview gateways={data.gateways} />
-      <div className="mt-5"><RupiahCard /></div>
+      <div className="mt-5"><RateCard ccy="IDR" />
+        <RateCard ccy="EUR" /></div>
       <div className="mt-5 grid gap-5">
         {data.gateways.map((g) => <GatewayCard key={g.id} g={g} onChange={load} />)}
         <EmailCard e={data.email} onSaved={load} />
@@ -235,24 +236,38 @@ function EnvForm({ g, env, onChange }: { g: Gateway; env: Env; onChange: () => v
   );
 }
 
-/** USD → IDR: what every rupiah method (Xendit, Midtrans, bank transfer) charges. */
-function RupiahCard() {
+/** USD → IDR / EUR: what the rupiah methods (Xendit, Midtrans, BNI IDR) and the BNI EUR account charge. */
+const RATE = {
+  IDR: {
+    key: "usd_idr_rate", read: "usdIdrRate", opt: "usdIdr", title: "Rupiah conversion (USD → IDR)",
+    lead: "Prices are set in USD. Xendit, Midtrans and the BNI rupiah account charge the rupiah amount at this rate, rounded up to Rp1,000.",
+    placeholder: "e.g. 16400", fmt: (n: number) => `Rp${n.toLocaleString("id-ID")}`, example: (r: number) => `Rp${(Math.ceil((49 * r) / 1000) * 1000).toLocaleString("id-ID")}`,
+  },
+  EUR: {
+    key: "usd_eur_rate", read: "usdEurRate", opt: "usdEur", title: "Euro conversion (USD → EUR)",
+    lead: "The BNI euro account is quoted at this rate, rounded up to the cent, so the dollar price always arrives in full.",
+    placeholder: "e.g. 0.92", fmt: (n: number) => `€${n}`, example: (r: number) => `€${(Math.ceil(Math.round(49 * r * 1e6) / 1e4) / 100).toFixed(2)}`,
+  },
+} as const;
+
+function RateCard({ ccy }: { ccy: keyof typeof RATE }) {
+  const c = RATE[ccy];
   const [fixed, setFixed] = useState<string | null>(null);
   const [effective, setEffective] = useState(0);
   const [rate, setRate] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
   const load = async () => {
-    const [s, o] = await Promise.all([api<{ usdIdrRate: string }>("/api/admin/settings"), api<{ usdIdr: number }>("/api/billing/options")]);
-    if (s.ok) { setFixed(s.data.usdIdrRate || ""); setRate(s.data.usdIdrRate || ""); }
-    if (o.ok) setEffective(o.data.usdIdr);
+    const [s, o] = await Promise.all([api<Record<string, string>>("/api/admin/settings"), api<Record<string, number>>("/api/billing/options")]);
+    if (s.ok) { setFixed(s.data[c.read] || ""); setRate(s.data[c.read] || ""); }
+    if (o.ok) setEffective(o.data[c.opt]);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   async function save(value: string) {
     setBusy(true); setMsg(null);
-    const r = await api("/api/admin/settings", { method: "PUT", body: { usd_idr_rate: value } });
+    const r = await api("/api/admin/settings", { method: "PUT", body: { [c.key]: value } });
     setBusy(false);
-    setMsg(r.ok ? { tone: "success", text: value ? `Fixed at Rp${Number(value).toLocaleString("id-ID")} per USD.` : "Automatic daily rate restored." } : { tone: "error", text: r.error || "Could not save." });
+    setMsg(r.ok ? { tone: "success", text: value ? `Fixed at ${c.fmt(Number(value))} per USD.` : "Automatic daily rate restored." } : { tone: "error", text: r.error || "Could not save." });
     if (r.ok) load();
   }
   if (fixed === null) return null;
@@ -260,14 +275,14 @@ function RupiahCard() {
     <section className="card-pad">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold">Rupiah conversion (USD → IDR)</h2>
-          <p className="mt-0.5 text-sm text-slate-500">Prices are set in USD. Xendit, Midtrans and bank transfer charge the rupiah amount at this rate, rounded up to Rp1,000.</p>
+          <h2 className="text-base font-semibold">{c.title}</h2>
+          <p className="mt-0.5 text-sm text-slate-500">{c.lead}</p>
         </div>
         <span className={fixed ? "badge-brand" : "badge-gray"}>{fixed ? "Fixed rate" : "Automatic (daily market rate)"}</span>
       </div>
-      <p className="mt-3 text-sm text-slate-700">In use now: <b>Rp{effective.toLocaleString("id-ID")}</b> per USD · e.g. US$49 → <b>Rp{(Math.ceil((49 * effective) / 1000) * 1000).toLocaleString("id-ID")}</b></p>
+      <p className="mt-3 text-sm text-slate-700">In use now: <b>{c.fmt(effective)}</b> per USD · e.g. US$49 → <b>{c.example(effective)}</b></p>
       <div className="mt-3 flex flex-wrap gap-2">
-        <input className="input w-48" inputMode="numeric" placeholder="e.g. 16400" value={rate} onChange={(e) => setRate(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Fixed USD to IDR rate" />
+        <input className="input w-48" inputMode="decimal" placeholder={c.placeholder} value={rate} onChange={(e) => setRate(e.target.value.replace(/[^0-9.]/g, ""))} aria-label={`Fixed USD to ${ccy} rate`} />
         <button className="btn-primary btn-sm" disabled={busy || !rate.trim()} onClick={() => save(rate.trim())}>Fix this rate</button>
         {fixed ? <button className="btn-secondary btn-sm" disabled={busy} onClick={() => { setRate(""); save(""); }}>Use the automatic rate</button> : null}
       </div>

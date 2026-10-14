@@ -67,7 +67,7 @@ function OrdersInner() {
                   <td className="whitespace-nowrap">{formatDate(o.created_at)}<span className="block text-[11px] text-slate-400">{o.id}</span></td>
                   <td>{o.email}</td>
                   <td className="capitalize">{o.plan} · {o.cycle}</td>
-                  <td className="whitespace-nowrap">{formatMoney(o.amount_usd)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR")}</span> : null}</td>
+                  <td className="whitespace-nowrap">{formatMoney(o.amount_usd)}{o.amount_local && o.currency !== "USD" ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, o.currency || "IDR")}</span> : null}</td>
                   <td>{o.gateway}{/"method"\s*:\s*"card"/.test(o.meta || "") ? <span className="badge-gray ml-1">card</span> : null}{isTest(o) ? <span className="badge-amber ml-1" title="Paid in the provider's sandbox — not revenue">TEST</span> : null}</td>
                   <td className="max-w-[220px] text-xs">
                     <span className="block truncate">{proof(o) || o.gateway_ref || "—"}</span>
@@ -96,7 +96,7 @@ function OrdersInner() {
         footer={<><button className="btn-ghost" onClick={() => setAct(null)}>Close</button><button className={act?.action === "refund" ? "btn-danger" : "btn-primary"} onClick={run} disabled={busy}>{busy ? <Spinner /> : null} Confirm</button></>}>
         {act ? (
           <div className="space-y-3 text-sm">
-            <p><strong>{act.order.email}</strong> — {act.order.plan} · {act.order.cycle} · {formatMoney(act.order.amount_usd)}{act.order.amount_local ? ` (${formatMoney(act.order.amount_local, "IDR")})` : ""}</p>
+            <p><strong>{act.order.email}</strong> — {act.order.plan} · {act.order.cycle} · {formatMoney(act.order.amount_usd)}{act.order.amount_local && act.order.currency !== "USD" ? ` (${formatMoney(act.order.amount_local, act.order.currency || "IDR")})` : ""}</p>
             {act.action === "mark_paid" ? <Alert tone="info">Approving activates the plan immediately, issues any self-hosted licences (they appear in the member's dashboard at once) and e-mails the invoice.</Alert> : null}
             {act.action === "reject_proof" ? <Alert tone="warn">The order stays open. The member sees this reason on the payment screen, gets it by e-mail and can upload a new receipt.</Alert> : null}
             <label className="block"><span className="label">{act.action === "reject_proof" ? "Reason (required, shown to the member)" : "Note (e.g. bank reference)"}</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} /></label>
@@ -110,7 +110,7 @@ function OrdersInner() {
           <button className="btn-primary" onClick={() => { setAct({ order: view, action: "mark_paid" }); setView(null); }}>Approve</button></> : null}</>}>
         {view ? (
           <div className="space-y-3 text-sm">
-            <p><strong>{view.email}</strong> — {view.plan} · {view.cycle} · {formatMoney(view.amount_usd)}{view.amount_local ? ` (${formatMoney(view.amount_local, "IDR")})` : ""}</p>
+            <p><strong>{view.email}</strong> — {view.plan} · {view.cycle} · {formatMoney(view.amount_usd)}{view.amount_local && view.currency !== "USD" ? ` (${formatMoney(view.amount_local, view.currency || "IDR")})` : ""}</p>
             {receipt(view)?.type === "application/pdf"
               ? <iframe title="Receipt" className="h-[60vh] w-full rounded-lg border border-slate-200" src={`/api/admin/orders/receipt?id=${encodeURIComponent(view.id)}`} />
               : <img alt="Transfer receipt" className="max-h-[60vh] w-full rounded-lg border border-slate-200 object-contain" src={`/api/admin/orders/receipt?id=${encodeURIComponent(view.id)}`} />}

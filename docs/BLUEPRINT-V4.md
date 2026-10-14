@@ -470,7 +470,8 @@ bukan dari perkiraan.
 | 5 | Desain Istana Kristal (§18) | token ✅ · komponen ✅ · halaman publik (beranda, header, footer, /apps, /self-hosted ✅; harga, panduan, blog, legal berikutnya) · portal member · admin · uji visual | 2/6 | **33 %** |
 | 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
 | 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti ✅ · admin terima/tolak ✅ · lisensi & email otomatis ✅ · uji E2E ✅ · tayang | dibangun sesi lain (`claude/bni-receipt-approval`), digabung ke branch kerja; tayang setelah CI hijau | **80 %** |
-| | **Total** (bobot = jumlah fase) | | **27/55** | **≈ 49 %** |
+| 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 3/5 | **60 %** |
+| | **Total** (bobot = jumlah fase) | | **30/60** | **≈ 50 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -525,6 +526,15 @@ pesanan lunas, lisensi/paket/edisi aktif dan email terkirim saat itu juga (zero-
 klik); „Tolak" mengirim alasan. Sedang dibangun di `claude/bni-receipt-approval` oleh sesi lain —
 sesi ini tidak membangun ulang agar tidak bentrok; setelah masuk `main`, edisi (A2) dan trial (A3)
 dipastikan ikut aktif lewat jalur yang sama (`markOrderPaid` → `markEditionPaid`).
+
+*Tambahan 14 Okt 2026 (`docs/REQUESTS.md` baris 52):* satu metode „Transfer bank (BNI)" kini memuat
+hingga tiga rekening — IDR (dalam negeri, dengan kode unik 3 digit), USD dan EUR (transfer SWIFT
+internasional, BNINIDJA). Pembeli memilih mata uang di panel pembayaran dan langsung melihat jumlah
+persis untuk rekening itu: USD = harga persis, EUR = dikonversi (kurs Admin `usd_eur_rate`, atau kurs
+publik yang di-cache, atau konstanta) dan dibulatkan ke atas per sen. Pilihan mata uang ikut bersama
+bukti transfer, sehingga Orders, riwayat member dan faktur menampilkan mata uang yang benar-benar
+dikirim. Nomor rekening diisi di Admin → Payments (penyimpanan terenkripsi), tidak pernah di repositori.
+PayPal Checkout memakai kunci Live/Sandbox dari tempat yang sama dan langsung aktif begitu disimpan.
 
 **D. Aplikasi lengkap, Docker = website, Windows + Linux.** Diteruskan oleh `AXTO-APPS-BLUEPRINT.md`:
 A4 (mesin menegakkan batas edisi & watermark trial), E1 AXTO Workspace (image Docker dari kode cloud

@@ -11,7 +11,7 @@ import { NextRequest } from "next/server";
 import { getDB, getEnv, dbRun, newId, now } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS } from "@/lib/plans";
-import { gatewayCreds, gatewayCredsFor, gatewayInfo, cardRoute, usdIdrRate, toIdr, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
+import { gatewayCreds, gatewayCredsFor, gatewayInfo, cardRoute, usdIdrRate, usdEurRate, toIdr, toEur, bankAccounts, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
 import { stripeCreate, paypalCreate, xenditCreate, midtransCreate, nowpaymentsCreate, type OrderForPayment } from "@/lib/billing/providers";
 import { readJson, fail, audit } from "@/lib/http";
 import { SITE } from "@/lib/site";
@@ -128,10 +128,24 @@ export async function POST(req: NextRequest) {
       case "xendit": ({ url, ref } = await xenditCreate(creds, o)); break;
       case "midtrans": url = await midtransCreate(creds, o); break;
       case "nowpayments": ({ url, ref } = await nowpaymentsCreate(creds, o)); break;
-      case "manual":
+      case "manual": {
+        // Every configured BNI account is offered with its own exact amount; the
+        // buyer picks the currency in the payment panel. Rupiah carries the
+        // unique 3-digit code; USD and EUR are SWIFT wires matched by reference.
+        const accounts = bankAccounts(creds);
+        const eurRate = accounts.some((a) => a.currency === "EUR") ? await usdEurRate(db, getEnv(req).KV) : 0;
+        const banks = accounts.map((a) =>
+          a.currency === "IDR" ? { currency: a.currency, account_number: a.number, amount: amountIdr, uniqueCode: unique?.code || 0 }
+          : a.currency === "USD" ? { currency: a.currency, account_number: a.number, amount: amountUsd }
+          : { currency: a.currency, account_number: a.number, amount: toEur(amountUsd, eurRate), rate: eurRate });
+        if (banks.length) {
+          await dbRun(db, `UPDATE orders SET meta = json_set(COALESCE(NULLIF(meta,''),'{}'), '$.bank_quotes', json(?)) WHERE id = ?`,
+            [JSON.stringify(banks.map(({ account_number: _n, ...q }) => q)), id]);
+        }
         return respond({
           ok: true, orderId: id, manual: true, method: "bank", reference: id, amountUsd, amountIdr, uniqueCode: unique?.code || 0, currency: "IDR",
           bank: { bank_name: creds.bank_name || "BNI", account_number: creds.account_number || "", account_name: creds.account_name || "", branch: creds.branch || "", swift_code: creds.swift_code || "" },
+          banks,
           // The unique-code line is always shown, even when the admin wrote their own instructions.
           instructions: [
             unique ? `Transfer EXACTLY Rp${amountIdr.toLocaleString("id-ID")} — the last 3 digits (${String(unique.code).padStart(3, "0")}) are your unique order code, so please do not round it.` : "",
@@ -139,6 +153,7 @@ export async function POST(req: NextRequest) {
           ].filter(Boolean).join(" "),
           note: creds.instructions || "",
         }, ctx);
+      }
       case "crypto":
         return respond({
           ok: true, orderId: id, manual: true, method: "crypto", reference: id, amountUsd, currency: "USD",

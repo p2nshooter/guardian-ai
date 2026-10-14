@@ -186,7 +186,7 @@ function BillingInner() {
                       <td>{formatDate(o.created_at, lang)}</td>
                       <td>{o.plan === "lifetime" ? `${t.lifetime} · ${t.once}` : `${o.plan === "edition" ? ED[lang].ui.sourceEdition : PLANS[o.plan as PlanId]?.name || o.plan} · ${o.cycle === "yearly" ? t.yearly : t.monthly}`}</td>
                       <td>{opts.gateways.find((g) => g.id === (o.method === "card" ? "card" : o.gateway))?.label || (o.method === "card" ? "Credit / debit card" : o.gateway)}</td>
-                      <td>{formatMoney(o.amount_usd, "USD", lang)}{o.amount_local ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, "IDR", lang)}</span> : null}</td>
+                      <td>{formatMoney(o.amount_usd, "USD", lang)}{o.amount_local && o.currency !== "USD" ? <span className="block text-xs text-slate-500">{formatMoney(o.amount_local, o.currency || "IDR", lang)}</span> : null}</td>
                       <td><StatusBadge status={o.status} label={statusLabel(tg, o.status)} /></td>
                       <td>{o.status === "paid" ? <a href={`/api/billing/invoice/${o.id}`} target="_blank" rel="noopener" className="text-sm font-semibold">{t.invoice}</a> : null}</td>
                     </tr>
