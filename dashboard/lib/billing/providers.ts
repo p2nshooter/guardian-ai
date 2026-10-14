@@ -11,7 +11,7 @@
  * The PRICE always comes from our own order row, never from the browser.
  * ============================================================================ */
 import { absoluteUrl, SITE } from "../site";
-import { ENV_KEY, CRYPTO_ASSETS, cardRoute, gatewayCredsFor, type GatewayId } from "./gateways";
+import { ENV_KEY, CRYPTO_ASSETS, bankAccounts, cardRoute, gatewayCredsFor, type GatewayId } from "./gateways";
 
 /** The credential set's environment (Admin → Payments → Sandbox / Live): sandbox = the provider's test API. */
 const isSandbox = (c: Record<string, string>) => c[ENV_KEY] === "sandbox";
@@ -291,10 +291,14 @@ export async function testConnection(id: GatewayId, c: Record<string, string>): 
         const t = await testConnection(route.processor, pc);
         return { ok: t.ok, message: `Cards run through ${route.processor === "xendit" ? "Xendit" : "Midtrans"} in ${route.currency}. ${t.message}${t.ok ? " Make sure card payments are enabled and your BNI account is the settlement account in that dashboard." : ""}` };
       }
-      case "manual":
-        return c.account_number && c.account_name
-          ? { ok: true, message: "Bank details are complete. Customers see them at checkout; you confirm each transfer in Orders." }
-          : { ok: !!c.instructions, message: c.instructions ? "Custom instructions only — customers see your text at checkout." : "Add the account number and holder name." };
+      case "manual": {
+        const accounts = bankAccounts(c);
+        if (!accounts.length) {
+          return { ok: !!c.instructions, message: c.instructions ? "Custom instructions only — customers see your text at checkout." : "Add the holder name and at least one account number (IDR, USD or EUR)." };
+        }
+        const intl = accounts.some((a) => a.currency !== "IDR");
+        return { ok: true, message: `Bank details are complete for ${accounts.map((a) => a.currency).join(", ")}. Customers choose the currency at checkout and see the exact amount for it; you confirm each transfer in Orders.${intl && !c.swift_code ? " Add the SWIFT code (BNINIDJA) — international payers need it." : ""}` };
+      }
     }
   } catch (e: any) {
     return { ok: false, message: `Could not reach the provider: ${String(e?.message || e).slice(0, 160)}` };

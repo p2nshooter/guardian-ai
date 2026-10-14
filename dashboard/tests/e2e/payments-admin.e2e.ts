@@ -166,3 +166,56 @@ test("delete: clearing the environment in use switches the method off", async ()
   const audit = await admin.call("GET", "/api/admin/audit?q=gateway");
   assert.ok(JSON.stringify(audit.json).includes("admin.gateway.cleared"), "every change is in the audit log");
 });
+
+test("bank transfer: IDR, USD and EUR accounts — the buyer picks the currency (owner, 14 Oct 2026)", async () => {
+  const before = await gw("manual");
+  const had = (k: string) => Boolean(before?.live?.values?.[k]);
+  const wasActive = Boolean(before?.active);
+  const creds: Record<string, unknown> = { usd_account_number: "100200300", eur_account_number: "400500600" };
+  if (!had("account_name")) creds.account_name = "PT AXTO E2E";
+  if (!had("account_number")) creds.account_number = "700800900";
+  if (!had("swift_code")) creds.swift_code = "BNINIDJA";
+  assert.equal((await put("manual", "live", creds)).status, 200);
+  if (!wasActive) assert.equal((await patch("manual", { active: true, mode: "live" })).status, 200);
+  try {
+    const m = new Client();
+    assert.equal((await m.call("POST", "/api/auth/register", { email: `bank-${RUN}@example.com`, name: "Bank Test", password: "abcdefgh1", acceptTerms: true })).status, 200);
+    const c = await m.call("POST", "/api/billing/checkout", { plan: "pro", cycle: "monthly", gateway: "manual" });
+    assert.equal(c.status, 200, c.text);
+    const banks: any[] = c.json.banks;
+    assert.deepEqual(banks.map((b) => b.currency), ["IDR", "USD", "EUR"], "every configured account, rupiah first");
+    const [idr, usd, eur] = banks;
+    assert.equal(idr.amount, c.json.amountIdr, "rupiah keeps the unique-code amount");
+    assert.ok(idr.uniqueCode > 0);
+    assert.equal(usd.amount, c.json.amountUsd, "dollars: the price itself");
+    assert.equal(usd.account_number, "100200300");
+    assert.equal(eur.account_number, "400500600");
+    assert.ok(eur.rate > 0.5 && eur.rate < 1.5, `sane EUR rate, got ${eur.rate}`);
+    const exact = c.json.amountUsd * eur.rate;
+    assert.ok(eur.amount >= exact - 1e-9 && eur.amount - exact < 0.01 + 1e-9, `rounded up to the cent: ${eur.amount} vs ${exact}`);
+
+    const row = d1(`SELECT meta FROM orders WHERE id = '${c.json.orderId}'`)[0];
+    assert.deepEqual(JSON.parse(row.meta).bank_quotes.map((q: any) => q.currency), ["IDR", "USD", "EUR"]);
+    assert.ok(!String(row.meta).includes("400500600"), "account numbers are never copied into the order");
+
+    const p = await m.call("POST", `/api/billing/orders/${c.json.orderId}`, { action: "bank_proof", reference: "SWIFT E2E 1", currency: "EUR" });
+    assert.equal(p.status, 200, p.text);
+    assert.equal(p.json.order.currency, "EUR");
+    assert.equal(p.json.order.amountLocal, eur.amount);
+    assert.equal(p.json.order.bankProof.currency, "EUR");
+    const forged = await m.call("POST", `/api/billing/orders/${c.json.orderId}`, { action: "bank_proof", reference: "SWIFT E2E 2", currency: "GBP" });
+    assert.equal(forged.json.order.currency, "EUR", "a currency we never quoted changes nothing");
+
+    const paid = await admin.call("POST", "/api/admin/orders", { action: "mark_paid", id: c.json.orderId });
+    assert.equal(paid.status, 200, paid.text);
+    const inv = await m.call("GET", `/api/billing/invoice/${c.json.orderId}`);
+    assert.equal(inv.status, 200);
+    assert.ok(inv.text.includes("EUR"), "the invoice shows the currency actually sent");
+    assert.equal((await m.call("GET", "/api/auth/me")).json.tier, "pro");
+  } finally {
+    if (!wasActive) await patch("manual", { active: false });
+    const reset: Record<string, null> = { usd_account_number: null, eur_account_number: null };
+    for (const k of ["account_name", "account_number", "swift_code"]) if (!had(k)) reset[k] = null;
+    assert.equal((await put("manual", "live", reset)).status, 200, "the bank method is left as it was found");
+  }
+});

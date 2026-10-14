@@ -103,16 +103,21 @@ export const GATEWAYS: GatewayInfo[] = [
       { key: "instructions", label: "Extra instructions (optional)", multiline: true },
     ],
     requires: [["usdt_trc20"], ["usdt_erc20"], ["usdt_bep20"], ["usdc_erc20"], ["btc"], ["eth"], ["sol"]] },
-  { id: "manual", label: "Bank transfer (BNI / local bank)", methods: "Transfer to our bank account, confirmed by our team within 1 business day", currency: "IDR", confirmation: "admin", envs: ["live"],
+  // One BNI multi-currency relationship, up to three accounts: rupiah for
+  // domestic transfers, US dollars and euros for international SWIFT wires.
+  // The buyer picks the currency inside the payment panel (components/app/PayPanel.tsx).
+  { id: "manual", label: "Bank transfer (BNI) — IDR, USD or EUR", methods: "Transfer in rupiah, US dollars or euros to our BNI account — confirmed by our team within 1 business day", currency: "IDR", confirmation: "admin", envs: ["live"],
     fields: [
       { key: "bank_name", label: "Bank", placeholder: "BNI (Bank Negara Indonesia)" },
-      { key: "account_number", label: "Account number", secret: true },
       { key: "account_name", label: "Account holder name", secret: true },
+      { key: "account_number", label: "IDR account number (transfers within Indonesia)", secret: true },
+      { key: "usd_account_number", label: "USD account number (international SWIFT wires)", secret: true },
+      { key: "eur_account_number", label: "EUR account number (international SWIFT wires)", secret: true },
       { key: "branch", label: "Branch (optional)" },
-      { key: "swift_code", label: "SWIFT / BIC for international transfers (optional)", placeholder: "BNINIDJA" },
+      { key: "swift_code", label: "SWIFT / BIC — required for the USD and EUR accounts", placeholder: "BNINIDJA" },
       { key: "instructions", label: "Extra instructions (optional)", multiline: true },
     ],
-    requires: [["account_number", "account_name"], ["instructions"]] },
+    requires: [["account_number", "account_name"], ["usd_account_number", "account_name"], ["eur_account_number", "account_name"], ["instructions"]] },
 ];
 
 /** The Indonesian processor that runs card payments, and its charge currency. */
@@ -299,31 +304,59 @@ export async function allPaymentSecrets(): Promise<string[]> {
   return Object.values(s.gateways).flatMap((st) => [...Object.values(st?.live || {}), ...Object.values(st?.sandbox || {})]).map(String);
 }
 
-// ── USD → IDR ───────────────────────────────────────────────────────────────
-// Admin-set rate (platform_config.usd_idr_rate) wins; otherwise a cached public
-// rate; otherwise a conservative constant. Amounts are rounded up to Rp1,000.
-const FALLBACK_IDR = 16500;
+// ── USD → IDR / EUR ─────────────────────────────────────────────────────────
+// Admin-set rate (platform_config.usd_idr_rate / usd_eur_rate) wins; otherwise
+// a cached public rate; otherwise a conservative constant. Rupiah amounts are
+// rounded up to Rp1,000, euro amounts up to the cent — never down, so the
+// price in dollars always arrives.
+const FX: Record<"IDR" | "EUR", { fallback: number; min: number; max: number }> = {
+  IDR: { fallback: 16500, min: 1000, max: 100000 },
+  EUR: { fallback: 0.95, min: 0.5, max: 1.5 },
+};
 
-export async function usdIdrRate(db: any, kv?: any): Promise<number> {
+async function usdRate(ccy: "IDR" | "EUR", db: any, kv?: any): Promise<number> {
+  const { fallback, min, max } = FX[ccy];
+  const ok = (v: number) => Number.isFinite(v) && v > min && v < max;
   try {
-    const row = await dbFirst<{ value: string }>(db, `SELECT value FROM platform_config WHERE key = 'usd_idr_rate'`);
+    const row = await dbFirst<{ value: string }>(db, `SELECT value FROM platform_config WHERE key = ?`, [`usd_${ccy.toLowerCase()}_rate`]);
     const v = Number(row?.value);
-    if (Number.isFinite(v) && v > 1000) return v;
+    if (ok(v)) return v;
   } catch {}
   try {
-    const cached = kv ? Number(await kv.get("fx:USDIDR")) : 0;
-    if (cached > 1000) return cached;
+    const cached = kv ? Number(await kv.get(`fx:USD${ccy}`)) : 0;
+    if (ok(cached)) return cached;
     const r = await fetch("https://open.er-api.com/v6/latest/USD", { cf: { cacheTtl: 43200 } } as any);
     const j: any = await r.json();
-    const rate = Number(j?.rates?.IDR);
-    if (rate > 1000) {
-      if (kv) await kv.put("fx:USDIDR", String(rate), { expirationTtl: 43200 }).catch(() => {});
+    const rate = Number(j?.rates?.[ccy]);
+    if (ok(rate)) {
+      if (kv) await kv.put(`fx:USD${ccy}`, String(rate), { expirationTtl: 43200 }).catch(() => {});
       return rate;
     }
   } catch {}
-  return FALLBACK_IDR;
+  return fallback;
 }
+
+export const usdIdrRate = (db: any, kv?: any) => usdRate("IDR", db, kv);
+export const usdEurRate = (db: any, kv?: any) => usdRate("EUR", db, kv);
 
 export function toIdr(usd: number, rate: number): number {
   return Math.ceil((usd * rate) / 1000) * 1000;
+}
+
+export function toEur(usd: number, rate: number): number {
+  return Math.ceil(Math.round(usd * rate * 1e6) / 1e4) / 100;
+}
+
+// ── Bank accounts of the manual method ─────────────────────────────────────
+export type BankCurrency = "IDR" | "USD" | "EUR";
+export const BANK_CURRENCIES: BankCurrency[] = ["IDR", "USD", "EUR"];
+const ACCOUNT_KEY: Record<BankCurrency, string> = { IDR: "account_number", USD: "usd_account_number", EUR: "eur_account_number" };
+
+/** The accounts a buyer can wire to, in display order (IDR, USD, EUR). Needs the holder name. */
+export function bankAccounts(c: Record<string, string> | null | undefined): { currency: BankCurrency; number: string }[] {
+  if (!c || !String(c.account_name || "").trim()) return [];
+  return BANK_CURRENCIES.flatMap((currency) => {
+    const number = String(c[ACCOUNT_KEY[currency]] || "").trim();
+    return number ? [{ currency, number }] : [];
+  });
 }
