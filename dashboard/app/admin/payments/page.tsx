@@ -184,7 +184,9 @@ function EnvForm({ g, env, onChange }: { g: Gateway; env: Env; onChange: () => v
     setBusy("save"); setMsg(null);
     const r = await api("/api/admin/gateways", { method: "PUT", body: { gateway: g.id, env, credentials: values } });
     setBusy("");
-    if (r.ok) { setMsg({ tone: "success", text: `${Thing} saved.` }); onChange(); } else setMsg({ tone: "error", text: r.error || "Could not save." });
+    // PayPal: the save also checks the keys and sets up the webhook — say how that went.
+    const setup = r.ok ? (r.data as { setup?: { ok: boolean; message: string } }).setup : undefined;
+    if (r.ok) { setMsg({ tone: setup && !setup.ok ? "error" : "success", text: setup ? `${Thing} saved. ${setup.message}` : `${Thing} saved.` }); onChange(); } else setMsg({ tone: "error", text: r.error || "Could not save." });
   }
   async function test() {
     setBusy("test"); setMsg(null);
