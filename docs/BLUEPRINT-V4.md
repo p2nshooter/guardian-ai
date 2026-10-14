@@ -585,3 +585,82 @@ deteksi GPU otomatis; banyak bagian axto.io dan xaa.es belum ada). Langkah perta
 (NVIDIA → AMD/ROCm → Intel → CPU) di engine Orchestra + installer/compose Windows & Linux, dengan uji; lalu
 fase `AXTO-APPS-BLUEPRINT.md` §9 berikutnya. Semua yang belum ada ditulis jujur sebagai roadmap di §21 A.
 
+## 22. Perintah pemilik 14 Okt 2026 (malam) — serah terima lengkap untuk AI berikutnya
+
+Pemilik: "Tolong chat sy masukin ke blueprint dulu agar tidak lupa dan bisa dilanjut AI lain, khususnya axto.io
+& xaa.es" dan "Baca seluruh perintah gw yang belum lu kerjain, dan jadiin blueprint agar bisa dikerjakan oleh AI
+berikutnya". Perintah dicatat apa adanya di `docs/REQUESTS.md` baris 57–66. **Kata sandi dan kunci tidak pernah
+dicatat** — login admin xaa.es dan kunci PayPal ada di chat pemilik / di penyimpanan terenkripsi situs.
+
+**A. Perintah malam ini (urutan pesan) dan cara mengerjakannya**
+1. *"Sudah ada PayPal sandbox, PayPal tiruan hapus saja."* Hapus server PayPal tiruan (axto `tests/e2e/paypal-mock.ts`,
+   xaa.es `tools/e2e/paypal-mock.mjs`) dan override `PAYPAL_SANDBOX_API` di kode produksi. Uji PayPal memakai
+   PayPal Sandbox asli bila kunci Sandbox tersedia sebagai secret CI; tanpa kunci, uji itu dilewati dengan alasan jelas.
+2. *"Sempurnakan seluruh aplikasinya, jangan ada yang ambigu … berkelas dunia, mudah digunakan, full fitur high class,
+   super premium & super enterprise."* Standar tetap untuk setiap perubahan: §1 (klaim jujur), §18 (desain Istana
+   Kristal), CLAUDE.md (10 bahasa, admin, paket, SEO, uji). Celah yang masih terbuka ada di daftar C.
+3. *WhatsApp konfirmasi manual xaa.es & axto.io diganti ke **+62 856-9287-9465** (`+6285692879465`), semua nomor lama
+   (`+6285691234561`) diganti.* Di kode (default), dokumen, dan **pengaturan yang sudah tersimpan** (migrasi D1 untuk
+   `platform_config` `site_sale` dan `capital_raise`; xaa.es di pengaturannya sendiri).
+4. *Akuisisi xaa.es **US$10.000.000** (bukan 2 juta) + tombol untuk menawar, elegan dan profesional, dengan penjelasan
+   keuntungannya.* xaa.es `/acquire` (EN/ES/ID, SEO, sitemap, footer): harga, keuntungan bagi pembeli, isi paket
+   (poin pemilik di §21 B), langkah pembeli, checkout (BNI USD/EUR, PayPal), **tombol "Ajukan penawaran"** →
+   formulir (nama, perusahaan, e-mail, WhatsApp, jumlah tawaran, pesan) yang tersimpan, terlihat di admin, dan
+   memberi tahu pemilik (e-mail + tautan WhatsApp). axto.io `/acquire` mendapat tombol tawar yang sama + poin pemilik.
+5. *Blueprint dulu* — bagian ini.
+6. *Login admin xaa.es diberikan di chat* — tidak dicatat; tanyakan pemilik bila perlu.
+7. *Penghitung pengunjung harian, mingguan, bulanan, tahunan & total di axto.io & xaa.es; harian tampil di beranda,
+   sisanya di portal admin.* Hemat kuota D1: satu baris per hari (bukan per kunjungan), pengunjung unik dihitung
+   dengan cookie harian tanpa data pribadi, total & rekap dari baris harian.
+8. *"Pastikan semua pembayaran sudah live … isi semua"* (tangkapan layar: PayPal & NOWPayments "Sandbox · TEST",
+   "Network error" di kartu PayPal, metode lain Off, checkout /acquire bertanda "Mode uji"). Target: PayPal **Live**
+   dengan kunci per situs (+ Sandbox tersimpan), BNI USD/EUR/IDR terisi & aktif, **tidak ada metode bertanda TEST di
+   checkout publik** — metode yang belum punya kunci live (mis. NOWPayments) dimatikan sampai pemilik memberi
+   kuncinya. Selidiki dan perbaiki "Network error" pada tombol Save/Test PayPal.
+9. *AdSense axto.io, xaa.es, rough.es, ulyah.com, 1fr.fr → `google.com, pub-6908951782430508, DIRECT,
+   f08c47fec0942fa0`* — cuplikan `adsbygoogle.js?client=ca-pub-6908951782430508`, `ads.txt`, dan tag meta
+   `google-adsense-account`. Aturan tetap: perubahan AdSense dikerjakan **paling dulu**.
+10. *SEO seluruh website "high class dan super premium agar menjadi nomor 1".*
+
+**B. Status (diperbarui setiap commit)**
+
+| Butir | Status |
+|---|---|
+| A1 hapus PayPal tiruan | ⏳ |
+| A3 WhatsApp baru | ⏳ |
+| A4 akuisisi xaa.es US$10 juta + tombol tawar | ⏳ |
+| A7 penghitung pengunjung | ⏳ |
+| A8 pembayaran live | ⏳ |
+| A9 AdSense 5 situs | ✅ kode: axto.io (PR guardian-ai), xaa.es (xaa PR #14), ulyah.com + 1fr.fr + rough.es (ulyah.com PR #343) → verifikasi live |
+| §21 A portal pemodal | kode + uji selesai di branch kerja; PR → tayang |
+| feed pendapatan xaa.es | kode + uji selesai di branch kerja xaa.es; PR → tayang |
+
+**C. Semua pekerjaan terbuka (untuk AI berikutnya, urut prioritas)**
+
+*axto.io (repo guardian-ai):*
+1. AdSense (A9) → pembayaran live (A8) → WhatsApp (A3) → portal pemodal tayang (§21 A) → `/acquire` poin pemilik +
+   tombol tawar (§21 B, A4) → penghitung pengunjung (A7) → hapus PayPal tiruan (A1).
+2. §17 A sisa terjemahan portal member: Security, Prompt Library, halaman kecil, crawler sampai 0.
+3. §18 desain Istana Kristal: harga, panduan, blog, legal, portal member, admin (tur, ⌘K, pusat aksi), uji visual.
+4. §20 B SEO & artikel layak AdSense: audit teknis, panduan per menu tiap aplikasi, data terstruktur lengkap,
+   Lighthouse/Rich Results — target "nomor 1".
+5. `AXTO-APPS-BLUEPRINT.md`: Orchestra GPU on-demand & CPU dengan deteksi GPU otomatis (NVIDIA → AMD/ROCm → Intel →
+   CPU) untuk Windows & Linux; fase A4, B1–B3, C1–C2, D1–D10, E1–E2, F2 Smart License v5, F3 desain, F4 Antivirus,
+   F5 lifetime + diskon Jumat.
+6. Butuh pemilik: kunci NOWPayments live (atau metode itu tetap mati), Stripe/Xendit/Midtrans bila ingin dipakai,
+   sertifikat code signing EV, pentest, audit SOC 2 / ISO 27001.
+
+*xaa.es (repo xaa):*
+1. AdSense (A9), pembayaran live (PayPal Live kunci xaa.es + Sandbox, BNI EUR/USD aktif), WhatsApp (A3).
+2. `/acquire` US$10 juta + tombol tawar + keuntungan + checkout + brankas serah terima (A4, §21 B).
+3. Penghitung pengunjung (A7); feed pendapatan ke axto.io (PR → tayang); hapus PayPal tiruan (A1).
+4. Peringatan hydration React #418 yang sesekali muncul di Admin → Leads (masalah lama).
+5. Template SaaS "super" belum punya produk (blueprint xaa.es §5).
+
+*Ekosistem ulyah.com dan situs mitra (repo ulyah.com, Jai, Lie, axto.us, axtodev, oldco.in, profity.in, Quantum):*
+1. AdSense ulyah.com, 1fr.fr, rough.es (A9) — `docs/ADSENSE-CODES.md` di repo ulyah.com adalah daftar resmi semua kode.
+2. D1 di bawah 500 MB; unit manual dawa.es tayang; dawa.es tetap tidak disentuh selain itu.
+3. Semua artikel ≥ 1.500 kata dan 5 artikel baru berkualitas tinggi per situs (19 situs statis + tenant Islami);
+   naikkan `MIN_WORDS` engine ke 1.500.
+4. Temuan CORS lie.skin → `api.ulyah.com/track`.
+5. SEO "high class, super premium, nomor 1" di semua situs; laporan akhir berbahasa Indonesia kepada pemilik.
