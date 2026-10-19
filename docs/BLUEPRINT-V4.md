@@ -471,7 +471,8 @@ bukan dari perkiraan.
 | 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
 | 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti ✅ · admin terima/tolak ✅ · lisensi & email otomatis ✅ · uji E2E ✅ · tayang | dibangun sesi lain (`claude/bni-receipt-approval`), digabung ke branch kerja; tayang setelah CI hijau | **80 %** |
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
-| | **Total** (bobot = jumlah fase) | | **32/61** | **≈ 52 %** |
+| 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 4/5 → 5/5 saat tayang | **80 %** |
+| | **Total** (bobot = jumlah fase) | | **36/66** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -546,31 +547,37 @@ ditambah pembaruan otomatis dan status lisensi langsung di setiap aplikasi (A4).
 ## 21. Perintah pemilik 14 Okt 2026 — modal, jual situs, aplikasi yang belum ada
 
 Dicatat apa adanya di `docs/REQUESTS.md` baris 52–56. Urutan kerja: pembayaran (selesai, #71) →
-webhook PayPal otomatis → **A** portal pemodal → **B** penawaran jual situs → **C** aplikasi.
+webhook PayPal otomatis → **A** putaran pemodal (khusus AXTO sejak 19 Okt) → **B** penawaran jual situs → **C** aplikasi.
 
-**A. Penawaran modal gabungan US$2.000.000 (axto.io + xaa.es).**
-- Syarat dari pemilik: pool bagi hasil **30 % dari setiap transaksi pendapatan**, dibagi menurut porsi
-  modal: bagian pemodal = 30 % × modal ÷ US$2.000.000 (US$50.000 = 0,75 %; US$500.000 = 7,5 %;
-  US$2.000.000 = 30 %). Minimum US$50.000; tiket besar US$500.000–2.000.000. Penawaran **tertutup otomatis
-  saat US$2.000.000 terpenuhi**. Bagi hasil dihitung otomatis per transaksi sejak modal terverifikasi,
-  **dibayarkan bulanan**, dan berlaku **sampai akuisisi penuh** (US$5–10 juta) — saat itu modal
-  **dikembalikan 100 %** dan bagi hasil selesai (jawaban pemilik 14 Okt).
-- Pembayaran modal: transfer ke rekening BNI **USD / EUR** (nomor dari Admin → Payments, terenkripsi)
-  lalu unggah bukti → admin memverifikasi satu klik; atau **PayPal** (terverifikasi otomatis saat capture;
-  batas per transaksi PayPal tetap berlaku). Teknis: setiap komitmen adalah order `plan = 'investment'`, jadi
-  memakai jalur yang sudah teruji (PayPal, bukti transfer + kuitansi R2, Admin → Orders, faktur, audit).
-- Pendapatan yang dibagi = order lunas axto.io (tanpa sandbox, tanpa `investment`/`acquisition`) + pembayaran
-  terkonfirmasi xaa.es (termin proyek + template, EUR → USD). D1 xaa.es ada di akun Cloudflare lain, jadi dibaca
-  **read-only** lewat feed pendapatan xaa.es yang dikunci token (`GET /api/revenue` — hanya jumlah & waktu,
-  tanpa data klien; sandbox dan refund PayPal tidak dihitung; token dibuat di xaa.es Settings → Revenue feed,
-  ditempel di axto.io Admin → Investors).
-- Portal pemodal `/app/investor`: hanya pemodal terverifikasi melihat pendapatan bisnis (agregat per bulan,
-  tanpa data pelanggan), porsi mereka, bagi hasil terhitung, yang sudah dibayar dan saldo. Admin → Investors:
-  verifikasi, catat pembayaran bulanan, pengaturan (target, pool, minimum, buka/tutup, tampil di Google).
-- Halaman penawaran `/invest`: kata-kata elegan, 10 bahasa, menjelaskan setiap aplikasi dan fitur **secara
-  jujur** — yang sudah tayang vs yang akan dibangun dengan dana (roadmap §21 C) — dengan pengungkapan risiko
-  (tidak ada jaminan hasil; dituangkan dalam perjanjian tertulis; pemodal memastikan kelayakan menurut hukum
-  negaranya). Bawaan: dapat dibuka lewat tautan, tidak diindeks Google; pemilik bisa mengubahnya di Admin.
+**A. Putaran pemodal khusus AXTO — ✅ dibangun 19 Okt 2026 (menggantikan penawaran gabungan).**
+- *Perubahan pemilik 19 Okt* (`REQUESTS.md` baris 71), tentang kalimat "joint offering for AXTO and XAA" di
+  xaa.es/acquire: **"Maksudnya masing2 web nyari investornya, bukan gabungan."** Jadi tidak ada penggalangan
+  gabungan: axto.io punya putarannya sendiri di `axto.io/invest`, dibayar **hanya dari pendapatan AXTO**;
+  xaa.es punya putarannya sendiri di `xaa.es/invest` (repo xaa, PR #16). Feed pendapatan xaa.es → axto.io
+  yang direncanakan untuk penawaran gabungan **dibatalkan** dan tidak dibangun di axto.io.
+- Syarat bawaan = syarat 14 Okt yang diterapkan ke AXTO saja (bisa diubah di Admin → Investors, pemilik
+  diminta konfirmasi): putaran US$2.000.000, tiket minimum US$50.000, pool **30 % dari setiap pesanan AXTO
+  yang lunas**, dibagi menurut porsi modal: bagian = 30 % × modal ÷ US$2.000.000 (US$50.000 = 0,75 %;
+  US$500.000 = 7,5 %; US$2.000.000 = 30 %); dibayar **bulanan** sejak modal terverifikasi **sampai akuisisi
+  penuh AXTO**, saat itu modal **dikembalikan 100 %** dan bagi hasil selesai.
+- Pendapatan yang dibagi = order axto.io berstatus `paid` (USD, pada tanggal lunas) — **tidak pernah** sandbox,
+  order `investment`/`acquisition`, atau order yang di-refund. Dihitung murni di `lib/invest-terms.ts`
+  (`shareOf`, `buildStatement`), disimpan di `lib/invest.ts`, tabel `investors` + `investor_payouts`
+  (`cf-migrations/0063_investors.sql`), syarat di `platform_config` `invest_offer`.
+- `/invest` (publik, 10 bahasa — `lib/invest-copy.ts` + `lib/i18n-pages/invest.ts`; `pageMeta`, JSON-LD
+  WebPage + FAQ + breadcrumb, sitemap, tautan footer "Invest in AXTO"): syarat, kalkulator porsi interaktif,
+  apa yang dihitung sebagai pendapatan, yang sudah tayang vs yang dibiayai modal (jujur, §1), 7 langkah,
+  "AXTO, dan hanya AXTO", pemberitahuan risiko, formulir pengajuan (tanpa pembayaran — honeypot, batas
+  laju, validasi minimum/maksimum/persetujuan risiko). **Tanpa nomor rekening di halaman publik**; nomor
+  WhatsApp pemilik (+6285691234561) diberikan setelah mengajukan. Pemilik menerima e-mail.
+- Admin → Investors: ubah syarat (buka / jeda / tutup, putaran, minimum, pool, WhatsApp), daftar pengajuan,
+  **verifikasi modal** (satu-satunya langkah manual — perjanjian ditandatangani + transfer bank diterima),
+  tolak, laporan per bulan per pemodal (pendapatan, porsi, dibayar, sisa), catat pembayaran bulanan,
+  tandai modal dikembalikan (akuisisi). Setiap aksi masuk audit log.
+- `/app/investor` (portal member, 10 bahasa): pemodal yang masuk dengan e-mail pengajuannya melihat porsinya,
+  pendapatan AXTO per bulan, bagiannya, yang sudah dibayar dan sisanya — hanya angka, tanpa data pelanggan.
+- Uji: `tests/invest.test.ts` (syarat, porsi, laporan) dan `tests/e2e/invest.e2e.ts` (halaman, pengajuan,
+  verifikasi, pendapatan hanya dari order lunas live, pembayaran, modal dikembalikan, jeda/tutup).
 
 **B. Penawaran jual situs.** xaa.es: halaman `/acquire` baru, harga pembuka US$2.000.000 (EN/ES/ID, SEO,
 sitemap, footer), checkout (transfer BNI USD/EUR, PayPal, kripto bila aktif), bukti transfer, akses admin
@@ -599,9 +606,10 @@ dicatat** — login admin xaa.es dan kunci PayPal ada di chat pemilik / di penyi
 2. *"Sempurnakan seluruh aplikasinya, jangan ada yang ambigu … berkelas dunia, mudah digunakan, full fitur high class,
    super premium & super enterprise."* Standar tetap untuk setiap perubahan: §1 (klaim jujur), §18 (desain Istana
    Kristal), CLAUDE.md (10 bahasa, admin, paket, SEO, uji). Celah yang masih terbuka ada di daftar C.
-3. *WhatsApp konfirmasi manual xaa.es & axto.io diganti ke **+62 856-9287-9465** (`+6285692879465`), semua nomor lama
-   (`+6285691234561`) diganti.* Di kode (default), dokumen, dan **pengaturan yang sudah tersimpan** (migrasi D1 untuk
-   `platform_config` `site_sale` dan `capital_raise`; xaa.es di pengaturannya sendiri).
+3. *(Diganti 18 Okt — `REQUESTS.md` baris 67: semua nomor HP axto.io & xaa.es = **+6285691234561**, nomor kirim bukti
+   transaksi manual.)* ~~WhatsApp konfirmasi manual diganti ke +62 856-9287-9465~~ — nomor itu tidak pernah masuk kode. +6285691234561 ada di kode (default),
+   dokumen, dan **pengaturan yang sudah tersimpan** (migrasi `0064_whatsapp_owner.sql` untuk `platform_config` `site_sale`
+   dan `invest_offer`; xaa.es di pengaturannya sendiri).
 4. *Akuisisi xaa.es **US$10.000.000** (bukan 2 juta) + tombol untuk menawar, elegan dan profesional, dengan penjelasan
    keuntungannya.* xaa.es `/acquire` (EN/ES/ID, SEO, sitemap, footer): harga, keuntungan bagi pembeli, isi paket
    (poin pemilik di §21 B), langkah pembeli, checkout (BNI USD/EUR, PayPal), **tombol "Ajukan penawaran"** →
@@ -627,18 +635,18 @@ dicatat** — login admin xaa.es dan kunci PayPal ada di chat pemilik / di penyi
 | Butir | Status |
 |---|---|
 | A1 hapus PayPal tiruan | ⏳ |
-| A3 WhatsApp baru | ⏳ |
+| A3 WhatsApp | ✅ +6285691234561 (perintah 18 Okt): default kode axto.io + migrasi `0064_whatsapp_owner.sql`; xaa.es di reponya |
 | A4 akuisisi xaa.es US$10 juta + tombol tawar | ⏳ |
 | A7 penghitung pengunjung | ⏳ |
 | A8 pembayaran live | ⏳ |
 | A9 AdSense 5 situs | ✅ kode: axto.io (PR guardian-ai), xaa.es (xaa PR #14), ulyah.com + 1fr.fr + rough.es (ulyah.com PR #343) → verifikasi live |
-| §21 A portal pemodal | kode + uji selesai di branch kerja; PR → tayang |
-| feed pendapatan xaa.es | kode + uji selesai di branch kerja xaa.es; PR → tayang |
+| §21 A putaran pemodal | ✅ khusus AXTO (19 Okt): `/invest`, Admin → Investors, `/app/investor`; xaa.es punya putarannya sendiri (xaa PR #16) |
+| feed pendapatan xaa.es | ❌ dibatalkan 19 Okt — setiap situs mencari pemodalnya sendiri, tidak ada pembagian pendapatan lintas situs |
 
 **C. Semua pekerjaan terbuka (untuk AI berikutnya, urut prioritas)**
 
 *axto.io (repo guardian-ai):*
-1. AdSense (A9) → pembayaran live (A8) → WhatsApp (A3) → portal pemodal tayang (§21 A) → `/acquire` poin pemilik +
+1. AdSense (A9) ✅ → pembayaran live (A8, kunci diisi pemilik) → WhatsApp (A3) ✅ → putaran pemodal AXTO (§21 A) ✅ → `/acquire` poin pemilik +
    tombol tawar (§21 B, A4) → penghitung pengunjung (A7) → hapus PayPal tiruan (A1).
 2. §17 A sisa terjemahan portal member: Security, Prompt Library, halaman kecil, crawler sampai 0.
 3. §18 desain Istana Kristal: harga, panduan, blog, legal, portal member, admin (tur, ⌘K, pusat aksi), uji visual.
@@ -653,7 +661,8 @@ dicatat** — login admin xaa.es dan kunci PayPal ada di chat pemilik / di penyi
 *xaa.es (repo xaa):*
 1. AdSense (A9), pembayaran live (PayPal Live kunci xaa.es + Sandbox, BNI EUR/USD aktif), WhatsApp (A3).
 2. `/acquire` US$10 juta + tombol tawar + keuntungan + checkout + brankas serah terima (A4, §21 B).
-3. Penghitung pengunjung (A7); feed pendapatan ke axto.io (PR → tayang); hapus PayPal tiruan (A1).
+3. Penghitung pengunjung (A7); hapus PayPal tiruan (A1). (Feed pendapatan ke axto.io dibatalkan 19 Okt; xaa.es punya
+   putaran pemodal sendiri di `/invest`, PR #16.)
 4. Peringatan hydration React #418 yang sesekali muncul di Admin → Leads (masalah lama).
 5. Template SaaS "super" belum punya produk (blueprint xaa.es §5).
 

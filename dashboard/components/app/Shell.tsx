@@ -46,6 +46,7 @@ function memberNav(): { section: Key; items: NavItem[] }[] {
     ] },
     { section: "nav.section.account", items: [
       { href: "/app/billing", label: "nav.billing", icon: "💳" },
+      { href: "/app/investor", label: "nav.investor", icon: "📈" },
       { href: "/app/settings", label: "nav.settings", icon: "⚙️" },
       { href: "/help", label: "nav.help", icon: "📘" },
     ] },
@@ -63,6 +64,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/trials", label: "Trials (100 per app)", icon: "🎟️" },
       { href: "/admin/support", label: "Support inbox", icon: "💬" },
       { href: "/admin/acquisition", label: "Site sale", icon: "🏛️" },
+      { href: "/admin/investors", label: "Investors", icon: "📈" },
     ] },
     { section: "Configuration", items: [
       { href: "/admin/plans", label: "Plans & pricing", icon: "🏷️" },
