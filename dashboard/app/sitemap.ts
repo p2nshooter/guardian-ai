@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/", 1, "daily"),
     page("/pricing", 0.9),
     page("/acquire", 0.8),
+    page("/invest", 0.7),
     page("/apps", 0.9),
     ...CLOUD_APPS.map((a) => page(`/apps/${a.slug}`, a.slug === "legal" ? 0.9 : 0.8)),
     page("/legal-ai", 0.8),
