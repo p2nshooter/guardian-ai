@@ -122,7 +122,10 @@ test("invest: verified capital earns its share of paid AXTO orders only", async 
   const v = await admin.post("/api/admin/investors", { action: "verify", id, capital: "100000", method: "wire" });
   assert.equal(v.status, 200, v.text);
   assert.equal((await admin.post("/api/admin/investors", { action: "verify", id, capital: "1" })).status, 400, "verified once");
-  const after = new Date(Date.now() + 2_000).toISOString();
+  // Paid after the verification but never in the future: a stamp ahead of the
+  // clock could still lie beyond the moment the next test returns the capital.
+  await new Promise((r) => setTimeout(r, 20));
+  const after = new Date().toISOString();
   d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, gateway, status, meta, created_at, paid_at) VALUES
       ${order(`ord_inv_a_${RUN}`, 1000, after)}, ${order(`ord_inv_b_${RUN}`, 3000, after)},
       ${order(`ord_inv_test_${RUN}`, 5000, after, "pro", "sandbox")}, ${order(`ord_inv_acq_${RUN}`, 10_000_000, after, "acquisition")}`);
