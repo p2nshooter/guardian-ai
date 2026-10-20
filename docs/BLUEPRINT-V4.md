@@ -475,7 +475,8 @@ bukan dari perkiraan.
 | 10 | Yang belum dibuat di axto.io & xaa.es (18 Okt 2026, `REQUESTS.md` 70) | audit 10 aplikasi Docker ✅ (`AXTO-APPS-BLUEPRINT.md` §16) · logika 18 template xaa.es ✅ (repo xaa `docs/TEMPLATES-BLUEPRINT.md`) · G1 deteksi GPU di host · template pertama + demo + gambar animasi · 17 template lainnya | 2/5 | **40 %** |
 | 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi · akun & keamanan · uang · lisensi · lainnya · migrasi data + jendela pindah · D1 dilepas | 1/8 | **13 %** |
 | 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
-| | **Total** (bobot = jumlah fase) | | **41/83** | **≈ 49 %** |
+| 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo · xaa.es pindah · axto.io pindah · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 0/5 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **41/88** | **≈ 47 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -738,3 +739,6 @@ xaa.es di repo xaa).
   pembayaran mode sandbox di lokal), tampil di `/guides` dan tombol „Lihat panduan" di tempat alurnya dipakai.
 - **Pembayaran:** tetap Live dari Admin → Payments; kunci hanya di penyimpanan terenkripsi (tidak di repo).
 - **Urutan:** pustaka R2 Store dibangun dan diuji di xaa.es (19 tabel yang dipakai, lebih kecil) lalu dipakai di axto.io.
+- **Aturan tetap untuk semua situs** (`REQUESTS.md` baris 81, `CLAUDE.md` §6): axto.io, xaa.es, ulyah.com, xad.es,
+  1fr.fr, tilawa.de dan semua yang menyimpan data — **wajib ke R2, tidak pernah ke D1**. Cakupan per situs (D1 yang
+  masih ada: `axto-db`, `xaa-portal`, `ulyah-db`, `quantum_db`) di `docs/R2-DATA-BLUEPRINT.md` §10.

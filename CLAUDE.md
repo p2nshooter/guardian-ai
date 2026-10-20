@@ -32,3 +32,9 @@ The running log of the owner's requests is in [`docs/REQUESTS.md`](docs/REQUESTS
 - Full end-to-end: `bash tests/e2e/run.sh` (local Cloudflare runtime; builds with next-on-pages).
 - A real-browser run (Playwright) for any UI change, on desktop and mobile width, with no console errors.
 - CI (GitHub Actions E2E) must be green before merging to `main`.
+
+## 6. Storage: R2 only — never D1
+Owner, 20 Oct 2026: „Catat ya baik di axto.io maupun di xaa.es, ulyah.com xad.es 1fr.fr tilawa.de dan semua yg membutuhkan penyimpanan, wajib ke R2, jgn pernah ke D1" (and „Database semuanya ke R2 … sy siap bayar 100-1000GB").
+- Every record and every file of every site and app — axto.io, xaa.es, ulyah.com, xad.es, 1fr.fr, tilawa.de, the partner sites and anything new — is stored in **Cloudflare R2**. Never create a D1 database, never add a `d1_databases` binding, never write a new D1 query, never "temporarily" use D1.
+- Build on the R2 Store design in `docs/R2-DATA-BLUEPRINT.md` §3: one JSON object per document, create-once writes (`If-None-Match: *`) for uniqueness guards, compare-and-swap updates (`etagMatches`), index entries with `customMetadata` summaries, append-only logs, no hot keys (R2 takes 1 write per second per key), daily backups to a private backup bucket kept 35 days. Money and licence transitions are conditional and idempotent.
+- Data still in D1 is moved, not left behind: copy once with the same ids, check every row arrived, keep D1 read-only for 7 days, then remove the binding (`docs/R2-DATA-BLUEPRINT.md` §4). Workers KV is not D1: it may hold short-lived caches and rate-limit counters only — durable data never lives there.

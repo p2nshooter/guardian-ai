@@ -12,7 +12,10 @@ xaa.es (repo xaa, `docs/R2-DATA-BLUEPRINT.md`); bagian 7–9 khusus axto.io.
 > customer, jika bluprint sudah sangat kuat dan sudah 100% siap produksi bukan sampah langsung kerjakan dengan live
 > payment, jgn ada sampah app" — 20 Okt 2026
 
-Artinya: **tidak ada lagi data aplikasi di D1**. Semua data (akun, pesanan, pembayaran, lisensi, pengaturan, log,
+> „Catat ya baik di axto.io maupun di xaa.es, ulyah.com  xad.es 1fr.fr tilawa.de dan semua yg membutuhkan penyimpanan,
+> wajib ke R2, jgn pernah ke D1" — 20 Okt 2026 (aturan tetap; `CLAUDE.md` §6; cakupan per situs di bagian 10)
+
+Artinya: **tidak ada lagi data aplikasi di D1**, di situs mana pun. Semua data (akun, pesanan, pembayaran, lisensi, pengaturan, log,
 dukungan, investor) dan semua file disimpan di **R2**. Kualitasnya tidak boleh turun: tidak boleh ada email terdaftar
 dua kali, pembayaran terkonfirmasi dua kali, atau lisensi terbit dua kali.
 
@@ -247,3 +250,20 @@ menghormati batas 1 tulis/detik per kunci), dijumlahkan cron ke `n/visits/<yyyy-
 | Migrasi data + jendela pindah + pengamatan 7 hari | ⏳ |
 | D1 dilepas | ⏳ |
 | Animasi panduan (23 + 8 admin) | ⏳ 0/31 |
+
+## 10. Cakupan: semua situs yang menyimpan data (perintah 20 Okt 2026, `REQUESTS.md` baris 81)
+
+Aturan tetap untuk setiap situs dan aplikasi, sekarang dan nanti: **semua penyimpanan ke R2, tidak pernah ke D1**. Tidak
+boleh ada database D1 baru, binding `d1_databases` baru, atau query D1 baru. Data yang masih di D1 dipindah dengan cara
+bagian 4 (salin sekali dengan ID sama → setiap baris diperiksa sudah ada di R2 → D1 hanya-baca 7 hari → binding dilepas).
+
+| Situs | Repo / Worker | D1 sekarang (diperiksa 20 Okt 2026) | Rencana R2 | Status |
+|---|---|---|---|---|
+| axto.io | guardian-ai · `dashboard` | `axto-db` (±1 MB, akun Cloudflare axto.io) | bagian 7: 25 tabel → `axto-data`, backup `axto-backups` | ⏳ setelah xaa.es |
+| xaa.es | xaa | `xaa-portal` (266 KB, 18 baris) | 19 tabel → `xaa-data` (blueprint repo xaa §7), backup harian `xaa-backups` | 🔄 sedang dikerjakan |
+| ulyah.com, xad.es, 1fr.fr, tilawa.de (+ situs mitra di `sites/`) | ulyah.com · `apps/worker-api` (`ulyah-api`) melayani `apps/web` | `ulyah-db` (±484 MB, 57 migrasi) — pemakai kuota D1 terbesar di akun | blueprint sendiri di repo ulyah.com (`docs/R2-DATA-BLUEPRINT.md`): inventaris tabel, R2 Store yang sama, migrasi bertahap per modul | ⏳ dicatat |
+| Quantum (karoseri) | Quantum · `quantum-karoseri` | `quantum_db` | sama: R2 Store + migrasi bagian 4 | ⏳ dicatat |
+| Situs lain (Jai, Lie, axto.us, axtodev, oldco.in, profity.in, verilex) | masing-masing | tidak ada | bila kelak perlu menyimpan apa pun: langsung R2 | ✅ aturan dicatat di tiap repo |
+
+KV (batas laju, cache singkat) bukan D1 dan boleh tetap untuk data sementara ber-TTL saja; data yang harus awet selalu di R2.
+
