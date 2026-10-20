@@ -59,9 +59,9 @@ k/<kunci>                                   pengaturan (satu objek per kunci; ni
   urutan leksikografis sekaligus urut waktu. Untuk urutan terbaru-dulu, `<urut>` = `(9999999999999 − ms)` dengan lebar
   tetap.
 - Nilai dalam kunci index dinormalisasi (huruf kecil, di-encode URI) dan dipotong; nilai bebas/panjang di-hash.
-- `customMetadata` (maks. 2 KB per objek) menyimpan kolom yang ditampilkan di daftar, sehingga halaman daftar cukup
-  memanggil `list({ prefix, include: ['customMetadata'] })` — **satu operasi untuk sampai 1000 baris**, tanpa
-  membaca dokumen satu per satu.
+- `customMetadata` (maks. 8.192 byte per objek, batas resmi R2) menyimpan kolom yang ditampilkan di daftar, sehingga
+  halaman daftar cukup memanggil `list({ prefix, include: ['customMetadata'] })` — **satu operasi untuk sampai 1000
+  baris**, tanpa membaca dokumen satu per satu.
 
 ### 3.3 Operasi dan aturan tulis
 
@@ -73,7 +73,7 @@ k/<kunci>                                   pengaturan (satu objek per kunci; ni
 | Unik (email, nomor faktur, kode, order PayPal) | `put(u/…, id, If-None-Match: *)` **sebelum** dokumen dibuat; bila 412 → „sudah dipakai" | dua pendaftaran bersamaan dengan email yang sama: tepat satu berhasil |
 | Hapus | hapus entri index → dokumen → penjaga keunikan | — |
 | Daftar & filter | `list` pada prefix index (+ `cursor` untuk halaman berikutnya) | konsisten kuat |
-| Hitung / jumlah | dokumen ringkasan `n/…` diperbarui dengan If-Match pada setiap perubahan yang relevan; dihitung ulang penuh tiap malam | angka dasbor tepat dan murah dibaca |
+| Hitung / jumlah | jumlah kecil (lencana admin, status) = menghitung entri index lewat `list`; angka yang sering bertambah (kunjungan, pemakaian AI, kuota) = **satu objek event per kejadian** dengan kunci unik, dijumlahkan ke `n/…` oleh cron lalu event lama dihapus | tidak pernah ada „kunci panas" (lihat batas di bawah) |
 
 **Urutan tulis untuk satu perubahan yang menyentuh beberapa objek:** penjaga keunikan → dokumen utama → entri index →
 ringkasan. Dokumen utama selalu yang menentukan kebenaran:
@@ -97,10 +97,13 @@ ringkasan. Dokumen utama selalu yang menentukan kebenaran:
 - Halaman publik tidak membaca data per permintaan (katalog, harga, teks = kode). Pengaturan yang sering dibaca (metode
   pembayaran aktif, konfigurasi platform) disimpan di memori isolate maks. 30 detik dan langsung dibuang saat ditulis.
   **Data uang tidak pernah di-cache.**
-- Perkiraan biaya bulanan pada trafik 100.000 kunjungan/bulan: ±300 ribu baca + ±30 ribu tulis/list → masih di dalam
-  kuota gratis R2. Biaya utama adalah penyimpanan file (100 GB ≈ $1,50/bulan; 1000 GB ≈ $15/bulan).
-- Batas yang diperhitungkan: `list` 1000 kunci per panggilan (pakai cursor), `customMetadata` 2 KB, objek dokumen
-  dijaga < 256 KB (riwayat panjang dipindah ke log/arsip).
+- Perkiraan biaya bulanan pada trafik 100.000 kunjungan/bulan: ±300 ribu baca (Kelas B) + ±150 ribu tulis/list
+  (Kelas A, termasuk satu event per kunjungan untuk penghitung pengunjung) → masih di dalam kuota gratis R2
+  (1 juta Kelas A, 10 juta Kelas B). Biaya utama adalah penyimpanan file (100 GB ≈ $1,50/bulan; 1000 GB ≈ $15/bulan).
+- Batas resmi R2 yang diperhitungkan: **maks. 1 tulis per detik ke kunci yang sama** — karena itu tidak ada penghitung
+  yang ditulis pada setiap permintaan (pakai event + rollup, bagian 3.3), dan pembaruan dokumen yang bentrok diulang
+  dengan jeda acak; `list` 1000 kunci per panggilan (pakai cursor) dan dihitung sebagai operasi **Kelas A**;
+  `customMetadata` 8.192 byte; kunci 1.024 byte; dokumen dijaga < 256 KB (riwayat panjang dipindah ke log/arsip).
 
 ### 3.6 Keamanan
 
@@ -121,10 +124,12 @@ ringkasan. Dokumen utama selalu yang menentukan kebenaran:
 1. **R2 palsu di memori** dengan semantik yang sama persis (If-None-Match, If-Match/etag, list urut + cursor +
    customMetadata, batas 2 KB). Tes: 50 tulis bersamaan ke satu dokumen → tidak ada yang hilang; 20 pendaftaran
    bersamaan dengan email sama → tepat 1 berhasil; 10 konfirmasi pembayaran bersamaan → tepat 1 transisi + 1 lisensi.
-2. Tes modul per modul dengan R2 palsu (semua alur yang dulu memakai SQL).
-3. E2E di runtime Cloudflare lokal (`wrangler dev`, R2 lokal Miniflare) — alur portal, pembayaran (sandbox),
+2. R2 palsu juga menegakkan batas 1 tulis/detik per kunci dan 8 KB metadata, sehingga desain yang melanggarnya gagal
+   di tes, bukan di produksi.
+3. Tes modul per modul dengan R2 palsu (semua alur yang dulu memakai SQL).
+4. E2E di runtime Cloudflare lokal (`wrangler dev`, R2 lokal Miniflare) — alur portal, pembayaran (sandbox),
    admin, dan migrasi.
-4. Uji migrasi: salinan data D1 → R2, jumlah & checksum per tabel harus sama.
+5. Uji migrasi: salinan data D1 → R2, jumlah & checksum per tabel harus sama.
 
 ## 4. Migrasi D1 → R2 (per situs, tanpa kehilangan data atau pembayaran)
 
@@ -189,8 +194,8 @@ arsip JSONL.
 | `api_keys` | `c/api_keys/<id>` | hash kunci | per pengguna · aktif | hanya hash yang disimpan |
 | `user_ai_keys` | `c/user_ai_keys/<userId>_<provider>` | (ID = pengguna + penyedia) | per pengguna | kunci terenkripsi |
 | `ai_provider_keys` | `c/ai_provider_keys/<id>` | — | aktif per penyedia | kunci platform (Managed AI) terenkripsi |
-| `byox_usage` | `n/byox/<userId>/<yyyy-mm>` | (ID) | per bulan (admin) | penghitung dengan If-Match (kuota Clipper) |
-| `managed_usage` | `n/managed/<userId>/<yyyy-mm>` | (ID) | — | idem |
+| `byox_usage` | event `l/usage/byox/<userId>/<yyyy-mm>/<ulid>` → ringkasan `n/byox/<userId>/<yyyy-mm>` | (ID) | per bulan (admin) | satu event per pemakaian (tidak ada kunci panas); cron menjumlahkan ke ringkasan; kuota Clipper = ringkasan + event yang belum dijumlahkan |
+| `managed_usage` | event `l/usage/managed/<userId>/<yyyy-mm>/<ulid>` → ringkasan `n/managed/<userId>/<yyyy-mm>` | (ID) | — | idem |
 | `managed_subscriptions` | `c/managed_subscriptions/<id>` | — | per pengguna + status | — |
 | `password_resets` | `c/password_resets/<sha256(token)>` | (ID = hash token) | — | kedaluwarsa 30 menit dan dipakai sekali (If-Match), seperti sekarang; **perbaikan:** D1 sekarang menyimpan token apa adanya, R2 hanya menyimpan hash-nya |
 | `audit_log` | log `l/audit/<yyyy>/<mm>/<dd>/<ulid>` (berantai hash) | — | per pelaku · per aksi | filter + halaman admin lewat index |
@@ -199,7 +204,8 @@ arsip JSONL.
 | `counters` | `n/<nama>` | — | — | nomor faktur, statistik |
 
 KV axto.io (batas laju, cache kecil) bukan D1 dan tetap dipakai (bagian 4). Pengunjung harian/mingguan/bulanan/
-tahunan (permintaan 63) dibangun langsung di R2: `n/visits/<yyyy-mm-dd>` (penghitung per hari) + ringkasan.
+tahunan (permintaan 63) dibangun langsung di R2: satu event per kunjungan `l/visits/<yyyy-mm-dd>/<ulid>` (kunci unik,
+menghormati batas 1 tulis/detik per kunci), dijumlahkan cron ke `n/visits/<yyyy-mm-dd>` lalu event-nya dihapus.
 
 **Urutan pindah axto.io (tiap tahap: tes hijau → E2E → tayang):**
 1. R2 Store + R2 palsu + tes konkurensi (pustaka yang sama dengan xaa.es).
