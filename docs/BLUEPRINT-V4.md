@@ -473,7 +473,11 @@ bukan dari perkiraan.
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
 | 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 5/5 (tayang 19 Okt, deploy #74/#75 hijau) | **100 %** |
 | 10 | Yang belum dibuat di axto.io & xaa.es (18 Okt 2026, `REQUESTS.md` 70) | audit 10 aplikasi Docker ✅ (`AXTO-APPS-BLUEPRINT.md` §16) · logika 18 template xaa.es ✅ (repo xaa `docs/TEMPLATES-BLUEPRINT.md`) · G1 deteksi GPU di host · template pertama + demo + gambar animasi · 17 template lainnya | 2/5 | **40 %** |
-| | **Total** (bobot = jumlah fase) | | **39/71** | **≈ 55 %** |
+| 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi · akun & keamanan · uang · lisensi · lainnya · migrasi data + jendela pindah · D1 dilepas | 1/8 | **13 %** |
+| 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
+| 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah · axto.io pindah · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 1/5 | **20 %** |
+| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82, §25) | data ke R2 · 10 aplikasi Docker lulus „selesai bila" (atau ditutup sebagai Early access) · semua pembayaran Live terbukti · uji ulang + CI hijau | 0/4 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **42/92** | **≈ 46 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -718,4 +722,46 @@ template yang demonya sudah tayang**. Aplikasi Docker axto.io mengikuti `AXTO-AP
 | A — PWA lengkap xaa.es | ⏳ |
 | B — SEO axto.io | ⏳ |
 | B — SEO xaa.es | ⏳ |
-| C — template Waitlist + demo + akun demo di portal member | 🔄 |
+| C — template Waitlist + demo + akun demo di portal member | ✅ 20 Okt (repo xaa: demo `/demos/waitlist/`, galeri 15 klip, akun demo di portal member; tayang setelah PR digabung) |
+
+## 24. Perintah pemilik 20 Okt 2026 (2) — semua data ke R2, blueprint kuat, animasi panduan
+
+Dicatat apa adanya di `docs/REQUESTS.md` baris 79–80. Rancangan lengkap: **`docs/R2-DATA-BLUEPRINT.md`** (sama untuk
+xaa.es di repo xaa).
+
+- **Data:** tidak ada lagi data aplikasi di D1. R2 Store = dokumen JSON per objek, tulis bersyarat atomik
+  (If-None-Match untuk membuat, If-Match/etag untuk mengubah), penjaga keunikan, index lewat `list` + customMetadata,
+  ringkasan, log append-only berantai hash, rekonsiliasi terjadwal, backup harian 35 hari. Uang dan lisensi dijaga
+  dengan transisi bersyarat + ID deterministik sehingga tidak pernah dobel.
+- **axto.io:** 25 tabel yang dipakai kode dipetakan satu per satu (§7 dokumen itu); ±60 tabel lama diarsipkan. Pindah
+  bertahap: akun & keamanan → uang → lisensi → lainnya → migrasi data (cocok 100 %) → 7 hari pengamatan → D1 dilepas.
+  KV tetap untuk batas laju (bukan D1).
+- **Animasi panduan:** 23 alur pelanggan + 8 alur admin dalam 10 bahasa, direkam otomatis (Playwright, data contoh,
+  pembayaran mode sandbox di lokal), tampil di `/guides` dan tombol „Lihat panduan" di tempat alurnya dipakai.
+- **Pembayaran:** tetap Live dari Admin → Payments; kunci hanya di penyimpanan terenkripsi (tidak di repo).
+- **Urutan:** pustaka R2 Store dibangun dan diuji di xaa.es (19 tabel yang dipakai, lebih kecil) lalu dipakai di axto.io.
+- **Aturan tetap untuk semua situs** (`REQUESTS.md` baris 81, `CLAUDE.md` §6): axto.io, xaa.es, ulyah.com, xad.es,
+  1fr.fr, tilawa.de dan semua yang menyimpan data — **wajib ke R2, tidak pernah ke D1**. Cakupan per situs (D1 yang
+  masih ada: `axto-db`, `xaa-portal`, `ulyah-db`, `quantum_db`) di `docs/R2-DATA-BLUEPRINT.md` §10.
+
+## 25. Perintah pemilik 20 Okt 2026 (3) — axto.io 100 % siap produksi setelah xaa.es
+
+> „Setelah xaa.es selesai skrg pindah ke axto.io pastikan 100% siap produksi, docker sudah di cek dan sudah siap
+> produksi, jgn ada aplikasi sampah, pastikan pembayaran semua sudah live" — `REQUESTS.md` baris 82
+
+Urutan kerja (dikerjakan setelah xaa.es selesai pindah ke R2 dan tayang):
+
+1. **Data axto.io ke R2** — `docs/R2-DATA-BLUEPRINT.md` §7: 25 tabel yang dipakai kode → `axto-data`, backup harian
+   `axto-backups`, migrasi sekali dengan pemeriksaan setiap baris, D1 hanya-baca 7 hari lalu dilepas (`CLAUDE.md` §6).
+2. **Docker diperiksa satu per satu** terhadap „selesai bila" di `AXTO-APPS-BLUEPRINT.md` §6–§7 dan audit §16.1:
+   image Linux amd64/arm64 + Windows (installer) dibangun dan dijalankan di CI, health, lisensi + batas edisi
+   ditegakkan, tes otomatis per engine, UI lengkap, dokumentasi, rilis bertanda tangan. **Tidak ada aplikasi
+   sampah:** aplikasi yang belum lulus tidak dijual atau diunduh sebagai produk jadi — halaman publiknya berkata jujur
+   „Early access" (tanpa klaim enterprise) sampai lulus, dan checkout/unduhan untuknya tertutup. Setiap aplikasi yang
+   lulus dicatat di tabel §16.1 dengan bukti (run CI, tes, uji browser).
+3. **Pembayaran semua Live dan terbukti:** setiap metode (PayPal, BNI IDR/USD/EUR, kripto/NOWPayments bila aktif)
+   default Live; tombol uji per metode hijau; webhook PayPal Live terdaftar otomatis; satu transaksi kecil sungguhan
+   per metode oleh pemilik; lisensi, faktur dan unduhan terkirim otomatis (zero-touch, §3 `CLAUDE.md`). Kunci Live
+   hanya ditempel pemilik di Admin → Payment & email (tidak pernah di repo, log atau chat).
+4. **Uji ulang semuanya** (`CLAUDE.md` §5): tsc + unit, E2E lokal Cloudflare, Playwright desktop + HP tanpa error
+   konsol, CI hijau sebelum merge.
