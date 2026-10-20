@@ -1,0 +1,56 @@
+# ==============================================================================
+# AXTO — Live audit of axto.io in a real browser (read-only).
+# Every sitemap page (status, title, description, canonical, JSON-LD, h1,
+# AdSense meta, noindex), every internal link, payment methods live vs sandbox
+# (public /api/billing/options), /api/health, and the key pages in Chromium on
+# desktop and on a phone (console errors, failed requests, sideways scrolling).
+# Script: dashboard/scripts/live-audit.mjs. It changes nothing anywhere.
+# ==============================================================================
+name: Live audit (axto.io, real browser)
+
+on:
+  workflow_run:
+    workflows: ["Deploy Dashboard → Cloudflare Pages"]
+    types: [completed]
+  workflow_dispatch: {}
+  schedule:
+    - cron: "23 5 * * *"
+  push:
+    branches: [claude/adsense-domain-config-esxjy1]
+    paths:
+      - ".github/workflows/live-audit.yml"
+      - "dashboard/scripts/live-audit.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium
+        run: |
+          mkdir -p /tmp/audit && cd /tmp/audit
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright@1.55.0 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Audit https://axto.io
+        run: |
+          cp dashboard/scripts/live-audit.mjs /tmp/audit/
+          cd /tmp/audit
+          set +e
+          node live-audit.mjs https://axto.io | tee report.txt
+          code=${PIPESTATUS[0]}
+          { echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-audit
+          path: /tmp/audit/live-audit.json
+          retention-days: 14
