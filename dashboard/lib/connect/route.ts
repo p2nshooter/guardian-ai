@@ -2,17 +2,18 @@
  * operator, caller authenticated, browser origin allowed, plan rate limit. */
 import type { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
-import { getDB } from "../db";
+import { getData } from "../db";
+import type { Data } from "../data";
 import { authenticate, ConnectError, type Caller } from "./auth";
 import { apiError, limit, originProblem } from "./http";
 import { getConnectSettings } from "./settings";
 
 export async function withCaller(
   req: NextRequest,
-  fn: (caller: Caller, db: any, remaining: string) => Promise<Response | NextResponse>,
+  fn: (caller: Caller, db: Data, remaining: string) => Promise<Response | NextResponse>,
   opts: { allowSession?: boolean; cost?: number } = {},
 ): Promise<Response | NextResponse> {
-  const db = getDB(req);
+  const db = getData(req);
   let caller: Caller | null = null;
   try {
     const settings = await getConnectSettings(db);

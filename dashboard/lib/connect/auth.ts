@@ -13,7 +13,8 @@
  * Every call re-reads the member's plan, so a lapsed plan stops the API at once.
  * ============================================================================ */
 import type { NextRequest } from "next/server";
-import { dbFirst, dbRun, now, secret } from "../db";
+import { now, secret } from "../db";
+import type { Data } from "../data";
 import { loadEntitlement, loadSession, effectiveTier } from "../auth";
 import { limitsFor, type Tier } from "../plans";
 
@@ -108,26 +109,25 @@ function bearer(req: NextRequest): string {
 export class ConnectError extends Error { constructor(message: string, public status = 401, public code = "unauthenticated") { super(message); } }
 
 /** Resolve the caller or throw ConnectError. `allowSession` lets the portal console use the cookie. */
-export async function authenticate(req: NextRequest, db: any, opts: { allowSession?: boolean } = {}): Promise<Caller> {
+export async function authenticate(req: NextRequest, db: Data, opts: { allowSession?: boolean } = {}): Promise<Caller> {
   const token = bearer(req);
   if (token.startsWith(KEY_PREFIX)) {
     // A key in a URL would end up in logs and history: refuse it there.
     if (new URL(req.url).searchParams.get("token") === token) throw new ConnectError("Send API keys in the Authorization header. In a browser, mint a stream token with POST /api/v1/tokens.", 400, "invalid_argument");
-    const row = await dbFirst<{ id: string; user_id: string; scopes: string; origins: string; revoked_at: string | null; last_used_at: string | null }>(db,
-      `SELECT id, user_id, scopes, origins, revoked_at, last_used_at FROM api_keys WHERE hash = ?`, [await sha256Hex(token)]);
+    const row = await db.apiKeys.find("hash", await sha256Hex(token));
     if (!row || row.revoked_at) throw new ConnectError("This API key is not valid (it may have been revoked).");
     const ent = await loadEntitlement(db, row.user_id);
     if (!ent) throw new ConnectError("The account behind this key is not active.", 403, "permission_denied");
     const tier = ent.role === "admin" ? "enterprise" : ent.tier;
     if (limitsFor(tier).apiKeys <= 0) throw new ConnectError("The developer API needs a paid plan.", 402, "failed_precondition");
-    // Touch last-used at most once a minute (D1-lean).
-    if (!row.last_used_at || Date.now() - Date.parse(row.last_used_at) > 60_000) await dbRun(db, `UPDATE api_keys SET last_used_at = ? WHERE id = ?`, [now(), row.id]).catch(() => {});
+    // Touch last-used at most once a minute (one write per key per minute at most).
+    if (!row.last_used_at || Date.now() - Date.parse(row.last_used_at) > 60_000) await db.apiKeys.update(row.id, (k) => ({ ...k, last_used_at: now() })).catch(() => {});
     return { userId: row.user_id, email: ent.email, tier, scopes: cleanScopes(row.scopes), keyId: row.id, origins: row.origins ? row.origins.split(" ") : [], via: "key" };
   }
   if (token.startsWith(TOKEN_PREFIX)) {
     const c = await verifyStreamToken(token);
     if (!c) throw new ConnectError("This stream token is not valid or has expired. Mint a new one.");
-    const key = await dbFirst<{ revoked_at: string | null }>(db, `SELECT revoked_at FROM api_keys WHERE id = ?`, [c.kid]);
+    const key = await db.apiKeys.get(c.kid).catch(() => null);
     if (!key || key.revoked_at) throw new ConnectError("The key that minted this token was revoked.");
     const ent = await loadEntitlement(db, c.sub);
     if (!ent) throw new ConnectError("The account behind this token is not active.", 403, "permission_denied");

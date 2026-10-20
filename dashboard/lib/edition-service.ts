@@ -9,12 +9,13 @@
  *                           converted into extra days (same rule as plans).
  *   • A trial of the app  → marked as converted.
  * ============================================================================ */
-import { dbFirst, dbRun, newId, now, secret } from "./db";
+import { now, secret } from "./db";
+import type { Data } from "./data";
 import { getEdition, editionMaxNodes, editionPrice, mergeEditionPrices, isEditionCycle, type Edition, type EditionCycle } from "./editions";
 export { EDITION_ANY_GATEWAY_MAX, editionGatewayAllowed } from "./editions";
 import { generateLicenseKey, catalogEntry, getSelfHosted } from "./selfhosted";
 import { markTrialConverted } from "./trials";
-import { ADMIN_HOLD } from "./licences";
+import { ADMIN_HOLD, findLicence, newLicence } from "./licences";
 
 const DAY = 86_400_000;
 const TERM_DAYS: Record<EditionCycle, number> = { monthly: 30.4375, yearly: 365.25 };
@@ -58,10 +59,10 @@ export function editionPeriod(current: { package_code: string; expires_at: strin
 export interface EditionIssued { id: string; product: string; name: string; edition: string; key: string; expiresAt: string; creditDays: number; renewed: boolean }
 
 /** Turn a paid edition order into a licence. Idempotence is handled by markOrderPaid. */
-export async function issueEdition(db: any, userId: string, choice: EditionChoice): Promise<EditionIssued | { error: string }> {
+export async function issueEdition(db: Data, userId: string, choice: EditionChoice): Promise<EditionIssued | { error: string }> {
   const e = getEdition(choice.code);
   if (!e || e.app !== choice.app) return { error: "Unknown edition." };
-  const existing = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ? AND source = 'edition'`, [userId, e.app]);
+  const existing = await findLicence(db, userId, e.app, "edition");
   if (existing?.notes === ADMIN_HOLD) return { error: "This licence was locked by AXTO. Contact support to restore it." };
   const prevCycle = (() => { try { return JSON.parse(existing?.notes || "{}").cycle; } catch { return undefined; } })();
   const { end, creditDays } = editionPeriod(existing ? { ...existing, cycle: isEditionCycle(prevCycle) ? prevCycle : undefined } : null, e, choice.cycle);
@@ -73,17 +74,17 @@ export async function issueEdition(db: any, userId: string, choice: EditionChoic
   if (existing) {
     // Keep the key on a renewal (nothing to reinstall); a new edition keeps it too — the engine re-validates.
     if (existing.status === "revoked" || !key) key = await generateLicenseKey(e.app, secret("LICENSE_KEY_HMAC_SECRET") || undefined);
-    await dbRun(db, `UPDATE sh_licenses SET license_key = ?, package_code = ?, max_nodes = ?, status = 'active', expires_at = ?, notes = ?, updated_at = ? WHERE id = ?`,
-      [key, e.code, editionMaxNodes(e), end.toISOString(), notes, at, existing.id]);
+    const k = key;
+    await db.shLicenses.update(existing.id, (l) => ({ ...l, license_key: k, package_code: e.code, max_nodes: editionMaxNodes(e), status: "active", expires_at: end.toISOString(), notes, updated_at: at }));
   } else {
     key = await generateLicenseKey(e.app, secret("LICENSE_KEY_HMAC_SECRET") || undefined);
-    id = newId();
-    await dbRun(db, `INSERT INTO sh_licenses (id, user_id, product, license_key, package_code, max_nodes, status, expires_at, notes, source, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, 'edition', ?, ?)`,
-      [id, userId, e.app, key, e.code, editionMaxNodes(e), end.toISOString(), notes, at, at]);
+    const doc = newLicence({ user_id: userId, product: e.app, license_key: key, package_code: e.code, max_nodes: editionMaxNodes(e), expires_at: end.toISOString(), notes, source: "edition" });
+    id = doc.id;
+    await db.shLicenses.create(doc);
   }
   // The paid licence replaces a running trial of the same app.
-  await dbRun(db, `UPDATE sh_licenses SET status = 'revoked', updated_at = ? WHERE user_id = ? AND product = ? AND source = 'trial' AND status = 'active'`, [at, userId, e.app]).catch(() => {});
+  const trial = await findLicence(db, userId, e.app, "trial");
+  if (trial) await db.shLicenses.update(trial.id, (l) => (l.status === "active" ? { ...l, status: "revoked", updated_at: at } : null)).catch(() => {});
   await markTrialConverted(db, userId, e.app);
   return { id, product: e.app, name: catalogEntry(e.app)?.name || e.app, edition: e.name, key, expiresAt: end.toISOString(), creditDays, renewed };
 }

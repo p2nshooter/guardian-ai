@@ -8,7 +8,9 @@
  * that fails 20 times in a row is switched off. Signing secrets are encrypted
  * per member and shown once.
  * ============================================================================ */
-import { dbQuery, dbRun, dbFirst, newId, now } from "../db";
+import { newId, now } from "../db";
+import type { Data } from "../data";
+import type { WebhookDoc } from "../data/schema";
 import { sealForUser, openForUser } from "../user-crypto";
 import { endpointProblem } from "../ai/providers";
 import { limitsFor, type Tier } from "../plans";
@@ -27,7 +29,7 @@ const unb64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 const b64u = (b: Uint8Array) => b64(b).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, "0")).join("");
 
-type Row = { id: string; user_id: string; url: string; secret_enc: string; channels: string; types: string; active: number; failures: number; last_status: number | null; last_error: string | null; last_delivery_at: string | null; created_at: string };
+type Row = WebhookDoc;
 const toHook = (r: Row): Webhook => ({
   id: r.id, url: r.url, channels: r.channels.split(" "), types: r.types.split(" "), active: !!r.active, failures: r.failures,
   lastStatus: r.last_status, lastError: r.last_error, lastDeliveryAt: r.last_delivery_at, createdAt: r.created_at,
@@ -44,33 +46,34 @@ export function webhookUrlProblem(url: unknown): string | null {
 }
 const typePatterns = (v: unknown) => parsePatterns(v ?? "*");
 
-export async function listWebhooks(db: any, userId: string): Promise<Webhook[]> {
-  return (await dbQuery<Row>(db, `SELECT * FROM webhooks WHERE user_id = ? ORDER BY created_at DESC`, [userId])).map(toHook);
+export async function listWebhooks(db: Data, userId: string): Promise<Webhook[]> {
+  return (await db.webhooks.listAllDocs("user", userId)).map(toHook);
 }
 
-export async function createWebhook(db: any, userId: string, tier: Tier, b: any): Promise<{ webhook: Webhook; secret: string }> {
+export async function createWebhook(db: Data, userId: string, tier: Tier, b: any): Promise<{ webhook: Webhook; secret: string }> {
   const problem = webhookUrlProblem(b?.url);
   if (problem) throw new ConnectError(problem, 400, "invalid_argument");
   const max = limitsFor(tier).webhooks;
-  const count = await dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM webhooks WHERE user_id = ?`, [userId]);
-  if (Number(count?.n || 0) >= max) throw new ConnectError(max ? `Your plan includes ${max} webhook${max === 1 ? "" : "s"}. Delete one or upgrade.` : "Webhooks need a paid plan.", 402, "resource_exhausted");
+  const count = await db.webhooks.count("user", userId);
+  if (count >= max) throw new ConnectError(max ? `Your plan includes ${max} webhook${max === 1 ? "" : "s"}. Delete one or upgrade.` : "Webhooks need a paid plan.", 402, "resource_exhausted");
   const id = newId("wh").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
   const secret = "whsec_" + b64u(crypto.getRandomValues(new Uint8Array(32)));
   const channels = parsePatterns(b?.channels ?? "*").join(" ");
   const types = typePatterns(b?.types).join(" ");
-  await dbRun(db, `INSERT INTO webhooks (id, user_id, url, secret_enc, channels, types, active, failures, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?)`,
-    [id, userId, b.url, b64(await sealForUser(userId, aad(userId, id), secret)), channels, types, now()]);
-  const row = await dbFirst<Row>(db, `SELECT * FROM webhooks WHERE id = ?`, [id]);
-  return { webhook: toHook(row!), secret };
+  const row = await db.webhooks.create({
+    id, user_id: userId, url: b.url, secret_enc: b64(await sealForUser(userId, aad(userId, id), secret)), channels, types, active: 1, failures: 0,
+    last_status: null, last_error: null, last_delivery_at: null, created_at: now(),
+  });
+  return { webhook: toHook(row), secret };
 }
 
-async function own(db: any, userId: string, id: string): Promise<Row> {
-  const r = await dbFirst<Row>(db, `SELECT * FROM webhooks WHERE id = ? AND user_id = ?`, [String(id || ""), userId]);
-  if (!r) throw new ConnectError("Webhook not found.", 404, "not_found");
+async function own(db: Data, userId: string, id: string): Promise<Row> {
+  const r = id ? await db.webhooks.get(String(id)).catch(() => null) : null;
+  if (!r || r.user_id !== userId) throw new ConnectError("Webhook not found.", 404, "not_found");
   return r;
 }
 
-export async function updateWebhook(db: any, userId: string, id: string, b: any): Promise<Webhook> {
+export async function updateWebhook(db: Data, userId: string, id: string, b: any): Promise<Webhook> {
   const r = await own(db, userId, id);
   const url = b?.url !== undefined ? b.url : r.url;
   const problem = webhookUrlProblem(url);
@@ -79,28 +82,27 @@ export async function updateWebhook(db: any, userId: string, id: string, b: any)
   const types = b?.types !== undefined ? typePatterns(b.types).join(" ") : r.types;
   const active = b?.active !== undefined ? (b.active ? 1 : 0) : r.active;
   // Switching back on clears the failure streak.
-  await dbRun(db, `UPDATE webhooks SET url = ?, channels = ?, types = ?, active = ?, failures = CASE WHEN ? = 1 AND active = 0 THEN 0 ELSE failures END WHERE id = ?`,
-    [url, channels, types, active, active, id]);
-  return toHook((await dbFirst<Row>(db, `SELECT * FROM webhooks WHERE id = ?`, [id]))!);
+  return toHook(await db.webhooks.update(id, (w) => ({ ...w, url, channels, types, active, failures: active === 1 && !w.active ? 0 : w.failures })));
 }
 
-export async function rotateSecret(db: any, userId: string, id: string): Promise<string> {
+export async function rotateSecret(db: Data, userId: string, id: string): Promise<string> {
   await own(db, userId, id);
   const secret = "whsec_" + b64u(crypto.getRandomValues(new Uint8Array(32)));
-  await dbRun(db, `UPDATE webhooks SET secret_enc = ? WHERE id = ?`, [b64(await sealForUser(userId, aad(userId, id), secret)), id]);
+  const enc = b64(await sealForUser(userId, aad(userId, id), secret));
+  await db.webhooks.update(id, (w) => ({ ...w, secret_enc: enc }));
   return secret;
 }
 
-export async function deleteWebhook(db: any, userId: string, id: string): Promise<void> {
+export async function deleteWebhook(db: Data, userId: string, id: string): Promise<void> {
   await own(db, userId, id);
-  await dbRun(db, `DELETE FROM webhook_deliveries WHERE webhook_id = ?`, [id]);
-  await dbRun(db, `DELETE FROM webhooks WHERE id = ?`, [id]);
+  for (const d of await db.webhookDeliveries.listAllDocs("webhook", id)) await db.webhookDeliveries.delete(d.id);
+  await db.webhooks.delete(id);
 }
 
-export async function listDeliveries(db: any, userId: string, id: string): Promise<Delivery[]> {
+export async function listDeliveries(db: Data, userId: string, id: string): Promise<Delivery[]> {
   await own(db, userId, id);
-  const rows = await dbQuery<any>(db, `SELECT * FROM webhook_deliveries WHERE webhook_id = ? ORDER BY created_at DESC LIMIT 50`, [id]);
-  return rows.map((r) => ({ id: r.id, eventId: r.event_id, attempt: r.attempt, status: r.status, durationMs: r.duration_ms, error: r.error, done: !!r.done, nextAt: r.next_at, createdAt: r.created_at }));
+  const { docs } = await db.webhookDeliveries.listDocs("webhook", id, { limit: 50 });
+  return docs.map((r) => ({ id: r.id, eventId: r.event_id, attempt: r.attempt, status: r.status, durationMs: r.duration_ms, error: r.error, done: !!r.done, nextAt: r.next_at, createdAt: r.created_at }));
 }
 
 /** HMAC-SHA256 signature header for a body (exported for tests and receivers' reference). */
@@ -127,48 +129,51 @@ async function post(hook: Row, deliveryId: string, event: Pick<ConnectEvent, "id
   }
 }
 
-async function record(db: any, hook: Row, deliveryId: string, attempt: number, r: { status: number; error: string | null; ms: number }) {
+async function record(db: Data, hook: Row, deliveryId: string, attempt: number, r: { status: number; error: string | null; ms: number }) {
   const ok = r.status >= 200 && r.status < 300;
   const last = attempt >= MAX_ATTEMPTS;
   const nextAt = ok || last ? null : new Date(Date.now() + BACKOFF_MIN[Math.min(attempt - 1, BACKOFF_MIN.length - 1)] * 60_000).toISOString();
-  await dbRun(db, `UPDATE webhook_deliveries SET attempt = ?, status = ?, duration_ms = ?, error = ?, done = ?, next_at = ?, updated_at = ? WHERE id = ?`,
-    [attempt, r.status, r.ms, r.error, ok || last ? 1 : 0, nextAt, now(), deliveryId]);
-  const failures = ok ? 0 : hook.failures + 1;
-  await dbRun(db, `UPDATE webhooks SET last_status = ?, last_error = ?, last_delivery_at = ?, failures = ?, active = CASE WHEN ? >= ? THEN 0 ELSE active END WHERE id = ?`,
-    [r.status, r.error, now(), failures, failures, DISABLE_AFTER, hook.id]);
-  hook.failures = failures;
+  await db.webhookDeliveries.update(deliveryId, (d) => ({ ...d, attempt, status: r.status, duration_ms: r.ms, error: r.error, done: ok || last ? 1 : 0, next_at: nextAt, updated_at: now() }));
+  const after = await db.webhooks.update(hook.id, (w) => {
+    const failures = ok ? 0 : w.failures + 1;
+    return { ...w, last_status: r.status, last_error: r.error, last_delivery_at: now(), failures, active: failures >= DISABLE_AFTER ? 0 : w.active };
+  });
+  hook.failures = after.failures;
 }
 
 /** New event → one delivery per matching active webhook, attempted at once. */
-export async function fanOut(db: any, userId: string, event: ConnectEvent): Promise<number> {
-  const hooks = (await dbQuery<Row>(db, `SELECT * FROM webhooks WHERE user_id = ? AND active = 1`, [userId]))
-    .filter((h) => matches(h.channels.split(" "), event.channel) && matches(h.types.split(" "), event.type));
+export async function fanOut(db: Data, userId: string, event: ConnectEvent): Promise<number> {
+  const hooks = (await db.webhooks.listAllDocs("user", userId))
+    .filter((h) => h.active && matches(h.channels.split(" "), event.channel) && matches(h.types.split(" "), event.type));
   await Promise.all(hooks.map(async (h) => {
     const id = newId("dl").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
-    await dbRun(db, `INSERT INTO webhook_deliveries (id, webhook_id, user_id, event_id, attempt, done, next_at, created_at, updated_at) VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?)`,
-      [id, h.id, userId, event.id, now(), now(), now()]);
+    const at = now();
+    await db.webhookDeliveries.create({ id, webhook_id: h.id, user_id: userId, event_id: event.id, attempt: 0, status: null, duration_ms: null, error: null, done: 0, next_at: at, created_at: at, updated_at: at });
     await record(db, h, id, 1, await post(h, id, event));
   }));
   return hooks.length;
 }
 
 /** Cron: retry deliveries whose time has come (bounded per tick). */
-export async function retryDue(db: any, max = 25): Promise<{ retried: number }> {
-  const due = await dbQuery<any>(db, `SELECT * FROM webhook_deliveries WHERE done = 0 AND next_at <= ? ORDER BY next_at LIMIT ?`, [now(), max]);
+export async function retryDue(db: Data, max = 25): Promise<{ retried: number }> {
+  const at = now();
+  // The "due" index holds unfinished deliveries, the earliest next attempt first.
+  const { docs } = await db.webhookDeliveries.listDocs("due", "all", { limit: max });
+  const due = docs.filter((d) => !d.done && (d.next_at || "") <= at);
   for (const d of due) {
-    const hook = await dbFirst<Row>(db, `SELECT * FROM webhooks WHERE id = ?`, [d.webhook_id]);
-    if (!hook || !hook.active) { await dbRun(db, `UPDATE webhook_deliveries SET done = 1, next_at = NULL, error = 'endpoint switched off' WHERE id = ?`, [d.id]); continue; }
-    const ev = await dbFirst<any>(db, `SELECT id, channel, type, data, created_at FROM connect_events WHERE id = ? AND user_id = ?`, [d.event_id, d.user_id]);
-    if (!ev) { await dbRun(db, `UPDATE webhook_deliveries SET done = 1, next_at = NULL, error = 'event expired' WHERE id = ?`, [d.id]); continue; }
+    const hook = await db.webhooks.get(d.webhook_id);
+    if (!hook || !hook.active) { await db.webhookDeliveries.update(d.id, (x) => ({ ...x, done: 1, next_at: null, error: "endpoint switched off" })); continue; }
+    const ev = await db.connectEvents.get(String(d.event_id));
+    if (!ev || ev.user_id !== d.user_id) { await db.webhookDeliveries.update(d.id, (x) => ({ ...x, done: 1, next_at: null, error: "event expired" })); continue; }
     let data: unknown = null;
     try { data = JSON.parse(new TextDecoder().decode(await openForUser(d.user_id, `connect-event:${d.user_id}`, unb64(ev.data)))); } catch {}
-    await record(db, hook, d.id, Number(d.attempt) + 1, await post(hook, d.id, { id: ev.id, channel: ev.channel, type: ev.type, data, createdAt: ev.created_at }));
+    await record(db, hook, d.id, Number(d.attempt) + 1, await post(hook, d.id, { id: ev.seq, channel: ev.channel, type: ev.type, data, createdAt: ev.created_at }));
   }
   return { retried: due.length };
 }
 
 /** "Send test event": a signed delivery that is not stored as an event. */
-export async function testWebhook(db: any, userId: string, id: string): Promise<{ status: number; error: string | null; ms: number }> {
+export async function testWebhook(db: Data, userId: string, id: string): Promise<{ status: number; error: string | null; ms: number }> {
   const hook = await own(db, userId, id);
   return post(hook, "test", { id: 0, channel: "axto.test", type: "webhook.test", data: { hello: "from AXTO Connect", at: now() }, createdAt: now() });
 }

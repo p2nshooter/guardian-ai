@@ -3,14 +3,15 @@
  * environment must be the order's. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbRun } from "@/lib/db";
+import { getData } from "@/lib/db";
+import { closePending } from "@/lib/billing/order-doc";
 import { gatewayCredsAll, ENV_KEY, type PayEnv } from "@/lib/billing/gateways";
 import { midtransVerify } from "@/lib/billing/providers";
 import { markOrderPaid, isFinal } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
   const n: any = await req.json().catch(() => null);
-  const db = getDB(req);
+  const db = getData(req);
   let env: PayEnv | null = null;
   if (n) for (const c of await gatewayCredsAll("midtrans")) if (await midtransVerify(n, c)) { env = c[ENV_KEY] as PayEnv; break; }
   if (!env) return NextResponse.json({ error: "invalid signature" }, { status: 401 });
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     const r = await markOrderPaid(db, n.order_id, { gatewayRef: n.transaction_id, paidLocal: Number(n.gross_amount || 0), gateway: "midtrans", env });
     if (!isFinal(r)) return NextResponse.json({ error: r.reason }, { status: 422 });
   } else if (st === "expire" || st === "cancel" || st === "deny") {
-    await dbRun(db, `UPDATE orders SET status = ? WHERE id = ? AND status = 'pending' AND gateway = 'midtrans'`, [st === "expire" ? "expired" : "failed", n.order_id]);
+    await closePending(db, String(n.order_id), "midtrans", st === "expire" ? "expired" : "failed");
   }
   return NextResponse.json({ received: true });
 }

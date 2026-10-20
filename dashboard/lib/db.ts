@@ -5,10 +5,13 @@
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  *
- * Cloudflare bindings + tiny D1 helpers.
+ * Cloudflare bindings and the data store.
  *
  * Bindings (dashboard/wrangler.toml):
- *   DB         D1   axto-db         — lean relational core (users, subscriptions, orders…)
+ *   DATA       R2   axto-data       — every record (users, subscriptions, orders, licences…), lib/data
+ *   BACKUPS    R2   axto-backups    — daily backups of DATA (35 days) and the archive of the old D1 tables
+ *   DB         D1   axto-db         — READ ONLY: the source of the one-time move to R2 (lib/data/migrate.ts);
+ *                                     removed seven days after it (CLAUDE.md §6: R2 only, never D1)
  *   KV         KV   axto-kv         — rate limits, small caches
  *   R2         R2   axto-storage    — platform content (encrypted prompts, invoices, archives)
  *   USER_FILES R2   axto-documents  — member uploads & saved work (u/<userId>/…)
@@ -18,8 +21,13 @@
 
 import type { NextRequest } from "next/server";
 import { getRequestContext } from "@cloudflare/next-on-pages";
+import { Store } from "./r2/store";
+import { dataFor, GatedBucket, type Data } from "./data";
+import { MaintenanceError, runMigration, type D1Like, type StepEnv } from "./data/migrate";
 
 export interface CfEnv {
+  DATA?: any;
+  BACKUPS?: any;
   DB?: any;
   KV?: any;
   R2?: any;
@@ -42,7 +50,7 @@ export function getEnv(_req?: NextRequest): CfEnv {
   if (lastEnv) return lastEnv;
   try {
     const pe = (process as any).env;
-    if (pe?.DB) return pe as CfEnv;
+    if (pe?.DATA || pe?.DB) return pe as CfEnv;
   } catch {}
   return {};
 }
@@ -53,7 +61,48 @@ function need(name: keyof CfEnv, req?: NextRequest): any {
   return b;
 }
 
-export const getDB = (req?: NextRequest) => need("DB", req);
+/* ── records (R2) ─────────────────────────────────────────────────────── */
+
+export function migrationEnv(env: CfEnv): StepEnv {
+  return {
+    d1: (env.DB as D1Like | undefined) ?? null,
+    archive: env.BACKUPS ?? null,
+    migratePayments: async (d1) => (await import("./billing/gateways")).migrateLegacyPayments(d1),
+  };
+}
+
+let cached: { binding: unknown; data: Data; raw: Data } | null = null;
+let ready = false;
+let pending: Promise<void> | null = null;
+
+/** Wait until the one-time move from D1 is done (runs one step of it if not). */
+function gate(raw: Data, env: CfEnv): Promise<void> {
+  if (ready) return Promise.resolve();
+  pending ??= (async () => {
+    const state = await runMigration(raw, migrationEnv(env), 1);
+    if (!state) throw new MaintenanceError();
+    ready = true;
+  })().finally(() => { pending = null; });
+  return pending;
+}
+
+function stores(req?: NextRequest) {
+  const env = getEnv(req);
+  const bucket = env.DATA;
+  if (!bucket) throw new Error(`Cloudflare binding "DATA" is not configured.`);
+  if (cached && cached.binding === bucket) return cached;
+  const raw = dataFor(new Store(bucket));
+  const next = { binding: bucket, raw, data: dataFor(new Store(new GatedBucket(bucket, () => gate(raw, env)))) };
+  cached = next;
+  return next;
+}
+
+/** Every record of the platform (lib/data/schema.ts), on the private R2 bucket DATA. */
+export const getData = (req?: NextRequest): Data => stores(req).data;
+/** The same collections without the migration gate — for the migrator, backups and the health probe. */
+export const getRawData = (req?: NextRequest): Data => stores(req).raw;
+/** @deprecated Being replaced by getData() while the modules move from D1 to R2. */
+export const getDB = (req?: NextRequest): any => getData(req);
 export const getKV = (req?: NextRequest) => need("KV", req);
 export const getR2 = (req?: NextRequest) => need("R2", req);
 export const getR2Builds = (req?: NextRequest) => getEnv(req).R2_BUILDS || need("R2", req);

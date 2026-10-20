@@ -2,6 +2,7 @@
  * (docs/AXTO-APPS-BLUEPRINT.md §3–§4): catalogue consistency, prices, signed
  * entitlements, trial codes, translations. */
 import { test } from "node:test";
+import { testData } from "./helpers/data";
 import assert from "node:assert/strict";
 import { EDITIONS, editionsFor, getEdition, topEdition, isTopEdition, editionMaxNodes, editionEntitlements, mergeEditionPrices, editionPrice, editionGatewayAllowed, EDITION_ANY_GATEWAY_MAX, hasOwnName } from "../lib/editions";
 import { SELF_HOSTED } from "../lib/selfhosted";
@@ -117,23 +118,33 @@ test("editions: translations — every feature line in all 10 languages", () => 
 });
 
 test("trials: the pool seeds itself once (zero-touch) and never again", async () => {
-  const { ensureTrialPool } = await import("../lib/trials");
-  const rows: string[] = []; const config = new Map<string, string>();
-  const db = {
-    prepare(sql: string) {
-      return { _sql: sql, _args: [] as unknown[], bind(...a: unknown[]) { this._args = a; return this; },
-        async first() {
-          if (/SELECT 1 AS x FROM platform_config/.test(this._sql)) return config.has("trials_seeded") ? { x: 1 } : null;
-          if (/INSERT INTO platform_config/.test(this._sql)) { if (config.has("trials_seeded")) return null; config.set("trials_seeded", "1"); return { key: "trials_seeded" }; }
-          if (/FROM platform_config WHERE key = 'trials'/.test(this._sql)) return null;
-          return null;
-        },
-        async run() { return { meta: { changes: 1 } }; }, async all() { return { results: [] }; } };
-    },
-    async batch(stmts: any[]) { for (const s of stmts) rows.push(String(s._args[1])); return []; },
-  };
+  const { ensureTrialPool, trialStats } = await import("../lib/trials");
+  const { db } = testData();
   assert.equal(await ensureTrialPool(db), true);
-  assert.equal(rows.length, 10 * 100, "100 codes for each of the 10 apps");
+  const stats = await trialStats(db);
+  assert.equal(Object.keys(stats).length, 10);
+  for (const [slug, st] of Object.entries(stats)) assert.deepEqual(st, { total: 100, available: 100, claimed: 0 }, `100 codes for ${slug}`);
   assert.equal(await ensureTrialPool(db), false, "second call does nothing");
-  assert.equal(rows.length, 1000);
+  assert.equal(Object.values(await trialStats(db)).reduce((a, s) => a + s.total, 0), 1000);
+});
+
+test("trials: claims are atomic — 12 members racing for 10 codes get 10 licences, never a code twice", async () => {
+  const { createTrialBatch, claimTrial, TRIAL_DEFAULTS, trialStats } = await import("../lib/trials");
+  const { db } = testData();
+  await db.config.set("trials_seeded", "1");
+  await createTrialBatch(db, "vault", 10);
+  const at = "2026-10-20T00:00:00.000Z";
+  const users = Array.from({ length: 12 }, (_, i) => ({ id: `u${i}`, email: `m${i}@example.com` }));
+  for (const u of users) await db.users.create({ id: u.id, email: u.email, role: "client", password_hash: "", name: u.id, organization: "", country: "", status: "active", last_login_at: "", storage_bytes: 0, ai_provider: "", sessions_valid_after: "", created_at: at, updated_at: at });
+  const results = await Promise.all(users.map((u, i) => claimTrial(db, u, "vault", `10.0.0.${i}`, { ...TRIAL_DEFAULTS })));
+  const won = results.filter((r) => r.ok);
+  assert.equal(won.length, 10);
+  assert.equal(new Set(won.map((r) => (r as any).code)).size, 10, "every code went to one member");
+  assert.ok(results.filter((r) => !r.ok).every((r) => (r as any).reason === "sold_out"));
+  assert.deepEqual((await trialStats(db)).vault, { total: 10, available: 0, claimed: 10 });
+  // The same member cannot take a second trial of the app.
+  await createTrialBatch(db, "vault", 5);
+  const again = await claimTrial(db, users[0]!, "vault", "10.9.9.9", { ...TRIAL_DEFAULTS });
+  assert.equal(again.ok, false);
+  assert.equal((again as any).reason, "used");
 });

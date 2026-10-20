@@ -6,7 +6,9 @@
  *        transfer receipt (photo/PDF) kept private in R2 for the admin to check and approve */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbFirst, dbRun, now } from "@/lib/db";
+import { getData, now } from "@/lib/db";
+import { ownOrder } from "@/lib/billing/order-doc";
+import { patchMeta, readMeta } from "@/lib/data/meta";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
   const { id } = await params;
-  const o = await dbFirst<any>(getDB(req), `SELECT * FROM orders WHERE id = ? AND user_id = ?`, [id, ctx.session.sub]);
+  const o = await ownOrder(getData(req), id, ctx.session.sub);
   if (!o) return fail("Order not found.", 404);
   return respond({ order: view(o) }, ctx);
 }
@@ -49,8 +51,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const rl = await rateLimit(req, "order-proof", ctx.session.sub, { max: 12, windowSeconds: 3600 });
   if (rl.limited) return fail("Too many attempts — please wait a few minutes.", 429);
-  const db = getDB(req);
-  const o = await dbFirst<any>(db, `SELECT * FROM orders WHERE id = ? AND user_id = ?`, [id, ctx.session.sub]);
+  const db = getData(req);
+  const o = await ownOrder(db, id, ctx.session.sub);
   if (!o) return fail("Order not found.", 404);
   if (o.status === "paid") return respond({ ok: true, status: "paid", message: "This order is already paid.", order: view(o) }, ctx);
   if (o.status !== "pending") return fail("This order is no longer open — start a new checkout.", 409);
@@ -76,7 +78,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (tx.length < 32) return fail("Paste the full transaction hash (TXID).");
     const r = await verifyCryptoProof(db, o.id, network, tx);
     await audit(db, ctx.session, "order.crypto_proof", "order", o.id, { network, status: r.status }, req);
-    const fresh = await dbFirst<any>(db, `SELECT * FROM orders WHERE id = ?`, [o.id]);
+    const fresh = await db.orders.get(o.id);
     return respond({ ok: r.status !== "rejected", ...r, order: view(fresh) }, ctx);
   }
 
@@ -94,18 +96,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     // Which BNI account the buyer wired to (IDR, USD or EUR). The order then
     // carries that currency and the quoted amount, so Orders, the history and
     // the invoice all show what was actually sent. Only quotes we issued count.
-    let meta: any = {};
-    try { meta = JSON.parse(o.meta || "{}"); } catch {}
+    const meta: any = readMeta(o.meta);
     const quotes: { currency: string; amount: number }[] = Array.isArray(meta.bank_quotes) ? meta.bank_quotes : [];
     const chosen = quotes.find((q) => q.currency === String(b?.currency || "").toUpperCase()) || null;
     if (chosen && (chosen.currency !== o.currency || Number(chosen.amount) !== Number(o.amount_local))) {
-      await dbRun(db, `UPDATE orders SET currency = ?, amount_local = ? WHERE id = ? AND status = 'pending'`, [chosen.currency, chosen.amount, o.id]);
+      await db.orders.update(o.id, (x) => (x.status === "pending" ? { ...x, currency: chosen.currency, amount_local: Number(chosen.amount) } : null));
     }
     const currency = chosen?.currency || o.currency;
     const local = chosen ? Number(chosen.amount) : Number(o.amount_local);
     // A new proof replaces the previous one and clears an earlier rejection.
-    await dbRun(db, `UPDATE orders SET meta = json_set(COALESCE(NULLIF(meta,''),'{}'), '$.bank_proof', json(?)) WHERE id = ?`,
-      [JSON.stringify({ reference, note, currency, at: now(), ...(receipt ? { receipt } : {}) }), o.id]);
+    const proof = { reference, note, currency, at: now(), ...(receipt ? { receipt } : {}) };
+    await db.orders.update(o.id, (x) => ({ ...x, meta: patchMeta(x.meta, (m) => { m.bank_proof = proof; }) }));
     const sent = !local ? "" : currency === "IDR" ? ` / Rp${local.toLocaleString("id-ID")}` : currency === "EUR" ? ` / €${local.toFixed(2)} to the EUR account` : currency === "USD" ? ` to the USD account` : ` / ${currency} ${local}`;
     const text = `Bank transfer sent for order ${o.id} (${o.plan}, ${o.cycle}, US$${o.amount_usd}${sent}).${reference ? `\nReference: ${reference}` : ""}${receipt ? `\nReceipt uploaded (${receipt.name}) — open Admin → Orders to view it and approve.` : ""}${note ? `\nNote: ${note}` : ""}`;
     const { id: threadId } = await createThread(db, {
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       const sale = await getSale(db);
       return respond({ ok: true, status: "pending", whatsapp: sale.whatsapp, message: `Thanks — the owner verifies the wire (usually within one business day) and your administrator access is granted the moment it is confirmed. Please also send the transfer receipt on WhatsApp ${sale.whatsapp}.` }, ctx);
     }
-    const fresh = await dbFirst<any>(db, `SELECT * FROM orders WHERE id = ?`, [o.id]);
+    const fresh = await db.orders.get(o.id);
     return respond({ ok: true, status: "pending", order: view(fresh), message: receipt
       ? "Receipt received — our team checks it (usually within one business day). The moment it is approved your plan and licences appear in your dashboard and you get an e-mail."
       : "Thanks — our team confirms bank transfers within one business day. You'll get an e-mail the moment your plan is active." }, ctx);

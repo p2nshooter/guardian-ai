@@ -1,18 +1,19 @@
 /* AXTO — GET /api/billing/overview · the member's subscription and order history. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbFirst, dbQuery } from "@/lib/db";
+import { getData } from "@/lib/db";
+import { readMeta } from "@/lib/data/meta";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
   if (!ctx) return unauthorized();
-  const db = getDB(req);
-  const [subscription, orders] = await Promise.all([
-    dbFirst(db, `SELECT plan, cycle, status, current_period_start, current_period_end FROM subscriptions WHERE user_id = ?`, [ctx.session.sub]),
-    dbQuery(db, `SELECT id, invoice_no, plan, cycle, amount_usd, currency, amount_local, gateway, status, created_at, paid_at,
-                        COALESCE(json_extract(meta, '$.method'), '') AS method
-                   FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`, [ctx.session.sub]),
-  ]);
+  const db = getData(req);
+  const [sub, page] = await Promise.all([db.subscriptions.get(ctx.session.sub), db.orders.listDocs("user", ctx.session.sub, { limit: 50 })]);
+  const subscription = sub ? { plan: sub.plan, cycle: sub.cycle, status: sub.status, current_period_start: sub.current_period_start, current_period_end: sub.current_period_end } : null;
+  const orders = page.docs.map((o) => ({
+    id: o.id, invoice_no: o.invoice_no, plan: o.plan, cycle: o.cycle, amount_usd: o.amount_usd, currency: o.currency, amount_local: o.amount_local,
+    gateway: o.gateway, status: o.status, created_at: o.created_at, paid_at: o.paid_at, method: String(readMeta(o.meta).method || ""),
+  }));
   return respond({ subscription, orders }, ctx);
 }

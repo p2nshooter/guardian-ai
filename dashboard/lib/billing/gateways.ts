@@ -9,7 +9,9 @@
  * document (lib/secure-store.ts, name "payments") edited from Admin → Payments.
  * Nothing payment-related is stored in D1 or in the repository.
  * ============================================================================ */
-import { dbFirst, dbQuery, getR2, now } from "../db";
+import { getR2, now } from "../db";
+import type { Data } from "../data";
+import type { D1Like } from "../data/migrate";
 import { readSecure, writeSecure } from "../secure-store";
 import { decryptObj } from "../gateway-crypto";
 
@@ -209,14 +211,14 @@ export async function savePaymentSettings(s: PaymentSettings): Promise<void> {
 
 /**
  * One-time move of the v2 settings (D1 `payment_gateways`, encrypted rows) into
- * the encrypted R2 documents. Runs when an admin opens Payments and no R2
- * document exists yet; the D1 rows are left untouched (nothing is lost).
+ * the encrypted R2 documents. Part of the one-time D1 → R2 move
+ * (lib/data/migrate.ts); does nothing when the R2 document already exists.
  */
-export async function migrateLegacyPayments(db: any): Promise<number> {
+export async function migrateLegacyPayments(d1: D1Like): Promise<number> {
   if (await getR2().head("secure/payments.json.enc")) return 0;
   let rows: { gateway: string; credentials_enc: string; is_active: number; is_test_mode: number }[] = [];
   try {
-    rows = await dbQuery(db, `SELECT gateway, credentials_enc, is_active, is_test_mode FROM payment_gateways WHERE credentials_enc != ''`);
+    rows = (await d1.prepare(`SELECT gateway, credentials_enc, is_active, is_test_mode FROM payment_gateways WHERE credentials_enc != ''`).all<typeof rows[number]>()).results ?? [];
   } catch {
     return 0;
   }
@@ -305,7 +307,7 @@ export async function allPaymentSecrets(): Promise<string[]> {
 }
 
 // ── USD → IDR / EUR ─────────────────────────────────────────────────────────
-// Admin-set rate (platform_config.usd_idr_rate / usd_eur_rate) wins; otherwise
+// Admin-set rate (settings usd_idr_rate / usd_eur_rate) wins; otherwise
 // a cached public rate; otherwise a conservative constant. Rupiah amounts are
 // rounded up to Rp1,000, euro amounts up to the cent — never down, so the
 // price in dollars always arrives.
@@ -314,12 +316,11 @@ const FX: Record<"IDR" | "EUR", { fallback: number; min: number; max: number }> 
   EUR: { fallback: 0.95, min: 0.5, max: 1.5 },
 };
 
-async function usdRate(ccy: "IDR" | "EUR", db: any, kv?: any): Promise<number> {
+async function usdRate(ccy: "IDR" | "EUR", db: Data, kv?: any): Promise<number> {
   const { fallback, min, max } = FX[ccy];
   const ok = (v: number) => Number.isFinite(v) && v > min && v < max;
   try {
-    const row = await dbFirst<{ value: string }>(db, `SELECT value FROM platform_config WHERE key = ?`, [`usd_${ccy.toLowerCase()}_rate`]);
-    const v = Number(row?.value);
+    const v = Number(await db.config.get(`usd_${ccy.toLowerCase()}_rate`));
     if (ok(v)) return v;
   } catch {}
   try {
@@ -336,8 +337,8 @@ async function usdRate(ccy: "IDR" | "EUR", db: any, kv?: any): Promise<number> {
   return fallback;
 }
 
-export const usdIdrRate = (db: any, kv?: any) => usdRate("IDR", db, kv);
-export const usdEurRate = (db: any, kv?: any) => usdRate("EUR", db, kv);
+export const usdIdrRate = (db: Data, kv?: any) => usdRate("IDR", db, kv);
+export const usdEurRate = (db: Data, kv?: any) => usdRate("EUR", db, kv);
 
 export function toIdr(usd: number, rate: number): number {
   return Math.ceil((usd * rate) / 1000) * 1000;

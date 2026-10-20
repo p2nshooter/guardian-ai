@@ -48,7 +48,7 @@ export const ACTIVATION_FORMAT = "axto-lifetime-1";
 
 export const isScope = (x: unknown): x is LifetimeScope => x === "app" || x === "suite";
 
-/** Merge the admin override (platform_config.lifetime_prices) over the defaults, ignoring junk. */
+/** Merge the admin override (setting "lifetime_prices") over the defaults, ignoring junk. */
 export function mergeLifetimePrices(overrideJson: string | null | undefined): LifetimeTier[] {
   const tiers = LIFETIME_TIERS.map((t) => ({ ...t }));
   if (!overrideJson) return tiers;
@@ -64,10 +64,9 @@ export function mergeLifetimePrices(overrideJson: string | null | undefined): Li
   return tiers;
 }
 
-export async function getLifetimePrices(db: any): Promise<LifetimeTier[]> {
+export async function getLifetimePrices(db: { config: { get(key: string): Promise<string | null> } }): Promise<LifetimeTier[]> {
   try {
-    const row = await db.prepare(`SELECT value FROM platform_config WHERE key = 'lifetime_prices'`).first();
-    return mergeLifetimePrices(row?.value);
+    return mergeLifetimePrices(await db.config.get("lifetime_prices"));
   } catch {
     return mergeLifetimePrices(null);
   }

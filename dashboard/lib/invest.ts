@@ -1,11 +1,13 @@
 /* ==============================================================================
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * ==============================================================================
- * INVESTOR ROUND — AXTO only: storage (platform_config "invest_offer", the
- * investors and investor_payouts tables, paid AXTO revenue). The terms, the
+ * INVESTOR ROUND — AXTO only: storage (setting "invest_offer", the
+ * investors and investor_payouts collections, paid AXTO revenue). The terms, the
  * share formula and the statement are pure and live in lib/invest-terms.ts.
  * ============================================================================ */
-import { dbFirst, dbQuery, dbRun, newId, now } from "./db";
+import { newId, now } from "./db";
+import type { Data } from "./data";
+import type { InvestorDoc } from "./data/schema";
 import { INVEST_DEFAULTS, INVEST_KEY, buildStatement, sanitizeInvest, type InvestOffer, type Investor, type Payout, type Statement } from "./invest-terms";
 
 export * from "./invest-terms";
@@ -13,69 +15,76 @@ export * from "./invest-terms";
 const cents = (n: number) => Math.round(n * 100) / 100;
 
 
-export async function getInvest(db: any): Promise<InvestOffer> {
+export async function getInvest(db: Data): Promise<InvestOffer> {
   try {
-    const row = await dbFirst<{ value: string }>(db, `SELECT value FROM platform_config WHERE key = ?`, [INVEST_KEY]);
-    return row?.value ? sanitizeInvest(JSON.parse(row.value)) : { ...INVEST_DEFAULTS };
+    const raw = await db.config.get(INVEST_KEY);
+    return raw ? sanitizeInvest(JSON.parse(raw)) : { ...INVEST_DEFAULTS };
   } catch {
     return { ...INVEST_DEFAULTS };
   }
 }
 
-export async function saveInvest(db: any, s: InvestOffer): Promise<void> {
-  await dbRun(db, `INSERT INTO platform_config (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    [INVEST_KEY, JSON.stringify({ ...s, updatedAt: now() }), now()]);
+export async function saveInvest(db: Data, s: InvestOffer): Promise<void> {
+  await db.config.set(INVEST_KEY, JSON.stringify({ ...s, updatedAt: now() }));
 }
 
-/** Paid AXTO revenue since a moment (ISO), oldest first — amounts and times only. */
-export async function revenueSince(db: any, sinceIso: string): Promise<{ at: string; amountUsd: number }[]> {
-  const rows = await dbQuery<{ at: string; amount: number }>(db,
-    `SELECT paid_at AS at, amount_usd AS amount FROM orders
-      WHERE status = 'paid' AND paid_at != '' AND paid_at >= ?
-        AND plan NOT IN ('investment', 'acquisition')
-        AND COALESCE(json_extract(meta, '$.env'), 'live') != 'sandbox'
-      ORDER BY paid_at`, [sinceIso]);
-  return rows.filter((r) => Number(r.amount) > 0).map((r) => ({ at: r.at, amountUsd: Number(r.amount) }));
+/** Paid orders in the order they were paid, read from the "paid" index summaries (no document reads). */
+export async function paidOrders(db: Data): Promise<{ plan: string; amount_usd: number; paid_at: string; sandbox: number }[]> {
+  const out: { plan: string; amount_usd: number; paid_at: string; sandbox: number }[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await db.orders.list("paid", "all", { cursor, limit: 1000 });
+    for (const e of page.entries) out.push({ plan: String(e.meta.plan || ""), amount_usd: Number(e.meta.amount_usd) || 0, paid_at: String(e.meta.paid_at || ""), sandbox: Number(e.meta.sandbox) || 0 });
+    cursor = page.cursor;
+  } while (cursor);
+  return out;
 }
 
-export async function applyInvestor(db: any, a: { userId?: string; name: string; email: string; company?: string; country?: string; pledgeUsd: number; method: string; lang: string; message?: string }): Promise<string> {
+/** Paid AXTO revenue since a moment (ISO), oldest first — amounts and times only. Test money, investment and acquisition never count. */
+export async function revenueSince(db: Data, sinceIso: string): Promise<{ at: string; amountUsd: number }[]> {
+  return (await paidOrders(db))
+    .filter((o) => o.paid_at && o.paid_at >= sinceIso && o.plan !== "investment" && o.plan !== "acquisition" && !o.sandbox && o.amount_usd > 0)
+    .map((o) => ({ at: o.paid_at, amountUsd: o.amount_usd }));
+}
+
+export async function applyInvestor(db: Data, a: { userId?: string; name: string; email: string; company?: string; country?: string; pledgeUsd: number; method: string; lang: string; message?: string }): Promise<string> {
   const id = newId("inv");
-  await dbRun(db, `INSERT INTO investors (id, user_id, name, email, company, country, pledge_usd, method, status, lang, message, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'applied', ?, ?, ?)`,
-    [id, a.userId || "", a.name.slice(0, 120), a.email, (a.company || "").slice(0, 160), (a.country || "").slice(0, 80), Math.round(a.pledgeUsd), a.method, a.lang, (a.message || "").slice(0, 5000), now()]);
+  await db.investors.create({
+    id, user_id: a.userId || "", name: a.name.slice(0, 120), email: a.email, company: (a.company || "").slice(0, 160), country: (a.country || "").slice(0, 80),
+    pledge_usd: Math.round(a.pledgeUsd), capital_usd: 0, method: a.method, status: "applied", lang: a.lang, message: (a.message || "").slice(0, 5000),
+    note: "", created_at: now(), verified_at: "", verified_by: "", returned_at: "",
+  });
   return id;
 }
 
-export const listInvestors = (db: any) => dbQuery<Investor>(db, `SELECT * FROM investors ORDER BY created_at DESC LIMIT 500`);
-export const getInvestor = (db: any, id: string) => dbFirst<Investor>(db, `SELECT * FROM investors WHERE id = ?`, [id]);
-export const investorsByEmail = (db: any, email: string) =>
-  dbQuery<Investor>(db, `SELECT * FROM investors WHERE email = ? AND status IN ('verified', 'returned') ORDER BY verified_at DESC`, [email]);
+const asInvestor = (d: InvestorDoc) => d as unknown as Investor;
+export const listInvestors = async (db: Data) => (await db.investors.listAllDocs("all", "all", 500)).map(asInvestor);
+export const getInvestor = async (db: Data, id: string) => { const d = await db.investors.get(id); return d ? asInvestor(d) : null; };
+export const investorsByEmail = async (db: Data, email: string) =>
+  (await db.investors.listAllDocs("email", email.trim().toLowerCase())).filter((i) => i.status === "verified" || i.status === "returned").map(asInvestor);
 
-export async function raisedUsd(db: any): Promise<number> {
-  const r = await dbFirst<{ total: number }>(db, `SELECT COALESCE(SUM(capital_usd), 0) AS total FROM investors WHERE status = 'verified'`);
-  return Number(r?.total || 0);
+export async function raisedUsd(db: Data): Promise<number> {
+  const verified = await db.investors.listAllDocs("status", "verified");
+  return verified.reduce((a, i) => a + (Number(i.capital_usd) || 0), 0);
 }
 
-export async function verifyInvestor(db: any, id: string, capitalUsd: number, method: string, by: string): Promise<void> {
-  await dbRun(db, `UPDATE investors SET status = 'verified', capital_usd = ?, method = ?, verified_at = ?, verified_by = ? WHERE id = ? AND status = 'applied'`,
-    [Math.round(capitalUsd), method, now(), by, id]);
+export async function verifyInvestor(db: Data, id: string, capitalUsd: number, method: string, by: string): Promise<void> {
+  await db.investors.update(id, (i) => (i.status === "applied" ? { ...i, status: "verified", capital_usd: Math.round(capitalUsd), method, verified_at: now(), verified_by: by } : null));
 }
 
-export async function closeInvestor(db: any, id: string, status: "declined" | "returned", note: string, by: string): Promise<void> {
-  await dbRun(db, `UPDATE investors SET status = ?, note = ?, returned_at = CASE WHEN ? = 'returned' THEN ? ELSE returned_at END,
-                     verified_by = CASE WHEN verified_by = '' THEN ? ELSE verified_by END WHERE id = ?`,
-    [status, note.slice(0, 2000), status, now(), by, id]);
+export async function closeInvestor(db: Data, id: string, status: "declined" | "returned", note: string, by: string): Promise<void> {
+  await db.investors.update(id, (i) => ({
+    ...i, status, note: note.slice(0, 2000), returned_at: status === "returned" ? now() : i.returned_at, verified_by: i.verified_by || by,
+  }));
 }
 
-export async function recordPayout(db: any, investorId: string, period: string, amountUsd: number, reference: string, by: string): Promise<void> {
-  await dbRun(db, `INSERT INTO investor_payouts (id, investor_id, period, amount_usd, reference, paid_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [newId("ipo"), investorId, period, cents(amountUsd), reference.slice(0, 200), now(), by]);
+export async function recordPayout(db: Data, investorId: string, period: string, amountUsd: number, reference: string, by: string): Promise<void> {
+  await db.investorPayouts.create({ id: newId("ipo"), investor_id: investorId, period, amount_usd: cents(amountUsd), reference: reference.slice(0, 200), paid_at: now(), created_by: by });
 }
 
-export const listPayouts = (db: any, investorId: string) =>
-  dbQuery<Payout>(db, `SELECT * FROM investor_payouts WHERE investor_id = ? ORDER BY period, paid_at`, [investorId]);
+export const listPayouts = async (db: Data, investorId: string) => (await db.investorPayouts.listAllDocs("investor", investorId)) as unknown as Payout[];
 
-export async function statementFor(db: any, inv: Investor, offer: InvestOffer): Promise<Statement> {
+export async function statementFor(db: Data, inv: Investor, offer: InvestOffer): Promise<Statement> {
   const revenue = inv.verified_at ? await revenueSince(db, inv.verified_at) : [];
   return buildStatement(inv, offer, revenue, await listPayouts(db, inv.id));
 }
