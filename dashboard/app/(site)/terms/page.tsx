@@ -5,7 +5,7 @@ import { LegalDoc } from "@/components/site/LegalDoc";
 import { pageMeta, breadcrumbJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 
-export const metadata: Metadata = pageMeta({ title: "Terms of Service", description: `The terms that govern your use of ${SITE.name}.`, path: "/terms" });
+export const metadata: Metadata = pageMeta({ title: "Terms of Service", description: `The terms for using ${SITE.name}: accounts, your own AI keys, acceptable use, plans, billing and self-hosted licences, your content, liability and termination.`, path: "/terms" });
 const UPDATED = "September 2026";
 
 export default function TermsPage() {

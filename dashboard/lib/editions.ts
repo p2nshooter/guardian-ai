@@ -105,11 +105,11 @@ export const EDITIONS: Edition[] = [
     ["Unlimited devices", "Custom protocol decoders"]),
   // Antivirus — endpoints
   E("antivirus", "starter", "antivirus_starter", "Starter", 2_900, 290, { endpoints: 10 }, ["guardian_ml"],
-    ["Up to 10 endpoints", "ClamAV and YARA scanning API"]),
+    ["Up to 10 endpoints", "ClamAV and pattern-rule scanning API"]),
   E("antivirus", "professional", "antivirus_professional", "Professional", 9_900, 990, { endpoints: 100 }, [],
-    ["Up to 100 endpoints", "Behavioural machine learning"]),
+    ["Up to 100 endpoints", "Hash list that learns from your samples"]),
   E("antivirus", "enterprise", "antivirus_enterprise", "Enterprise", 29_900, 2_990, { endpoints: -1 }, [],
-    ["Unlimited endpoints", "Custom YARA rules and SOC integration"]),
+    ["Unlimited endpoints", "Bulk import of malware hash feeds"]),
   // AXTO Studio — requests per day, GPUs
   E("studio", "starter", "studio_starter", "Starter", 490, 49, { reqPerDay: 500, gpus: 1 }, ["hybrid_pool", "image_generation"],
     ["500 requests a day", "1 GPU endpoint"]),

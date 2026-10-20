@@ -72,3 +72,43 @@ test("installer and portal agree on every self-hosted product (key prefix, port,
     assert.equal(field(b, "ConfigAs"), p!.configTarget, `${slug} config target`);
   }
 });
+
+test("links: every internal href in the code points at a page, a route, a redirect or a public file", () => {
+  // Route patterns from app/**/page.tsx and route.ts; (group) folders are not part of the URL.
+  const routes: RegExp[] = [];
+  const walk = (dir: string, segs: string[]) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) walk(path.join(dir, e.name), /^\(.*\)$/.test(e.name) ? segs : [...segs, e.name]);
+      else if (/^(page|route)\.tsx?$/.test(e.name)) {
+        const re = segs.map((s) => (/^\[\.\.\..+\]$/.test(s) ? ".+" : /^\[.+\]$/.test(s) ? "[^/]+" : s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))).join("/");
+        routes.push(new RegExp(`^/${re}/?$`));
+      }
+    }
+  };
+  walk(path.join(ROOT, "app"), []);
+  const cfg = fs.readFileSync(path.join(ROOT, "next.config.ts"), "utf8");
+  // Only redirects() count: the headers() sources match every path.
+  const redirects = [...cfg.slice(cfg.indexOf("async redirects()")).matchAll(/source: "([^"]+)"/g)].map((m) => new RegExp(`^${m[1].replace(/:[a-z]+\*?/g, ".+")}/?$`));
+  const special = new Set(["/", "/sitemap.xml", "/robots.txt", "/manifest.webmanifest"]);
+  const isPublic = (p: string) => fs.existsSync(path.join(ROOT, "public", p)) && fs.statSync(path.join(ROOT, "public", p)).isFile();
+  const files: string[] = [];
+  const collect = (dir: string) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const f = path.join(dir, e.name);
+      if (e.isDirectory()) collect(f);
+      else if (/\.(tsx?|mdx?)$/.test(e.name)) files.push(f);
+    }
+  };
+  for (const d of ["app", "components", "lib"]) collect(path.join(ROOT, d));
+  const broken: string[] = [];
+  for (const f of files) {
+    const src = fs.readFileSync(f, "utf8");
+    for (const m of src.matchAll(/href(?:=|:\s*)["'](\/[^"'#?${}\s]*)/g)) {
+      const href = m[1].replace(/\/$/, "") || "/";
+      if (href.startsWith("//") || special.has(href) || isPublic(href)) continue;
+      if (routes.some((r) => r.test(href)) || redirects.some((r) => r.test(href)) || REWRITES.some(([r]) => r.test(href))) continue;
+      broken.push(`${path.relative(ROOT, f)} → ${href}`);
+    }
+  }
+  assert.deepEqual(broken, [], `links to pages that do not exist:\n${broken.join("\n")}`);
+});

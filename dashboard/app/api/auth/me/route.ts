@@ -10,7 +10,8 @@ import { localModeFor } from "@/lib/ai/local-settings";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
-  if (!ctx) return respond({ user: null }, null, { status: 401 });
+  // ?optional=1: public pages only ask "is someone signed in?" — a visitor is not an error there.
+  if (!ctx) return respond({ user: null }, null, { status: req.nextUrl.searchParams.has("optional") ? 200 : 401 });
   const s = ctx.session;
   const db = getDB(req);
   const tier = effectiveTier(s);

@@ -499,6 +499,12 @@ baseline enterprise di §6; pengiriman di §5. Template xaa.es punya blueprint s
 | 9 | AXTO Studio (`studio/`, `ai-studio/`, `gpu-studio/`, `hybrid-studio/`) | 1.471 + 1.928 + 2.006 + 1.493 | 0 | ✅ | ✅ | ✅ | ❌ | **dasar** | paritas AI Studio cloud lewat AXTO Workspace, model lokal (Ollama/vLLM) + CUDA teruji, RAG file lokal | ❌ |
 | 10 | AXTO Legal (`legal/`) | 4.352 | 0 | ✅ satu halaman HTML (±970 baris) di dalam `src/api.py` | ✅ | ✅ (satu-satunya yang membaca edisi) | 🔄 | standar | UI lengkap terpisah, paritas Legal AI cloud (36 workspace, redline, playbook, klausul, tenggat), mode air-gapped | ❌ |
 
+**20 Okt (cek produksi):** semua image lulus Docker smoke (amd64 + arm64, `/health`). Klaim publik yang tidak ada di kode
+sudah dikoreksi di `lib/product-catalog.ts` + `lib/editions.ts` (10 bahasa): Antivirus tanpa „machine learning“,
+„real-time“, „YARA“ atau „integrasi SOC“; Vault tanpa „AES-256-GCM vault“; Legal tanpa konektor LexisNexis/Westlaw; SOC
+tanpa STIX/TAXII; Edge tanpa „circuit breaking“; Orchestra tanpa „dead-letter“. Fitur itu baru boleh disebut lagi
+setelah dibangun dan diuji.
+
 „Standar“ = layanan berjalan di container dengan API + UI sederhana, tetapi belum memenuhi baseline enterprise §6 dan
 belum setara pembandingnya di §7. „Dasar“ = fungsi inti saja; paling butuh pekerjaan. **Tidak ada satu pun dari 10
 aplikasi yang hari ini boleh disebut „Enterprise“ menurut §6** (SSO/SCIM, audit berantai, HA, OpenTelemetry, OpenAPI,
@@ -534,7 +540,7 @@ pengguna Windows/Linux tidak perlu membuka komentar compose secara manual. Logik
 
 | Situs | Kode | Yang masih menunggu |
 |---|---|---|
-| axto.io | Bawaan **Live** untuk setiap gateway (`lib/billing/gateways.ts` → `normalize`: mode tanpa nilai = `live`); Sandbox hanya bila admin memilihnya, dan checkout menandainya sebagai uji | Pemilik menempelkan kunci **Live** PayPal (dan NOWPayments bila dipakai) di Admin → Payment & email dan memilih Live. Kunci dari file yang dikirim di chat **tidak pernah** ditulis ke repo/log; sebaiknya kunci itu diganti (rotate) karena sudah dibagikan di chat |
+| axto.io | Bawaan **Live** untuk setiap gateway (`lib/billing/gateways.ts` → `normalize`: mode tanpa nilai = `live`); Sandbox hanya bila admin memilihnya, dan checkout menandainya sebagai uji | ✅ 20 Okt: produksi melaporkan **PayPal = Live** dan **NOWPayments = Live** (`/api/billing/options`, audit live `BLUEPRINT-V4.md` §25.1). Belum aktif: transfer BNI (IDR/USD/EUR), kartu (Xendit/Midtrans), Stripe, kripto langsung — pemilik mengisi dan mengaktifkannya di Admin → Payments, lalu satu transaksi kecil sungguhan per metode. Kunci dari file yang dikirim di chat **tidak pernah** ditulis ke repo/log; sebaiknya kunci itu diganti (rotate) karena sudah dibagikan di chat |
 | xaa.es | `paypal_mode` kosong = Live (`src/server/settings.ts`), sandbox diberi label „Test mode“ di checkout | Sama: kunci Live diisi pemilik di Admin → Settings → PayPal Checkout |
 | Server PayPal tiruan untuk uji (permintaan 57) | masih ada: `dashboard/tests/e2e/paypal-mock.ts`, override `PAYPAL_SANDBOX_API`; xaa `tools/e2e/paypal-mock.mjs` | ganti dengan PayPal Sandbox asli bila kunci Sandbox tersedia sebagai secret CI; tanpa secret, uji dilewati dengan alasan jelas |
 
