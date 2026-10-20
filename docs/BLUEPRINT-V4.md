@@ -674,3 +674,48 @@ dicatat** — login admin xaa.es dan kunci PayPal ada di chat pemilik / di penyi
    naikkan `MIN_WORDS` engine ke 1.500.
 4. Temuan CORS lie.skin → `api.ulyah.com/track`.
 5. SEO "high class, super premium, nomor 1" di semua situs; laporan akhir berbahasa Indonesia kepada pemilik.
+
+## 23. Perintah pemilik 20 Okt 2026 — aplikasi HP, SEO, yang belum dibuat
+
+Dicatat apa adanya di `docs/REQUESTS.md` baris 73–78. Urutan pemilik: **kerjakan dulu yang belum dibuat di axto.io
+dan xaa.es**, baru promosi lagi; dawa.es tidak diurus lebih jauh.
+
+**A. Aplikasi yang bisa dipasang di HP (PWA) — axto.io dan xaa.es.**
+- Pemilik: tombol pasang dengan **ikon HP** di **paling atas**, aplikasi terbuka **tanpa browser**, dan ikon **hilang bila
+  aplikasi sudah terpasang**.
+- axto.io sudah punya manifest, service worker dan tombol „Install app“, tetapi (1) tombolnya ada di tengah header dan
+  memakai emoji, (2) di Android tombol sering tidak muncul karena event `beforeinstallprompt` sudah lewat sebelum React
+  aktif, (3) tidak ada deteksi „sudah terpasang“ selain mode standalone.
+- Logika: skrip kecil di `<head>` menangkap `beforeinstallprompt` dan `appinstalled` sedini mungkin. **Bilah pasang**
+  menjadi elemen pertama halaman publik, portal member dan halaman masuk: ikon HP, judul, satu kalimat („layar penuh,
+  tanpa browser“), tombol Pasang. Android/Chrome/Edge memakai dialog pasang bawaan; iPhone/iPad dan browser tanpa dialog
+  mendapat langkah singkat sesuai perangkatnya.
+- **Disembunyikan bila sudah terpasang:** (a) dibuka sebagai aplikasi (`display-mode: standalone`), (b) event
+  `appinstalled` → tanda di penyimpanan lokal, (c) `navigator.getInstalledRelatedApps()` (Chrome Android) dengan
+  `related_applications` di manifest. Bila browser kembali menawarkan pemasangan (aplikasi dihapus), tanda itu dihapus.
+  Tombol × menyembunyikan bilah 14 hari.
+- axto.io: 10 bahasa (`lib/i18n-pages/pwa.ts`). xaa.es: EN/ES/ID, ditambah manifest, ikon 192/512/maskable, service
+  worker (aset statis dari cache, halaman dari jaringan dengan halaman offline cadangan).
+
+**B. SEO yang meledak, dengan cara yang aman.** „Bagaimanapun caranya“ tetap dalam batas kebijakan spam Google — tanpa
+halaman doorway, teks tersembunyi, konten hasil putar-kata, atau jaringan tautan. Niche yang kuat:
+- **axto.io** — „AI yang privat“: alat AI dengan kunci sendiri (BYOK), mode lokal di perangkat, redaksi PII, alat
+  keamanan. Mesin trafik: **alat gratis yang benar-benar jalan di browser** (redaksi PDF/teks, penghapus metadata foto,
+  dekoder JWT, generator hash/kata sandi, penguji regex, dll.), masing-masing satu halaman dengan panduan, FAQ dan
+  JSON-LD `SoftwareApplication`; halaman perbandingan yang jujur („alternatif …“); hub istilah.
+- **xaa.es** — „template SaaS + studio pembuatan web“: halaman template dengan demo hidup dan gambar animasi,
+  kalkulator biaya website (alat gratis), panduan biaya per negara.
+- Teknis untuk keduanya: canonical & hreflang benar, sitemap dengan `lastmod`, IndexNow saat deploy, Core Web Vitals,
+  data terstruktur lengkap, tautan internal antarhalaman niche.
+
+**C. Yang belum dibuat (dikerjakan dahulu).** Template xaa.es mengikuti `xaa/docs/TEMPLATES-BLUEPRINT.md` (Waitlist
+pertama, lalu urutan di sana); **akun demo (username & kata sandi) ditampilkan di portal member xaa.es hanya untuk
+template yang demonya sudah tayang**. Aplikasi Docker axto.io mengikuti `AXTO-APPS-BLUEPRINT.md` §16.5.
+
+| Butir | Status |
+|---|---|
+| A — bilah pasang aplikasi axto.io | ✅ 20 Okt: bilah ikon HP paling atas (situs publik, portal member, halaman masuk), dialog pasang bawaan + langkah iPhone/Android, hilang bila terpasang (standalone · `appinstalled` · `getInstalledRelatedApps`), tombol × 14 hari, 10 bahasa; `tests/pwa.test.ts` + Playwright 8 skenario |
+| A — PWA lengkap xaa.es | ⏳ |
+| B — SEO axto.io | ⏳ |
+| B — SEO xaa.es | ⏳ |
+| C — template Waitlist + demo + akun demo di portal member | 🔄 |

@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import AppIcon from "@/components/site/AppIcon";
-import { InstallButton } from "@/components/pwa/Pwa";
 import { useI18n } from "@/lib/i18n";
 import { LANGS, dirOf, type Lang } from "@/lib/i18n-shared";
 import { ECOSYSTEM_CLOUD, ECOSYSTEM_SELF, type EcoApp } from "@/lib/ecosystem";
@@ -106,7 +105,6 @@ export default function SiteHeader() {
         </nav>
         <div className="ml-auto hidden items-center gap-2 lg:flex">
           <LangSelect />
-          <InstallButton className="btn text-slate-200 hover:bg-white/10 hover:text-white" />
           <Link href="/login" className="btn text-slate-200 hover:bg-white/10 hover:text-white">{t("site.signin")}</Link>
           <Link href="/register" className="btn-primary">{t("site.getstarted")}</Link>
         </div>
@@ -114,7 +112,6 @@ export default function SiteHeader() {
         {/* Mobile controls */}
         <div className="ml-auto flex items-center gap-2 lg:hidden">
           <LangSelect />
-          <InstallButton className="btn-crystal btn-sm" />
           <button type="button" className="btn text-slate-100 hover:bg-white/10" aria-label={t("site.menu")} aria-expanded={open} onClick={() => setOpen((v) => !v)}>☰</button>
         </div>
       </div>

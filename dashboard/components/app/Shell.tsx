@@ -15,7 +15,6 @@ import { useI18n, formatDate, LANGS, type Key } from "@/lib/i18n";
 import { CLOUD_APPS } from "@/lib/apps";
 import { Spinner } from "@/components/ui";
 import ChatWidget from "@/components/support/ChatWidget";
-import { InstallButton } from "@/components/pwa/Pwa";
 
 export interface Me {
   user: { id: string; email: string; role: "admin" | "member"; name: string; organization: string; country: string; createdAt: string };
@@ -148,7 +147,6 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
             <button className="btn-ghost btn-sm lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
             <div className="lg:hidden"><Logo size={22} /></div>
             <div className="ml-auto flex items-center gap-3">
-              <InstallButton lang={lang} className="btn-secondary btn-sm" />
               {me ? (
                 <>
                   {variant === "member" ? (

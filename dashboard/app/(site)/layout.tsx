@@ -9,10 +9,13 @@ import { orgJsonLd, websiteJsonLd } from "@/lib/seo";
 import { SITE } from "@/lib/site";
 import ChatWidget from "@/components/support/ChatWidget";
 import { I18nProvider } from "@/lib/i18n";
+import { InstallBar } from "@/components/pwa/Pwa";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <I18nProvider>
+      {/* Owner, 20 Oct 2026: the phone-app install bar sits at the very top; gone once AXTO is installed. */}
+      <InstallBar />
       <JsonLd data={[orgJsonLd(), websiteJsonLd()]} />
       <Copa2026 />
       <SiteHeader />
