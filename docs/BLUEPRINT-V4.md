@@ -473,7 +473,9 @@ bukan dari perkiraan.
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
 | 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 5/5 (tayang 19 Okt, deploy #74/#75 hijau) | **100 %** |
 | 10 | Yang belum dibuat di axto.io & xaa.es (18 Okt 2026, `REQUESTS.md` 70) | audit 10 aplikasi Docker ✅ (`AXTO-APPS-BLUEPRINT.md` §16) · logika 18 template xaa.es ✅ (repo xaa `docs/TEMPLATES-BLUEPRINT.md`) · G1 deteksi GPU di host · template pertama + demo + gambar animasi · 17 template lainnya | 2/5 | **40 %** |
-| | **Total** (bobot = jumlah fase) | | **39/71** | **≈ 55 %** |
+| 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi · akun & keamanan · uang · lisensi · lainnya · migrasi data + jendela pindah · D1 dilepas | 1/8 | **13 %** |
+| 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
+| | **Total** (bobot = jumlah fase) | | **41/83** | **≈ 49 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -718,4 +720,21 @@ template yang demonya sudah tayang**. Aplikasi Docker axto.io mengikuti `AXTO-AP
 | A — PWA lengkap xaa.es | ⏳ |
 | B — SEO axto.io | ⏳ |
 | B — SEO xaa.es | ⏳ |
-| C — template Waitlist + demo + akun demo di portal member | 🔄 |
+| C — template Waitlist + demo + akun demo di portal member | ✅ 20 Okt (repo xaa: demo `/demos/waitlist/`, galeri 15 klip, akun demo di portal member; tayang setelah PR digabung) |
+
+## 24. Perintah pemilik 20 Okt 2026 (2) — semua data ke R2, blueprint kuat, animasi panduan
+
+Dicatat apa adanya di `docs/REQUESTS.md` baris 79–80. Rancangan lengkap: **`docs/R2-DATA-BLUEPRINT.md`** (sama untuk
+xaa.es di repo xaa).
+
+- **Data:** tidak ada lagi data aplikasi di D1. R2 Store = dokumen JSON per objek, tulis bersyarat atomik
+  (If-None-Match untuk membuat, If-Match/etag untuk mengubah), penjaga keunikan, index lewat `list` + customMetadata,
+  ringkasan, log append-only berantai hash, rekonsiliasi terjadwal, backup harian 35 hari. Uang dan lisensi dijaga
+  dengan transisi bersyarat + ID deterministik sehingga tidak pernah dobel.
+- **axto.io:** 25 tabel yang dipakai kode dipetakan satu per satu (§7 dokumen itu); ±60 tabel lama diarsipkan. Pindah
+  bertahap: akun & keamanan → uang → lisensi → lainnya → migrasi data (cocok 100 %) → 7 hari pengamatan → D1 dilepas.
+  KV tetap untuk batas laju (bukan D1).
+- **Animasi panduan:** 23 alur pelanggan + 8 alur admin dalam 10 bahasa, direkam otomatis (Playwright, data contoh,
+  pembayaran mode sandbox di lokal), tampil di `/guides` dan tombol „Lihat panduan" di tempat alurnya dipakai.
+- **Pembayaran:** tetap Live dari Admin → Payments; kunci hanya di penyimpanan terenkripsi (tidak di repo).
+- **Urutan:** pustaka R2 Store dibangun dan diuji di xaa.es (19 tabel yang dipakai, lebih kecil) lalu dipakai di axto.io.
