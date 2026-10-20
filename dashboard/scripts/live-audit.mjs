@@ -149,7 +149,7 @@ await pool(toCheck, 8, async (path) => {
 
 /* 6. real browser, desktop + phone ------------------------------------------ */
 const KEY = ["/", "/pricing", "/apps", "/apps/clipper", "/apps/legal", "/self-hosted", "/self-hosted/guardian", "/self-hosted/guardian/guide",
-  "/acquire", "/invest", "/prompts", "/legal-ai", "/blog", "/help", "/developers", "/about", "/contact", "/status", "/login", "/signup"];
+  "/acquire", "/invest", "/prompts", "/legal-ai", "/blog", "/help", "/developers", "/about", "/contact", "/status", "/login", "/register"];
 const browser = await chromium.launch();
 report.browser = [];
 for (const [label, ctxOpts] of [["desktop", { viewport: { width: 1366, height: 900 } }], ["phone", { ...devices["iPhone 13"] }]]) {
@@ -167,7 +167,9 @@ for (const [label, ctxOpts] of [["desktop", { viewport: { width: 1366, height: 9
       status = res?.status() ?? 0;
       await page.waitForTimeout(800);
       overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-      testMode = await page.evaluate(() => /TEST MODE|MODE UJI|SANDBOX/i.test(document.body.innerText));
+      // The checkout badge of a sandbox method ("Test mode" / "TEST MODE" / "Mode uji"); prose that only
+      // mentions sandboxes (e.g. "test (sandbox) payments are never counted") is not a badge.
+      testMode = await page.evaluate(() => /\bTEST MODE\b|\bTest mode\b|\bMode uji\b|\bMODE UJI\b/.test(document.body.innerText));
     } catch (e) {
       errors.push(`navigation: ${String(e).slice(0, 200)}`);
     }

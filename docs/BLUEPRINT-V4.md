@@ -476,7 +476,7 @@ bukan dari perkiraan.
 | 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi · akun & keamanan · uang · lisensi · lainnya · migrasi data + jendela pindah · D1 dilepas | 1/8 | **13 %** |
 | 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
 | 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah · axto.io pindah · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 1/5 | **20 %** |
-| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82, §25) | data ke R2 · 10 aplikasi Docker lulus „selesai bila" (atau ditutup sebagai Early access) · semua pembayaran Live terbukti · uji ulang + CI hijau | 0/4 | **0 %** |
+| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–83, §25) | data ke R2 · 10 aplikasi Docker lulus „selesai bila" (atau ditutup sebagai Early access) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 0/4 | **0 %** |
 | | **Total** (bobot = jumlah fase) | | **42/92** | **≈ 46 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
@@ -765,3 +765,26 @@ Urutan kerja (dikerjakan setelah xaa.es selesai pindah ke R2 dan tayang):
    hanya ditempel pemilik di Admin → Payment & email (tidak pernah di repo, log atau chat).
 4. **Uji ulang semuanya** (`CLAUDE.md` §5): tsc + unit, E2E lokal Cloudflare, Playwright desktop + HP tanpa error
    konsol, CI hijau sebelum merge.
+
+### 25.1 Hasil cek 20 Okt 2026 („coba cek axto.io apakah seluruh sudah sempurna dan 100% siap produksi“)
+
+Diukur, bukan diperkirakan. Situs live dibuka di Chromium sungguhan lewat GitHub Actions (container kerja tidak bisa
+membuka axto.io): `dashboard/scripts/live-audit.mjs`, workflow „Live audit (axto.io, real browser)“ — sekarang jalan
+setelah setiap deploy dan setiap hari. Akun Cloudflare dibaca lewat akses CF (hanya metadata, tidak membaca data).
+
+| Bagian | Hasil terukur | Status |
+|---|---|---|
+| Kode | `tsc` bersih · 202/202 tes unit (termasuk kelengkapan i18n 10 bahasa) · E2E lokal Cloudflare (lihat PR) | ✅ |
+| Docker | Docker smoke di CI: semua image amd64 + arm64 dibangun, jalan dengan config contoh, menjawab `/health` | ✅ jalan · ❌ baseline §6 (lihat bawah) |
+| Situs live (build `53a5b1a`) | 553/553 halaman sitemap menjawab 200; title, description, canonical, JSON-LD, satu h1 dan tag AdSense ada di semua halaman; robots, ads.txt, sitemap benar; `/api/health` ok, semua binding + secret ada | ✅ |
+| Temuan situs live | (1) tautan „Installation guide“ di `/self-hosted` ke `/self-hosted-guide` → 404; (2) `/acquire` memanggil `/api/auth/me` → 401 di konsol untuk pengunjung; (3) deskripsi `/terms` hanya 39 karakter; (4) `/signup`, `/sign-up`, `/signin`, `/sign-in` → 404 | ✅ diperbaiki: daftar 10 panduan instalasi di `/self-hosted#guides`, `?optional=1` → 200 `{user:null}` (tes E2E), deskripsi baru, redirect permanen ke `/register` / `/login` |
+| Pembayaran (produksi, `/api/billing/options`) | **PayPal = Live**, **NOWPayments = Live**; tidak ada metode di sandbox | ✅ |
+| Pembayaran yang belum aktif | Transfer bank BNI (IDR/USD/EUR), kartu (Xendit/Midtrans), Stripe dan kripto langsung **tidak aktif** di produksi; belum ada satu transaksi kecil sungguhan per metode sebagai bukti | 🔄 pemilik: isi data BNI + kunci di Admin → Payments, aktifkan, lalu satu transaksi uji kecil per metode |
+| Data | D1 `axto-db` masih 86 tabel (5,7 MB); kode masih memakai 26 tabel lewat ±341 pernyataan SQL di 54 file; bucket `axto-data` / `axto-backups` belum dibuat | ❌ 0 % — `docs/R2-DATA-BLUEPRINT.md` §7 |
+| 10 aplikasi Docker vs „selesai bila“ | 0/10 lulus baseline enterprise §6 (tes per engine, batas edisi ditegakkan, SSO/SCIM, audit berantai, HA, OpenAPI …) — `AXTO-APPS-BLUEPRINT.md` §16.1 | ❌ |
+| Klaim publik vs kode | Klaim yang tidak ada di kode dikoreksi (`lib/product-catalog.ts`, `lib/editions.ts`, terjemahan 10 bahasa): Antivirus („machine learning“, „real-time“, „YARA“, „integrasi SOC“ — kodenya ClamAV + aturan pola + entropi + daftar hash yang belajar, pemindaian sesuai permintaan), Vault („AES-256-GCM vault“ → token per permintaan di memori), Legal (konektor LexisNexis/Westlaw tidak ada), SOC (STIX/TAXII tidak ada; „jutaan IOC“ → lookup AbuseIPDB + OTX + feed lokal), Edge („circuit breaking“), Orchestra („dead-letter“) | ✅ jujur sekarang |
+
+**Kesimpulan jujur:** axto.io **belum** 100 % siap produksi. Yang sudah siap: situs publik (553 halaman), aplikasi
+cloud, PayPal dan NOWPayments Live, image Docker yang jalan. Yang masih memblokir: (1) data masih di D1, (2) tidak ada
+aplikasi Docker yang lulus baseline enterprise, (3) BNI/kartu belum aktif dan belum ada bukti transaksi per metode.
+

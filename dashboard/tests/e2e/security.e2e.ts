@@ -245,6 +245,10 @@ test("members cannot read or change anyone else's data, and every admin API refu
   for (const p of ["/api/auth/me", "/api/selfhosted", "/api/lifetime", "/api/files", "/api/billing/overview", "/api/legal/matters"]) {
     assert.equal((await anon.get(p)).status, 401, `anonymous ${p}`);
   }
+  // Public pages ask "is someone signed in?" with ?optional=1: a visitor gets 200 and no account, never data.
+  const soft = await anon.get("/api/auth/me?optional=1");
+  assert.equal(soft.status, 200);
+  assert.deepEqual(soft.json, { user: null });
 });
 
 test("lifetime: the portal only links builds that exist", async () => {

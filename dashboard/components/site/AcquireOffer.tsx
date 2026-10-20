@@ -81,7 +81,7 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
 
   useEffect(() => {
     api<Info>("/api/acquire").then((r) => { if (r.ok) { setInfo(r.data); setGateway(r.data.gateways[0]?.id || ""); } });
-    api<{ user: Me | null }>("/api/auth/me").then((r) => { const u = r.ok ? r.data.user : null; setMe(u); if (u) setForm((f) => ({ ...f, name: f.name || u.name || "" })); });
+    api<{ user: Me | null }>("/api/auth/me?optional=1").then((r) => { const u = r.ok ? r.data.user : null; setMe(u); if (u) setForm((f) => ({ ...f, name: f.name || u.name || "" })); });
     const q = new URLSearchParams(window.location.search);
     const paidQ = q.get("paid");
     if (paidQ) { setOrderId(paidQ); setTimeout(() => document.getElementById("checkout")?.scrollIntoView({ behavior: "smooth" }), 300); }

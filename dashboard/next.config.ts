@@ -52,6 +52,11 @@ const nextConfig: NextConfig = {
       { source: "/guide", destination: "/self-hosted", permanent: true },
       { source: "/promo", destination: "/pricing", permanent: true },
       { source: "/reseller/:path*", destination: "/contact", permanent: true },
+      // The sign-up page is /register; people also type the usual names.
+      { source: "/signup", destination: "/register", permanent: true },
+      { source: "/sign-up", destination: "/register", permanent: true },
+      { source: "/signin", destination: "/login", permanent: true },
+      { source: "/sign-in", destination: "/login", permanent: true },
     ];
   },
 };

@@ -51,11 +51,20 @@ export default function SelfHostedIndex() {
         <div className="container-page relative">
           <Reveal className="mb-8 flex flex-wrap items-end justify-between gap-3">
             <h2 className="text-2xl font-bold text-white"><T k="lp.eco.self" /> <span className="ml-1 rounded-full bg-white/10 px-2 py-0.5 align-middle text-xs font-bold text-slate-300">{ECOSYSTEM_SELF.length}</span></h2>
-            <Link href="/self-hosted-guide" className="text-sm font-semibold text-brand-300 hover:text-gold-200"><T k="sh.idx.guide" /> →</Link>
+            <a href="#guides" className="text-sm font-semibold text-brand-300 hover:text-gold-200"><T k="sh.idx.guide" /> ↓</a>
           </Reveal>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {ECOSYSTEM_SELF.map((a, i) => <EcoTile key={a.slug} app={a} i={i} />)}
           </div>
+          {/* One installation guide per app (/self-hosted/<slug>/guide). */}
+          <nav id="guides" aria-labelledby="guides-title" className="mt-10 scroll-mt-24 rounded-2xl border border-white/10 bg-white/5 p-5" data-testid="sh-guides">
+            <h3 id="guides-title" className="text-sm font-bold uppercase tracking-wide text-gold-200"><T k="sh.idx.guide" /></h3>
+            <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
+              {ECOSYSTEM_SELF.map((a) => (
+                <li key={a.slug}><Link href={`/self-hosted/${a.slug}/guide`} className="text-slate-200 underline-offset-4 hover:text-gold-200 hover:underline">{a.name}</Link></li>
+              ))}
+            </ul>
+          </nav>
         </div>
       </section>
     </>
