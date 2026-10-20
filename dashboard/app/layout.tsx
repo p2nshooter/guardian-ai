@@ -11,6 +11,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { SITE, absoluteUrl } from "@/lib/site";
 import { PwaRegister } from "@/components/pwa/Pwa";
+import { PWA_EARLY } from "@/components/pwa/early";
 
 // "Crystal Palace" type (docs/BLUEPRINT-V4.md §18.1), served from our own origin:
 // Inter for reading, Playfair Display for the large public headings.
@@ -53,6 +54,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`}>
+      <head>
+        {/* Catches the browser's install offer before React starts (components/pwa/early.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: PWA_EARLY }} />
+      </head>
       <body>
         {SITE.isPreview ? (
           <div className="bg-amber-400 px-4 py-1.5 text-center text-xs font-semibold text-amber-950">

@@ -20,6 +20,9 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#07090d",
     theme_color: "#07090d",
     categories: ["productivity", "business", "utilities"],
+    // Lets Chrome tell the page that this app is already installed, so the install bar hides itself.
+    related_applications: [{ platform: "webapp", url: `${SITE.url}/manifest.webmanifest` }],
+    prefer_related_applications: false,
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
