@@ -5,6 +5,8 @@
 # (public /api/billing/options), /api/health, and the key pages in Chromium on
 # desktop and on a phone (console errors, failed requests, sideways scrolling).
 # Script: dashboard/scripts/live-audit.mjs. It changes nothing anywhere.
+# It audits production, not a pull request's code, so it runs after each
+# deploy, daily and on demand — never as a PR check.
 # ==============================================================================
 name: Live audit (axto.io, real browser)
 
@@ -15,11 +17,6 @@ on:
   workflow_dispatch: {}
   schedule:
     - cron: "23 5 * * *"
-  push:
-    branches: [claude/adsense-domain-config-esxjy1]
-    paths:
-      - ".github/workflows/live-audit.yml"
-      - "dashboard/scripts/live-audit.mjs"
 
 permissions:
   contents: read
