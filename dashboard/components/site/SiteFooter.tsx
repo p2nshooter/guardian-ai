@@ -23,6 +23,12 @@ export default function SiteFooter() {
           <Logo dark />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400"><T k="foot.tagline" /></p>
           <p className="mt-4 text-sm"><a href={`mailto:${SITE.email}`} className="text-brand-300 no-underline hover:text-brand-200">{SITE.email}</a></p>
+          {/* Owner, 18 Oct 2026: promote axto.io and xaa.es on every site — the sister studio, from here. */}
+          <p className="mt-4 text-sm">
+            <a href="https://xaa.es/?utm_source=axto.io&utm_medium=referral&utm_campaign=ecosystem" rel="noopener" className="eco-promo font-semibold text-amber-300 no-underline hover:text-amber-200" data-testid="footer-xaa">
+              <T k="foot.xaa" />
+            </a>
+          </p>
         </div>
         {col(<T k="foot.apps" />, CLOUD_APPS.map((a) => ({ href: `/apps/${a.slug}`, label: a.name })))}
         {col(<T k="foot.selfhosted" />, SELF_HOSTED.map((p): { href: string; label: React.ReactNode } => ({ href: `/self-hosted/${p.slug}`, label: catalogEntry(p.slug)?.name || p.slug })).concat([{ href: "/self-hosted", label: <T k="foot.allEditions" /> }]))}
