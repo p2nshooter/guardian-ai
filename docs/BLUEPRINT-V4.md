@@ -471,8 +471,9 @@ bukan dari perkiraan.
 | 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
 | 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti ✅ · admin terima/tolak ✅ · lisensi & email otomatis ✅ · uji E2E ✅ · tayang | dibangun sesi lain (`claude/bni-receipt-approval`), digabung ke branch kerja; tayang setelah CI hijau | **80 %** |
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
-| 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 4/5 → 5/5 saat tayang | **80 %** |
-| | **Total** (bobot = jumlah fase) | | **36/66** | **≈ 55 %** |
+| 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 5/5 (tayang 19 Okt, deploy #74/#75 hijau) | **100 %** |
+| 10 | Yang belum dibuat di axto.io & xaa.es (18 Okt 2026, `REQUESTS.md` 70) | audit 10 aplikasi Docker ✅ (`AXTO-APPS-BLUEPRINT.md` §16) · logika 18 template xaa.es ✅ (repo xaa `docs/TEMPLATES-BLUEPRINT.md`) · G1 deteksi GPU di host · template pertama + demo + gambar animasi · 17 template lainnya | 2/5 | **40 %** |
+| | **Total** (bobot = jumlah fase) | | **39/71** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
