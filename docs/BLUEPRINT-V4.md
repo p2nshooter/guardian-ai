@@ -774,7 +774,7 @@ setelah setiap deploy dan setiap hari. Akun Cloudflare dibaca lewat akses CF (ha
 
 | Bagian | Hasil terukur | Status |
 |---|---|---|
-| Kode | `tsc` bersih · 202/202 tes unit (termasuk kelengkapan i18n 10 bahasa) · E2E lokal Cloudflare (lihat PR) | ✅ |
+| Kode | `tsc` bersih · 202/202 tes unit (termasuk kelengkapan i18n 10 bahasa) · E2E lokal Cloudflare 123/125 lulus, 0 gagal (2 tes butuh Docker/Go, jalan di CI) · E2E penuh di CI hijau (PR #80) | ✅ |
 | Docker | Docker smoke di CI: semua image amd64 + arm64 dibangun, jalan dengan config contoh, menjawab `/health` | ✅ jalan · ❌ baseline §6 (lihat bawah) |
 | Situs live (build `53a5b1a`) | 553/553 halaman sitemap menjawab 200; title, description, canonical, JSON-LD, satu h1 dan tag AdSense ada di semua halaman; robots, ads.txt, sitemap benar; `/api/health` ok, semua binding + secret ada | ✅ |
 | Temuan situs live | (1) tautan „Installation guide“ di `/self-hosted` ke `/self-hosted-guide` → 404; (2) `/acquire` memanggil `/api/auth/me` → 401 di konsol untuk pengunjung; (3) deskripsi `/terms` hanya 39 karakter; (4) `/signup`, `/sign-up`, `/signin`, `/sign-in` → 404 | ✅ diperbaiki: daftar 10 panduan instalasi di `/self-hosted#guides`, `?optional=1` → 200 `{user:null}` (tes E2E), deskripsi baru, redirect permanen ke `/register` / `/login` |
@@ -783,6 +783,9 @@ setelah setiap deploy dan setiap hari. Akun Cloudflare dibaca lewat akses CF (ha
 | Data | D1 `axto-db` masih 86 tabel (5,7 MB); kode masih memakai 26 tabel lewat ±341 pernyataan SQL di 54 file; bucket `axto-data` / `axto-backups` belum dibuat | ❌ 0 % — `docs/R2-DATA-BLUEPRINT.md` §7 |
 | 10 aplikasi Docker vs „selesai bila“ | 0/10 lulus baseline enterprise §6 (tes per engine, batas edisi ditegakkan, SSO/SCIM, audit berantai, HA, OpenAPI …) — `AXTO-APPS-BLUEPRINT.md` §16.1 | ❌ |
 | Klaim publik vs kode | Klaim yang tidak ada di kode dikoreksi (`lib/product-catalog.ts`, `lib/editions.ts`, terjemahan 10 bahasa): Antivirus („machine learning“, „real-time“, „YARA“, „integrasi SOC“ — kodenya ClamAV + aturan pola + entropi + daftar hash yang belajar, pemindaian sesuai permintaan), Vault („AES-256-GCM vault“ → token per permintaan di memori), Legal (konektor LexisNexis/Westlaw tidak ada), SOC (STIX/TAXII tidak ada; „jutaan IOC“ → lookup AbuseIPDB + OTX + feed lokal), Edge („circuit breaking“), Orchestra („dead-letter“) | ✅ jujur sekarang |
+
+**Setelah perbaikan (PR #80, build `c782096`):** audit live di Chromium — 553/553 halaman, 40 pemuatan halaman desktop +
+HP — **0 masalah**. Audit ini sekarang jalan otomatis setelah setiap deploy dan setiap hari.
 
 **Kesimpulan jujur:** axto.io **belum** 100 % siap produksi. Yang sudah siap: situs publik (553 halaman), aplikasi
 cloud, PayPal dan NOWPayments Live, image Docker yang jalan. Yang masih memblokir: (1) data masih di D1, (2) tidak ada
