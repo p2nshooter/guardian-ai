@@ -303,7 +303,8 @@ Urut dari dampak terbesar; semuanya harus **nyata**, bukan klaim:
 | F2 | Smart License v5 (§11) | — | ⏳ |
 | F3 | Desain mewah menyeluruh: publik, login, portal member, admin (§13) | — | ⏳ |
 | F4 | Antivirus kelas dunia, tahap 1–4 (§14) | — | ⏳ |
-| F5 | Lifetime: harga baku + tawaran klien (acc manual) + diskon Jumat otomatis 30 % / 50 % (§15) | — | 🔄 |
+| F5 | Lifetime: harga baku + tawaran klien (acc manual) + diskon Jumat otomatis 30 % / 50 % (§15) | — | ⏳ (audit 20 Okt: belum ada di kode) |
+| G1 | Orchestra: deteksi GPU di host → profil compose GPU/CPU otomatis, Windows & Linux (§16.3, permintaan 56) | — | ⏳ |
 
 Setiap fase: satu PR, `cd dashboard && npx tsc --noEmit -p . && npm test`, `bash tests/e2e/run.sh`,
 uji browser nyata untuk UI, CI E2E hijau sebelum merge, baris di `docs/REQUESTS.md` diperbarui.
@@ -469,3 +470,85 @@ batas tawaran minimum %, masa berlaku tawaran) dan *Tawaran* (daftar, filter sta
 zona waktu WIB vs UTC), harga terbaik, batas tawaran; E2E: tawaran → tolak → tawaran → terima → checkout di harga
 tawaran → bayar → lisensi; checkout hari Jumat → 30 %; uji browser desktop + mobile tanpa error konsol.
 
+
+## 16. Audit 20 Okt 2026 — apa yang belum dibuat (perintah pemilik 18 Okt, `REQUESTS.md` baris 70)
+
+> „Perhatikan di axto.io (aplikasi/docker windows/Linux apa saja yg belum di buat atau app yg masih standar karena
+> project ini wajib berkelas dunia dengan fitur2 sempurna dan sangat komplit) dan wajib bikin high class premium
+> enterprise … Seluruhnya wajib di catat dan di kembangkan dulu logikanya dalam blueprint dan tandai yg sudah di
+> kerjakan, yg belum dan sedang di kerjakan, pastikan semua siap produksi bukan script sampah …"
+> dan: „Pelajari axto.io & xaa.es dan buat blueprint apa saja yg belum di buat, pastikan seluruh pembayaran sudah
+> menggunakan live bukan sandbox.“
+
+Diukur langsung dari kode di `main` (850596f), bukan dari perkiraan. Logika „selesai bila“ setiap aplikasi ada di §7;
+baseline enterprise di §6; pengiriman di §5. Template xaa.es punya blueprint sendiri di repo xaa:
+`docs/TEMPLATES-BLUEPRINT.md`.
+
+### 16.1 Sepuluh aplikasi Docker: keadaan sebenarnya
+
+| # | Aplikasi | Kode (baris) | File tes | UI web | Health | Cek lisensi | Batas edisi ditegakkan | Tingkat sekarang | Celah utama (rincian §7) | Status |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Guardian AI (`engine/`) | 15.787 | 0 | ✅ | ✅ | ✅ | ❌ | lengkap untuk Linux | agen Windows/macOS, aturan ATT&CK teruji, isolasi host, tes | 🔄 sebagian |
+| 2 | Orchestra AI (`orchestra/`) | 8.452 | 1 | ✅ | ✅ + `/metrics` | ✅ | ❌ | lengkap di worker | **deteksi GPU di host → worker GPU otomatis** (lihat 16.3), fallback per penyedia, cache semantik, anggaran tim | 🔄 sebagian |
+| 3 | Vault AI (`vault/`) | 4.201 | 0 | ✅ | ✅ | ✅ | ❌ | standar | paritas dengan Privacy Vault cloud, proxy OpenAI-compatible yang meredaksi, laporan akurasi per entitas | ❌ |
+| 4 | Edge AI (`edge/`) | 4.292 | 0 | ✅ | ✅ | ✅ | ❌ | standar (+ modul SSO awal di `enterprise.py`) | portal developer pembeli, metering teraudit, penagihan milik pembeli | ❌ |
+| 5 | SOC AI (`soc/`) | 5.620 | 0 | ✅ | ✅ + `/metrics` | ✅ | ❌ | standar | parser sumber log, korelasi Sigma, playbook SOAR, uji 1K EPS | ❌ |
+| 6 | Compliance AI (`compliance/`) | 3.481 | 0 | ✅ | ✅ | ✅ | ❌ | standar | paritas Compliance Center cloud, konektor bukti (AWS/Azure/GCP/GitHub/M365) | ❌ |
+| 7 | Sentinel OT (`sentinel/`) | 4.263 | 0 | ✅ | ✅ | ✅ | ❌ | standar | decoder protokol OT dengan PCAP uji, model Purdue, inventaris firmware + CVE | ❌ |
+| 8 | Antivirus (`antivirus/`) | 2.111 | 0 | ✅ | ✅ | ✅ | ❌ | **dasar — hanya API pemindaian di container** | agen endpoint Windows & Linux (on-access, karantina, update signature), konsol kebijakan, uji EICAR (§14) | ❌ |
+| 9 | AXTO Studio (`studio/`, `ai-studio/`, `gpu-studio/`, `hybrid-studio/`) | 1.471 + 1.928 + 2.006 + 1.493 | 0 | ✅ | ✅ | ✅ | ❌ | **dasar** | paritas AI Studio cloud lewat AXTO Workspace, model lokal (Ollama/vLLM) + CUDA teruji, RAG file lokal | ❌ |
+| 10 | AXTO Legal (`legal/`) | 4.352 | 0 | ✅ satu halaman HTML (±970 baris) di dalam `src/api.py` | ✅ | ✅ (satu-satunya yang membaca edisi) | 🔄 | standar | UI lengkap terpisah, paritas Legal AI cloud (36 workspace, redline, playbook, klausul, tenggat), mode air-gapped | ❌ |
+
+„Standar“ = layanan berjalan di container dengan API + UI sederhana, tetapi belum memenuhi baseline enterprise §6 dan
+belum setara pembandingnya di §7. „Dasar“ = fungsi inti saja; paling butuh pekerjaan. **Tidak ada satu pun dari 10
+aplikasi yang hari ini boleh disebut „Enterprise“ menurut §6** (SSO/SCIM, audit berantai, HA, OpenTelemetry, OpenAPI,
+WCAG, tes ≥ 70 %).
+
+### 16.2 Pengiriman Windows & Linux
+
+| Bagian | Sekarang | Belum ada |
+|---|---|---|
+| Image Linux amd64 + arm64 | ✅ dibangun CI (`auto-build-all.yml`, `_build-image.yml`), uji asap `docker-smoke.yml` di Ubuntu | registry OCI bertag, cosign, SBOM, Trivy (fase B1) |
+| `AXTO-Setup.exe` (Windows, Go) + installer Linux/macOS | ✅ dibangun CI (`build-installer.yml`) dengan `SHA256SUMS.txt` | tanda tangan Authenticode (sertifikat EV pemilik), `.msi`, `install.sh` bertanda tangan, `.deb`/`.rpm`, bundle air-gapped (fase B2) |
+| Agen native Windows (Antivirus, Guardian) | ❌ | layanan Windows Go yang melapor ke core |
+| Matriks uji OS | Ubuntu saja | Debian 12, RHEL 9, Windows Server 2022 / Windows 11 (fase B3) |
+| Pilih worker GPU otomatis saat instal | ❌ (worker GPU masih dikomentari di `orchestra-compose.yml`) | lihat 16.3 |
+
+### 16.3 Orchestra GPU on-demand & CPU — logika deteksi GPU di host (permintaan 56)
+
+Deteksi di **dalam** worker GPU sudah ada (`orchestra_worker/worker_gpu.py`: nvidia-smi → /proc → rocm-smi → lspci →
+sysfs → Intel → torch → CPU). Yang belum ada adalah keputusan **di host** sebelum container dijalankan, sehingga
+pengguna Windows/Linux tidak perlu membuka komentar compose secara manual. Logika:
+
+1. `AXTO-Setup` (Go) memeriksa host: Linux → `nvidia-smi -L`, `/proc/driver/nvidia/gpus`, `rocminfo`/`/dev/kfd`,
+   `/dev/dri/renderD*` + vendor PCI; Windows → `nvidia-smi.exe`, WMI `Win32_VideoController` (vendor 10DE/1002/8086),
+   lalu `docker info` untuk runtime `nvidia` (Linux) atau dukungan GPU WSL 2 (Windows).
+2. Hasil → profil compose: `gpu-nvidia` (worker CUDA dengan `deploy.resources.reservations.devices`), `gpu-amd`
+   (image ROCm, `/dev/kfd` + `/dev/dri`), `gpu-intel` (`/dev/dri`, OpenVINO), atau `cpu`. NVIDIA tanpa
+   nvidia-container-toolkit → tetap CPU + pesan jelas cara memasang toolkit (tanpa gagal diam-diam).
+3. Ditampilkan di layar instal dan disimpan di `state.json`; tombol „Deteksi ulang“ setelah driver dipasang.
+4. **Selesai bila:** tes unit Go dengan keluaran contoh tiap vendor (termasuk tanpa GPU dan toolkit hilang), compose
+   tervalidasi untuk keempat profil, uji asap CPU di CI; uji GPU nyata dicatat manual.
+
+### 16.4 Pembayaran live, bukan sandbox
+
+| Situs | Kode | Yang masih menunggu |
+|---|---|---|
+| axto.io | Bawaan **Live** untuk setiap gateway (`lib/billing/gateways.ts` → `normalize`: mode tanpa nilai = `live`); Sandbox hanya bila admin memilihnya, dan checkout menandainya sebagai uji | Pemilik menempelkan kunci **Live** PayPal (dan NOWPayments bila dipakai) di Admin → Payment & email dan memilih Live. Kunci dari file yang dikirim di chat **tidak pernah** ditulis ke repo/log; sebaiknya kunci itu diganti (rotate) karena sudah dibagikan di chat |
+| xaa.es | `paypal_mode` kosong = Live (`src/server/settings.ts`), sandbox diberi label „Test mode“ di checkout | Sama: kunci Live diisi pemilik di Admin → Settings → PayPal Checkout |
+| Server PayPal tiruan untuk uji (permintaan 57) | masih ada: `dashboard/tests/e2e/paypal-mock.ts`, override `PAYPAL_SANDBOX_API`; xaa `tools/e2e/paypal-mock.mjs` | ganti dengan PayPal Sandbox asli bila kunci Sandbox tersedia sebagai secret CI; tanpa secret, uji dilewati dengan alasan jelas |
+
+### 16.5 Urutan kerja berikutnya (dari audit ini)
+
+| Urutan | Fase | Isi | Status |
+|---|---|---|---|
+| 1 | G1 | Deteksi GPU di host + profil compose otomatis Windows & Linux (16.3) | ❌ |
+| 2 | A4 | Engine menegakkan batas edisi + watermark trial (10 engine; Legal sudah membaca edisi) | ❌ |
+| 3 | C2 | Tes per engine (sekarang 0 file tes di 12 dari 14 direktori) | ❌ |
+| 4 | D10 | AXTO Legal: UI lengkap (sekarang satu halaman HTML di dalam `api.py`) + paritas Legal AI cloud | ❌ |
+| 5 | F4 / D8 | Antivirus tahap 1 (§14) | ❌ |
+| 6 | D9 | Studio: paritas cloud + model lokal | ❌ |
+| 7 | B1–B3 | Rilis bertanda tangan, installer lengkap, matriks OS | ❌ |
+| 8 | C1 | Baseline enterprise §6 sebagai pustaka bersama | ❌ |
+| 9 | F5 | Lifetime: diskon Jumat + tawaran klien (§15) — **belum ada di kode** (`lib/lifetime.ts` tanpa logika Jumat) | ❌ |
+| 10 | F2, F3 | Smart License v5, desain menyeluruh | ❌ |
