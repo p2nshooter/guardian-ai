@@ -83,6 +83,12 @@ test("migration: every legacy row arrives with the same id, in resumable steps",
   assert.equal((await db.connectEvents.get("1700000000000001"))?.seq, 1700000000000001);
   assert.equal(await db.config.get("usd_idr_rate"), "16400");
   assert.equal(await db.store.next("invoice"), 42, "the invoice counter continues");
+  // Without a counter row, the counter still starts after the highest invoice that exists.
+  const other = legacyD1();
+  other.db.prepare(`INSERT INTO orders (id, invoice_no, user_id, email, plan, cycle, amount_usd, gateway, status) VALUES ('o9', 'AXTO-2026-000917', 'u', 'u@example.com', 'pro', 'monthly', 9, 'manual', 'paid')`).run();
+  const fresh = testData();
+  for (let i = 0; i < 20 && !(await runMigration(fresh.db, { d1: other.d1 }, 1)); i++);
+  assert.equal(await fresh.db.store.next("invoice"), 918);
   assert.ok(archive.get("legacy/magic_links.jsonl")?.includes("ml1"), "unused tables are archived, not lost");
   // The conflict keeps the whole row.
   const kept = [...bucket.objects.keys()].filter((k) => k.startsWith("k/meta/migration-conflicts/users/"));

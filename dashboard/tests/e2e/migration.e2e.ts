@@ -81,9 +81,19 @@ test("data: Admin → Data reports the move; a backup taken in parts by the tick
   assert.equal(v.backup.configured, true);
   assert.ok(!JSON.stringify(v).includes("legacy-member@example.com"), "counts only, never records");
 
+  // After 02:00 UTC the daily backup may already be running (the tick starts it by itself): let it finish first.
+  const tickUntilIdle = async () => {
+    for (let i = 0; i < 200; i++) {
+      const job = (await get()).backup.job;
+      if (!job || job.done_at) return;
+      await fetch(`${BASE}/api/cron/tick`, { headers: CRON });
+    }
+    assert.fail("the running backup never finished");
+  };
+  await tickUntilIdle();
   assert.equal((await post({ action: "backup" })).status, 200);
   assert.equal((await post({ action: "backup" })).status, 409, "one backup at a time");
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 200; i++) {
     await fetch(`${BASE}/api/cron/tick`, { headers: CRON });
     const job = (await get()).backup.job;
     if (job?.done_at) break;

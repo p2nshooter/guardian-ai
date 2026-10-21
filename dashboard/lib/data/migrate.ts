@@ -204,6 +204,20 @@ async function probeConditionalWrites(d: Data): Promise<void> {
   if (!first || second || stale || body !== "first") throw new Error("R2 conditional writes are not honoured by this bucket; records will not be stored until they are.");
 }
 
+/** Make a counter at least `min` (compare-and-swap; never lowers it). */
+async function raiseCounter(d: Data, name: string, min: number): Promise<void> {
+  if (!(min > 0)) return;
+  const b = d.store.bucket;
+  const key = `n/${name}`;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const cur = await d.store.retry(() => b.get(key));
+    const value = cur ? num((JSON.parse(await cur.text()) as { value: number }).value) : 0;
+    if (value >= min) return;
+    const ok = await d.store.retry(() => b.put(key, JSON.stringify({ value: min }), { onlyIf: cur ? { etagMatches: cur.etag } : CREATE_ONLY() }));
+    if (ok) return;
+  }
+}
+
 /* ── the copy ───────────────────────────────────────────────────────── */
 
 async function tableExists(d1: D1Like, table: string): Promise<boolean> {
@@ -311,6 +325,11 @@ export async function migrationStep(d: Data, env: StepEnv): Promise<MigrationSta
         const v = num(r.value);
         await d.store.retry(() => d.store.bucket.put(`n/${r.name}`, JSON.stringify({ value: v }), { onlyIf: CREATE_ONLY() }));
       }
+    }
+    // The invoice counter never restarts below an invoice that already exists (AXTO-YYYY-NNNNNN).
+    if (await tableExists(d1, "orders")) {
+      const top = await d1.prepare(`SELECT MAX(CAST(substr(invoice_no, 11) AS INTEGER)) AS n FROM orders WHERE invoice_no LIKE 'AXTO-____-%'`).bind().first<{ n: number }>();
+      await raiseCounter(d, "invoice", num(top?.n));
     }
     p.counters = true;
     await save();

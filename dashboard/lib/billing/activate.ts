@@ -15,6 +15,7 @@
  * ============================================================================ */
 import { autoIssueAfterPayment, ADMIN_HOLD } from "../licences";
 import { getR2, now } from "../db";
+import { ConflictError } from "../r2/store";
 import type { Data } from "../data";
 import { ids, type OrderDoc, type SubscriptionDoc } from "../data/schema";
 import { patchMeta, readMeta } from "../data/meta";
@@ -108,9 +109,15 @@ async function claimOrder(db: Data, id: string, gatewayRef?: string, grant = fal
 /** Give a paid order its invoice number (once) and store the printable invoice. */
 async function invoiceFor(db: Data, o: OrderRow, until?: string): Promise<OrderRow> {
   let paid = o;
-  if (!o.invoice_no) {
+  // A number is never given twice (its guard is create-once); one already taken — an invoice carried over
+  // from D1 ahead of the counter — is skipped and the next one taken.
+  for (let attempt = 0; !paid.invoice_no && attempt < 100; attempt += 1) {
     const no = await nextInvoiceNo(db);
-    paid = await db.orders.update(o.id, (c) => (c.invoice_no ? null : { ...c, invoice_no: no }));
+    try {
+      paid = await db.orders.update(o.id, (c) => (c.invoice_no ? null : { ...c, invoice_no: no }));
+    } catch (e) {
+      if (!(e instanceof ConflictError)) throw e;
+    }
   }
   const user = await db.users.get(o.user_id);
   try {
