@@ -29,6 +29,8 @@ export interface BackupJob {
   after: string;
   parts: number;
   objects: number;
+  /** Compressed size of the parts written so far. */
+  bytes?: number;
   done_at?: string;
 }
 
@@ -45,7 +47,7 @@ function newJob(now: Date, reason: string): BackupJob {
   const tag = reason.replace(/[^a-z0-9-]+/gi, "-").toLowerCase().slice(0, 40) || "manual";
   return {
     id: `${dayOf(now)}/${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}-${tag}`,
-    reason, started_at: now.toISOString(), prefix: 0, after: "", parts: 0, objects: 0,
+    reason, started_at: now.toISOString(), prefix: 0, after: "", parts: 0, objects: 0, bytes: 0,
   };
 }
 
@@ -119,14 +121,16 @@ export async function backupStep(data: R2Like, store: Store, backups: BlobBucket
     }
     const last = page.objects.length ? page.objects[page.objects.length - 1]!.key : job.after;
     const nextPart = job.parts + (objects.length ? 1 : 0);
+    let written = 0;
     if (objects.length) {
       const gz = await gzip(JSON.stringify({ part: nextPart, objects }));
       await backups.put(partKey(`backups/${job.id}`, nextPart), gz, { httpMetadata: { contentType: "application/gzip" }, customMetadata: { sha256: await sha256(gz) } });
+      written = gz.byteLength;
     }
     const from = job;
     const moved: BackupJob = page.truncated
-      ? { ...job, after: last, parts: nextPart, objects: job.objects + objects.length }
-      : { ...job, prefix: job.prefix + 1, after: "", parts: nextPart, objects: job.objects + objects.length };
+      ? { ...job, after: last, parts: nextPart, objects: job.objects + objects.length, bytes: (job.bytes ?? 0) + written }
+      : { ...job, prefix: job.prefix + 1, after: "", parts: nextPart, objects: job.objects + objects.length, bytes: (job.bytes ?? 0) + written };
     let advanced = false;
     await store.updateDoc<BackupJob | null>(JOB, null, (cur) => {
       // Only from the position this slice started at: an overlapping tick that already moved on wins.
@@ -142,10 +146,13 @@ export async function backupStep(data: R2Like, store: Store, backups: BlobBucket
   const key = `backups/${job.id}.json.gz`;
   await backups.put(key, gz, {
     httpMetadata: { contentType: "application/gzip" },
-    customMetadata: { taken_at: job.started_at, reason: job.reason.slice(0, 200), objects: String(job.objects), parts: String(job.parts), sha256: await sha256(gz) },
+    customMetadata: {
+      taken_at: job.started_at, reason: job.reason.slice(0, 200), objects: String(job.objects), parts: String(job.parts),
+      bytes: String((job.bytes ?? 0) + gz.byteLength), sha256: await sha256(gz),
+    },
   });
   const done = job;
   await store.updateDoc<BackupJob | null>(JOB, null, (cur) => (cur && cur.id === done.id && !cur.done_at ? { ...cur, done_at: now.toISOString() } : null));
   const pruned = await prune(backups, now).catch(() => 0);
-  return { state: "finished", backup: { key, takenAt: job.started_at, reason: job.reason, objects: job.objects, bytes: gz.byteLength }, pruned };
+  return { state: "finished", backup: { key, takenAt: job.started_at, reason: job.reason, objects: job.objects, bytes: (job.bytes ?? 0) + gz.byteLength }, pruned };
 }

@@ -37,13 +37,13 @@ VARS
 (cd "$CTL" && CI=1 WRANGLER_SEND_METRICS=false npx wrangler d1 migrations apply axto-db --local --persist-to ../persist >/dev/null)
 # Legacy records the one-time move must carry over (checked by tests/e2e/migration.e2e.ts).
 (cd "$CTL" && CI=1 WRANGLER_SEND_METRICS=false npx wrangler d1 execute axto-db --local --persist-to ../persist --command "
-  INSERT INTO users (id, email, role, password_hash, name, organization, country, status, created_at, updated_at)
+  INSERT OR IGNORE INTO users (id, email, role, password_hash, name, organization, country, status, created_at, updated_at)
     VALUES ('legacy-user-1', 'legacy-member@example.com', 'client', '', 'Legacy Member', 'Old Co', 'ID', 'active', '2026-01-02 03:04:05', '2026-01-02 03:04:05');
-  INSERT INTO subscriptions (user_id, plan, cycle, status, current_period_start, current_period_end, created_at, updated_at)
+  INSERT OR IGNORE INTO subscriptions (user_id, plan, cycle, status, current_period_start, current_period_end, created_at, updated_at)
     VALUES ('legacy-user-1', 'pro', 'yearly', 'active', '2026-01-02T03:04:05.000Z', '2099-01-02T03:04:05.000Z', '2026-01-02 03:04:05', '2026-01-02 03:04:05');
-  INSERT INTO orders (id, invoice_no, user_id, email, plan, cycle, amount_usd, currency, gateway, status, meta, created_at, paid_at)
+  INSERT OR IGNORE INTO orders (id, invoice_no, user_id, email, plan, cycle, amount_usd, currency, gateway, status, meta, created_at, paid_at)
     VALUES ('ord_legacy_1', 'AXTO-2026-000001', 'legacy-user-1', 'legacy-member@example.com', 'pro', 'yearly', 490, 'USD', 'manual', 'paid', '{\"env\":\"live\"}', '2026-01-02 03:04:05', '2026-01-02 03:05:00');
-  INSERT INTO platform_config (key, value, updated_at) VALUES ('e2e_legacy_setting', 'carried-over', '2026-01-02 03:04:05');
+  INSERT OR IGNORE INTO platform_config (key, value, updated_at) VALUES ('e2e_legacy_setting', 'carried-over', '2026-01-02 03:04:05');
 " >/dev/null)
 cd "$WORK"
 # --log-level info logs one line per request, so a request that hangs is named in the CI log.

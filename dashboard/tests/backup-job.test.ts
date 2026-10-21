@@ -76,6 +76,9 @@ test("backup: due once a day, taken in parts, read back complete; old ones remov
   const listed = await listBackups(backups);
   assert.ok(listed.some((b) => b.key === last.backup.key), "parts are not listed as backups");
   assert.ok(!listed.some((b) => b.key.includes(".part-")));
+  const partBytes = backups.keys().filter((k) => k.startsWith(last.backup.key.replace(/\.json\.gz$/, ".part-"))).length;
+  assert.ok(partBytes > 1);
+  assert.ok(listed.find((b) => b.key === last.backup.key)!.bytes > 1000, "the size is the whole backup, not the manifest");
 
   // Done for today; tomorrow's starts by itself.
   assert.deepEqual(await backupStep(bucket, db.store, backups, at("2026-10-20T23:00:00Z")), { state: "idle" });

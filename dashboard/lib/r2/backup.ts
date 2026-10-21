@@ -146,7 +146,8 @@ export async function listBackups(backups: BlobBucket, limit = 20): Promise<Back
         takenAt: o.customMetadata?.taken_at ?? o.uploaded.toISOString(),
         reason: o.customMetadata?.reason ?? '',
         objects: Number(o.customMetadata?.objects ?? 0),
-        bytes: o.size ?? 0,
+        // A backup taken in parts names its total size; a single-file backup is its own size.
+        bytes: Number(o.customMetadata?.bytes ?? o.size ?? 0),
       });
     }
     cursor = page.truncated ? page.cursor : undefined;
