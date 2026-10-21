@@ -138,7 +138,11 @@ export function collections(store: Store) {
       unique: [{ name: "invoice_no", value: (o) => o.invoice_no }],
       indexes: [
         { name: "user", key: (o) => o.user_id },
-        { name: "all", key: () => "all", meta: (o) => ({ status: o.status, plan: o.plan, cycle: o.cycle, gateway: o.gateway, amount_usd: o.amount_usd, created_at: o.created_at, paid_at: o.paid_at, sandbox: isSandbox(o) ? 1 : 0 }) },
+        // Enough for Admin → Orders to filter and search (status, e-mail, id, invoice, gateway reference, IDR amount) without reading orders.
+        {
+          name: "all", key: () => "all",
+          meta: (o) => ({ status: o.status, plan: o.plan, cycle: o.cycle, gateway: o.gateway, amount_usd: o.amount_usd, amount_local: o.amount_local, email: o.email, invoice_no: o.invoice_no, gateway_ref: (o.gateway_ref || "").slice(0, 120), created_at: o.created_at, paid_at: o.paid_at, sandbox: isSandbox(o) ? 1 : 0 }),
+        },
         { name: "pending", key: (o) => (o.status === "pending" ? o.gateway : null), sort: (o) => oldestFirst(o.created_at), meta: (o) => ({ amount_local: o.amount_local, amount_usd: o.amount_usd, created_at: o.created_at }) },
         { name: "paid", key: (o) => (o.status === "paid" && o.paid_at ? "all" : null), sort: (o) => oldestFirst(o.paid_at), meta: (o) => ({ plan: o.plan, amount_usd: o.amount_usd, paid_at: o.paid_at, sandbox: isSandbox(o) ? 1 : 0 }) },
         { name: "plan", key: (o) => o.plan },
@@ -153,7 +157,11 @@ export function collections(store: Store) {
       ],
       indexes: [
         { name: "user", key: (l) => l.user_id },
-        { name: "all", key: () => "all", meta: (l) => ({ user_id: l.user_id, product: l.product, source: l.source, status: l.status, package_code: l.package_code }) },
+        // Everything Admin → Licences lists, so the list is a few list calls (last_seen_at changes at most hourly per licence).
+        {
+          name: "all", key: () => "all",
+          meta: (l) => ({ user_id: l.user_id, product: l.product, source: l.source, license_key: l.license_key, package_code: l.package_code, status: l.status, expires_at: l.expires_at, max_nodes: l.max_nodes, bound_machine_id: l.bound_machine_id, last_seen_at: l.last_seen_at, last_version: l.last_version, last_ip: l.last_ip, reset_count: l.reset_count, notes: (l.notes || "").slice(0, 200), created_at: l.created_at }),
+        },
         { name: "trial_machine", key: (l) => (l.source === "trial" && l.bound_machine_id ? `${l.product}|${l.bound_machine_id}` : null) },
       ],
     }),
@@ -230,7 +238,8 @@ export function collections(store: Store) {
       unique: [{ name: "hash", value: (k) => k.hash }],
       indexes: [
         { name: "user", key: (k) => k.user_id },
-        { name: "all", key: () => "all" },
+        // What Admin → Connect lists (never the hash). last_used_at is written at most once a minute per key.
+        { name: "all", key: () => "all", meta: (k) => ({ user_id: k.user_id, name: k.name, prefix: k.prefix, scopes: k.scopes, origins: k.origins, created_at: k.created_at, last_used_at: k.last_used_at, revoked_at: k.revoked_at }) },
       ],
     }),
     userAiKeys: store.collection<UserAiKeyDoc>({
@@ -251,7 +260,8 @@ export function collections(store: Store) {
     audit: store.collection<AuditDoc>({
       name: "audit_log",
       indexes: [
-        { name: "all", key: () => "all" },
+        // The summary carries what the audit page shows and searches, so a page of the log is one list call.
+        { name: "all", key: () => "all", meta: (a) => ({ actor_email: a.actor_email, action: a.action, entity_type: a.entity_type, entity_id: a.entity_id.slice(0, 120), ip_address: a.ip_address, created_at: a.created_at, metadata: (a.metadata || "").slice(0, 600) }) },
         { name: "action", key: (a) => a.action },
         { name: "actor", key: (a) => lower(a.actor_email) || null },
         { name: "entity", key: (a) => (a.entity_type ? `${a.entity_type}|${a.entity_id}` : null) },

@@ -3,12 +3,12 @@
  * the WhatsApp number are only returned inside a started checkout. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { activeGateways } from "@/lib/billing/gateways";
 import { getSale, PAYPAL_TYPICAL_MAX_USD } from "@/lib/acquisition";
 
 export async function GET(req: NextRequest) {
-  const db = getDB(req);
+  const db = getData(req);
   const [sale, active] = await Promise.all([getSale(db), activeGateways(db)]);
   const live = new Map(active.map((g) => [g.id, g]));
   type Method = { id: string; label: string; methods: string; test: boolean; limit?: number };

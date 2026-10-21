@@ -4,7 +4,8 @@
  *       payment methods, WhatsApp number and the BNI receiving accounts */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbQuery } from "@/lib/db";
+import { getData } from "@/lib/db";
+import { readMeta } from "@/lib/data/meta";
 import { requireAdmin, respond, forbidden } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { getSale, saveSale, sanitizeSale, SALE_DEFAULTS, SALE_GATEWAYS } from "@/lib/acquisition";
@@ -13,18 +14,17 @@ import { activeGateways } from "@/lib/billing/gateways";
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return forbidden();
-  const db = getDB(req);
+  const db = getData(req);
   const [settings, orders, active] = await Promise.all([
     getSale(db),
-    dbQuery<any>(db, `SELECT id, email, amount_usd, amount_local, gateway, status, invoice_no, meta, created_at, paid_at FROM orders WHERE plan = 'acquisition' ORDER BY created_at DESC LIMIT 200`),
+    db.orders.listDocs("plan", "acquisition", { limit: 200 }).then((p) => p.docs),
     activeGateways(db),
   ]);
   return respond({
     settings, defaults: SALE_DEFAULTS, gateways: SALE_GATEWAYS,
     live: Object.fromEntries(active.map((g) => [g.id, g.mode])),
     orders: orders.map((o) => {
-      let m: any = {};
-      try { m = JSON.parse(o.meta || "{}"); } catch {}
+      const m = readMeta(o.meta);
       return { id: o.id, email: o.email, amountUsd: o.amount_usd, amountIdr: o.amount_local, gateway: o.gateway, status: o.status, invoiceNo: o.invoice_no, createdAt: o.created_at, paidAt: o.paid_at,
                env: m.env === "sandbox" ? "sandbox" : "live", buyer: m.buyer || {}, proof: m.bank_proof || m.crypto?.proof || null };
     }),
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return forbidden();
-  const db = getDB(req);
+  const db = getData(req);
   const b = await readJson(req);
   if (!b?.settings) return fail("Nothing to save.");
   const current = await getSale(db);

@@ -3,10 +3,11 @@
  *   POST {action:"suspend"|"activate"|"revoke"|"reset", id} */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
+import { getData, now } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { ADMIN_HOLD } from "@/lib/licences";
+import type { ShLicenseDoc } from "@/lib/data/schema";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
@@ -14,18 +15,23 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim().toUpperCase().slice(0, 100);
   const status = url.searchParams.get("status") || "";
-  const where: string[] = ["1 = 1"]; const args: unknown[] = [];
-  if (q) { where.push("(UPPER(l.license_key) LIKE ? OR UPPER(u.email) LIKE ? OR UPPER(l.product) LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`); }
-  // "expired" is a date, not a stored status: active licences past their end date.
-  if (status === "expired") { where.push("l.status = 'active' AND l.expires_at <= ?"); args.push(new Date().toISOString()); }
-  else if (status) { where.push("l.status = ?"); args.push(status); }
   const source = url.searchParams.get("source") || "";
-  if (source === "plan" || source === "edition" || source === "trial") { where.push("l.source = ?"); args.push(source); }
-  const rows = await dbQuery(getDB(req),
-    `SELECT l.id, l.product, l.source, l.license_key, l.package_code, l.status, l.expires_at, l.max_nodes, l.bound_machine_id,
-            l.last_seen_at, l.last_version, l.last_ip, l.reset_count, l.notes, l.created_at, u.email, u.name
-       FROM sh_licenses l LEFT JOIN users u ON u.id = l.user_id
-      WHERE ${where.join(" AND ")} ORDER BY l.created_at DESC LIMIT 200`, args);
+  const db = getData(req);
+  const [licences, users] = await Promise.all([db.shLicenses.listAll("all", "all"), db.users.listAll("all", "all")]);
+  const owner = new Map(users.map((e) => [e.id, e.meta as Record<string, any>]));
+  const nowIso = new Date().toISOString();
+  const rows: Record<string, unknown>[] = [];
+  for (const e of licences) {
+    const l = e.meta as Record<string, any>;
+    const u = owner.get(String(l.user_id || ""));
+    if (q && ![l.license_key, u?.email, l.product].some((v) => String(v || "").toUpperCase().includes(q))) continue;
+    // "expired" is a date, not a stored status: active licences past their end date.
+    if (status === "expired" ? !(l.status === "active" && String(l.expires_at || "") <= nowIso) : status && l.status !== status) continue;
+    if ((source === "plan" || source === "edition" || source === "trial") && l.source !== source) continue;
+    const { user_id: _u, ...fields } = l;
+    rows.push({ id: e.id, ...fields, email: u?.email ?? null, name: u?.name ?? null });
+    if (rows.length >= 200) break;
+  }
   return respond({ licenses: rows }, ctx);
 }
 
@@ -33,16 +39,20 @@ export async function POST(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const b = await readJson(req);
-  const db = getDB(req);
-  const lic = await dbFirst<{ id: string; status: string }>(db, `SELECT id, status FROM sh_licenses WHERE id = ?`, [String(b?.id || "")]);
+  const db = getData(req);
+  const lic = await db.shLicenses.get(String(b?.id || ""));
   if (!lic) return fail("Licence not found.", 404);
   const a = String(b?.action || "");
   // Suspend / revoke by an admin is a hold: neither the member nor a renewal can lift it.
-  if (a === "suspend") await dbRun(db, `UPDATE sh_licenses SET status = 'suspended', notes = ?, updated_at = ? WHERE id = ?`, [ADMIN_HOLD, now(), lic.id]);
-  else if (a === "activate") await dbRun(db, `UPDATE sh_licenses SET status = 'active', notes = '', updated_at = ? WHERE id = ?`, [now(), lic.id]);
-  else if (a === "revoke") await dbRun(db, `UPDATE sh_licenses SET status = 'revoked', notes = ?, updated_at = ? WHERE id = ?`, [ADMIN_HOLD, now(), lic.id]);
-  else if (a === "reset") await dbRun(db, `UPDATE sh_licenses SET bound_machine_id = '', reset_count = reset_count + 1, updated_at = ? WHERE id = ?`, [now(), lic.id]);
-  else return fail("Unknown action.");
+  const change: Record<string, (l: ShLicenseDoc) => ShLicenseDoc> = {
+    suspend: (l) => ({ ...l, status: "suspended", notes: ADMIN_HOLD }),
+    activate: (l) => ({ ...l, status: "active", notes: "" }),
+    revoke: (l) => ({ ...l, status: "revoked", notes: ADMIN_HOLD }),
+    reset: (l) => ({ ...l, bound_machine_id: "", reset_count: (l.reset_count || 0) + 1 }),
+  };
+  const fn = Object.prototype.hasOwnProperty.call(change, a) ? change[a] : undefined;
+  if (!fn) return fail("Unknown action.");
+  await db.shLicenses.update(lic.id, (l) => ({ ...fn(l), updated_at: now() }));
   await audit(db, ctx.session, `admin.license.${a}`, "sh_license", lic.id, {}, req);
   return respond({ ok: true }, ctx);
 }

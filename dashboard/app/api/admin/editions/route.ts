@@ -3,7 +3,7 @@
  *   PUT  /api/admin/editions {prices:[{code, yearly, monthly, enabled}]}   save (audited) */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbQuery, dbRun, now } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { EDITIONS, getEditionPrices, mergeEditionPrices } from "@/lib/editions";
@@ -11,15 +11,17 @@ import { EDITIONS, getEditionPrices, mergeEditionPrices } from "@/lib/editions";
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const db = getDB(req);
-  const [prices, sold] = await Promise.all([
+  const db = getData(req);
+  const [prices, licences] = await Promise.all([
     getEditionPrices(db),
-    dbQuery<{ package_code: string; n: number }>(db, `SELECT package_code, COUNT(*) AS n FROM sh_licenses WHERE source = 'edition' AND status = 'active' GROUP BY package_code`).catch(() => []),
+    db.shLicenses.listAll("all", "all"),
   ]);
+  const sold = new Map<string, number>();
+  for (const { meta: m } of licences) if (m.source === "edition" && m.status === "active") sold.set(String(m.package_code), (sold.get(String(m.package_code)) || 0) + 1);
   return respond({
     editions: EDITIONS.map((e) => {
       const p = prices.find((x) => x.code === e.code)!;
-      return { app: e.app, tier: e.tier, code: e.code, name: e.name, defaultYearly: e.yearly, defaultMonthly: e.monthly, yearly: p.yearly, monthly: p.monthly, enabled: p.enabled, limits: e.limits, active: sold.find((s) => s.package_code === e.code)?.n || 0 };
+      return { app: e.app, tier: e.tier, code: e.code, name: e.name, defaultYearly: e.yearly, defaultMonthly: e.monthly, yearly: p.yearly, monthly: p.monthly, enabled: p.enabled, limits: e.limits, active: sold.get(e.code) || 0 };
     }),
   }, ctx);
 }
@@ -34,8 +36,8 @@ export async function PUT(req: NextRequest) {
     if (!(Number(p.yearly) > 0) || !(Number(p.monthly) > 0)) return fail("Prices must be greater than zero.");
   }
   const clean = mergeEditionPrices(JSON.stringify(b.prices));
-  const db = getDB(req);
-  await dbRun(db, `INSERT INTO platform_config (key, value, updated_at) VALUES ('edition_prices', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, [JSON.stringify(clean), now()]);
+  const db = getData(req);
+  await db.config.set("edition_prices", JSON.stringify(clean));
   await audit(db, ctx.session, "admin.editions.prices", "platform_config", "edition_prices", { changed: b.prices.length }, req);
   return respond({ ok: true, prices: clean }, ctx);
 }

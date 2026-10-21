@@ -419,6 +419,18 @@ export class Collection<T extends Doc> {
     return out;
   }
 
+  /** Every entry (with its summary) under an index value, all pages, up to `max`: lists that need no document reads. */
+  async listAll(index: string, value: string | number, max = 20_000): Promise<IndexEntry[]> {
+    const out: IndexEntry[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await this.list(index, value, { cursor, limit: 1000 });
+      out.push(...page.entries);
+      cursor = page.cursor;
+    } while (cursor && out.length < max);
+    return out.slice(0, max);
+  }
+
   /** How many entries an index value has (counts keys; reads no documents). */
   async count(index: string, value: string | number): Promise<number> {
     this.indexDef(index);

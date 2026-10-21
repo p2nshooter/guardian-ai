@@ -6,7 +6,7 @@
  *   PUT  {tiers:[{devices, app, suite}]}   override list prices */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { requireAdmin, respond, normEmail } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { sendMail } from "@/lib/mail";
@@ -16,14 +16,19 @@ import { issueLifetime, lifetimeChoiceProblem, lifetimeMail, productName, revoke
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const db = getDB(req);
-  const [lics, acts, tiers] = await Promise.all([
-    dbQuery<any>(db, `SELECT l.*, u.email, u.name FROM lifetime_licenses l LEFT JOIN users u ON u.id = l.user_id ORDER BY l.created_at DESC LIMIT 500`),
-    dbQuery<any>(db, `SELECT * FROM lifetime_activations ORDER BY created_at`),
+  const db = getData(req);
+  const [page, users, acts, tiers] = await Promise.all([
+    db.lifetimeLicenses.listDocs("all", "all", { limit: 500 }),
+    db.users.listAll("all", "all"),
+    db.lifetimeActivations.listAllDocs("all", "all"),
     getLifetimePrices(db),
   ]);
+  const owner = new Map(users.map((e) => [e.id, e.meta as Record<string, any>]));
   return respond({
-    licenses: lics.map((l) => ({ ...l, productName: productName(l.product), apps: productsOf(l), activations: acts.filter((a) => a.license_id === l.id) })),
+    licenses: page.docs.map((l) => ({
+      ...l, email: owner.get(l.user_id)?.email ?? null, name: owner.get(l.user_id)?.name ?? null,
+      productName: productName(l.product), apps: productsOf(l), activations: acts.filter((a) => a.license_id === l.id),
+    })),
     tiers, defaults: LIFETIME_TIERS,
   }, ctx);
 }
@@ -31,12 +36,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const db = getDB(req);
+  const db = getData(req);
   const b = await readJson(req);
 
   if (b?.action === "issue") {
     const email = normEmail(b.email);
-    const user = await dbFirst<{ id: string; email: string }>(db, `SELECT id, email FROM users WHERE email = ?`, [email]);
+    const user = await db.users.find("email", email);
     if (!user) return fail("No account with that email. Ask the customer to register first.");
     const problem = lifetimeChoiceProblem(b.scope, b.product);
     if (problem) return fail(problem);
@@ -77,9 +82,8 @@ export async function PUT(req: NextRequest) {
     if (!r || !(Number(r.app) > 0) || !(Number(r.suite) > 0)) return fail(`Enter both prices for ${t.label}.`);
   }
   const clean = mergeLifetimePrices(JSON.stringify(b.tiers));
-  const db = getDB(req);
-  await dbRun(db, `INSERT INTO platform_config (key, value, updated_at) VALUES ('lifetime_prices', ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    [JSON.stringify(clean), now()]);
+  const db = getData(req);
+  await db.config.set("lifetime_prices", JSON.stringify(clean));
   await audit(db, ctx.session, "admin.lifetime.prices", "platform_config", "lifetime_prices", { tiers: clean }, req);
   return respond({ ok: true, tiers: clean }, ctx);
 }
