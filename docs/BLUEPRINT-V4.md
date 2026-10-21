@@ -473,11 +473,11 @@ bukan dari perkiraan.
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
 | 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 5/5 (tayang 19 Okt, deploy #74/#75 hijau) | **100 %** |
 | 10 | Yang belum dibuat di axto.io & xaa.es (18 Okt 2026, `REQUESTS.md` 70) | audit 10 aplikasi Docker ✅ (`AXTO-APPS-BLUEPRINT.md` §16) · logika 18 template xaa.es ✅ (repo xaa `docs/TEMPLATES-BLUEPRINT.md`) · G1 deteksi GPU di host · template pertama + demo + gambar animasi · 17 template lainnya | 2/5 | **40 %** |
-| 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi · akun & keamanan · uang · lisensi · lainnya · migrasi data + jendela pindah · D1 dilepas | 1/8 | **13 %** |
+| 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi ✅ · akun & keamanan ✅ · uang ✅ · lisensi ✅ · lainnya ✅ · migrasi data + jendela pindah (kode + tes ✅, tayang setelah deploy, §25.3) · D1 dilepas (±28 Okt) | 6/8 | **75 %** |
 | 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
 | 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah · axto.io pindah · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 1/5 | **20 %** |
-| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–83, §25) | data ke R2 · 10 aplikasi Docker lulus „selesai bila" (atau ditutup sebagai Early access) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 0/4 | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **42/92** | **≈ 46 %** |
+| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 (dibangun + diuji §25.3, tayang setelah deploy) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 0/4 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **47/92** | **≈ 51 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -790,4 +790,29 @@ HP — **0 masalah**. Audit ini sekarang jalan otomatis setelah setiap deploy da
 **Kesimpulan jujur:** axto.io **belum** 100 % siap produksi. Yang sudah siap: situs publik (553 halaman), aplikasi
 cloud, PayPal dan NOWPayments Live, image Docker yang jalan. Yang masih memblokir: (1) data masih di D1, (2) tidak ada
 aplikasi Docker yang lulus baseline enterprise, (3) BNI/kartu belum aktif dan belum ada bukti transaksi per metode.
+
+### 25.2 Keputusan pemilik 20 Okt 2026: „a" (`REQUESTS.md` baris 84)
+
+Pertanyaan: aplikasi Docker (a) tetap dijual dengan klaim jujur dan dilengkapi satu per satu, atau (b) diberi label
+„Early access" dan checkout-nya ditutup? Jawaban pemilik: **„a"**. Jadi butir 2 di atas berlaku dengan perubahan ini:
+kesepuluh aplikasi **tetap dijual**; halaman publik, edisi dan terjemahan hanya mengklaim yang benar-benar ada di kode
+(koreksi §25.1); setiap aplikasi dilengkapi satu per satu terhadap daftar „selesai bila" (`AXTO-APPS-BLUEPRINT.md`
+§16.5) dan dicatat dengan bukti. Checkout dan unduhan tidak ditutup.
+
+### 25.3 Data axto.io ke R2 — dibangun dan diuji (21 Okt 2026)
+
+Butir 1 §25 (`R2-DATA-BLUEPRINT.md` §7) selesai di kode:
+
+| Bagian | Isi | Bukti |
+|---|---|---|
+| Penyimpanan | Semua catatan = dokumen JSON di bucket privat `axto-data` (`lib/data/schema.ts`: 23 koleksi, penjaga unik create-once, indeks dengan ringkasan); pengaturan `k/config/*`, penghitung faktur `n/invoice` | `tests/r2store.test.ts` |
+| Kode | Setiap route dan modul memakai `getData()`; **0 kueri D1** tersisa (`dbQuery/dbFirst/dbRun/getDB` dihapus); uang, lisensi, kursi perangkat, trial, reset sandi = transisi bersyarat (compare-and-swap) dan idempoten | `tsc` bersih · 234 tes unit |
+| Pindah sekali | `lib/data/migrate.ts`: per langkah 60 baris (6 paralel), bisa dilanjutkan, satu lease; id sama; datetime D1 → ISO; baris yang bentrok nilai unik disimpan utuh (`k/meta/migration-conflicts/`), tidak dibuang; tabel lama yang tak dipakai diarsip ke `axto-backups/legacy/`; selesai hanya bila setiap id D1 ada di R2 | `tests/migrate.test.ts` (skema D1 asli di SQLite, 130+ baris, langkah kecil, pemanggil berlomba) · `tests/e2e/migration.e2e.ts` (baris lama di D1 lokal → R2) |
+| Saat pindah | Middleware menjawab 503 yang jelas untuk API selama beberapa menit; setiap permintaan, tick otomatis dan langkah deploy („Move the records from D1 to R2") mendorong langkahnya; deploy gagal bila tidak selesai | `deploy-dashboard.yml`, `deploy-preview.yml` |
+| Backup | Harian setelah 02:00 UTC, bertahap per tick (`lib/data/backup-job.ts`), manifest + bagian di `axto-backups`, disimpan 35 hari (dihapus otomatis); tombol „Back up now" | `tests/backup-job.test.ts` |
+| Admin | Admin → Data & backups: laporan per tabel (baris D1 / dokumen R2 / konflik), jendela D1 hanya-baca 7 hari, backup terbaru | E2E + Playwright |
+| Uji E2E | 88 kueri D1 langsung di tes diganti endpoint uji `/api/test/data` (hanya runtime lokal: `E2E_TEST_DATA=1` + `ALLOW_INSECURE_ENDPOINTS=1` + localhost + rahasia cron; produksi 404) | `tests/e2e/*.e2e.ts` |
+
+Sesudah tayang: `/api/health` menunjukkan `records: "ready"`; D1 `axto-db` hanya-baca 7 hari (sampai ±28 Okt 2026),
+lalu binding `DB` dan `lib/data/migrate.ts` dilepas (`R2-DATA-BLUEPRINT.md` §4).
 

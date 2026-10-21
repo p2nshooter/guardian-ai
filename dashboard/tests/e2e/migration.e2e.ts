@@ -66,3 +66,30 @@ test("migration: the moved member's plan is served from R2", async () => {
   assert.equal(j.subscription.plan, "pro");
   assert.equal(j.orders[0].id, "ord_legacy_1");
 });
+
+test("data: Admin → Data reports the move; a backup taken in parts by the tick reads back in the list", async () => {
+  const { adminCookie } = await import("./admin-session");
+  const cookie = await adminCookie();
+  const get = async () => (await fetch(`${BASE}/api/admin/data`, { headers: { Cookie: cookie } })).json();
+  const post = (body: unknown) => fetch(`${BASE}/api/admin/data`, { method: "POST", headers: { Cookie: cookie, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  assert.equal((await fetch(`${BASE}/api/admin/data`)).status, 403, "admins only");
+  const v = await get();
+  assert.equal(v.move.done, true);
+  assert.equal(v.move.d1.bound, true, "the old database stays readable for seven days");
+  assert.ok(Date.parse(v.move.d1.readOnlyUntil) > Date.now());
+  assert.ok(v.move.tables.orders.r2 >= 1);
+  assert.equal(v.backup.configured, true);
+  assert.ok(!JSON.stringify(v).includes("legacy-member@example.com"), "counts only, never records");
+
+  assert.equal((await post({ action: "backup" })).status, 200);
+  assert.equal((await post({ action: "backup" })).status, 409, "one backup at a time");
+  for (let i = 0; i < 60; i++) {
+    await fetch(`${BASE}/api/cron/tick`, { headers: CRON });
+    const job = (await get()).backup.job;
+    if (job?.done_at) break;
+  }
+  const after = await get();
+  assert.ok(after.backup.job?.done_at, "the tick finished the backup");
+  const b = after.backup.latest.find((x: any) => /manual-by/.test(x.key));
+  assert.ok(b && b.objects > 10, JSON.stringify(after.backup.latest));
+});

@@ -244,11 +244,12 @@ menghormati batas 1 tulis/detik per kunci), dijumlahkan cron ke `n/visits/<yyyy-
 | Butir | Status |
 |---|---|
 | Blueprint R2 (dokumen ini) | ✅ 20 Okt |
-| Pustaka R2 Store + R2 palsu + tes konkurensi | ⏳ (dibangun di xaa.es dulu, lalu dipakai di sini) |
-| Tahap 2–5 (25 tabel) | ⏳ 0/25 |
-| Arsip tabel lama ke `axto-backups/legacy/` | ⏳ |
-| Migrasi data + jendela pindah + pengamatan 7 hari | ⏳ |
-| D1 dilepas | ⏳ |
+| Pustaka R2 Store + R2 palsu + tes konkurensi | ✅ 21 Okt (`lib/r2/*`, dari xaa.es) |
+| Tahap 2–5 (koleksi `lib/data/schema.ts`, semua route & modul) | ✅ 21 Okt — 0 kueri D1 tersisa |
+| Arsip tabel lama ke `axto-backups/legacy/` | ✅ kode + tes (berjalan saat pindah) |
+| Migrasi data + jendela pindah + pengamatan 7 hari | ✅ kode + tes (`tests/migrate.test.ts`, `tests/e2e/migration.e2e.ts`); tayang setelah deploy (`BLUEPRINT-V4.md` §25.3) |
+| Backup harian bertahap, 35 hari | ✅ kode + tes (`lib/data/backup-job.ts`) |
+| D1 dilepas | ⏳ 7 hari setelah pindah (±28 Okt 2026) |
 | Animasi panduan (23 + 8 admin) | ⏳ 0/31 |
 
 ## 10. Cakupan: semua situs yang menyimpan data (perintah 20 Okt 2026, `REQUESTS.md` baris 81)
