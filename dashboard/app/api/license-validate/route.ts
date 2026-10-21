@@ -13,12 +13,13 @@
  *   • the signed payload binds key, machine, product, status, expiry and the
  *     serialized entitlements, so no MITM or local edit can unlock a higher tier
  *   • licences are always issued at the TOP tier of each engine
- * D1-lean: no heartbeat log table — one row update at most once per hour.
+ * Storage-lean: no heartbeat log — the licence document is updated at most once per hour.
  * ============================================================================ */
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbRun, now } from "@/lib/db";
+import { getData, now, background } from "@/lib/db";
+import type { Data } from "@/lib/data";
 import { signLicense, signEntitlements, SigningUnavailable, type SignFields } from "@/lib/license-sign";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { SELF_HOSTED, productFromKey } from "@/lib/selfhosted";
@@ -38,7 +39,7 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS });
 }
 
-async function signed(db: any, body: Record<string, any>, sign: SignFields, status = 200) {
+async function signed(db: Data, body: Record<string, any>, sign: SignFields, status = 200) {
   try {
     return NextResponse.json({ ...body, ...(await signLicense(db, sign)) }, { status, headers: CORS });
   } catch (e) {
@@ -84,8 +85,8 @@ export async function POST(req: NextRequest) {
     return plain({ valid: false, error: `Unrecognized license key format. Key must start with one of: ${SELF_HOSTED.map((p) => p.keyPrefix + "-").join(", ")}` });
   }
 
-  let db: any;
-  try { db = getDB(req); } catch { return plain({ valid: false, error: "Service temporarily unavailable. Try again in a moment." }, 503); }
+  let db: Data;
+  try { db = getData(req); } catch { return plain({ valid: false, error: "Service temporarily unavailable. Try again in a moment." }, 503); }
 
   // ── Former free-program keys: signed lock ────────────────────────────────
   if (/-FREE-ACCESS-\d{4}$/.test(key)) {
@@ -96,10 +97,10 @@ export async function POST(req: NextRequest) {
     }, { licenseKey: key, machineId: mid, product: keyProduct, valid: false, status: "program_ended", expiresAt: new Date().toISOString(), nonce });
   }
 
-  const lic = await dbFirst<any>(db,
-    `SELECT l.*, u.name AS client_name, u.organization AS organization, u.status AS user_status
-       FROM sh_licenses l LEFT JOIN users u ON u.id = l.user_id WHERE l.license_key = ?`, [key]);
-  if (!lic) return plain({ valid: false, error: `License key not found. Get your key at ${PORTAL}` });
+  const doc = await db.shLicenses.find("license_key", key);
+  if (!doc) return plain({ valid: false, error: `License key not found. Get your key at ${PORTAL}` });
+  const owner = doc.user_id ? await db.users.get(doc.user_id) : null;
+  const lic = { ...doc, client_name: owner?.name || "", organization: owner?.organization || "", user_status: owner?.status || "" };
 
   const sign = (status: string, valid = false, extra: Partial<SignFields> = {}): SignFields =>
     ({ licenseKey: key, machineId: mid, product: lic.product, valid, status, expiresAt: lic.expires_at, nonce, ...extra });
@@ -131,13 +132,14 @@ export async function POST(req: NextRequest) {
     let bound = lic.bound_machine_id;
     if (!bound && trial) {
       // One trial per app per machine: a server that already ran a trial of this app cannot start another.
-      const reused = await dbFirst<{ x: number }>(db, `SELECT 1 AS x FROM sh_licenses WHERE source = 'trial' AND product = ? AND bound_machine_id = ? AND id != ?`, [lic.product, mid, lic.id]).catch(() => null);
-      if (reused) return signed(db, { valid: false, reason: "trial_used_on_machine", license_type: "trial", error: `This server has already used a trial of ${lic.product}. Buy an edition at ${PORTAL}.`, renew_url: PORTAL }, sign("trial_used"));
+      const used = await db.shLicenses.list("trial_machine", `${lic.product}|${mid}`, { limit: 5 }).catch(() => ({ entries: [] }));
+      if (used.entries.some((e) => e.id !== lic.id)) return signed(db, { valid: false, reason: "trial_used_on_machine", license_type: "trial", error: `This server has already used a trial of ${lic.product}. Buy an edition at ${PORTAL}.`, renew_url: PORTAL }, sign("trial_used"));
     }
     if (!bound) {
       // First machine wins; a second server racing for the same key sees the winner and is refused.
-      await dbRun(db, `UPDATE sh_licenses SET bound_machine_id = ?, updated_at = ? WHERE id = ? AND bound_machine_id = ''`, [mid, now(), lic.id]).catch(() => {});
-      bound = (await dbFirst<{ m: string }>(db, `SELECT bound_machine_id AS m FROM sh_licenses WHERE id = ?`, [lic.id]).catch(() => null))?.m ?? mid;
+      // Compare-and-swap: only an unbound licence takes the machine.
+      const after = await db.shLicenses.update(lic.id, (l) => (l.bound_machine_id ? null : { ...l, bound_machine_id: mid, updated_at: now() })).catch(() => null);
+      bound = after?.bound_machine_id || mid;
     }
     if (bound && bound !== mid) {
       return signed(db, { valid: false, reason: "machine_mismatch", error: `License is bound to a different server. Reset the binding at ${PORTAL}.`, reset_url: PORTAL }, sign("machine_mismatch"));
@@ -152,11 +154,12 @@ export async function POST(req: NextRequest) {
     }, sign("node_limit_exceeded"));
   }
 
-  // Heartbeat: a single row update, at most once per hour.
+  // Heartbeat: one document update, at most once per hour (after the answer is sent).
   const version = String(versionField || guardian_version || orchestra_version || vault_version || edge_version || soc_version || compliance_version || sentinel_version || "unknown").slice(0, 40);
-  dbRun(db,
-    `UPDATE sh_licenses SET last_seen_at = ?, last_version = ?, last_ip = ? WHERE id = ? AND (last_seen_at = '' OR last_seen_at < ?)`,
-    [now(), version, ip, lic.id, new Date(Date.now() - 3600_000).toISOString()]).catch(() => {});
+  const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+  if (!lic.last_seen_at || lic.last_seen_at < hourAgo) {
+    background(db.shLicenses.update(lic.id, (l) => (l.last_seen_at && l.last_seen_at >= hourAgo ? null : { ...l, last_seen_at: now(), last_version: version, last_ip: ip })));
+  }
 
   const daysLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000);
   const features = buildFeatures(licProduct, lic.package_code, maxNodes);

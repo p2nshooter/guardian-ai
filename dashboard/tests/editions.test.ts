@@ -117,14 +117,22 @@ test("editions: translations — every feature line in all 10 languages", () => 
   assert.equal(featureText("de", "unknown line"), "unknown line");
 });
 
-test("trials: the pool seeds itself once (zero-touch) and never again", async () => {
-  const { ensureTrialPool, trialStats } = await import("../lib/trials");
+test("trials: the pool fills itself in small chunks (zero-touch), exactly once, even with callers racing", async () => {
+  const { ensureTrialPool, trialStats, TRIAL_BATCH_MAX } = await import("../lib/trials");
   const { db } = testData();
-  assert.equal(await ensureTrialPool(db), true);
+  // Page views and ticks arrive at once: chunks are reserved with compare-and-swap, so the pool never overfills.
+  let calls = 0;
+  for (let round = 0; round < 80; round++) {
+    const worked = await Promise.all([ensureTrialPool(db), ensureTrialPool(db), ensureTrialPool(db, undefined, TRIAL_BATCH_MAX)]);
+    calls += 3;
+    if (!worked.some(Boolean) && (await db.config.get("trials_seeded"))) break;
+  }
+  assert.ok(await db.config.get("trials_seeded"), "the pool is complete");
+  assert.ok(calls > 3, "filled over several requests, never in one");
   const stats = await trialStats(db);
   assert.equal(Object.keys(stats).length, 10);
   for (const [slug, st] of Object.entries(stats)) assert.deepEqual(st, { total: 100, available: 100, claimed: 0 }, `100 codes for ${slug}`);
-  assert.equal(await ensureTrialPool(db), false, "second call does nothing");
+  assert.equal(await ensureTrialPool(db), false, "a later call does nothing");
   assert.equal(Object.values(await trialStats(db)).reduce((a, s) => a + s.total, 0), 1000);
 });
 

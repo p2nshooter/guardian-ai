@@ -13,12 +13,13 @@ import os from "node:os";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { licenceByKey, seedAdmin, update, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
+const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/ctl");
 const REPO = path.resolve(process.cwd(), "..");
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const PORT = 18081;
 const GO = fs.existsSync("/usr/local/go/bin/go") ? "/usr/local/go/bin/go" : "go";
@@ -26,12 +27,6 @@ const sh = (cmd: string, args: string[], opts: any = {}) => spawnSync(cmd, args,
 const haveDocker = sh("docker", ["info"]).status === 0;
 const haveGo = sh(GO, ["version"]).status === 0;
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 async function call(method: string, p: string, body?: unknown, cookie = "", headers: Record<string, string> = {}) {
   const res = await fetch(BASE + p, { method, redirect: "manual", signal: AbortSignal.timeout(120_000),
@@ -82,11 +77,11 @@ test("installer: licence → signed download → docker load → run → manage 
   assert.equal(put.status, 0, put.stderr);
 
   // 3. A Business member with a Vault licence.
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   const admin = { status: 200, cookie: await adminCookie() };   // shared admin session
   const reg = await call("POST", "/api/auth/register", { email: `inst-${RUN}@example.com`, name: "Installer Test", password: "abcdefgh1", acceptTerms: true });
   assert.equal(reg.status, 200);
-  const [u] = d1(`SELECT id FROM users WHERE email = 'inst-${RUN}@example.com'`);
+  const u = await userByEmail(`inst-${RUN}@example.com`);
   assert.equal((await call("POST", `/api/admin/members/${u.id}`, { action: "grant", plan: "business", cycle: "monthly" }, admin.cookie)).status, 200);
   const member = await call("POST", "/api/auth/login", { email: `inst-${RUN}@example.com`, password: "abcdefgh1" });
   const lic = await call("POST", "/api/selfhosted", { action: "issue", product: "vault" }, member.cookie);
@@ -133,12 +128,12 @@ test("installer: licence → signed download → docker load → run → manage 
   assert.match(run("list").stdout, /vault\s+http:\/\/localhost:18081/);
 
   // 7. A revoked licence can no longer download.
-  d1(`UPDATE sh_licenses SET status = 'revoked' WHERE license_key = '${key}'`);
+  await update("shLicenses", (await licenceByKey(key)).id, { status: "revoked" });
   const denied = run("update", "vault");
   assert.notEqual(denied.status, 0);
   assert.match(denied.stderr, /revoked/);
   assert.equal((await fetch(img.url)).status, 403, "existing links die with the licence");
-  d1(`UPDATE sh_licenses SET status = 'active' WHERE license_key = '${key}'`);
+  await update("shLicenses", (await licenceByKey(key)).id, { status: "active" });
 
   // 8. Uninstall removes containers, volumes and files.
   const un = run("uninstall", "vault");

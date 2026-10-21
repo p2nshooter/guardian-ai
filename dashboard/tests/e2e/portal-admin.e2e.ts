@@ -6,22 +6,15 @@
  *   • the admin pages Plans & pricing, Settings, Managed AI and Releases work. */
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { doc, seedAdmin } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 class Client {
   cookie = ""; ip = `10.33.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
   async call(method: string, p: string, body?: unknown) {
@@ -44,7 +37,7 @@ let orderId = "";
 let key = "", licId = "";
 
 before(async () => {
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "0123456789", account_name: "AXTO" } })).status, 200);
   assert.equal((await member.post("/api/auth/register", { email: `adm-${RUN}@example.com`, name: "Lic Owner", password: "abcdefgh1", acceptTerms: true })).status, 200);
@@ -67,7 +60,7 @@ test("BNI bank transfer is manual: pending until the admin confirms, then the pl
   const pasted = "Rp " + co.json.amountIdr.toLocaleString("id-ID");
   const found = await admin.get(`/api/admin/orders?q=${encodeURIComponent(pasted)}`);
   assert.deepEqual(found.json.orders.map((o: any) => o.id), [orderId], `search "${pasted}" finds the order`);
-  assert.equal(d1(`SELECT status FROM orders WHERE id='${orderId}'`)[0].status, "pending", "no auto-confirmation for bank transfers");
+  assert.equal((await doc("orders", orderId)).status, "pending", "no auto-confirmation for bank transfers");
   const before = (await member.get("/api/auth/me")).json;
   assert.equal(before.tier, "none", "no access before confirmation");
   assert.ok(!before.limits.apps.includes("security"), "paid apps still locked");

@@ -2,7 +2,7 @@
  * Completely separate from /api/byox/run: different credentials, usage table and plans. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getAI } from "@/lib/db";
+import { getData, getAI } from "@/lib/db";
 import { loadSession, unauthorized } from "@/lib/auth";
 import { managedEnabled, managedStream } from "@/lib/ai/managed";
 import { toTextStream, inputSize, MAX_INPUT_CHARS, type ChatMessage } from "@/lib/ai/providers";
@@ -11,7 +11,7 @@ import { readJson, fail } from "@/lib/http";
 export async function POST(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
-  const db = getDB(req);
+  const db = getData(req);
   if (!(await managedEnabled(db))) {
     return NextResponse.json({ error: "Managed AI is coming soon. Your apps already work with your own AI keys (BYOX)." }, { status: 423 });
   }

@@ -12,6 +12,7 @@
 import { secret } from "./db";
 import { readSecure } from "./secure-store";
 import { SITE, absoluteUrl } from "./site";
+import { recordTestMail } from "./test-data";
 
 export interface EmailSettings { api_key?: string; from?: string; admin_email?: string }
 
@@ -29,6 +30,7 @@ export async function adminInbox(): Promise<string> {
 }
 
 export async function sendMail(to: string, subject: string, html: string, replyTo?: string): Promise<boolean> {
+  await recordTestMail(to, subject, html);
   try {
     const cfg = await emailSettings();
     const key = secret("RESEND_API_KEY") || cfg.api_key || "";

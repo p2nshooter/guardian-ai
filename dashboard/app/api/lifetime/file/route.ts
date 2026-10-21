@@ -2,21 +2,26 @@
  * .axto-license file again (members: their own; admins: any, for support). */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst } from "@/lib/db";
+import { getData } from "@/lib/db";
+import type { Data } from "@/lib/data";
 import { loadSession } from "@/lib/auth";
 import { SigningUnavailable } from "@/lib/license-sign";
 import { activationFileFor } from "@/lib/lifetime-service";
 
+/** The customer an activation belongs to (activation → licence → member). */
+async function activationOwner(db: Data, activationId: string) {
+  const a = await db.lifetimeActivations.get(activationId);
+  const l = a ? await db.lifetimeLicenses.get(a.license_id) : null;
+  return l ? db.users.get(l.user_id) : null;
+}
+
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return NextResponse.redirect(new URL("/login?redirect=/app/lifetime", req.url));
-  const db = getDB(req);
+  const db = getData(req);
   const id = new URL(req.url).searchParams.get("id") || "";
   const admin = ctx.session.role === "admin";
-  const owner = admin
-    ? await dbFirst<{ email: string; name: string; organization: string }>(db,
-        `SELECT u.email, u.name, u.organization FROM lifetime_activations a JOIN lifetime_licenses l ON l.id = a.license_id JOIN users u ON u.id = l.user_id WHERE a.id = ?`, [id])
-    : await dbFirst<{ email: string; name: string; organization: string }>(db, `SELECT email, name, organization FROM users WHERE id = ?`, [ctx.session.sub]);
+  const owner = admin ? await activationOwner(db, id) : await db.users.get(ctx.session.sub);
   const customer = [owner?.organization, owner?.name, owner?.email].filter(Boolean).join(" · ");
   try {
     const f = await activationFileFor(db, id, admin ? null : ctx.session.sub, customer);

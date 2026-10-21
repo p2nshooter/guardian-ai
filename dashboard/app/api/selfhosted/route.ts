@@ -12,7 +12,8 @@
  * ============================================================================ */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
+import { getData, now, background } from "@/lib/db";
+import { ids } from "@/lib/data/schema";
 import { availableBuilds, imageKey, archImageName } from "@/lib/builds";
 import { loadSession, unauthorized, respond, effectiveTier, loadSessionFor } from "@/lib/auth";
 import { limitsFor, PLANS, isPlanId } from "@/lib/plans";
@@ -20,7 +21,7 @@ import { SELF_HOSTED, getSelfHosted, catalogEntry, generateLicenseKey } from "@/
 import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendMail } from "@/lib/mail";
-import { issueLicence, licencesMail, ADMIN_HOLD, HOLD_MESSAGE } from "@/lib/licences";
+import { issueLicence, licencesMail, findLicence, ADMIN_HOLD, HOLD_MESSAGE } from "@/lib/licences";
 import { getEdition } from "@/lib/editions";
 import { getTrialConfig, trialOpen, trialStats, trialEdition, claimTrial, ensureTrialPool } from "@/lib/trials";
 import { mailLayout } from "@/lib/mail";
@@ -36,17 +37,22 @@ export async function GET(req: NextRequest) {
   if (!ctx) return unauthorized();
   const tier = effectiveTier(ctx.session);
   const lim = limitsFor(tier);
-  const db = getDB(req);
-  await ensureTrialPool(db);
-  const [lics, sub, builds, cfg, stats, trials] = await Promise.all([
-    dbQuery<any>(db, `SELECT id, product, source, package_code, license_key, status, expires_at, max_nodes, bound_machine_id, last_seen_at, last_version, created_at,
-                             CASE WHEN notes = 'admin_hold' THEN 1 ELSE 0 END AS held
-                        FROM sh_licenses WHERE user_id = ? AND (status != 'revoked' OR notes = 'admin_hold')`, [ctx.session.sub]),
-    dbFirst<any>(db, `SELECT current_period_end FROM subscriptions WHERE user_id = ?`, [ctx.session.sub]),
+  const db = getData(req);
+  // The first trial pool is filled in the background, a chunk per page view, until it is complete.
+  background(ensureTrialPool(db));
+  const [all, sub, builds, cfg, stats, mineTrials] = await Promise.all([
+    db.shLicenses.listAllDocs("user", ctx.session.sub),
+    db.subscriptions.get(ids.subscription(ctx.session.sub)),
     availableBuilds(req),
     getTrialConfig(db), trialStats(db),
-    dbQuery<{ product: string; rating: number }>(db, `SELECT product, rating FROM sh_trials WHERE status = 'claimed' AND user_id = ?`, [ctx.session.sub]),
+    db.shTrials.listAllDocs("user", ctx.session.sub),
   ]);
+  const lics = all.filter((l) => l.status !== "revoked" || l.notes === ADMIN_HOLD).map((l) => ({
+    id: l.id, product: l.product, source: l.source, package_code: l.package_code, license_key: l.license_key, status: l.status, expires_at: l.expires_at,
+    max_nodes: l.max_nodes, bound_machine_id: l.bound_machine_id, last_seen_at: l.last_seen_at, last_version: l.last_version, created_at: l.created_at,
+    held: l.notes === ADMIN_HOLD ? 1 : 0,
+  }));
+  const trials = mineTrials.filter((t) => t.status === "claimed");
   const planActive = lics.filter((l) => l.status === "active" && (l.source || "plan") === "plan").length;
   const open = trialOpen(cfg);
   const products = SELF_HOSTED.map((p) => {
@@ -79,7 +85,7 @@ export async function POST(req: NextRequest) {
   const b = await readJson(req);
   const product = getSelfHosted(String(b?.product || ""));
   if (!product) return fail("Unknown product.");
-  const db = getDB(req);
+  const db = getData(req);
   const source: Source = isSource(b?.source) ? b.source : "plan";
 
   if (b?.action === "trial") {
@@ -102,19 +108,20 @@ export async function POST(req: NextRequest) {
   if (b?.action === "rate") {
     const rating = Number(b?.rating);
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) return fail("Choose 1 to 5 stars.");
-    const r = await dbRun(db, `UPDATE sh_trials SET rating = ? WHERE user_id = ? AND product = ? AND status = 'claimed'`, [rating, s.sub, product.slug]);
-    if (!r?.meta?.changes) return fail("You have no trial of this app.", 404);
+    const mine = (await db.shTrials.listAllDocs("user", s.sub)).filter((t) => t.product === product.slug && t.status === "claimed");
+    if (!mine.length) return fail("You have no trial of this app.", 404);
+    for (const t of mine) await db.shTrials.update(t.id, (x) => (x.status === "claimed" && x.user_id === s.sub ? { ...x, rating } : null));
     await audit(db, s, "trial.rated", "sh_trial", product.slug, { rating }, req);
     return respond({ ok: true }, ctx);
   }
 
-  const existing = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ? AND source = ?`, [s.sub, product.slug, source]);
+  const existing = await findLicence(db, s.sub, product.slug, source);
 
   if (b?.action === "issue") {
     if (lim.selfHostedApps === 0) return fail("Self-hosted apps are included in the Business and Enterprise plans.", 402, { upgrade: true });
     if (s.role === "admin") return fail("Admins issue licences from Admin → Licences.");
-    const sub = await dbFirst<{ current_period_end: string }>(db, `SELECT current_period_end FROM subscriptions WHERE user_id = ? AND status = 'active'`, [s.sub]);
-    if (!sub) return fail("No active plan.", 402, { upgrade: true });
+    const sub = await db.subscriptions.get(ids.subscription(s.sub));
+    if (!sub || sub.status !== "active") return fail("No active plan.", 402, { upgrade: true });
     if (existing && existing.status === "active") return respond({ ok: true, license: existing }, ctx);
     const r = await issueLicence(db, s.sub, product.slug, lim, sub.current_period_end);
     if (r && "error" in r) return fail(r.error, 409);
@@ -123,7 +130,7 @@ export async function POST(req: NextRequest) {
       const m = licencesMail([r]);
       await sendMail(s.email, m.subject, m.html);
     }
-    const license = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ? AND source = 'plan'`, [s.sub, product.slug]);
+    const license = await findLicence(db, s.sub, product.slug, "plan");
     return respond({ ok: true, license }, ctx);
   }
 
@@ -133,14 +140,14 @@ export async function POST(req: NextRequest) {
   if (b?.action === "reset") {
     const rl = await rateLimit(req, "license-reset", `${s.sub}:${product.slug}:${source}`, { max: 3, windowSeconds: 86400 });
     if (rl.limited) return fail("You can reset the server binding up to 3 times per day.", 429);
-    await dbRun(db, `UPDATE sh_licenses SET bound_machine_id = '', reset_count = reset_count + 1, updated_at = ? WHERE id = ?`, [now(), existing.id]);
+    await db.shLicenses.update(existing.id, (l) => ({ ...l, bound_machine_id: "", reset_count: (l.reset_count || 0) + 1, updated_at: now() }));
     await audit(db, s, "license.reset", "sh_license", product.slug, { source }, req);
     return respond({ ok: true }, ctx);
   }
 
   if (b?.action === "release") {
     if (source !== "plan") return fail("Only licences from your plan can be released.");
-    await dbRun(db, `UPDATE sh_licenses SET status = 'revoked', updated_at = ? WHERE id = ?`, [now(), existing.id]);
+    await db.shLicenses.update(existing.id, (l) => ({ ...l, status: "revoked", updated_at: now() }));
     await audit(db, s, "license.released", "sh_license", product.slug, {}, req);
     return respond({ ok: true }, ctx);
   }

@@ -20,6 +20,8 @@ import { withRetry, realSleep, type Sleep } from './bucket';
 export interface BlobBucket {
   put(key: string, value: ArrayBuffer | string, options?: { httpMetadata?: { contentType?: string }; customMetadata?: Record<string, string> }): Promise<unknown>;
   get(key: string): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; customMetadata?: Record<string, string> } | null>;
+  /** Removing backups older than the retention (35 days). */
+  delete?(keys: string | string[]): Promise<unknown>;
   list(options?: { prefix?: string; cursor?: string; limit?: number; include?: ('customMetadata' | 'httpMetadata')[] }): Promise<{
     objects: { key: string; size?: number; uploaded: Date; customMetadata?: Record<string, string> }[];
     truncated: boolean;
@@ -40,6 +42,20 @@ export interface BackupFile {
   objects: BackupObject[];
 }
 
+/**
+ * A backup taken in parts (lib/data/backup-job.ts — a data bucket too large
+ * for one request): the manifest names how many part files hold the objects.
+ */
+export interface BackupManifest {
+  version: 2;
+  taken_at: string;
+  reason: string;
+  parts: number;
+  objects: number;
+}
+
+export const partKey = (base: string, n: number) => `${base}.part-${String(n).padStart(5, '0')}.json.gz`;
+
 export interface BackupInfo {
   key: string;
   takenAt: string;
@@ -49,10 +65,10 @@ export interface BackupInfo {
 }
 
 /** Everything the store writes. The migration lease is a lock, not data, and is left out. */
-const PREFIXES = ['c/', 'k/', 'l/', 'u/', 'i/', 'n/'];
-const SKIP = new Set(['k/meta/migration-lock']);
+export const PREFIXES = ['c/', 'k/', 'l/', 'u/', 'i/', 'n/'];
+export const SKIP = new Set(['k/meta/migration-lock']);
 
-async function gzip(text: string): Promise<ArrayBuffer> {
+export async function gzip(text: string): Promise<ArrayBuffer> {
   const stream = new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'));
   return new Response(stream).arrayBuffer();
 }
@@ -62,7 +78,7 @@ async function gunzip(buf: ArrayBuffer): Promise<string> {
   return new Response(stream).text();
 }
 
-async function sha256(buf: ArrayBuffer): Promise<string> {
+export async function sha256(buf: ArrayBuffer): Promise<string> {
   const d = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, '0')).join('');
 }
@@ -124,6 +140,7 @@ export async function listBackups(backups: BlobBucket, limit = 20): Promise<Back
   do {
     const page = await backups.list({ prefix: 'backups/', cursor, limit: 1000, include: ['customMetadata'] });
     for (const o of page.objects) {
+      if (o.key.includes('.part-')) continue; // a part of a backup, listed through its manifest
       out.push({
         key: o.key,
         takenAt: o.customMetadata?.taken_at ?? o.uploaded.toISOString(),
@@ -137,14 +154,26 @@ export async function listBackups(backups: BlobBucket, limit = 20): Promise<Back
   return out.sort((a, b) => b.takenAt.localeCompare(a.takenAt)).slice(0, limit);
 }
 
-export async function readBackup(backups: BlobBucket, key: string): Promise<BackupFile> {
-  if (!/^backups\/\d{4}-\d\d-\d\d\/[\w-]+\.json\.gz$/.test(key)) throw new Error('Not a backup file.');
+async function readGz<T>(backups: BlobBucket, key: string): Promise<T> {
   const obj = await backups.get(key);
   if (!obj) throw new Error('That backup no longer exists.');
   const buf = await obj.arrayBuffer();
   const expected = obj.customMetadata?.sha256;
   if (expected && (await sha256(buf)) !== expected) throw new Error('That backup file is damaged (checksum mismatch).');
-  const file = JSON.parse(await gunzip(buf)) as BackupFile;
+  return JSON.parse(await gunzip(buf)) as T;
+}
+
+export async function readBackup(backups: BlobBucket, key: string): Promise<BackupFile> {
+  if (!/^backups\/\d{4}-\d\d-\d\d\/[\w-]+\.json\.gz$/.test(key)) throw new Error('Not a backup file.');
+  const file = await readGz<BackupFile | BackupManifest>(backups, key);
+  if (file.version === 2) {
+    // Taken in parts: the objects are the parts' objects, in order.
+    const base = key.replace(/\.json\.gz$/, '');
+    const objects: BackupObject[] = [];
+    for (let n = 1; n <= file.parts; n += 1) objects.push(...(await readGz<{ objects: BackupObject[] }>(backups, partKey(base, n))).objects);
+    if (objects.length !== file.objects) throw new Error('That backup is incomplete (a part is missing).');
+    return { version: 1, taken_at: file.taken_at, reason: file.reason, objects };
+  }
   if (file.version !== 1 || !Array.isArray(file.objects)) throw new Error('Unknown backup format.');
   return file;
 }

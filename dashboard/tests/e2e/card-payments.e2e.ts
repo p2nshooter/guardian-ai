@@ -7,14 +7,13 @@
  * ============================================================================ */
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { createOrder, doc, meta, ordersOf, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const XENDIT = { secret_key: "xnd_development_e2e_card", webhook_token: `tok-${RUN}` };
 
@@ -34,12 +33,6 @@ class Client {
     return { status: res.status, json, text };
   }
 }
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 const admin = new Client(), member = new Client();
 const put = (gateway: string, env: string, credentials: Record<string, unknown>) => admin.call("PUT", "/api/admin/gateways", { gateway, env, credentials });
 const patch = (gateway: string, b: Record<string, unknown>) => admin.call("PATCH", "/api/admin/gateways", { gateway, ...b });
@@ -51,7 +44,7 @@ before(async () => {
   const email = `card-${RUN}@example.com`;
   const r = await member.call("POST", "/api/auth/register", { email, name: "Card Buyer", password: "Card-Pass-2026", acceptTerms: true });
   assert.equal(r.status, 200, r.text);
-  uid = d1(`SELECT id FROM users WHERE email = '${email}'`)[0].id;
+  uid = (await userByEmail(email)).id;
 });
 after(async () => {
   await patch("card", { active: false, mode: "live" });
@@ -84,7 +77,8 @@ test("card: offered only when its processor is configured in the same environmen
 test("card: checkout is filed under the processor with method=card; the processor's webhook confirms it", async () => {
   const r = await member.call("POST", "/api/billing/checkout", { plan: "pro", cycle: "monthly", gateway: "card" });
   // The local runtime cannot reach Xendit with a test key, so the hosted page is not created — the order row still shows the routing.
-  const [row] = d1(`SELECT id, gateway, currency, amount_local, status, json_extract(meta, '$.method') AS method, json_extract(meta, '$.env') AS env FROM orders WHERE user_id = '${uid}' ORDER BY created_at DESC LIMIT 1`);
+  const [o] = await ordersOf(uid);
+  const row = { ...o, method: meta(o).method, env: meta(o).env };
   assert.ok(r.status === 200 || r.status === 502, r.text);
   assert.equal(row.gateway, "xendit");
   assert.equal(row.method, "card");
@@ -94,15 +88,14 @@ test("card: checkout is filed under the processor with method=card; the processo
 
   // A pending card order confirmed by Xendit's webhook (sandbox token), amount verified.
   const id = `ord_card_${RUN}`;
-  d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
-      VALUES ('${id}', '${uid}', 'card-${RUN}@example.com', 'pro', 'monthly', 49, 'USD', 0, 'xendit', 'pending', '{"env":"sandbox","method":"card"}', datetime('now'))`);
+  await createOrder({ id, user_id: uid, email: `card-${RUN}@example.com`, plan: "pro", cycle: "monthly", amount_usd: 49, gateway: "xendit", meta: JSON.stringify({ env: "sandbox", method: "card" }) });
   const hook = (body: unknown, token = XENDIT.webhook_token) => new Client().call("POST", "/api/webhooks/xendit", body, { "x-callback-token": token });
   assert.equal((await hook({ status: "PAID", external_id: id, currency: "USD", paid_amount: 49 }, "wrong")).status, 401);
   assert.equal((await hook({ status: "PAID", external_id: id, currency: "USD", paid_amount: 5 })).status, 422, "a short USD payment never activates");
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${id}'`)[0].status, "pending");
+  assert.equal((await doc("orders", id)).status, "pending");
   assert.equal((await hook({ status: "PAID", external_id: id, currency: "USD", paid_amount: 49, id: "inv_1" })).status, 200);
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${id}'`)[0].status, "paid");
-  assert.equal(d1(`SELECT plan, status FROM subscriptions WHERE user_id = '${uid}'`)[0].plan, "pro");
+  assert.equal((await doc("orders", id)).status, "paid");
+  assert.equal((await doc("subscriptions", uid)).plan, "pro");
 
   const ov = await member.call("GET", "/api/billing/overview");
   assert.equal(ov.json.orders.find((o: any) => o.id === id).method, "card", "member history shows it as a card payment");

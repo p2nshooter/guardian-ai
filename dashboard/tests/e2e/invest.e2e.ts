@@ -9,14 +9,13 @@
  * ============================================================================ */
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { auditFor, createOrder } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 
 class Client {
@@ -38,14 +37,10 @@ class Client {
   post = (p: string, b: unknown = {}) => this.call("POST", p, b);
   put = (p: string, b: unknown = {}) => this.call("PUT", p, b);
 }
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
-const order = (id: string, amount: number, paidAt: string, plan = "pro", env = "live") =>
-  `('${id}', 'u-${RUN}', 'customer-${RUN}@example.com', '${plan}', 'monthly', ${amount}, 'USD', 'paypal', 'paid', '{"env":"${env}"}', '${paidAt}', '${paidAt}')`;
+const order = (id: string, amount: number, paidAt: string, plan = "pro", env = "live") => createOrder({
+  id, user_id: `u-${RUN}`, email: `customer-${RUN}@example.com`, plan, cycle: "monthly", amount_usd: amount, gateway: "paypal", status: "paid",
+  meta: JSON.stringify({ env }), created_at: paidAt, paid_at: paidAt,
+});
 
 const admin = new Client(), investor = new Client(), anon = new Client();
 const EMAIL = `investor-${RUN}@example.com`;
@@ -118,7 +113,7 @@ test("invest: applications are validated and only an application is taken", asyn
 
 test("invest: verified capital earns its share of paid AXTO orders only", async () => {
   const before = new Date(Date.now() - 86_400_000).toISOString();
-  d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, gateway, status, meta, created_at, paid_at) VALUES ${order(`ord_inv_old_${RUN}`, 9999, before)}`);
+  await order(`ord_inv_old_${RUN}`, 9999, before);
   const v = await admin.post("/api/admin/investors", { action: "verify", id, capital: "100000", method: "wire" });
   assert.equal(v.status, 200, v.text);
   assert.equal((await admin.post("/api/admin/investors", { action: "verify", id, capital: "1" })).status, 400, "verified once");
@@ -126,9 +121,10 @@ test("invest: verified capital earns its share of paid AXTO orders only", async 
   // clock could still lie beyond the moment the next test returns the capital.
   await new Promise((r) => setTimeout(r, 20));
   const after = new Date().toISOString();
-  d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, gateway, status, meta, created_at, paid_at) VALUES
-      ${order(`ord_inv_a_${RUN}`, 1000, after)}, ${order(`ord_inv_b_${RUN}`, 3000, after)},
-      ${order(`ord_inv_test_${RUN}`, 5000, after, "pro", "sandbox")}, ${order(`ord_inv_acq_${RUN}`, 10_000_000, after, "acquisition")}`);
+  await Promise.all([
+    order(`ord_inv_a_${RUN}`, 1000, after), order(`ord_inv_b_${RUN}`, 3000, after),
+    order(`ord_inv_test_${RUN}`, 5000, after, "pro", "sandbox"), order(`ord_inv_acq_${RUN}`, 10_000_000, after, "acquisition"),
+  ]);
 
   const mine = await investor.get("/api/account/investor");
   assert.equal(mine.status, 200, mine.text);
@@ -148,14 +144,14 @@ test("invest: verified capital earns its share of paid AXTO orders only", async 
   assert.deepEqual([paid.totalPaidUsd, paid.balanceUsd], [60, 0]);
   const desk = await admin.get("/api/admin/investors");
   assert.ok(desk.json.raisedUsd >= 100_000);
-  const audit = d1(`SELECT action FROM audit_log WHERE entity_id = '${id}' ORDER BY created_at`).map((r) => r.action);
+  const audit = (await auditFor("investor", id)).map((r: any) => r.action);
   for (const a of ["invest.apply", "admin.investor.verify", "admin.investor.payout"]) assert.ok(audit.includes(a), `audit has ${a}`);
 });
 
 test("invest: returned capital ends the share; paused and closed rounds refuse applications", async () => {
   const r = await admin.post("/api/admin/investors", { action: "returned", id, note: `Returned at acquisition ${RUN}` });
   assert.equal(r.status, 200, r.text);
-  d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, gateway, status, meta, created_at, paid_at) VALUES ${order(`ord_inv_late_${RUN}`, 7000, new Date(Date.now() + 5_000).toISOString())}`);
+  await order(`ord_inv_late_${RUN}`, 7000, new Date(Date.now() + 5_000).toISOString());
   const stake = (await investor.get("/api/account/investor")).json.stakes[0];
   assert.equal(stake.status, "returned");
   assert.equal(stake.statement.totalRevenueUsd, 4000, "nothing after the capital was returned");

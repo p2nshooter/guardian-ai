@@ -8,7 +8,7 @@
  * same job are free, and are refused without an open job. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getKV } from "@/lib/db";
+import { getData, getKV } from "@/lib/db";
 import { loadSessionFor, unauthorized, effectiveTier, setSessionCookie } from "@/lib/auth";
 import { resolveStt, ByoxMissingKey } from "@/lib/ai/byox";
 import { transcribe } from "@/lib/ai/providers";
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const language = String(form.get("language") || "").trim().slice(0, 10) || undefined;
   const want = String(form.get("provider") || "").trim() || undefined;
 
-  const db = getDB(req);
+  const db = getData(req);
   // Confirm the member has a speech-to-text key BEFORE spending a monthly quota slot.
   const conn = await resolveStt(db, s.sub, want).catch((e) => { if (e instanceof ByoxMissingKey) return null; throw e; });
   if (!conn) return fail(new ByoxMissingKey("stt").message, 412, { needKey: true, stt: true });

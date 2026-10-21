@@ -10,7 +10,7 @@
 // Generic fixed-window rate limiter backed by Cloudflare KV (binding "KV",
 // already provisioned in wrangler.toml). Used to throttle abuse of public,
 // unauthenticated endpoints such as /api/license-validate where the existing
-// D1-backed login_attempts approach (see lib/auth.ts) would add unnecessary
+// login_attempts approach of the old D1 days would add unnecessary
 // write load for a high-frequency endpoint that on-prem engines call on
 // every heartbeat (default every 30 minutes per node, but configurable by
 // whoever is running the client).

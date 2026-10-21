@@ -8,7 +8,7 @@
  * Legal AI uses its own richer /api/legal/matters store. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getUserFiles } from "@/lib/db";
+import { getData, getUserFiles } from "@/lib/db";
 import { loadSessionFor, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { readJson, fail } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
@@ -24,7 +24,7 @@ async function guard(req: NextRequest, app: string) {
   const ctx = await loadSessionFor(req, (tier) => limitsFor(tier).apps.includes(app));
   if (!ctx) return { res: unauthorized() } as const;
   if (!limitsFor(effectiveTier(ctx.session)).apps.includes(app)) return { res: fail("This app needs a plan.", 402, { upgrade: true }) } as const;
-  return { ctx, hist: new History(getUserFiles(req), getDB(req), ctx.session.sub, app) } as const;
+  return { ctx, hist: new History(getUserFiles(req), getData(req), ctx.session.sub, app) } as const;
 }
 const handle = (e: any) => { if (e instanceof HistoryError) return fail(e.message, e.status); throw e; };
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     // The Prompt Library's own settings item (favourites, own prompts, profiles) is small and
     // allowed on every account; everything else counts against the plan's storage.
     const libraryState = app === "prompts" && (id || b?.id) === PROMPTS_STATE_ID && JSON.stringify(b?.body || {}).length <= 200_000;
-    const room = libraryState ? null : storageProblem(await getUsage(getDB(req), g.ctx.session.sub, effectiveTier(g.ctx.session)), Math.ceil(JSON.stringify(b || {}).length * 1.1));
+    const room = libraryState ? null : storageProblem(await getUsage(getData(req), g.ctx.session.sub, effectiveTier(g.ctx.session)), Math.ceil(JSON.stringify(b || {}).length * 1.1));
     if (room) return fail(room, 413, { upgrade: true });
     const item = await g.hist.save({ id: id || (typeof b?.id === "string" ? b.id : undefined), title: String(b?.title || ""), body: b?.body, meta: b?.meta });
     return respond({ ok: true, item }, g.ctx);

@@ -6,15 +6,14 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { createOrder, doc, licenceByKey, resetToken, seedAdmin, update, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const WHSEC = "whsec_e2e_security";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -40,12 +39,6 @@ class Client {
   put = (p: string, b?: unknown) => this.call("PUT", p, b ?? {});
 }
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 /** A Stripe webhook signed exactly like Stripe does (t=…,v1=HMAC-SHA256). */
 function stripeEvent(orderId: string, amountUsd: number) {
@@ -61,7 +54,7 @@ async function newMember(tag: string, plan?: string) {
   const email = `sec-${tag}-${RUN}@example.com`;
   const r = await c.post("/api/auth/register", { email, name: `Sec ${tag}`, password: "abcdefgh1", acceptTerms: true });
   assert.equal(r.status, 200, r.text);
-  const [u] = d1(`SELECT id FROM users WHERE email = '${email}'`);
+  const u = await userByEmail(email);
   if (plan) {
     assert.equal((await admin.post(`/api/admin/members/${u.id}`, { action: "grant", plan, cycle: "monthly" })).status, 200);
     await c.post("/api/auth/login", { email, password: "abcdefgh1" });   // fresh token with the plan
@@ -70,7 +63,7 @@ async function newMember(tag: string, plan?: string) {
 }
 
 before(async () => {
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   // Bank transfer (to create orders) + Stripe (to replay signed webhooks). Stripe is switched off again in after().
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", credentials: { instructions: "Bank Test 123" }, is_active: true })).status, 200);
@@ -94,47 +87,46 @@ test("payments: a refunded order never grants access again", async () => {
   const orderId = co.json.orderId;
   assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: orderId })).status, 200);
   assert.equal((await admin.post("/api/admin/orders", { action: "refund", id: orderId, endAccess: true, note: "e2e" })).status, 200);
-  assert.equal(d1(`SELECT status FROM subscriptions WHERE user_id = '${m.id}'`)[0].status, "canceled");
+  assert.equal((await doc("subscriptions", m.id)).status, "canceled");
 
   // Admin cannot re-approve it by mistake…
   const again = await admin.post("/api/admin/orders", { action: "mark_paid", id: orderId });
   assert.equal(again.status, 400);
   assert.match(again.json.error, /refunded/);
   // …and a correctly signed, replayed gateway event is acknowledged without granting anything.
-  const [o] = d1(`SELECT amount_usd FROM orders WHERE id = '${orderId}'`);
-  d1(`UPDATE orders SET gateway = 'stripe', meta = json_set(meta, '$.env', 'sandbox') WHERE id = '${orderId}'`);
+  const o = await doc("orders", orderId);
+  await update("orders", orderId, { gateway: "stripe" }, { env: "sandbox" });
   const ev = stripeEvent(orderId, o.amount_usd);
   const w = await new Client().post("/api/webhooks/stripe", ev.payload, { "stripe-signature": ev.header });
   assert.equal(w.status, 200, "final state: no retries from the gateway");
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${orderId}'`)[0].status, "refunded");
-  assert.equal(d1(`SELECT status FROM subscriptions WHERE user_id = '${m.id}'`)[0].status, "canceled");
+  assert.equal((await doc("orders", orderId)).status, "refunded");
+  assert.equal((await doc("subscriptions", m.id)).status, "canceled");
 });
 
 test("payments: a gateway can only settle its own orders", async () => {
   const m = await newMember("xgw");
   const co = await m.c.post("/api/billing/checkout", { plan: "starter", cycle: "monthly", gateway: "manual" });
   assert.equal(co.status, 200, co.text);
-  const [o] = d1(`SELECT amount_usd FROM orders WHERE id = '${co.json.orderId}'`);
+  const o = await doc("orders", co.json.orderId);
   const ev = stripeEvent(co.json.orderId, o.amount_usd);
   const w = await new Client().post("/api/webhooks/stripe", ev.payload, { "stripe-signature": ev.header });
   assert.equal(w.status, 422);
   assert.equal(w.json.error, "gateway_mismatch");
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${co.json.orderId}'`)[0].status, "pending");
+  assert.equal((await doc("orders", co.json.orderId)).status, "pending");
 });
 
 test("payments: a genuine Stripe event for a Stripe order activates the plan once", async () => {
   const m = await newMember("stripe");
   // Stripe's API is not reachable here, so create the order row as checkout would.
   const id = `ord_sec_${RUN}`;
-  d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
-      VALUES ('${id}', '${m.id}', '${m.email}', 'pro', 'monthly', 49, 'USD', 0, 'stripe', 'pending', '{"env":"sandbox"}', datetime('now'))`);
+  await createOrder({ id, user_id: m.id, email: m.email, plan: "pro", cycle: "monthly", amount_usd: 49, gateway: "stripe", meta: JSON.stringify({ env: "sandbox" }) });
   const short = stripeEvent(id, 10);
   assert.equal((await new Client().post("/api/webhooks/stripe", short.payload, { "stripe-signature": short.header })).status, 422, "short payment refused");
   const ev = stripeEvent(id, 49);
   assert.equal((await new Client().post("/api/webhooks/stripe", ev.payload, { "stripe-signature": ev.header })).status, 200);
   assert.equal((await new Client().post("/api/webhooks/stripe", ev.payload, { "stripe-signature": ev.header })).status, 200, "idempotent");
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${id}'`)[0].status, "paid");
-  assert.equal(d1(`SELECT plan, status FROM subscriptions WHERE user_id = '${m.id}'`)[0].plan, "pro");
+  assert.equal((await doc("orders", id)).status, "paid");
+  assert.equal((await doc("subscriptions", m.id)).plan, "pro");
 });
 
 test("licences: an admin suspension or revocation holds against the member and renewals", async () => {
@@ -142,7 +134,7 @@ test("licences: an admin suspension or revocation holds against the member and r
   const issued = await m.c.post("/api/selfhosted", { action: "issue", product: "vault" });
   assert.equal(issued.status, 200, issued.text);
   const key = issued.json.license.license_key;
-  const [lic] = d1(`SELECT id FROM sh_licenses WHERE license_key = '${key}'`);
+  const lic = await licenceByKey(key);
   const validate = () => fetch(`${BASE}/api/license-validate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: key, machine_id: "hold-machine" }) }).then((r) => r.json());
 
   assert.equal((await admin.post("/api/admin/licenses", { action: "suspend", id: lic.id })).status, 200);
@@ -150,7 +142,7 @@ test("licences: an admin suspension or revocation holds against the member and r
   assert.equal((await m.c.post("/api/selfhosted", { action: "reset", product: "vault" })).status, 403);
   // A renewal payment re-activates plan-suspended licences — but not an admin hold.
   assert.equal((await admin.post(`/api/admin/members/${m.id}`, { action: "grant", plan: "business", cycle: "monthly" })).status, 200);
-  assert.equal(d1(`SELECT status FROM sh_licenses WHERE id = '${lic.id}'`)[0].status, "suspended");
+  assert.equal((await doc("shLicenses", lic.id)).status, "suspended");
   assert.equal((await validate()).reason, "suspended");
 
   assert.equal((await admin.post("/api/admin/licenses", { action: "revoke", id: lic.id })).status, 200);
@@ -162,7 +154,7 @@ test("licences: an admin suspension or revocation holds against the member and r
 
   assert.equal((await admin.post("/api/admin/licenses", { action: "activate", id: lic.id })).status, 200);
   assert.equal((await validate()).valid, true, "an admin lifts the hold");
-  assert.equal(d1(`SELECT notes FROM sh_licenses WHERE id = '${lic.id}'`)[0].notes, "");
+  assert.equal((await doc("shLicenses", lic.id)).notes, "");
 });
 
 test("licences: two servers racing for a fresh key — only one is bound", async () => {
@@ -173,7 +165,7 @@ test("licences: two servers racing for a fresh key — only one is bound", async
   const call = (mid: string) => fetch(`${BASE}/api/license-validate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: key, machine_id: mid }) }).then((r) => r.json());
   const [a, b] = await Promise.all([call("race-machine-a"), call("race-machine-b")]);
   assert.equal([a, b].filter((r) => r.valid).length, 1, JSON.stringify([a.reason, b.reason]));
-  const bound = d1(`SELECT bound_machine_id AS m FROM sh_licenses WHERE license_key = '${key}'`)[0].m;
+  const bound = (await licenceByKey(key)).bound_machine_id;
   assert.equal((a.valid ? "race-machine-a" : "race-machine-b"), bound);
 });
 
@@ -194,7 +186,8 @@ test("sessions: a password change signs out every other device", async () => {
 test("sessions: a reset link works once, even when used twice at the same moment", async () => {
   const m = await newMember("reset");
   assert.equal((await new Client().post("/api/auth/forgot", { email: m.email })).status, 200);
-  const [row] = d1(`SELECT token FROM password_resets WHERE email = '${m.email}' AND used = 0 ORDER BY created_at DESC LIMIT 1`);
+  const row = { token: await resetToken(m.email) };
+  assert.ok(row.token, "the reset link was e-mailed");
   const [a, b] = await Promise.all([
     new Client().post("/api/auth/reset", { token: row.token, password: "raceone123" }),
     new Client().post("/api/auth/reset", { token: row.token, password: "racetwo123" }),
@@ -204,11 +197,11 @@ test("sessions: a reset link works once, even when used twice at the same moment
 
 test("admin: a demoted admin loses access on the very next call", async () => {
   const m = await newMember("demote");
-  d1(`UPDATE users SET role = 'admin' WHERE id = '${m.id}'`);
+  await update("users", m.id, { role: "admin" });
   const c = new Client();
   assert.equal((await c.post("/api/auth/login", { email: m.email, password: "abcdefgh1" })).status, 200);
   assert.equal((await c.get("/api/admin/stats")).status, 200);
-  d1(`UPDATE users SET role = 'client' WHERE id = '${m.id}'`);
+  await update("users", m.id, { role: "client" });
   assert.equal((await c.get("/api/admin/stats")).status, 403);
   assert.equal((await c.post("/api/admin/orders", { action: "cancel", id: "x" })).status, 403);
 });

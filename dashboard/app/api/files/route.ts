@@ -4,7 +4,7 @@
  * rename, delete and export go through /api/history/:app and /api/legal/matters. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getUserFiles } from "@/lib/db";
+import { getData, getUserFiles } from "@/lib/db";
 import { loadSession, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { limitsFor } from "@/lib/plans";
 import { getUsage } from "@/lib/usage";
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (!ctx) return unauthorized();
   const tier = effectiveTier(ctx.session);
   const apps = limitsFor(tier).apps;
-  const db = getDB(req), bucket = getUserFiles(req), uid = ctx.session.sub;
+  const db = getData(req), bucket = getUserFiles(req), uid = ctx.session.sub;
 
   const lists = await Promise.all([
     apps.includes("legal")

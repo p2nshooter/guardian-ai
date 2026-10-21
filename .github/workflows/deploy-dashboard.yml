@@ -17,11 +17,6 @@ on:
       - "dashboard/**"
       - ".github/workflows/deploy-dashboard.yml"
   workflow_dispatch:
-    inputs:
-      skip_migration:
-        description: "Skip D1 migration (use if already applied)"
-        type: boolean
-        default: false
 
 jobs:
   deploy:
@@ -32,7 +27,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: dashboard/package-lock.json
 
@@ -45,12 +40,12 @@ jobs:
         working-directory: dashboard
         run: npx tsc --noEmit -p . && npm test
 
-      - name: Apply D1 Migrations
-        if: ${{ !inputs.skip_migration }}
+      # Records live in R2 only (CLAUDE.md §6): no D1 migrations any more. The data
+      # and backup buckets exist already; creating them again is a harmless no-op.
+      - name: R2 buckets for the records
         working-directory: dashboard
-        # Non-fatal: if migrations can't apply (transient/auth), the dashboard
-        # still deploys. Re-run this workflow after fixing credentials to migrate.
-        run: npx wrangler d1 migrations apply axto-db --remote || echo "⚠️ D1 migration skipped — dashboard will still deploy. Re-run after verifying CLOUDFLARE_API_TOKEN."
+        run: |
+          for b in axto-data axto-backups; do npx --yes wrangler@3 r2 bucket create "$b" >/dev/null 2>&1 && echo "created $b" || echo "$b exists"; done
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
@@ -74,6 +69,33 @@ jobs:
           npx --yes wrangler@3 pages project create axto-dashboard --production-branch main 2>/dev/null || true
           npx --yes wrangler@3 pages deploy .vercel/output/static \
             --project-name axto-dashboard --branch main --commit-dirty=true
+
+      # Zero-touch, once: the first requests after this deploy move the records
+      # from D1 to R2 (lib/data/migrate.ts); this loop drives the same steps so
+      # the short maintenance window ends as fast as possible, and fails the job
+      # if it does not finish. On every later deploy it is a no-op.
+      - name: Move the records from D1 to R2 (once)
+        working-directory: dashboard
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SHA: ${{ github.sha }}
+          BASE: ${{ vars.NEXT_PUBLIC_APP_URL || 'https://axto.io' }}
+        run: |
+          for i in $(seq 1 60); do
+            [ "$(curl -s --max-time 20 "$BASE/api/health" | jq -r '.build // ""')" = "${SHA:0:12}" ] && break
+            sleep 10
+          done
+          for i in $(seq 1 2000); do
+            if [ -n "$CRON_SECRET" ]; then
+              curl -s --max-time 90 -X POST -H "x-cron-secret: $CRON_SECRET" "$BASE/api/cron/migrate" | jq -c '{done, table, conflicts, incomplete}' 2>/dev/null || true
+            else
+              curl -s -o /dev/null --max-time 90 "$BASE/api/billing/options"   # every API request runs a step too
+            fi
+            if [ "$(curl -s --max-time 20 "$BASE/api/health" | jq -r '.records')" = "ready" ]; then
+              echo "✅ records on R2"; curl -s "$BASE/api/health" | jq -c '{records, movedAt, bindings, legacy}'; exit 0
+            fi
+          done
+          echo "::error::the move from D1 to R2 did not finish — /api/health shows where it stands"; exit 1
 
   # Installation guides → branded PDFs (EN + ID) → R2 builds/latest/guides/,
   # served by /api/download/guide. Same source as the web guides

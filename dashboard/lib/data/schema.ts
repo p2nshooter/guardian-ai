@@ -172,8 +172,12 @@ export function collections(store: Store) {
         { name: "user", key: (t) => t.user_id || null },
         { name: "email", key: (t) => lower(t.email) || null },
         { name: "ip_product", key: (t) => (t.ip ? `${t.ip}|${t.product}` : null) },
-        { name: "batch", key: (t) => t.batch, sort: (t) => t.code },
-        { name: "all", key: () => "all", sort: (t) => `${t.product}_${oldestFirst(t.created_at)}_${t.code}`, meta: (t) => ({ product: t.product, batch: t.batch, status: t.status, created_at: t.created_at }) },
+        { name: "batch", key: (t) => t.batch, sort: (t) => t.code, meta: (t) => ({ status: t.status, product: t.product }) },
+        // Everything Admin → Trials shows and exports, so the screen and the CSV need no document reads.
+        {
+          name: "all", key: () => "all", sort: (t) => `${t.product}_${oldestFirst(t.created_at)}_${t.code}`,
+          meta: (t) => ({ product: t.product, batch: t.batch, status: t.status, created_at: t.created_at, email: t.email, ip: t.ip, claimed_at: t.claimed_at, rating: t.rating, converted: t.converted, license_id: t.license_id }),
+        },
       ],
     }),
     lifetimeLicenses: store.collection<LifetimeLicenseDoc>({

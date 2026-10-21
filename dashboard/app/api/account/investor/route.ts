@@ -4,14 +4,14 @@
  * never a customer, an order or another investor. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession, respond, unauthorized } from "@/lib/auth";
 import { getInvest, investorsByEmail, statementFor } from "@/lib/invest";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
-  const db = getDB(req);
+  const db = getData(req);
   const [offer, stakes] = await Promise.all([getInvest(db), investorsByEmail(db, ctx.session.email)]);
   return respond({
     email: ctx.session.email,

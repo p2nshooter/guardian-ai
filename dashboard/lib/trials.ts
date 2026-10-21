@@ -73,32 +73,65 @@ export function trialEdition(product: string) {
   return list.find((e) => e.tier === TRIAL_EDITION_TIER) || list[Math.min(1, list.length - 1)];
 }
 
+/** Codes created per request: each code is a document plus three index entries (~5 R2 calls), so a request stays well inside Cloudflare's subrequest limit. */
+export const TRIAL_BATCH_MAX = 100;
+/** Codes a public page view adds to the initial pool (in the background, until the pool is complete). */
+const SEED_PER_VIEW = 20;
+
+interface SeedProgress { i: number; batch: string; reserved: number }
+
 /**
  * Zero-touch start: the first time the programme is used, every app gets its
- * pool of `perApp` codes (100). One atomic flag makes sure this happens once,
- * so codes the admin later deletes are not silently recreated.
+ * pool of `perApp` codes (100). The pool is filled in small chunks (page views
+ * and the hourly tick); every chunk is first reserved on one progress document
+ * with compare-and-swap, so concurrent callers never create more than the pool.
+ * When it is complete a flag is set, so codes the admin later deletes are not
+ * silently recreated.
  */
-export async function ensureTrialPool(db: Data, c?: TrialConfig): Promise<boolean> {
+export async function ensureTrialPool(db: Data, c?: TrialConfig, budget = SEED_PER_VIEW): Promise<boolean> {
   try {
-    // A read first: the create-once write is only attempted until the pool exists.
     if (await db.config.get("trials_seeded")) return false;
-    if (!(await db.config.setIfAbsent("trials_seeded", now()))) return false;
     const cfg = c || await getTrialConfig(db);
-    for (const p of SELF_HOSTED) await createTrialBatch(db, p.slug, cfg.perApp);
-    return true;
+    const apps = SELF_HOSTED.map((p) => p.slug);
+    let left = Math.max(1, Math.min(TRIAL_BATCH_MAX, budget));
+    let worked = false;
+    while (left > 0) {
+      let job: { product: string; batch: string; take: number } | null = null;
+      let complete = false;
+      await db.store.updateDoc<SeedProgress>("trials-seed", { i: 0, batch: "", reserved: 0 }, (cur) => {
+        // Decided on every run of the compare-and-swap.
+        job = null; complete = false;
+        let { i, batch, reserved } = cur;
+        if (reserved >= cfg.perApp) { i += 1; batch = ""; reserved = 0; }
+        if (i >= apps.length) { complete = true; return null; }
+        const take = Math.min(left, cfg.perApp - reserved);
+        batch ||= newId("tb");
+        job = { product: apps[i]!, batch, take };
+        return { i, batch, reserved: reserved + take };
+      });
+      if (complete) { await db.config.setIfAbsent("trials_seeded", now()); return worked; }
+      const j = job as { product: string; batch: string; take: number } | null;
+      if (!j) return worked;
+      await createTrialCodes(db, j.product, j.batch, j.take);
+      left -= j.take;
+      worked = true;
+    }
+    return worked;
   } catch { return false; }
 }
 
 /** Every trial code's summary (the "all" index: one list call per 1,000 codes, no document reads). */
-export async function trialSummaries(db: Data): Promise<{ code: string; product: string; batch: string; status: string; created_at: string }[]> {
-  const out: { code: string; product: string; batch: string; status: string; created_at: string }[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await db.shTrials.list("all", "all", { cursor, limit: 1000 });
-    for (const e of page.entries) out.push({ code: e.id, product: String(e.meta.product || ""), batch: String(e.meta.batch || ""), status: String(e.meta.status || ""), created_at: String(e.meta.created_at || "") });
-    cursor = page.cursor;
-  } while (cursor);
-  return out;
+export interface TrialSummary {
+  code: string; product: string; batch: string; status: string; created_at: string; email: string; ip: string; claimed_at: string;
+  rating: number; converted: number; license_id: string;
+}
+
+export async function trialSummaries(db: Data): Promise<TrialSummary[]> {
+  return (await db.shTrials.listAll("all", "all", 200_000)).map(({ id, meta: m }) => ({
+    code: id, product: String(m.product || ""), batch: String(m.batch || ""), status: String(m.status || ""), created_at: String(m.created_at || ""),
+    email: String(m.email || ""), ip: String(m.ip || ""), claimed_at: String(m.claimed_at || ""), rating: Number(m.rating) || 0,
+    converted: Number(m.converted) || 0, license_id: String(m.license_id || ""),
+  }));
 }
 
 /** Available / claimed / total per app (public cards + admin). */
@@ -115,17 +148,10 @@ export async function trialStats(db: Data): Promise<Record<string, { total: numb
   return out;
 }
 
-/** Most codes one batch creates (each code is its own document with three index entries). */
-export const TRIAL_BATCH_MAX = 200;
-
-/** Create `count` codes for one app in one batch (≤ TRIAL_BATCH_MAX). */
-export async function createTrialBatch(db: Data, product: string, count: number): Promise<{ batch: string; created: number }> {
-  if (!getSelfHosted(product)) throw new Error("Unknown product.");
-  const n = Math.max(1, Math.min(TRIAL_BATCH_MAX, Math.floor(count)));
-  const batch = newId("tb");
+async function createTrialCodes(db: Data, product: string, batch: string, count: number): Promise<number> {
   const at = now();
   const codes = new Set<string>();
-  while (codes.size < n) codes.add(newTrialCode());
+  while (codes.size < count) codes.add(newTrialCode());
   let created = 0;
   const list = [...codes];
   for (let i = 0; i < list.length; i += 10) {
@@ -134,7 +160,21 @@ export async function createTrialBatch(db: Data, product: string, count: number)
     })));
     created += done.filter(Boolean).length;
   }
-  return { batch, created };
+  return created;
+}
+
+/**
+ * Add up to TRIAL_BATCH_MAX codes for one app to a batch (a new batch unless
+ * `batch` is given — the admin screen continues a large batch over several
+ * requests). Returns the batch, how many codes this call made and how many the
+ * batch holds now.
+ */
+export async function createTrialBatch(db: Data, product: string, count: number, batch?: string): Promise<{ batch: string; created: number; total: number }> {
+  if (!getSelfHosted(product)) throw new Error("Unknown product.");
+  const n = Math.max(1, Math.min(TRIAL_BATCH_MAX, Math.floor(count)));
+  const id = batch || newId("tb");
+  const created = await createTrialCodes(db, product, id, n);
+  return { batch: id, created, total: batch ? await db.shTrials.count("batch", id) : created };
 }
 
 /** A member's claimed trials (by account or by e-mail address). */

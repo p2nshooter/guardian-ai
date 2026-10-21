@@ -3,14 +3,14 @@
  * that verifies must match the order's (test money never pays a real order). */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { gatewayCredsAll, ENV_KEY, type PayEnv } from "@/lib/billing/gateways";
 import { stripeVerify } from "@/lib/billing/providers";
 import { markOrderPaid, isFinal } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
   const payload = await req.text();
-  const db = getDB(req);
+  const db = getData(req);
   let env: PayEnv | null = null;
   for (const c of await gatewayCredsAll("stripe")) {
     if (await stripeVerify(payload, req.headers.get("stripe-signature"), c.webhook_secret)) { env = c[ENV_KEY] as PayEnv; break; }

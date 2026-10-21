@@ -5,20 +5,19 @@
 # Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 # ==============================================================================
 # ═══════════════════════════════════════════════════════════════════════════════
-# AXTO — One-click Cloudflare provisioning (D1 + KV + R2 + Pages)
+# AXTO — One-click Cloudflare provisioning (KV + R2 + Pages)
 #
 # Creates every Cloudflare resource the platform needs, IDEMPOTENTLY:
-#   • D1 database  : axto-db
 #   • KV namespace : axto-kv
-#   • R2 buckets   : axto-storage, axto-builds
+#   • R2 buckets   : axto-data (every record), axto-backups, axto-storage, axto-builds, axto-documents
 #   • Pages project: axto-dashboard
-# Then patches the real resource IDs back into dashboard/wrangler.toml,
-# commits the change, and applies D1 migrations.
+# Then patches the real KV id back into dashboard/wrangler.toml and commits it.
+# Records are stored in R2 only — this never creates a D1 database (CLAUDE.md §6).
 #
 # Run it ONCE (Actions → "Provision Cloudflare" → Run workflow). Safe to re-run.
 #
 # Required secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-#   (token needs: D1 Edit, Workers KV Edit, Workers R2 Edit, Pages Edit)
+#   (token needs: Workers KV Edit, Workers R2 Edit, Pages Edit)
 # ═══════════════════════════════════════════════════════════════════════════════
 name: Provision Cloudflare
 
@@ -40,10 +39,10 @@ concurrency:
 env:
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-  D1_NAME: axto-db
   KV_TITLE: axto-kv
   R2_PRIMARY: axto-storage
   R2_BUILDS: axto-builds
+  R2_BUCKETS: axto-data axto-backups axto-storage axto-builds axto-documents
   PAGES_PROJECT: axto-dashboard
 
 jobs:
@@ -54,7 +53,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22" }
 
       - name: Preflight — verify secrets
         run: |
@@ -68,21 +67,6 @@ jobs:
       # Robustly extract JSON from wrangler output (it may print an info notice
       # like "📎 It looks like you are authenticating..." before the JSON).
       # parse_json <name-field> <id-field>  — reads stdin, prints matching id.
-
-      # ── D1 ────────────────────────────────────────────────────────────────
-      - name: Create / resolve D1 database
-        id: d1
-        continue-on-error: true
-        env:
-          D1_ID_SECRET: ${{ secrets.CF_D1_DATABASE_ID }}
-        run: |
-          # Discover the REAL id from the account (authoritative); secret is only a fallback.
-          wrangler d1 create "$D1_NAME" 2>/dev/null || echo "D1 '$D1_NAME' exists or create skipped."
-          ID="$(wrangler d1 list --json 2>/dev/null | node -e \
-            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.search(/[\[{]/);try{const a=JSON.parse(s.slice(i));const x=(Array.isArray(a)?a:[]).find(d=>d.name===process.env.D1_NAME);console.log(x?(x.uuid||x.database_id||""):"")}catch(e){console.log("")}})')"
-          [ -z "$ID" ] && ID="$D1_ID_SECRET"
-          echo "id=$ID" >> "$GITHUB_OUTPUT"
-          echo "🗄️  D1 $D1_NAME → ${ID:-NOT FOUND}"
 
       # ── KV ────────────────────────────────────────────────────────────────
       - name: Create / resolve KV namespace
@@ -102,7 +86,7 @@ jobs:
       - name: Create R2 buckets
         continue-on-error: true
         run: |
-          for b in "$R2_PRIMARY" "$R2_BUILDS"; do
+          for b in $R2_BUCKETS; do
             wrangler r2 bucket create "$b" 2>/dev/null && echo "🪣 created $b" || echo "🪣 $b exists or create skipped"
           done
 
@@ -118,11 +102,9 @@ jobs:
       - name: Patch dashboard/wrangler.toml
         if: ${{ inputs.commit_ids }}
         env:
-          D1_ID: ${{ steps.d1.outputs.id }}
           KV_ID: ${{ steps.kv.outputs.id }}
         run: |
           f=dashboard/wrangler.toml
-          [ -n "$D1_ID" ] && sed -i -E "s|^(database_id[[:space:]]*=).*|\1 \"$D1_ID\"|" "$f" || true
           if [ -n "$KV_ID" ]; then
             # replace the id on the line that follows the KV binding
             awk -v id="$KV_ID" '
@@ -147,12 +129,6 @@ jobs:
             echo "✅ Committed resolved Cloudflare IDs."
           fi
 
-      # ── Schema ────────────────────────────────────────────────────────────
-      - name: Apply D1 migrations
-        working-directory: dashboard
-        run: |
-          npx --yes wrangler@3 d1 migrations apply "$D1_NAME" --remote || echo "migrations step skipped"
-
       - name: Summary
         if: always()
         run: |
@@ -161,10 +137,8 @@ jobs:
             echo ""
             echo "| Resource | Name | ID |"
             echo "|---|---|---|"
-            echo "| D1 database | \`$D1_NAME\` | \`${{ steps.d1.outputs.id }}\` |"
             echo "| KV namespace | \`$KV_TITLE\` | \`${{ steps.kv.outputs.id }}\` |"
-            echo "| R2 bucket | \`$R2_PRIMARY\` | — |"
-            echo "| R2 bucket | \`$R2_BUILDS\` | — |"
+            for b in $R2_BUCKETS; do echo "| R2 bucket | \`$b\` | — |"; done
             echo "| Pages project | \`$PAGES_PROJECT\` | — |"
             echo ""
             echo "Resource IDs were patched into \`dashboard/wrangler.toml\` and committed (if enabled)."

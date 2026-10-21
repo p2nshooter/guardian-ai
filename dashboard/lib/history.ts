@@ -9,9 +9,10 @@
  *
  *   R2 (USER_FILES):  app/<slug>/<uid>/index.enc         list (sidebar)
  *                     app/<slug>/<uid>/items/<id>.enc     one item's full body
- *   cipher: AES-256-GCM, key unique per member (lib/user-crypto). D1 stores
- *   nothing but the member's storage total (users.storage_bytes).
+ *   cipher: AES-256-GCM, key unique per member (lib/user-crypto). The member's
+ *   record holds nothing but their storage total (users.storage_bytes).
  * ============================================================================ */
+import type { Data } from "./data";
 import { newId, now } from "./db";
 import { getSealedJson, putSealedJson, sealForUser } from "./user-crypto";
 import { addStorage } from "./usage";
@@ -26,7 +27,7 @@ const ID_RE = /^[a-zA-Z0-9_-]{6,40}$/;
 const clean = (v: unknown, max: number) => String(v ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "").trim().slice(0, max);
 
 export class History {
-  constructor(private bucket: any, private db: any, private uid: string, private app: string, private opts: { maxItems?: number; maxBytes?: number } = {}) {
+  constructor(private bucket: any, private db: Data, private uid: string, private app: string, private opts: { maxItems?: number; maxBytes?: number } = {}) {
     if (!APP_RE.test(app)) throw new HistoryError("bad app slug", 500);
   }
   private root() { return `app/${this.app}/${this.uid}`; }

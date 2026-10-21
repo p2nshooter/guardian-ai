@@ -39,7 +39,7 @@ export interface CfEnv {
 
 // Bindings and secrets are fixed for the life of an isolate. Keeping the last
 // request's env lets work that outlives its request (WebSocket message
-// handlers, waitUntil tasks) still reach D1, KV, R2 and secrets.
+// handlers, waitUntil tasks) still reach R2, KV and secrets.
 let lastEnv: CfEnv | null = null;
 
 export function getEnv(_req?: NextRequest): CfEnv {
@@ -97,43 +97,48 @@ function stores(req?: NextRequest) {
   return next;
 }
 
+/**
+ * Whether the records can be used (the one-time move from D1 is done). Runs
+ * one step of the move when no one else is, so visitors finish it too; false
+ * while it is still running (the middleware answers 503 then).
+ */
+export async function dataReady(req?: NextRequest): Promise<boolean> {
+  if (ready) return true;
+  const env = getEnv(req);
+  if (!env.DATA) return true; // not configured: the route itself reports the missing binding
+  try {
+    await gate(stores(req).raw, env);
+    return true;
+  } catch (e) {
+    if (e instanceof MaintenanceError) return false;
+    throw e;
+  }
+}
+
 /** Every record of the platform (lib/data/schema.ts), on the private R2 bucket DATA. */
 export const getData = (req?: NextRequest): Data => stores(req).data;
 /** The same collections without the migration gate — for the migrator, backups and the health probe. */
 export const getRawData = (req?: NextRequest): Data => stores(req).raw;
-/** @deprecated Being replaced by getData() while the modules move from D1 to R2. */
-export const getDB = (req?: NextRequest): any => getData(req);
 export const getKV = (req?: NextRequest) => need("KV", req);
 export const getR2 = (req?: NextRequest) => need("R2", req);
 export const getR2Builds = (req?: NextRequest) => getEnv(req).R2_BUILDS || need("R2", req);
 export const getUserFiles = (req?: NextRequest) => getEnv(req).USER_FILES || need("R2", req);
 export const getAI = (req?: NextRequest) => getEnv(req).AI || null;
 
+/** Run background work after the response (webhook fan-out, filling the trial pool) when the platform allows it. */
+export function background(p: Promise<unknown>) {
+  try {
+    getRequestContext().ctx.waitUntil(p.catch(() => {}));
+    return;
+  } catch {}
+  p.catch(() => {});
+}
+
 /** Server-side secret/env lookup: Pages secrets are exposed on process.env and on the binding env. */
 export function secret(name: string): string {
   const fromBinding = getEnv()[name];
   if (typeof fromBinding === "string" && fromBinding) return fromBinding;
   return (process.env[name] as string) || "";
-}
-
-// ── Query helpers ──────────────────────────────────────────────────────────
-export async function dbQuery<T = Record<string, any>>(db: any, sql: string, params: unknown[] = []): Promise<T[]> {
-  const r = await db.prepare(sql).bind(...params).all();
-  return (r.results || []) as T[];
-}
-
-export async function dbFirst<T = Record<string, any>>(db: any, sql: string, params: unknown[] = []): Promise<T | null> {
-  const r = await db.prepare(sql).bind(...params).first();
-  return (r as T) ?? null;
-}
-
-export async function dbRun(db: any, sql: string, params: unknown[] = []): Promise<any> {
-  return db.prepare(sql).bind(...params).run();
-}
-
-/** Execute several statements atomically (D1 batch = single transaction). */
-export async function dbBatch(db: any, stmts: [string, unknown[]][]): Promise<any[]> {
-  return db.batch(stmts.map(([sql, p]) => db.prepare(sql).bind(...p)));
 }
 
 export function newId(prefix = ""): string {

@@ -6,6 +6,7 @@
  * Tools run the member's own AI (BYOK) and AXTO's on-server engines; nothing is
  * stored except events the agent chooses to publish.
  * ============================================================================ */
+import type { Data } from "../data";
 import { prepareRun, splitStatus } from "../ai/run-core";
 import { compute, RULES, type Unit, type Roll, type HolidayCountry } from "../legal/deadlines";
 import { extractCitations } from "../legal/citations";
@@ -20,7 +21,7 @@ export const MCP_PROTOCOL = "2025-06-18";
 const SUPPORTED = ["2025-06-18", "2025-03-26", "2024-11-05"];
 
 type Json = Record<string, any>;
-interface Tool { name: string; title: string; description: string; inputSchema: Json; scope?: Parameters<typeof requireScope>[1]; run: (args: Json, caller: Caller, db: any) => Promise<{ text: string; data?: unknown; isError?: boolean }> }
+interface Tool { name: string; title: string; description: string; inputSchema: Json; scope?: Parameters<typeof requireScope>[1]; run: (args: Json, caller: Caller, db: Data) => Promise<{ text: string; data?: unknown; isError?: boolean }> }
 
 const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 
@@ -109,7 +110,7 @@ export const TOOLS: Tool[] = [
 const rpcError = (id: unknown, code: number, message: string) => ({ jsonrpc: "2.0", id: id ?? null, error: { code, message } });
 
 /** Handle one JSON-RPC message. Returns null for notifications. */
-export async function handleMcp(msg: Json, caller: Caller, db: any): Promise<Json | null> {
+export async function handleMcp(msg: Json, caller: Caller, db: Data): Promise<Json | null> {
   if (!msg || msg.jsonrpc !== "2.0" || typeof msg.method !== "string") return rpcError(msg?.id, -32600, "Invalid Request");
   const isNotification = msg.id === undefined || msg.id === null;
   const reply = (result: Json) => (isNotification ? null : { jsonrpc: "2.0", id: msg.id, result });

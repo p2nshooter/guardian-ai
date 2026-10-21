@@ -7,14 +7,13 @@
  * ============================================================================ */
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { auditByAction, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 
 class Client {
@@ -35,12 +34,6 @@ class Client {
   get = (p: string) => this.call("GET", p);
   post = (p: string, b: unknown = {}) => this.call("POST", p, b);
   put = (p: string, b: unknown = {}) => this.call("PUT", p, b);
-}
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
 }
 async function signUp(c: Client, email: string) {
   const r = await c.post("/api/auth/register", { email, name: "Buyer " + RUN, password: "Buyer-Pass-2026", acceptTerms: true });
@@ -126,8 +119,8 @@ test("acquire: BNI wire checkout → owner's accounts, WhatsApp, proof → admin
   assert.equal((await buyer.get("/api/admin/stats")).status, 200, "admin APIs open for the new owner");
   const adminPage = await buyer.get("/admin");
   assert.notEqual(adminPage.status, 307, "the middleware lets the refreshed cookie into /admin");
-  assert.equal(d1(`SELECT role FROM users WHERE email = 'buyer-${RUN}@example.com'`)[0].role, "admin");
-  assert.ok(d1(`SELECT action FROM audit_log WHERE action = 'site.sale.paid' AND entity_id = '${orderId}'`).length === 1);
+  assert.equal((await userByEmail(`buyer-${RUN}@example.com`)).role, "admin");
+  assert.ok((await auditByAction("site.sale.paid")).filter((a: any) => a.entity_id === orderId).length === 1);
 });
 
 test("acquire: once sold, the offer closes for everyone else", async () => {
@@ -143,7 +136,7 @@ test("acquire: once sold, the offer closes for everyone else", async () => {
 test("acquire: a refund removes the buyer's admin role and reopens the offer", async () => {
   const r = await admin.post("/api/admin/orders", { action: "refund", id: orderId, note: "test refund", endAccess: true });
   assert.equal(r.status, 200, r.text);
-  assert.equal(d1(`SELECT role FROM users WHERE email = 'buyer-${RUN}@example.com'`)[0].role, "client", "back to a regular member");
+  assert.equal((await userByEmail(`buyer-${RUN}@example.com`)).role, "client", "back to a regular member");
   assert.equal((await buyer.get("/api/admin/stats")).status, 403, "admin access ends at once");
   assert.equal((await anon.get("/api/acquire")).json.status, "open");
 });

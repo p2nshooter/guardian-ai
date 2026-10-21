@@ -7,8 +7,8 @@
  * Authentication & sessions — pure Web Crypto, no third-party auth.
  *
  * The session JWT carries the member's plan ("tier") and paid-until date, so
- * most requests never touch D1. The entitlement inside the token is re-read
- * from D1 at most once per hour (ENT_TTL) or immediately after a payment, via
+ * most requests never read the records. The entitlement inside the token is
+ * re-read from R2 at most once per hour (ENT_TTL) or immediately after a payment, via
  * loadSession().
  * ============================================================================ */
 import { NextRequest, NextResponse } from "next/server";

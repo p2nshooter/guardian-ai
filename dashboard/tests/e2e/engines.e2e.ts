@@ -14,12 +14,12 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { seedAdmin, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
 const REPO = path.resolve(process.cwd(), "..");
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const IMAGE = "axto-licence-test:py311";
 const RUN = Date.now().toString(36);
 
@@ -43,12 +43,6 @@ function docker(...args: string[]) {
   return spawnSync("docker", args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 }
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 async function call(method: string, p: string, body?: unknown, cookie = "") {
   const res = await fetch(BASE + p, {
@@ -81,12 +75,12 @@ const dockerAvailable = docker("info").status === 0;
 
 test("engines: every licence family validates, resists tampering and replay", { skip: !dockerAvailable && "Docker not available", timeout: 600_000 }, async () => {
   // Admin + a member on Enterprise (every app, unlimited nodes).
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   const admin = { status: 200, cookie: await adminCookie() };   // shared admin session
   assert.equal(admin.status, 200);
   const reg = await call("POST", "/api/auth/register", { email: `engines-${RUN}@example.com`, name: "Engine Test", password: "abcdefgh1", acceptTerms: true });
   assert.equal(reg.status, 200);
-  const [u] = d1(`SELECT id FROM users WHERE email = 'engines-${RUN}@example.com'`);
+  const u = await userByEmail(`engines-${RUN}@example.com`);
   assert.equal((await call("POST", `/api/admin/members/${u.id}`, { action: "grant", plan: "enterprise", cycle: "monthly" }, admin.cookie)).status, 200);
   const member = await call("POST", "/api/auth/login", { email: `engines-${RUN}@example.com`, password: "abcdefgh1" });
 

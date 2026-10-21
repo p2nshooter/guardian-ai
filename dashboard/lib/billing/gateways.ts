@@ -7,7 +7,7 @@
  * Payment gateway registry + encrypted settings access.
  * Every credential, bank account and wallet address lives in ONE encrypted R2
  * document (lib/secure-store.ts, name "payments") edited from Admin → Payments.
- * Nothing payment-related is stored in D1 or in the repository.
+ * No payment credential is stored in the records or in the repository.
  * ============================================================================ */
 import { getR2, now } from "../db";
 import type { Data } from "../data";

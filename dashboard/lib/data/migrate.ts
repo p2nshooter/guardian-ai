@@ -61,17 +61,22 @@ export interface MigrationState {
   settings: number;
   legacy: Record<string, number>;
   conflicts: { table: string; id: string; field: string }[];
+  /** Tables still short after copying them again twice (named for the admin; D1 stays readable for seven days). */
+  incomplete?: string[];
 }
 
 interface Progress {
   table: number;
   offset: number;
-  copied: Record<string, { d1: number; created: number; existing: number; conflicts: number }>;
+  /** d1 = rows, docs = distinct document ids those rows become. */
+  copied: Record<string, { d1: number; docs?: number; created: number; existing: number; conflicts: number }>;
   settings?: number;
   counters?: boolean;
   payments?: boolean;
   legacy?: Record<string, number>;
   conflicts: { table: string; id: string; field: string }[];
+  /** Times the check sent tables back to be copied again. */
+  recopies?: number;
 }
 
 type Row = Record<string, unknown>;
@@ -104,6 +109,8 @@ interface TableDef {
   table: string;
   pick: (d: Data) => Collection<Doc>;
   toDoc: (row: Row, ctx: { d1: D1Like }) => Promise<Doc | null>;
+  /** SQL for the document id of a row, when it is not `id` (rows sharing an id become one document). */
+  key?: string;
 }
 
 const plain = (keepNull: string[] = [], numbers: string[] = []) => async (row: Row) => {
@@ -115,13 +122,13 @@ const plain = (keepNull: string[] = [], numbers: string[] = []) => async (row: R
 /** Every D1 table the code still uses, in the order they are copied (accounts first, then money, licences, the rest). */
 export const TABLES: TableDef[] = [
   { table: "users", pick: (d) => d.users as unknown as Collection<Doc>, toDoc: plain([], ["storage_bytes"]) },
-  { table: "subscriptions", pick: (d) => d.subscriptions as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), id: ids.subscription(String(row.user_id)) } as unknown as Doc) },
+  { table: "subscriptions", key: "user_id", pick: (d) => d.subscriptions as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), id: ids.subscription(String(row.user_id)) } as unknown as Doc) },
   { table: "orders", pick: (d) => d.orders as unknown as Collection<Doc>, toDoc: plain([], ["amount_usd", "amount_local"]) },
-  { table: "payment_proofs", pick: (d) => d.paymentProofs as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), amount: num(row.amount), id: ids.proof(String(row.tx_hash)) } as unknown as Doc) },
+  { table: "payment_proofs", key: "tx_hash", pick: (d) => d.paymentProofs as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), amount: num(row.amount), id: ids.proof(String(row.tx_hash)) } as unknown as Doc) },
   { table: "investors", pick: (d) => d.investors as unknown as Collection<Doc>, toDoc: plain([], ["pledge_usd", "capital_usd"]) },
   { table: "investor_payouts", pick: (d) => d.investorPayouts as unknown as Collection<Doc>, toDoc: plain([], ["amount_usd"]) },
   { table: "sh_licenses", pick: (d) => d.shLicenses as unknown as Collection<Doc>, toDoc: plain([], ["max_nodes", "reset_count"]) },
-  { table: "sh_trials", pick: (d) => d.shTrials as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), rating: num(row.rating), converted: num(row.converted), id: String(row.code) } as unknown as Doc) },
+  { table: "sh_trials", key: "code", pick: (d) => d.shTrials as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), rating: num(row.rating), converted: num(row.converted), id: String(row.code) } as unknown as Doc) },
   { table: "lifetime_licenses", pick: (d) => d.lifetimeLicenses as unknown as Collection<Doc>, toDoc: plain([], ["devices", "major_version"]) },
   {
     table: "lifetime_activations", pick: (d) => d.lifetimeActivations as unknown as Collection<Doc>,
@@ -139,14 +146,14 @@ export const TABLES: TableDef[] = [
     },
   },
   { table: "api_keys", pick: (d) => d.apiKeys as unknown as Collection<Doc>, toDoc: plain(["last_used_at", "revoked_at"]) },
-  { table: "user_ai_keys", pick: (d) => d.userAiKeys as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), id: ids.aiKey(String(row.user_id), String(row.provider)) } as unknown as Doc) },
+  { table: "user_ai_keys", key: "user_id || '_' || provider", pick: (d) => d.userAiKeys as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), id: ids.aiKey(String(row.user_id), String(row.provider)) } as unknown as Doc) },
   { table: "ai_provider_keys", pick: (d) => d.aiProviderKeys as unknown as Collection<Doc>, toDoc: plain([], ["for_managed_pool", "is_active"]) },
-  { table: "byox_usage", pick: (d) => d.byoxUsage as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), requests: num(row.requests), clipper_videos: num(row.clipper_videos), id: ids.usage(String(row.user_id), String(row.month)) } as unknown as Doc) },
-  { table: "managed_usage", pick: (d) => d.managedUsage as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), credits_used: num(row.credits_used), tokens: num(row.tokens), id: ids.usage(String(row.user_id), String(row.month)) } as unknown as Doc) },
-  { table: "managed_subscriptions", pick: (d) => d.managedSubscriptions as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), id: String(row.user_id) } as unknown as Doc) },
+  { table: "byox_usage", key: "user_id || '_' || month", pick: (d) => d.byoxUsage as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), requests: num(row.requests), clipper_videos: num(row.clipper_videos), id: ids.usage(String(row.user_id), String(row.month)) } as unknown as Doc) },
+  { table: "managed_usage", key: "user_id || '_' || month", pick: (d) => d.managedUsage as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), credits_used: num(row.credits_used), tokens: num(row.tokens), id: ids.usage(String(row.user_id), String(row.month)) } as unknown as Doc) },
+  { table: "managed_subscriptions", key: "user_id", pick: (d) => d.managedSubscriptions as unknown as Collection<Doc>, toDoc: async (row) => ({ ...clean(row), id: String(row.user_id) } as unknown as Doc) },
   {
     // The token itself is never kept: the document id is its SHA-256, which is what the reset page looks up.
-    table: "password_resets", pick: (d) => d.passwordResets as unknown as Collection<Doc>,
+    table: "password_resets", key: "token", pick: (d) => d.passwordResets as unknown as Collection<Doc>,
     toDoc: async (row) => {
       const r = clean(row);
       const { token, ...rest } = r;
@@ -210,6 +217,16 @@ async function countRows(d1: D1Like, table: string): Promise<number> {
   return num(r?.n);
 }
 
+/** How many documents a table becomes: rows that share a document id (a duplicate key) are one document. */
+async function countDistinct(d1: D1Like, def: TableDef): Promise<number> {
+  if (!(await tableExists(d1, def.table))) return 0;
+  const r = await d1.prepare(`SELECT COUNT(DISTINCT ${def.key ?? "id"}) AS n FROM ${def.table}`).bind().first<{ n: number }>();
+  return num(r?.n);
+}
+
+/** Rows copied at the same time inside one step (Workers run at most six storage calls at once). */
+const PARALLEL = 6;
+
 export interface StepEnv {
   d1: D1Like | null;
   /** Where the legacy tables are archived (the backup bucket); skipped when absent. */
@@ -252,20 +269,23 @@ export async function migrationStep(d: Data, env: StepEnv): Promise<MigrationSta
     const rows = results ?? [];
     if (!rows.length) { p.offset = c.d1; continue; }
     const coll = def.pick(d);
-    for (const row of rows) {
+    const copyRow = async (row: Row) => {
       const doc = await def.toDoc(row, { d1 });
-      if (!doc) continue;
+      if (!doc) return;
       try {
         if (await coll.createIfAbsent(doc)) c.created += 1;
         else c.existing += 1;
       } catch (err) {
-        if (!(err instanceof ConflictError)) throw err;
-        // Never dropped: the row is kept as it was, and the report names it.
-        await d.store.createDoc(`meta/migration-conflicts/${def.table}/${doc.id}`, { field: err.field, row: clean(row) });
+        // A taken unique value, or an id R2 cannot hold: never dropped — the row is kept as it was, and the report names it.
+        const field = err instanceof ConflictError ? err.field : err instanceof Error && err.message.startsWith("invalid id") ? "id" : null;
+        if (!field) throw err;
+        const id = String(doc.id);
+        await d.store.createDoc(`meta/migration-conflicts/${def.table}/${encodeURIComponent(id).replace(/[~]/g, "%7E")}`, { field, id, row: clean(row) });
         c.conflicts += 1;
-        p.conflicts.push({ table: def.table, id: doc.id, field: err.field });
+        if (!p.conflicts.some((x) => x.table === def.table && x.id === id)) p.conflicts.push({ table: def.table, id, field });
       }
-    }
+    };
+    for (let i = 0; i < rows.length; i += PARALLEL) await Promise.all(rows.slice(i, i + PARALLEL).map(copyRow));
     p.offset += rows.length;
     budget -= rows.length;
     await save();
@@ -321,12 +341,17 @@ export async function migrationStep(d: Data, env: StepEnv): Promise<MigrationSta
   const short: string[] = [];
   for (const def of TABLES) {
     const c = p.copied[def.table]!;
+    c.docs ??= await countDistinct(d1, def);
     const r2 = await def.pick(d).countDocs();
     tables[def.table] = { d1: c.d1, r2, conflicts: c.conflicts };
-    if (r2 + c.conflicts < c.d1) short.push(def.table);
+    // Every distinct D1 row is a document (or a recorded conflict). A conflict re-recorded by a resumed step counts once per row.
+    if (r2 + Math.min(c.conflicts, c.docs) < c.docs) short.push(def.table);
   }
-  if (short.length) {
+  // Copied again at most twice; after that the move finishes and names the tables, so the site can never stay
+  // in maintenance (D1 is kept read-only for seven days, so nothing is lost while the report is looked at).
+  if (short.length && (p.recopies ?? 0) < 2) {
     console.error("D1 → R2 move incomplete:", short.join(", "));
+    p.recopies = (p.recopies ?? 0) + 1;
     // Copy those tables again from the start (create-if-absent: nothing doubles).
     const first = TABLES.findIndex((t) => short.includes(t.table));
     p.table = first;
@@ -338,6 +363,7 @@ export async function migrationStep(d: Data, env: StepEnv): Promise<MigrationSta
   const state: MigrationState = {
     status: "done", at: new Date().toISOString(), source: "d1", tables,
     settings: p.settings ?? 0, legacy: p.legacy ?? {}, conflicts: p.conflicts,
+    ...(short.length ? { incomplete: short } : {}),
   };
   return (await d.store.createDoc<MigrationState>(STATE, state)).doc;
 }

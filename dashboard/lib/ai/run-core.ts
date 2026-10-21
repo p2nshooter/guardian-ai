@@ -6,6 +6,7 @@
  * builds the server-side prompt, resolves the MEMBER'S OWN keys and streams
  * the answer with failover to their next key. No AXTO-provided AI is used.
  * ============================================================================ */
+import type { Data } from "../data";
 import { resolveChatAll, ByoxMissingKey } from "./byox";
 import { chatStream, providerInfo, supportsResearch, statusLine, type Connection } from "./providers";
 import type { BuiltTask } from "./tasks";
@@ -29,7 +30,7 @@ export function runAllowed(tier: Tier, app: string, task?: string): boolean {
   return l.apps.includes(app) && (!needsAllLegal || l.legalWorkspaces === "all");
 }
 
-export async function prepareRun(db: any, userId: string, tier: Tier, b: RunRequest): Promise<RunResult> {
+export async function prepareRun(db: Data, userId: string, tier: Tier, b: RunRequest): Promise<RunResult> {
   // Validate the app, plan and inputs and build the prompt once, before touching any key.
   const v = buildRun(tier, b);
   if (!v.ok) return v;

@@ -9,15 +9,14 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
+import { all, licenceByKey, resetToken, seedAdmin, update, userByEmail } from "./data";
 
-// The d1() helper blocks for seconds; don't reuse sockets the dev server has since closed.
+// Don't reuse sockets the dev server has since closed.
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const MOCK_PORT = 8799;
 const ADMIN_EMAIL = "e2e-admin@axto.io";
 const ADMIN_PASSWORD = "e2e-admin-Pass-2026";
@@ -66,13 +65,6 @@ class Client {
   del = (p: string) => this.call("DELETE", p);
 }
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  const j = JSON.parse(out.slice(out.indexOf("[")));
-  return j[0]?.results || [];
-}
 
 let mock: http.Server;
 const mockCalls: any[] = [];
@@ -92,7 +84,7 @@ before(async () => {
     });
   }).listen(MOCK_PORT);
   // Seed an admin account (password comes from the ADMIN_PASSWORD break-glass secret).
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', '${ADMIN_EMAIL}', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin(ADMIN_EMAIL);
 });
 after(() => mock?.close());
 
@@ -104,11 +96,12 @@ let firstOrderId = "";
 let guardKey = "";
 
 // ── tests ──────────────────────────────────────────────────────────────────
-test("health: D1, KV and R2 bindings are live", async () => {
+test("health: the records are on R2 and every binding is live", async () => {
   const r = await member.get("/api/health");
   assert.equal(r.status, 200);
   assert.equal(r.json.ok, true);
-  assert.deepEqual(r.json.bindings, { d1: true, kv: true, r2: true, userFiles: true, builds: true });
+  assert.equal(r.json.records, "ready");
+  assert.deepEqual(r.json.bindings, { data: true, backups: true, kv: true, r2: true, userFiles: true, builds: true });
 });
 
 test("register: validation, success, duplicate", async () => {
@@ -302,7 +295,7 @@ test("BYOX: keys, custom endpoint, live test against a provider", async () => {
   assert.equal(call.body.model, "mock-llm");
   assert.equal(call.body.messages[0].role, "system");
 
-  const rows = d1(`SELECT key_enc FROM user_ai_keys WHERE provider = 'custom'`);
+  const rows = (await all("userAiKeys")).filter((k: any) => k.provider === "custom");
   assert.ok(rows.length && !String(rows[0].key_enc).includes("sk-local-test-key"), "stored encrypted");
 
   // AI Studio is live and included in the member's plan → it runs on their own key.
@@ -337,8 +330,8 @@ test("admin price override flows into checkout", async () => {
 test("password reset end to end", async () => {
   const f = await new Client().post("/api/auth/forgot", { email: memberEmail });
   assert.equal(f.status, 200);
-  const [row] = d1(`SELECT token FROM password_resets WHERE email = '${memberEmail}' AND used = 0 ORDER BY created_at DESC LIMIT 1`);
-  assert.ok(row?.token);
+  const row = { token: await resetToken(memberEmail) };
+  assert.ok(row.token, "the reset link was e-mailed");
   const c = new Client();
   assert.equal((await c.post("/api/auth/reset", { token: row.token, password: "weak" })).status, 400);
   assert.equal((await c.post("/api/auth/reset", { token: row.token, password: "newpass123" })).status, 200);
@@ -347,7 +340,7 @@ test("password reset end to end", async () => {
 });
 
 test("suspension blocks sign-in and licences; reactivation restores", async () => {
-  const [u] = d1(`SELECT id FROM users WHERE email = '${memberEmail}'`);
+  const u = await userByEmail(memberEmail);
   assert.equal((await admin.post(`/api/admin/members/${u.id}`, { action: "suspend" })).status, 200);
   assert.equal((await new Client().post("/api/auth/login", { email: memberEmail, password: "newpass123" })).status, 403);
   const v = await fetch(`${BASE}/api/license-validate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: guardKey, machine_id: "machine-B" }) }).then((r) => r.json());
@@ -357,16 +350,16 @@ test("suspension blocks sign-in and licences; reactivation restores", async () =
 
 test("cron: auth, expiry suspends licences", async () => {
   assert.equal((await new Client().get("/api/cron/expire-licenses")).status, 401);
-  const [u] = d1(`SELECT id FROM users WHERE email = '${memberEmail}'`);
-  d1(`UPDATE subscriptions SET current_period_end = '2020-01-01T00:00:00.000Z' WHERE user_id = '${u.id}'`);
+  const u = await userByEmail(memberEmail);
+  await update("subscriptions", u.id, { current_period_end: "2020-01-01T00:00:00.000Z" });
   const r = await new Client().call("GET", "/api/cron/expire-licenses", undefined, { "x-cron-secret": CRON_SECRET });
   assert.equal(r.status, 200, r.text);
   assert.ok(r.json.expired >= 1);
-  const [lic] = d1(`SELECT status FROM sh_licenses WHERE license_key = '${guardKey}'`);
+  const lic = await licenceByKey(guardKey);
   assert.equal(lic.status, "suspended");
   // Admin grant restores access and licences through the same activation path.
   assert.equal((await admin.post(`/api/admin/members/${u.id}`, { action: "grant", plan: "enterprise", cycle: "monthly" })).status, 200);
-  const [lic2] = d1(`SELECT status, max_nodes FROM sh_licenses WHERE license_key = '${guardKey}'`);
+  const lic2 = await licenceByKey(guardKey);
   assert.equal(lic2.status, "active");
   assert.equal(lic2.max_nodes, -1);
 });

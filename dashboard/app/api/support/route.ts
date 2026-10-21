@@ -6,7 +6,7 @@
  * Rate-limited per IP; `website` is a honeypot field bots fill in. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJson, fail, ipOf } from "@/lib/http";
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   if (email && !EMAIL_RE.test(email)) return fail("That e-mail address doesn't look right.");
   if (topic.handoff && !email) return fail("Add your e-mail so our team can send you the proposal.");
 
-  const db = getDB(req);
+  const db = getData(req);
   const { id, token } = await createThread(db, {
     name, email, topic: topic.id, source: "chat", userId: ctx?.session.sub || null,
     needsAdmin: topic.handoff, first: { name: name || "Visitor", text: message },

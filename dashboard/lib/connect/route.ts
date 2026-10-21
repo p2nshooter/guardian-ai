@@ -34,11 +34,4 @@ export const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((r)
   signal?.addEventListener("abort", () => { clearTimeout(t); r(); }, { once: true });
 });
 
-/** Run background work after the response (webhook fan-out) when the platform allows it. */
-export function background(p: Promise<unknown>) {
-  try {
-    getRequestContext().ctx.waitUntil(p.catch(() => {}));
-    return;
-  } catch {}
-  p.catch(() => {});
-}
+export { background } from "../db";
