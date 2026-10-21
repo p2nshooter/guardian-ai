@@ -92,7 +92,9 @@ jobs:
               curl -s -o /dev/null --max-time 90 "$BASE/api/billing/options"   # every API request runs a step too
             fi
             if [ "$(curl -s --max-time 20 "$BASE/api/health" | jq -r '.records')" = "ready" ]; then
-              echo "✅ records on R2"; curl -s "$BASE/api/health" | jq -c '{records, movedAt, bindings, legacy}'; exit 0
+              h=$(curl -s "$BASE/api/health"); echo "$h" | jq -c '{records, movedAt, move, bindings, legacy}'
+              if [ "$(echo "$h" | jq '.move.incomplete | length')" != "0" ]; then echo "::error::tables short after the move (D1 stays readable): $(echo "$h" | jq -c '.move.incomplete')"; exit 1; fi
+              echo "✅ records on R2"; exit 0
             fi
           done
           echo "::error::the move from D1 to R2 did not finish — /api/health shows where it stands"; exit 1

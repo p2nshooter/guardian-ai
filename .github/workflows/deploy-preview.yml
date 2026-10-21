@@ -78,7 +78,9 @@ jobs:
           for i in $(seq 1 2000); do
             curl -s -o /dev/null --max-time 90 "$base/api/billing/options"   # every API request runs a step of the move
             if [ "$(curl -s --max-time 20 "$base/api/health" | jq -r '.records')" = "ready" ]; then
-              echo "✅ preview records on R2"; curl -s "$base/api/health" | jq -c '{records, movedAt, bindings, legacy}'; exit 0
+              h=$(curl -s "$base/api/health"); echo "$h" | jq -c '{records, movedAt, move, bindings, legacy}'
+              if [ "$(echo "$h" | jq '.move.incomplete | length')" != "0" ]; then echo "::error::tables short after the move (D1 stays readable): $(echo "$h" | jq -c '.move.incomplete')"; exit 1; fi
+              echo "✅ preview records on R2"; exit 0
             fi
           done
           echo "::error::the preview move from D1 to R2 did not finish"; exit 1

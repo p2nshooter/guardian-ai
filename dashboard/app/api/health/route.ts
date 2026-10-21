@@ -11,13 +11,16 @@ export async function GET() {
   const env = getEnv();
   let records: "ready" | "moving" | "unavailable" = "unavailable";
   let movedAt = "";
+  // Counts and table names only (never records): rows kept as conflicts, and tables still short after the move.
+  let move: { conflicts: number; incomplete: string[] } | null = null;
   try {
     const state = await migrationState(getRawData());
     records = state ? "ready" : "moving";
     movedAt = state?.at || "";
+    if (state) move = { conflicts: state.conflicts.length, incomplete: state.incomplete ?? [] };
   } catch {}
   return NextResponse.json({
-    ok: records === "ready", version: VERSION, records, movedAt,
+    ok: records === "ready" && !move?.incomplete.length, version: VERSION, records, movedAt, move,
     // The commit this deployment was built from (lets anyone check which build a hostname serves).
     build: (process.env.NEXT_PUBLIC_BUILD_SHA || "dev").slice(0, 12),
     bindings: { data: !!env.DATA, backups: !!env.BACKUPS, kv: !!env.KV, r2: !!env.R2, userFiles: !!env.USER_FILES, builds: !!env.R2_BUILDS },

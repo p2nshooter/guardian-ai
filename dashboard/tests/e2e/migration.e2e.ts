@@ -32,6 +32,7 @@ test("migration: legacy D1 records arrive in R2 with the same ids", async () => 
   const h = await (await fetch(`${BASE}/api/health`)).json();
   assert.equal(h.records, "ready");
   assert.ok(h.movedAt);
+  assert.deepEqual(h.move, { conflicts: 0, incomplete: [] });
   const m = await data({ op: "migration" });
   assert.equal(m.done, true);
   assert.equal(m.state.source, "d1");
