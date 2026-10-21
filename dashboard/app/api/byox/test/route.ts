@@ -1,7 +1,7 @@
 /* AXTO — POST /api/byox/test {provider} · verify a saved BYOX key with a tiny request. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { resolveChat, resolveStt } from "@/lib/ai/byox";
 import { providerInfo, chatStream, collect } from "@/lib/ai/providers";
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (!info) return fail("Unknown provider.");
   const rl = await rateLimit(req, "byox-test", ctx.session.sub, { max: 20, windowSeconds: 600 });
   if (rl.limited) return fail("Too many tests. Please wait a few minutes.", 429);
-  const db = getDB(req);
+  const db = getData(req);
   const started = Date.now();
   try {
     if (!info.chat) {

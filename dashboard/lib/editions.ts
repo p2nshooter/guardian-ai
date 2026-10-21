@@ -6,7 +6,7 @@
  * shown on the owner's "AXTO Digital Global" picture, using the package codes
  * that already exist (old PACKAGE_INFO / D1 license_packages) so licences sold
  * before stay valid. Prices are the pre-v3 list prices as defaults; the owner
- * changes them in Admin → Plans → Editions (platform_config.edition_prices).
+ * changes them in Admin → Plans → Editions (setting "edition_prices").
  *
  * Used by the public pages, checkout, the member portal, the admin portal and
  * the signed licence entitlements (lib/entitlements.ts) — engines take their
@@ -164,7 +164,7 @@ export function editionEntitlements(e: Edition): Record<string, string | number 
 
 export interface EditionPrice { code: string; yearly: number; monthly: number; enabled: boolean }
 
-/** Merge the admin override (platform_config.edition_prices) over the defaults, ignoring junk. */
+/** Merge the admin override (setting "edition_prices") over the defaults, ignoring junk. */
 export function mergeEditionPrices(overrideJson: string | null | undefined): EditionPrice[] {
   const rows = EDITIONS.map((e) => ({ code: e.code, yearly: e.yearly, monthly: e.monthly, enabled: true }));
   if (!overrideJson) return rows;
@@ -183,10 +183,9 @@ export function mergeEditionPrices(overrideJson: string | null | undefined): Edi
   return rows;
 }
 
-export async function getEditionPrices(db: any): Promise<EditionPrice[]> {
+export async function getEditionPrices(db: { config: { get(key: string): Promise<string | null> } }): Promise<EditionPrice[]> {
   try {
-    const row = await db.prepare(`SELECT value FROM platform_config WHERE key = 'edition_prices'`).first();
-    return mergeEditionPrices(row?.value);
+    return mergeEditionPrices(await db.config.get("edition_prices"));
   } catch {
     return mergeEditionPrices(null);
   }

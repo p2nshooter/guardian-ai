@@ -133,37 +133,37 @@ test("connect: webhook signatures are HMAC-SHA256 over `t.body`", async () => {
 
 test("mcp: initialize, tools/list, tools/call and errors", async () => {
   const c = caller();
-  const init = await handleMcp({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26" } }, c, null);
+  const init = await handleMcp({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-03-26" } }, c, null as never);
   assert.equal(init?.result.protocolVersion, "2025-03-26");
   assert.equal(init?.result.serverInfo.name, "axto-connect");
-  const unknownVersion = await handleMcp({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "1999-01-01" } }, c, null);
+  const unknownVersion = await handleMcp({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "1999-01-01" } }, c, null as never);
   assert.equal(unknownVersion?.result.protocolVersion, MCP_PROTOCOL);
-  assert.equal(await handleMcp({ jsonrpc: "2.0", method: "notifications/initialized" }, c, null), null);
-  assert.deepEqual((await handleMcp({ jsonrpc: "2.0", id: 2, method: "ping" }, c, null))?.result, {});
+  assert.equal(await handleMcp({ jsonrpc: "2.0", method: "notifications/initialized" }, c, null as never), null);
+  assert.deepEqual((await handleMcp({ jsonrpc: "2.0", id: 2, method: "ping" }, c, null as never))?.result, {});
 
-  const list = await handleMcp({ jsonrpc: "2.0", id: 3, method: "tools/list" }, c, null);
+  const list = await handleMcp({ jsonrpc: "2.0", id: 3, method: "tools/list" }, c, null as never);
   const names = list?.result.tools.map((t: any) => t.name);
   assert.deepEqual(names, TOOLS.map((t) => t.name));
   for (const n of ["ai_run", "events_publish", "events_list", "legal_deadline", "legal_citations", "contract_redline", "pii_scan", "prompt_library_search"]) assert.ok(names.includes(n), n);
   for (const t of list?.result.tools) { assert.equal(t.inputSchema.type, "object"); assert.ok(t.description.length > 20); assert.equal(t.run, undefined, "no functions leak into JSON"); }
 
-  const dl = await handleMcp({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "legal_deadline", arguments: { trigger: "2026-01-02", amount: 14, unit: "days", calendar: "none" } } }, c, null);
+  const dl = await handleMcp({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "legal_deadline", arguments: { trigger: "2026-01-02", amount: 14, unit: "days", calendar: "none" } } }, c, null as never);
   assert.equal(dl?.result.isError, false);
   assert.match(dl?.result.content[0].text, /Due 2026-01-16/);
 
-  const pii = await handleMcp({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "pii_scan", arguments: { text: "Mail budi@example.com now" } } }, c, null);
+  const pii = await handleMcp({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "pii_scan", arguments: { text: "Mail budi@example.com now" } } }, c, null as never);
   assert.ok(pii?.result.structuredContent.findings.some((f: any) => f.type === "EMAIL"));
   assert.ok(!JSON.stringify(pii?.result.structuredContent).includes("budi@example.com"), "structured findings carry positions, not values");
 
-  const cites = await handleMcp({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "legal_citations", arguments: { text: "See Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi." } } }, c, null);
+  const cites = await handleMcp({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "legal_citations", arguments: { text: "See Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi." } } }, c, null as never);
   assert.ok(cites?.result.structuredContent.citations.length >= 1);
 
   // No mcp scope → the tool refuses with isError (not a protocol error)
-  const noScope = await handleMcp({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "pii_scan", arguments: { text: "x" } } }, caller({ scopes: ["events:read"] }), null);
+  const noScope = await handleMcp({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "pii_scan", arguments: { text: "x" } } }, caller({ scopes: ["events:read"] }), null as never);
   assert.equal(noScope?.result.isError, true);
-  assert.equal((await handleMcp({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "nope" } }, c, null))?.error.code, -32602);
-  assert.equal((await handleMcp({ jsonrpc: "2.0", id: 9, method: "resources/list" }, c, null))?.error.code, -32601);
-  assert.equal((await handleMcp({ id: 10, method: "ping" } as any, c, null))?.error.code, -32600);
+  assert.equal((await handleMcp({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "nope" } }, c, null as never))?.error.code, -32602);
+  assert.equal((await handleMcp({ jsonrpc: "2.0", id: 9, method: "resources/list" }, c, null as never))?.error.code, -32601);
+  assert.equal((await handleMcp({ id: 10, method: "ping" } as any, c, null as never))?.error.code, -32600);
 });
 
 test("openapi: documents every public endpoint with bearer auth", () => {

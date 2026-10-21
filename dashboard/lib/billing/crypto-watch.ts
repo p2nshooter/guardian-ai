@@ -13,7 +13,11 @@
  * right network/token, for at least the quoted amount, after the order was
  * created, with enough confirmations, and the tx never paid another order.
  * ============================================================================ */
-import { dbFirst, dbQuery, dbRun, now } from "../db";
+import { now } from "../db";
+import type { Data } from "../data";
+import type { OrderDoc } from "../data/schema";
+import { ids } from "../data/schema";
+import { patchMeta } from "../data/meta";
 import { gatewayCreds, CRYPTO_ASSETS } from "./gateways";
 import { markOrderPaid } from "./activate";
 import { STABLE, VOLATILE, incomingTransfers, transferByHash, spotUsd, cents, type Network, type Transfer } from "./chain";
@@ -33,10 +37,15 @@ function meta(o: any): any {
 }
 
 /** Unique amount among open crypto orders of the same price + volatile quotes. */
-export async function quoteCrypto(db: any, amountUsd: number, creds: Record<string, string>): Promise<CryptoQuote> {
-  const open = await dbQuery<{ meta: string }>(db,
-    `SELECT meta FROM orders WHERE gateway = 'crypto' AND status = 'pending' AND amount_usd = ? AND created_at > ?`,
-    [amountUsd, new Date(Date.now() - WINDOW_MS).toISOString()]);
+/** Open crypto orders of the last WINDOW_MS, oldest first. */
+async function openCryptoOrders(db: Data): Promise<OrderDoc[]> {
+  const since = new Date(Date.now() - WINDOW_MS).toISOString();
+  const page = await db.orders.listAllDocs("pending", "crypto", 2000);
+  return page.filter((o) => o.status === "pending" && o.created_at > since);
+}
+
+export async function quoteCrypto(db: Data, amountUsd: number, creds: Record<string, string>): Promise<CryptoQuote> {
+  const open = (await openCryptoOrders(db)).filter((o) => o.amount_usd === amountUsd);
   const taken = new Set(open.map((o) => meta(o)?.crypto?.amount).filter(Boolean));
   let amount = "";
   for (let i = 0; i < 200 && !amount; i++) {
@@ -54,11 +63,15 @@ export async function quoteCrypto(db: any, amountUsd: number, creds: Record<stri
   return { amount: amount || cents(amountUsd), quotes, at: now() };
 }
 
-async function claimTx(db: any, t: Transfer, orderId: string): Promise<boolean> {
-  const id = `${t.network}:${t.network.startsWith("usdt_trc") || t.network === "btc" || t.network === "sol" ? t.tx : t.tx.toLowerCase()}`;
-  const r = await dbRun(db, `INSERT OR IGNORE INTO payment_proofs (tx_hash, network, order_id, amount, created_at) VALUES (?, ?, ?, ?, ?)`,
-    [id, t.network, orderId, t.amount, now()]);
-  return !!r?.meta?.changes;
+/** One transaction pays one order: the proof is created once (create-only), and only the creator settles. */
+async function claimTx(db: Data, t: Transfer, orderId: string): Promise<boolean> {
+  const hash = `${t.network}:${t.network.startsWith("usdt_trc") || t.network === "btc" || t.network === "sol" ? t.tx : t.tx.toLowerCase()}`;
+  const id = ids.proof(hash);
+  // Already recorded for this same order (a run that stopped before settling): settling again is safe, markOrderPaid is idempotent.
+  const existing = await db.paymentProofs.get(id);
+  if (existing) return existing.order_id === orderId;
+  if (await db.paymentProofs.createIfAbsent({ id, tx_hash: hash, network: t.network, order_id: orderId, amount: t.amount, created_at: now() })) return true;
+  return (await db.paymentProofs.get(id))?.order_id === orderId;
 }
 
 function acceptable(order: any, q: CryptoQuote, t: Transfer, livePrice?: number): { ok: boolean; reason?: string } {
@@ -75,15 +88,15 @@ function acceptable(order: any, q: CryptoQuote, t: Transfer, livePrice?: number)
   return t.amount >= needed * 0.99 ? { ok: true } : { ok: false, reason: `Received ${t.amount} ${sym}, expected about ${needed.toFixed(8)} ${sym}.` };
 }
 
-async function settle(db: any, order: any, t: Transfer): Promise<boolean> {
+async function settle(db: Data, order: any, t: Transfer): Promise<boolean> {
   if (!(await claimTx(db, t, order.id))) return false;         // already paid another order
   const r = await markOrderPaid(db, order.id, { gatewayRef: `${t.network}:${t.tx}`, actor: `chain:${t.network}`, gateway: "crypto" });
   return r.ok;
 }
 
 /** Customer-supplied transaction hash. */
-export async function verifyCryptoProof(db: any, orderId: string, network: Network, tx: string): Promise<{ status: "paid" | "pending" | "rejected"; message: string }> {
-  const order = await dbFirst<any>(db, `SELECT * FROM orders WHERE id = ?`, [orderId]);
+export async function verifyCryptoProof(db: Data, orderId: string, network: Network, tx: string): Promise<{ status: "paid" | "pending" | "rejected"; message: string }> {
+  const order = await db.orders.get(orderId);
   if (!order || order.gateway !== "crypto") return { status: "rejected", message: "Order not found." };
   if (order.status === "paid") return { status: "paid", message: "This order is already paid." };
   const creds = await gatewayCreds(db, "crypto");
@@ -98,8 +111,8 @@ export async function verifyCryptoProof(db: any, orderId: string, network: Netwo
     t = null;
   }
   const save = async (status: "pending" | "rejected", reason = "") => {
-    await dbRun(db, `UPDATE orders SET meta = json_set(COALESCE(NULLIF(meta,''),'{}'), '$.crypto.proof', json(?)) WHERE id = ?`,
-      [JSON.stringify({ network, tx: tx.trim(), at: now(), status, reason }), orderId]);
+    const proof = { network, tx: tx.trim(), at: now(), status, reason };
+    await db.orders.update(orderId, (o) => ({ ...o, meta: patchMeta(o.meta, (m) => { m.crypto = { ...(m.crypto || {}), proof }; }) }));
   };
   if (!t) {
     await save("pending", "Not visible on-chain yet (or not sent to our address).");
@@ -120,10 +133,10 @@ export async function verifyCryptoProof(db: any, orderId: string, network: Netwo
 }
 
 /** Cron: auto-match stablecoin transfers and re-check submitted hashes. */
-export async function watchCryptoOrders(db: any): Promise<{ checked: number; paid: number }> {
-  const orders = await dbQuery<any>(db,
-    `SELECT * FROM orders WHERE gateway = 'crypto' AND status = 'pending' AND created_at > ? ORDER BY created_at`,
-    [new Date(Date.now() - WINDOW_MS).toISOString()]);
+export async function watchCryptoOrders(db: Data): Promise<{ checked: number; paid: number }> {
+  // One list call when nothing is pending.
+  if (!(await db.orders.list("pending", "crypto", { limit: 1 })).entries.length) return { checked: 0, paid: 0 };
+  const orders = await openCryptoOrders(db);
   if (!orders.length) return { checked: 0, paid: 0 };
   const creds = await gatewayCreds(db, "crypto");
   if (!creds) return { checked: orders.length, paid: 0 };

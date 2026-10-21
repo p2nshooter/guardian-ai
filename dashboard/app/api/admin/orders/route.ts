@@ -5,7 +5,10 @@
  *        the reason on the payment screen, gets an e-mail and can upload a new receipt. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbQuery, dbRun, now } from "@/lib/db";
+import { getData, now } from "@/lib/db";
+import { readMeta, patchMeta } from "@/lib/data/meta";
+import { ids } from "@/lib/data/schema";
+import { findLicence } from "@/lib/licences";
 import { requireAdmin, respond } from "@/lib/auth";
 import { parseIdrQuery } from "@/lib/billing/unique-amount";
 import { markOrderPaid, syncLicenses } from "@/lib/billing/activate";
@@ -25,17 +28,17 @@ export async function GET(req: NextRequest) {
   const status = url.searchParams.get("status") || "";
   const q = (url.searchParams.get("q") || "").trim().toLowerCase().slice(0, 100);
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
-  const where: string[] = ["1 = 1"]; const args: unknown[] = [];
-  if (status) { where.push("status = ?"); args.push(status); }
   const idr = parseIdrQuery(q);
-  if (idr) { where.push("(CAST(ROUND(amount_local) AS INTEGER) = ? OR id LIKE ? OR invoice_no LIKE ?)"); args.push(idr, `%${q}%`, `%${q}%`); }
-  else if (q) { where.push("(email LIKE ? OR id LIKE ? OR invoice_no LIKE ? OR gateway_ref LIKE ?)"); args.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`); }
-  const db = getDB(req);
-  const w = where.join(" AND ");
-  const [orders, total] = await Promise.all([
-    dbQuery(db, `SELECT * FROM orders WHERE ${w} ORDER BY created_at DESC LIMIT ${PAGE} OFFSET ${(page - 1) * PAGE}`, args),
-    dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM orders WHERE ${w}`, args),
-  ]);
+  const db = getData(req);
+  const has = (v: unknown) => String(v || "").toLowerCase().includes(q);
+  // Filtered on the index summaries (one list call per 1,000 orders); only the page shown is read.
+  const hits = (await db.orders.listAll("all", "all", 100_000)).filter(({ id, meta: m }) => {
+    if (status && m.status !== status) return false;
+    if (idr) return Math.round(Number(m.amount_local) || 0) === idr || has(id) || has(m.invoice_no);
+    return !q || has(m.email) || has(id) || has(m.invoice_no) || has(m.gateway_ref);
+  });
+  const orders = (await db.orders.getMany(hits.slice((page - 1) * PAGE, page * PAGE).map((e) => e.id))).filter((o) => o !== null);
+  const total = { n: hits.length };
   return respond({ orders, total: total?.n ?? 0, page, pageSize: PAGE }, ctx);
 }
 
@@ -43,8 +46,8 @@ export async function POST(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const b = await readJson(req);
-  const db = getDB(req);
-  const o = await dbFirst<any>(db, `SELECT * FROM orders WHERE id = ?`, [String(b?.id || "")]);
+  const db = getData(req);
+  const o = await db.orders.get(String(b?.id || ""));
   if (!o) return fail("Order not found.", 404);
   const note = String(b?.note || "").slice(0, 300);
   if (b?.action === "mark_paid") {
@@ -53,43 +56,45 @@ export async function POST(req: NextRequest) {
     if (!r.ok) return fail(`Could not activate: ${r.reason}`);
   } else if (b?.action === "reject_proof") {
     if (o.status !== "pending") return fail("Only open orders can have their proof rejected.");
-    let m: any = {};
-    try { m = JSON.parse(o.meta || "{}"); } catch {}
+    const m = readMeta(o.meta);
     if (!m.bank_proof) return fail("This order has no transfer proof to reject.");
     if (!note.trim()) return fail("Write the reason, so the member knows what to fix.");
-    await dbRun(db, `UPDATE orders SET meta = json_set(meta, '$.bank_proof.rejected', json(?)) WHERE id = ?`, [JSON.stringify({ reason: note, at: now() }), o.id]);
+    const rejected = { reason: note, at: now() };
+    await db.orders.update(o.id, (x) => ({ ...x, meta: patchMeta(x.meta, (mm) => { if (mm.bank_proof && typeof mm.bank_proof === "object") mm.bank_proof.rejected = rejected; }) }));
     await sendMail(o.email, `Your transfer proof for order ${o.id} needs another look`,
       mailLayout("We could not confirm your transfer yet",
         `<p>We checked the transfer proof for order <strong>${esc(o.id)}</strong> and could not confirm it yet.</p><p><strong>Reason:</strong> ${esc(note)}</p><p>Please open the payment screen and upload a clearer receipt, or the correct one. Your order stays open.</p>`,
         { label: "Open billing", href: absoluteUrl(o.plan === "lifetime" ? "/app/lifetime" : "/app/billing") })).catch(() => false);
   } else if (b?.action === "refund") {
     if (o.status !== "paid") return fail("Only paid orders can be refunded.");
-    await dbRun(db, `UPDATE orders SET status = 'refunded', meta = json_set(meta, '$.refund_note', ?) WHERE id = ?`, [note, o.id]);
-    const sub = await dbFirst<{ last_order_id: string }>(db, `SELECT last_order_id FROM subscriptions WHERE user_id = ?`, [o.user_id]);
+    await db.orders.update(o.id, (x) => ({ ...x, status: "refunded", meta: patchMeta(x.meta, (mm) => { mm.refund_note = note; }) }));
+    const sub = await db.subscriptions.get(ids.subscription(o.user_id));
     if (o.plan === "lifetime" && b?.endAccess) {
       // New activations and downloads stop; devices already activated offline cannot be reached.
-      await dbRun(db, `UPDATE lifetime_licenses SET status = 'revoked', updated_at = ? WHERE order_id = ?`, [now(), o.id]);
+      const lic = await db.lifetimeLicenses.find("order_id", o.id);
+      if (lic) await db.lifetimeLicenses.update(lic.id, (x) => ({ ...x, status: "revoked", updated_at: now() }));
     }
     if (o.plan === "edition" && b?.endAccess) {
       // A refunded edition: its licence ends now (the engine stops at its next check-in).
-      let app = "";
-      try { app = String(JSON.parse(o.meta || "{}").edition?.app || ""); } catch {}
-      if (app) await dbRun(db, `UPDATE sh_licenses SET status = 'revoked', expires_at = ?, updated_at = ? WHERE user_id = ? AND product = ? AND source = 'edition'`, [now(), now(), o.user_id, app]);
+      const app = String(readMeta(o.meta).edition?.app || "");
+      const lic = app ? await findLicence(db, o.user_id, app, "edition") : null;
+      if (lic) await db.shLicenses.update(lic.id, (x) => ({ ...x, status: "revoked", expires_at: now(), updated_at: now() }));
     }
     if (o.plan === "acquisition" && b?.endAccess) {
       // A refunded site purchase: the buyer's administrator role ends and the offer reopens.
       if (o.user_id === ctx.session.sub) return fail("You cannot remove your own administrator role.");
-      await dbRun(db, `UPDATE users SET role = 'client', updated_at = ? WHERE id = ?`, [now(), o.user_id]);   // 'client' = member in the users table
+      await db.users.update(o.user_id, (x) => ({ ...x, role: "client", updated_at: now() }));   // 'client' = member in the users table
       const sale = await getSale(db);
       if (sale.soldTo?.orderId === o.id) await saveSale(db, { ...sale, status: "open", soldTo: undefined });
     }
     if (sub?.last_order_id === o.id && b?.endAccess) {
-      await dbRun(db, `UPDATE subscriptions SET status = 'canceled', current_period_end = ?, updated_at = ? WHERE user_id = ?`, [now(), now(), o.user_id]);
+      const at = now();
+      await db.subscriptions.update(ids.subscription(o.user_id), (x) => ({ ...x, status: "canceled", current_period_end: at, updated_at: at }));
       await syncLicenses(db, o.user_id, "none", now());
     }
   } else if (b?.action === "cancel") {
     if (o.status !== "pending") return fail("Only pending orders can be cancelled.");
-    await dbRun(db, `UPDATE orders SET status = 'failed', meta = json_set(meta, '$.cancel_note', ?) WHERE id = ?`, [note, o.id]);
+    await db.orders.update(o.id, (x) => (x.status === "pending" ? { ...x, status: "failed", meta: patchMeta(x.meta, (mm) => { mm.cancel_note = note; }) } : null));
   } else {
     return fail("Unknown action.");
   }

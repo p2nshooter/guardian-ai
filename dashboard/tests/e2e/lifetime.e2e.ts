@@ -8,14 +8,13 @@
  * ============================================================================ */
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { auditFor, doc, find, meta, seedAdmin } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const TEST_SIGNING_PUBLIC_KEY_B64 = "tljcAsNNvb0cxHPRnNTkm5o15YfzMWJGOyeew1UwvpY=";   // serve-local.sh test key
 const FIELDS = ["format", "license_id", "product", "machine_id", "scope", "devices", "major", "updates_until", "issued_at", "entitlements"];
@@ -40,12 +39,6 @@ class Client {
   put = (p: string, b: unknown = {}) => this.call("PUT", p, b);
 }
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 /** Verify a .axto-license file exactly like the engines do. */
 async function verifyFile(text: string): Promise<Record<string, string> | null> {
@@ -63,7 +56,7 @@ const email = `lifetime-${RUN}@example.com`;
 let orderId = "", licenseId = "";
 
 before(async () => {
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   const g = await admin.get("/api/admin/gateways");
   if (!g.json.gateways.find((x: any) => x.id === "manual")?.active) {
@@ -95,7 +88,8 @@ test("lifetime: live prices are public; checkout validates the choice and charge
   assert.equal(c.json.manual, true);
   assert.equal(c.json.amountUsd, 99000, "the browser never sets the price");
   orderId = c.json.orderId;
-  const [row] = d1(`SELECT plan, cycle, amount_usd, status, json_extract(meta, '$.lifetime.product') AS product, json_extract(meta, '$.lifetime.devices') AS devices FROM orders WHERE id = '${orderId}'`);
+  const ord = await doc("orders", orderId);
+  const row = { plan: ord.plan, cycle: ord.cycle, amount_usd: ord.amount_usd, status: ord.status, product: meta(ord).lifetime?.product, devices: meta(ord).lifetime?.devices };
   assert.deepEqual(row, { plan: "lifetime", cycle: "once", amount_usd: 99000, status: "pending", product: "vault", devices: 5 });
 });
 
@@ -112,7 +106,7 @@ test("lifetime: payment issues the licence with no admin step; idempotent; invoi
   assert.equal(lic.scope, "app"); assert.equal(lic.product, "vault"); assert.equal(lic.devices, 5); assert.equal(lic.status, "active");
   assert.equal(lic.updatesActive, true);
   assert.deepEqual(lic.products.map((p: any) => p.slug), ["vault"]);
-  assert.equal(d1(`SELECT COUNT(*) AS n FROM lifetime_licenses WHERE order_id = '${orderId}'`)[0].n, 1);
+  assert.ok(await find("lifetimeLicenses", "order_id", orderId), "one licence for the order");
   const inv = await member.get(`/api/billing/invoice/${orderId}`);
   assert.equal(inv.status, 200);
   assert.match(inv.text, /Lifetime licence — .*up to 5 devices/);
@@ -193,6 +187,6 @@ test("lifetime: admin prices flow into checkout; negotiated suite deal; admin-on
   const a = await member.post("/api/lifetime", { action: "activate", licenseId: mine.id, product: "legal", machineId: mid(9) });
   assert.equal(a.status, 200);
   assert.match((await verifyFile(a.json.file))!.entitlements, /;workspaces=-1(;|$)/);
-  const audit = d1(`SELECT action FROM audit_log WHERE entity_id IN ('${licenseId}', '${deal.json.license.id}') ORDER BY created_at`).map((r) => r.action);
+  const audit = [...(await auditFor("lifetime_license", licenseId)), ...(await auditFor("lifetime_license", deal.json.license.id))].map((r: any) => r.action);
   for (const want of ["lifetime.revoked", "lifetime.restored", "lifetime.issued"]) assert.ok(audit.includes(want), `audit has ${want}: ${audit}`);
 });

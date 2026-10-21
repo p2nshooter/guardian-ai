@@ -1,13 +1,13 @@
 /* AXTO — GET /api/billing/options · public: plan + lifetime prices, active payment methods, IDR and EUR rates. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getEnv } from "@/lib/db";
+import { getData, getEnv } from "@/lib/db";
 import { getPlanPrices, PLANS, PLAN_ORDER } from "@/lib/plans";
 import { activeGateways, usdEurRate, usdIdrRate } from "@/lib/billing/gateways";
 import { getLifetimePrices, LIFETIME_GATEWAYS, CARD_MAX_USD, PAYPAL_MAX_USD } from "@/lib/lifetime";
 
 export async function GET(req: NextRequest) {
-  const db = getDB(req);
+  const db = getData(req);
   const kv = getEnv(req).KV;
   const [prices, gateways, rate, eur, lifetime] = await Promise.all([getPlanPrices(db), activeGateways(db, { fresh: true }), usdIdrRate(db, kv), usdEurRate(db, kv), getLifetimePrices(db)]);
   return NextResponse.json({

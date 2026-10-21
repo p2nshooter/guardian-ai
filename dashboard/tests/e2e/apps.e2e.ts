@@ -5,23 +5,16 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { all, seedAdmin, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const MOCK_PORT = 8797;
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 class Client {
   cookie = ""; ip = `10.32.${Math.floor(Math.random()*250)}.${1+Math.floor(Math.random()*250)}`;
   async call(method: string, p: string, body?: unknown) {
@@ -52,7 +45,7 @@ before(async () => {
       res.end("data: [DONE]\n\n");
     } else { res.writeHead(404); res.end(); }
   }).listen(MOCK_PORT);
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   assert.equal((await admin.call("PUT", "/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "1", account_name: "AXTO" } })).status, 200);
   async function member(c: Client, plan: string, tag: string) {
@@ -188,8 +181,8 @@ test("clipper: history persists (encrypted, CRUD) on Starter", async () => {
 test("clipper: a long video is ONE quota slot across its parts; parts need an open job", async () => {
   // A (fake) Groq key: the provider call itself fails here, but the quota logic runs first.
   assert.equal((await pro.post("/api/byox/keys", { provider: "groq", value: "gsk_e2e_fake_speech_key_0001" })).status, 200);
-  const [u] = d1(`SELECT id FROM users WHERE email = 'aproo-${RUN}@example.com'`);
-  const used = () => Number(d1(`SELECT COALESCE(SUM(clipper_videos), 0) AS n FROM byox_usage WHERE user_id = '${u.id}'`)[0].n);
+  const u = await userByEmail(`aproo-${RUN}@example.com`);
+  const used = async () => (await all("byoxUsage")).filter((x: any) => x.user_id === u.id).reduce((n: number, x: any) => n + Number(x.clipper_videos || 0), 0);
   const send = async (fields: Record<string, string>) => {
     const fd = new FormData();
     fd.append("audio", new Blob([new Uint8Array([1, 2, 3, 4])], { type: "audio/mpeg" }), "part.mp3");
@@ -198,19 +191,19 @@ test("clipper: a long video is ONE quota slot across its parts; parts need an op
     return { status: res.status, json: await res.json().catch(() => ({})) as any };
   };
   const job = `job${RUN}`.replace(/[^a-z0-9]/g, "").padEnd(10, "0").slice(0, 30);
-  const start = used();
+  const start = await used();
   const orphan = await send({ job: job + "x", part: "1", parts: "3" });
   assert.equal(orphan.status, 409, "a later part without an open job is refused");
-  assert.equal(used(), start, "…and costs nothing");
+  assert.equal(await used(), start, "…and costs nothing");
   assert.equal((await send({ job: "BAD!", part: "0", parts: "2" })).status, 400, "job ids are validated");
   const first = await send({ job, part: "0", parts: "3" });
   assert.notEqual(first.status, 409);
-  assert.equal(used(), start + 1, "part 0 counts the video once");
+  assert.equal(await used(), start + 1, "part 0 counts the video once");
   for (const part of ["1", "2"]) {
     const r = await send({ job, part, parts: "3" });
     assert.notEqual(r.status, 409, `part ${part} belongs to the open job`);
   }
-  assert.equal(used(), start + 1, "the other parts are free");
+  assert.equal(await used(), start + 1, "the other parts are free");
   assert.equal((await send({ job, part: "3", parts: "3" })).status, 400, "part number out of range");
 });
 

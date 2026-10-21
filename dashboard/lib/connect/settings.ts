@@ -1,12 +1,12 @@
 /* ==============================================================================
  * AXTO CONNECT — operator settings (Admin → Connect) and WebRTC ICE servers.
- *   platform_config "connect_settings"  enabled, retentionDays (not secret)
+ *   setting "connect_settings"  enabled, retentionDays (not secret)
  *   secure store   "connect-turn"       Cloudflare Realtime TURN key id + token
  * STUN is always offered (stun.cloudflare.com, free and public). TURN — needed
  * when both peers sit behind strict NATs — is offered only when the operator
  * has configured it; credentials are minted per room and expire.
  * ============================================================================ */
-import { dbFirst, dbRun, now } from "../db";
+import type { Data } from "../data";
 import { readSecure, writeSecure, keepSecret, maskValue } from "../secure-store";
 
 export interface ConnectSettings { enabled: boolean; retentionDays: number }
@@ -14,10 +14,10 @@ export interface TurnConfig { keyId: string; apiToken: string }
 export const DEFAULT_SETTINGS: ConnectSettings = { enabled: true, retentionDays: 7 };
 const KEY = "connect_settings";
 
-export async function getConnectSettings(db: any): Promise<ConnectSettings> {
+export async function getConnectSettings(db: Data): Promise<ConnectSettings> {
   try {
-    const r = await dbFirst<{ value: string }>(db, `SELECT value FROM platform_config WHERE key = ?`, [KEY]);
-    const v = r?.value ? JSON.parse(r.value) : {};
+    const raw = await db.config.get(KEY);
+    const v = raw ? JSON.parse(raw) : {};
     return {
       enabled: typeof v.enabled === "boolean" ? v.enabled : DEFAULT_SETTINGS.enabled,
       retentionDays: Number.isFinite(v.retentionDays) ? Math.max(1, Math.min(90, Math.floor(v.retentionDays))) : DEFAULT_SETTINGS.retentionDays,
@@ -25,14 +25,13 @@ export async function getConnectSettings(db: any): Promise<ConnectSettings> {
   } catch { return { ...DEFAULT_SETTINGS }; }
 }
 
-export async function saveConnectSettings(db: any, b: any): Promise<ConnectSettings> {
+export async function saveConnectSettings(db: Data, b: any): Promise<ConnectSettings> {
   const cur = await getConnectSettings(db);
   const next: ConnectSettings = {
     enabled: typeof b?.enabled === "boolean" ? b.enabled : cur.enabled,
     retentionDays: Number.isFinite(Number(b?.retentionDays)) ? Math.max(1, Math.min(90, Math.floor(Number(b.retentionDays)))) : cur.retentionDays,
   };
-  await dbRun(db, `INSERT INTO platform_config (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    [KEY, JSON.stringify(next), now()]);
+  await db.config.set(KEY, JSON.stringify(next));
   return next;
 }
 

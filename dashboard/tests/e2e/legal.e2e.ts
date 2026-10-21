@@ -7,26 +7,19 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { seedAdmin, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const PERSIST = path.resolve(process.cwd(), ".e2e-state/persist");
 const RUN = Date.now().toString(36);
 const MOCK_PORT = 8797;
 const SECRET_MARK = `PRIVILEGED-${RUN}-klausul rahasia`;
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 class Client {
   cookie = "";
@@ -76,7 +69,7 @@ before(async () => {
       } else { res.writeHead(404); res.end(); }
     });
   }).listen(MOCK_PORT);
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   assert.equal((await admin.call("PUT", "/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "1234567890", account_name: "PT AXTO E2E" } })).status, 200);
   for (const [c, tag] of [[member, "legal"], [stranger, "stranger"]] as const) {
@@ -158,7 +151,7 @@ test("failover: a broken key falls through to the member's next key", async () =
 });
 
 test("matters: encrypted at rest, documents and results round-trip, storage accounted, isolated", async () => {
-  const before = d1(`SELECT storage_bytes FROM users WHERE email = 'legal-${RUN}@example.com'`)[0].storage_bytes;
+  const before = (await userByEmail(`legal-${RUN}@example.com`)).storage_bytes;
   const c = await member.post("/api/legal/matters", { title: "PT A v. PT B", client: "PT A", jurisdiction: { country: "ID", sub: "JI", city: "Surabaya" }, area: "contracts" });
   assert.equal(c.status, 200, c.text);
   const id = c.json.matter.id;
@@ -184,7 +177,7 @@ test("matters: encrypted at rest, documents and results round-trip, storage acco
   const leaked = files.filter((f) => statSync(f).size < 5_000_000 && readFileSync(f).includes(Buffer.from(SECRET_MARK)));
   assert.deepEqual(leaked.filter((f) => !f.includes("d1")), [], "matter content is encrypted in R2");
 
-  const during = d1(`SELECT storage_bytes FROM users WHERE email = 'legal-${RUN}@example.com'`)[0].storage_bytes;
+  const during = (await userByEmail(`legal-${RUN}@example.com`)).storage_bytes;
   assert.ok(during > before, "storage counted");
 
   // Another member cannot see it.
@@ -195,7 +188,7 @@ test("matters: encrypted at rest, documents and results round-trip, storage acco
 
   assert.equal((await member.del(`/api/legal/matters/${id}`)).status, 200);
   assert.equal((await member.get(`/api/legal/matters/${id}`)).status, 404);
-  const afterDel = d1(`SELECT storage_bytes FROM users WHERE email = 'legal-${RUN}@example.com'`)[0].storage_bytes;
+  const afterDel = (await userByEmail(`legal-${RUN}@example.com`)).storage_bytes;
   assert.ok(afterDel < during, "storage released");
 });
 

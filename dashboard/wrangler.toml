@@ -10,12 +10,24 @@ compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
-# D1 — lean relational core (users, subscriptions, orders, licences, usage…)
+# R2 — every record of the platform (users, subscriptions, orders, licences, usage…),
+# one JSON document per record (lib/data, docs/R2-DATA-BLUEPRINT.md). Owner, 20 Oct 2026:
+# all storage on R2, never D1.
+[[r2_buckets]]
+binding     = "DATA"
+bucket_name = "axto-data"
+
+# R2 — daily backups of DATA (kept 35 days) and the archive of the old D1 tables
+[[r2_buckets]]
+binding     = "BACKUPS"
+bucket_name = "axto-backups"
+
+# D1 — READ ONLY, the source of the one-time move to R2 (lib/data/migrate.ts).
+# Nothing writes to it any more; this binding is removed seven days after the move.
 [[d1_databases]]
 binding        = "DB"
 database_name  = "axto-db"
 database_id    = "125ec216-76f4-4bdb-ba8d-f29092759183"
-migrations_dir = "cf-migrations"
 
 # KV — rate limits and small caches
 [[kv_namespaces]]

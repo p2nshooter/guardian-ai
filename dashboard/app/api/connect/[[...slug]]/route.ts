@@ -11,7 +11,8 @@
  *   GET    /api/connect/webhooks/:id/deliveries */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbQuery, dbFirst, dbRun, newId, now } from "@/lib/db";
+import { getData, newId, now } from "@/lib/db";
+import { eventUsage } from "@/lib/connect/events";
 import { loadSession, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
@@ -26,7 +27,7 @@ async function guard(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
   if (!ctx) return { res: unauthorized() } as const;
   const tier = effectiveTier(ctx.session);
-  return { ctx, tier, db: getDB(req) } as const;
+  return { ctx, tier, db: getData(req) } as const;
 }
 const handle = (e: unknown) => { if (e instanceof ConnectError) return fail(e.message, e.status); throw e; };
 const keyRow = (r: any) => ({ id: r.id, name: r.name, prefix: r.prefix, scopes: r.scopes.split(" "), origins: r.origins ? r.origins.split(" ") : [], createdAt: r.created_at, lastUsedAt: r.last_used_at, revokedAt: r.revoked_at });
@@ -40,14 +41,14 @@ export async function GET(req: NextRequest, { params }: Params) {
     if (kind === "webhooks" && id && sub === "deliveries") return respond({ deliveries: await listDeliveries(g.db, uid, id) }, g.ctx);
     if (kind) return fail("Not found.", 404);
     const l = limitsFor(g.tier);
-    const keys = (await dbQuery<any>(g.db, `SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC`, [uid])).map(keyRow);
-    const usage = await dbFirst<{ n: number; last: string | null }>(g.db, `SELECT COUNT(*) AS n, MAX(created_at) AS last FROM connect_events WHERE user_id = ? AND created_at > ?`, [uid, new Date(Date.now() - 86_400_000).toISOString()]);
+    const keys = (await g.db.apiKeys.listAllDocs("user", uid)).map(keyRow);
+    const usage = await eventUsage(g.db, uid);
     const settings = await getConnectSettings(g.db);
     return respond({
       enabled: settings.enabled, retentionDays: settings.retentionDays,
       limits: { apiKeys: l.apiKeys, apiRpm: l.apiRpm, webhooks: l.webhooks },
       keys, webhooks: await listWebhooks(g.db, uid),
-      usage: { events24h: Number(usage?.n || 0), lastEventAt: usage?.last || null },
+      usage,
     }, g.ctx);
   } catch (e) { return handle(e); }
 }
@@ -64,16 +65,17 @@ export async function POST(req: NextRequest, { params }: Params) {
   try {
     if (kind === "keys" && !id) {
       if (l.apiKeys <= 0) return fail("The developer API needs a paid plan.", 402, { upgrade: true });
-      const active = await dbFirst<{ n: number }>(g.db, `SELECT COUNT(*) AS n FROM api_keys WHERE user_id = ? AND revoked_at IS NULL`, [uid]);
-      if (Number(active?.n || 0) >= l.apiKeys) return fail(`Your plan includes ${l.apiKeys} active key${l.apiKeys === 1 ? "" : "s"}. Revoke one or upgrade.`, 402, { upgrade: true });
+      const active = (await g.db.apiKeys.listAllDocs("user", uid)).filter((k) => !k.revoked_at).length;
+      if (active >= l.apiKeys) return fail(`Your plan includes ${l.apiKeys} active key${l.apiKeys === 1 ? "" : "s"}. Revoke one or upgrade.`, 402, { upgrade: true });
       const name = String(b?.name || "").trim().slice(0, 80) || "API key";
       const key = newApiKey();
       const kid = newId("ak").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
       const scopes = cleanScopes(b?.scopes), origins = cleanOrigins(b?.origins);
-      await dbRun(g.db, `INSERT INTO api_keys (id, user_id, name, prefix, hash, scopes, origins, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [kid, uid, name, key.slice(0, KEY_PREFIX.length + 6), await sha256Hex(key), scopes.join(" "), origins.join(" "), now()]);
+      const row = await g.db.apiKeys.create({
+        id: kid, user_id: uid, name, prefix: key.slice(0, KEY_PREFIX.length + 6), hash: await sha256Hex(key), scopes: scopes.join(" "), origins: origins.join(" "),
+        created_at: now(), last_used_at: null, revoked_at: null,
+      });
       await audit(g.db, g.ctx.session, "connect.key.create", "api_key", kid, { name, scopes }, req);
-      const row = await dbFirst<any>(g.db, `SELECT * FROM api_keys WHERE id = ?`, [kid]);
       return respond({ ok: true, key: keyRow(row), apiKey: key }, g.ctx);
     }
     if (kind === "webhooks" && !id) {
@@ -99,14 +101,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const b = await readJson(req);
   try {
     if (kind === "keys" && id) {
-      const row = await dbFirst<any>(g.db, `SELECT * FROM api_keys WHERE id = ? AND user_id = ?`, [id, uid]);
-      if (!row || row.revoked_at) return fail("Key not found.", 404);
+      const row = await g.db.apiKeys.get(id).catch(() => null);
+      if (!row || row.user_id !== uid || row.revoked_at) return fail("Key not found.", 404);
       const name = b?.name !== undefined ? String(b.name).trim().slice(0, 80) || row.name : row.name;
       const scopes = b?.scopes !== undefined ? cleanScopes(b.scopes).join(" ") : row.scopes;
       const origins = b?.origins !== undefined ? cleanOrigins(b.origins).join(" ") : row.origins;
-      await dbRun(g.db, `UPDATE api_keys SET name = ?, scopes = ?, origins = ? WHERE id = ?`, [name, scopes, origins, id]);
+      const updated = await g.db.apiKeys.update(id, (k) => ({ ...k, name, scopes, origins }));
       await audit(g.db, g.ctx.session, "connect.key.update", "api_key", id, { scopes }, req);
-      return respond({ ok: true, key: keyRow(await dbFirst<any>(g.db, `SELECT * FROM api_keys WHERE id = ?`, [id])) }, g.ctx);
+      return respond({ ok: true, key: keyRow(updated) }, g.ctx);
     }
     if (kind === "webhooks" && id) return respond({ ok: true, webhook: await updateWebhook(g.db, uid, id, b) }, g.ctx);
     return fail("Not found.", 404);
@@ -120,8 +122,11 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   const uid = g.ctx.session.sub;
   try {
     if (kind === "keys" && id) {
-      const r = await dbRun(g.db, `UPDATE api_keys SET revoked_at = ? WHERE id = ? AND user_id = ? AND revoked_at IS NULL`, [now(), id, uid]);
-      if (!r?.meta?.changes) return fail("Key not found.", 404);
+      const cur = await g.db.apiKeys.get(id).catch(() => null);
+      if (!cur || cur.user_id !== uid || cur.revoked_at) return fail("Key not found.", 404);
+      let won = false;
+      await g.db.apiKeys.update(id, (k) => { won = !k.revoked_at; return won ? { ...k, revoked_at: now() } : null; });
+      if (!won) return fail("Key not found.", 404);
       await audit(g.db, g.ctx.session, "connect.key.revoke", "api_key", id, {}, req);
       return respond({ ok: true }, g.ctx);
     }

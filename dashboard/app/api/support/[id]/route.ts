@@ -5,7 +5,7 @@
  *        admin is online; "human" flags the conversation for the team. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbRun } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJson, fail } from "@/lib/http";
@@ -15,7 +15,7 @@ import { autoReply, notifyAdmin } from "@/lib/support/service";
 type Params = { params: Promise<{ id: string }> };
 
 async function authorize(req: NextRequest, id: string) {
-  const db = getDB(req);
+  const db = getData(req);
   const row = await getThreadRow(db, id);
   const ctx = await loadSession(req).catch(() => null);
   const ok = await canAccess(row, req.headers.get("x-support-token") || "", ctx?.session.sub);
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { db, row } = a;
 
   if (b?.action === "human") {
-    await dbRun(db, `UPDATE support_threads SET needs_admin = 1 WHERE id = ?`, [id]);
+    await db.supportThreads.update(id, (t) => ({ ...t, needs_admin: 1 }));
     await addMessage(db, row, "system", "", row.email
       ? "We've asked a team member to take over — you'll get a reply by e-mail if we're not online."
       : "We've asked a team member to take over. Add your e-mail in your next message so we can reply.");

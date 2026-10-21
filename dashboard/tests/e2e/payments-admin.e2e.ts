@@ -6,15 +6,14 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { createOrder, doc, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const LIVE = { secret_key: "sk_live_e2e_payments", webhook_secret: "whsec_live_e2e" };
 const SANDBOX = { secret_key: "sk_test_e2e_payments", webhook_secret: "whsec_sandbox_e2e" };
@@ -37,12 +36,6 @@ class Client {
   }
 }
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 function stripeEvent(orderId: string, amountUsd: number, whsec: string) {
   const payload = JSON.stringify({ type: "checkout.session.completed", data: { object: { id: `cs_${orderId}`, client_reference_id: orderId, payment_status: "paid", amount_total: Math.round(amountUsd * 100), payment_intent: `pi_${orderId}` } } });
@@ -128,22 +121,21 @@ test("test money never pays a real order; test orders are not revenue", async ()
   const email = `pay-${RUN}@example.com`;
   const m = new Client();
   assert.equal((await m.call("POST", "/api/auth/register", { email, name: "Pay Test", password: "abcdefgh1", acceptTerms: true })).status, 200);
-  const [u] = d1(`SELECT id FROM users WHERE email = '${email}'`);
+  const u = await userByEmail(email);
   const liveId = `ord_live_${RUN}`, sbId = `ord_sb_${RUN}`;
-  d1(`INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at) VALUES
-      ('${liveId}', '${u.id}', '${email}', 'pro', 'monthly', 49, 'USD', 0, 'stripe', 'pending', '{"env":"live"}', datetime('now')),
-      ('${sbId}', '${u.id}', '${email}', 'pro', 'monthly', 49, 'USD', 0, 'stripe', 'pending', '{"env":"sandbox"}', datetime('now'))`);
+  await createOrder({ id: liveId, user_id: u.id, email, plan: "pro", cycle: "monthly", amount_usd: 49, gateway: "stripe", meta: JSON.stringify({ env: "live" }) });
+  await createOrder({ id: sbId, user_id: u.id, email, plan: "pro", cycle: "monthly", amount_usd: 49, gateway: "stripe", meta: JSON.stringify({ env: "sandbox" }) });
   const before = (await admin.call("GET", "/api/admin/stats")).json;
 
   const cheat = stripeEvent(liveId, 49, SANDBOX.webhook_secret);
   const r1 = await new Client().call("POST", "/api/webhooks/stripe", cheat.payload, { "stripe-signature": cheat.header });
   assert.equal(r1.status, 422);
   assert.equal(r1.json.error, "env_mismatch");
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${liveId}'`)[0].status, "pending", "a sandbox payment cannot pay a live order");
+  assert.equal((await doc("orders", liveId)).status, "pending", "a sandbox payment cannot pay a live order");
 
   const sb = stripeEvent(sbId, 49, SANDBOX.webhook_secret);
   assert.equal((await new Client().call("POST", "/api/webhooks/stripe", sb.payload, { "stripe-signature": sb.header })).status, 200);
-  assert.equal(d1(`SELECT status FROM orders WHERE id = '${sbId}'`)[0].status, "paid", "sandbox pays a sandbox order (testing works end to end)");
+  assert.equal((await doc("orders", sbId)).status, "paid", "sandbox pays a sandbox order (testing works end to end)");
   const mid = (await admin.call("GET", "/api/admin/stats")).json;
   assert.equal(mid.revenueAll, before.revenueAll, "a test payment is not revenue");
 
@@ -194,7 +186,7 @@ test("bank transfer: IDR, USD and EUR accounts — the buyer picks the currency 
     const exact = c.json.amountUsd * eur.rate;
     assert.ok(eur.amount >= exact - 1e-9 && eur.amount - exact < 0.01 + 1e-9, `rounded up to the cent: ${eur.amount} vs ${exact}`);
 
-    const row = d1(`SELECT meta FROM orders WHERE id = '${c.json.orderId}'`)[0];
+    const row = await doc("orders", c.json.orderId);
     assert.deepEqual(JSON.parse(row.meta).bank_quotes.map((q: any) => q.currency), ["IDR", "USD", "EUR"]);
     assert.ok(!String(row.meta).includes("400500600"), "account numbers are never copied into the order");
 

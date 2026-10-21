@@ -546,6 +546,10 @@ pengguna Windows/Linux tidak perlu membuka komentar compose secara manual. Logik
 
 ### 16.5 Urutan kerja berikutnya (dari audit ini)
 
+Keputusan pemilik 20 Okt 2026 (`REQUESTS.md` baris 84, jawaban **„a"**): kesepuluh aplikasi **tetap dijual** dengan
+klaim yang jujur (hanya yang benar-benar ada di kode) dan dilengkapi satu per satu menurut urutan di bawah; checkout
+dan unduhan tidak ditutup. Setiap fase yang lulus dicatat di sini dengan buktinya.
+
 | Urutan | Fase | Isi | Status |
 |---|---|---|---|
 | 1 | G1 | Deteksi GPU di host + profil compose otomatis Windows & Linux (16.3) | ❌ |

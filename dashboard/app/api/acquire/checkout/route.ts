@@ -6,7 +6,9 @@
  * When the payment is verified, lib/billing/activate makes the buyer an admin. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getEnv, dbRun, dbFirst, newId, now } from "@/lib/db";
+import { getData, getEnv, newId } from "@/lib/db";
+import { patchMeta } from "@/lib/data/meta";
+import { newOrder } from "@/lib/billing/order-doc";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
   if (ctx.session.role === "admin") return fail("Administrator accounts cannot buy the site — sign in with the buyer's account.");
   const rl = await rateLimit(req, "acquire-checkout", ctx.session.sub, { max: 10, windowSeconds: 3600 });
   if (rl.limited) return fail("Too many attempts — please wait a few minutes.", 429);
-  const db = getDB(req);
+  const db = getData(req);
   const sale = await getSale(db);
   if (sale.status !== "open") return fail(sale.status === "sold" ? `${SITE.name} has been sold.` : "The offer is paused at the moment.", 409);
 
@@ -43,14 +45,15 @@ export async function POST(req: NextRequest) {
   const crypto = gateway === "crypto" && creds ? await quoteCrypto(db, amountUsd, creds) : null;
 
   // One open order per buyer and method: reuse it instead of piling up duplicates.
-  const open = await dbFirst<{ id: string }>(db, `SELECT id FROM orders WHERE user_id = ? AND plan = 'acquisition' AND gateway = ? AND status = 'pending' AND created_at > ? ORDER BY created_at DESC`,
-    [ctx.session.sub, gateway, new Date(Date.now() - 6 * 3600_000).toISOString()]);
+  const since = new Date(Date.now() - 6 * 3600_000).toISOString();
+  const open = (await db.orders.listDocs("user", ctx.session.sub, { limit: 50 })).docs
+    .find((x) => x.plan === "acquisition" && x.gateway === gateway && x.status === "pending" && x.created_at > since);
   const id = gateway === "manual" && open ? open.id : newId("ord");
   if (id !== open?.id) {
-    await dbRun(db,
-      `INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
-       VALUES (?,?,?, 'acquisition', 'once', ?, 'USD', ?, ?, 'pending', ?, ?)`,
-      [id, ctx.session.sub, ctx.session.email, amountUsd, amountIdr, gateway, JSON.stringify({ env, rate: rate || undefined, buyer, crypto: crypto || undefined }), now()]);
+    await db.orders.create(newOrder({
+      id, user_id: ctx.session.sub, email: ctx.session.email, plan: "acquisition", cycle: "once", amount_usd: amountUsd, amount_local: amountIdr, gateway,
+      meta: JSON.stringify({ env, rate: rate || undefined, buyer, crypto: crypto || undefined }),
+    }));
     await audit(db, ctx.session, "site.sale.checkout", "order", id, { gateway, env, amountUsd, company: buyer.company }, req);
   }
 
@@ -82,10 +85,11 @@ export async function POST(req: NextRequest) {
       default:
         return fail("Choose a payment method.");
     }
-    if (ref) await dbRun(db, `UPDATE orders SET gateway_ref = ? WHERE id = ?`, [ref, id]);
+    if (ref) await db.orders.update(id, (x) => ({ ...x, gateway_ref: ref }));
     return respond({ ok: true, orderId: id, url, test: env === "sandbox" }, ctx);
   } catch (e: any) {
-    await dbRun(db, `UPDATE orders SET status = 'failed', meta = json_set(meta, '$.error', ?) WHERE id = ?`, [String(e?.message || e).slice(0, 300), id]);
+    const error = String(e?.message || e).slice(0, 300);
+    await db.orders.update(id, (x) => ({ ...x, status: "failed", meta: patchMeta(x.meta, (m) => { m.error = error; }) })).catch(() => null);
     const paypalLimit = gateway === "paypal" ? " PayPal limits the size of a single payment — for the full price use crypto or a bank wire." : "";
     return fail(`Could not start the payment: ${String(e?.message || "unknown error").slice(0, 200)}.${paypalLimit}`, 502);
   }

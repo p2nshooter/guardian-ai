@@ -9,11 +9,12 @@
  * the transfer of external accounts (domain registrar, Cloudflare, GitHub,
  * payment providers) is then completed together (checklist on /acquire).
  *
- * Settings live in platform_config "site_sale" (Admin → Site sale). The bank
+ * Settings live in the setting "site_sale" (Admin → Site sale). The bank
  * accounts below are the owner's public BNI receiving accounts (the same ones
  * published on ulyah.com); the admin can change every value.
  * ============================================================================ */
-import { dbFirst, dbRun, now } from "./db";
+import { now } from "./db";
+import type { Data } from "./data";
 
 export const SALE_KEY = "site_sale";
 export const DEFAULT_PRICE_USD = 10_000_000;
@@ -96,18 +97,17 @@ export function sanitizeSale(v: any, base: SaleSettings = SALE_DEFAULTS): SaleSe
   };
 }
 
-export async function getSale(db: any): Promise<SaleSettings> {
+export async function getSale(db: Data): Promise<SaleSettings> {
   try {
-    const row = await dbFirst<{ value: string }>(db, `SELECT value FROM platform_config WHERE key = ?`, [SALE_KEY]);
-    return row?.value ? sanitizeSale(JSON.parse(row.value)) : { ...SALE_DEFAULTS };
+    const raw = await db.config.get(SALE_KEY);
+    return raw ? sanitizeSale(JSON.parse(raw)) : { ...SALE_DEFAULTS };
   } catch {
     return { ...SALE_DEFAULTS };
   }
 }
 
-export async function saveSale(db: any, s: SaleSettings): Promise<void> {
-  await dbRun(db, `INSERT INTO platform_config (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    [SALE_KEY, JSON.stringify({ ...s, updatedAt: now() }), now()]);
+export async function saveSale(db: Data, s: SaleSettings): Promise<void> {
+  await db.config.set(SALE_KEY, JSON.stringify({ ...s, updatedAt: now() }));
 }
 
 /** Can this gateway carry this amount at all? (PayPal is offered; its own limits may still apply.) */

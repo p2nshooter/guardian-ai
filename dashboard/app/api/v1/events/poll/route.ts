@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 import { withCaller, sleep } from "@/lib/connect/route";
 import { apiJson, preflight } from "@/lib/connect/http";
 import { requireScope, canReadChannel } from "@/lib/connect/auth";
-import { eventsAfter, parsePatterns, startCursor } from "@/lib/connect/events";
+import { eventsAfter, parsePatterns, startCursor, SETTLE_MS } from "@/lib/connect/events";
 
 export const OPTIONS = (req: NextRequest) => preflight(req, "GET, OPTIONS");
 
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     let cursor = await startCursor(db, c.userId, null, q.get("after"));
     const until = Date.now() + wait * 1000;
     for (;;) {
-      const events = (await eventsAfter(db, c.userId, cursor, patterns, 100)).filter((e) => canReadChannel(c, e.channel));
+      const events = (await eventsAfter(db, c.userId, cursor, patterns, 100, SETTLE_MS)).filter((e) => canReadChannel(c, e.channel));
       if (events.length) return apiJson(req, c, { events, cursor: events[events.length - 1].id });
       if (Date.now() >= until || req.signal.aborted) return apiJson(req, c, { events: [], cursor });
       await sleep(1000, req.signal);

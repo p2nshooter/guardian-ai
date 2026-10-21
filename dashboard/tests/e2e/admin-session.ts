@@ -4,7 +4,7 @@
  * The cookie is cached in .e2e-state (wiped by run.sh on every run). */
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { seedAdmin } from "./data";
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
 const STATE = path.resolve(process.cwd(), ".e2e-state");
@@ -23,9 +23,7 @@ export async function adminCookie(): Promise<string> {
     const cached = fs.readFileSync(FILE, "utf8").trim();
     if (cached && (await isAdmin(cached))) return cached;
   } catch {}
-  execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command",
-    `INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', '${ADMIN_EMAIL}', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`],
-    { cwd: path.join(STATE, "d1ctl"), env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, stdio: "ignore" });
+  await seedAdmin(ADMIN_EMAIL);
   const r = await fetch(`${BASE}/api/auth/login`, {
     method: "POST", headers: { "Content-Type": "application/json", "cf-connecting-ip": "10.250.250.250" },
     body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),

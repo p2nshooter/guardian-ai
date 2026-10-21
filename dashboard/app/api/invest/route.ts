@@ -3,11 +3,11 @@
  * capital verified so far. AXTO only — xaa.es raises separately on xaa.es. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { getInvest, raisedUsd } from "@/lib/invest";
 
 export async function GET(req: NextRequest) {
-  const db = getDB(req);
+  const db = getData(req);
   const [offer, raised] = await Promise.all([getInvest(db), raisedUsd(db).catch(() => 0)]);
   return NextResponse.json({ status: offer.status, targetUsd: offer.targetUsd, minUsd: offer.minUsd, poolPct: offer.poolPct, raisedUsd: raised },
     { headers: { "Cache-Control": "no-store" } });

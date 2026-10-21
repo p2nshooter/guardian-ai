@@ -57,7 +57,7 @@ export const ACQ_EN = {
     ["Engineering quality", "Typed end to end, unit and end-to-end test suites in CI on every change, security hardening, rate limits, and a written architecture blueprint."],
   ] as [string, string][],
   stackTitle: "Technology",
-  stack: "Next.js 15 on Cloudflare's global edge (Pages, Workers, D1, KV, R2) · TypeScript · Go installer · Docker (multi-arch) · browser-side AI tooling (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · WebRTC and WebSocket realtime.",
+  stack: "Next.js 15 on Cloudflare's global edge (Pages, Workers, KV, R2) · TypeScript · Go installer · Docker (multi-arch) · browser-side AI tooling (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · WebRTC and WebSocket realtime.",
 
   guideTitle: "Buyer's guide — from first call to full ownership",
   guideLead: "A clear path for a transaction of this size. Every step can be accelerated; none is skipped on safety.",
@@ -73,7 +73,7 @@ export const ACQ_EN = {
   timelineTitle: "Handover timeline",
   timeline: [
     ["Minute 0", "Administrator access", "Granted automatically when the payment is verified, confirmed by e-mail and recorded in the audit log."],
-    ["Day 1", "Code and infrastructure", "GitHub repositories with full history, the Cloudflare account (Pages, D1, KV, R2, DNS) and the domain transfer authorisation."],
+    ["Day 1", "Code and infrastructure", "GitHub repositories with full history, the Cloudflare account (Pages, KV, R2, DNS) and the domain transfer authorisation."],
     ["Week 1", "Payments and e-mail", "Payment providers moved to your company or switched to your own accounts; e-mail sending and support inboxes."],
     ["Weeks 2–4", "Knowledge transfer", "Walk-throughs of the architecture, the release pipeline, the admin runbooks and the self-hosted build, with answers in writing."],
   ] as [string, string, string][],
@@ -95,7 +95,7 @@ export const ACQ_EN = {
   handover: [
     "Administrator access to the AXTO portal — automatic when the payment is verified",
     "Domain axto.io at the registrar",
-    "Cloudflare account / zone: Pages project, D1 database, KV, R2 buckets, Workers and DNS",
+    "Cloudflare account / zone: Pages project, KV, R2 buckets, Workers and DNS",
     "GitHub repositories (dashboard, engines, installer, CI/CD) with full history",
     "Payment provider accounts — or a clean switch to your own (PayPal, Stripe, Xendit, Midtrans, NOWPayments, crypto wallets)",
     "E-mail sending (Resend) and support inboxes",

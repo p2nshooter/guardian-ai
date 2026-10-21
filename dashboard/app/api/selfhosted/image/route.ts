@@ -7,7 +7,7 @@
  * name may carry the -arm64 suffix of an ARM build. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getR2Builds, dbFirst } from "@/lib/db";
+import { getData, getR2Builds } from "@/lib/db";
 import { verifyImageUrl } from "@/lib/download-links";
 import { SELF_HOSTED } from "@/lib/selfhosted";
 import { productsOf } from "@/lib/lifetime";
@@ -21,14 +21,14 @@ export async function GET(req: NextRequest) {
     return bad("This download link is invalid or has expired. Run the installer again to get a fresh one.", 403);
   }
   const base = name.replace(/-arm64$/, "");
-  const db = getDB(req);
+  const db = getData(req);
   let products: string[] = [];
   if (lic.startsWith("lt:")) {
-    const row = await dbFirst<any>(db, `SELECT scope, product, status, updates_until FROM lifetime_licenses WHERE id = ?`, [lic.slice(3)]);
+    const row = await db.lifetimeLicenses.get(lic.slice(3));
     if (!row || row.status !== "active" || !(row.updates_until > new Date().toISOString())) return bad("The licence is no longer active.", 403);
     products = productsOf(row);
   } else {
-    const row = await dbFirst<any>(db, `SELECT product, status, expires_at FROM sh_licenses WHERE id = ?`, [lic]);
+    const row = await db.shLicenses.get(lic);
     if (!row || row.status !== "active" || !(new Date(row.expires_at).getTime() > Date.now())) return bad("The licence is no longer active.", 403);
     products = [row.product];
   }

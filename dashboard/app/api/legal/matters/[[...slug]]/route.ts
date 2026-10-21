@@ -12,7 +12,7 @@
  *   DELETE /api/legal/matters/:id/runs/:run */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getUserFiles } from "@/lib/db";
+import { getData, getUserFiles } from "@/lib/db";
 import { loadSessionFor, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { readJson, fail } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (rl.limited) return fail("Too many changes at once. Please wait a moment.", 429);
   const [mid, kind] = (await params).slug || [];
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   const bucket = getUserFiles(req);
   const need = Math.ceil((JSON.stringify(b || {}).length) * 1.1);
   const room = storageProblem(await getUsage(db, ctx.session.sub, tier), need);
@@ -81,7 +81,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const [mid, kind] = (await params).slug || [];
   if (!mid || kind) return fail("Not found.", 404);
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   // Deadlines and citation checks make a matter grow: they count against the plan's storage.
   if (b?.deadlines !== undefined || b?.citeChecks !== undefined) {
     const room = storageProblem(await getUsage(db, ctx.session.sub, tier), Math.ceil(JSON.stringify(b || {}).length * 1.1));
@@ -97,7 +97,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   if ("res" in g) return g.res;
   const { ctx } = g;
   const [mid, kind, sub] = (await params).slug || [];
-  const db = getDB(req);
+  const db = getData(req);
   const bucket = getUserFiles(req);
   try {
     if (mid && !kind) { await deleteMatter(bucket, db, ctx.session.sub, mid); return respond({ ok: true }, ctx); }

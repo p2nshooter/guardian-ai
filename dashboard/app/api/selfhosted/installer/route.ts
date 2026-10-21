@@ -10,7 +10,7 @@
  * <image>-arm64 builds. No session: the key is the credential; rate-limited per IP. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getR2Builds, dbFirst } from "@/lib/db";
+import { getData, getR2Builds } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJson, ipOf, audit } from "@/lib/http";
 import { SELF_HOSTED, productFromKey, catalogEntry, type SelfHostedProduct } from "@/lib/selfhosted";
@@ -45,15 +45,14 @@ export async function POST(req: NextRequest) {
   const key = String(b?.license_key || "").trim().toUpperCase();
   const arch = normArch(b?.arch);
   if (!arch) return no("This computer's processor type is not supported. AXTO apps run on x86-64 (amd64) and ARM64.");
-  const db = getDB(req);
+  const db = getData(req);
   if (isInstallKey(key)) return lifetime(req, db, b, key, arch);
 
   const slug = productFromKey(key);
   if (!slug) return no(`That doesn't look like an AXTO licence key. Copy it from ${PORTAL} (subscriptions) or ${LIFETIME} (lifetime licences).`);
-  const lic = await dbFirst<any>(db,
-    `SELECT l.id, l.user_id, l.product, l.status, l.expires_at, l.max_nodes, u.status AS user_status
-       FROM sh_licenses l LEFT JOIN users u ON u.id = l.user_id WHERE l.license_key = ?`, [key]);
-  if (!lic) return no(`Licence key not found. Copy it from ${PORTAL}.`, 404);
+  const doc = await db.shLicenses.find("license_key", key);
+  if (!doc) return no(`Licence key not found. Copy it from ${PORTAL}.`, 404);
+  const lic = { ...doc, user_status: doc.user_id ? (await db.users.get(doc.user_id))?.status || "" : "" };
   if (lic.status !== "active" || (lic.user_status && lic.user_status !== "active")) return no(`This licence is ${lic.status === "active" ? "suspended" : lic.status}. Manage it at ${PORTAL}.`, 403);
   if (!(new Date(lic.expires_at).getTime() > Date.now())) return no(`This licence expired on ${String(lic.expires_at).slice(0, 10)}. Renew at ${PORTAL}.`, 403);
 

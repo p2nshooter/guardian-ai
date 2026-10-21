@@ -9,33 +9,32 @@
  * ============================================================================ */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbQuery, dbRun, now } from "@/lib/db";
+import { getData, now } from "@/lib/db";
+import type { Data } from "@/lib/data";
 import { requireAdmin, respond } from "@/lib/auth";
 import { encryptObj } from "@/lib/gateway-crypto";
 import { managedEnabled, managedSettings } from "@/lib/ai/managed";
 import { isProviderId } from "@/lib/ai/providers";
 import { readJson, fail, audit } from "@/lib/http";
 
-async function view(db: any) {
-  const keys = await dbQuery<any>(db, `SELECT id, provider, key_name, is_active, updated_at FROM ai_provider_keys ORDER BY updated_at DESC`);
+async function view(db: Data) {
+  const keys = (await db.aiProviderKeys.listAllDocs("all", "all", 500)).map((k) => ({ id: k.id, provider: k.provider, key_name: k.key_name, is_active: k.is_active, updated_at: k.updated_at }));
   return { enabled: await managedEnabled(db), settings: await managedSettings(db), keys };
 }
 
-async function setConfig(db: any, key: string, value: string) {
-  await dbRun(db, `INSERT INTO platform_config (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, [key, value, now()]);
-}
+const setConfig = (db: Data, key: string, value: string) => db.config.set(key, value);
 
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return respond(await view(getDB(req)), ctx);
+  return respond(await view(getData(req)), ctx);
 }
 
 export async function PUT(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   if (typeof b?.enabled === "boolean") await setConfig(db, "managed_enabled", b.enabled ? "1" : "0");
   if (b?.settings && typeof b.settings === "object") {
     const s = b.settings;
@@ -59,10 +58,12 @@ export async function POST(req: NextRequest) {
   const value = String(b?.value || "").trim();
   if (!isProviderId(provider) || provider === "custom" || provider === "deepgram") return fail("Choose a chat provider.");
   if (value.length < 8) return fail("Paste the full key.");
-  const db = getDB(req);
-  await dbRun(db, `INSERT INTO ai_provider_keys (id, provider, key_name, category, purpose, value_enc, for_managed_pool, is_active, created_at, updated_at)
-                   VALUES (?, ?, ?, 'llm', 'managed', ?, 1, 1, ?, ?)`,
-    [crypto.randomUUID(), provider, `…${value.slice(-4)}`, await encryptObj({ value }), now(), now()]);
+  const db = getData(req);
+  const at = now();
+  await db.aiProviderKeys.create({
+    id: crypto.randomUUID(), provider, key_name: `…${value.slice(-4)}`, category: "llm", purpose: "managed", value_enc: await encryptObj({ value }),
+    for_managed_pool: 1, is_active: 1, created_at: at, updated_at: at,
+  });
   await audit(db, ctx.session, "admin.managed.key_added", "ai_provider_key", provider, {}, req);
   return respond(await view(db), ctx);
 }
@@ -71,8 +72,8 @@ export async function DELETE(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const id = new URL(req.url).searchParams.get("id") || "";
-  const db = getDB(req);
-  await dbRun(db, `DELETE FROM ai_provider_keys WHERE id = ?`, [id]);
+  const db = getData(req);
+  await db.aiProviderKeys.delete(id);
   await audit(db, ctx.session, "admin.managed.key_deleted", "ai_provider_key", id, {}, req);
   return respond(await view(db), ctx);
 }

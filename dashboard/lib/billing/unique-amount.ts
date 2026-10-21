@@ -7,16 +7,20 @@
  * it pays — search that amount in Admin → Orders and press "Mark paid".
  * Confirmation stays manual; the code only identifies the order.
  * ============================================================================ */
-import { dbQuery } from "../db";
+import type { Data } from "../data";
 
 const WINDOW_DAYS = 14;
 
 /** base (already rounded to Rp 1.000) + a code 1…999 no open bank order is using. */
-export async function uniqueIdrAmount(db: any, base: number): Promise<{ amount: number; code: number }> {
+export async function uniqueIdrAmount(db: Data, base: number): Promise<{ amount: number; code: number }> {
   const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString();
-  const rows = await dbQuery<{ amount_local: number }>(db,
-    `SELECT amount_local FROM orders WHERE gateway = 'manual' AND status = 'pending' AND created_at >= ?`, [since]);
-  const taken = new Set(rows.map((r) => Math.round(r.amount_local)));
+  const taken = new Set<number>();
+  let cursor: string | undefined;
+  do {
+    const page = await db.orders.list("pending", "manual", { cursor, limit: 1000 });
+    for (const e of page.entries) if (String(e.meta.created_at) >= since) taken.add(Math.round(Number(e.meta.amount_local) || 0));
+    cursor = page.cursor;
+  } while (cursor);
   const start = 1 + (crypto.getRandomValues(new Uint16Array(1))[0] % 999);
   for (let i = 0; i < 999; i++) {
     const code = ((start - 1 + i) % 999) + 1;

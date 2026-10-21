@@ -3,14 +3,14 @@
  * Webhook ID and accepts it); that environment must match the order's. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { gatewayCredsAll, ENV_KEY, type PayEnv } from "@/lib/billing/gateways";
 import { paypalVerifyWebhook } from "@/lib/billing/providers";
 import { markOrderPaid } from "@/lib/billing/activate";
 
 export async function POST(req: NextRequest) {
   const event = await req.json().catch(() => null);
-  const db = getDB(req);
+  const db = getData(req);
   let env: PayEnv | null = null;
   if (event) {
     for (const c of await gatewayCredsAll("paypal")) {

@@ -28,11 +28,23 @@ export default function AdminTrials() {
   };
   useEffect(() => { load(); }, []);
 
+  // Large jobs (hundreds of codes) run in steps: the server answers with `next` (the body of the
+  // following step) or `more`, and this keeps going until the job is done, showing the progress.
   async function call(label: string, path: string, init: { method?: string; body: unknown }) {
     setBusy(label); setMsg(null);
-    const r = await api<any>(path, init as never);
+    let body = init.body;
+    let r = await api<any>(path, { ...init, body } as never);
+    let made = 0, changed = 0;
+    for (let step = 0; r.ok && step < 200; step += 1) {
+      made += (r.data?.made || []).reduce((n: number, m: { created: number }) => n + m.created, 0);
+      changed += Number(r.data?.changed || 0);
+      if (r.data?.next) body = r.data.next;
+      else if (!r.data?.more) break;
+      setMsg({ tone: "success", text: made ? `Creating codes… ${made}` : `Working… ${changed}` });
+      r = await api<any>(path, { ...init, body } as never);
+    }
     setBusy("");
-    setMsg(r.ok ? { tone: "success", text: "Done." } : { tone: "error", text: r.error });
+    setMsg(r.ok ? { tone: "success", text: made ? `Done — ${made} codes created.` : changed ? `Done — ${changed} codes changed.` : "Done." } : { tone: "error", text: r.error });
     if (r.ok) load();
     return r;
   }

@@ -15,10 +15,10 @@
  * Storage: one AES-256-GCM encrypted R2 document per area (lib/secure-store.ts). */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, now } from "@/lib/db";
+import { getData, now } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import {
-  GATEWAYS, ENV_KEY, gatewayInfo, gatewaySetting, isConfigured, isPayEnv, migrateLegacyPayments, paymentSettings, prefixProblem, savePaymentSettings,
+  GATEWAYS, ENV_KEY, gatewayInfo, gatewaySetting, isConfigured, isPayEnv, paymentSettings, prefixProblem, savePaymentSettings,
   type GatewayField, type GatewayInfo, type GatewaySetting, type PayEnv, type PaymentSettings,
 } from "@/lib/billing/gateways";
 import { paypalEnsureWebhook, testConnection } from "@/lib/billing/providers";
@@ -70,11 +70,8 @@ function present(g: GatewayInfo, st: GatewaySetting) {
   };
 }
 
-async function admin(req: NextRequest) {
-  const ctx = await requireAdmin(req);
-  if (ctx) await migrateLegacyPayments(getDB(req)).catch(() => 0);   // never overwrite un-migrated v2 settings
-  return ctx;
-}
+// The v2 payment settings were moved by the one-time D1 → R2 copy (lib/data/migrate.ts), which runs before any admin call.
+const admin = (req: NextRequest) => requireAdmin(req);
 const forbidden = () => NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
 async function guard(fn: () => Promise<NextResponse>): Promise<NextResponse> {
@@ -129,7 +126,7 @@ export async function PUT(req: NextRequest) {
   const ctx = await admin(req);
   if (!ctx) return forbidden();
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   return guard(async () => {
     if (b?.gateway === "email") {
       const cur = await emailSettings();
@@ -185,7 +182,7 @@ export async function PATCH(req: NextRequest) {
       return fail(`Fill in the ${ENV_NAME[st.mode]} credentials (${requirement(g)}) before offering ${g.label} in ${ENV_NAME[st.mode]} mode.`);
     }
     await write(s, g.id, st, ctx.session.email);
-    await audit(getDB(req), ctx.session, "admin.gateway.switch", "payment_gateway", g.id, { before, after: { active: st.active, mode: st.mode } }, req);
+    await audit(getData(req), ctx.session, "admin.gateway.switch", "payment_gateway", g.id, { before, after: { active: st.active, mode: st.mode } }, req);
     return respond({ ok: true, gateway: present(g, st) }, ctx);
   });
 }
@@ -205,7 +202,7 @@ export async function DELETE(req: NextRequest) {
     st[env] = {};
     if (wasOffered) st.active = false;
     await write(s, g.id, st, ctx.session.email);
-    await audit(getDB(req), ctx.session, "admin.gateway.cleared", "payment_gateway", g.id, { env, switchedOff: wasOffered }, req);
+    await audit(getData(req), ctx.session, "admin.gateway.cleared", "payment_gateway", g.id, { env, switchedOff: wasOffered }, req);
     return respond({ ok: true, switchedOff: wasOffered, gateway: present(g, st) }, ctx);
   });
 }
@@ -224,7 +221,7 @@ export async function POST(req: NextRequest) {
     const st = gatewaySetting(s, g.id);
     if (!isConfigured(g, st[env])) return respond({ ok: false, message: `Save the ${ENV_NAME[env]} credentials first (${requirement(g)}).` }, ctx);
     const r = g.id === "paypal" ? await paypalSetup(s, st, env, ctx.session.email) : await testConnection(g.id, { ...st[env], [ENV_KEY]: env });
-    await audit(getDB(req), ctx.session, "admin.gateway.tested", "payment_gateway", g.id, { env, ok: r.ok }, req);
+    await audit(getData(req), ctx.session, "admin.gateway.tested", "payment_gateway", g.id, { env, ok: r.ok }, req);
     return respond(r, ctx);
   });
 }

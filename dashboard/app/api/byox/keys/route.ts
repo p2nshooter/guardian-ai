@@ -5,7 +5,7 @@
  *   DELETE ?provider=… → remove */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { listKeys, saveKey, deleteKey, setPreferred, setModel } from "@/lib/ai/byox";
 import { PROVIDERS } from "@/lib/ai/providers";
@@ -16,7 +16,7 @@ const catalogue = PROVIDERS.map((p) => ({ id: p.id, name: p.name, chat: p.chat, 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
-  const data = await listKeys(getDB(req), ctx.session.sub);
+  const data = await listKeys(getData(req), ctx.session.sub);
   return respond({ ...data, providers: catalogue }, ctx);
 }
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   const err = await saveKey(db, ctx.session.sub, String(b?.provider || ""), { value: b?.value, model: b?.model, baseUrl: b?.baseUrl });
   if (err) return fail(err);
   await audit(db, ctx.session, "byox.key_saved", "user_ai_key", String(b?.provider), {}, req);
@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   const err = b?.provider && typeof b?.model === "string"
     ? await setModel(db, ctx.session.sub, String(b.provider), b.model)
     : await setPreferred(db, ctx.session.sub, String(b?.preferred || ""));
@@ -47,7 +47,7 @@ export async function DELETE(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
   const provider = new URL(req.url).searchParams.get("provider") || "";
-  const db = getDB(req);
+  const db = getData(req);
   await deleteKey(db, ctx.session.sub, provider);
   await audit(db, ctx.session, "byox.key_deleted", "user_ai_key", provider, {}, req);
   return respond({ ok: true, ...(await listKeys(db, ctx.session.sub)) }, ctx);

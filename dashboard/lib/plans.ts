@@ -8,7 +8,7 @@
  * unlocks. Pricing page, checkout, entitlement checks, the member portal, the
  * admin portal and self-hosted licence issuing all read from here.
  *
- * Prices are defaults; the admin can override them (platform_config key
+ * Prices are defaults; the admin can override them (setting
  * "plan_prices") without a deploy — see getPlanPrices().
  * ============================================================================ */
 
@@ -179,7 +179,7 @@ export function defaultPrices(): PriceTable {
   return t;
 }
 
-/** Merge an admin override (JSON from platform_config.plan_prices) over defaults, ignoring junk. */
+/** Merge an admin override (JSON from the setting "plan_prices") over defaults, ignoring junk. */
 export function mergePrices(overrideJson: string | null | undefined): PriceTable {
   const t = defaultPrices();
   if (!overrideJson) return t;
@@ -194,10 +194,9 @@ export function mergePrices(overrideJson: string | null | undefined): PriceTable
   return t;
 }
 
-export async function getPlanPrices(db: any): Promise<PriceTable> {
+export async function getPlanPrices(db: { config: { get(key: string): Promise<string | null> } }): Promise<PriceTable> {
   try {
-    const row = await db.prepare(`SELECT value FROM platform_config WHERE key = 'plan_prices'`).first();
-    return mergePrices(row?.value);
+    return mergePrices(await db.config.get("plan_prices"));
   } catch {
     return defaultPrices();
   }
@@ -229,7 +228,7 @@ export function formatUsd(n: number): string {
 
 // ── MANAGED (AXTO-provided AI) — a separate product line, LOCKED ───────────
 // Defined here so pricing is ready, but never sold or used while locked
-// (platform_config.managed_enabled != "1"). Nothing in the BYOX plans above
+// (setting "managed_enabled" != "1"). Nothing in the BYOX plans above
 // depends on these, and the Managed code path never reads BYOX keys.
 export interface ManagedPlan { id: string; name: string; monthly: number; creditsPerMonth: number; blurb: string }
 

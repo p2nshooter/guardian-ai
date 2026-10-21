@@ -118,7 +118,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "Teknologi",
-    "stack": "Next.js 15 di edge global Cloudflare (Pages, Workers, D1, KV, R2) · TypeScript · installer Go · Docker (multi-arsitektur) · perkakas AI di sisi browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · realtime WebRTC dan WebSocket.",
+    "stack": "Next.js 15 di edge global Cloudflare (Pages, Workers, KV, R2) · TypeScript · installer Go · Docker (multi-arsitektur) · perkakas AI di sisi browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · realtime WebRTC dan WebSocket.",
     "guideTitle": "Panduan pembeli — dari panggilan pertama hingga kepemilikan penuh",
     "guideLead": "Jalur yang jelas untuk transaksi sebesar ini. Setiap langkah bisa dipercepat; tidak ada yang dilewati demi keamanan.",
     "guide": [
@@ -163,7 +163,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "Hari 1",
         "Kode dan infrastruktur",
-        "Repositori GitHub beserta seluruh riwayatnya, akun Cloudflare (Pages, D1, KV, R2, DNS), dan otorisasi transfer domain."
+        "Repositori GitHub beserta seluruh riwayatnya, akun Cloudflare (Pages, KV, R2, DNS), dan otorisasi transfer domain."
       ],
       [
         "Minggu 1",
@@ -192,7 +192,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "Akses administrator portal AXTO — otomatis saat pembayaran terverifikasi",
       "Domain axto.io di registrar",
-      "Akun / zona Cloudflare: proyek Pages, database D1, KV, bucket R2, Workers, dan DNS",
+      "Akun / zona Cloudflare: proyek Pages, KV, bucket R2, Workers, dan DNS",
       "Repositori GitHub (dashboard, engine, installer, CI/CD) beserta seluruh riwayatnya",
       "Akun penyedia pembayaran — atau peralihan rapi ke akun Anda sendiri (PayPal, Stripe, Xendit, Midtrans, NOWPayments, dompet kripto)",
       "Pengiriman email (Resend) dan kotak masuk dukungan",
@@ -412,7 +412,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "Teknologi",
-    "stack": "Next.js 15 di edge global Cloudflare (Pages, Workers, D1, KV, R2) · TypeScript · pemasang Go · Docker (pelbagai seni bina) · alat AI di sisi pelayar (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · masa nyata WebRTC dan WebSocket.",
+    "stack": "Next.js 15 di edge global Cloudflare (Pages, Workers, KV, R2) · TypeScript · pemasang Go · Docker (pelbagai seni bina) · alat AI di sisi pelayar (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · masa nyata WebRTC dan WebSocket.",
     "guideTitle": "Panduan pembeli — daripada panggilan pertama hingga pemilikan penuh",
     "guideLead": "Laluan yang jelas untuk transaksi sebesar ini. Setiap langkah boleh dipercepat; tiada yang dilangkau atas nama keselamatan.",
     "guide": [
@@ -457,7 +457,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "Hari 1",
         "Kod dan infrastruktur",
-        "Repositori GitHub dengan sejarah penuh, akaun Cloudflare (Pages, D1, KV, R2, DNS) dan kebenaran pemindahan domain."
+        "Repositori GitHub dengan sejarah penuh, akaun Cloudflare (Pages, KV, R2, DNS) dan kebenaran pemindahan domain."
       ],
       [
         "Minggu 1",
@@ -486,7 +486,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "Akses pentadbir ke portal AXTO — automatik apabila pembayaran disahkan",
       "Domain axto.io di pendaftar",
-      "Akaun / zon Cloudflare: projek Pages, pangkalan data D1, KV, baldi R2, Workers dan DNS",
+      "Akaun / zon Cloudflare: projek Pages, KV, baldi R2, Workers dan DNS",
       "Repositori GitHub (dashboard, enjin, pemasang, CI/CD) dengan sejarah penuh",
       "Akaun penyedia pembayaran — atau pertukaran kemas ke akaun anda sendiri (PayPal, Stripe, Xendit, Midtrans, NOWPayments, dompet kripto)",
       "Penghantaran e-mel (Resend) dan peti masuk sokongan",
@@ -706,7 +706,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "Technologie",
-    "stack": "Next.js 15 am globalen Edge von Cloudflare (Pages, Workers, D1, KV, R2) · TypeScript · Go-Installer · Docker (Multi-Arch) · KI-Werkzeuge im Browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · Echtzeit über WebRTC und WebSocket.",
+    "stack": "Next.js 15 am globalen Edge von Cloudflare (Pages, Workers, KV, R2) · TypeScript · Go-Installer · Docker (Multi-Arch) · KI-Werkzeuge im Browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · Echtzeit über WebRTC und WebSocket.",
     "guideTitle": "Leitfaden für Käufer — vom ersten Gespräch zum vollen Eigentum",
     "guideLead": "Ein klarer Weg für eine Transaktion dieser Größe. Jeder Schritt lässt sich beschleunigen; keiner wird zulasten der Sicherheit übersprungen.",
     "guide": [
@@ -751,7 +751,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "Tag 1",
         "Code und Infrastruktur",
-        "GitHub-Repositories mit vollständiger Historie, das Cloudflare-Konto (Pages, D1, KV, R2, DNS) und die Freigabe zum Domain-Transfer."
+        "GitHub-Repositories mit vollständiger Historie, das Cloudflare-Konto (Pages, KV, R2, DNS) und die Freigabe zum Domain-Transfer."
       ],
       [
         "Woche 1",
@@ -780,7 +780,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "Administratorzugang zum AXTO-Portal — automatisch nach verifizierter Zahlung",
       "Domain axto.io beim Registrar",
-      "Cloudflare-Konto / Zone: Pages-Projekt, D1-Datenbank, KV, R2-Buckets, Workers und DNS",
+      "Cloudflare-Konto / Zone: Pages-Projekt, KV, R2-Buckets, Workers und DNS",
       "GitHub-Repositories (Dashboard, Engines, Installer, CI/CD) mit vollständiger Historie",
       "Konten der Zahlungsanbieter — oder ein sauberer Wechsel zu Ihren eigenen (PayPal, Stripe, Xendit, Midtrans, NOWPayments, Krypto-Wallets)",
       "E-Mail-Versand (Resend) und Support-Postfächer",
@@ -1000,7 +1000,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "Technologie",
-    "stack": "Next.js 15 sur le réseau périphérique mondial de Cloudflare (Pages, Workers, D1, KV, R2) · TypeScript · installateur en Go · Docker (multi-architecture) · outils d'IA côté navigateur (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · temps réel WebRTC et WebSocket.",
+    "stack": "Next.js 15 sur le réseau périphérique mondial de Cloudflare (Pages, Workers, KV, R2) · TypeScript · installateur en Go · Docker (multi-architecture) · outils d'IA côté navigateur (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · temps réel WebRTC et WebSocket.",
     "guideTitle": "Guide de l'acheteur — du premier appel à la pleine propriété",
     "guideLead": "Un chemin clair pour une transaction de cette taille. Chaque étape peut être accélérée ; aucune n'est sacrifiée sur le plan de la sécurité.",
     "guide": [
@@ -1045,7 +1045,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "Jour 1",
         "Code et infrastructure",
-        "Dépôts GitHub avec l'historique complet, le compte Cloudflare (Pages, D1, KV, R2, DNS) et l'autorisation de transfert du domaine."
+        "Dépôts GitHub avec l'historique complet, le compte Cloudflare (Pages, KV, R2, DNS) et l'autorisation de transfert du domaine."
       ],
       [
         "Semaine 1",
@@ -1074,7 +1074,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "Accès administrateur au portail AXTO — automatique lorsque le paiement est vérifié",
       "Le domaine axto.io auprès du registraire",
-      "Compte / zone Cloudflare : projet Pages, base de données D1, KV, buckets R2, Workers et DNS",
+      "Compte / zone Cloudflare : projet Pages, KV, buckets R2, Workers et DNS",
       "Dépôts GitHub (tableau de bord, moteurs, installateur, CI/CD) avec l'historique complet",
       "Comptes des fournisseurs de paiement — ou un basculement propre vers les vôtres (PayPal, Stripe, Xendit, Midtrans, NOWPayments, portefeuilles crypto)",
       "Envoi d'e-mails (Resend) et boîtes de support",
@@ -1294,7 +1294,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "Tecnologia",
-    "stack": "Next.js 15 sull'edge globale di Cloudflare (Pages, Workers, D1, KV, R2) · TypeScript · programma di installazione in Go · Docker (multi-architettura) · strumenti di IA lato browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · tempo reale con WebRTC e WebSocket.",
+    "stack": "Next.js 15 sull'edge globale di Cloudflare (Pages, Workers, KV, R2) · TypeScript · programma di installazione in Go · Docker (multi-architettura) · strumenti di IA lato browser (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · tempo reale con WebRTC e WebSocket.",
     "guideTitle": "Guida per l'acquirente — dalla prima chiamata alla piena proprietà",
     "guideLead": "Un percorso chiaro per una transazione di queste dimensioni. Ogni passaggio può essere accelerato; nessuno viene saltato a scapito della sicurezza.",
     "guide": [
@@ -1339,7 +1339,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "Giorno 1",
         "Codice e infrastruttura",
-        "Repository GitHub con lo storico completo, l'account Cloudflare (Pages, D1, KV, R2, DNS) e l'autorizzazione al trasferimento del dominio."
+        "Repository GitHub con lo storico completo, l'account Cloudflare (Pages, KV, R2, DNS) e l'autorizzazione al trasferimento del dominio."
       ],
       [
         "Settimana 1",
@@ -1368,7 +1368,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "Accesso da amministratore al portale AXTO — automatico quando il pagamento è verificato",
       "Il dominio axto.io presso il registrar",
-      "Account / zona Cloudflare: progetto Pages, database D1, KV, bucket R2, Workers e DNS",
+      "Account / zona Cloudflare: progetto Pages, KV, bucket R2, Workers e DNS",
       "Repository GitHub (dashboard, motori, programma di installazione, CI/CD) con lo storico completo",
       "Account dei fornitori di pagamento — o un passaggio pulito ai tuoi (PayPal, Stripe, Xendit, Midtrans, NOWPayments, wallet crypto)",
       "Invio e-mail (Resend) e caselle di assistenza",
@@ -1588,7 +1588,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "技术",
-    "stack": "运行在 Cloudflare 全球边缘网络上的 Next.js 15（Pages、Workers、D1、KV、R2）· TypeScript · Go 安装程序 · Docker（多架构）· 浏览器端 AI 工具（PDF.js、Tesseract、ffmpeg.wasm、MediaPipe）· WebRTC 与 WebSocket 实时通信。",
+    "stack": "运行在 Cloudflare 全球边缘网络上的 Next.js 15（Pages、Workers、KV、R2）· TypeScript · Go 安装程序 · Docker（多架构）· 浏览器端 AI 工具（PDF.js、Tesseract、ffmpeg.wasm、MediaPipe）· WebRTC 与 WebSocket 实时通信。",
     "guideTitle": "买家指南——从第一次通话到完全拥有",
     "guideLead": "为这一规模的交易提供清晰路径。每一步都可以加快，但没有任何一步会在安全上打折扣。",
     "guide": [
@@ -1633,7 +1633,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "第 1 天",
         "代码与基础设施",
-        "包含完整历史的 GitHub 仓库、Cloudflare 账户（Pages、D1、KV、R2、DNS）以及域名转移授权。"
+        "包含完整历史的 GitHub 仓库、Cloudflare 账户（Pages、KV、R2、DNS）以及域名转移授权。"
       ],
       [
         "第 1 周",
@@ -1662,7 +1662,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "AXTO 门户的管理员权限——付款经验证后自动授予",
       "注册商处的 axto.io 域名",
-      "Cloudflare 账户 / 区域：Pages 项目、D1 数据库、KV、R2 存储桶、Workers 和 DNS",
+      "Cloudflare 账户 / 区域：Pages 项目、KV、R2 存储桶、Workers 和 DNS",
       "包含完整历史的 GitHub 仓库（控制台、引擎、安装程序、CI/CD）",
       "支付服务商账户——或干净地切换到您自己的账户（PayPal、Stripe、Xendit、Midtrans、NOWPayments、加密钱包）",
       "邮件发送（Resend）和支持收件箱",
@@ -1882,7 +1882,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "技術",
-    "stack": "Cloudflare のグローバルエッジ上の Next.js 15（Pages、Workers、D1、KV、R2）· TypeScript · Go 製インストーラー · Docker（マルチアーキテクチャ）· ブラウザ側 AI ツール（PDF.js、Tesseract、ffmpeg.wasm、MediaPipe）· WebRTC と WebSocket によるリアルタイム通信。",
+    "stack": "Cloudflare のグローバルエッジ上の Next.js 15（Pages、Workers、KV、R2）· TypeScript · Go 製インストーラー · Docker（マルチアーキテクチャ）· ブラウザ側 AI ツール（PDF.js、Tesseract、ffmpeg.wasm、MediaPipe）· WebRTC と WebSocket によるリアルタイム通信。",
     "guideTitle": "購入者ガイド — 最初の通話から完全な所有まで",
     "guideLead": "この規模の取引のための明確な道筋です。どのステップも短縮できますが、安全面で省略されるステップはありません。",
     "guide": [
@@ -1927,7 +1927,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "1日目",
         "コードとインフラ",
-        "全履歴付きの GitHub リポジトリ、Cloudflare アカウント（Pages、D1、KV、R2、DNS）、ドメイン移管の承認コード。"
+        "全履歴付きの GitHub リポジトリ、Cloudflare アカウント（Pages、KV、R2、DNS）、ドメイン移管の承認コード。"
       ],
       [
         "1週目",
@@ -1956,7 +1956,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "AXTO ポータルの管理者権限 — お支払いの確認時に自動付与",
       "レジストラにある axto.io ドメイン",
-      "Cloudflare アカウント／ゾーン：Pages プロジェクト、D1 データベース、KV、R2 バケット、Workers、DNS",
+      "Cloudflare アカウント／ゾーン：Pages プロジェクト、KV、R2 バケット、Workers、DNS",
       "全履歴付きの GitHub リポジトリ（ダッシュボード、エンジン、インストーラー、CI/CD）",
       "決済プロバイダーのアカウント — またはご自身のアカウントへのクリーンな切り替え（PayPal、Stripe、Xendit、Midtrans、NOWPayments、暗号資産ウォレット）",
       "メール送信（Resend）とサポート受信箱",
@@ -2176,7 +2176,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "टेक्नोलॉजी",
-    "stack": "Cloudflare के वैश्विक एज पर Next.js 15 (Pages, Workers, D1, KV, R2) · TypeScript · Go इंस्टॉलर · Docker (मल्टी-आर्किटेक्चर) · ब्राउज़र-साइड AI टूलिंग (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · WebRTC और WebSocket रीयल-टाइम।",
+    "stack": "Cloudflare के वैश्विक एज पर Next.js 15 (Pages, Workers, KV, R2) · TypeScript · Go इंस्टॉलर · Docker (मल्टी-आर्किटेक्चर) · ब्राउज़र-साइड AI टूलिंग (PDF.js, Tesseract, ffmpeg.wasm, MediaPipe) · WebRTC और WebSocket रीयल-टाइम।",
     "guideTitle": "ख़रीदार गाइड — पहली कॉल से पूर्ण स्वामित्व तक",
     "guideLead": "इस आकार के लेन-देन के लिए एक स्पष्ट रास्ता। हर चरण तेज़ किया जा सकता है; सुरक्षा के मामले में कोई चरण छोड़ा नहीं जाता।",
     "guide": [
@@ -2221,7 +2221,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "दिन 1",
         "कोड और इंफ्रास्ट्रक्चर",
-        "पूरे इतिहास के साथ GitHub रिपॉज़िटरी, Cloudflare खाता (Pages, D1, KV, R2, DNS) और डोमेन ट्रांसफ़र प्राधिकरण।"
+        "पूरे इतिहास के साथ GitHub रिपॉज़िटरी, Cloudflare खाता (Pages, KV, R2, DNS) और डोमेन ट्रांसफ़र प्राधिकरण।"
       ],
       [
         "सप्ताह 1",
@@ -2250,7 +2250,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "AXTO पोर्टल का एडमिनिस्ट्रेटर एक्सेस — भुगतान सत्यापित होने पर स्वचालित",
       "रजिस्ट्रार पर axto.io डोमेन",
-      "Cloudflare खाता / ज़ोन: Pages प्रोजेक्ट, D1 डेटाबेस, KV, R2 बकेट, Workers और DNS",
+      "Cloudflare खाता / ज़ोन: Pages प्रोजेक्ट, KV, R2 बकेट, Workers और DNS",
       "पूरे इतिहास के साथ GitHub रिपॉज़िटरी (डैशबोर्ड, इंजन, इंस्टॉलर, CI/CD)",
       "भुगतान प्रदाता खाते — या आपके अपने खातों पर साफ़ स्विच (PayPal, Stripe, Xendit, Midtrans, NOWPayments, क्रिप्टो वॉलेट)",
       "ई-मेल भेजना (Resend) और सपोर्ट इनबॉक्स",
@@ -2470,7 +2470,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       ]
     ],
     "stackTitle": "التقنية",
-    "stack": "Next.js 15 على شبكة Cloudflare الطرفية العالمية (Pages وWorkers وD1 وKV وR2) · TypeScript · مُثبّت بلغة Go · Docker (متعدد المعماريات) · أدوات ذكاء اصطناعي في المتصفح (PDF.js وTesseract وffmpeg.wasm وMediaPipe) · اتصال فوري عبر WebRTC وWebSocket.",
+    "stack": "Next.js 15 على شبكة Cloudflare الطرفية العالمية (Pages وWorkers وKV وR2) · TypeScript · مُثبّت بلغة Go · Docker (متعدد المعماريات) · أدوات ذكاء اصطناعي في المتصفح (PDF.js وTesseract وffmpeg.wasm وMediaPipe) · اتصال فوري عبر WebRTC وWebSocket.",
     "guideTitle": "دليل المشتري — من المكالمة الأولى إلى الملكية الكاملة",
     "guideLead": "مسار واضح لصفقة بهذا الحجم. يمكن تسريع كل خطوة؛ ولا تُتجاوز أي خطوة على حساب الأمان.",
     "guide": [
@@ -2515,7 +2515,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "اليوم 1",
         "الشيفرة والبنية التحتية",
-        "مستودعات GitHub بسجلها الكامل، وحساب Cloudflare ‏(Pages وD1 وKV وR2 وDNS)، وتفويض نقل النطاق."
+        "مستودعات GitHub بسجلها الكامل، وحساب Cloudflare ‏(Pages وKV وR2 وDNS)، وتفويض نقل النطاق."
       ],
       [
         "الأسبوع 1",
@@ -2544,7 +2544,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
     "handover": [
       "صلاحيات المسؤول على بوابة AXTO — تلقائيًا عند التحقق من الدفعة",
       "النطاق axto.io لدى جهة التسجيل",
-      "حساب / منطقة Cloudflare: مشروع Pages، وقاعدة بيانات D1، وKV، وحاويات R2، وWorkers، وDNS",
+      "حساب / منطقة Cloudflare: مشروع Pages، وKV، وحاويات R2، وWorkers، وDNS",
       "مستودعات GitHub (لوحة التحكم، والمحركات، والمُثبّت، وCI/CD) بسجلها الكامل",
       "حسابات مزوّدي الدفع — أو تحويل نظيف إلى حساباتك (PayPal وStripe وXendit وMidtrans وNOWPayments ومحافظ العملات المشفرة)",
       "إرسال البريد الإلكتروني (Resend) وصناديق الدعم",

@@ -6,9 +6,10 @@
  * ==============================================================================
  * BYOX usage & plan quotas (Clipper videos, storage). AI itself is unmetered
  * on the BYOX path — the member pays their own provider. Managed-AI credits
- * are tracked separately in lib/ai/managed.ts (table managed_usage).
+ * are tracked separately in lib/ai/managed.ts (collection managed_usage).
  * ============================================================================ */
-import { dbFirst, dbRun } from "./db";
+import type { Data } from "./data";
+import { ids, type ByoxUsageDoc } from "./data/schema";
 import { limitsFor, monthKey, type Tier } from "./plans";
 
 export interface UsageSnapshot {
@@ -20,37 +21,39 @@ export interface UsageSnapshot {
   storageLimit: number;
 }
 
-export async function getUsage(db: any, userId: string, tier: Tier): Promise<UsageSnapshot> {
+export async function getUsage(db: Data, userId: string, tier: Tier): Promise<UsageSnapshot> {
   const m = monthKey();
-  const row = await dbFirst<{ requests: number; clipper_videos: number; storage_bytes: number }>(db,
-    `SELECT COALESCE(b.requests, 0) AS requests, COALESCE(b.clipper_videos, 0) AS clipper_videos, us.storage_bytes
-       FROM users us LEFT JOIN byox_usage b ON b.user_id = us.id AND b.month = ?
-      WHERE us.id = ?`, [m, userId]);
+  const [u, b] = await Promise.all([db.users.get(userId), db.byoxUsage.get(ids.usage(userId, m))]);
   const lim = limitsFor(tier);
   return {
-    month: m, requests: row?.requests ?? 0, clipperVideos: row?.clipper_videos ?? 0, clipperLimit: lim.clipperVideosPerMonth,
-    storageBytes: row?.storage_bytes ?? 0, storageLimit: lim.storageGB * 1024 ** 3,
+    month: m, requests: b?.requests ?? 0, clipperVideos: b?.clipper_videos ?? 0, clipperLimit: lim.clipperVideosPerMonth,
+    storageBytes: u?.storage_bytes ?? 0, storageLimit: lim.storageGB * 1024 ** 3,
   };
 }
 
-export async function recordByoxRequest(db: any, userId: string): Promise<void> {
-  await dbRun(db,
-    `INSERT INTO byox_usage (user_id, month, requests, clipper_videos) VALUES (?, ?, 1, 0)
-     ON CONFLICT(user_id, month) DO UPDATE SET requests = requests + 1`, [userId, monthKey()]);
+const blankUsage = (userId: string, month: string): ByoxUsageDoc => ({ id: ids.usage(userId, month), user_id: userId, month, requests: 0, clipper_videos: 0 });
+
+export async function recordByoxRequest(db: Data, userId: string): Promise<void> {
+  const m = monthKey();
+  await db.byoxUsage.upsert(ids.usage(userId, m), (cur) => {
+    const u = cur ?? blankUsage(userId, m);
+    return { ...u, requests: u.requests + 1 };
+  });
 }
 
 /** Reserve one Clipper video for this month; returns an error message if the quota is used up. */
-export async function reserveClipperVideo(db: any, userId: string, tier: Tier): Promise<string | null> {
+export async function reserveClipperVideo(db: Data, userId: string, tier: Tier): Promise<string | null> {
   const lim = limitsFor(tier).clipperVideosPerMonth;
   if (lim === 0) return "Your plan does not include Clipper. Choose a plan to continue.";
-  if (lim > 0) {
-    const row = await dbFirst<{ clipper_videos: number }>(db, `SELECT clipper_videos FROM byox_usage WHERE user_id = ? AND month = ?`, [userId, monthKey()]);
-    if ((row?.clipper_videos ?? 0) >= lim) return `You have processed all ${lim} Clipper videos for this month. Upgrade your plan for more.`;
-  }
-  await dbRun(db,
-    `INSERT INTO byox_usage (user_id, month, requests, clipper_videos) VALUES (?, ?, 0, 1)
-     ON CONFLICT(user_id, month) DO UPDATE SET clipper_videos = clipper_videos + 1`, [userId, monthKey()]);
-  return null;
+  const m = monthKey();
+  let full = false;
+  // The check and the increment are one compare-and-swap: two videos started at once cannot both take the last slot.
+  await db.byoxUsage.upsert(ids.usage(userId, m), (cur) => {
+    const u = cur ?? blankUsage(userId, m);
+    full = lim > 0 && u.clipper_videos >= lim;
+    return full ? null : { ...u, clipper_videos: u.clipper_videos + 1 };
+  });
+  return full ? `You have processed all ${lim} Clipper videos for this month. Upgrade your plan for more.` : null;
 }
 
 export function storageProblem(u: UsageSnapshot, addBytes: number): string | null {
@@ -59,8 +62,9 @@ export function storageProblem(u: UsageSnapshot, addBytes: number): string | nul
   return null;
 }
 
-export async function addStorage(db: any, userId: string, delta: number): Promise<void> {
-  await dbRun(db, `UPDATE users SET storage_bytes = MAX(0, storage_bytes + ?) WHERE id = ?`, [Math.round(delta), userId]);
+export async function addStorage(db: Data, userId: string, delta: number): Promise<void> {
+  const d = Math.round(delta);
+  await db.users.update(userId, (u) => ({ ...u, storage_bytes: Math.max(0, (u.storage_bytes || 0) + d) }));
 }
 
 export function formatBytes(n: number): string {

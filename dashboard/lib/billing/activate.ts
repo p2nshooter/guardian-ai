@@ -14,7 +14,12 @@
  * upgrades, downgrades and renewals all use one fair rule.
  * ============================================================================ */
 import { autoIssueAfterPayment, ADMIN_HOLD } from "../licences";
-import { dbFirst, dbRun, dbQuery, dbBatch, getR2, now } from "../db";
+import { getR2, now } from "../db";
+import { ConflictError } from "../r2/store";
+import type { Data } from "../data";
+import { ids, type OrderDoc, type SubscriptionDoc } from "../data/schema";
+import { patchMeta, readMeta } from "../data/meta";
+import { audit } from "../http";
 import { PLANS, addPeriod, isPlanId, isCycle, formatUsd, type PlanId, type Cycle } from "../plans";
 import { sendMail, mails, mailLayout, adminInbox } from "../mail";
 import { getSale, saveSale } from "../acquisition";
@@ -23,11 +28,7 @@ import { issueForOrder, productName } from "../lifetime-service";
 import { issueEdition } from "../edition-service";
 import { getEdition, isEditionCycle } from "../editions";
 
-export interface OrderRow {
-  id: string; invoice_no: string; user_id: string; email: string; plan: string; cycle: string;
-  amount_usd: number; currency: string; amount_local: number; gateway: string; gateway_ref: string;
-  status: string; meta: string; created_at: string; paid_at: string;
-}
+export type OrderRow = OrderDoc;
 
 const PERIOD_DAYS: Record<Cycle, number> = { monthly: 30.4375, yearly: 365.25 };
 const DAY = 86_400_000;
@@ -61,45 +62,84 @@ export function computeNewPeriod(
   return { start, end, creditDays };
 }
 
-async function nextInvoiceNo(db: any): Promise<string> {
-  const row = await dbFirst<{ value: number }>(db,
-    `INSERT INTO counters (name, value) VALUES ('invoice', 1)
-     ON CONFLICT(name) DO UPDATE SET value = value + 1 RETURNING value`);
-  const n = row?.value ?? Date.now() % 1_000_000;
+async function nextInvoiceNo(db: Data): Promise<string> {
+  const n = await db.store.next("invoice");
   return `AXTO-${new Date().getUTCFullYear()}-${String(n).padStart(6, "0")}`;
 }
 
 /** Keep self-hosted licences in step with the plan: expiry, node cap, and how many stay active. */
-export async function syncLicenses(db: any, userId: string, plan: string, periodEnd: string): Promise<void> {
+export async function syncLicenses(db: Data, userId: string, plan: string, periodEnd: string): Promise<void> {
   const lim = isPlanId(plan) ? PLANS[plan].limits : null;
+  const mine = (await db.shLicenses.listAllDocs("user", userId)).filter((l) => l.source === "plan");
   if (!lim || lim.selfHostedApps === 0) {
-    await dbRun(db, `UPDATE sh_licenses SET status = 'suspended', updated_at = ? WHERE user_id = ? AND status = 'active' AND source = 'plan'`, [now(), userId]);
+    for (const l of mine) await db.shLicenses.update(l.id, (c) => (c.status === "active" && c.source === "plan" ? { ...c, status: "suspended", updated_at: now() } : null));
     return;
   }
-  await dbRun(db,
-    `UPDATE sh_licenses SET expires_at = ?, max_nodes = ?, status = CASE WHEN status = 'suspended' AND notes != ? THEN 'active' ELSE status END, updated_at = ?
-      WHERE user_id = ? AND status != 'revoked' AND source = 'plan'`,
-    [periodEnd, lim.selfHostedNodes, ADMIN_HOLD, now(), userId]);
+  for (const l of mine) {
+    await db.shLicenses.update(l.id, (c) => (c.status === "revoked" || c.source !== "plan" ? null : {
+      ...c, expires_at: periodEnd, max_nodes: lim.selfHostedNodes,
+      status: c.status === "suspended" && c.notes !== ADMIN_HOLD ? "active" : c.status, updated_at: now(),
+    }));
+  }
   if (lim.selfHostedApps > 0) {
-    const rows = await dbQuery<{ id: string }>(db,
-      `SELECT id FROM sh_licenses WHERE user_id = ? AND status = 'active' AND source = 'plan' ORDER BY created_at DESC`, [userId]);
-    const extra = rows.slice(lim.selfHostedApps).map((r) => r.id);
-    for (const id of extra) await dbRun(db, `UPDATE sh_licenses SET status = 'suspended', updated_at = ? WHERE id = ?`, [now(), id]);
+    // Newest first: the oldest licences beyond the plan's app count are suspended.
+    const active = (await db.shLicenses.listAllDocs("user", userId)).filter((l) => l.source === "plan" && l.status === "active");
+    for (const l of active.slice(lim.selfHostedApps)) await db.shLicenses.update(l.id, (c) => (c.status === "active" ? { ...c, status: "suspended", updated_at: now() } : null));
   }
 }
+
+/**
+ * Claim an order for payment: pending → paid, once. A compare-and-swap on the
+ * order itself, so webhooks, the PayPal return, the crypto watcher and the
+ * admin button arriving together grant exactly once. Returns the paid order
+ * when THIS call claimed it.
+ */
+async function claimOrder(db: Data, id: string, gatewayRef?: string, grant = false): Promise<OrderRow | null> {
+  let won = false;
+  const at = now();
+  const after = await db.orders.update(id, (cur) => {
+    won = cur.status !== "paid" && cur.status !== "refunded";
+    if (!won) return null;
+    // `grant: "pending"` until the plan is applied: if this call stops in between, the next call for the order finishes it.
+    return { ...cur, status: "paid", paid_at: at, gateway_ref: gatewayRef || cur.gateway_ref, meta: grant ? patchMeta(cur.meta, (m) => { m.grant = "pending"; }) : cur.meta };
+  });
+  return won ? after : null;
+}
+
+/** Give a paid order its invoice number (once) and store the printable invoice. */
+async function invoiceFor(db: Data, o: OrderRow, until?: string): Promise<OrderRow> {
+  let paid = o;
+  // A number is never given twice (its guard is create-once); one already taken — an invoice carried over
+  // from D1 ahead of the counter — is skipped and the next one taken.
+  for (let attempt = 0; !paid.invoice_no && attempt < 100; attempt += 1) {
+    const no = await nextInvoiceNo(db);
+    try {
+      paid = await db.orders.update(o.id, (c) => (c.invoice_no ? null : { ...c, invoice_no: no }));
+    } catch (e) {
+      if (!(e instanceof ConflictError)) throw e;
+    }
+  }
+  const user = await db.users.get(o.user_id);
+  try {
+    await getR2().put(`invoices/${paid.invoice_no.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name, until }), {
+      httpMetadata: { contentType: "text/html; charset=utf-8" },
+    });
+  } catch {}
+  return paid;
+}
+
+const system = (actor?: string) => ({ sub: actor || "system", email: actor || "system" });
 
 /** Invoice line for an order: a subscription period, or a lifetime licence. */
 function invoiceLine(o: OrderRow): string {
   if (o.plan === "acquisition") return `Acquisition of ${SITE.name} (${SITE.url.replace(/^https?:\/\//, "")}) — website, apps, code, accounts and brand`;
   if (o.plan === "lifetime") {
-    let m: any = {};
-    try { m = JSON.parse(o.meta || "{}").lifetime || {}; } catch {}
+    const m: any = readMeta(o.meta).lifetime || {};
     const devices = Number(m.devices) || 0;
     return `${SITE.name} Lifetime licence — ${productName(m.scope === "suite" ? "suite" : String(m.product || ""))}, up to ${devices} device${devices === 1 ? "" : "s"}${m.scope === "suite" ? " per app" : ""}`;
   }
   if (o.plan === "edition") {
-    let m: any = {};
-    try { m = JSON.parse(o.meta || "{}").edition || {}; } catch {}
+    const m: any = readMeta(o.meta).edition || {};
     const e = getEdition(String(m.code || ""));
     return `${productName(e?.app || "")} — ${e?.name || "?"} edition, ${o.cycle === "monthly" ? "1 month" : "1 year"} (self-hosted licence)`;
   }
@@ -132,74 +172,67 @@ ${local}<tr class="tot"><td>Total paid (USD)</td><td style="text-align:right">${
  * A refunded order is final: a replayed webhook or a revisited PayPal return
  * link must never grant access again (webhooks acknowledge it, see isFinal).
  */
-export async function markOrderPaid(db: any, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string; env?: "live" | "sandbox" } = {}): Promise<{ ok: boolean; reason?: string }> {
-  const o = await dbFirst<OrderRow>(db, `SELECT * FROM orders WHERE id = ?`, [orderId]);
+export async function markOrderPaid(db: Data, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string; env?: "live" | "sandbox" } = {}): Promise<{ ok: boolean; reason?: string }> {
+  const o = await db.orders.get(orderId);
   if (!o) return { ok: false, reason: "order_not_found" };
-  if (o.status === "paid") return { ok: true, reason: "already_paid" };
   if (o.status === "refunded") return { ok: false, reason: "refunded" };
   // A gateway can only settle its own orders (the amount checks below assume its currency).
-  if (opts.gateway && o.gateway !== opts.gateway) return { ok: false, reason: "gateway_mismatch" };
+  if (o.status !== "paid" && opts.gateway && o.gateway !== opts.gateway) return { ok: false, reason: "gateway_mismatch" };
   // Test money never pays a real order (and a live payment is not filed as a test).
-  if (opts.env && orderEnv(o) !== opts.env) return { ok: false, reason: "env_mismatch" };
+  if (o.status !== "paid" && opts.env && orderEnv(o) !== opts.env) return { ok: false, reason: "env_mismatch" };
   // Amount check (1% tolerance for FX/rounding on the gateway side).
-  if (typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
-  if (typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
+  if (o.status !== "paid" && typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
+  if (o.status !== "paid" && typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (o.plan === "lifetime") return markLifetimePaid(db, o, opts);
   if (o.plan === "acquisition") return markAcquisitionPaid(db, o, opts);
   if (o.plan === "edition") return markEditionPaid(db, o, opts);
   if (!isPlanId(o.plan) || !isCycle(o.cycle)) return { ok: false, reason: "bad_order" };
 
-  // Claim the order and extend the subscription in ONE transaction. The upsert
-  // only runs if this call's claim token landed, so concurrent webhooks for
-  // the same order can never grant twice.
-  const current = await dbFirst<any>(db, `SELECT plan, cycle, status, current_period_end FROM subscriptions WHERE user_id = ?`, [o.user_id]);
-  const { start, end } = computeNewPeriod(current, o.plan, o.cycle);
-  const endIso = end.toISOString();
-  const claim = crypto.randomUUID();
-  const ts = now();
-  const [claimRes] = await dbBatch(db, [
-    [`UPDATE orders SET status = 'paid', paid_at = ?, meta = json_set(COALESCE(NULLIF(meta, ''), '{}'), '$.claim', ?),
-        gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END
-      WHERE id = ? AND status NOT IN ('paid', 'refunded')`, [ts, claim, opts.gatewayRef || "", opts.gatewayRef || "", o.id]],
-    [`INSERT INTO subscriptions (user_id, plan, cycle, status, current_period_start, current_period_end, last_order_id, reminded_at, created_at, updated_at)
-      SELECT ?, ?, ?, 'active', ?, ?, ?, '', ?, ?
-       WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND json_extract(meta, '$.claim') = ?)
-      ON CONFLICT(user_id) DO UPDATE SET plan = excluded.plan, cycle = excluded.cycle, status = 'active',
-        current_period_start = excluded.current_period_start, current_period_end = excluded.current_period_end,
-        last_order_id = excluded.last_order_id, reminded_at = '', updated_at = excluded.updated_at`,
-      [o.user_id, o.plan, o.cycle, start.toISOString(), endIso, o.id, ts, ts, o.id, claim]],
-  ]);
-  if (!claimRes?.meta?.changes) return { ok: true, reason: "already_paid" };
+  const claimed = await claimOrder(db, o.id, opts.gatewayRef, true);
+  const paidNow = claimed ?? (await db.orders.get(o.id));
+  if (!paidNow || paidNow.status !== "paid") return { ok: false, reason: "bad_order" };
+  // Paid earlier and fully applied (or paid before the move to R2): nothing to do.
+  if (!claimed && readMeta(paidNow.meta).grant !== "pending") return { ok: true, reason: "already_paid" };
 
-  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
-  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
-  await syncLicenses(db, o.user_id, o.plan, endIso);
+  // Extend the subscription. Idempotent per order: a second run (a webhook that
+  // raced the claim, or a retry after a crash right after it) changes nothing.
+  let applied = false;
+  let endIso = "";
+  const plan = o.plan as PlanId;
+  const cycle = o.cycle as Cycle;
+  await db.subscriptions.upsert(ids.subscription(o.user_id), (cur) => {
+    if (cur?.applied_orders?.includes(o.id)) { applied = false; endIso = cur.current_period_end; return null; }
+    const { start, end } = computeNewPeriod(cur, plan, cycle);
+    const ts = now();
+    applied = true;
+    endIso = end.toISOString();
+    const next: SubscriptionDoc = {
+      id: ids.subscription(o.user_id), user_id: o.user_id, plan, cycle, status: "active",
+      current_period_start: start.toISOString(), current_period_end: endIso, last_order_id: o.id, reminded_at: "",
+      created_at: cur?.created_at || ts, updated_at: ts, applied_orders: [...(cur?.applied_orders || []), o.id].slice(-20),
+    };
+    return next;
+  });
+  if (!claimed && !applied) return { ok: true, reason: "already_paid" };
+  await db.orders.update(o.id, (c) => (readMeta(c.meta).grant === "pending" ? { ...c, meta: patchMeta(c.meta, (m) => { m.grant = "done"; }) } : null));
 
-  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
-  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
   const until = endIso.slice(0, 10);
-  try {
-    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name, until }), {
-      httpMetadata: { contentType: "text/html; charset=utf-8" },
-    });
-  } catch {}
-  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
-    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "order.paid", "order", o.id,
-     JSON.stringify({ plan: o.plan, cycle: o.cycle, amount_usd: o.amount_usd, gateway: o.gateway, until }), now()]).catch(() => {});
+  const paid = await invoiceFor(db, (await db.orders.get(o.id)) ?? paidNow, until);
+  await syncLicenses(db, o.user_id, o.plan, endIso);
+  await audit(db, system(opts.actor), "order.paid", "order", o.id, { plan: o.plan, cycle: o.cycle, amount_usd: o.amount_usd, gateway: o.gateway, until });
 
-  const m = mails.paymentReceived({ planName: PLANS[o.plan].name, cycle: o.cycle, amount: formatUsd(o.amount_usd), invoiceNo, until });
+  const m = mails.paymentReceived({ planName: PLANS[plan].name, cycle: o.cycle, amount: formatUsd(o.amount_usd), invoiceNo: paid.invoice_no, until });
   await sendMail(o.email, m.subject, m.html);
 
   // Zero-touch: licences are issued the moment the payment is confirmed.
-  let chosen: string[] = [];
-  try { chosen = JSON.parse(o.meta || "{}").apps || []; } catch {}
+  const chosen = readMeta(o.meta).apps;
   await autoIssueAfterPayment(db, o.user_id, o.email, o.plan, endIso, Array.isArray(chosen) ? chosen.map(String) : []);
   return { ok: true };
 }
 
 /** The environment an order was created in (orders before v3.2.1: live). */
 export function orderEnv(o: { meta?: string }): "live" | "sandbox" {
-  try { return JSON.parse(o.meta || "{}").env === "sandbox" ? "sandbox" : "live"; } catch { return "live"; }
+  return readMeta(o.meta).env === "sandbox" ? "sandbox" : "live";
 }
 
 /** Webhook answer: done (paid now or before), or final (refunded) — nothing for the gateway to retry. */
@@ -207,33 +240,23 @@ export const isFinal = (r: { ok: boolean; reason?: string }) => r.ok || r.reason
 
 /** Site acquisition paid → claim it once, invoice it, and (live money only, first
  *  buyer only) make the buyer an administrator and mark the site sold. */
-async function markAcquisitionPaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
-  const claim = await dbRun(db,
-    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
-    [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
-  if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
-  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
-  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
-  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
-  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
-  try {
-    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name }), { httpMetadata: { contentType: "text/html; charset=utf-8" } });
-  } catch {}
+async function markAcquisitionPaid(db: Data, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
+  const claimed = await claimOrder(db, o.id, opts.gatewayRef);
+  if (!claimed) return { ok: true, reason: "already_paid" };
+  const paid = await invoiceFor(db, claimed);
+  const invoiceNo = paid.invoice_no;
 
   const sale = await getSale(db);
-  let meta: any = {};
-  try { meta = JSON.parse(o.meta || "{}"); } catch {}
+  const meta = readMeta(o.meta);
   const test = orderEnv(o) === "sandbox";
   const duplicate = sale.status === "sold" && sale.soldTo?.orderId && sale.soldTo.orderId !== o.id;
   const grant = !test && !duplicate && sale.autoGrantAdmin;
-  if (grant) await dbRun(db, `UPDATE users SET role = 'admin', updated_at = ? WHERE id = ?`, [now(), o.user_id]);
+  if (grant) await db.users.update(o.user_id, (u) => ({ ...u, role: "admin", updated_at: now() }));
   if (!test && !duplicate) {
     await saveSale(db, { ...sale, status: "sold", soldTo: { userId: o.user_id, email: o.email, orderId: o.id, paidAt: paid.paid_at, company: String(meta?.buyer?.company || "") || undefined } });
   }
   const outcome = test ? "test_payment" : duplicate ? "duplicate_after_sale" : grant ? "admin_granted" : "awaiting_manual_grant";
-  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
-    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "site.sale.paid", "order", o.id,
-     JSON.stringify({ amount_usd: o.amount_usd, gateway: o.gateway, buyer: o.email, outcome }), now()]).catch(() => {});
+  await audit(db, system(opts.actor), "site.sale.paid", "order", o.id, { amount_usd: o.amount_usd, gateway: o.gateway, buyer: o.email, outcome });
 
   const money = formatUsd(o.amount_usd);
   const buyerMail = test
@@ -250,51 +273,27 @@ async function markAcquisitionPaid(db: any, o: OrderRow, opts: { gatewayRef?: st
 }
 
 /** Lifetime order paid → claim it once, invoice it, issue the licence (zero-touch). */
-async function markLifetimePaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
-  const claim = await dbRun(db,
-    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
-    [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
-  if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
-  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
-  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
-  const lic = await issueForOrder(db, o);
-  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
-  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
-  try {
-    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name, until: lic?.updates_until.slice(0, 10) }), {
-      httpMetadata: { contentType: "text/html; charset=utf-8" },
-    });
-  } catch {}
-  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
-    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "order.paid", "order", o.id,
-     JSON.stringify({ plan: "lifetime", amount_usd: o.amount_usd, gateway: o.gateway, license: lic?.id || "" }), now()]).catch(() => {});
+async function markLifetimePaid(db: Data, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
+  const claimed = await claimOrder(db, o.id, opts.gatewayRef);
+  if (!claimed) return { ok: true, reason: "already_paid" };
+  const lic = await issueForOrder(db, claimed);
+  await invoiceFor(db, claimed, lic?.updates_until.slice(0, 10));
+  await audit(db, system(opts.actor), "order.paid", "order", o.id, { plan: "lifetime", amount_usd: o.amount_usd, gateway: o.gateway, license: lic?.id || "" });
   return lic ? { ok: true } : { ok: false, reason: "bad_order" };
 }
 
 /** Edition order paid → claim it once, invoice it, issue or extend the edition licence (zero-touch). */
-async function markEditionPaid(db: any, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
-  let m: any = {};
-  try { m = JSON.parse(o.meta || "{}").edition || {}; } catch {}
+async function markEditionPaid(db: Data, o: OrderRow, opts: { gatewayRef?: string; actor?: string }): Promise<{ ok: boolean; reason?: string }> {
+  const m = readMeta(o.meta).edition || {};
   const e = getEdition(String(m.code || ""));
   if (!e || !isEditionCycle(o.cycle)) return { ok: false, reason: "bad_order" };
-  const claim = await dbRun(db,
-    `UPDATE orders SET status = 'paid', paid_at = ?, gateway_ref = CASE WHEN ? != '' THEN ? ELSE gateway_ref END WHERE id = ? AND status NOT IN ('paid', 'refunded')`,
-    [now(), opts.gatewayRef || "", opts.gatewayRef || "", o.id]);
-  if (!claim?.meta?.changes) return { ok: true, reason: "already_paid" };
-  const invoiceNo = o.invoice_no || await nextInvoiceNo(db);
-  await dbRun(db, `UPDATE orders SET invoice_no = ? WHERE id = ?`, [invoiceNo, o.id]);
+  const claimed = await claimOrder(db, o.id, opts.gatewayRef);
+  if (!claimed) return { ok: true, reason: "already_paid" };
   const lic = await issueEdition(db, o.user_id, { code: e.code, app: e.app, cycle: o.cycle });
   const issued = "key" in lic ? lic : null;
-  const paid: OrderRow = { ...o, status: "paid", invoice_no: invoiceNo, paid_at: now(), gateway_ref: opts.gatewayRef || o.gateway_ref };
-  const user = await dbFirst<{ name: string }>(db, `SELECT name FROM users WHERE id = ?`, [o.user_id]);
-  try {
-    await getR2().put(`invoices/${invoiceNo.slice(5, 9)}/${o.id}.html`, renderInvoice(paid, { name: user?.name, until: issued?.expiresAt.slice(0, 10) }), {
-      httpMetadata: { contentType: "text/html; charset=utf-8" },
-    });
-  } catch {}
-  await dbRun(db, `INSERT INTO audit_log (id, actor_id, actor_email, action, entity_type, entity_id, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)`,
-    [crypto.randomUUID(), opts.actor || "system", opts.actor || "system", "order.paid", "order", o.id,
-     JSON.stringify({ plan: "edition", edition: e.code, cycle: o.cycle, amount_usd: o.amount_usd, gateway: o.gateway, license: issued?.id || "", error: issued ? undefined : (lic as any).error }), now()]).catch(() => {});
+  const paid = await invoiceFor(db, claimed, issued?.expiresAt.slice(0, 10));
+  const invoiceNo = paid.invoice_no;
+  await audit(db, system(opts.actor), "order.paid", "order", o.id, { plan: "edition", edition: e.code, cycle: o.cycle, amount_usd: o.amount_usd, gateway: o.gateway, license: issued?.id || "", error: issued ? undefined : (lic as any).error });
   if (issued) {
     const esc = (x: string) => x.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
     await sendMail(o.email, `Your ${issued.name} ${issued.edition} licence`, mailLayout(`${issued.name} — ${issued.edition}`,

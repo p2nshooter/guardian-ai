@@ -7,11 +7,13 @@
  * BYOX — Bring Your Own Key / Model / Endpoint.
  *
  * Every cloud app runs on the MEMBER's own AI credentials, stored encrypted in
- * `user_ai_keys`. This module reads ONLY that table. It never falls back to
+ * `user_ai_keys`. This module reads ONLY that collection. It never falls back to
  * AXTO-provided AI; that is the separate, locked Managed path
  * (lib/ai/managed.ts), which in turn never reads member keys.
  * ============================================================================ */
-import { dbFirst, dbQuery, dbRun, now, secret } from "../db";
+import { now, secret } from "../db";
+import type { Data } from "../data";
+import { ids } from "../data/schema";
 import { encryptObj, decryptObj } from "../gateway-crypto";
 import { PROVIDERS, providerInfo, isProviderId, endpointProblem, type Connection, type ProviderId } from "./providers";
 
@@ -29,12 +31,8 @@ export class ByoxMissingKey extends Error {
 
 export const allowInsecureEndpoints = () => secret("ALLOW_INSECURE_ENDPOINTS") === "1";
 
-export async function listKeys(db: any, userId: string): Promise<{ keys: SavedKey[]; preferred: string }> {
-  const [rows, u] = await Promise.all([
-    dbQuery<{ provider: string; hint: string; model: string; key_enc: string; created_at: string }>(db,
-      `SELECT provider, hint, model, key_enc, created_at FROM user_ai_keys WHERE user_id = ? ORDER BY created_at`, [userId]),
-    dbFirst<{ ai_provider: string }>(db, `SELECT ai_provider FROM users WHERE id = ?`, [userId]),
-  ]);
+export async function listKeys(db: Data, userId: string): Promise<{ keys: SavedKey[]; preferred: string }> {
+  const [rows, u] = await Promise.all([db.userAiKeys.listAllDocs("user", userId), db.users.get(userId)]);
   const keys: SavedKey[] = [];
   for (const r of rows) {
     if (!isProviderId(r.provider)) continue;
@@ -47,7 +45,7 @@ export async function listKeys(db: any, userId: string): Promise<{ keys: SavedKe
   return { keys, preferred: u?.ai_provider || "" };
 }
 
-export async function saveKey(db: any, userId: string, provider: string, input: { value?: string; model?: string; baseUrl?: string }): Promise<string | null> {
+export async function saveKey(db: Data, userId: string, provider: string, input: { value?: string; model?: string; baseUrl?: string }): Promise<string | null> {
   if (!isProviderId(provider)) return "Unknown provider.";
   const value = String(input.value || "").trim();
   const model = String(input.model || "").trim().slice(0, 200);
@@ -62,33 +60,35 @@ export async function saveKey(db: any, userId: string, provider: string, input: 
   if (value.length > 400) return "That key is too long.";
   const enc = await encryptObj({ value, ...(provider === "custom" ? { baseUrl } : {}) });
   const hint = value ? `…${value.slice(-4)}` : "no key";
-  await dbRun(db,
-    `INSERT INTO user_ai_keys (user_id, provider, key_enc, hint, model, created_at) VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id, provider) DO UPDATE SET key_enc = excluded.key_enc, hint = excluded.hint, model = excluded.model`,
-    [userId, provider, enc, hint, model, now()]);
+  await db.userAiKeys.upsert(ids.aiKey(userId, provider), (cur) =>
+    cur ? { ...cur, key_enc: enc, hint, model } : { id: ids.aiKey(userId, provider), user_id: userId, provider, key_enc: enc, hint, model, created_at: now() });
   // First chat-capable key becomes the default automatically.
   if (providerInfo(provider)!.chat) {
-    await dbRun(db, `UPDATE users SET ai_provider = ? WHERE id = ? AND ai_provider = ''`, [provider, userId]);
+    await db.users.update(userId, (u) => (u.ai_provider ? null : { ...u, ai_provider: provider }));
   }
   return null;
 }
 
-export async function deleteKey(db: any, userId: string, provider: string): Promise<void> {
-  await dbRun(db, `DELETE FROM user_ai_keys WHERE user_id = ? AND provider = ?`, [userId, provider]);
-  await dbRun(db, `UPDATE users SET ai_provider = '' WHERE id = ? AND ai_provider = ?`, [userId, provider]);
+export async function deleteKey(db: Data, userId: string, provider: string): Promise<void> {
+  if (!isProviderId(provider)) return;
+  await db.userAiKeys.delete(ids.aiKey(userId, provider));
+  await db.users.update(userId, (u) => (u.ai_provider === provider ? { ...u, ai_provider: "" } : null));
 }
 
-export async function setPreferred(db: any, userId: string, provider: string): Promise<string | null> {
+export async function setPreferred(db: Data, userId: string, provider: string): Promise<string | null> {
   if (!isProviderId(provider) || !providerInfo(provider)!.chat) return "Choose a chat provider.";
-  const has = await dbFirst(db, `SELECT 1 AS x FROM user_ai_keys WHERE user_id = ? AND provider = ?`, [userId, provider]);
-  if (!has) return "Add a key for that provider first.";
-  await dbRun(db, `UPDATE users SET ai_provider = ? WHERE id = ?`, [provider, userId]);
+  if (!(await db.userAiKeys.get(ids.aiKey(userId, provider)))) return "Add a key for that provider first.";
+  await db.users.update(userId, (u) => ({ ...u, ai_provider: provider }));
   return null;
 }
 
-async function connectionFor(db: any, userId: string, provider: ProviderId, modelOverride?: string, stt = false): Promise<Connection | null> {
-  const row = await dbFirst<{ key_enc: string; model: string }>(db,
-    `SELECT key_enc, model FROM user_ai_keys WHERE user_id = ? AND provider = ?`, [userId, provider]);
+/** Whether the member has saved a key for this provider. */
+export async function hasKey(db: Data, userId: string, provider: string): Promise<boolean> {
+  return isProviderId(provider) && Boolean(await db.userAiKeys.get(ids.aiKey(userId, provider)));
+}
+
+async function connectionFor(db: Data, userId: string, provider: ProviderId, modelOverride?: string, stt = false): Promise<Connection | null> {
+  const row = await db.userAiKeys.get(ids.aiKey(userId, provider));
   if (!row) return null;
   let s: Secret;
   try { s = await decryptObj<Secret>(row.key_enc); } catch { return null; }
@@ -98,7 +98,7 @@ async function connectionFor(db: any, userId: string, provider: ProviderId, mode
 }
 
 /** Every usable chat connection in failover order: requested provider → member's default → other keys. */
-export async function resolveChatAll(db: any, userId: string, want?: { provider?: string; model?: string }): Promise<Connection[]> {
+export async function resolveChatAll(db: Data, userId: string, want?: { provider?: string; model?: string }): Promise<Connection[]> {
   const { keys, preferred } = await listKeys(db, userId);
   const chatKeys = keys.filter((k) => providerInfo(k.provider)!.chat).map((k) => k.provider);
   const order = [want?.provider, preferred, ...chatKeys].filter((p, i, a): p is ProviderId => isProviderId(p) && chatKeys.includes(p) && a.indexOf(p) === i);
@@ -112,20 +112,22 @@ export async function resolveChatAll(db: any, userId: string, want?: { provider?
 }
 
 /** Connection for text generation: requested provider → member's default → any chat key. */
-export async function resolveChat(db: any, userId: string, want?: { provider?: string; model?: string }): Promise<Connection> {
+export async function resolveChat(db: Data, userId: string, want?: { provider?: string; model?: string }): Promise<Connection> {
   return (await resolveChatAll(db, userId, want))[0];
 }
 
 /** Change the saved default model for a provider without re-entering the key. */
-export async function setModel(db: any, userId: string, provider: string, model: string): Promise<string | null> {
+export async function setModel(db: Data, userId: string, provider: string, model: string): Promise<string | null> {
   if (!isProviderId(provider)) return "Unknown provider.";
   const m = String(model || "").trim().slice(0, 200);
-  const r = await dbRun(db, `UPDATE user_ai_keys SET model = ? WHERE user_id = ? AND provider = ?`, [m, userId, provider]);
-  return r?.meta?.changes ? null : "Add a key for that provider first.";
+  const id = ids.aiKey(userId, provider);
+  if (!(await db.userAiKeys.get(id))) return "Add a key for that provider first.";
+  await db.userAiKeys.update(id, (k) => ({ ...k, model: m }));
+  return null;
 }
 
 /** Connection for speech-to-text (Clipper): Deepgram → Groq → OpenAI, or the one requested. */
-export async function resolveStt(db: any, userId: string, want?: string): Promise<Connection> {
+export async function resolveStt(db: Data, userId: string, want?: string): Promise<Connection> {
   const order: ProviderId[] = isProviderId(want) && providerInfo(want)!.stt ? [want] : ["deepgram", "groq", "openai"];
   for (const p of order) {
     const c = await connectionFor(db, userId, p, undefined, true);

@@ -2,14 +2,16 @@
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * ==============================================================================
  * Support conversations.
- *   D1  support_threads  — one small index row per conversation (inbox list)
+ *   DATA support_threads — one small document per conversation (inbox list)
  *   R2  support/threads/<id>.json — the messages (append with etag check, so a
  *       visitor and an admin writing at the same moment never lose a message)
  *   R2  support/presence.json — is an admin at the inbox right now?
  * Visitors reach their conversation with a random token (only its SHA-256 is
  * stored); signed-in members also by their account.
  * ============================================================================ */
-import { getR2, dbFirst, dbRun, newId, now } from "../db";
+import { getR2, newId, now } from "../db";
+import type { Data } from "../data";
+import type { SupportThreadDoc } from "../data/schema";
 
 export type Sender = "visitor" | "admin" | "ai" | "system";
 
@@ -64,11 +66,12 @@ async function appendDoc(id: string, msgs: SupportMessage[]): Promise<ThreadDoc>
   throw new Error("Conversation is busy, please retry.");
 }
 
-export async function getThreadRow(db: any, id: string): Promise<ThreadRow | null> {
-  return dbFirst<ThreadRow>(db, `SELECT * FROM support_threads WHERE id = ?`, [id]);
+export async function getThreadRow(db: Data, id: string): Promise<ThreadRow | null> {
+  if (!/^[\w-]{1,80}$/.test(id)) return null;
+  return (await db.supportThreads.get(id)) as ThreadRow | null;
 }
 
-export async function createThread(db: any, t: {
+export async function createThread(db: Data, t: {
   name: string; email: string; topic: string; source: ThreadRow["source"]; userId?: string | null;
   subject?: string; needsAdmin: boolean; first: { name: string; text: string };
 }): Promise<{ id: string; token: string; doc: ThreadDoc }> {
@@ -77,24 +80,23 @@ export async function createThread(db: any, t: {
   const at = now();
   const msg: SupportMessage = { id: newId("m"), from: "visitor", name: t.first.name, text: t.first.text, at };
   const doc = await appendDoc(id, [msg]);
-  await dbRun(db,
-    `INSERT INTO support_threads (id, token_hash, user_id, name, email, topic, source, status, needs_admin, ai_enabled, subject,
-       last_from, last_preview, unread_admin, message_count, last_message_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, 1, ?, 'visitor', ?, 1, 1, ?, ?)`,
-    [id, await sha256Hex(token), t.userId || null, t.name, t.email, t.topic, t.source, t.needsAdmin ? 1 : 0,
-     (t.subject || t.first.text).slice(0, 140), t.first.text.slice(0, 160), at, at]);
+  const row: SupportThreadDoc = {
+    id, token_hash: await sha256Hex(token), user_id: t.userId || "", name: t.name, email: t.email, topic: t.topic, source: t.source, status: "open",
+    needs_admin: t.needsAdmin ? 1 : 0, ai_enabled: 1, subject: (t.subject || t.first.text).slice(0, 140), last_from: "visitor",
+    last_preview: t.first.text.slice(0, 160), unread_admin: 1, message_count: 1, last_message_at: at, created_at: at,
+  };
+  await db.supportThreads.create(row);
   return { id, token, doc };
 }
 
-export async function addMessage(db: any, row: ThreadRow, from: Sender, name: string, text: string): Promise<SupportMessage> {
+export async function addMessage(db: Data, row: ThreadRow, from: Sender, name: string, text: string): Promise<SupportMessage> {
   const msg: SupportMessage = { id: newId("m"), from, name, text, at: now() };
   const doc = await appendDoc(row.id, [msg]);
-  const status = from === "visitor" ? "open" : from === "admin" ? "answered" : row.status === "closed" ? "open" : row.status;
-  await dbRun(db,
-    `UPDATE support_threads SET last_from = ?, last_preview = ?, last_message_at = ?, message_count = ?, status = ?,
-       unread_admin = CASE WHEN ? IN ('visitor') THEN unread_admin + 1 WHEN ? = 'admin' THEN 0 ELSE unread_admin END
-     WHERE id = ?`,
-    [from, text.slice(0, 160), msg.at, doc.messages.length, status, from, from, row.id]);
+  await db.supportThreads.update(row.id, (t) => ({
+    ...t, last_from: from, last_preview: text.slice(0, 160), last_message_at: msg.at, message_count: doc.messages.length,
+    status: from === "visitor" ? "open" : from === "admin" ? "answered" : t.status === "closed" ? "open" : t.status,
+    unread_admin: from === "visitor" ? t.unread_admin + 1 : from === "admin" ? 0 : t.unread_admin,
+  }));
   return msg;
 }
 

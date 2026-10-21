@@ -6,22 +6,15 @@
  * ============================================================================ */
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { list, seedAdmin, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 class Client {
   cookie = "";
@@ -49,10 +42,14 @@ async function member(tag: string) {
   assert.equal(r.status, 200, r.text);
   return c;
 }
-const licences = (email: string) => d1(`SELECT l.product, l.status FROM sh_licenses l JOIN users u ON u.id = l.user_id WHERE u.email = '${email}' ORDER BY l.product`);
+const licences = async (email: string) => {
+  const u = await userByEmail(email);
+  if (!u) return [];
+  return (await list("shLicenses", "user", u.id)).map((l: any) => ({ product: l.product, status: l.status })).sort((a: any, b: any) => a.product.localeCompare(b.product));
+};
 
 before(async () => {
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "1234567890", account_name: "PT AXTO E2E" } })).status, 200);
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "crypto", is_active: true, credentials: { usdt_trc20: "TQautoE2EwalletAddress00000000001" } })).status, 200);
@@ -63,11 +60,11 @@ test("payment confirmed → Business licences for the apps chosen at checkout, n
   assert.equal((await m.post("/api/billing/checkout", { plan: "business", cycle: "monthly", gateway: "manual", apps: ["vault", "legal", "soc", "edge"] })).status, 400, "max 3 apps");
   const c = await m.post("/api/billing/checkout", { plan: "business", cycle: "monthly", gateway: "manual", apps: ["vault", "legal", "nope"] });
   assert.equal(c.status, 200, c.text);
-  assert.deepEqual(licences(`biz-${RUN}@example.com`), []);
+  assert.deepEqual(await licences(`biz-${RUN}@example.com`), []);
   // The gateway (here: the admin approving the transfer) confirms the payment…
   assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: c.json.orderId })).status, 200);
   // …and the licences exist immediately.
-  assert.deepEqual(licences(`biz-${RUN}@example.com`), [{ product: "legal", status: "active" }, { product: "vault", status: "active" }]);
+  assert.deepEqual(await licences(`biz-${RUN}@example.com`), [{ product: "legal", status: "active" }, { product: "vault", status: "active" }]);
   const sh = await m.get("/api/selfhosted");
   assert.equal(sh.json.used, 2);
   assert.match(sh.json.products.find((p: any) => p.slug === "vault").license.license_key, /^VAULT-/);
@@ -77,7 +74,7 @@ test("Enterprise payment → every self-hosted app licensed automatically", asyn
   const m = await member("ent");
   const c = await m.post("/api/billing/checkout", { plan: "enterprise", cycle: "monthly", gateway: "manual" });
   assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: c.json.orderId })).status, 200);
-  const l = licences(`ent-${RUN}@example.com`);
+  const l = await licences(`ent-${RUN}@example.com`);
   assert.equal(l.length, 10);
   assert.ok(l.every((x: any) => x.status === "active"));
 });
@@ -151,7 +148,7 @@ test("BNI receipt upload → admin rejects with a reason → new receipt → app
   const seen = await m.get(`/api/billing/orders/${c.json.orderId}`);
   assert.equal(seen.json.order.status, "pending");
   assert.equal(seen.json.order.bankProof.rejected.reason, "Amount does not match");
-  assert.deepEqual(licences(`rcpt-${RUN}@example.com`), []);
+  assert.deepEqual(await licences(`rcpt-${RUN}@example.com`), []);
 
   // A new receipt clears the rejection; approving activates everything at once.
   const again = await upload(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 10]), "bukti.pdf", "application/pdf");
@@ -159,7 +156,7 @@ test("BNI receipt upload → admin rejects with a reason → new receipt → app
   assert.equal(again.json.order.bankProof.rejected, null);
   assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: c.json.orderId })).status, 200);
   assert.equal((await m.get(`/api/billing/orders/${c.json.orderId}`)).json.order.status, "paid");
-  const l = licences(`rcpt-${RUN}@example.com`);
+  const l = await licences(`rcpt-${RUN}@example.com`);
   assert.equal(l.length, 10);
   const sh = await m.get("/api/selfhosted");
   assert.match(sh.json.products.find((p: any) => p.slug === "antivirus").license.license_key, /^AV-/);

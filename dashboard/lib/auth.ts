@@ -7,12 +7,13 @@
  * Authentication & sessions — pure Web Crypto, no third-party auth.
  *
  * The session JWT carries the member's plan ("tier") and paid-until date, so
- * most requests never touch D1. The entitlement inside the token is re-read
- * from D1 at most once per hour (ENT_TTL) or immediately after a payment, via
+ * most requests never read the records. The entitlement inside the token is
+ * re-read from R2 at most once per hour (ENT_TTL) or immediately after a payment, via
  * loadSession().
  * ============================================================================ */
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbRun, secret } from "./db";
+import { getData, secret } from "./db";
+import type { Data } from "./data";
 import { isPlanId, type Tier } from "./plans";
 
 export const COOKIE_NAME = "axto_session";
@@ -133,37 +134,30 @@ export function isEmail(e: string): boolean {
 }
 
 // ── Entitlement loading ───────────────────────────────────────────────────
-interface UserRow { id: string; email: string; role: string; name: string | null; status: string | null; plan: string | null; sstatus: string | null; period_end: string | null; valid_after: string | null }
-
 /**
  * Current entitlement of a user, or null when the account is gone or suspended.
  * With `issuedAt` (the token's iat) it is also null for a session issued before
  * the last password change — that is how a reset signs out every other device.
  */
-export async function loadEntitlement(db: any, userId: string, issuedAt?: number): Promise<Omit<Session, "iat" | "exp"> | null> {
-  const sql = (epoch: string) =>
-    `SELECT u.id, u.email, u.role, u.name, u.status, ${epoch} AS valid_after, s.plan, s.status AS sstatus, s.current_period_end AS period_end
-       FROM users u LEFT JOIN subscriptions s ON s.user_id = u.id
-      WHERE u.id = ?`;
-  // Until migration 0058 has run, sign-in keeps working without the epoch column.
-  const r = await dbFirst<UserRow>(db, sql("u.sessions_valid_after"), [userId])
-    .catch(() => dbFirst<UserRow>(db, sql("''"), [userId]));
-  if (!r || (r.status && r.status !== "active")) return null;
-  if (issuedAt !== undefined && Number(r.valid_after) > 0 && issuedAt < Number(r.valid_after)) return null;
-  const role: Role = r.role === "admin" ? "admin" : "member";
-  const endMs = r.period_end ? Date.parse(r.period_end) : 0;
-  const paid = r.sstatus === "active" && isPlanId(r.plan) && endMs > Date.now();
+export async function loadEntitlement(db: Data, userId: string, issuedAt?: number): Promise<Omit<Session, "iat" | "exp"> | null> {
+  const [u, sub] = await Promise.all([db.users.get(userId), db.subscriptions.get(userId)]);
+  if (!u || (u.status && u.status !== "active")) return null;
+  if (issuedAt !== undefined && Number(u.sessions_valid_after) > 0 && issuedAt < Number(u.sessions_valid_after)) return null;
+  const role: Role = u.role === "admin" ? "admin" : "member";
+  const endMs = sub?.current_period_end ? Date.parse(sub.current_period_end) : 0;
+  const paid = sub?.status === "active" && isPlanId(sub.plan) && endMs > Date.now();
   return {
-    sub: r.id, email: r.email, role, name: r.name || "",
-    tier: role === "admin" ? "enterprise" : paid ? (r.plan as Tier) : "none",
+    sub: u.id, email: u.email, role, name: u.name || "",
+    tier: role === "admin" ? "enterprise" : paid ? (sub!.plan as Tier) : "none",
     until: paid ? Math.floor(endMs / 1000) : 0,
     ent: Math.floor(Date.now() / 1000),
   };
 }
 
-/** Every session issued before now is refused from now on (password change / reset). Best effort before migration 0058. */
-export async function signOutOtherSessions(db: any, userId: string): Promise<void> {
-  await dbRun(db, `UPDATE users SET sessions_valid_after = ? WHERE id = ?`, [String(Math.floor(Date.now() / 1000)), userId]).catch(() => {});
+/** Every session issued before now is refused from now on (password change / reset). */
+export async function signOutOtherSessions(db: Data, userId: string): Promise<void> {
+  const at = String(Math.floor(Date.now() / 1000));
+  await db.users.update(userId, (u) => ({ ...u, sessions_valid_after: at })).catch(() => {});
 }
 
 /** Effective tier right now (expires the moment the paid period ends, even mid-token). */
@@ -189,7 +183,7 @@ export async function issueSession(res: NextResponse, ent: Omit<Session, "iat" |
 
 /**
  * Read the session from the request. If the embedded entitlement is older than
- * an hour (or `fresh` is requested) it is reloaded from D1 and `refreshed` holds
+ * an hour (or `fresh` is requested) it is reloaded and `refreshed` holds
  * a new token that the caller should set on its response via `respond()`.
  */
 export async function loadSession(req: NextRequest, opts: { fresh?: boolean } = {}): Promise<{ session: Session; refreshed: string | null } | null> {
@@ -198,7 +192,7 @@ export async function loadSession(req: NextRequest, opts: { fresh?: boolean } = 
   const stale = opts.fresh || Date.now() / 1000 - s.ent > ENT_TTL;
   if (!stale) return { session: s, refreshed: null };
   try {
-    const ent = await loadEntitlement(getDB(req), s.sub, s.iat);
+    const ent = await loadEntitlement(getData(req), s.sub, s.iat);
     if (!ent) return null; // deleted or suspended account, or signed out by a password change
     const token = await signSession(ent);
     const session = (await verifySession(token))!;
@@ -210,7 +204,7 @@ export async function loadSession(req: NextRequest, opts: { fresh?: boolean } = 
 
 /**
  * Session for a plan-gated feature. The cookie's plan can be up to an hour old;
- * when it would DENY access, re-read the plan from D1 once before refusing, so a
+ * when it would DENY access, re-read the plan once before refusing, so a
  * payment that was just confirmed (webhook, on-chain, admin approval) works at
  * once. The allowed path costs nothing extra.
  */

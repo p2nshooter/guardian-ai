@@ -3,7 +3,9 @@
  * cookie carries the administrator role (no sign-out needed). */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbFirst } from "@/lib/db";
+import { getData } from "@/lib/db";
+import { readMeta } from "@/lib/data/meta";
+import { ownOrder } from "@/lib/billing/order-doc";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { fail } from "@/lib/http";
 import { getSale } from "@/lib/acquisition";
@@ -12,12 +14,10 @@ export async function GET(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
   if (!ctx) return unauthorized();
   const id = new URL(req.url).searchParams.get("order") || "";
-  const db = getDB(req);
-  const o = await dbFirst<{ id: string; status: string; gateway: string; amount_usd: number; invoice_no: string; paid_at: string; meta: string }>(db,
-    `SELECT id, status, gateway, amount_usd, invoice_no, paid_at, meta FROM orders WHERE id = ? AND user_id = ? AND plan = 'acquisition'`, [id, ctx.session.sub]);
-  if (!o) return fail("Order not found.", 404);
-  let test = false;
-  try { test = JSON.parse(o.meta || "{}").env === "sandbox"; } catch {}
+  const db = getData(req);
+  const o = await ownOrder(db, id, ctx.session.sub);
+  if (!o || o.plan !== "acquisition") return fail("Order not found.", 404);
+  const test = readMeta(o.meta).env === "sandbox";
   const sale = await getSale(db);
   const paid = o.status === "paid";
   return respond({

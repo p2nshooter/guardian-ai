@@ -5,7 +5,7 @@
  * Buying goes through /api/billing/checkout {kind:"lifetime"}. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbFirst } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
@@ -18,7 +18,7 @@ import { licensesFor, activateDevice, productName, installKeyFor } from "@/lib/l
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req);
   if (!ctx) return unauthorized();
-  const db = getDB(req);
+  const db = getData(req);
   const [licenses, tiers, builds] = await Promise.all([licensesFor(db, ctx.session.sub), getLifetimePrices(db), availableBuilds(req)]);
   // Only files that exist are linked (a build can still be in preparation).
   const files = (slug: string) => {
@@ -47,8 +47,8 @@ export async function POST(req: NextRequest) {
   if (b?.action !== "activate") return fail("Unknown action.");
   const rl = await rateLimit(req, "lifetime-activate", ctx.session.sub, { max: 60, windowSeconds: 86400 });
   if (rl.limited) return fail("Too many activations today. Please try again tomorrow or contact support.", 429);
-  const db = getDB(req);
-  const u = await dbFirst<{ name: string; organization: string }>(db, `SELECT name, organization FROM users WHERE id = ?`, [ctx.session.sub]);
+  const db = getData(req);
+  const u = await db.users.get(ctx.session.sub);
   const customer = [u?.organization, u?.name, ctx.session.email].filter(Boolean).join(" · ");
   try {
     const r = await activateDevice(db, ctx.session.sub, String(b.licenseId || ""), String(b.product || ""), String(b.machineId || ""), String(b.label || ""), customer);

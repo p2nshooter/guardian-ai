@@ -10,7 +10,7 @@ export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { withCaller, background } from "@/lib/connect/route";
 import { requireScope, canReadChannel, ConnectError } from "@/lib/connect/auth";
-import { eventsAfter, parsePatterns, publishEvent, latestEventId } from "@/lib/connect/events";
+import { eventsAfter, parsePatterns, publishEvent, latestEventId, SETTLE_MS } from "@/lib/connect/events";
 import { fanOut } from "@/lib/connect/webhooks";
 import { rateLimit } from "@/lib/rate-limit";
 import { limitsFor } from "@/lib/plans";
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
       let lastBeat = Date.now();
       while (open && Date.now() - started < MAX_LIFETIME_MS) {
         if (patterns.length) {
-          const events = await eventsAfter(db, c.userId, cursor, patterns, 100).catch(() => []);
+          const events = await eventsAfter(db, c.userId, cursor, patterns, 100, SETTLE_MS).catch(() => []);
           for (const e of events) { cursor = e.id; if (canReadChannel(c, e.channel)) send({ op: "event", event: e }); }
         }
         if (Date.now() - lastBeat > 30_000) { send({ op: "heartbeat", cursor }); lastBeat = Date.now(); }

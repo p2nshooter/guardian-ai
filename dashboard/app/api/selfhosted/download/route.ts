@@ -4,7 +4,7 @@
  * included-updates period has not ended. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, getR2Builds, dbFirst } from "@/lib/db";
+import { getData, getR2Builds } from "@/lib/db";
 import { loadSession, effectiveTier } from "@/lib/auth";
 import { getSelfHosted } from "@/lib/selfhosted";
 import { limitsFor } from "@/lib/plans";
@@ -19,10 +19,10 @@ export async function GET(req: NextRequest) {
   const file = url.searchParams.get("file") || "";
   if (!p) return new NextResponse("Unknown product", { status: 404 });
   const s = ctx.session;
-  const db = getDB(req);
+  const db = getData(req);
   if (s.role !== "admin" && !(await lifetimeCovers(db, s.sub, p.slug))) {
     if (limitsFor(effectiveTier(s)).selfHostedApps === 0) return new NextResponse("Your plan does not include self-hosted apps.", { status: 402 });
-    const lic = await dbFirst(db, `SELECT id FROM sh_licenses WHERE user_id = ? AND product = ? AND status = 'active'`, [s.sub, p.slug]);
+    const lic = (await db.shLicenses.listAllDocs("user", s.sub)).find((l) => l.product === p.slug && l.status === "active");
     if (!lic) return new NextResponse("Issue a licence for this app first.", { status: 403 });
   }
   // <image> = x86-64 build, <image>-arm64 = ARM build. Windows installs use AXTO Setup.exe.

@@ -9,8 +9,9 @@
  *   legal/<uid>/m/<mid>/r/<rid>.enc       one saved result (request + answer)
  *   legal/<uid>/library.enc               the member's own playbooks and clauses (v4)
  *
- * D1 keeps nothing but the member's storage total (users.storage_bytes).
+ * The member's record keeps nothing but their storage total (users.storage_bytes).
  * ============================================================================ */
+import type { Data } from "../data";
 import { newId, now } from "../db";
 import { getSealedJson, putSealedJson, sealForUser } from "../user-crypto";
 import { addStorage } from "../usage";
@@ -51,7 +52,7 @@ async function readIndex(bucket: any, uid: string): Promise<{ list: IndexEntry[]
 }
 
 /** Read-modify-write of the index with an etag guard (two tabs saving at once). */
-async function updateIndex(bucket: any, db: any, uid: string, fn: (list: IndexEntry[]) => IndexEntry[]): Promise<void> {
+async function updateIndex(bucket: any, db: Data, uid: string, fn: (list: IndexEntry[]) => IndexEntry[]): Promise<void> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const { list, etag, size } = await readIndex(bucket, uid);
     const next = fn(list.slice());
@@ -79,7 +80,7 @@ export async function getMatter(bucket: any, uid: string, mid: string): Promise<
   return { matter: r.value, size: r.size };
 }
 
-async function saveMatter(bucket: any, db: any, uid: string, m: Matter, prevSize: number): Promise<void> {
+async function saveMatter(bucket: any, db: Data, uid: string, m: Matter, prevSize: number): Promise<void> {
   m.updatedAt = now();
   const size = await putSealedJson(bucket, uid, kMatter(uid, m.id), m);
   await addStorage(db, uid, size - prevSize);
@@ -103,7 +104,7 @@ function applyFields(m: Matter, b: any) {
   }
 }
 
-export async function createMatter(bucket: any, db: any, uid: string, b: any): Promise<Matter> {
+export async function createMatter(bucket: any, db: Data, uid: string, b: any): Promise<Matter> {
   const { list } = await readIndex(bucket, uid);
   if (list.length >= LIMITS.matters) throw new MatterError(`You can keep up to ${LIMITS.matters} matters. Delete closed matters to add new ones.`);
   const m: Matter = {
@@ -115,14 +116,14 @@ export async function createMatter(bucket: any, db: any, uid: string, b: any): P
   return m;
 }
 
-export async function updateMatter(bucket: any, db: any, uid: string, mid: string, b: any): Promise<Matter> {
+export async function updateMatter(bucket: any, db: Data, uid: string, mid: string, b: any): Promise<Matter> {
   const { matter, size } = await getMatter(bucket, uid, mid);
   applyFields(matter, b);
   await saveMatter(bucket, db, uid, matter, size);
   return matter;
 }
 
-export async function deleteMatter(bucket: any, db: any, uid: string, mid: string): Promise<void> {
+export async function deleteMatter(bucket: any, db: Data, uid: string, mid: string): Promise<void> {
   const { matter, size } = await getMatter(bucket, uid, mid);
   const keys = [kMatter(uid, mid), ...matter.docs.map((d) => kDoc(uid, mid, d.id)), ...matter.runs.map((r) => kRun(uid, mid, r.id))];
   for (let i = 0; i < keys.length; i += 1000) await bucket.delete(keys.slice(i, i + 1000));
@@ -131,7 +132,7 @@ export async function deleteMatter(bucket: any, db: any, uid: string, mid: strin
   await updateIndex(bucket, db, uid, (list) => list.filter((x) => x.id !== mid));
 }
 
-export async function addDocument(bucket: any, db: any, uid: string, mid: string, b: any): Promise<DocMeta> {
+export async function addDocument(bucket: any, db: Data, uid: string, mid: string, b: any): Promise<DocMeta> {
   const { matter, size } = await getMatter(bucket, uid, mid);
   if (matter.docs.length >= LIMITS.docsPerMatter) throw new MatterError(`A matter can hold up to ${LIMITS.docsPerMatter} documents.`);
   const body = String(b?.text ?? "").replace(/\u0000/g, "");
@@ -154,7 +155,7 @@ export async function getDocument(bucket: any, uid: string, mid: string, did: st
   return r.value;
 }
 
-export async function deleteDocument(bucket: any, db: any, uid: string, mid: string, did: string): Promise<void> {
+export async function deleteDocument(bucket: any, db: Data, uid: string, mid: string, did: string): Promise<void> {
   const { matter, size } = await getMatter(bucket, uid, mid);
   const d = matter.docs.find((x) => x.id === did);
   if (!d) throw new MatterError("Document not found.", 404);
@@ -164,7 +165,7 @@ export async function deleteDocument(bucket: any, db: any, uid: string, mid: str
   await saveMatter(bucket, db, uid, matter, size);
 }
 
-export async function addRun(bucket: any, db: any, uid: string, mid: string, b: any): Promise<RunMeta> {
+export async function addRun(bucket: any, db: Data, uid: string, mid: string, b: any): Promise<RunMeta> {
   const { matter, size } = await getMatter(bucket, uid, mid);
   if (matter.runs.length >= LIMITS.runsPerMatter) throw new MatterError(`A matter can hold up to ${LIMITS.runsPerMatter} saved results.`);
   const ws = getWorkspace(b?.workspace);
@@ -193,7 +194,7 @@ export async function getRun(bucket: any, uid: string, mid: string, rid: string)
   return r.value;
 }
 
-export async function deleteRun(bucket: any, db: any, uid: string, mid: string, rid: string): Promise<void> {
+export async function deleteRun(bucket: any, db: Data, uid: string, mid: string, rid: string): Promise<void> {
   const { matter, size } = await getMatter(bucket, uid, mid);
   const r = matter.runs.find((x) => x.id === rid);
   if (!r) throw new MatterError("Result not found.", 404);
@@ -209,7 +210,7 @@ export async function getLibrary(bucket: any, uid: string): Promise<LegalLibrary
   return r ? sanitizeLibrary(r.value) : { ...EMPTY_LIBRARY };
 }
 
-export async function saveLibrary(bucket: any, db: any, uid: string, b: any): Promise<LegalLibrary> {
+export async function saveLibrary(bucket: any, db: Data, uid: string, b: any): Promise<LegalLibrary> {
   const lib = sanitizeLibrary(b);
   if (JSON.stringify(lib).length > LIBRARY_LIMITS.bytes) throw new MatterError("Your playbooks and clauses are too large to save (400 KB max). Remove some first.", 413);
   const prev = await getSealedJson<LegalLibrary>(bucket, uid, kLibrary(uid));

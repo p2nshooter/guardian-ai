@@ -73,6 +73,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/connect", label: "Connect (developer API)", icon: "⚡" },
       { href: "/admin/releases", label: "Releases", icon: "📦" },
       { href: "/admin/settings", label: "Settings", icon: "⚙️" },
+      { href: "/admin/data", label: "Data & backups", icon: "🗄️" },
       { href: "/admin/audit", label: "Audit log", icon: "🕵️" },
     ] },
   ];

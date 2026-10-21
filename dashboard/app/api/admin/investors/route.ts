@@ -10,7 +10,7 @@
  *         payout   {period, amount, reference} → a monthly payment, recorded */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, dbQuery } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { requireAdmin, respond, forbidden } from "@/lib/auth";
 import { readJson, fail, audit, str } from "@/lib/http";
 import {
@@ -21,10 +21,10 @@ import {
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return forbidden();
-  const db = getDB(req);
+  const db = getData(req);
   const [settings, investors, raised, payouts] = await Promise.all([
     getInvest(db), listInvestors(db), raisedUsd(db),
-    dbQuery<Payout>(db, `SELECT * FROM investor_payouts ORDER BY period, paid_at`),
+    db.investorPayouts.listAllDocs("all", "all", 20_000) as Promise<Payout[]>,
   ]);
   const stakes = investors.filter((i) => i.verified_at);
   const since = stakes.map((i) => i.verified_at).sort()[0];
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return forbidden();
-  const db = getDB(req);
+  const db = getData(req);
   const b = await readJson(req);
   if (!b?.settings) return fail("Nothing to save.");
   const next = sanitizeInvest(b.settings, await getInvest(db));
@@ -53,7 +53,7 @@ export async function PUT(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return forbidden();
-  const db = getDB(req);
+  const db = getData(req);
   const b = await readJson(req);
   const inv = await getInvestor(db, str(b?.id, 64));
   if (!inv) return fail("Investor not found.", 404);

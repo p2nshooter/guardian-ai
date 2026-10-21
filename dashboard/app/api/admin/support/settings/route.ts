@@ -6,7 +6,7 @@
  *   POST {test: true} → asks the assistant a sample question with the saved settings. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { writeSecure, maskValue, MASK, SettingsKeyMissing } from "@/lib/secure-store";
@@ -54,14 +54,14 @@ export async function PUT(req: NextRequest) {
     if (e instanceof SettingsKeyMissing) return fail("Set the SETTINGS_ENCRYPTION_KEY secret first.", 503);
     throw e;
   }
-  await audit(getDB(req), ctx.session, "admin.support_ai.update", "settings", "support-ai", { providers: providers.length, keys: providers.reduce((n, p) => n + p.keys.length, 0) }, req);
+  await audit(getData(req), ctx.session, "admin.support_ai.update", "settings", "support-ai", { providers: providers.length, keys: providers.reduce((n, p) => n + p.keys.length, 0) }, req);
   return respond({ ok: true }, ctx);
 }
 
 export async function POST(req: NextRequest) {
   const ctx = await requireAdmin(req);
   if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const answer = await supportAnswer(getDB(req), "other", [
+  const answer = await supportAnswer(getData(req), "other", [
     { id: "t", from: "visitor", name: "Admin test", text: "Hi! What plans do you offer and which one includes the self-hosted apps?", at: new Date().toISOString() },
   ]);
   if (!answer) return fail("No provider answered. Check the keys, model names and endpoint.", 502);

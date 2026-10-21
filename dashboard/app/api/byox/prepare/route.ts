@@ -8,7 +8,7 @@
  * talks to the model on the member's own device. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSessionFor, unauthorized, effectiveTier, respond } from "@/lib/auth";
 import { runAllowed } from "@/lib/ai/run-core";
 import { buildRun } from "@/lib/ai/run-build";
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const rl = await rateLimit(req, "byox-prepare", s.sub, { max: 120, windowSeconds: 60 });
   if (rl.limited) return fail("You're sending requests very quickly. Please wait a moment.", 429);
   const tier = effectiveTier(s);
-  if (!(await localModeFor(getDB(req), tier))) return fail("Local Mode is not available on this account right now.", 403, { local: true });
+  if (!(await localModeFor(getData(req), tier))) return fail("Local Mode is not available on this account right now.", 403, { local: true });
 
   const r = buildRun(tier, { app, task: b?.task, messages: b?.messages, options: b?.options, documents: b?.documents });
   if (!r.ok) return fail(r.error, r.status, r.extra || {});

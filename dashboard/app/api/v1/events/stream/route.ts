@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 import { withCaller, sleep } from "@/lib/connect/route";
 import { corsHeaders, preflight } from "@/lib/connect/http";
 import { requireScope, canReadChannel } from "@/lib/connect/auth";
-import { eventsAfter, parsePatterns, startCursor } from "@/lib/connect/events";
+import { eventsAfter, parsePatterns, startCursor, SETTLE_MS } from "@/lib/connect/events";
 
 export const OPTIONS = (req: NextRequest) => preflight(req, "GET, OPTIONS");
 
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
         send(`retry: 2000\n: connected cursor=${cursor}\n\n`);
         let lastBeat = Date.now();
         while (!req.signal.aborted && Date.now() - started < maxMs) {
-          const events = await eventsAfter(db, c.userId, cursor, patterns, 100).catch(() => []);
+          const events = await eventsAfter(db, c.userId, cursor, patterns, 100, SETTLE_MS).catch(() => []);
           for (const e of events) {
             cursor = e.id;
             if (!canReadChannel(c, e.channel)) continue;

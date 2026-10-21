@@ -8,14 +8,13 @@
  * ============================================================================ */
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { doc, list, meta, seedAdmin, update, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 
 class Client {
@@ -39,12 +38,6 @@ class Client {
   put = (p: string, b: unknown = {}) => this.call("PUT", p, b);
 }
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 const validate = (key: string, machine: string, product: string) =>
   fetch(`${BASE}/api/license-validate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: key, machine_id: machine, product, nonce: crypto.randomUUID() }) }).then((r) => r.json());
 
@@ -52,7 +45,7 @@ const admin = new Client(), buyer = new Client(), tryer = new Client(), sameIp =
 let orderId = "", editionKey = "";
 
 before(async () => {
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();
   const g = await admin.get("/api/admin/gateways");
   if (!g.json.gateways.find((x: any) => x.id === "manual")?.active) {
@@ -77,7 +70,8 @@ test("editions: public catalogue with live prices; checkout charges OUR price", 
   assert.equal(c.status, 200, c.text);
   assert.equal(c.json.amountUsd, 4990, "the browser never sets the price");
   orderId = c.json.orderId;
-  const [row] = d1(`SELECT plan, cycle, amount_usd, json_extract(meta, '$.edition.code') AS code FROM orders WHERE id = '${orderId}'`);
+  const o = await doc("orders", orderId);
+  const row = { plan: o.plan, cycle: o.cycle, amount_usd: o.amount_usd, code: meta(o).edition?.code };
   assert.deepEqual(row, { plan: "edition", cycle: "yearly", amount_usd: 4990, code: "vault_starter" });
 });
 
@@ -121,9 +115,18 @@ test("editions: admin prices and on/off reach checkout and the public catalogue"
 test("trials: admin creates the pool; members claim zero-touch; abuse limits hold", async () => {
   assert.equal((await new Client().get("/api/admin/trials")).status, 403);
   assert.equal((await admin.put("/api/admin/trials", { config: { enabled: true, days: 14, maxProducts: 2, perApp: 100 } })).status, 200);
-  const g = await admin.post("/api/admin/trials", { action: "generate", product: "all", count: 100 });
+  // Large jobs run in steps (each well inside Cloudflare's per-request limits): follow `next` like the admin screen does.
+  let g = await admin.post("/api/admin/trials", { action: "generate", product: "all", count: 100 });
   assert.equal(g.status, 200, g.text);
-  assert.equal(g.json.made.length, 10);
+  const made: { product: string; created: number }[] = [...g.json.made];
+  for (let i = 0; g.json.next && i < 50; i++) {
+    g = await admin.post("/api/admin/trials", g.json.next);
+    assert.equal(g.status, 200, g.text);
+    made.push(...g.json.made);
+  }
+  assert.equal(g.json.next, null, "the job finished");
+  assert.equal(new Set(made.map((m) => m.product)).size, 10);
+  assert.ok(made.filter((m) => m.product === "legal").reduce((n, m) => n + m.created, 0) >= 100);
   const pub = await new Client().get("/api/editions");
   assert.equal(pub.json.trials.open, true);
   assert.ok(pub.json.trials.apps.legal.available >= 100);
@@ -163,8 +166,10 @@ test("trials: admin creates the pool; members claim zero-touch; abuse limits hol
 });
 
 test("trials: an expired trial is refused with the buy link; buying the edition converts it", async () => {
-  const [lic] = d1(`SELECT l.license_key AS k, l.id FROM sh_licenses l JOIN users u ON u.id = l.user_id WHERE u.email = 'ed-tryer-${RUN}@example.com' AND l.product = 'soc' AND l.source = 'trial'`);
-  d1(`UPDATE sh_licenses SET expires_at = '2020-01-01T00:00:00.000Z' WHERE id = '${lic.id}'`);
+  const tryerId = (await userByEmail(`ed-tryer-${RUN}@example.com`)).id;
+  const t0 = (await list("shLicenses", "user", tryerId)).find((l: any) => l.product === "soc" && l.source === "trial");
+  const lic = { k: t0.license_key, id: t0.id };
+  await update("shLicenses", lic.id, { expires_at: "2020-01-01T00:00:00.000Z" });
   const v = await validate(lic.k, "machine-soc", "soc");
   assert.equal(v.valid, false); assert.equal(v.reason, "trial_expired"); assert.match(v.error, /Buy an edition/);
   const c = await tryer.post("/api/billing/checkout", { kind: "edition", edition: "soc_starter", cycle: "monthly", gateway: "manual" });
@@ -174,7 +179,7 @@ test("trials: an expired trial is refused with the buy link; buying the edition 
   const soc = sh.json.products.find((p: any) => p.slug === "soc");
   assert.ok(soc.licenses.some((l: any) => l.source === "edition" && l.status === "active" && l.package_code === "soc_starter"));
   assert.ok(!soc.licenses.some((l: any) => l.source === "trial" && l.status === "active"), "the trial is replaced");
-  assert.equal(d1(`SELECT converted FROM sh_trials WHERE email = 'ed-tryer-${RUN}@example.com' AND product = 'soc'`)[0].converted, 1);
+  assert.equal((await list("shTrials", "email", `ed-tryer-${RUN}@example.com`)).find((t: any) => t.product === "soc").converted, 1);
 });
 
 test("trials: admin can pause the programme and end a trial", async () => {
@@ -182,8 +187,9 @@ test("trials: admin can pause the programme and end a trial", async () => {
   assert.equal((await new Client().get("/api/editions")).json.trials.open, false);
   assert.equal((await buyer.post("/api/selfhosted", { action: "trial", product: "studio" })).json.reason, "closed");
   await admin.put("/api/admin/trials", { config: { enabled: true, days: 14, maxProducts: 2 } });
-  const [t] = d1(`SELECT code FROM sh_trials WHERE email = 'ed-third-${RUN}@example.com' AND product = 'legal'`);
+  const t = (await list("shTrials", "email", `ed-third-${RUN}@example.com`)).find((x: any) => x.product === "legal");
   assert.equal((await admin.post("/api/admin/trials", { action: "revoke", code: t.code })).status, 200);
-  const [l] = d1(`SELECT l.status AS status FROM sh_licenses l JOIN users u ON u.id = l.user_id WHERE u.email = 'ed-third-${RUN}@example.com' AND l.source = 'trial'`);
+  const thirdId = (await userByEmail(`ed-third-${RUN}@example.com`)).id;
+  const l = (await list("shLicenses", "user", thirdId)).find((x: any) => x.source === "trial");
   assert.equal(l.status, "revoked");
 });

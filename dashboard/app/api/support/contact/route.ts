@@ -4,7 +4,7 @@
  * acknowledgement. Rate-limited per IP; `website` is a honeypot. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { readJson, fail, ipOf } from "@/lib/http";
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   if (!EMAIL_RE.test(email)) return fail("Enter a valid e-mail address so we can reply.");
   if (message.length < 10) return fail("Tell us a bit more (at least 10 characters).");
 
-  const db = getDB(req);
+  const db = getData(req);
   const text = company ? `${message}\n\n— ${company}` : message;
   const { id } = await createThread(db, {
     name, email, topic: topic.id, source: "contact", userId: ctx?.session.sub || null,

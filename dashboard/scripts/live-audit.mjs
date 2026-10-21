@@ -64,7 +64,7 @@ const decode = (s) => s?.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(
   let h = null;
   try { h = JSON.parse(r.body); } catch {}
   report.health = h ?? { status: r.status };
-  if (!h?.ok) fail("/api/health", `not ok (HTTP ${r.status})`);
+  if (!h?.ok) fail("/api/health", `not ok (HTTP ${r.status}${h?.records ? `, records ${h.records}` : ""}${h?.move?.incomplete?.length ? `, tables short after the move: ${h.move.incomplete.join(", ")}` : ""})`);
   for (const [k, v] of Object.entries(h?.secrets ?? {})) if (!v) fail("/api/health", `secret ${k} is missing`);
   for (const [k, v] of Object.entries(h?.bindings ?? {})) if (!v) fail("/api/health", `binding ${k} is missing`);
 }

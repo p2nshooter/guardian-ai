@@ -3,24 +3,17 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { seedAdmin, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const MOCK_PORT = 8796;
 const SECRET = `STUDIO-SECRET-${RUN}`;
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 class Client {
   cookie = ""; ip = `10.30.${Math.floor(Math.random()*250)}.${1+Math.floor(Math.random()*250)}`;
   async call(method: string, p: string, body?: unknown) {
@@ -48,7 +41,7 @@ before(async () => {
       res.end("data: [DONE]\n\n");
     } else { res.writeHead(404); res.end(); }
   }).listen(MOCK_PORT);
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
   assert.equal((await admin.call("PUT", "/api/admin/gateways", { gateway: "manual", is_active: true, credentials: { bank_name: "BNI", account_number: "1", account_name: "AXTO" } })).status, 200);
   assert.equal((await member.post("/api/auth/register", { email: `studio-${RUN}@example.com`, name: "Studio", password: "abcdefgh1", acceptTerms: true })).status, 200);
@@ -82,8 +75,8 @@ test("history: save, list, open, rename, duplicate, delete — encrypted & isola
   const dup = await member.post(`/api/history/studio/${cid}/duplicate`, {});
   assert.equal(dup.status, 200);
   assert.equal((await member.get("/api/history/studio")).json.items.length, 2);
-  // encrypted at rest: the secret is never in D1
-  assert.equal(d1(`SELECT COUNT(*) AS n FROM users WHERE email='studio-${RUN}@example.com' AND email LIKE '%${SECRET}%'`)[0].n, 0);
+  // encrypted at rest: the secret is never in the member's record
+  assert.ok(!JSON.stringify(await userByEmail(`studio-${RUN}@example.com`)).includes(SECRET));
   // isolation: another member sees nothing
   const other = new Client();
   await other.post("/api/auth/register", { email: `other-${RUN}@example.com`, name: "Other", password: "abcdefgh1", acceptTerms: true });

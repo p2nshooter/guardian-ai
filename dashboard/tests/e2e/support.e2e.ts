@@ -11,23 +11,18 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { auditByAction, seedAdmin } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
+const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/ctl");
 const MOCK_PORT = 8797;
 const RUN = Date.now().toString(36);
 const WALLET = "TQmockWalletAddressE2E0000000000001";
 const BANK_ACC = "0987654321";
 const AI_KEY = "good-support-key-e2e-123456";
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 
 function r2Get(key: string): string {
   return execFileSync("npx", ["wrangler", "r2", "object", "get", `axto-storage/${key}`, "--local", "--persist-to", "../persist", "--pipe"], {
@@ -76,7 +71,7 @@ before(async () => {
       res.end("data: [DONE]\n\n");
     });
   }).listen(MOCK_PORT);
-  d1(`INSERT OR IGNORE INTO users (id, email, role, name, created_at, updated_at) VALUES ('e2e-admin', 'e2e-admin@axto.io', 'admin', 'E2E Admin', datetime('now'), datetime('now'))`);
+  await seedAdmin("e2e-admin@axto.io");
   admin.cookie = await adminCookie();   // one shared admin session (sign-in is rate-limited)
 });
 after(() => mock?.close());
@@ -101,7 +96,7 @@ test("payments: bank (BNI) + crypto wallets are stored encrypted in R2 and maske
 
   const blob = r2Get("secure/payments.json.enc");
   assert.ok(blob.includes('"ct"') && !blob.includes(WALLET) && !blob.includes(BANK_ACC) && !blob.includes("PT AXTO TEST"), "R2 object is ciphertext");
-  assert.equal(d1(`SELECT COUNT(*) AS n FROM payment_gateways WHERE gateway IN ('crypto', 'manual') AND credentials_enc LIKE '%${WALLET}%'`)[0].n, 0);
+  assert.ok(!JSON.stringify(await auditByAction("admin.gateway.credentials")).includes(WALLET), "the audit log never holds the wallet");
 
   // Customers see the details only at checkout.
   const m = new Client();

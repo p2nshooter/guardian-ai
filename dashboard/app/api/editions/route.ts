@@ -3,15 +3,16 @@
  * number of trial licences left per app. No personal data; cached for a minute. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData, background } from "@/lib/db";
 import { EDITIONS, getEditionPrices } from "@/lib/editions";
 import { getTrialConfig, trialOpen, trialStats, trialEdition, ensureTrialPool } from "@/lib/trials";
 import { SELF_HOSTED } from "@/lib/selfhosted";
 
 export async function GET(req: NextRequest) {
-  const db = getDB(req);
+  const db = getData(req);
   const cfg = await getTrialConfig(db);
-  if (cfg.enabled) await ensureTrialPool(db, cfg);
+  // The first trial pool is filled in the background, a chunk per page view, until it is complete.
+  if (cfg.enabled) background(ensureTrialPool(db, cfg));
   const [prices, stats] = await Promise.all([getEditionPrices(db), trialStats(db)]);
   const editions = EDITIONS.map((e) => {
     const p = prices.find((x) => x.code === e.code)!;

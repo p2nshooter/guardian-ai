@@ -7,11 +7,11 @@
  * ============================================================================ */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { cronAuthorized } from "@/lib/cron";
 import { runHousekeeping } from "@/lib/billing/lifecycle";
 
 export async function GET(req: NextRequest) {
   if (!cronAuthorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  return NextResponse.json({ ok: true, ...(await runHousekeeping(getDB(req))) });
+  return NextResponse.json({ ok: true, ...(await runHousekeeping(getData(req))) });
 }

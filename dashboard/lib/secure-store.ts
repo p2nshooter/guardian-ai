@@ -2,8 +2,8 @@
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * ==============================================================================
  * Encrypted settings in R2 — payment gateways, bank/crypto payout details,
- * e-mail and support-AI credentials. Nothing sensitive lives in D1 or in the
- * repository; admins edit everything from the Admin portal.
+ * e-mail and support-AI credentials. Nothing sensitive lives in the records
+ * or in the repository; admins edit everything from the Admin portal.
  *
  *   object:  R2 (axto-storage)  secure/<name>.json.enc
  *   cipher:  AES-256-GCM, random 96-bit IV, AAD = document name

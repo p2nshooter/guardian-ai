@@ -8,7 +8,7 @@
  * = "1") is used when the answering provider supports it. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSessionFor, unauthorized, effectiveTier, setSessionCookie } from "@/lib/auth";
 import { toTextStream } from "@/lib/ai/providers";
 import { prepareRun, runAllowed } from "@/lib/ai/run-core";
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   const rl = await rateLimit(req, "byox-run", s.sub, { max: 60, windowSeconds: 60 });
   if (rl.limited) return fail("You're sending requests very quickly. Please wait a moment.", 429);
 
-  const run = await prepareRun(getDB(req), s.sub, effectiveTier(s), b || {});
+  const run = await prepareRun(getData(req), s.sub, effectiveTier(s), b || {});
   if (!run.ok) return fail(run.error, run.status, run.extra || {});
 
   const res = new NextResponse(toTextStream(run.stream), {

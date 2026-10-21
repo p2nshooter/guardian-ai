@@ -8,9 +8,11 @@
  *                 the member can pick the rest any time in the portal.
  * Keys are e-mailed together with the installer link.
  * Plan licences have source = 'plan'; editions and trials (lib/edition-service.ts,
- * lib/trials.ts) are separate rows and never count against the plan's slots.
+ * lib/trials.ts) are separate documents and never count against the plan's slots.
  * ============================================================================ */
-import { dbFirst, dbQuery, dbRun, newId, now, secret } from "./db";
+import { newId, now, secret } from "./db";
+import type { Data } from "./data";
+import type { ShLicenseDoc } from "./data/schema";
 import { PLANS, isPlanId, type PlanLimits } from "./plans";
 import { SELF_HOSTED, getSelfHosted, generateLicenseKey, catalogEntry } from "./selfhosted";
 import { mailLayout, sendMail } from "./mail";
@@ -23,28 +25,37 @@ export interface IssuedLicence { product: string; name: string; key: string }
 export const ADMIN_HOLD = "admin_hold";
 export const HOLD_MESSAGE = "This licence was locked by AXTO. Contact support to restore it.";
 
+/** The member's licence for an app from one source (plan, edition or trial), or null. */
+export const findLicence = (db: Data, userId: string, product: string, source: string): Promise<ShLicenseDoc | null> =>
+  db.shLicenses.find("slot", `${userId}|${product}|${source}`);
+
+/** A new licence document with every field set. */
+export function newLicence(f: Pick<ShLicenseDoc, "user_id" | "product" | "license_key" | "package_code" | "max_nodes" | "expires_at" | "source"> & Partial<ShLicenseDoc>): ShLicenseDoc {
+  const at = now();
+  return {
+    id: newId(), status: "active", bound_machine_id: "", reset_count: 0, last_seen_at: "", last_version: "", last_ip: "", notes: "",
+    created_at: at, updated_at: at, ...f,
+  };
+}
+
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
 /** Issue (or re-activate) one app's licence. Returns null when the plan doesn't allow it. */
-export async function issueLicence(db: any, userId: string, slug: string, lim: PlanLimits, periodEnd: string): Promise<IssuedLicence | { error: string } | null> {
+export async function issueLicence(db: Data, userId: string, slug: string, lim: PlanLimits, periodEnd: string): Promise<IssuedLicence | { error: string } | null> {
   const product = getSelfHosted(slug);
   if (!product) return { error: "Unknown product." };
   if (lim.selfHostedApps === 0) return { error: "Self-hosted apps are included in the Business and Enterprise plans." };
-  const existing = await dbFirst<any>(db, `SELECT * FROM sh_licenses WHERE user_id = ? AND product = ? AND source = 'plan'`, [userId, slug]);
+  const existing = await findLicence(db, userId, slug, "plan");
   if (existing && existing.status === "active") return null;
   if (existing?.notes === ADMIN_HOLD) return { error: HOLD_MESSAGE };
-  if (lim.selfHostedApps > 0) {
-    const n = await dbFirst<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active' AND source = 'plan'`, [userId]);
-    if ((n?.n ?? 0) >= lim.selfHostedApps) return { error: `Your plan includes ${lim.selfHostedApps} self-hosted apps. Release one first, or upgrade to Enterprise for all of them.` };
+  if (lim.selfHostedApps > 0 && (await activeLicenceCount(db, userId)) >= lim.selfHostedApps) {
+    return { error: `Your plan includes ${lim.selfHostedApps} self-hosted apps. Release one first, or upgrade to Enterprise for all of them.` };
   }
   const key = await generateLicenseKey(slug, secret("LICENSE_KEY_HMAC_SECRET") || undefined);
   if (existing) {
-    await dbRun(db, `UPDATE sh_licenses SET license_key = ?, package_code = ?, max_nodes = ?, status = 'active', expires_at = ?, bound_machine_id = '', updated_at = ? WHERE id = ?`,
-      [key, product.packageCode, lim.selfHostedNodes, periodEnd, now(), existing.id]);
+    await db.shLicenses.update(existing.id, (l) => ({ ...l, license_key: key, package_code: product.packageCode, max_nodes: lim.selfHostedNodes, status: "active", expires_at: periodEnd, bound_machine_id: "", updated_at: now() }));
   } else {
-    await dbRun(db, `INSERT INTO sh_licenses (id, user_id, product, license_key, package_code, max_nodes, status, expires_at, source, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, 'active', ?, 'plan', ?, ?)`,
-      [newId(), userId, slug, key, product.packageCode, lim.selfHostedNodes, periodEnd, now(), now()]);
+    await db.shLicenses.create(newLicence({ user_id: userId, product: slug, license_key: key, package_code: product.packageCode, max_nodes: lim.selfHostedNodes, expires_at: periodEnd, source: "plan" }));
   }
   return { product: slug, name: catalogEntry(slug)?.name || slug, key };
 }
@@ -65,7 +76,7 @@ export function licencesMail(list: IssuedLicence[]): { subject: string; html: st
  * Called right after a payment activates a plan. Enterprise gets every app,
  * Business gets the apps chosen at checkout. Never throws.
  */
-export async function autoIssueAfterPayment(db: any, userId: string, email: string, plan: string, periodEnd: string, chosen: string[] = []): Promise<IssuedLicence[]> {
+export async function autoIssueAfterPayment(db: Data, userId: string, email: string, plan: string, periodEnd: string, chosen: string[] = []): Promise<IssuedLicence[]> {
   try {
     if (!isPlanId(plan)) return [];
     const lim = PLANS[plan].limits;
@@ -86,7 +97,6 @@ export async function autoIssueAfterPayment(db: any, userId: string, email: stri
   }
 }
 
-export async function activeLicenceCount(db: any, userId: string): Promise<number> {
-  const rows = await dbQuery<{ n: number }>(db, `SELECT COUNT(*) AS n FROM sh_licenses WHERE user_id = ? AND status = 'active' AND source = 'plan'`, [userId]);
-  return rows[0]?.n ?? 0;
+export async function activeLicenceCount(db: Data, userId: string): Promise<number> {
+  return (await db.shLicenses.listAllDocs("user", userId)).filter((l) => l.status === "active" && l.source === "plan").length;
 }

@@ -1,7 +1,8 @@
 /* AXTO — POST /api/auth/register · create a member account (free tier) and sign in. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB, dbFirst, dbRun, newId, now } from "@/lib/db";
+import { getData, newId, now } from "@/lib/db";
+import { ConflictError } from "@/lib/r2/store";
 import { hashPassword, passwordProblem, normEmail, isEmail, issueSession, loadEntitlement } from "@/lib/auth";
 import { readJson, fail, str, ipOf, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
@@ -23,15 +24,21 @@ export async function POST(req: NextRequest) {
   const rl = await rateLimit(req, "register", ipOf(req) || "anon", { max: 8, windowSeconds: 3600 });
   if (rl.limited) return fail("Too many sign-ups from this network. Please try again later.", 429);
 
-  const db = getDB(req);
-  if (await dbFirst(db, `SELECT id FROM users WHERE email = ?`, [email])) {
-    return fail("An account with this email already exists. Please sign in.", 409);
-  }
+  const db = getData(req);
+  const taken = () => fail("An account with this email already exists. Please sign in.", 409);
+  if (await db.users.find("email", email)) return taken();
   const id = newId();
-  await dbRun(db,
-    `INSERT INTO users (id, email, role, password_hash, name, organization, status, last_login_at, created_at, updated_at)
-     VALUES (?, ?, 'client', ?, ?, ?, 'active', ?, ?, ?)`,
-    [id, email, await hashPassword(password), name, organization, now(), now(), now()]);
+  const at = now();
+  try {
+    // The e-mail guard is taken atomically: two sign-ups with one address at the same moment create one account.
+    await db.users.create({
+      id, email, role: "client", password_hash: await hashPassword(password), name, organization, country: "", status: "active",
+      last_login_at: at, storage_bytes: 0, ai_provider: "", sessions_valid_after: "", created_at: at, updated_at: at,
+    });
+  } catch (err) {
+    if (err instanceof ConflictError) return taken();
+    throw err;
+  }
   await audit(db, { sub: id, email }, "user.register", "user", id, {}, req);
   const m = mails.welcome(name);
   await sendMail(email, m.subject, m.html);

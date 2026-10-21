@@ -5,7 +5,7 @@
  * `code` the page translates. `website` is a honeypot field bots fill in. */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getDB } from "@/lib/db";
+import { getData } from "@/lib/db";
 import { loadSession, isEmail, normEmail } from "@/lib/auth";
 import { readJson, fail, ipOf, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const rl = await rateLimit(req, "invest-apply", ipOf(req) || "anon", { max: 5, windowSeconds: 3600 });
   if (rl.limited) return err("other", "Too many applications — please try again later.", 429);
 
-  const db = getDB(req);
+  const db = getData(req);
   const offer = await getInvest(db);
   if (offer.status === "closed") return err("closed", "The round is complete.", 409);
   if (offer.status === "paused") return err("paused", "Applications are paused at the moment.", 409);

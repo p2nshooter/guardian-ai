@@ -8,7 +8,10 @@
  * debit card), which pay card revenue out to our BNI account. */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getEnv, dbRun, newId, now } from "@/lib/db";
+import { getData, getEnv, newId } from "@/lib/db";
+import { newOrder } from "@/lib/billing/order-doc";
+import { patchMeta } from "@/lib/data/meta";
+import { findLicence } from "@/lib/licences";
 import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { getPlanPrices, priceFor, isPlanId, isCycle, PLANS } from "@/lib/plans";
 import { gatewayCreds, gatewayCredsFor, gatewayInfo, cardRoute, usdIdrRate, usdEurRate, toIdr, toEur, bankAccounts, CRYPTO_ASSETS, ENV_KEY, type GatewayId } from "@/lib/billing/gateways";
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
   const info = gatewayInfo(gateway);
   if (!info) return fail("Choose a payment method.");
 
-  const db = getDB(req);
+  const db = getData(req);
   // Editions: the price comes from the (admin-editable) edition table — never from the browser —
   // and decides which payment methods may carry it, before any gateway is contacted.
   let editionAmount = 0;
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
     const e = getEdition(String(b.edition))!;
     const price = editionPrice(e.code, b.cycle as EditionCycle, await getEditionPrices(db));
     if (price === null) return fail("That edition is not on sale right now.");
-    const planLic = await db.prepare(`SELECT 1 AS x FROM sh_licenses WHERE user_id = ? AND product = ? AND source = 'plan' AND status = 'active'`).bind(ctx.session.sub, e.app).first();
+    const planLic = (await findLicence(db, ctx.session.sub, e.app, "plan"))?.status === "active";
     if (planLic) return fail("This app is already included in your plan at the top edition.");
     if (!editionGatewayAllowed(gateway, price, CARD_MAX_USD)) return fail(`For more than $${EDITION_ANY_GATEWAY_MAX.toLocaleString("en-US")} please pay by bank/wire transfer, crypto or card.`);
     editionAmount = price;
@@ -108,11 +111,11 @@ export async function POST(req: NextRequest) {
       ? `${SITE.name} Lifetime licence — ${productName(lifetimeMeta.product)}, up to ${lifetimeMeta.devices} device${lifetimeMeta.devices === 1 ? "" : "s"}`
       : `${SITE.name} ${PLANS[plan as keyof typeof PLANS].name} — ${cycle === "yearly" ? "1 year" : "1 month"}`;
 
-  await dbRun(db,
-    `INSERT INTO orders (id, user_id, email, plan, cycle, amount_usd, currency, amount_local, gateway, status, meta, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?, 'pending', ?, ?)`,
-    [id, ctx.session.sub, ctx.session.email, edition ? "edition" : lifetime ? "lifetime" : plan, edition ? editionMeta!.cycle : lifetime ? "once" : cycle, amountUsd, orderCurrency, amountIdr, orderGateway,
-     JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, edition: editionMeta, method: card ? "card" : undefined }), now()]);
+  await db.orders.create(newOrder({
+    id, user_id: ctx.session.sub, email: ctx.session.email, plan: edition ? "edition" : lifetime ? "lifetime" : plan, cycle: edition ? editionMeta!.cycle : lifetime ? "once" : cycle,
+    amount_usd: amountUsd, currency: orderCurrency, amount_local: amountIdr, gateway: orderGateway,
+    meta: JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, edition: editionMeta, method: card ? "card" : undefined }),
+  }));
   await audit(db, ctx.session, "order.created", "order", id, { plan: edition ? "edition" : lifetime ? "lifetime" : plan, cycle: edition ? editionMeta!.cycle : lifetime ? "once" : cycle, gateway, processor: card?.processor, env, amountUsd, lifetime: lifetimeMeta, edition: editionMeta }, req);
 
   const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: edition ? "/app/self-hosted" : lifetime ? "/app/lifetime" : undefined };
@@ -139,8 +142,8 @@ export async function POST(req: NextRequest) {
           : a.currency === "USD" ? { currency: a.currency, account_number: a.number, amount: amountUsd }
           : { currency: a.currency, account_number: a.number, amount: toEur(amountUsd, eurRate), rate: eurRate });
         if (banks.length) {
-          await dbRun(db, `UPDATE orders SET meta = json_set(COALESCE(NULLIF(meta,''),'{}'), '$.bank_quotes', json(?)) WHERE id = ?`,
-            [JSON.stringify(banks.map(({ account_number: _n, ...q }) => q)), id]);
+          const quotes = banks.map(({ account_number: _n, ...q }) => q);
+          await db.orders.update(id, (o) => ({ ...o, meta: patchMeta(o.meta, (m) => { m.bank_quotes = quotes; }) }));
         }
         return respond({
           ok: true, orderId: id, manual: true, method: "bank", reference: id, amountUsd, amountIdr, uniqueCode: unique?.code || 0, currency: "IDR",
@@ -167,10 +170,11 @@ export async function POST(req: NextRequest) {
           note: creds.instructions || "",
         }, ctx);
     }
-    if (ref) await dbRun(db, `UPDATE orders SET gateway_ref = ? WHERE id = ?`, [ref, id]);
+    if (ref) await db.orders.update(id, (o) => ({ ...o, gateway_ref: ref }));
     return respond({ ok: true, orderId: id, url, test: env === "sandbox" }, ctx);
   } catch (e: any) {
-    await dbRun(db, `UPDATE orders SET status = 'failed', meta = json_set(meta, '$.error', ?) WHERE id = ?`, [String(e?.message || e).slice(0, 300), id]);
+    const error = String(e?.message || e).slice(0, 300);
+    await db.orders.update(id, (o) => ({ ...o, status: "failed", meta: patchMeta(o.meta, (m) => { m.error = error; }) }));
     return fail(`Could not start the payment: ${String(e?.message || "unknown error").slice(0, 200)}. Please try another method.`, 502);
   }
 }

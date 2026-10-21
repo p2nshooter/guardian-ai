@@ -8,23 +8,16 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import crypto from "node:crypto";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { doc, update, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 const MOCK_PORT = 8796;
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 class Client {
   cookie = ""; ip = `10.77.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`; bearer = "";
   async call(method: string, p: string, body?: unknown, headers: Record<string, string> = {}) {
@@ -65,7 +58,7 @@ before(async () => {
   for (const [c, e] of [[member, `connect-${RUN}@example.com`], [free, `connect-free-${RUN}@example.com`]] as const) {
     assert.equal((await c.post("/api/auth/register", { email: e, name: "Connect", password: "abcdefgh1", acceptTerms: true })).status, 200);
   }
-  const uid = d1(`SELECT id FROM users WHERE email = 'connect-${RUN}@example.com'`)[0].id;
+  const uid = (await userByEmail(`connect-${RUN}@example.com`)).id;
   assert.equal((await admin.post(`/api/admin/members/${uid}`, { action: "grant", plan: "pro", cycle: "monthly" })).status, 200);
   await member.get("/api/auth/me");
   assert.equal((await member.post("/api/byox/keys", { provider: "custom", value: "", model: "mock", baseUrl: `http://127.0.0.1:${MOCK_PORT}/v1` })).status, 200);
@@ -79,9 +72,9 @@ test("connect: keys are plan-limited, shown once, stored hashed; a free account 
   apiKey = r.json.apiKey; keyId = r.json.key.id;
   assert.match(apiKey, /^axto_sk_[A-Za-z0-9_-]{43}$/);
   assert.deepEqual(r.json.key.origins, ["https://shop.example.com"], "only real origins are kept");
-  const row = d1(`SELECT hash, prefix FROM api_keys WHERE id = '${keyId}'`)[0];
+  const row = await doc("apiKeys", keyId);
   assert.equal(row.hash, crypto.createHash("sha256").update(apiKey).digest("hex"));
-  assert.ok(!JSON.stringify(d1(`SELECT * FROM api_keys WHERE id = '${keyId}'`)).includes(apiKey), "the key itself is never stored");
+  assert.ok(!JSON.stringify(row).includes(apiKey), "the key itself is never stored");
   const list = await member.get("/api/connect");
   assert.equal(list.json.limits.apiKeys, 5);
   assert.ok(!list.text.includes(apiKey));
@@ -114,7 +107,8 @@ test("connect: publish → list, long polling wakes up, SSE streams and resumes 
   assert.equal((await api.post("/api/v1/events", { channel: "big", data: "x".repeat(70_000) })).status, 413);
   const l = await api.get(`/api/v1/events?channels=orders.*&after=${first - 1}`);
   assert.deepEqual(l.json.events.map((e: any) => [e.id, e.type, e.data.total]), [[first, "order.paid", 42]]);
-  assert.ok(!JSON.stringify(d1(`SELECT data FROM connect_events WHERE id = ${first}`)).includes("42"), "payload encrypted at rest");
+  const stored = await doc("connectEvents", String(first));
+  assert.ok(stored && !JSON.stringify(stored.data).includes("42"), "payload encrypted at rest");
 
   // Long poll: nothing yet → a publish 1.5 s later wakes it.
   const t0 = Date.now();
@@ -210,7 +204,7 @@ test("connect: signed webhooks with delivery log; test delivery; secret shown on
   assert.equal(c.status, 200, c.text);
   const { webhook, secret } = c.json;
   assert.match(secret, /^whsec_/);
-  d1(`UPDATE webhooks SET url = 'http://127.0.0.1:${MOCK_PORT}/hook' WHERE id = '${webhook.id}'`);
+  await update("webhooks", webhook.id, { url: `http://127.0.0.1:${MOCK_PORT}/hook` });
   await api.post("/api/v1/events", { channel: `pay.${RUN}`, type: "invoice.paid", data: { amount: 99 } });
   for (let i = 0; i < 40 && !hooks.length; i++) await new Promise((r) => setTimeout(r, 250));
   assert.equal(hooks.length, 1, "delivered");
@@ -221,7 +215,8 @@ test("connect: signed webhooks with delivery log; test delivery; secret shown on
   assert.equal(h.headers["x-axto-event"], "invoice.paid");
   const dl = await member.get(`/api/connect/webhooks/${webhook.id}/deliveries`);
   assert.equal(dl.json.deliveries[0].status, 204);
-  assert.ok(!JSON.stringify(d1(`SELECT secret_enc FROM webhooks WHERE id = '${webhook.id}'`)).includes(secret), "secret encrypted at rest");
+  const hookDoc = await doc("webhooks", webhook.id);
+  assert.ok(hookDoc && !JSON.stringify(hookDoc).includes(secret), "secret encrypted at rest");
   const test2 = await member.post(`/api/connect/webhooks/${webhook.id}/test`, {});
   assert.equal(test2.json.result.status, 204);
   assert.equal((await member.del(`/api/connect/webhooks/${webhook.id}`)).status, 200);

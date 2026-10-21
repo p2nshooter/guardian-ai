@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withCaller, background, sleep } from "@/lib/connect/route";
 import { corsHeaders, preflight } from "@/lib/connect/http";
 import { requireScope, canReadChannel, ConnectError, type Caller } from "@/lib/connect/auth";
-import { eventsAfter, parsePatterns, publishEvent, startCursor } from "@/lib/connect/events";
+import { eventsAfter, parsePatterns, publishEvent, startCursor, SETTLE_MS } from "@/lib/connect/events";
 import { fanOut } from "@/lib/connect/webhooks";
 import { prepareRun, runAllowed, splitStatus } from "@/lib/ai/run-core";
 import { CONNECT_JSON, CODE_STATUS, envelope, readEnvelope, statusCode } from "@/lib/connect/connect-protocol";
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           const until = Date.now() + Math.max(5, Math.min(55, Number(msg.max_seconds ?? msg.maxSeconds) || 55)) * 1000;
           return streamResponse(req, c, async (send) => {
             while (!req.signal.aborted && Date.now() < until) {
-              for (const e of await eventsAfter(db, c.userId, cursor, patterns, 100)) {
+              for (const e of await eventsAfter(db, c.userId, cursor, patterns, 100, SETTLE_MS)) {
                 cursor = e.id;
                 if (canReadChannel(c, e.channel) && !send({ ...e, created_at: e.createdAt })) return;
               }

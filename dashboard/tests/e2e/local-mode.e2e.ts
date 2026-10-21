@@ -5,22 +5,15 @@
  * read, no AI is called, and the placeholders come back unchanged. */
 import { test, before } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
+import { auditByAction, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
-const CTL_DIR = path.resolve(process.cwd(), ".e2e-state/d1ctl");
 const RUN = Date.now().toString(36);
 
-function d1(sql: string): any[] {
-  const out = execFileSync("npx", ["wrangler", "d1", "execute", "axto-db", "--local", "--persist-to", "../persist", "--command", sql, "--json"], {
-    cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" }, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
-  });
-  return JSON.parse(out.slice(out.indexOf("[")))[0]?.results || [];
-}
 class Client {
   cookie = ""; ip = `10.78.${Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}`;
   async call(method: string, p: string, body?: unknown) {
@@ -54,7 +47,7 @@ before(async () => {
     assert.equal((await c.post("/api/auth/register", { email: e, name: "Local", password: "abcdefgh1", acceptTerms: true })).status, 200);
   }
   for (const [e, plan] of [[`lm-pro-${RUN}@example.com`, "pro"], [`lm-st-${RUN}@example.com`, "starter"]] as const) {
-    const uid = d1(`SELECT id FROM users WHERE email = '${e}'`)[0].id;
+    const uid = (await userByEmail(e)).id;
     assert.equal((await admin.post(`/api/admin/members/${uid}`, { action: "grant", plan, cycle: "monthly" })).status, 200);
   }
   await pro.get("/api/auth/me"); await starter.get("/api/auth/me");
@@ -108,6 +101,6 @@ test("local mode: the operator can switch it off and on (audited)", async () => 
   assert.equal((await admin.put("/api/admin/settings", { local_mode: true })).status, 200);
   assert.equal((await pro.get("/api/auth/me")).json.localMode, true);
   assert.equal((await pro.post("/api/byox/prepare", LEGAL("ask"))).status, 200);
-  assert.ok(d1(`SELECT action FROM audit_log WHERE action = 'admin.settings.update' ORDER BY created_at DESC LIMIT 1`).length === 1);
+  assert.ok((await auditByAction("admin.settings.update")).length >= 1);
   assert.equal((await pro.put("/api/admin/settings", { local_mode: false })).status, 403, "members cannot switch it");
 });

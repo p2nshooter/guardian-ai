@@ -9,7 +9,11 @@
  * home), so a member cannot "free" a device slot themselves — only an admin
  * can, after the customer confirms the old device is retired.
  * ============================================================================ */
-import { dbFirst, dbQuery, dbRun, newId, now } from "./db";
+import { newId, now } from "./db";
+import type { Data } from "./data";
+import type { LifetimeActivationDoc, LifetimeLicenseDoc } from "./data/schema";
+import { readMeta } from "./data/meta";
+import { ConflictError } from "./r2/store";
 import { signPayload } from "./license-sign";
 import { mailLayout, sendMail } from "./mail";
 import { absoluteUrl, SITE } from "./site";
@@ -21,11 +25,9 @@ import {
   LIFETIME_MAJOR, UPDATE_MONTHS, type LifetimeScope,
 } from "./lifetime";
 
-export interface LifetimeLicense {
-  id: string; user_id: string; order_id: string; scope: LifetimeScope; product: string; devices: number;
-  major_version: number; updates_until: string; status: "active" | "revoked"; note: string; created_at: string;
-}
-export interface LifetimeActivation { id: string; license_id: string; product: string; machine_id: string; label: string; created_at: string; revoked_at: string }
+export type LifetimeLicense = LifetimeLicenseDoc & { scope: LifetimeScope; status: "active" | "revoked" };
+export type LifetimeActivation = LifetimeActivationDoc;
+const asLicence = (d: LifetimeLicenseDoc | null) => d as LifetimeLicense | null;
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 export const productName = (slug: string) => (slug === "suite" ? "Suite (all 10 apps)" : catalogEntry(slug)?.name || slug);
@@ -37,35 +39,31 @@ export function lifetimeChoiceProblem(scope: unknown, product: unknown): string 
   return null;
 }
 
-export async function issueLifetime(db: any, o: { userId: string; orderId?: string; scope: LifetimeScope; product: string; devices: number; updateMonths?: number; note?: string }): Promise<LifetimeLicense> {
-  const id = newLicenseId();
+export async function issueLifetime(db: Data, o: { userId: string; orderId?: string; scope: LifetimeScope; product: string; devices: number; updateMonths?: number; note?: string }): Promise<LifetimeLicense> {
   const ts = now();
   const updatesUntil = addMonths(new Date(), o.updateMonths ?? UPDATE_MONTHS).toISOString();
   const product = o.scope === "suite" ? "suite" : o.product;
-  await dbRun(db,
-    `INSERT INTO lifetime_licenses (id, user_id, order_id, scope, product, devices, major_version, updates_until, status, note, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`,
-    [id, o.userId, o.orderId || "", o.scope, product, o.devices, LIFETIME_MAJOR, updatesUntil, String(o.note || "").slice(0, 300), ts, ts]);
-  return (await dbFirst<LifetimeLicense>(db, `SELECT * FROM lifetime_licenses WHERE id = ?`, [id]))!;
+  const doc: LifetimeLicenseDoc = {
+    id: newLicenseId(), user_id: o.userId, order_id: o.orderId || "", scope: o.scope, product, devices: o.devices, major_version: LIFETIME_MAJOR,
+    updates_until: updatesUntil, status: "active", note: String(o.note || "").slice(0, 300), install_key: "", created_at: ts, updated_at: ts,
+  };
+  return asLicence(await db.lifetimeLicenses.create(doc))!;
 }
 
-export async function licensesFor(db: any, userId: string): Promise<(LifetimeLicense & { activations: LifetimeActivation[] })[]> {
-  const lics = await dbQuery<LifetimeLicense>(db, `SELECT * FROM lifetime_licenses WHERE user_id = ? ORDER BY created_at DESC`, [userId]);
+export async function licensesFor(db: Data, userId: string): Promise<(LifetimeLicense & { activations: LifetimeActivation[] })[]> {
+  const lics = (await db.lifetimeLicenses.listAllDocs("user", userId)) as LifetimeLicense[];
   if (!lics.length) return [];
-  const acts = await dbQuery<LifetimeActivation>(db,
-    `SELECT * FROM lifetime_activations WHERE license_id IN (${lics.map(() => "?").join(",")}) ORDER BY created_at`, lics.map((l) => l.id));
-  return lics.map((l) => ({ ...l, activations: acts.filter((a) => a.license_id === l.id) }));
+  const acts = await Promise.all(lics.map((l) => db.lifetimeActivations.listAllDocs("license", l.id)));
+  return lics.map((l, i) => ({ ...l, activations: acts[i]! }));
 }
 
 /** Does the member hold an active lifetime licence for this app with updates still included? */
-export async function lifetimeCovers(db: any, userId: string, product: string): Promise<boolean> {
-  const r = await dbFirst(db,
-    `SELECT 1 AS x FROM lifetime_licenses WHERE user_id = ? AND status = 'active' AND updates_until > ? AND (product = ? OR scope = 'suite') LIMIT 1`,
-    [userId, now(), product]);
-  return !!r;
+export async function lifetimeCovers(db: Data, userId: string, product: string): Promise<boolean> {
+  const at = now();
+  return (await db.lifetimeLicenses.listAllDocs("user", userId)).some((l) => l.status === "active" && l.updates_until > at && (l.product === product || l.scope === "suite"));
 }
 
-async function signedFile(db: any, lic: LifetimeLicense, act: LifetimeActivation, customer: string): Promise<string> {
+async function signedFile(db: Data, lic: LifetimeLicense, act: LifetimeActivation, customer: string): Promise<string> {
   // Top-tier features, with the device count as the node/worker/device cap.
   const pkg = getSelfHosted(act.product)?.packageCode || "";
   const entitlements = serializeEntitlements(buildFeatures(act.product, pkg, lic.devices), pkg);
@@ -83,30 +81,29 @@ export type ActivateResult = { ok: true; activation: LifetimeActivation; file: s
  * active returns the same file (no extra slot). Throws SigningUnavailable when
  * the signing key is missing (callers answer 503).
  */
-export async function activateDevice(db: any, userId: string, licenseId: string, product: string, machineId: string, label: string, customer: string): Promise<ActivateResult> {
-  const lic = await dbFirst<LifetimeLicense>(db, `SELECT * FROM lifetime_licenses WHERE id = ? AND user_id = ?`, [licenseId, userId]);
-  if (!lic) return { ok: false, error: "Licence not found.", status: 404 };
+export async function activateDevice(db: Data, userId: string, licenseId: string, product: string, machineId: string, label: string, customer: string): Promise<ActivateResult> {
+  const lic = asLicence(await db.lifetimeLicenses.get(licenseId));
+  if (!lic || lic.user_id !== userId) return { ok: false, error: "Licence not found.", status: 404 };
   if (lic.status !== "active") return { ok: false, error: "This licence has been revoked. Contact support.", status: 403 };
   if (!productsOf(lic).includes(product)) return { ok: false, error: `This licence does not cover ${productName(product)}.`, status: 400 };
   const mid = String(machineId || "").trim().toLowerCase();
   if (!isMachineId(mid)) return { ok: false, error: "Enter the 32-character machine ID the app shows on first start (see the guide).", status: 400 };
 
-  let act = await dbFirst<LifetimeActivation>(db,
-    `SELECT * FROM lifetime_activations WHERE license_id = ? AND product = ? AND machine_id = ? AND revoked_at = ''`, [lic.id, product, mid]);
+  const live = () => db.lifetimeActivations.find("machine", `${lic.id}|${product}|${mid}`);
+  let act = await live();
   if (!act) {
-    // Count-and-insert in ONE statement so two simultaneous activations can never exceed the limit.
-    const id = newId("act");
-    try {
-      await dbRun(db,
-        `INSERT INTO lifetime_activations (id, license_id, product, machine_id, label, created_at)
-         SELECT ?, ?, ?, ?, ?, ?
-          WHERE (SELECT COUNT(*) FROM lifetime_activations WHERE license_id = ? AND product = ? AND revoked_at = '') < ?`,
-        [id, lic.id, product, mid, String(label || "").trim().slice(0, 80), now(), lic.id, product, lic.devices]);
-    } catch {
-      // Same machine activated concurrently (unique index) — fall through and return that activation.
+    // A device takes a numbered seat (1…devices) through a uniqueness guard: two simultaneous
+    // activations can never exceed the limit, and one machine never takes two seats.
+    for (let slot = 1; slot <= lic.devices && !act; slot++) {
+      try {
+        act = await db.lifetimeActivations.create({
+          id: newId("act"), license_id: lic.id, product, machine_id: mid, label: String(label || "").trim().slice(0, 80), created_at: now(), revoked_at: "", slot,
+        });
+      } catch (err) {
+        if (!(err instanceof ConflictError)) throw err;
+        if (err.field === "machine") act = await live();   // the same machine, activated concurrently
+      }
     }
-    act = await dbFirst<LifetimeActivation>(db,
-      `SELECT * FROM lifetime_activations WHERE license_id = ? AND product = ? AND machine_id = ? AND revoked_at = ''`, [lic.id, product, mid]);
     if (!act) {
       return { ok: false, error: `All ${lic.devices} device${lic.devices === 1 ? "" : "s"} for ${productName(product)} are activated. To move to new hardware, ask support to retire an old device.`, status: 409 };
     }
@@ -114,42 +111,57 @@ export async function activateDevice(db: any, userId: string, licenseId: string,
   return { ok: true, activation: act, file: await signedFile(db, lic, act, customer), filename: `${product}.axto-license` };
 }
 
-/** The licence's AXTO Setup key, created on first use ("" until migration 0059 has run). */
-export async function installKeyFor(db: any, licenseId: string): Promise<string> {
+/** The licence's AXTO Setup key, created on first use. */
+export async function installKeyFor(db: Data, licenseId: string): Promise<string> {
   try {
-    const cur = await dbFirst<{ k: string }>(db, `SELECT install_key AS k FROM lifetime_licenses WHERE id = ?`, [licenseId]);
-    if (cur?.k) return cur.k;
-    await dbRun(db, `UPDATE lifetime_licenses SET install_key = ?, updated_at = ? WHERE id = ? AND install_key = ''`, [newInstallKey(), now(), licenseId]);
-    return (await dbFirst<{ k: string }>(db, `SELECT install_key AS k FROM lifetime_licenses WHERE id = ?`, [licenseId]))?.k || "";
+    const cur = await db.lifetimeLicenses.get(licenseId);
+    if (!cur) return "";
+    if (cur.install_key) return cur.install_key;
+    const k = newInstallKey();
+    return (await db.lifetimeLicenses.update(licenseId, (l) => (l.install_key ? null : { ...l, install_key: k, updated_at: now() }))).install_key;
   } catch {
     return "";
   }
 }
 
 type InstallLicence = LifetimeLicense & { user_status: string; email: string; name: string; organization: string };
-export async function licenseByInstallKey(db: any, key: string): Promise<InstallLicence | null> {
-  return dbFirst<InstallLicence>(db,
-    `SELECT l.*, u.status AS user_status, u.email, u.name, u.organization FROM lifetime_licenses l JOIN users u ON u.id = l.user_id
-      WHERE l.install_key = ?`, [key]).catch(() => null);
+export async function licenseByInstallKey(db: Data, key: string): Promise<InstallLicence | null> {
+  try {
+    const l = asLicence(await db.lifetimeLicenses.find("install_key", key));
+    if (!l) return null;
+    const u = await db.users.get(l.user_id);
+    if (!u) return null;
+    return { ...l, user_status: u.status, email: u.email, name: u.name, organization: u.organization };
+  } catch {
+    return null;
+  }
 }
 
 /** Re-download an existing activation's file (member: own licences only). */
-export async function activationFileFor(db: any, activationId: string, userId: string | null, customer: string): Promise<{ file: string; filename: string } | null> {
-  const act = await dbFirst<LifetimeActivation>(db, `SELECT * FROM lifetime_activations WHERE id = ? AND revoked_at = ''`, [activationId]);
-  if (!act) return null;
-  const lic = await dbFirst<LifetimeLicense>(db, `SELECT * FROM lifetime_licenses WHERE id = ?`, [act.license_id]);
+export async function activationFileFor(db: Data, activationId: string, userId: string | null, customer: string): Promise<{ file: string; filename: string } | null> {
+  const act = await db.lifetimeActivations.get(activationId);
+  if (!act || act.revoked_at) return null;
+  const lic = asLicence(await db.lifetimeLicenses.get(act.license_id));
   if (!lic || lic.status !== "active" || (userId && lic.user_id !== userId)) return null;
   return { file: await signedFile(db, lic, act, customer), filename: `${act.product}.axto-license` };
 }
 
-export async function revokeActivation(db: any, activationId: string): Promise<boolean> {
-  const r = await dbRun(db, `UPDATE lifetime_activations SET revoked_at = ? WHERE id = ? AND revoked_at = ''`, [now(), activationId]);
-  return !!r?.meta?.changes;
+/** Retire a device: its seat and its machine guard are released for a new device. */
+export async function revokeActivation(db: Data, activationId: string): Promise<boolean> {
+  const cur = await db.lifetimeActivations.get(activationId);
+  if (!cur || cur.revoked_at) return false;
+  let won = false;
+  await db.lifetimeActivations.update(activationId, (a) => {
+    won = !a.revoked_at;
+    return won ? { ...a, revoked_at: now() } : null;
+  });
+  return won;
 }
 
-export async function setLicenseStatus(db: any, licenseId: string, status: "active" | "revoked"): Promise<boolean> {
-  const r = await dbRun(db, `UPDATE lifetime_licenses SET status = ?, updated_at = ? WHERE id = ?`, [status, now(), licenseId]);
-  return !!r?.meta?.changes;
+export async function setLicenseStatus(db: Data, licenseId: string, status: "active" | "revoked"): Promise<boolean> {
+  if (!(await db.lifetimeLicenses.get(licenseId))) return false;
+  await db.lifetimeLicenses.update(licenseId, (l) => ({ ...l, status, updated_at: now() }));
+  return true;
 }
 
 export function lifetimeMail(lic: LifetimeLicense, amount?: number) {
@@ -165,15 +177,21 @@ export function lifetimeMail(lic: LifetimeLicense, amount?: number) {
 
 /**
  * Paid lifetime order → licence (called from markOrderPaid after it claimed the
- * order). Idempotent through the unique index on order_id.
+ * order). Idempotent through the uniqueness guard on order_id.
  */
-export async function issueForOrder(db: any, o: { id: string; user_id: string; email: string; amount_usd: number; meta: string }): Promise<LifetimeLicense | null> {
-  const existing = await dbFirst<LifetimeLicense>(db, `SELECT * FROM lifetime_licenses WHERE order_id = ?`, [o.id]);
+export async function issueForOrder(db: Data, o: { id: string; user_id: string; email: string; amount_usd: number; meta: string }): Promise<LifetimeLicense | null> {
+  const existing = asLicence(await db.lifetimeLicenses.find("order_id", o.id));
   if (existing) return existing;
-  let m: any = {};
-  try { m = JSON.parse(o.meta || "{}").lifetime || {}; } catch {}
+  const m: any = readMeta(o.meta).lifetime || {};
   if (lifetimeChoiceProblem(m.scope, m.product) || !(Number(m.devices) >= 1 && Number(m.devices) <= 100)) return null;
-  const lic = await issueLifetime(db, { userId: o.user_id, orderId: o.id, scope: m.scope, product: String(m.product || ""), devices: Number(m.devices) });
+  let lic: LifetimeLicense;
+  try {
+    lic = await issueLifetime(db, { userId: o.user_id, orderId: o.id, scope: m.scope, product: String(m.product || ""), devices: Number(m.devices) });
+  } catch (err) {
+    // The order_id guard: a licence for this order was issued concurrently.
+    if (err instanceof ConflictError) return asLicence(await db.lifetimeLicenses.find("order_id", o.id));
+    throw err;
+  }
   const mail = lifetimeMail(lic, o.amount_usd);
   await sendMail(o.email, mail.subject, mail.html);
   return lic;

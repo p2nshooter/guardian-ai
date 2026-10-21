@@ -3,7 +3,7 @@
  *   PUT /api/legal/library  {playbooks, clauses} → { ok, library } */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
-import { getDB, getUserFiles } from "@/lib/db";
+import { getData, getUserFiles } from "@/lib/db";
 import { loadSessionFor, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { readJson, fail } from "@/lib/http";
 import { limitsFor } from "@/lib/plans";
@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest) {
   const rl = await rateLimit(req, "legal-write", g.ctx.session.sub, { max: 240, windowSeconds: 600 });
   if (rl.limited) return fail("Too many changes at once. Please wait a moment.", 429);
   const b = await readJson(req);
-  const db = getDB(req);
+  const db = getData(req);
   const room = storageProblem(await getUsage(db, g.ctx.session.sub, g.tier), Math.ceil(JSON.stringify(b || {}).length * 1.1));
   if (room) return fail(room, 413, { upgrade: true });
   try {
