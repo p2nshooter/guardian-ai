@@ -836,7 +836,9 @@ ulyah.com, 1fr.fr dan tilawa.de. `dashboard/lib/site.ts` (`adsenseClient`) membe
 
 TXT verifikasi, MX `mx1.spacemail.com` / `mx2.spacemail.com` (prioritas 0), SRV `_autodiscover._tcp` 0 0 443
 `autoconfig.spacemail.com`, SPF tunggal `v=spf1 include:spf.spacemail.com ~all` (SPF lain digabung/dihapus — satu
-domain hanya boleh punya satu rekaman SPF), DKIM `spacemail._domainkey`. Yang sudah dimasukkan pemilik dibiarkan.
+domain hanya boleh punya satu rekaman SPF), DKIM `spacemail._domainkey`. Yang sudah dimasukkan pemilik dibiarkan. **✅ 26 Okt: semua rekaman
+dimasukkan pemilik sendiri di dasbor Cloudflare**; `dns-mail.yml` tetap ada sebagai alat cek/ulang yang idempoten (token
+deploy axto.io tidak punya izin Zone → DNS, jadi workflow hanya melapor).
 
 ### 26.3 Cloudflare: token & R2 (dicatat dulu)
 
