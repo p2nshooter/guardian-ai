@@ -473,11 +473,11 @@ bukan dari perkiraan.
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
 | 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 5/5 (tayang 19 Okt, deploy #74/#75 hijau) | **100 %** |
 | 10 | Yang belum dibuat di axto.io & xaa.es (18 Okt 2026, `REQUESTS.md` 70) | audit 10 aplikasi Docker ✅ (`AXTO-APPS-BLUEPRINT.md` §16) · logika 18 template xaa.es ✅ (repo xaa `docs/TEMPLATES-BLUEPRINT.md`) · G1 deteksi GPU di host · template pertama + demo + gambar animasi · 17 template lainnya | 2/5 | **40 %** |
-| 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi ✅ · akun & keamanan ✅ · uang ✅ · lisensi ✅ · lainnya ✅ · migrasi data + jendela pindah (kode + tes ✅, tayang setelah deploy, §25.3) · D1 dilepas (±28 Okt) | 6/8 | **75 %** |
+| 11 | Semua data pindah dari D1 ke R2 (20 Okt 2026, `REQUESTS.md` 79, §24) | blueprint ✅ (`docs/R2-DATA-BLUEPRINT.md`) · R2 Store + tes konkurensi ✅ · akun & keamanan ✅ · uang ✅ · lisensi ✅ · lainnya ✅ · migrasi data + jendela pindah ✅ (tayang 21 Okt, 0 konflik, §25.3) · D1 dilepas (±28 Okt) | 7/8 | **88 %** |
 | 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
-| 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah · axto.io pindah · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 1/5 | **20 %** |
-| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 (dibangun + diuji §25.3, tayang setelah deploy) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 0/4 | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **47/92** | **≈ 51 %** |
+| 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah ✅ · axto.io pindah ✅ (21 Okt) · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 3/5 | **60 %** |
+| 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 ✅ (tayang 21 Okt, §25.3) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 1/4 | **25 %** |
+| | **Total** (bobot = jumlah fase) | | **51/92** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -813,6 +813,66 @@ Butir 1 §25 (`R2-DATA-BLUEPRINT.md` §7) selesai di kode:
 | Admin | Admin → Data & backups: laporan per tabel (baris D1 / dokumen R2 / konflik), jendela D1 hanya-baca 7 hari, backup terbaru | E2E + Playwright |
 | Uji E2E | 88 kueri D1 langsung di tes diganti endpoint uji `/api/test/data` (hanya runtime lokal: `E2E_TEST_DATA=1` + `ALLOW_INSECURE_ENDPOINTS=1` + localhost + rahasia cron; produksi 404) | `tests/e2e/*.e2e.ts` |
 
-Sesudah tayang: `/api/health` menunjukkan `records: "ready"`; D1 `axto-db` hanya-baca 7 hari (sampai ±28 Okt 2026),
-lalu binding `DB` dan `lib/data/migrate.ts` dilepas (`R2-DATA-BLUEPRINT.md` §4).
+**Tayang 21 Okt 2026 (PR #82, build `56fc566`):** langkah deploy „Move the records from D1 to R2 (once)" memindahkan
+`axto-db` (5,7 MB) dalam ±4 menit — selesai 02:33:21 UTC, **0 konflik, 0 tabel kurang**; `/api/health` di axto.io:
+`records: "ready"`, semua binding R2 ada. Uji coba sebelumnya di preview (1,8 MB data asli) selesai dalam ±3 menit.
+D1 `axto-db` sekarang hanya-baca sampai ±28 Okt 2026, lalu binding `DB` dan `lib/data/migrate.ts` dilepas
+(`R2-DATA-BLUEPRINT.md` §4).
 
+
+## 26. Perintah pemilik 21–26 Okt 2026 — AdSense dulu, artikel, lalu (dengan izin) aplikasi
+
+Urutan dari pemilik: **kode AdSense sampai live → kode lain (DNS) → situs baru → artikel ≥ 45 di setiap situs
+non-muslim (termasuk axto.io dan xaa.es) → blueprint → minta izin sebelum mengerjakan aplikasi.** "Kita berhenti dulu
+aplikasi xaa.es dan axto.io"; "jgn pernah mengerjakan aplikasi sebelum di perintahkan" (REQUESTS 85–92).
+
+### 26.1 AdSense axto.io (✅ kode; live setelah merge + deploy)
+
+`google.com, pub-8991272269211824, DIRECT, f08c47fec0942fa0` (sebelumnya 6908951782430508), sama dengan xaa.es,
+ulyah.com, 1fr.fr dan tilawa.de. `dashboard/lib/site.ts` (`adsenseClient`) memberi loader dan tag meta di HTML server;
+`dashboard/public/ads.txt` satu baris yang sama; `scripts/live-audit.mjs` memeriksa ketiganya di situs live.
+
+### 26.2 DNS axto.io: Spacemail
+
+TXT verifikasi, MX `mx1.spacemail.com` / `mx2.spacemail.com` (prioritas 0), SRV `_autodiscover._tcp` 0 0 443
+`autoconfig.spacemail.com`, SPF tunggal `v=spf1 include:spf.spacemail.com ~all` (SPF lain digabung/dihapus — satu
+domain hanya boleh punya satu rekaman SPF), DKIM `spacemail._domainkey`. Yang sudah dimasukkan pemilik dibiarkan.
+
+### 26.3 Cloudflare: token & R2 (dicatat dulu)
+
+R2 akun axto.io: 12,53 GB terpakai; `axto-data` 4,19 rb objek setelah pindah dari D1. Kapasitas ini dipakai penuh
+oleh axto.io (data per dokumen, berkas anggota terenkripsi, rilis Docker bertanda tangan, cadangan 35 hari).
+Rencana berikutnya (dibahas dengan pemilik dulu, belum dikerjakan): xaa.es pindah ke akun Cloudflare yang sama dengan
+axto.io agar satu akun fokus khusus aplikasi. Izin token tidak ditulis di repo (aturan §4 CLAUDE.md).
+
+### 26.4 Penawaran investor disembunyikan (⏸ menunggu izin)
+
+Default tersembunyi di semua halaman index dan portal member axto.io dan xaa.es; tombol tampil/sembunyi di portal
+admin (dicatat di log audit). Saat tersembunyi: tautan header/footer, kartu beranda, `/invest` (noindex + 404) dan
+entri sitemap ikut hilang, supaya tidak ada halaman yatim yang dirayapi.
+
+### 26.5 Lelang lisensi tiap 2 minggu (📝 blueprint)
+
+- Siklus 14 hari, selalu berakhir **Jumat 15:00 UTC**; satu lot per paket yang dilelang, harga buka **25 % dari harga
+  normal**, kenaikan minimum 1 % harga normal, perpanjangan anti-snipe 5 menit bila ada tawaran di 5 menit terakhir.
+- Hanya anggota terverifikasi; setiap tawaran adalah dokumen R2 create-once (`auction_bids/<lot>/<seq>`), harga
+  tertinggi dibaca dari indeks, penutupan lot adalah transisi bersyarat (CAS) yang idempoten.
+- Pemenang membayar lewat checkout live biasa dalam 48 jam; bila tidak, lot jatuh ke penawar berikutnya. Lisensi
+  aktif otomatis setelah pembayaran terverifikasi (zero-touch).
+- Pemenang memilih **nama yang ditampilkan** (perusahaan atau pribadi, disaring kata kasar dan merek orang lain);
+  daftar pemenang + paketnya tampil di beranda, portal member dan portal admin (admin: lot, tawaran, pembatalan,
+  log audit).
+
+### 26.6 Koin AXTO lokal (📝 blueprint, catatan risiko)
+
+Total pasokan 100 jt, harga awal $1, hanya untuk transaksi di axto.io (bayar paket, lelang, add-on), tidak bisa
+dicairkan oleh axto.io. Buku besar di R2 (log append-only + saldo CAS per akun), pasokan tetap dan dapat diaudit.
+Jual-beli antar klien/pihak luar: pasar P2P dengan escrow koin. **Risiko yang wajib dibahas sebelum dibangun:** token
+yang dijual ke "investor" dengan harapan nilainya naik dapat digolongkan sekuritas atau aset kripto yang diatur
+(mis. OJK/Bappebti di Indonesia, MiCA di UE, SEC di AS); klaim harus jujur (tanpa janji imbal hasil).
+
+### 26.7 axto.io kelas dunia & promosi (📝)
+
+Perbaikan konsistensi dan riset pesaing ("1000 kali lebih canggih") menunggu izin pemilik setelah artikel selesai.
+Promosi axto.io (dan xaa.es, ulyah.com) masuk ke pekerjaan artikel di semua situs: blok "Dari ekosistem kami" dengan
+logo, tautan biasa berlabel jelas, jauh dari iklan, tanpa teks tersembunyi (kebijakan AdSense).
