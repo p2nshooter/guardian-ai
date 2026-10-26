@@ -19,6 +19,7 @@ if (!file || !token) {
   process.exit(2);
 }
 const spec = JSON.parse(readFileSync(file, "utf8"));
+let failed = 0;
 const summary = [];
 const note = (line) => { console.log(line); summary.push(line); };
 
@@ -41,6 +42,8 @@ if (!zone) {
 const listed = await api(`/zones/${zone}/dns_records?per_page=500`);
 if (!listed.success) {
   note(`- ❌ cannot list records: ${JSON.stringify(listed.errors)}`);
+  note("- The token needs **Zone → DNS → Edit** on this zone (dash.cloudflare.com/profile/api-tokens → edit the token behind the CLOUDFLARE_API_TOKEN secret), then run this workflow again.");
+  failed = spec.records.length + (spec.spf ? 1 : 0);
   finish(1);
 }
 const existing = listed.result;
@@ -49,7 +52,6 @@ for (const r of existing.filter((r) => ["MX", "SRV"].includes(r.type) || (r.type
   console.log(`  existing ${r.type} ${r.name} ${r.priority ?? ""} ${r.type === "TXT" ? txt(r.content).slice(0, 80) : r.content}`);
 }
 
-let failed = 0;
 for (const rec of spec.records) {
   const same = existing.find((r) => {
     if (r.type !== rec.type || host(r.name) !== host(rec.name)) return false;
