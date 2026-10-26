@@ -1,0 +1,12 @@
+{
+  "_comment": "Spacemail (Spaceship) mailboxes for axto.io. Owner, 25-26 Oct 2026: 'Tolong masukin ke dns axto.io settingan ini' with the Spaceship 'Connecting with DNS records' screenshots, then 'Jika input spacemail gagal karena sebagian sudah sy input … Kerjakan yg berhasil saja'. Every value is public by design (anyone can read it in DNS). Applied by .github/workflows/dns-mail.yml: records already there are left alone, SPF is merged into one record, nothing else is deleted.",
+  "zone": "axto.io",
+  "records": [
+    { "label": "Spaceship domain verification", "type": "TXT", "name": "axto.io", "content": "f7c2d54c-0db6-4cd5-9ea9-3dceb1735990" },
+    { "label": "Spacemail MX 1", "type": "MX", "name": "axto.io", "content": "mx1.spacemail.com", "priority": 0 },
+    { "label": "Spacemail MX 2", "type": "MX", "name": "axto.io", "content": "mx2.spacemail.com", "priority": 0 },
+    { "label": "Spacemail autodiscover", "type": "SRV", "name": "_autodiscover._tcp.axto.io", "data": { "priority": 0, "weight": 0, "port": 443, "target": "autoconfig.spacemail.com" } },
+    { "label": "Spacemail DKIM", "type": "TXT", "name": "spacemail._domainkey.axto.io", "content": "v=DKIM1;k=rsa;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8iinWic8IbU4LMF9K0h2w0Ii/BUswp7Hp2CHhQclD38DIkiEE6RSYvPsJDQuVG2PFFyXwZogQojW+Sc7mhz8VL5g+Z47DCxKlperk/oeQ4d/M6/Qm2LDSrxFlYY5pKqmYYJkxtv+cuGI8w8Kf8hKFkkLutthJpfAiWSUORx4Tt1OaonGeLC0T1BQ9cJjEcBzCIdox6g5kfr5E/Mw5vflHeKQfGCWi3dLHeRNyYidxXapBPi1Vf0DqiZxLFMKd77JFFvJhV+GWg36TUiDqDU3t+SzzooIP8Kg1eG93XIwmdBA2DvdmSDmVHxWkvIb8NGDsy9GqQSvRsCpCN9c0kHXgQIDAQAB" }
+  ],
+  "spf": { "name": "axto.io", "include": "spf.spacemail.com", "all": "~all" }
+}

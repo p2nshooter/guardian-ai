@@ -247,7 +247,7 @@ menghormati batas 1 tulis/detik per kunci), dijumlahkan cron ke `n/visits/<yyyy-
 | Pustaka R2 Store + R2 palsu + tes konkurensi | ✅ 21 Okt (`lib/r2/*`, dari xaa.es) |
 | Tahap 2–5 (koleksi `lib/data/schema.ts`, semua route & modul) | ✅ 21 Okt — 0 kueri D1 tersisa |
 | Arsip tabel lama ke `axto-backups/legacy/` | ✅ kode + tes (berjalan saat pindah) |
-| Migrasi data + jendela pindah + pengamatan 7 hari | ✅ kode + tes (`tests/migrate.test.ts`, `tests/e2e/migration.e2e.ts`); tayang setelah deploy (`BLUEPRINT-V4.md` §25.3) |
+| Migrasi data + jendela pindah + pengamatan 7 hari | ✅ tayang 21 Okt 2026 02:33 UTC — `axto-db` 5,7 MB dalam ±4 menit, 0 konflik, 0 tabel kurang (`BLUEPRINT-V4.md` §25.3); pengamatan 7 hari berjalan |
 | Backup harian bertahap, 35 hari | ✅ kode + tes (`lib/data/backup-job.ts`) |
 | D1 dilepas | ⏳ 7 hari setelah pindah (±28 Okt 2026) |
 | Animasi panduan (23 + 8 admin) | ⏳ 0/31 |

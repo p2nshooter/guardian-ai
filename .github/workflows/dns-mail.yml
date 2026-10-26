@@ -1,0 +1,35 @@
+name: DNS mail records (Spacemail on axto.io)
+
+# Adds the Spacemail records in .github/dns/axto-spacemail.json to the axto.io
+# zone: domain verification TXT, the two MX, the autodiscover SRV and DKIM,
+# and merges spf.spacemail.com into the domain's single SPF record. Records
+# already there are left alone and nothing else is deleted; a record that
+# fails is reported in the job summary while the others still go in.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/dns/**'
+      - '.github/workflows/dns-mail.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: dns-mail
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  spacemail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply the Spacemail records
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node .github/dns/apply-mail.mjs .github/dns/axto-spacemail.json
