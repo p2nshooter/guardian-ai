@@ -9,7 +9,7 @@ import { pageMeta, breadcrumbJsonLd, faqJsonLd, softwareJsonLd } from "@/lib/seo
 import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = pageMeta({
-  title: "AI Prompt Library — 50+ premium, ready-to-run prompts for every profession",
+  title: "AI Prompt Library — 50+ ready-to-run prompts",
   description: `AXTO's prompt library: expert, ready-to-run AI prompts for ${FIELDS.length} professional fields — business, marketing, sales, legal, finance, software, data and more. Fill in the blanks and run on your own AI. Basic prompts free.`,
   path: "/prompts",
   keywords: ["ai prompt library", "chatgpt prompts", "claude prompts", "best ai prompts", "premium prompt templates", "ai prompts for business", "prompt marketplace"],

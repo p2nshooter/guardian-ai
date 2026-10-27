@@ -1,12 +1,14 @@
 /* ==============================================================================
  * AXTO — the licence auction end to end on the LOCAL runtime (§26.5):
  *   the tick opens this auction's lots (every package by default; Friday 07:00
- *   WIB = 00:00 UTC; 25 % opening, 1 % raise) → only verified members bid (e-mailed code, filtered display name)
- *   → bids are validated, create-once, outbid e-mail, anti-snipe → the lot
- *   closes to the top bidder → only the winner pays, at the winning bid,
- *   through the normal checkout → payment issues the licence and marks the lot
- *   sold → the winner's chosen name is public, nothing else → an unpaid win
- *   passes to the next bidder (their pending order is cancelled), then unsold
+ *   WIB = 00:00 UTC; 25 % opening, every bid +10 % of the opening bid) → only
+ *   verified members bid (e-mailed code, filtered display name) → bids are
+ *   validated, create-once, outbid e-mail, anti-snipe → the lot closes to the
+ *   top bidder → the win stays unpaid and listed as such until the winner pays,
+ *   at the winning bid, through the normal checkout; a bank transfer needs the
+ *   screenshot and the admin's approval → only payment issues the licence and
+ *   marks the lot sold → the winner's chosen name is public, nothing else → the
+ *   admin hands an unpaid win on by hand, or automatically when switched on
  *   → admin settings, opening a package, cancelling, the audit log.
  * Times are moved with the test-only data endpoint, so the run works on any day.
  * ============================================================================ */
@@ -69,7 +71,7 @@ before(async () => {
   assert.equal(g.status, 200, g.text);
   saved = g.json.settings;
   assert.equal(g.json.defaults.openPct, 25);
-  assert.equal(g.json.defaults.packages.length, 10);
+  assert.equal(g.json.defaults.packages.length, 103);
   // The normal checkout's bank transfer, so a win can be paid in the test.
   assert.equal((await admin.put("/api/admin/gateways", { gateway: "manual", credentials: { instructions: "Bank Test 123" }, is_active: true })).status, 200);
   for (const [c, email] of [[ada, ADA], [ben, BEN]] as const) {
@@ -93,7 +95,7 @@ test("auction: every package by default; the tick opens one lot per package at 2
   lotA = a.id; lotB = b.id;
   assert.equal(a.normal_usd, 990);
   assert.equal(a.open_usd, 248, "25 % of $990, rounded up");
-  assert.equal(a.step_usd, 10, "1 % of $990, rounded up");
+  assert.equal(a.step_usd, 25, "10 % of the $248 opening bid, rounded up");
   const end = new Date(a.ends_at);
   assert.deepEqual([end.getUTCDay(), end.getUTCHours(), end.getUTCMinutes()], [5, 0, 0], "Friday 00:00 UTC");
   assert.equal(end.toLocaleString("en-GB", { timeZone: "Asia/Jakarta", weekday: "long", hour: "2-digit", minute: "2-digit" }), "Friday 07:00", "= Friday 07:00 WIB");
@@ -102,7 +104,7 @@ test("auction: every package by default; the tick opens one lot per package at 2
   assert.equal((await list("auctionLots", "all", "all")).filter((l: any) => l.pkg === LOT_A && l.cycle === a.cycle).length, 1);
   const desk = await admin.get(`/api/admin/auctions?cycle=${a.cycle}`);
   assert.ok(desk.json.lots.some((l: any) => l.id === lotA && l.title && l.status === "open"), "the desk lists the auction from the index summaries");
-  assert.ok((await auditFor("auction_lot", lotA)).some((x: any) => x.action === "auction.lot_opened"));
+  assert.ok((await auditFor("auction_cycle", a.cycle)).some((x: any) => x.action === "auction.lots_opened"), "one audit entry per batch of lots opened");
   await live(lotA); await live(lotB);
 
   const page = await anon.get("/auction");

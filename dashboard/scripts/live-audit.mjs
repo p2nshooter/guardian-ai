@@ -91,6 +91,16 @@ if (/^disallow:\s*\/\s*$/im.test(robots.body)) fail("/robots.txt", "Disallow: / 
 const ads = await get("/ads.txt");
 report.adsTxt = ads.body.trim();
 if (!ads.body.includes(`google.com, ${ADSENSE.replace("ca-", "")}, DIRECT, f08c47fec0942fa0`)) fail("/ads.txt", `does not declare ${ADSENSE}`);
+// The files phones, social apps, AI search and security researchers ask for (owner, 27 Oct 2026).
+for (const [path, test, what] of [
+  ["/llms.txt", (b) => /^# /m.test(b) && !/<html/i.test(b), "no llms.txt summary"],
+  ["/.well-known/security.txt", (b) => /^Contact:/m.test(b) && /^Expires:/m.test(b), "no security.txt with Contact and Expires"],
+  ["/manifest.webmanifest", (b) => /"icons"/.test(b), "no web app manifest"],
+  ["/apple-touch-icon.png", () => true, "no apple-touch-icon"],
+]) {
+  const r = await get(path);
+  if (r.status !== 200 || !test(r.body)) fail(path, `${what} (HTTP ${r.status})`);
+}
 const sm = await get("/sitemap.xml");
 const urls = [...sm.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => decode(m[1]));
 report.sitemapUrls = urls.length;
@@ -116,9 +126,12 @@ const pages = await pool(urls, 8, async (u) => {
   const where = new URL(u).pathname;
   if (r.status !== 200) fail(where, `HTTP ${r.status}${r.error ? " " + r.error : ""}`);
   else {
+    // Google shows about 60 characters of a title and 160 of a description (lib/seo.ts searchTitle / snippet).
     if (!p.title) fail(where, "no <title>");
+    else if (p.title.length > 60) fail(where, `<title> ${p.title.length} characters (max 60): ${p.title}`);
     if (!p.description) fail(where, "no meta description");
     else if (p.description.length < 50) fail(where, `meta description only ${p.description.length} characters`);
+    else if (p.description.length > 160) fail(where, `meta description ${p.description.length} characters (max 160)`);
     if (!p.canonical) fail(where, "no canonical");
     else if (p.canonical.replace(/\/$/, "") !== u.replace(/\/$/, "")) fail(where, `canonical points elsewhere: ${p.canonical}`);
     if (!p.jsonld) fail(where, "no JSON-LD");

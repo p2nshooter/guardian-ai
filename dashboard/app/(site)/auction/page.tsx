@@ -12,7 +12,7 @@ import { AUC_EN } from "@/lib/auction-copy";
 const DESCRIPTION = "Bid on AXTO self-hosted licences every two weeks: bidding opens at 25 % of the normal price, every auction ends on Friday at 07:00 WIB (UTC+7) and the next starts at once; the licence activates by itself once the winner pays.";
 
 export const metadata: Metadata = pageMeta({
-  title: "Licence auction — AXTO self-hosted apps from 25 % of the price",
+  title: "Licence auction — AXTO apps from 25 % of the price",
   description: DESCRIPTION,
   path: "/auction",
   keywords: ["software licence auction", "license auction", "self-hosted software deal", "AI security software discount", "AXTO auction", "lelang lisensi software", "lelang lisensi"],

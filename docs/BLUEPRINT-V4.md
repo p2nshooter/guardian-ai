@@ -468,7 +468,7 @@ bukan dari perkiraan.
 | 3 | Terjemahan portal member konsisten (§17 A) | Legal (workspace) ✅ · Legal (alat: playbook, klausul, tenggat) ✅ · Compliance ✅ · Security · Prompt Library · halaman kecil · crawler 0 | 3/7 | **43 %** |
 | 4 | 10 aplikasi self-hosted (`AXTO-APPS-BLUEPRINT.md` §9) | A1 ✅ A2 ✅ A3 ✅ A4 B1 B2 B3 C1 C2 D1–D10 E1 E2 · F2 Smart License v5 · F3 desain menyeluruh · F4 Antivirus kelas dunia · F5 lifetime tawaran + diskon Jumat (F1 BNI = baris 7) | 3/17 | **18 %** |
 | 5 | Desain Istana Kristal (§18) | token ✅ · komponen ✅ · halaman publik (beranda, header, footer, /apps, /self-hosted ✅; harga, panduan, blog, legal berikutnya) · portal member · admin · uji visual | 2/6 | **33 %** |
-| 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 0/5 | **0 %** |
+| 6 | SEO kuat + artikel layak AdSense (§20 B) | audit teknis ✅ (§27.6e: judul ≤ 60, description ≤ 160, llms.txt, security.txt, audit 554 halaman) · panduan per menu tiap aplikasi · artikel orisinal · data terstruktur · uji Lighthouse/Rich Results | 1/5 | **20 %** |
 | 7 | Bank lokal BNI + tombol „Pembayaran diterima" → lisensi langsung terkirim (§20 C) | unggah bukti ✅ · admin terima/tolak ✅ · lisensi & email otomatis ✅ · uji E2E ✅ · tayang | dibangun sesi lain (`claude/bni-receipt-approval`), digabung ke branch kerja; tayang setelah CI hijau | **80 %** |
 | 8 | Pembayaran langsung pakai (14 Okt 2026, `REQUESTS.md` 52–53): PayPal Live + Sandbox, BNI IDR/USD/EUR | rekening USD & EUR di metode BNI ✅ · pilihan mata uang di panel bayar, 10 bahasa ✅ · uji unit & browser ✅ · tayang (#71) ✅ · webhook PayPal dibuat otomatis oleh situs (uji E2E dengan tiruan PayPal) ✅ · kunci PayPal & nomor rekening diisi pemilik di Admin → Payments | 5/6 | **83 %** |
 | 9 | Putaran pemodal khusus AXTO (19 Okt 2026, `REQUESTS.md` 71, §21 A) | halaman /invest 10 bahasa + SEO ✅ · Admin → Investors ✅ · laporan pemodal /app/investor ✅ · uji unit + E2E ✅ · tayang (deploy otomatis setelah merge) | 5/5 (tayang 19 Okt, deploy #74/#75 hijau) | **100 %** |
@@ -477,8 +477,8 @@ bukan dari perkiraan.
 | 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
 | 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah ✅ · axto.io pindah ✅ (21 Okt) · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 3/5 | **60 %** |
 | 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 ✅ (tayang 21 Okt, §25.3) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 1/4 | **25 %** |
-| 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tersembunyi + tombol admin ✅ (tayang #86) · 27.2 lelang lisensi tiap 2 minggu ✅ · 27.3 setiap paket bisa dibeli + lisensi jalan | 2/3 | **67 %** |
-| | **Total** (bobot = jumlah fase) | | **53/95** | **≈ 56 %** |
+| 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
+| | **Total** (bobot = jumlah fase) | | **55/95** | **≈ 58 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -865,6 +865,7 @@ entri sitemap ikut hilang, supaya tidak ada halaman yatim yang dirayapi.
 - Pemenang memilih **nama yang ditampilkan** (perusahaan atau pribadi, disaring kata kasar dan merek orang lain);
   daftar pemenang + paketnya tampil di beranda, portal member dan portal admin (admin: lot, tawaran, pembatalan,
   log audit).
+- **Catatan:** aturan di paragraf ini diganti perintah pemilik berikutnya — §27.4 (semua paket, Jumat 07.00 WIB, sesi baru langsung) dan §27.5 (lisensi hanya setelah bayar, "belum membayar", +10 % dari harga buka, bukti transfer). Paragraf di bawah adalah versi pertama.
 - **Dibangun 27 Okt 2026** (`lib/auction-terms.ts` aturan murni, `lib/auction.ts` penyimpanan R2, `lib/auction-packages.ts`
   paket): siklus pertama berakhir **Jumat 6 Nov 2026 15:00 UTC**, lalu tiap 14 hari. Paket default yang dilelang
   setiap siklus: edisi **Starter 1 tahun** dari ke-10 aplikasi (diubah di Admin → Licence auction; bisa juga edisi
@@ -900,7 +901,7 @@ sudah jalan" (REQUESTS 93). Ini izin pemilik untuk pekerjaan aplikasi (aturan ba
 |---|---|---|---|
 | 27.1 | §26.4 penawaran investor tersembunyi | `visible` (default **false**) di `invest_offer`; saat tersembunyi `/invest` 404 + noindex, `/api/invest` dan `/api/invest/apply` menolak, tautan footer, menu member „Investor" (kecuali anggota yang sudah tercatat sebagai pemodal) dan entri sitemap hilang; tombol Tampilkan/Sembunyikan di Admin → Investors, dicatat `admin.invest_visibility` di log audit; uji unit + E2E (129/129) + browser desktop & HP | ✅ (27 Okt; tayang setelah merge + deploy) |
 | 27.2 | §26.5 lelang lisensi tiap 2 minggu | lot per paket (edisi aplikasi atau lifetime), siklus 14 hari berakhir Jumat 15:00 UTC, buka 25 %, kenaikan 1 %, anti-snipe 5 menit, tawaran create-once di R2, penutupan CAS idempoten, pemenang bayar ≤ 48 jam lewat checkout live (lisensi otomatis), lalu jatuh ke penawar berikutnya; nama tampilan disaring; pemenang di beranda, portal member, admin; 10 bahasa; SEO `/auction` | ✅ kode + uji (27 Okt); tayang setelah merge + deploy |
-| 27.3 | Semua aplikasi bisa dibeli, lisensi jalan | setiap paket (plan, edisi per aplikasi, lifetime) membuat order di harga server, pembayaran terverifikasi → lisensi terbit, ditandatangani, lolos `/api/license-validate`, unduhan tersedia; uji unit + E2E untuk setiap SKU | ⏳ |
+| 27.3 | Semua aplikasi bisa dibeli, lisensi jalan | setiap paket (plan, edisi per aplikasi, lifetime) membuat order di harga server, pembayaran terverifikasi → lisensi terbit, ditandatangani, lolos `/api/license-validate`, unduhan tersedia; uji unit + E2E untuk setiap SKU | ✅ E2E `catalogue.e2e.ts`: setiap edisi, lisensi lifetime dan plan dibeli lewat checkout, lisensi terbit dan tervalidasi (27 Okt) |
 
 ### 27.4 Perintah pemilik 27 Okt 2026 (2) — investor tampil, semua paket dilelang, Jumat 07.00
 
@@ -910,11 +911,11 @@ tampilkan di homepage, portal member dan portal admin" (REQUESTS 94). Perubahan 
 
 | # | Pekerjaan | Rincian | Status |
 |---|---|---|---|
-| 27.4a | Investor default **tampil** | axto.io (`invest_offer.visible` default true) dan xaa.es (`invest_visible` default ya); tombol tampil/sembunyi tetap di admin, dicatat di log audit | 🔄 |
-| 27.4b | **Semua paket** dilelang tiap siklus | setiap edisi setiap aplikasi (1 tahun, 37) + setiap lisensi lifetime per aplikasi (6 tingkat perangkat × 10) + suite (6) = 103 lot per siklus; dibuka bertahap oleh cron (20 lot per menit, aman untuk batas sub-permintaan Worker); halaman memakai ringkasan indeks R2, bukan membaca 103 dokumen | 🔄 |
-| 27.4c | Sesi baru **langsung** | lot siklus berikutnya dibuat dalam 24 jam terakhir siklus berjalan dan mulai tepat saat siklus itu berakhir — tidak ada jeda | 🔄 |
-| 27.4d | Berakhir **Jumat 07.00 WIB** | "jam 7 pagi" dibaca sebagai waktu Indonesia Barat (UTC+7) = Jumat 00.00 UTC; siklus pertama berakhir Jumat 6 Nov 2026 07.00 WIB, lalu tiap 14 hari; semua teks 10 bahasa dan waktu di halaman memakai WIB | 🔄 |
-| 27.4e | Pemenang tampil | beranda (strip pemenang), portal member (beranda member + halaman Lelang), portal admin (ringkasan admin + Licence auction) | 🔄 |
+| 27.4a | Investor default **tampil** | axto.io (`invest_offer.visible` default true) dan xaa.es (`invest_visible` default ya); tombol tampil/sembunyi tetap di admin, dicatat di log audit | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.4b | **Semua paket** dilelang tiap siklus | setiap edisi setiap aplikasi (1 tahun, 37) + setiap lisensi lifetime per aplikasi (6 tingkat perangkat × 10) + suite (6) = 103 lot per siklus; dibuka bertahap oleh cron (20 lot per menit, aman untuk batas sub-permintaan Worker); halaman memakai ringkasan indeks R2, bukan membaca 103 dokumen | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.4c | Sesi baru **langsung** | lot siklus berikutnya dibuat dalam 24 jam terakhir siklus berjalan dan mulai tepat saat siklus itu berakhir — tidak ada jeda | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.4d | Berakhir **Jumat 07.00 WIB** | "jam 7 pagi" dibaca sebagai waktu Indonesia Barat (UTC+7) = Jumat 00.00 UTC; siklus pertama berakhir Jumat 6 Nov 2026 07.00 WIB, lalu tiap 14 hari; semua teks 10 bahasa dan waktu di halaman memakai WIB | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.4e | Pemenang tampil | beranda (strip pemenang), portal member (beranda member + halaman Lelang), portal admin (ringkasan admin + Licence auction) | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
 
 ### 27.5 Perintah pemilik 27 Okt 2026 (3) — lisensi setelah bayar, "belum membayar", kenaikan 10 %, bukti transfer
 
@@ -925,10 +926,10 @@ akan di acc admin manual" (REQUESTS 95). Ini mengganti aturan "48 jam lalu jatuh
 
 | # | Aturan | Cara kerja | Status |
 |---|---|---|---|
-| 27.5a | Lisensi hanya setelah bayar | lisensi diterbitkan dan dikirim otomatis hanya oleh pembayaran yang terverifikasi (checkout biasa); kemenangan saja tidak pernah menerbitkan lisensi | 🔄 |
-| 27.5b | Pemenang belum bayar tetap tampil | status "Belum membayar" di beranda, portal member dan portal admin; tidak ada pengalihan otomatis ke penawar berikutnya (bawaan mati — admin tetap bisa "Pass on" atau "Cancel" secara manual, dan bisa menyalakan pengalihan otomatis di Admin → Licence auction) | 🔄 |
-| 27.5c | Kenaikan tiap tawaran 10 % dari harga awal | harga awal = 25 % harga normal; setiap tawaran menaikkan harga **tepat** 10 % dari harga awal (contoh: normal $990 → awal $248 → naik $25 per tawaran: $273, $298, …), maksimal harga normal | 🔄 |
-| 27.5d | Bayar manual wajib bukti | transfer bank: pemenang wajib mengunggah screenshot bukti bayar; admin menyetujui secara manual (Admin → Orders / Support); tanpa screenshot persetujuan ditolak; setelah disetujui lisensi terkirim otomatis | 🔄 |
+| 27.5a | Lisensi hanya setelah bayar | lisensi diterbitkan dan dikirim otomatis hanya oleh pembayaran yang terverifikasi (checkout biasa); kemenangan saja tidak pernah menerbitkan lisensi | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.5b | Pemenang belum bayar tetap tampil | status "Belum membayar" di beranda, portal member dan portal admin; tidak ada pengalihan otomatis ke penawar berikutnya (bawaan mati — admin tetap bisa "Pass on" atau "Cancel" secara manual, dan bisa menyalakan pengalihan otomatis di Admin → Licence auction) | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.5c | Kenaikan tiap tawaran 10 % dari harga awal | harga awal = 25 % harga normal; setiap tawaran menaikkan harga **tepat** 10 % dari harga awal (contoh: normal $990 → awal $248 → naik $25 per tawaran: $273, $298, …), maksimal harga normal | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
+| 27.5d | Bayar manual wajib bukti | transfer bank: pemenang wajib mengunggah screenshot bukti bayar; admin menyetujui secara manual (Admin → Orders / Support); tanpa screenshot persetujuan ditolak; setelah disetujui lisensi terkirim otomatis | ✅ kode + uji unit + E2E (6/6) + browser desktop & HP (27 Okt); tayang setelah merge + deploy |
 
 ### 27.6 Perintah pemilik 27 Okt 2026 (4) — SEO dulu, lalu lelang di depan, satu kotak surat
 
@@ -940,4 +941,5 @@ pendukung, tautan antarsitus yang aman untuk AdSense) → **(2) lanjutkan lelang
 | 27.6a | Lelang lisensi paling depan di axto.io | bagian pertama beranda: lelang yang sedang berjalan, hitung mundur ke Jumat 07.00 WIB, lot terpanas, pemenang (lunas / belum membayar) | 📝 setelah SEO |
 | 27.6b | Semua e-mail ke hello@axto.io | notifikasi order, dukungan, lelang, investor dan kontak dari axto.io **dan** xaa.es masuk ke satu kotak surat hello@axto.io (satu manajemen); alamat balas tetap per situs | 📝 setelah SEO |
 | 27.6c | Lelang xaa.es (website, bukan lisensi) | blueprint di repo xaa `docs/BLUEPRINT.md` §9 dan di blueprint HTML | 📝 blueprint |
-| 27.6d | Blueprint HTML yang bisa diunduh | satu berkas `docs/BLUEPRINT.html` (repo ulyah.com) berisi semua perintah, aturan, status dan rencana | 🔄 |
+| 27.6d | Blueprint HTML yang bisa diunduh | satu berkas `docs/BLUEPRINT.html` (repo ulyah.com) berisi semua perintah, aturan, status dan rencana | ✅ 27 Okt (ulyah.com #369) |
+| 27.6e | SEO axto.io | `lib/seo.ts`: `<title>` setiap halaman publik ≤ 60 karakter (judul dipotong di jeda kalimat terakhir yang muat, kata kunci di depan, " \| AXTO" bila muat, tidak pernah "AXTO \| AXTO"), description ≤ 160 dipotong di akhir kalimat, Open Graph tetap lengkap; empat judul ditulis ulang agar muat utuh; `/llms.txt` (aplikasi, self-hosted, pembelian, pustaka, blog) dan `/.well-known/security.txt`; `scripts/live-audit.mjs` kini menggagalkan judul > 60, description > 160 dan berkas yang hilang. Uji: `tests/seo.test.ts`; audit build lokal 554/554 halaman, 0 judul terlalu panjang, 0 judul ganda | ✅ 27 Okt; tayang setelah merge |
