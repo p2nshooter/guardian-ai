@@ -1,5 +1,5 @@
-/* Member: Licence auction (§26.5). Verify the e-mail with a 6-digit code,
- * choose the name shown on a win, bid on this auction's lots, follow your own
+/* Member: Licence auction (§26.5). A signed-in member chooses the name shown on
+ * a win — no e-mailed code (§27.7) — then bids on this auction's lots, follows their own
  * bids, and pay a win within the payment window through the normal checkout
  * ({kind:"auction"}) — the licence then activates by itself. In all 10
  * languages (lib/i18n-pages/auction.ts). */
@@ -16,7 +16,7 @@ import { gatewayAllowed } from "@/lib/lifetime";
 type MyLot = Lot & { myBestUsd: number; leading: boolean };
 type Win = Lot & { payBy: string; orderId: string };
 interface Data extends Omit<Board, "lots"> {
-  bidder: { verified: boolean; codeSent: boolean; displayName: string; email: string };
+  bidder: { verified: boolean; admin: boolean; displayName: string; email: string };
   lots: MyLot[]; myBids: MyLot[]; wins: Win[];
 }
 interface Gateway { id: string; label: string; methods: string; currency: string; test?: boolean }
@@ -29,7 +29,6 @@ export default function AuctionMemberPage() {
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState("");
-  const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [paying, setPaying] = useState<Win | null>(null);
   const f = useLotFilter<MyLot>(d?.lots || []);
@@ -83,31 +82,19 @@ export default function AuctionMemberPage() {
         </div>
       ) : null}
 
-      {/* Verified members bid: the code, then the name shown on a win. */}
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Section title={b.verified ? `✓ ${t.verified}` : t.verifyT} description={b.verified ? b.email : fill(t.verifyB, { email: b.email })}>
-          {b.verified ? null : (
-            <div className="space-y-3" data-testid="auction-verify">
-              {b.codeSent ? <p className="text-sm text-slate-600">{fill(t.sent, { email: b.email })}</p> : null}
-              <div className="flex flex-wrap gap-2">
-                {b.codeSent ? (
-                  <>
-                    <input className="input w-40 tracking-[0.3em]" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="••••••" aria-label={t.codeLabel}
-                      value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} data-testid="auction-code" />
-                    <button className="btn-primary" disabled={code.length !== 6 || !!busy} onClick={() => act("verify", { code }, () => `✓ ${t.verified}`)} data-testid="auction-verify-btn">{busy === "verify" ? <Spinner /> : null} {t.verify}</button>
-                  </>
-                ) : null}
-                <button className={b.codeSent ? "btn-ghost" : "btn-primary"} disabled={!!busy} onClick={() => act("send_code", {}, () => fill(t.sent, { email: b.email }))} data-testid="auction-send-code">{busy === "send_code" ? <Spinner /> : null} {b.codeSent ? t.resend : t.send}</button>
-              </div>
+      {/* A signed-in member bids once they have chosen the name shown on a win (owner, 27 Oct 2026: no e-mailed
+          code). Admins run the auction and do not bid. */}
+      <div className="mb-6">
+        {b.admin ? (
+          <Alert tone="info"><span data-testid="auction-admin-note">{t.adminNote}</span></Alert>
+        ) : (
+          <Section title={b.verified ? `✓ ${t.verified} · ${b.displayName}` : t.nameT} description={t.nameB}>
+            <div className="flex flex-wrap gap-2">
+              <input className="input min-w-0 flex-1" maxLength={48} value={name} onChange={(e) => setName(e.target.value)} aria-label={t.nameLabel} placeholder={t.nameLabel} data-testid="auction-name" />
+              <button className={b.verified ? "btn-secondary" : "btn-primary"} disabled={!name.trim() || !!busy} onClick={() => act("name", { displayName: name }, () => t.nameSaved)} data-testid="auction-name-save">{busy === "name" ? <Spinner /> : null} {t.saveName}</button>
             </div>
-          )}
-        </Section>
-        <Section title={t.nameT} description={t.nameB}>
-          <div className="flex flex-wrap gap-2">
-            <input className="input min-w-0 flex-1" maxLength={48} value={name} onChange={(e) => setName(e.target.value)} aria-label={t.nameLabel} placeholder={t.nameLabel} disabled={!b.verified} data-testid="auction-name" />
-            <button className="btn-secondary" disabled={!b.verified || !name.trim() || !!busy} onClick={() => act("name", { displayName: name }, () => t.nameSaved)} data-testid="auction-name-save">{busy === "name" ? <Spinner /> : null} {t.saveName}</button>
-          </div>
-        </Section>
+          </Section>
+        )}
       </div>
 
       {/* This auction's lots: every package. */}
@@ -116,7 +103,7 @@ export default function AuctionMemberPage() {
       {d.lots.length ? (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {f.shown.map((l) => {
-            const ready = b.verified && !!b.displayName;
+            const ready = b.verified && !b.admin;
             const capped = l.bidsCount > 0 && l.highUsd >= l.normalUsd;
             return (
               <LotCard key={l.id} lot={l} highlight={l.leading ? "lead" : undefined}>

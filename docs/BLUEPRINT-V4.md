@@ -943,3 +943,15 @@ pendukung, tautan antarsitus yang aman untuk AdSense) → **(2) lanjutkan lelang
 | 27.6c | Lelang xaa.es (website, bukan lisensi) | blueprint di repo xaa `docs/BLUEPRINT.md` §9 dan di blueprint HTML | 📝 blueprint |
 | 27.6d | Blueprint HTML yang bisa diunduh | satu berkas `docs/BLUEPRINT.html` (repo ulyah.com) berisi semua perintah, aturan, status dan rencana | ✅ 27 Okt (ulyah.com #369) |
 | 27.6e | SEO axto.io | `lib/seo.ts`: `<title>` setiap halaman publik ≤ 60 karakter (judul dipotong di jeda kalimat terakhir yang muat, kata kunci di depan, " \| AXTO" bila muat, tidak pernah "AXTO \| AXTO"), description ≤ 160 dipotong di akhir kalimat, Open Graph tetap lengkap; empat judul ditulis ulang agar muat utuh; `/llms.txt` (aplikasi, self-hosted, pembelian, pustaka, blog) dan `/.well-known/security.txt`; `scripts/live-audit.mjs` kini menggagalkan judul > 60, description > 160 dan berkas yang hilang. Uji: `tests/seo.test.ts`; audit build lokal 554/554 halaman, 0 judul terlalu panjang, 0 judul ganda | ✅ 27 Okt; tayang setelah merge |
+
+### 27.7 Perintah pemilik 27 Okt 2026 (5) — verifikasi penawar otomatis
+
+"e2e-admin@axto.io itu email dari mana … gw g punya email begitu, lu bikinin dah biar otomatis tanpa harus dari email
+website" (REQUESTS 101). e2e-admin@axto.io hanya ada di runtime uji lokal (dibuat dan dihapus oleh `tests/e2e`), tidak
+pernah di axto.io.
+
+| # | Pekerjaan | Rincian | Status |
+|---|---|---|---|
+| 27.7a | Penawar terverifikasi otomatis | tidak ada lagi kode 6 digit lewat e-mail: anggota yang sudah masuk (login) langsung menjadi penawar begitu memilih nama yang ditampilkan saat menang (tetap disaring: kata kasar, merek orang lain, kontak); dokumen `auction_bidders` dibuat saat nama disimpan | ✅ 27 Okt (E2E lelang 6/6, browser desktop & HP) |
+| 27.7b | Admin tidak menawar | akun admin melihat keterangan "Akun admin menjalankan lelang dan tidak ikut menawar" di halaman Lelang, bukan formulir menawar | ✅ 27 Okt (E2E lelang 6/6, browser desktop & HP) |
+| 27.7c | Teks 10 bahasa | langkah "Verifikasi e-mail", aturan dan FAQ diganti: cukup masuk dan memilih nama | ✅ 27 Okt (E2E lelang 6/6, browser desktop & HP) |

@@ -52,8 +52,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "Cara kerja lelang",
     "how": [
       [
-        "Verifikasi e-mail Anda",
-        "Masuk, konfirmasi kode 6 digit yang kami kirim lewat e-mail, lalu pilih nama yang ditampilkan bila Anda menang."
+        "Masuk",
+        "Masuk ke akun AXTO Anda dan pilih nama yang ditampilkan jika Anda menang — tanpa kode, tanpa e-mail tambahan."
       ],
       [
         "Menawar",
@@ -77,7 +77,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "Satu lot per paket di setiap lelang; satu lisensi per lot.",
       "Tawaran pembuka {open} dari harga normal pada hari lot dibuka; setiap tawaran menaikkan harga tepat {step} dari harga awal.",
       "Tawaran tidak pernah boleh melebihi harga normal.",
-      "Hanya anggota terverifikasi yang menawar; Anda tidak bisa melampaui tawaran Anda sendiri.",
+      "Hanya anggota yang sudah masuk yang dapat menawar; Anda tidak dapat menawar melawan diri sendiri.",
       "Lisensi dikirim hanya setelah pemenang membayar; kemenangan yang belum dibayar tetap tampil dengan keterangan belum membayar. Transfer bank wajib dengan screenshot bukti bayar dan persetujuan admin.",
       "Lisensinya sama dengan yang dibeli di harga normal: fitur, pembaruan dan dukungan yang sama.",
       "Pemenang memilih nama perusahaan atau pribadi yang ditampilkan — tanpa merek perusahaan lain, tanpa data kontak, tanpa kata yang menyinggung."
@@ -106,8 +106,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "Lisensi tidak dikirim. Kemenangan Anda tetap tampil dengan keterangan belum membayar sampai Anda membayar; admin dapat menyerahkan lot ke penawar berikutnya."
       ],
       [
-        "Mengapa e-mail saya perlu diverifikasi?",
-        "Agar setiap tawaran datang dari anggota nyata yang bisa dihubungi. Cukup satu kode."
+        "Apakah saya perlu kode atau e-mail tambahan?",
+        "Tidak. Akun AXTO yang sudah masuk sudah cukup; Anda hanya memilih nama yang ditampilkan jika menang."
       ],
       [
         "Nama apa yang ditampilkan bila saya menang?",
@@ -122,19 +122,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "Lelang lisensi",
       "lead": "Tawar lot di lelang ini. Penawaran dibuka di {open} dari harga normal.",
-      "verifyT": "Verifikasi e-mail Anda untuk menawar",
-      "verifyB": "Hanya anggota terverifikasi yang menawar. Kami mengirim kode 6 digit ke {email}.",
-      "send": "Kirim kode",
-      "sent": "Kode dikirim ke {email}. Berlaku 15 menit.",
-      "codeLabel": "Kode 6 digit",
-      "verify": "Verifikasi",
-      "resend": "Kirim kode baru",
       "nameT": "Nama yang ditampilkan bila Anda menang",
       "nameB": "Nama perusahaan atau nama Anda sendiri, ditampilkan bersama kemenangan Anda di axto.io. Tanpa merek perusahaan lain, tanpa data kontak.",
       "nameLabel": "Nama tampilan",
       "saveName": "Simpan nama",
       "nameSaved": "Tersimpan.",
-      "verified": "Penawar terverifikasi",
+      "verified": "Siap menawar",
+      "adminNote": "Akun admin menjalankan lelang dan tidak ikut menawar.",
       "bidLabel": "Tawaran Anda (USD)",
       "bid": "Ajukan tawaran",
       "minHint": "Tawaran berikutnya: {amount}",
@@ -167,14 +161,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "Unggah screenshot bukti bayar.",
         "bad_amount": "Masukkan tawaran dalam dolar AS bulat.",
         "not_found": "Lot lelang tidak ditemukan.",
-        "not_verified": "Verifikasi e-mail dan pilih nama tampilan sebelum menawar.",
+        "not_verified": "Pilih nama yang ditampilkan saat Anda menang sebelum menawar.",
         "admin": "Akun admin menjalankan lelang dan tidak bisa menawar.",
         "wait": "Mohon tunggu sebentar lalu coba lagi.",
-        "verified": "E-mail Anda sudah terverifikasi.",
-        "no_code": "Minta kode terlebih dahulu.",
-        "expired": "Kode sudah kedaluwarsa — minta kode baru.",
-        "attempts": "Terlalu banyak kode salah — minta kode baru.",
-        "wrong": "Kode itu salah.",
         "length": "Gunakan 2 sampai 48 karakter.",
         "chars": "Gunakan huruf, angka, spasi dan . , & ' ( ) - saja.",
         "contact": "Tanpa alamat e-mail, alamat web atau nomor telepon.",
@@ -230,8 +219,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "Cara lelongan berfungsi",
     "how": [
       [
-        "Sahkan e-mel anda",
-        "Log masuk, sahkan kod 6 digit yang kami e-melkan dan pilih nama yang dipaparkan jika anda menang."
+        "Log masuk",
+        "Log masuk ke akaun AXTO anda dan pilih nama yang dipaparkan jika anda menang — tanpa kod, tanpa e-mel tambahan."
       ],
       [
         "Bida",
@@ -255,7 +244,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "Satu lot bagi setiap pakej dalam setiap lelongan; satu lesen bagi setiap lot.",
       "Bidaan pembukaan {open} daripada harga biasa pada hari lot dibuka; setiap bidaan menaikkan harga tepat {step} daripada harga pembukaan.",
       "Bidaan tidak boleh melebihi harga biasa.",
-      "Hanya ahli yang disahkan boleh membida; anda tidak boleh mengatasi bidaan anda sendiri.",
+      "Hanya ahli yang telah log masuk boleh membida; anda tidak boleh membida mengatasi diri sendiri.",
       "Lesen dihantar hanya selepas pemenang membayar; kemenangan yang belum dibayar kekal dipaparkan sebagai belum dibayar. Pindahan bank memerlukan tangkapan skrin bukti bayaran dan kelulusan pentadbir.",
       "Lesennya sama seperti yang dibeli pada harga biasa: ciri, kemas kini dan sokongan yang sama.",
       "Pemenang memilih nama syarikat atau peribadi yang dipaparkan — tiada jenama syarikat lain, tiada butiran hubungan, tiada kata yang menyinggung."
@@ -284,8 +273,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "Tiada lesen dihantar. Kemenangan anda kekal dipaparkan sebagai belum dibayar sehingga anda membayar; pentadbir boleh menyerahkan lot kepada pembida seterusnya."
       ],
       [
-        "Mengapa e-mel saya perlu disahkan?",
-        "Supaya setiap bidaan datang daripada ahli sebenar yang boleh dihubungi. Hanya satu kod."
+        "Adakah saya perlukan kod atau e-mel tambahan?",
+        "Tidak. Akaun AXTO yang telah log masuk sudah memadai; anda hanya memilih nama yang dipaparkan jika menang."
       ],
       [
         "Nama apakah yang dipaparkan jika saya menang?",
@@ -300,19 +289,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "Lelongan lesen",
       "lead": "Bida lot dalam lelongan ini. Bidaan dibuka pada {open} daripada harga biasa.",
-      "verifyT": "Sahkan e-mel anda untuk membida",
-      "verifyB": "Hanya ahli yang disahkan boleh membida. Kami menghantar kod 6 digit ke {email}.",
-      "send": "Hantar kod",
-      "sent": "Kod dihantar ke {email}. Sah selama 15 minit.",
-      "codeLabel": "Kod 6 digit",
-      "verify": "Sahkan",
-      "resend": "Hantar kod baharu",
       "nameT": "Nama yang dipaparkan jika anda menang",
       "nameB": "Nama syarikat atau nama anda sendiri, dipaparkan bersama kemenangan anda di axto.io. Tiada jenama syarikat lain, tiada butiran hubungan.",
       "nameLabel": "Nama paparan",
       "saveName": "Simpan nama",
       "nameSaved": "Disimpan.",
-      "verified": "Pembida disahkan",
+      "verified": "Sedia untuk membida",
+      "adminNote": "Akaun pentadbir menjalankan lelongan dan tidak membida.",
       "bidLabel": "Bidaan anda (USD)",
       "bid": "Hantar bidaan",
       "minHint": "Bidaan seterusnya: {amount}",
@@ -345,14 +328,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "Muat naik tangkapan skrin bukti bayaran.",
         "bad_amount": "Masukkan bidaan dalam dolar AS bulat.",
         "not_found": "Lot lelongan tidak dijumpai.",
-        "not_verified": "Sahkan e-mel dan pilih nama paparan sebelum membida.",
+        "not_verified": "Pilih nama yang dipaparkan apabila anda menang sebelum membida.",
         "admin": "Akaun admin mengendalikan lelongan dan tidak boleh membida.",
         "wait": "Sila tunggu sebentar dan cuba lagi.",
-        "verified": "E-mel anda sudah disahkan.",
-        "no_code": "Minta kod dahulu.",
-        "expired": "Kod telah tamat tempoh — minta kod baharu.",
-        "attempts": "Terlalu banyak kod salah — minta kod baharu.",
-        "wrong": "Kod itu tidak betul.",
         "length": "Gunakan 2 hingga 48 aksara.",
         "chars": "Gunakan huruf, nombor, ruang dan . , & ' ( ) - sahaja.",
         "contact": "Tiada alamat e-mel, alamat web atau nombor telefon.",
@@ -408,8 +386,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "So funktioniert die Auktion",
     "how": [
       [
-        "E-Mail bestätigen",
-        "Melden Sie sich an, bestätigen Sie den 6-stelligen Code aus unserer E-Mail und wählen Sie den Namen, der bei einem Gewinn angezeigt wird."
+        "Anmelden",
+        "Melden Sie sich bei Ihrem AXTO-Konto an und wählen Sie den Namen, der bei einem Gewinn angezeigt wird — kein Code, keine zusätzliche E-Mail."
       ],
       [
         "Bieten",
@@ -433,7 +411,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "Ein Los pro Paket in jeder Auktion; eine Lizenz pro Los.",
       "Startgebot {open} des Normalpreises am Tag der Losöffnung; jedes Gebot erhöht den Preis um genau {step} des Startgebots.",
       "Ein Gebot darf nie höher sein als der Normalpreis.",
-      "Nur verifizierte Mitglieder bieten; Sie können sich nicht selbst überbieten.",
+      "Nur angemeldete Mitglieder bieten; Sie können sich nicht selbst überbieten.",
       "Die Lizenz wird erst gesendet, wenn der Gewinner bezahlt hat; ein unbezahlter Gewinn bleibt als „noch nicht bezahlt“ sichtbar. Eine Banküberweisung braucht den Zahlungs-Screenshot und die Freigabe eines Administrators.",
       "Die Lizenz entspricht einer zum Normalpreis gekauften: gleiche Funktionen, gleiche Updates, gleicher Support.",
       "Gewinner wählen den angezeigten Firmen- oder Personennamen – keine fremden Marken, keine Kontaktdaten, nichts Anstößiges."
@@ -462,8 +440,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "Es wird keine Lizenz gesendet. Ihr Gewinn bleibt als „noch nicht bezahlt“ sichtbar, bis Sie zahlen; der Administrator kann das Los an den nächsten Bieter geben."
       ],
       [
-        "Warum muss ich meine E-Mail bestätigen?",
-        "Damit jedes Gebot von einem echten, erreichbaren Mitglied kommt. Es genügt ein Code."
+        "Brauche ich einen Code oder eine zusätzliche E-Mail?",
+        "Nein. Ihr angemeldetes AXTO-Konto genügt; Sie wählen nur den Namen, der bei einem Gewinn angezeigt wird."
       ],
       [
         "Welcher Name wird angezeigt, wenn ich gewinne?",
@@ -478,19 +456,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "Lizenzauktion",
       "lead": "Bieten Sie auf die Lose dieser Auktion. Die Gebote beginnen bei {open} des Normalpreises.",
-      "verifyT": "E-Mail bestätigen, um zu bieten",
-      "verifyB": "Nur verifizierte Mitglieder bieten. Wir senden einen 6-stelligen Code an {email}.",
-      "send": "Code senden",
-      "sent": "Code an {email} gesendet. Er gilt 15 Minuten.",
-      "codeLabel": "6-stelliger Code",
-      "verify": "Bestätigen",
-      "resend": "Neuen Code senden",
       "nameT": "Der Name, der bei einem Gewinn angezeigt wird",
       "nameB": "Ihr Firmenname oder Ihr eigener Name, angezeigt mit Ihrem Gewinn auf axto.io. Keine fremden Marken, keine Kontaktdaten.",
       "nameLabel": "Anzeigename",
       "saveName": "Namen speichern",
       "nameSaved": "Gespeichert.",
-      "verified": "Verifizierter Bieter",
+      "verified": "Bereit zum Bieten",
+      "adminNote": "Admin-Konten leiten die Auktion und bieten nicht mit.",
       "bidLabel": "Ihr Gebot (USD)",
       "bid": "Gebot abgeben",
       "minHint": "Nächstes Gebot: {amount}",
@@ -523,14 +495,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "Laden Sie den Zahlungs-Screenshot hoch.",
         "bad_amount": "Geben Sie ein Gebot in ganzen US-Dollar ein.",
         "not_found": "Auktionslos nicht gefunden.",
-        "not_verified": "Bestätigen Sie Ihre E-Mail und wählen Sie einen Anzeigenamen, bevor Sie bieten.",
+        "not_verified": "Wählen Sie vor dem Bieten den Namen, der bei einem Gewinn angezeigt wird.",
         "admin": "Admin-Konten führen die Auktion durch und können nicht bieten.",
         "wait": "Bitte warten Sie kurz und versuchen Sie es erneut.",
-        "verified": "Ihre E-Mail ist bereits bestätigt.",
-        "no_code": "Fordern Sie zuerst einen Code an.",
-        "expired": "Der Code ist abgelaufen – fordern Sie einen neuen an.",
-        "attempts": "Zu viele falsche Codes – fordern Sie einen neuen an.",
-        "wrong": "Der Code ist nicht richtig.",
         "length": "Verwenden Sie 2 bis 48 Zeichen.",
         "chars": "Verwenden Sie nur Buchstaben, Ziffern, Leerzeichen und . , & ' ( ) -.",
         "contact": "Keine E-Mail-Adressen, Webadressen oder Telefonnummern.",
@@ -586,8 +553,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "Comment fonctionne l'enchère",
     "how": [
       [
-        "Vérifiez votre e-mail",
-        "Connectez-vous, confirmez le code à 6 chiffres que nous vous envoyons et choisissez le nom affiché si vous gagnez."
+        "Connectez-vous",
+        "Connectez-vous à votre compte AXTO et choisissez le nom affiché si vous gagnez — sans code ni e-mail supplémentaire."
       ],
       [
         "Enchérissez",
@@ -611,7 +578,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "Un lot par formule dans chaque vente ; une licence par lot.",
       "Mise à prix {open} du prix normal le jour de l'ouverture du lot ; chaque offre augmente le prix d'exactement {step} de la mise à prix.",
       "Une offre ne peut jamais dépasser le prix normal.",
-      "Seuls les membres vérifiés enchérissent ; vous ne pouvez pas surenchérir sur vous-même.",
+      "Seuls les membres connectés enchérissent ; vous ne pouvez pas surenchérir sur vous-même.",
       "La licence n'est envoyée qu'après le paiement du gagnant ; un gain non payé reste affiché comme non payé. Un virement exige la capture d'écran du paiement et la validation d'un administrateur.",
       "La licence est identique à celle achetée au prix normal : mêmes fonctions, mêmes mises à jour, même support.",
       "Les gagnants choisissent le nom d'entreprise ou personnel affiché — pas de marque d'autrui, pas de coordonnées, rien d'offensant."
@@ -640,8 +607,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "Aucune licence n'est envoyée. Votre gain reste affiché comme non payé jusqu'à votre paiement ; l'administrateur peut attribuer le lot à l'enchérisseur suivant."
       ],
       [
-        "Pourquoi vérifier mon e-mail ?",
-        "Pour que chaque offre vienne d'un vrai membre joignable. Un seul code suffit."
+        "Ai-je besoin d'un code ou d'un e-mail supplémentaire ?",
+        "Non. Votre compte AXTO connecté suffit ; vous choisissez seulement le nom affiché si vous gagnez."
       ],
       [
         "Quel nom est affiché si je gagne ?",
@@ -656,19 +623,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "Enchère de licences",
       "lead": "Enchérissez sur les lots de cette vente. Les enchères s'ouvrent à {open} du prix normal.",
-      "verifyT": "Vérifiez votre e-mail pour enchérir",
-      "verifyB": "Seuls les membres vérifiés enchérissent. Nous envoyons un code à 6 chiffres à {email}.",
-      "send": "Envoyer le code",
-      "sent": "Code envoyé à {email}. Il est valable 15 minutes.",
-      "codeLabel": "Code à 6 chiffres",
-      "verify": "Vérifier",
-      "resend": "Envoyer un nouveau code",
       "nameT": "Le nom affiché si vous gagnez",
       "nameB": "Le nom de votre entreprise ou le vôtre, affiché avec votre gain sur axto.io. Pas de marque d'autrui, pas de coordonnées.",
       "nameLabel": "Nom affiché",
       "saveName": "Enregistrer le nom",
       "nameSaved": "Enregistré.",
-      "verified": "Enchérisseur vérifié",
+      "verified": "Prêt à enchérir",
+      "adminNote": "Les comptes administrateur gèrent l'enchère et n'enchérissent pas.",
       "bidLabel": "Votre offre (USD)",
       "bid": "Enchérir",
       "minHint": "Prochaine offre : {amount}",
@@ -701,14 +662,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "Téléversez la capture d'écran du paiement.",
         "bad_amount": "Saisissez une offre en dollars US entiers.",
         "not_found": "Lot introuvable.",
-        "not_verified": "Vérifiez votre e-mail et choisissez un nom affiché avant d'enchérir.",
+        "not_verified": "Choisissez le nom affiché en cas de victoire avant d'enchérir.",
         "admin": "Les comptes administrateurs gèrent la vente et ne peuvent pas enchérir.",
         "wait": "Patientez un instant puis réessayez.",
-        "verified": "Votre e-mail est déjà vérifié.",
-        "no_code": "Demandez d'abord un code.",
-        "expired": "Le code a expiré — demandez-en un nouveau.",
-        "attempts": "Trop de codes erronés — demandez-en un nouveau.",
-        "wrong": "Ce code n'est pas correct.",
         "length": "Utilisez 2 à 48 caractères.",
         "chars": "Utilisez uniquement des lettres, chiffres, espaces et . , & ' ( ) -.",
         "contact": "Pas d'adresse e-mail, d'adresse web ni de numéro de téléphone.",
@@ -764,8 +720,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "Come funziona l'asta",
     "how": [
       [
-        "Verifica la tua e-mail",
-        "Accedi, conferma il codice a 6 cifre che ti inviamo e scegli il nome mostrato se vinci."
+        "Accedi",
+        "Accedi al tuo account AXTO e scegli il nome mostrato se vinci — nessun codice, nessuna e-mail in più."
       ],
       [
         "Fai un'offerta",
@@ -789,7 +745,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "Un lotto per pacchetto in ogni asta; una licenza per lotto.",
       "Base d'asta {open} del prezzo normale nel giorno di apertura del lotto; ogni offerta aumenta il prezzo esattamente del {step} della base d'asta.",
       "Un'offerta non può mai superare il prezzo normale.",
-      "Fanno offerte solo i membri verificati; non puoi superare la tua stessa offerta.",
+      "Fanno offerte solo i membri che hanno effettuato l'accesso; non puoi superare la tua stessa offerta.",
       "La licenza viene inviata solo dopo il pagamento del vincitore; una vittoria non pagata resta visibile come non ancora pagata. Un bonifico richiede lo screenshot del pagamento e l'approvazione di un amministratore.",
       "La licenza è identica a quella acquistata al prezzo normale: stesse funzioni, stessi aggiornamenti, stesso supporto.",
       "I vincitori scelgono il nome aziendale o personale mostrato — niente marchi altrui, niente contatti, niente di offensivo."
@@ -818,8 +774,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "Non viene inviata nessuna licenza. La tua vittoria resta visibile come non ancora pagata finché non paghi; l'amministratore può assegnare il lotto all'offerente successivo."
       ],
       [
-        "Perché devo verificare la mia e-mail?",
-        "Perché ogni offerta provenga da un membro reale e raggiungibile. Basta un codice."
+        "Mi serve un codice o un'e-mail in più?",
+        "No. Basta il tuo account AXTO con cui hai effettuato l'accesso; scegli solo il nome mostrato se vinci."
       ],
       [
         "Quale nome viene mostrato se vinco?",
@@ -834,19 +790,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "Asta di licenze",
       "lead": "Fai offerte sui lotti di questa asta. Le offerte partono da {open} del prezzo normale.",
-      "verifyT": "Verifica la tua e-mail per fare offerte",
-      "verifyB": "Fanno offerte solo i membri verificati. Inviamo un codice a 6 cifre a {email}.",
-      "send": "Invia il codice",
-      "sent": "Codice inviato a {email}. Vale 15 minuti.",
-      "codeLabel": "Codice a 6 cifre",
-      "verify": "Verifica",
-      "resend": "Invia un nuovo codice",
       "nameT": "Il nome mostrato se vinci",
       "nameB": "Il nome della tua azienda o il tuo, mostrato con la tua vittoria su axto.io. Niente marchi altrui, niente contatti.",
       "nameLabel": "Nome visualizzato",
       "saveName": "Salva il nome",
       "nameSaved": "Salvato.",
-      "verified": "Offerente verificato",
+      "verified": "Pronto a fare offerte",
+      "adminNote": "Gli account amministratore gestiscono l'asta e non fanno offerte.",
       "bidLabel": "La tua offerta (USD)",
       "bid": "Fai l'offerta",
       "minHint": "Prossima offerta: {amount}",
@@ -879,14 +829,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "Carica lo screenshot del pagamento.",
         "bad_amount": "Inserisci un'offerta in dollari USA interi.",
         "not_found": "Lotto non trovato.",
-        "not_verified": "Verifica la tua e-mail e scegli un nome visualizzato prima di fare offerte.",
+        "not_verified": "Scegli il nome mostrato in caso di vittoria prima di fare un'offerta.",
         "admin": "Gli account amministratore gestiscono l'asta e non possono fare offerte.",
         "wait": "Attendi un momento e riprova.",
-        "verified": "La tua e-mail è già verificata.",
-        "no_code": "Richiedi prima un codice.",
-        "expired": "Il codice è scaduto — richiedine uno nuovo.",
-        "attempts": "Troppi codici errati — richiedine uno nuovo.",
-        "wrong": "Il codice non è corretto.",
         "length": "Usa da 2 a 48 caratteri.",
         "chars": "Usa solo lettere, numeri, spazi e . , & ' ( ) -.",
         "contact": "Niente indirizzi e-mail, indirizzi web o numeri di telefono.",
@@ -942,8 +887,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "拍卖如何进行",
     "how": [
       [
-        "验证邮箱",
-        "登录后确认我们发送的 6 位验证码，并选择中标时显示的名称。"
+        "登录",
+        "登录您的 AXTO 账户，并选择中标时显示的名称——无需验证码，也无需额外邮件。"
       ],
       [
         "出价",
@@ -967,7 +912,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "每场拍卖每个套餐一件拍品；每件拍品一份许可证。",
       "起拍价为拍品开放当日正常价格的 {open}；每次出价恰好加价起拍价的 {step}。",
       "出价不得高于正常价格。",
-      "仅限已验证会员出价；不能超过自己的出价。",
+      "仅限已登录会员出价；您不能对自己加价。",
       "中标者付款后才会发送许可证；未付款的中标仍会显示为“尚未付款”。银行转账须提供付款截图并经管理员审核通过。",
       "许可证与按正常价格购买的完全相同：功能、更新和支持都一样。",
       "中标者自选显示的公司或个人名称——不得使用他人品牌、联系方式或冒犯性内容。"
@@ -996,8 +941,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "不会发送许可证。在您付款之前，您的中标会一直显示为“尚未付款”；管理员可以将拍品转给下一位出价者。"
       ],
       [
-        "为什么需要验证邮箱？",
-        "确保每次出价都来自可联系的真实会员，只需一个验证码。"
+        "我需要验证码或额外的邮件吗？",
+        "不需要。已登录的 AXTO 账户即可；您只需选择中标时显示的名称。"
       ],
       [
         "中标后显示什么名称？",
@@ -1012,19 +957,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "许可证拍卖",
       "lead": "为本场拍卖的拍品出价。起拍价为正常价格的 {open}。",
-      "verifyT": "验证邮箱后即可出价",
-      "verifyB": "仅限已验证会员出价。我们会向 {email} 发送 6 位验证码。",
-      "send": "发送验证码",
-      "sent": "验证码已发送至 {email}，15 分钟内有效。",
-      "codeLabel": "6 位验证码",
-      "verify": "验证",
-      "resend": "重新发送验证码",
       "nameT": "中标时显示的名称",
       "nameB": "您的公司名称或本人姓名，将与中标信息一起显示在 axto.io 上。不得使用他人品牌或联系方式。",
       "nameLabel": "显示名称",
       "saveName": "保存名称",
       "nameSaved": "已保存。",
-      "verified": "已验证的出价者",
+      "verified": "可以出价",
+      "adminNote": "管理员账户负责运营拍卖，不参与出价。",
       "bidLabel": "您的出价（美元）",
       "bid": "出价",
       "minHint": "下一次出价：{amount}",
@@ -1057,14 +996,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "请上传付款截图。",
         "bad_amount": "请输入整数美元金额。",
         "not_found": "未找到该拍品。",
-        "not_verified": "出价前请先验证邮箱并选择显示名称。",
+        "not_verified": "出价前请先选择中标时显示的名称。",
         "admin": "管理员账户负责运营拍卖，不能出价。",
         "wait": "请稍候再试。",
-        "verified": "您的邮箱已验证。",
-        "no_code": "请先获取验证码。",
-        "expired": "验证码已过期——请重新获取。",
-        "attempts": "错误次数过多——请重新获取验证码。",
-        "wrong": "验证码不正确。",
         "length": "请使用 2 至 48 个字符。",
         "chars": "只能使用字母、数字、空格以及 . , & ' ( ) -。",
         "contact": "不得包含邮箱、网址或电话号码。",
@@ -1120,8 +1054,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "オークションの流れ",
     "how": [
       [
-        "メールを確認",
-        "ログインし、メールでお送りする 6 桁のコードを確認して、落札時に表示する名前を選びます。"
+        "ログイン",
+        "AXTO アカウントにログインし、落札時に表示する名前を選ぶだけ — コードも追加のメールも不要です。"
       ],
       [
         "入札",
@@ -1145,7 +1079,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "各オークションでパッケージごとに 1 ロット、1 ロットにつきライセンス 1 つ。",
       "開始価格はロット公開日の通常価格の {open}。入札ごとに開始価格の {step} ずつ上がります。",
       "入札額は通常価格を超えることはできません。",
-      "入札できるのは確認済みメンバーのみで、自分の入札を上回ることはできません。",
+      "入札できるのはログイン済みの会員のみです。自分の入札を上回る入札はできません。",
       "ライセンスは落札者の支払い後にのみ送付されます。未払いの落札は「未払い」と表示されたままです。銀行振込には支払いのスクリーンショットと管理者の承認が必要です。",
       "ライセンスは通常価格で購入したものと同じです。機能・アップデート・サポートも同じです。",
       "落札者は表示する会社名または個人名を選べます。他社のブランド、連絡先、不快な表現は使えません。"
@@ -1174,8 +1108,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "ライセンスは送付されません。支払うまで落札は「未払い」と表示されたままで、管理者がロットを次の入札者に移すことがあります。"
       ],
       [
-        "なぜメール確認が必要ですか？",
-        "すべての入札が連絡の取れる実在のメンバーから行われるようにするためです。コード 1 つで完了します。"
+        "コードや追加のメールは必要ですか？",
+        "いいえ。ログイン済みの AXTO アカウントで十分です。落札時に表示する名前を選ぶだけです。"
       ],
       [
         "落札時にはどの名前が表示されますか？",
@@ -1190,19 +1124,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "ライセンスオークション",
       "lead": "このオークションのロットに入札しましょう。入札は通常価格の {open} から始まります。",
-      "verifyT": "入札するにはメールを確認してください",
-      "verifyB": "入札できるのは確認済みメンバーのみです。{email} に 6 桁のコードをお送りします。",
-      "send": "コードを送信",
-      "sent": "{email} にコードを送信しました。有効期限は 15 分です。",
-      "codeLabel": "6 桁のコード",
-      "verify": "確認",
-      "resend": "新しいコードを送信",
       "nameT": "落札時に表示する名前",
       "nameB": "会社名またはご本人の名前で、落札とともに axto.io に表示されます。他社のブランドや連絡先は使えません。",
       "nameLabel": "表示名",
       "saveName": "名前を保存",
       "nameSaved": "保存しました。",
-      "verified": "確認済みの入札者",
+      "verified": "入札できます",
+      "adminNote": "管理者アカウントはオークションを運営し、入札はしません。",
       "bidLabel": "入札額（USD）",
       "bid": "入札する",
       "minHint": "次の入札額：{amount}",
@@ -1235,14 +1163,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "支払いのスクリーンショットをアップロードしてください。",
         "bad_amount": "米ドルの整数で入札額を入力してください。",
         "not_found": "ロットが見つかりません。",
-        "not_verified": "入札する前にメールを確認し、表示名を選んでください。",
+        "not_verified": "入札の前に、落札時に表示する名前を選んでください。",
         "admin": "管理者アカウントはオークションを運営するため入札できません。",
         "wait": "少し待ってからもう一度お試しください。",
-        "verified": "メールはすでに確認済みです。",
-        "no_code": "まずコードをリクエストしてください。",
-        "expired": "コードの有効期限が切れました。新しいコードをリクエストしてください。",
-        "attempts": "誤ったコードが多すぎます。新しいコードをリクエストしてください。",
-        "wrong": "コードが正しくありません。",
         "length": "2〜48 文字で入力してください。",
         "chars": "文字、数字、スペース、および . , & ' ( ) - のみ使えます。",
         "contact": "メールアドレス、URL、電話番号は使えません。",
@@ -1298,8 +1221,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "नीलामी कैसे काम करती है",
     "how": [
       [
-        "अपना ई-मेल सत्यापित करें",
-        "साइन इन करें, हमारे भेजे 6 अंकों के कोड की पुष्टि करें और जीतने पर दिखाया जाने वाला नाम चुनें।"
+        "साइन इन करें",
+        "अपने AXTO खाते में साइन इन करें और जीतने पर दिखने वाला नाम चुनें — न कोड, न अतिरिक्त ई-मेल।"
       ],
       [
         "बोली लगाएँ",
@@ -1323,7 +1246,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "हर नीलामी में प्रति पैकेज एक लॉट; प्रति लॉट एक लाइसेंस।",
       "लॉट खुलने के दिन की सामान्य कीमत का {open} प्रारंभिक बोली; हर बोली कीमत को प्रारंभिक बोली के ठीक {step} से बढ़ाती है।",
       "कोई बोली कभी सामान्य कीमत से अधिक नहीं हो सकती।",
-      "केवल सत्यापित सदस्य बोली लगाते हैं; आप अपनी ही बोली से आगे नहीं जा सकते।",
+      "केवल साइन-इन किए हुए सदस्य बोली लगाते हैं; आप अपनी ही बोली से ऊपर बोली नहीं लगा सकते।",
       "विजेता के भुगतान के बाद ही लाइसेंस भेजा जाता है; बिना भुगतान वाली जीत \"अभी भुगतान नहीं हुआ\" के साथ दिखती रहती है। बैंक ट्रांसफ़र के लिए भुगतान का स्क्रीनशॉट और एडमिन की मंज़ूरी ज़रूरी है।",
       "लाइसेंस सामान्य कीमत पर खरीदे गए लाइसेंस जैसा ही है: वही सुविधाएँ, वही अपडेट, वही सहायता।",
       "विजेता दिखाया जाने वाला कंपनी या व्यक्तिगत नाम चुनते हैं — दूसरों के ब्रांड, संपर्क विवरण या आपत्तिजनक शब्द नहीं।"
@@ -1352,8 +1275,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "कोई लाइसेंस नहीं भेजा जाता। भुगतान करने तक आपकी जीत \"अभी भुगतान नहीं हुआ\" के साथ दिखती रहती है; एडमिन लॉट अगले बोलीदाता को दे सकता है।"
       ],
       [
-        "मुझे ई-मेल सत्यापित क्यों करना है?",
-        "ताकि हर बोली किसी वास्तविक, संपर्क योग्य सदस्य से आए। बस एक कोड।"
+        "क्या मुझे कोई कोड या अतिरिक्त ई-मेल चाहिए?",
+        "नहीं। आपका साइन-इन किया हुआ AXTO खाता काफ़ी है; आपको बस जीतने पर दिखने वाला नाम चुनना है।"
       ],
       [
         "जीतने पर कौन-सा नाम दिखता है?",
@@ -1368,19 +1291,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "लाइसेंस नीलामी",
       "lead": "इस नीलामी के लॉट पर बोली लगाएँ। बोली सामान्य कीमत के {open} से शुरू होती है।",
-      "verifyT": "बोली लगाने के लिए अपना ई-मेल सत्यापित करें",
-      "verifyB": "केवल सत्यापित सदस्य बोली लगाते हैं। हम {email} पर 6 अंकों का कोड भेजते हैं।",
-      "send": "कोड भेजें",
-      "sent": "कोड {email} पर भेजा गया। यह 15 मिनट तक मान्य है।",
-      "codeLabel": "6 अंकों का कोड",
-      "verify": "सत्यापित करें",
-      "resend": "नया कोड भेजें",
       "nameT": "जीतने पर दिखने वाला नाम",
       "nameB": "आपकी कंपनी का या आपका अपना नाम, जो axto.io पर आपकी जीत के साथ दिखेगा। दूसरों के ब्रांड और संपर्क विवरण नहीं।",
       "nameLabel": "प्रदर्शित नाम",
       "saveName": "नाम सहेजें",
       "nameSaved": "सहेजा गया।",
-      "verified": "सत्यापित बोलीदाता",
+      "verified": "बोली लगाने के लिए तैयार",
+      "adminNote": "एडमिन खाते नीलामी चलाते हैं और बोली नहीं लगाते।",
       "bidLabel": "आपकी बोली (USD)",
       "bid": "बोली लगाएँ",
       "minHint": "अगली बोली: {amount}",
@@ -1413,14 +1330,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "भुगतान का स्क्रीनशॉट अपलोड करें।",
         "bad_amount": "पूरे अमेरिकी डॉलर में बोली दर्ज करें।",
         "not_found": "नीलामी लॉट नहीं मिला।",
-        "not_verified": "बोली लगाने से पहले ई-मेल सत्यापित करें और प्रदर्शित नाम चुनें।",
+        "not_verified": "बोली लगाने से पहले जीतने पर दिखने वाला नाम चुनें।",
         "admin": "एडमिन खाते नीलामी चलाते हैं और बोली नहीं लगा सकते।",
         "wait": "कृपया थोड़ा रुककर फिर प्रयास करें।",
-        "verified": "आपका ई-मेल पहले से सत्यापित है।",
-        "no_code": "पहले कोड माँगें।",
-        "expired": "कोड की अवधि समाप्त हो गई — नया कोड माँगें।",
-        "attempts": "बहुत अधिक गलत कोड — नया कोड माँगें।",
-        "wrong": "यह कोड सही नहीं है।",
         "length": "2 से 48 वर्ण उपयोग करें।",
         "chars": "केवल अक्षर, अंक, स्पेस और . , & ' ( ) - उपयोग करें।",
         "contact": "ई-मेल पते, वेब पते या फ़ोन नंबर नहीं।",
@@ -1476,8 +1388,8 @@ export const AUC: Record<Lang, AucCopy> = {
     "howTitle": "كيف يعمل المزاد",
     "how": [
       [
-        "تحقّق من بريدك",
-        "سجّل الدخول وأكّد الرمز المكوّن من 6 أرقام الذي نرسله إليك، واختر الاسم الذي يظهر إذا فزت."
+        "سجّل الدخول",
+        "سجّل الدخول إلى حساب AXTO واختر الاسم الذي يظهر إذا فزت — بلا رمز ولا بريد إضافي."
       ],
       [
         "زايد",
@@ -1501,7 +1413,7 @@ export const AUC: Record<Lang, AucCopy> = {
       "قطعة واحدة لكل باقة في كل مزاد، وترخيص واحد لكل قطعة.",
       "سعر الافتتاح {open} من السعر العادي يوم فتح القطعة، ويرفع كل عرض السعر بمقدار {step} من سعر الافتتاح بالضبط.",
       "لا يمكن أن يتجاوز أي عرض السعر العادي.",
-      "يزايد الأعضاء الموثّقون فقط، ولا يمكنك المزايدة على عرضك.",
+      "لا يزايد إلا الأعضاء المسجّلون دخولهم؛ ولا يمكنك المزايدة على نفسك.",
       "لا يُرسل الترخيص إلا بعد دفع الفائز؛ ويبقى الفوز غير المدفوع معروضًا على أنه لم يُدفع بعد. يتطلب التحويل البنكي لقطة شاشة للدفع وموافقة مشرف.",
       "الترخيص مماثل لترخيص يُشترى بالسعر العادي: الميزات نفسها والتحديثات نفسها والدعم نفسه.",
       "يختار الفائزون اسم الشركة أو الاسم الشخصي المعروض — دون علامات تجارية للآخرين أو بيانات اتصال أو ألفاظ مسيئة."
@@ -1530,8 +1442,8 @@ export const AUC: Record<Lang, AucCopy> = {
         "لا يُرسل أي ترخيص. يبقى فوزك معروضًا على أنه لم يُدفع بعد حتى تدفع، ويمكن للمشرف منح القطعة للمزايد التالي."
       ],
       [
-        "لماذا يجب التحقق من بريدي؟",
-        "حتى يأتي كل عرض من عضو حقيقي يمكن التواصل معه. يكفي رمز واحد."
+        "هل أحتاج إلى رمز أو بريد إلكتروني إضافي؟",
+        "لا. يكفي حساب AXTO الذي سجّلت الدخول به؛ تختار فقط الاسم الذي يظهر إذا فزت."
       ],
       [
         "ما الاسم الذي يظهر إذا فزت؟",
@@ -1546,19 +1458,13 @@ export const AUC: Record<Lang, AucCopy> = {
     "me": {
       "title": "مزاد التراخيص",
       "lead": "زايد على قطع هذا المزاد. تبدأ العروض من {open} من السعر العادي.",
-      "verifyT": "تحقّق من بريدك للمزايدة",
-      "verifyB": "يزايد الأعضاء الموثّقون فقط. نرسل رمزًا من 6 أرقام إلى {email}.",
-      "send": "أرسل الرمز",
-      "sent": "أُرسل الرمز إلى {email}. صالح لمدة 15 دقيقة.",
-      "codeLabel": "رمز من 6 أرقام",
-      "verify": "تحقّق",
-      "resend": "أرسل رمزًا جديدًا",
       "nameT": "الاسم الذي يظهر إذا فزت",
       "nameB": "اسم شركتك أو اسمك، ويظهر مع فوزك على axto.io. دون علامات تجارية للآخرين ودون بيانات اتصال.",
       "nameLabel": "الاسم المعروض",
       "saveName": "احفظ الاسم",
       "nameSaved": "تم الحفظ.",
-      "verified": "مزايد موثّق",
+      "verified": "جاهز للمزايدة",
+      "adminNote": "حسابات المشرفين تدير المزاد ولا تزايد.",
       "bidLabel": "عرضك (دولار أمريكي)",
       "bid": "قدّم العرض",
       "minHint": "العرض التالي: {amount}",
@@ -1591,14 +1497,9 @@ export const AUC: Record<Lang, AucCopy> = {
         "receipt_required": "ارفع لقطة شاشة الدفع.",
         "bad_amount": "أدخل عرضًا بالدولار الأمريكي دون كسور.",
         "not_found": "لم يتم العثور على القطعة.",
-        "not_verified": "تحقّق من بريدك واختر اسمًا معروضًا قبل المزايدة.",
+        "not_verified": "اختر الاسم الذي يظهر عند فوزك قبل أن تزايد.",
         "admin": "حسابات المشرفين تدير المزاد ولا يمكنها المزايدة.",
         "wait": "يُرجى الانتظار قليلًا ثم المحاولة مجددًا.",
-        "verified": "بريدك موثّق بالفعل.",
-        "no_code": "اطلب رمزًا أولًا.",
-        "expired": "انتهت صلاحية الرمز — اطلب رمزًا جديدًا.",
-        "attempts": "رموز خاطئة كثيرة — اطلب رمزًا جديدًا.",
-        "wrong": "هذا الرمز غير صحيح.",
         "length": "استخدم من 2 إلى 48 حرفًا.",
         "chars": "استخدم الحروف والأرقام والمسافات و . , & ' ( ) - فقط.",
         "contact": "دون عناوين بريد أو مواقع ويب أو أرقام هواتف.",

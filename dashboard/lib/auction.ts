@@ -203,67 +203,24 @@ function boardOut<L>(d: Awaited<ReturnType<typeof boardData>>, lots: L[]) {
 
 /* ---- bidders --------------------------------------------------------------- */
 
-async function sha256Hex(s: string): Promise<string> {
-  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-const CODE_TTL_MS = 15 * 60_000;
-const CODE_RESEND_MS = 60_000;
-const CODE_ATTEMPTS = 5;
-
 export const getBidder = (db: Data, userId: string) => db.auctionBidders.get(userId);
+/** A signed-in member is a bidder as soon as they have chosen the name shown when they win (owner, 27 Oct 2026:
+ *  "biar otomatis tanpa harus dari email website" — no e-mailed code). */
 export const isVerified = (b: AuctionBidderDoc | null) => !!(b?.verified_at && b.display_name);
 
-/** E-mail a 6-digit code that proves the member owns their address (the "verified members" rule). */
-export async function sendBidderCode(db: Data, user: { sub: string; email: string }): Promise<{ ok: true } | { error: "wait" | "verified" }> {
-  const code = String(crypto.getRandomValues(new Uint32Array(1))[0]! % 1_000_000).padStart(6, "0");
-  const hash = await sha256Hex(`${user.sub}:${code}`);
-  let problem = null as "wait" | "verified" | null;   // set inside the compare-and-swap
-  await db.auctionBidders.upsert(user.sub, (cur) => {
-    problem = null;
-    if (cur?.verified_at && cur.email === user.email) { problem = "verified"; return null; }
-    if (cur?.code_sent_at && Date.now() - Date.parse(cur.code_sent_at) < CODE_RESEND_MS) { problem = "wait"; return null; }
-    const at = now();
-    return {
-      id: user.sub, email: user.email, display_name: cur?.display_name || "", verified_at: "",
-      code_hash: hash, code_expires: iso(Date.now() + CODE_TTL_MS), code_attempts: 0, code_sent_at: at,
-      created_at: cur?.created_at || at, updated_at: at,
-    };
-  });
-  if (problem) return { error: problem };
-  await sendMail(user.email, `Your AXTO auction code: ${code}`, mailLayout("Verify your e-mail to bid",
-    `<p>Enter this code on the Auction page to start bidding:</p><p style="font-family:ui-monospace,Menlo,monospace;font-size:28px;font-weight:800;letter-spacing:6px">${code}</p><p style="color:#64748b;font-size:13px">It works for 15 minutes. If you did not ask for it, ignore this e-mail.</p>`,
-    { label: "Open the auction", href: absoluteUrl("/app/auction") }));
-  return { ok: true };
-}
-
-export async function confirmBidderCode(db: Data, user: { sub: string; email: string }, code: string): Promise<{ ok: true } | { error: "no_code" | "expired" | "attempts" | "wrong" }> {
-  const hash = await sha256Hex(`${user.sub}:${String(code || "").replace(/\D/g, "").slice(0, 6)}`);
-  type Outcome = "ok" | "no_code" | "expired" | "attempts" | "wrong";
-  let outcome = "no_code" as Outcome;
-  await db.auctionBidders.upsert(user.sub, (cur) => {
-    outcome = "no_code";
-    if (!cur?.code_hash || cur.email !== user.email) return null;
-    if (Date.now() > Date.parse(cur.code_expires)) { outcome = "expired"; return null; }
-    if (cur.code_attempts >= CODE_ATTEMPTS) { outcome = "attempts"; return null; }
-    if (cur.code_hash !== hash) { outcome = "wrong"; return { ...cur, code_attempts: cur.code_attempts + 1, updated_at: now() }; }
-    outcome = "ok";
-    return { ...cur, verified_at: now(), code_hash: "", code_expires: "", code_attempts: 0, updated_at: now() };
-  });
-  return outcome === "ok" ? { ok: true } : { error: outcome as Exclude<Outcome, "ok"> };
-}
-
 /** The name shown when this member wins — also on lots they have already won. */
-export async function setDisplayName(db: Data, user: { sub: string; email: string }, raw: unknown): Promise<{ ok: true; name: string } | { error: NameProblem | "not_verified" }> {
+export async function setDisplayName(db: Data, user: { sub: string; email: string }, raw: unknown): Promise<{ ok: true; name: string } | { error: NameProblem }> {
   const problem = displayNameProblem(raw);
   if (problem) return { error: problem };
   const name = cleanDisplayName(raw);
-  let verified = false as boolean;
   await db.auctionBidders.upsert(user.sub, (cur) => {
-    verified = !!cur?.verified_at;
-    return cur?.verified_at ? { ...cur, display_name: name, updated_at: now() } : null;
+    const at = now();
+    return {
+      id: user.sub, email: user.email, display_name: name, verified_at: cur?.verified_at || at,
+      code_hash: "", code_expires: "", code_attempts: 0, code_sent_at: "",
+      created_at: cur?.created_at || at, updated_at: at,
+    };
   });
-  if (!verified) return { error: "not_verified" };
   for (const l of await db.auctionLots.listAllDocs("winner", user.sub, 200)) {
     await db.auctionLots.update(l.id, (c) => (c.winner_user === user.sub && (c.status === "awaiting_payment" || c.status === "sold") && c.winner_name !== name ? { ...c, winner_name: name, updated_at: now() } : null));
   }
@@ -276,7 +233,7 @@ export type BidResult = { ok: true; lot: AuctionLotDoc; seq: number; extended: b
 
 export async function placeBid(db: Data, user: { sub: string; email: string }, lot: string, amountIn: unknown, nowMs = Date.now()): Promise<BidResult> {
   const bidder = await getBidder(db, user.sub);
-  if (!isVerified(bidder) || bidder!.email !== user.email) return { error: "not_verified" };
+  if (!isVerified(bidder)) return { error: "not_verified" };
   const amount = Math.round(Number(String(amountIn ?? "").replace(/[^\d.]/g, "")) || 0);
   const s = await getAuctionSettings(db);
   if (!(await db.auctionLots.get(lot))) return { error: "not_found" };
@@ -462,7 +419,7 @@ export async function auctionOrderPaid(db: Data, o: OrderDoc): Promise<"sold" | 
 
 /* ---- the member's view ------------------------------------------------------- */
 
-export async function memberBoard(db: Data, user: { sub: string; email: string }, nowMs = Date.now()) {
+export async function memberBoard(db: Data, user: { sub: string; email: string; role?: string }, nowMs = Date.now()) {
   const [d, bidder, myBids, won] = await Promise.all([
     boardData(db, nowMs), getBidder(db, user.sub),
     db.auctionBids.listAllDocs("user", user.sub, 500), db.auctionLots.listAllDocs("winner", user.sub, 200),
@@ -476,7 +433,8 @@ export async function memberBoard(db: Data, user: { sub: string; email: string }
   const mine = [...d.live.filter((l) => best.has(l.id)), ...others].sort((a, b) => b.ends_at.localeCompare(a.ends_at));
   return {
     ...boardOut(d, d.live.map((l) => ({ ...lotView(l), myBestUsd: best.get(l.id) || 0, leading: leading(l) }))),
-    bidder: { verified: isVerified(bidder) && bidder!.email === user.email, codeSent: !!bidder?.code_hash && !bidder.verified_at, displayName: bidder?.display_name || "", email: user.email },
+    // Admins run the auction and do not bid; everyone else bids once they have chosen a display name.
+    bidder: { verified: isVerified(bidder), admin: user.role === "admin", displayName: bidder?.display_name || "", email: user.email },
     myBids: mine.map((l) => ({ ...lotView(l), myBestUsd: best.get(l.id) || 0, leading: leading(l) })),
     wins: won.filter((l) => l.winner_user === user.sub && (l.status === "awaiting_payment" || l.status === "sold"))
       .map((l) => ({ ...lotView(l), winnerName: l.winner_name, winnerUsd: l.winner_usd, payBy: l.pay_by, orderId: l.order_id, status: l.status, paidAt: l.paid_at })),

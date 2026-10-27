@@ -1,8 +1,8 @@
 /* ==============================================================================
  * AXTO — the licence auction end to end on the LOCAL runtime (§26.5):
  *   the tick opens this auction's lots (every package by default; Friday 07:00
- *   WIB = 00:00 UTC; 25 % opening, every bid +10 % of the opening bid) → only
- *   verified members bid (e-mailed code, filtered display name) → bids are
+ *   WIB = 00:00 UTC; 25 % opening, every bid +10 % of the opening bid) → a
+ *   signed-in member bids once they chose a filtered display name (no code) → bids are
  *   validated, create-once, outbid e-mail, anti-snipe → the lot closes to the
  *   top bidder → the win stays unpaid and listed as such until the winner pays,
  *   at the winning bid, through the normal checkout; a bank transfer needs the
@@ -49,16 +49,8 @@ let saved: any = null, lotA = "", lotB = "";
 const me = (c: Client, b: Record<string, unknown>) => c.post("/api/account/auction", b);
 const iso = (ms: number) => new Date(ms).toISOString();
 
-/** The newest 6-digit auction code e-mailed to an address. */
-async function codeFor(email: string): Promise<string> {
-  for (const m of await mails(email)) { const c = m.subject.match(/auction code: (\d{6})/); if (c) return c[1]!; }
-  return "";
-}
-async function verify(c: Client, email: string, name: string) {
-  assert.equal((await me(c, { action: "send_code" })).status, 200);
-  const code = await codeFor(email);
-  assert.match(code, /^\d{6}$/);
-  assert.equal((await me(c, { action: "verify", code })).status, 200);
+/** A signed-in member becomes a bidder by choosing the name shown on a win — no e-mailed code (§27.7). */
+async function join(c: Client, name: string) {
   const n = await me(c, { action: "name", displayName: name });
   assert.equal(n.status, 200, n.text);
 }
@@ -116,27 +108,25 @@ test("auction: every package by default; the tick opens one lot per package at 2
   assert.match((await anon.get("/")).text, /href="\/auction"/, "linked from the footer");
 });
 
-test("auction: only verified members bid, with a clean display name", async () => {
-  assert.equal((await new Client().post("/api/account/auction", { action: "bid", lot: lotA, amount: 300 })).status, 401);
+test("auction: a signed-in member bids once they have chosen a clean display name — no e-mailed code", async () => {
+  assert.equal((await new Client().post("/api/account/auction", { action: "bid", lot: lotA, amount: 300 })).status, 401, "signed out");
   const early = await me(ada, { action: "bid", lot: lotA, amount: 300 });
   assert.equal(early.status, 409);
-  assert.equal(early.json.code, "not_verified");
+  assert.equal(early.json.code, "not_verified", "a name first");
   assert.equal((await me(admin, { action: "bid", lot: lotA, amount: 300 })).json.code, "admin", "admins run the auction");
-
-  assert.equal((await me(ada, { action: "send_code" })).status, 200);
-  assert.equal((await me(ada, { action: "send_code" })).json.code, "wait", "one code a minute");
-  const real = await codeFor(ADA);
-  assert.equal((await me(ada, { action: "verify", code: real === "000000" ? "111111" : "000000" })).json.code, "wrong");
-  assert.equal((await me(ada, { action: "name", displayName: "Ada Labs" })).json.code, "not_verified");
-  assert.equal((await me(ada, { action: "verify", code: real })).status, 200);
+  assert.equal((await admin.get("/api/account/auction")).json.bidder.admin, true, "the page tells an admin they do not bid");
+  assert.equal((await me(ada, { action: "send_code" })).status, 400, "there is no code step any more");
   for (const [bad, code] of [["Google Partner", "brand"], ["Fuck Corp", "abuse"], ["ada@example.com", "contact"], ["A", "length"]] as const) {
     assert.equal((await me(ada, { action: "name", displayName: bad })).json.code, code, bad);
   }
+  const before = (await mails(ADA)).length;
   assert.equal((await me(ada, { action: "name", displayName: "Ada Labs" })).json.displayName, "Ada Labs");
-  await verify(ben, BEN, "Ben & Partners");
+  assert.equal((await mails(ADA)).length, before, "no e-mail is needed to start bidding");
+  await join(ben, "Ben & Partners");
   const board = await ada.get("/api/account/auction");
   assert.equal(board.status, 200, board.text);
   assert.equal(board.json.bidder.verified, true);
+  assert.equal(board.json.bidder.admin, false);
   assert.equal(board.json.bidder.displayName, "Ada Labs");
 });
 

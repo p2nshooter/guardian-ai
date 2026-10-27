@@ -1,9 +1,8 @@
 /* AXTO — /api/account/auction · the member's side of the licence auction (§26.5)
  *   GET → the running auction with the member's own bids, leads and wins, and
- *         whether they are verified to bid
- *   POST {action:"send_code"}         → e-mail a 6-digit code (verified members only bid)
- *   POST {action:"verify", code}      → confirm it
- *   POST {action:"name", displayName} → the company or personal name shown when they win
+ *         whether they can bid
+ *   POST {action:"name", displayName} → the company or personal name shown when they win;
+ *         a signed-in member who has chosen it bids — no e-mailed code (owner, 27 Oct 2026)
  *   POST {action:"bid", lot, amount}  → one bid, whole dollars
  * Errors carry a `code` the page translates. Paying a win is the normal
  * checkout: POST /api/billing/checkout {kind:"auction", lot, gateway}. */
@@ -13,7 +12,7 @@ import { getData } from "@/lib/db";
 import { loadSession, respond, unauthorized } from "@/lib/auth";
 import { readJson, fail, str } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
-import { confirmBidderCode, memberBoard, placeBid, sendBidderCode, setDisplayName } from "@/lib/auction";
+import { memberBoard, placeBid, setDisplayName } from "@/lib/auction";
 
 const err = (code: string, message: string, status = 400) => fail(message, status, { code });
 
@@ -22,11 +21,11 @@ const BID_MESSAGES: Record<string, string> = {
   too_low: "Every bid is exactly the next price shown.", too_high: "A bid cannot be higher than the normal price.",
   already_highest: "You already have the highest bid on this lot.", bad_amount: "Enter a bid in whole US dollars.",
   not_next: "Someone bid just before you — the next bid has been updated.",
-  not_found: "Auction lot not found.", not_verified: "Verify your e-mail and choose a display name before you bid.",
+  not_found: "Auction lot not found.", not_verified: "Choose the name shown when you win before you bid.",
 };
 const NAME_MESSAGES: Record<string, string> = {
   length: "Use 2 to 48 characters.", chars: "Use letters, numbers, spaces and . , & ' ( ) - only.", contact: "No e-mail addresses, web addresses or phone numbers.",
-  abuse: "Please choose another name.", brand: "That name belongs to another company's brand.", not_verified: "Verify your e-mail first.",
+  abuse: "Please choose another name.", brand: "That name belongs to another company's brand.",
 };
 
 export async function GET(req: NextRequest) {
@@ -43,19 +42,9 @@ export async function POST(req: NextRequest) {
   const db = getData(req);
   const b = await readJson(req);
   switch (b?.action) {
-    case "send_code": {
-      const rl = await rateLimit(req, "auction-code", s.sub, { max: 5, windowSeconds: 3600 });
-      if (rl.limited) return err("wait", "Too many codes — please try again later.", 429);
-      const r = await sendBidderCode(db, s);
-      if ("error" in r) return err(r.error, r.error === "wait" ? "Please wait a minute before asking for another code." : "Your e-mail is already verified.", r.error === "wait" ? 429 : 400);
-      return respond({ ok: true }, ctx);
-    }
-    case "verify": {
-      const r = await confirmBidderCode(db, s, str(b?.code, 12));
-      if ("error" in r) return err(r.error, { no_code: "Ask for a code first.", expired: "The code has expired — ask for a new one.", attempts: "Too many wrong codes — ask for a new one.", wrong: "That code is not right." }[r.error]);
-      return respond({ ok: true }, ctx);
-    }
     case "name": {
+      const rl = await rateLimit(req, "auction-name", s.sub, { max: 20, windowSeconds: 3600 });
+      if (rl.limited) return err("wait", "Too many changes — please try again later.", 429);
       const r = await setDisplayName(db, s, b?.displayName);
       if ("error" in r) return err(r.error, NAME_MESSAGES[r.error] || "Please choose another name.");
       return respond({ ok: true, displayName: r.name }, ctx);
