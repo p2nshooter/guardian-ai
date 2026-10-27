@@ -8,6 +8,7 @@ import { loadSession, respond, effectiveTier } from "@/lib/auth";
 import { getUsage } from "@/lib/usage";
 import { PLANS, limitsFor, isPlanId } from "@/lib/plans";
 import { localModeFor } from "@/lib/ai/local-settings";
+import { hasInvestorRecord, investVisible } from "@/lib/invest";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
@@ -16,11 +17,13 @@ export async function GET(req: NextRequest) {
   const s = ctx.session;
   const db = getData(req);
   const tier = effectiveTier(s);
-  const [profile, sub, usage, localMode] = await Promise.all([
+  const [profile, sub, usage, localMode, investShown, investRecord] = await Promise.all([
     db.users.get(s.sub),
     db.subscriptions.get(ids.subscription(s.sub)),
     getUsage(db, s.sub, tier),
     localModeFor(db, tier),
+    investVisible(db),
+    hasInvestorRecord(db, s.email),
   ]);
   return respond({
     user: { id: s.sub, email: s.email, role: s.role, name: profile?.name || "", organization: profile?.organization || "", country: profile?.country || "", createdAt: profile?.created_at || "" },
@@ -30,5 +33,6 @@ export async function GET(req: NextRequest) {
     limits: limitsFor(tier),
     usage,
     localMode,          // Local Mode (AI on this device) allowed: plan + operator switch
+    investor: investShown || investRecord,   // §26.4: "Investment" in the menu only while the round is shown, or for an investor
   }, ctx);
 }

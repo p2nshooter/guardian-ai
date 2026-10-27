@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
 
   const db = getData(req);
   const offer = await getInvest(db);
+  if (!offer.visible) return err("hidden", "Not found", 404);            // §26.4: the round is not shown
   if (offer.status === "closed") return err("closed", "The round is complete.", 409);
   if (offer.status === "paused") return err("paused", "Applications are paused at the moment.", 409);
 

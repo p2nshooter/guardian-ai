@@ -39,6 +39,16 @@ export default function AdminInvestorsPage() {
     if (r.ok) { setS(r.data.settings); setMsg({ tone: "success", text: "Saved — /invest uses it immediately." }); load(); }
     else setMsg({ tone: "error", text: r.error });
   }
+  async function setVisible(visible: boolean) {
+    if (!confirm(visible
+      ? "SHOW the investor round on axto.io? The footer link, the sitemap entry, /invest, applications and the member menu item appear for everyone."
+      : "HIDE the investor round? /invest becomes a 404, the footer link, the sitemap entry and applications disappear. Existing investors keep their statement.")) return;
+    setBusy(true); setMsg(null);
+    const r = await api<{ settings: InvestOffer }>("/api/admin/investors", { method: "PUT", body: { visible } });
+    setBusy(false);
+    if (r.ok) { setMsg({ tone: "success", text: visible ? "The investor round is now shown on axto.io." : "The investor round is now hidden on axto.io." }); load(); }
+    else setMsg({ tone: "error", text: r.error });
+  }
   async function act(body: Record<string, unknown>, done: string) {
     setBusy(true); setMsg(null);
     const r = await api("/api/admin/investors", { body });
@@ -72,8 +82,19 @@ export default function AdminInvestorsPage() {
   return (
     <>
       <PageHeader eyebrow="Business" title="Investors" description="The AXTO-only revenue-sharing round on /invest. xaa.es raises separately on its own site — nothing here is shared with it."
-        actions={<Link href="/invest" target="_blank" className="btn-secondary">Open /invest ↗</Link>} />
+        actions={d.settings.visible ? <Link href="/invest" target="_blank" className="btn-secondary">Open /invest ↗</Link> : undefined} />
       {msg ? <div className="mb-4"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
+
+      <div className="mb-5">
+        <Section title="Visibility on axto.io" description="Hidden by default (owner, 26 Oct 2026). While hidden there is no footer link and no sitemap entry, /invest is a noindex 404, the public API and applications are refused, and “Investment” shows in the member menu only for someone who already has a record here. Every change is in the audit log.">
+          <div className="flex flex-wrap items-center gap-3" data-testid="inv-visibility">
+            <StatusBadge status={d.settings.visible ? "active" : "inactive"} label={d.settings.visible ? "Shown" : "Hidden"} />
+            {d.settings.visible
+              ? <button className="btn-secondary" onClick={() => setVisible(false)} disabled={busy} data-testid="inv-hide">Hide the investor round</button>
+              : <button className="btn-primary" onClick={() => setVisible(true)} disabled={busy} data-testid="inv-show">Show the investor round</button>}
+          </div>
+        </Section>
+      </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5" data-testid="inv-summary">
         {([

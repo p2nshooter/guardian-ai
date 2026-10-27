@@ -1,5 +1,11 @@
-/* sitemap.xml — every public, indexable page (static routes + generated pages). */
+/* sitemap.xml — every public, indexable page (static routes + generated pages).
+ * Built per request so /invest is listed only while the owner shows the
+ * investor round (§26.4, hidden by default — Admin → Investors). */
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 import type { MetadataRoute } from "next";
+import { getData } from "@/lib/db";
+import { investVisible } from "@/lib/invest";
 import { absoluteUrl } from "@/lib/site";
 import { CLOUD_APPS } from "@/lib/apps";
 import { COUNTRIES } from "@/lib/legal/jurisdictions";
@@ -9,14 +15,15 @@ import { PRODUCT_CATALOG } from "@/lib/product-catalog";
 
 const BUILT = new Date();
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const invest = await investVisible(getData()).catch(() => false);
   const page = (path: string, priority: number, changeFrequency: "daily" | "weekly" | "monthly" = "weekly") =>
     ({ url: absoluteUrl(path), lastModified: BUILT, changeFrequency, priority });
   return [
     page("/", 1, "daily"),
     page("/pricing", 0.9),
     page("/acquire", 0.8),
-    page("/invest", 0.7),
+    ...(invest ? [page("/invest", 0.7)] : []),
     page("/apps", 0.9),
     ...CLOUD_APPS.map((a) => page(`/apps/${a.slug}`, a.slug === "legal" ? 0.9 : 0.8)),
     page("/legal-ai", 0.8),
