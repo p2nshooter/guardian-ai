@@ -477,7 +477,8 @@ bukan dari perkiraan.
 | 12 | Animasi panduan pelanggan (20 Okt 2026, `REQUESTS.md` 80) | rencana ✅ (`R2-DATA-BLUEPRINT.md` §5, §8) · perekam panduan · 23 panduan + 8 admin dalam 10 bahasa · halaman /guides + tombol „Lihat panduan" | 1/4 | **25 %** |
 | 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah ✅ · axto.io pindah ✅ (21 Okt) · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 3/5 | **60 %** |
 | 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 ✅ (tayang 21 Okt, §25.3) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 1/4 | **25 %** |
-| | **Total** (bobot = jumlah fase) | | **51/92** | **≈ 55 %** |
+| 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tersembunyi + tombol admin ✅ · 27.2 lelang lisensi tiap 2 minggu · 27.3 setiap paket bisa dibeli + lisensi jalan | 1/3 | **33 %** |
+| | **Total** (bobot = jumlah fase) | | **52/95** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -847,13 +848,13 @@ oleh axto.io (data per dokumen, berkas anggota terenkripsi, rilis Docker bertand
 Rencana berikutnya (dibahas dengan pemilik dulu, belum dikerjakan): xaa.es pindah ke akun Cloudflare yang sama dengan
 axto.io agar satu akun fokus khusus aplikasi. Izin token tidak ditulis di repo (aturan §4 CLAUDE.md).
 
-### 26.4 Penawaran investor disembunyikan (⏸ menunggu izin)
+### 26.4 Penawaran investor disembunyikan (✅ 27 Okt, §27.1)
 
 Default tersembunyi di semua halaman index dan portal member axto.io dan xaa.es; tombol tampil/sembunyi di portal
 admin (dicatat di log audit). Saat tersembunyi: tautan header/footer, kartu beranda, `/invest` (noindex + 404) dan
 entri sitemap ikut hilang, supaya tidak ada halaman yatim yang dirayapi.
 
-### 26.5 Lelang lisensi tiap 2 minggu (📝 blueprint)
+### 26.5 Lelang lisensi tiap 2 minggu (🔄 izin 27 Okt, §27)
 
 - Siklus 14 hari, selalu berakhir **Jumat 15:00 UTC**; satu lot per paket yang dilelang, harga buka **25 % dari harga
   normal**, kenaikan minimum 1 % harga normal, perpanjangan anti-snipe 5 menit bila ada tawaran di 5 menit terakhir.
@@ -878,3 +879,15 @@ yang dijual ke "investor" dengan harapan nilainya naik dapat digolongkan sekurit
 Perbaikan konsistensi dan riset pesaing ("1000 kali lebih canggih") menunggu izin pemilik setelah artikel selesai.
 Promosi axto.io (dan xaa.es, ulyah.com) masuk ke pekerjaan artikel di semua situs: blok "Dari ekosistem kami" dengan
 logo, tautan biasa berlabel jelas, jauh dari iklan, tanpa teks tersembunyi (kebijakan AdSense).
+
+## 27. Perintah pemilik 27 Okt 2026 — axto.io 100 % siap produksi: tampil/sembunyi investor, lelang, semua aplikasi bisa dibeli
+
+"Jika sudah lanjut ke axto.io pastikan seluruhnya 100% siap produksi, lihat lg blueprint husus axto.io mulai dr show
+hiden pencarian anggaran sampe auction license dan pastikan seluruh aplikasi sudah siap di beli customer, dan licensi
+sudah jalan" (REQUESTS 93). Ini izin pemilik untuk pekerjaan aplikasi (aturan baris 86). Urutan kerja:
+
+| # | Pekerjaan | Rincian | Status |
+|---|---|---|---|
+| 27.1 | §26.4 penawaran investor tersembunyi | `visible` (default **false**) di `invest_offer`; saat tersembunyi `/invest` 404 + noindex, `/api/invest` dan `/api/invest/apply` menolak, tautan footer, menu member „Investor" (kecuali anggota yang sudah tercatat sebagai pemodal) dan entri sitemap hilang; tombol Tampilkan/Sembunyikan di Admin → Investors, dicatat `admin.invest_visibility` di log audit; uji unit + E2E (129/129) + browser desktop & HP | ✅ (27 Okt; tayang setelah merge + deploy) |
+| 27.2 | §26.5 lelang lisensi tiap 2 minggu | lot per paket (edisi aplikasi atau lifetime), siklus 14 hari berakhir Jumat 15:00 UTC, buka 25 %, kenaikan 1 %, anti-snipe 5 menit, tawaran create-once di R2, penutupan CAS idempoten, pemenang bayar ≤ 48 jam lewat checkout live (lisensi otomatis), lalu jatuh ke penawar berikutnya; nama tampilan disaring; pemenang di beranda, portal member, admin; 10 bahasa; SEO `/auction` | ⏳ |
+| 27.3 | Semua aplikasi bisa dibeli, lisensi jalan | setiap paket (plan, edisi per aplikasi, lifetime) membuat order di harga server, pembayaran terverifikasi → lisensi terbit, ditandatangani, lolos `/api/license-validate`, unduhan tersedia; uji unit + E2E untuk setiap SKU | ⏳ |

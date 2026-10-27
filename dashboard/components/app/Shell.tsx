@@ -24,6 +24,7 @@ export interface Me {
   limits: { clipperVideosPerMonth: number; storageGB: number; promptLevels: string[]; legalWorkspaces: string; apps: string[]; selfHostedApps: number; selfHostedNodes: number; localMode?: boolean };
   usage: { month: string; requests: number; clipperVideos: number; clipperLimit: number; storageBytes: number; storageLimit: number };
   localMode?: boolean;           // Local Mode allowed now (plan + operator switch)
+  investor?: boolean;            // the investor round is shown, or this member has a record in it (§26.4)
 }
 
 const MeCtx = createContext<{ me: Me | null; reload: () => Promise<void> }>({ me: null, reload: async () => {} });
@@ -31,7 +32,7 @@ export const useMe = () => useContext(MeCtx);
 
 interface NavItem { href: string; label: Key | string; icon: string; badge?: string; match?: string }
 
-function memberNav(): { section: Key; items: NavItem[] }[] {
+function memberNav(me: Me | null): { section: Key; items: NavItem[] }[] {
   return [
     { section: "nav.section.workspace", items: [
       { href: "/app", label: "nav.home", icon: "🏠" },
@@ -45,7 +46,7 @@ function memberNav(): { section: Key; items: NavItem[] }[] {
     ] },
     { section: "nav.section.account", items: [
       { href: "/app/billing", label: "nav.billing", icon: "💳" },
-      { href: "/app/investor", label: "nav.investor", icon: "📈" },
+      ...(me?.investor ? [{ href: "/app/investor", label: "nav.investor", icon: "📈" }] : []),
       { href: "/app/settings", label: "nav.settings", icon: "⚙️" },
       { href: "/help", label: "nav.help", icon: "📘" },
     ] },
@@ -93,7 +94,7 @@ export default function Shell({ variant, children }: { variant: "member" | "admi
   useEffect(() => { reload(); }, [reload]);
   useEffect(() => { setOpen(false); }, [path]);
 
-  const nav = variant === "admin" ? adminNav() : memberNav();
+  const nav = variant === "admin" ? adminNav() : memberNav(me);
   const label = (l: string) => (l.includes(".") ? t(l as Key) : l);
   const isActive = (it: NavItem) => it.href === "/app" || it.href === "/admin" ? path === it.href : path === it.href || path.startsWith((it.match || it.href) + "/");
 

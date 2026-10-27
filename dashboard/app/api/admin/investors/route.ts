@@ -3,6 +3,9 @@
  *         month-by-month statement (revenue, share due, paid, still open)
  *   PUT {settings} → status (open / paused / closed), round, minimum ticket,
  *         revenue pool and the WhatsApp number given to applicants
+ *   PUT {visible}  → show or hide the whole round on axto.io (§26.4, hidden by
+ *         default): footer link, sitemap entry, /invest, the public API,
+ *         applications and the member menu item. Its own audit entry.
  *   POST {action, id, …}
  *         verify   {capital, method} → capital received; the revenue share starts now
  *         decline  {note}            → an application that does not go ahead
@@ -43,8 +46,16 @@ export async function PUT(req: NextRequest) {
   if (!ctx) return forbidden();
   const db = getData(req);
   const b = await readJson(req);
+  const current = await getInvest(db);
+  if (!b?.settings && typeof b?.visible === "boolean") {
+    const next = { ...current, visible: b.visible };
+    await saveInvest(db, next);
+    await audit(db, ctx.session, "admin.invest_visibility", "platform_config", "invest_offer", { visible: next.visible, was: current.visible }, req);
+    return respond({ ok: true, settings: next }, ctx);
+  }
   if (!b?.settings) return fail("Nothing to save.");
-  const next = sanitizeInvest(b.settings, await getInvest(db));
+  // Showing or hiding the round is its own action (above), never a side effect of saving the terms.
+  const next = { ...sanitizeInvest(b.settings, current), visible: current.visible };
   await saveInvest(db, next);
   await audit(db, ctx.session, "admin.invest_offer", "platform_config", "invest_offer", { status: next.status, targetUsd: next.targetUsd, minUsd: next.minUsd, poolPct: next.poolPct }, req);
   return respond({ ok: true, settings: next }, ctx);

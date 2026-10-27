@@ -16,6 +16,12 @@
  * US$50,000, paid monthly until a full acquisition of AXTO, when the capital is
  * returned in full.
  *
+ * Owner, 26 Oct 2026 (docs/BLUEPRINT-V4.md §26.4): the round is HIDDEN by
+ * default — `visible` is false until the owner switches it on in Admin →
+ * Investors. While hidden there is no footer link, no sitemap entry, /invest is
+ * a 404 (noindex), the public API and applications are refused, and the member
+ * menu shows "Investment" only to someone who already has a stake.
+ *
  * This file is pure (no database) so the public page and the tests can use it;
  * lib/invest.ts adds the storage.
  *
@@ -32,6 +38,8 @@ export type InvestStatus = "open" | "paused" | "closed";
 export type InvestorStatus = "applied" | "verified" | "declined" | "returned";
 
 export interface InvestOffer {
+  /** Shown on the public site and in the member menu at all (§26.4). Off by default. */
+  visible: boolean;
   status: InvestStatus;
   targetUsd: number;
   minUsd: number;
@@ -42,7 +50,7 @@ export interface InvestOffer {
   updatedAt?: string;
 }
 
-export const INVEST_DEFAULTS: InvestOffer = { status: "open", targetUsd: 2_000_000, minUsd: 50_000, poolPct: 30, whatsapp: "+6285691234561" };
+export const INVEST_DEFAULTS: InvestOffer = { visible: false, status: "open", targetUsd: 2_000_000, minUsd: 50_000, poolPct: 30, whatsapp: "+6285691234561" };
 
 const num = (v: unknown) => Number(String(v ?? "").replace(/[^\d.]/g, ""));
 
@@ -57,6 +65,7 @@ export function sanitizeInvest(v: any, base: InvestOffer = INVEST_DEFAULTS): Inv
   const poolPct = Number.isFinite(pool) && pool > 0 && pool <= 100 ? Math.round(pool * 100) / 100 : base.poolPct;
   const whatsapp = String(v.whatsapp ?? "").replace(/[^\d+ ]/g, "").trim().slice(0, 30);
   return {
+    visible: typeof v.visible === "boolean" ? v.visible : base.visible,
     status: v.status === "paused" || v.status === "closed" ? v.status : v.status === "open" ? "open" : base.status,
     targetUsd, minUsd, poolPct,
     whatsapp: /\d{8,}/.test(whatsapp.replace(/\D/g, "")) ? whatsapp : base.whatsapp,

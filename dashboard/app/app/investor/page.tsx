@@ -14,7 +14,7 @@ import { INV_EN, type InvCopy } from "@/lib/invest-copy";
 import { pct, type Statement } from "@/lib/invest-terms";
 
 interface Stake { id: string; status: "verified" | "returned"; capitalUsd: number; verifiedAt: string; returnedAt: string; statement: Statement }
-interface Data { email: string; offer: { poolPct: number; targetUsd: number; status: string }; stakes: Stake[] }
+interface Data { email: string; offer: { poolPct: number; targetUsd: number; status: string; visible: boolean }; stakes: Stake[] }
 
 const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k] : m));
 
@@ -42,7 +42,7 @@ export default function InvestorPage() {
     <>
       <PageHeader eyebrow="AXTO" title={t.title} description={fill(t.lead, vars)} />
       {!d.stakes.length ? (
-        <EmptyState icon="📈" title={t.none} action={<Link href="/invest" className="btn-primary">{t.apply}</Link>}>
+        <EmptyState icon="📈" title={t.none} action={d.offer.visible ? <Link href="/invest" className="btn-primary">{t.apply}</Link> : undefined}>
           <span data-testid="investor-none">{fill(t.noneB, { email: d.email })}</span>
         </EmptyState>
       ) : (

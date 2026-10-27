@@ -1,11 +1,14 @@
 /* ==============================================================================
  * AXTO — the AXTO-only investor round end to end on the LOCAL runtime:
- *   public terms + page + footer + sitemap → application errors (min, ack,
+ *   hidden by default (§26.4: no page, no footer link, no sitemap entry, no
+ *   public API, no applications, no member menu item) → the admin shows it
+ *   (audited) → public terms + page + sitemap → application errors (min, ack,
  *   e-mail) → an application (WhatsApp only after applying) → admin verifies
  *   the capital → paid AXTO orders after that day count, sandbox / acquisition
  *   / earlier ones never do → the investor's own statement → a payout nets the
  *   month → capital returned ends the share → paused / closed rounds refuse
- *   applications. No bank details anywhere on the public side.
+ *   applications → hidden again, an investor keeps the menu item and the
+ *   statement. No bank details anywhere on the public side.
  * ============================================================================ */
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -51,18 +54,62 @@ before(async () => {
   const g = await admin.get("/api/admin/investors");
   assert.equal(g.status, 200, g.text);
   saved = g.json.settings;
+  assert.equal(g.json.defaults.visible, false, "the round is hidden by default");
   const r = await admin.put("/api/admin/investors", { settings: { ...g.json.defaults, status: "open" } });
   assert.equal(r.status, 200, r.text);
+  const h = await admin.put("/api/admin/investors", { visible: false });
+  assert.equal(h.status, 200, h.text);
   const s = await investor.post("/api/auth/register", { email: EMAIL, name: "Investor " + RUN, password: "Investor-Pass-2026", acceptTerms: true });
   assert.equal(s.status, 200, s.text);
 });
 after(async () => {
-  if (saved) await admin.put("/api/admin/investors", { settings: saved });
+  if (saved) {
+    await admin.put("/api/admin/investors", { settings: saved });
+    await admin.put("/api/admin/investors", { visible: saved.visible === true });
+  }
 });
 
-test("invest: public terms, the page, the footer link and the sitemap", async () => {
+test("invest: hidden — no page, no footer link, no sitemap entry, no API, no applications, no menu item", async () => {
   const r = await anon.get("/api/invest");
   assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.json, { visible: false }, "nothing about the round while it is hidden");
+  const page = await anon.get("/invest");
+  assert.equal(page.status, 404, "/invest is a 404 while hidden");
+  assert.match(page.text, /<meta name="robots" content="noindex/);
+  assert.ok(!page.text.includes("AXTO, and only AXTO"), "none of the offer is rendered");
+  const home = await anon.get("/");
+  assert.equal(home.status, 200);
+  assert.ok(!/href="\/invest"/.test(home.text), "no footer link");
+  const map = await anon.get("/sitemap.xml");
+  assert.equal(map.status, 200);
+  assert.match(map.text, /<loc>[^<]*\/pricing<\/loc>/, "the sitemap still lists the site");
+  assert.ok(!/\/invest<\/loc>/.test(map.text), "no sitemap entry");
+  const a = await new Client().post("/api/invest/apply", { name: "Early", email: `early-${RUN}@example.com`, amount: "50000", ack: true });
+  assert.equal(a.status, 404);
+  assert.equal(a.json.code, "hidden");
+  const me = await investor.get("/api/auth/me");
+  assert.equal(me.status, 200, me.text);
+  assert.equal(me.json.investor, false, "no Investment menu item for a member without a record");
+  const mine = await investor.get("/api/account/investor");
+  assert.equal(mine.json.offer.visible, false);
+
+  assert.equal((await investor.put("/api/admin/investors", { visible: true })).status, 403, "members cannot switch it on");
+  const show = await admin.put("/api/admin/investors", { visible: true });
+  assert.equal(show.status, 200, show.text);
+  assert.equal(show.json.settings.visible, true);
+  const audit = (await auditFor("platform_config", "invest_offer")).map((x: any) => [x.action, JSON.stringify(x.metadata ?? "")]);
+  assert.ok(audit.some(([action, meta]: any) => action === "admin.invest_visibility" && /visible\\?":true/.test(meta)), "showing the round is audited");
+  // Saving the terms never flips the switch.
+  const g = await admin.get("/api/admin/investors");
+  const terms = await admin.put("/api/admin/investors", { settings: { ...g.json.settings, visible: false } });
+  assert.equal(terms.json.settings.visible, true);
+  assert.equal((await investor.get("/api/auth/me")).json.investor, true, "the menu item appears while shown");
+});
+
+test("invest: public terms, the page and the sitemap while shown", async () => {
+  const r = await anon.get("/api/invest");
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.json.visible, true);
   assert.deepEqual([r.json.status, r.json.targetUsd, r.json.minUsd, r.json.poolPct], ["open", 2_000_000, 50_000, 30]);
   assert.ok(!("whatsapp" in r.json), "the WhatsApp number is given only after applying");
   const page = await anon.get("/invest");
@@ -71,8 +118,8 @@ test("invest: public terms, the page, the footer link and the sitemap", async ()
   assert.match(page.text, /AXTO, and only AXTO/);
   assert.match(page.text, /"@type":"FAQPage"/);
   for (const secret of ["2090571495", "2090571484", "BNINIDJA"]) assert.ok(!page.text.includes(secret), `no ${secret} on /invest`);
-  const home = await anon.get("/");
-  assert.match(home.text, /href="\/invest"/, "the footer links to the round");
+  assert.match(page.text, /<link rel="canonical" href="[^"]*\/invest"/);
+  assert.ok(!/<meta name="robots" content="noindex/.test(page.text), "indexable while shown");
   const map = await anon.get("/sitemap.xml");
   assert.match(map.text, /\/invest<\/loc>/);
 });
@@ -164,4 +211,19 @@ test("invest: returned capital ends the share; paused and closed rounds refuse a
     assert.equal(a.status, 409);
     assert.equal(a.json.code, status);
   }
+});
+
+test("invest: hidden again — investors keep their menu item and statement, nobody else sees the round", async () => {
+  const hide = await admin.put("/api/admin/investors", { visible: false });
+  assert.equal(hide.status, 200, hide.text);
+  assert.equal((await anon.get("/invest")).status, 404);
+  assert.ok(!/\/invest<\/loc>/.test((await anon.get("/sitemap.xml")).text));
+  assert.equal((await investor.get("/api/auth/me")).json.investor, true, "an investor still finds their statement");
+  assert.equal((await investor.get("/api/account/investor")).json.stakes.length, 1);
+  const other = new Client();
+  const s = await other.post("/api/auth/register", { email: `other-${RUN}@example.com`, name: "Other " + RUN, password: "Other-Pass-2026", acceptTerms: true });
+  assert.equal(s.status, 200, s.text);
+  assert.equal((await other.get("/api/auth/me")).json.investor, false);
+  const audit = (await auditFor("platform_config", "invest_offer")).map((x: any) => [x.action, JSON.stringify(x.metadata ?? "")]);
+  assert.ok(audit.some(([action, meta]) => action === "admin.invest_visibility" && /visible\\?":false/.test(meta)), "hiding the round is audited");
 });

@@ -148,8 +148,11 @@ await pool(toCheck, 8, async (path) => {
 });
 
 /* 6. real browser, desktop + phone ------------------------------------------ */
+// /invest is a page only while the owner shows the investor round (§26.4, hidden by default).
+const investShown = await get("/api/invest").then((r) => { try { return JSON.parse(r.body || "{}").visible === true; } catch { return false; } }).catch(() => false);
+report.investShown = investShown;
 const KEY = ["/", "/pricing", "/apps", "/apps/clipper", "/apps/legal", "/self-hosted", "/self-hosted/guardian", "/self-hosted/guardian/guide",
-  "/acquire", "/invest", "/prompts", "/legal-ai", "/blog", "/help", "/developers", "/about", "/contact", "/status", "/login", "/register"];
+  "/acquire", ...(investShown ? ["/invest"] : []), "/prompts", "/legal-ai", "/blog", "/help", "/developers", "/about", "/contact", "/status", "/login", "/register"];
 const browser = await chromium.launch();
 report.browser = [];
 for (const [label, ctxOpts] of [["desktop", { viewport: { width: 1366, height: 900 } }], ["phone", { ...devices["iPhone 13"] }]]) {
