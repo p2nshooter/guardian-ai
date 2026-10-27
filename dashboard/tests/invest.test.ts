@@ -10,7 +10,7 @@ import { INV } from "../lib/i18n-pages/invest";
 import { LANG_CODES } from "../lib/i18n-shared";
 
 test("defaults: the 14 Oct terms for AXTO alone — US$2M round, US$50k ticket, 30 % pool, owner's WhatsApp", () => {
-  assert.equal(INVEST_DEFAULTS.visible, false, "hidden by default (§26.4)");
+  assert.equal(INVEST_DEFAULTS.visible, true, "shown by default (owner, 27 Oct 2026)");
   assert.equal(INVEST_DEFAULTS.status, "open");
   assert.equal(INVEST_DEFAULTS.targetUsd, 2_000_000);
   assert.equal(INVEST_DEFAULTS.minUsd, 50_000);
@@ -77,11 +77,11 @@ test("copy: AXTO only, no bank details, every language complete", () => {
   }
 });
 
-test("sanitizeInvest: the round stays hidden unless the switch says otherwise (§26.4)", () => {
-  // Terms saved before the switch existed carry no `visible` field: they read as hidden.
-  assert.equal(sanitizeInvest({ status: "open", targetUsd: 2_000_000, minUsd: 50_000, poolPct: 30, whatsapp: "+6285691234561" }).visible, false);
-  assert.equal(sanitizeInvest({ visible: true }).visible, true);
-  assert.equal(sanitizeInvest({ visible: "yes" }).visible, false, "only a real boolean switches it on");
-  assert.equal(sanitizeInvest({ visible: "yes" }, { ...INVEST_DEFAULTS, visible: true }).visible, true, "an unusable value keeps the current one");
-  assert.equal(sanitizeInvest(null).visible, false);
+test("sanitizeInvest: the round is shown unless the switch hides it (§26.4, §27.4)", () => {
+  // Terms saved before the switch existed carry no `visible` field: they read as shown (the default).
+  assert.equal(sanitizeInvest({ status: "open", targetUsd: 2_000_000, minUsd: 50_000, poolPct: 30, whatsapp: "+6285691234561" }).visible, true);
+  assert.equal(sanitizeInvest({ visible: false }).visible, false);
+  assert.equal(sanitizeInvest({ visible: "no" }).visible, true, "only a real boolean switches it");
+  assert.equal(sanitizeInvest({ visible: "no" }, { ...INVEST_DEFAULTS, visible: false }).visible, false, "an unusable value keeps the current one");
+  assert.equal(sanitizeInvest(null).visible, true);
 });

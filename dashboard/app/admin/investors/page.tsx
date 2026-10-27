@@ -86,7 +86,7 @@ export default function AdminInvestorsPage() {
       {msg ? <div className="mb-4"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
 
       <div className="mb-5">
-        <Section title="Visibility on axto.io" description="Hidden by default (owner, 26 Oct 2026). While hidden there is no footer link and no sitemap entry, /invest is a noindex 404, the public API and applications are refused, and “Investment” shows in the member menu only for someone who already has a record here. Every change is in the audit log.">
+        <Section title="Visibility on axto.io" description="Shown by default (owner, 27 Oct 2026). While hidden there is no footer link and no sitemap entry, /invest is a noindex 404, the public API and applications are refused, and “Investment” shows in the member menu only for someone who already has a record here. Every change is in the audit log.">
           <div className="flex flex-wrap items-center gap-3" data-testid="inv-visibility">
             <StatusBadge status={d.settings.visible ? "active" : "inactive"} label={d.settings.visible ? "Shown" : "Hidden"} />
             {d.settings.visible

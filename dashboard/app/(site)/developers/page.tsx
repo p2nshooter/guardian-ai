@@ -12,7 +12,7 @@ import { SITE } from "@/lib/site";
 const DESCRIPTION = "AXTO Connect: connect websites, apps and AI agents to AXTO in real time — REST, Server-Sent Events, WebSocket, long polling, HTTP/2 & HTTP/3 streaming, the gRPC-compatible Connect protocol, WebRTC, signed webhooks and an MCP server.";
 
 export const metadata: Metadata = pageMeta({
-  title: "Developer API & realtime — SSE, WebSocket, WebRTC, gRPC-compatible, MCP | AXTO Connect",
+  title: "Developer API — SSE, WebSocket, WebRTC, MCP | AXTO Connect",
   description: DESCRIPTION,
   path: "/developers",
   keywords: ["realtime API", "Server-Sent Events API", "WebSocket API", "long polling", "WebRTC signaling", "gRPC Connect protocol", "MCP server", "webhooks", "AI streaming API", "API realtime Indonesia"],

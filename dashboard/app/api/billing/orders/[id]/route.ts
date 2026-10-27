@@ -87,6 +87,8 @@ export async function POST(req: NextRequest, { params }: Params) {
     const reference = cleanText(b?.reference, 120);
     const note = cleanText(b?.note, 1000);
     if (!reference && !receiptFile) return fail("Upload the transfer receipt, or enter the transfer reference / sender account name.");
+    // An auction win paid by hand: the payment screenshot is required, and an administrator approves it (owner, 27 Oct 2026).
+    if (readMeta(o.meta).auction && !receiptFile) return fail("Upload the payment screenshot — an administrator checks it, then your licence is sent.", 400, { code: "receipt_required" });
     let receipt = null;
     if (receiptFile) {
       const st = await storeReceipt(o.id, receiptFile);

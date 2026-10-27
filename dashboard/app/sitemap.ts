@@ -23,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page("/", 1, "daily"),
     page("/pricing", 0.9),
     page("/acquire", 0.8),
+    page("/auction", 0.8, "daily"),
     ...(invest ? [page("/invest", 0.7)] : []),
     page("/apps", 0.9),
     ...CLOUD_APPS.map((a) => page(`/apps/${a.slug}`, a.slug === "legal" ? 0.9 : 0.8)),

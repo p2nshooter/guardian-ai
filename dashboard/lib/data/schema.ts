@@ -116,6 +116,31 @@ export interface InvestorDoc {
 
 export interface InvestorPayoutDoc { id: string; investor_id: string; period: string; amount_usd: number; reference: string; paid_at: string; created_by: string }
 
+/** A licence auction lot (docs/BLUEPRINT-V4.md §26.5, lib/auction.ts). Every change is a compare-and-swap on this document. */
+export interface AuctionLotDoc {
+  id: string; cycle: string; pkg: string; kind: string; app: string; title: string;
+  edition_code: string; billing: string; scope: string; product: string; devices: number;
+  normal_usd: number; open_usd: number; step_usd: number; starts_at: string; ends_at: string; status: string;
+  bids_count: number; high_usd: number; high_seq: number; high_user: string; high_name: string;
+  winner_user: string; winner_email: string; winner_name: string; winner_seq: number; winner_usd: number;
+  pay_by: string; order_id: string; passed: string[]; closed_at: string; paid_at: string;
+  note: string; created_by: string; created_at: string; updated_at: string;
+}
+/** What a lot's index entries carry (well under R2's 2 KB of custom metadata): enough to show and close it. */
+export const lotSummary = (l: AuctionLotDoc) => ({
+  cycle: l.cycle, pkg: l.pkg, kind: l.kind, app: l.app, title: l.title, normal_usd: l.normal_usd, open_usd: l.open_usd, step_usd: l.step_usd,
+  starts_at: l.starts_at, ends_at: l.ends_at, status: l.status, bids_count: l.bids_count, high_usd: l.high_usd, high_user: l.high_user, high_name: l.high_name,
+  winner_user: l.winner_user, winner_email: l.winner_email, winner_name: l.winner_name, winner_usd: l.winner_usd, pay_by: l.pay_by, order_id: l.order_id,
+  passed_n: l.passed.length, closed_at: l.closed_at, paid_at: l.paid_at,
+});
+/** One bid, created once under "<lot>.<seq>" — never changed. */
+export interface AuctionBidDoc { id: string; lot_id: string; seq: number; user_id: string; email: string; display_name: string; amount_usd: number; created_at: string }
+/** A member allowed to bid: e-mail verified with a code, and the name shown when they win. Id = user id. */
+export interface AuctionBidderDoc {
+  id: string; email: string; display_name: string; verified_at: string;
+  code_hash: string; code_expires: string; code_attempts: number; code_sent_at: string; created_at: string; updated_at: string;
+}
+
 /** Pending orders oldest first; paid orders by the moment they were paid (revenue, investor statements). */
 const isSandbox = (o: OrderDoc) => { try { return JSON.parse(o.meta || "{}").env === "sandbox"; } catch { return false; } };
 
@@ -286,6 +311,28 @@ export function collections(store: Store) {
         { name: "all", key: () => "all", sort: (p) => `${p.period}_${oldestFirst(p.paid_at)}` },
       ],
     }),
+    // Every list (the public board, the portals, the tick, the admin desk) reads the summaries on the index
+    // entries — 103 lots per auction are never read one document at a time (lotSummary below).
+    auctionLots: store.collection<AuctionLotDoc>({
+      name: "auction_lots",
+      indexes: [
+        { name: "all", key: () => "all", meta: lotSummary },
+        { name: "status", key: (l) => l.status, sort: (l) => oldestFirst(l.status === "awaiting_payment" ? l.pay_by : l.ends_at), meta: lotSummary },
+        { name: "cycle", key: (l) => l.cycle, sort: (l) => l.title, meta: lotSummary },
+        { name: "winner", key: (l) => l.winner_user || null, sort: (l) => newestFirst(l.closed_at || l.created_at) },
+        // Every win, paid or not yet paid (owner: an unpaid winner stays listed), newest first.
+        { name: "won", key: (l) => (l.status === "sold" || l.status === "awaiting_payment" ? "all" : null), sort: (l) => newestFirst(l.closed_at || l.created_at), meta: lotSummary },
+      ],
+    }),
+    auctionBids: store.collection<AuctionBidDoc>({
+      name: "auction_bids",
+      indexes: [
+        // Highest first: whole dollars fill 10 digits, inverted; the earlier bid wins a tie.
+        { name: "lot", key: (b) => b.lot_id, sort: (b) => `${String(9_999_999_999 - Math.round(b.amount_usd)).padStart(10, "0")}_${String(b.seq).padStart(6, "0")}` },
+        { name: "user", key: (b) => b.user_id, sort: (b) => newestFirst(b.created_at) },
+      ],
+    }),
+    auctionBidders: store.collection<AuctionBidderDoc>({ name: "auction_bidders" }),
   };
 }
 

@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
   if (b?.action === "mark_paid") {
     if (o.status === "paid") return fail("Already paid.");
     const r = await markOrderPaid(db, o.id, { gatewayRef: note ? `manual:${note}` : "manual", actor: ctx.session.email });
+    if (r.reason === "receipt_required") return fail("This auction win is paid by bank transfer: it can be approved only once the winner has uploaded the payment screenshot.", 400, { code: "receipt_required" });
     if (!r.ok) return fail(`Could not activate: ${r.reason}`);
   } else if (b?.action === "reject_proof") {
     if (o.status !== "pending") return fail("Only open orders can have their proof rejected.");

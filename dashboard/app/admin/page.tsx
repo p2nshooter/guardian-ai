@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { formatDate, formatMoney } from "@/lib/i18n";
 import { Alert, LoadingBlock, PageHeader, Section, Stat, StatusBadge } from "@/components/ui";
+import AuctionWinnersCard from "@/components/site/AuctionWinnersCard";
 
 interface Stats {
   members: number; newMembers30d: number; activeSubscriptions: number; byPlan: { plan: string; cycle: string; n: number }[]; mrr: number;
@@ -30,6 +31,7 @@ export default function AdminHome() {
         <Stat label="Members" value={s.members.toLocaleString()} hint={`+${s.newMembers30d} in 30 days`} />
         <Stat label="Active licences" value={s.activeLicenses.toLocaleString()} hint={`All-time revenue ${formatMoney(s.revenueAll)}`} />
       </div>
+      <div className="mt-5"><AuctionWinnersCard href="/admin/auctions" admin /></div>
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Section title="Revenue by month">
           {s.revenueByMonth.length ? (

@@ -24,7 +24,7 @@ export async function getInvest(db: Data): Promise<InvestOffer> {
   }
 }
 
-/** §26.4: is the round shown on the public site? Any read error counts as hidden. */
+/** §26.4: is the round shown on the public site? (Shown by default; any read error counts as hidden.) */
 export const investVisible = async (db: Data): Promise<boolean> => (await getInvest(db).catch(() => INVEST_DEFAULTS)).visible === true;
 
 /** Does this e-mail have any investor record (applied, verified, …)? One index list, no document reads. */

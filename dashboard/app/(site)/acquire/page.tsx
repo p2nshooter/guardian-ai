@@ -18,7 +18,7 @@ import { DEVCOPY } from "@/lib/developers-copy";
 const DESCRIPTION = "Acquire AXTO outright: the axto.io domain, full source code, seven live cloud AI apps (Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst, Prompt Library), ten self-hosted products, the AXTO Connect real-time developer platform, Local Mode, worldwide payments and licensing, ten languages and the brand — with a buyer's guide, escrow option and an automatic administrator handover.";
 
 export const metadata: Metadata = pageMeta({
-  title: "Acquire AXTO — an enterprise-grade AI platform for sale (US$10M)",
+  title: "Acquire AXTO — enterprise AI platform for sale (US$10M)",
   description: DESCRIPTION,
   path: "/acquire",
   keywords: ["buy AI SaaS business", "AI platform for sale", "AI startup acquisition", "SaaS acquisition", "buy software company", "enterprise AI platform", "legal AI platform for sale", "turnkey AI business", "jual beli website AI", "akuisisi startup AI"],
