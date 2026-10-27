@@ -8,7 +8,9 @@
  *                until it is done (nothing else runs before it is)
  *   every tick   confirm direct crypto payments on-chain → plan + licences;
  *                retry due Connect webhook deliveries; the next slice of the
- *                daily backup; the first trial pool, until it is complete
+ *                daily backup; the first trial pool, until it is complete; the
+ *                licence auction (open this cycle's lots, close ended ones, pass
+ *                unpaid wins on — lib/auction.ts)
  *   hourly       renewal reminders, expiries, stale orders (lib/billing/lifecycle);
  *                Connect events past the retention period are deleted
  * Storage-lean: the hourly marker is one setting, claimed with compare-and-swap
@@ -25,6 +27,7 @@ import { pruneEvents } from "@/lib/connect/events";
 import { getConnectSettings } from "@/lib/connect/settings";
 import { backupStep } from "@/lib/data/backup-job";
 import { ensureTrialPool, getTrialConfig, TRIAL_BATCH_MAX } from "@/lib/trials";
+import { auctionTick } from "@/lib/auction";
 
 const HOURLY_MS = 55 * 60_000;
 
@@ -43,6 +46,7 @@ export async function GET(req: NextRequest) {
     const cfg = await getTrialConfig(db);
     if (cfg.enabled) out.trialPool = await ensureTrialPool(db, cfg, TRIAL_BATCH_MAX);
   } catch (e: any) { out.trialPool = { error: String(e?.message || e) }; }
+  try { out.auction = await auctionTick(db); } catch (e: any) { out.auction = { error: String(e?.message || e) }; }
 
   const force = new URL(req.url).searchParams.get("hourly") === "1";
   let hourly = false;

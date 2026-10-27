@@ -16,6 +16,7 @@ import { PLANS, PLAN_ORDER } from "@/lib/plans";
 import { SITE } from "@/lib/site";
 import Reveal from "@/components/site/Reveal";
 import T from "@/components/site/T";
+import AuctionWinners from "@/components/site/AuctionWinners";
 
 export const metadata: Metadata = {
   ...pageMeta({
@@ -49,6 +50,9 @@ export default function HomePage() {
       </section>
 
       <Ecosystem />
+
+      {/* The licence auction: recent winners and their packages (§26.5) */}
+      <AuctionWinners />
 
       {/* How it works */}
       <section className="border-y border-slate-200 bg-slate-50 py-20">

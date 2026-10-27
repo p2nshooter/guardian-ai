@@ -10,6 +10,7 @@ import { CLOUD_APPS } from "@/lib/apps";
 import { LoadingBlock, Progress, Stat, Steps } from "@/components/ui";
 import { InstallButton } from "@/components/pwa/Pwa";
 import { useLocalAi } from "@/components/ai/ModelPicker";
+import AuctionWinnersCard from "@/components/site/AuctionWinnersCard";
 
 export default function MemberHome() {
   const { t, lang } = useI18n();
@@ -82,6 +83,9 @@ export default function MemberHome() {
           </Stat>
         </div>
       </section>
+
+      {/* The licence auction's winners (owner, 27 Oct 2026) and the running auction. */}
+      <AuctionWinnersCard href="/app/auction" />
 
       {me.tier === "starter" || me.tier === "pro" ? (
         <section className="card-pad flex flex-col gap-3 border-brand-200 bg-brand-50/40 sm:flex-row sm:items-center">

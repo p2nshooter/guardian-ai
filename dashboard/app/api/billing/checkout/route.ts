@@ -2,6 +2,8 @@
  *   {plan, cycle, gateway, apps?}                        subscription period
  *   {kind:"lifetime", scope, product?, devices, gateway} lifetime licence (one-time)
  *   {kind:"edition", edition, cycle, gateway}            one self-hosted app in an edition (monthly / yearly)
+ *   {kind:"auction", lot, gateway}                       a won auction lot (§26.5) at the winning bid; the
+ *                                                        order is an edition or lifetime order like any other
  * Creates an order at OUR price (never the browser's) and returns the hosted
  * payment page URL. Manual bank transfer and crypto return instructions instead.
  * "card" runs through Xendit or Midtrans (Admin → Payment & email → Credit /
@@ -25,41 +27,50 @@ import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, PAYPAL_MAX_USD, type L
 import { lifetimeChoiceProblem, productName } from "@/lib/lifetime-service";
 import { getEdition, getEditionPrices, editionPrice, type EditionCycle } from "@/lib/editions";
 import { editionChoiceProblem, editionGatewayAllowed, EDITION_ANY_GATEWAY_MAX } from "@/lib/edition-service";
+import { noteAuctionOrder, winCheckout, type WinCheckout } from "@/lib/auction";
 
 export async function POST(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
   if (!ctx) return unauthorized();
   if (ctx.session.role === "admin") return fail("Admin accounts already have full access.");
   const b = await readJson(req);
-  const lifetime = b?.kind === "lifetime";
-  const edition = b?.kind === "edition";
+  const db = getData(req);
+  // An auction win is charged at the winning bid for the lot's own package — never what the browser sends.
+  let win: WinCheckout | null = null;
+  if (b?.kind === "auction") {
+    const w = await winCheckout(db, String(b?.lot || ""), ctx.session.sub);
+    if ("error" in w) return fail(w.error, 409);
+    win = w;
+  }
+  const lifetime = b?.kind === "lifetime" || !!win?.lifetime;
+  const edition = b?.kind === "edition" || !!win?.edition;
   const plan = b?.plan, cycle = b?.cycle, gateway = String(b?.gateway || "") as GatewayId;
   if (!lifetime && !edition && (!isPlanId(plan) || !isCycle(cycle))) return fail("Choose a plan and billing period.");
-  if (edition) {
+  if (edition && !win) {
     const problem = editionChoiceProblem(b?.edition, b?.cycle);
     if (problem) return fail(problem);
   }
-  if (lifetime) {
+  if (lifetime && !win) {
     const problem = lifetimeChoiceProblem(b?.scope, b?.product);
     if (problem) return fail(problem);
   }
   const info = gatewayInfo(gateway);
   if (!info) return fail("Choose a payment method.");
 
-  const db = getData(req);
   // Editions: the price comes from the (admin-editable) edition table — never from the browser —
   // and decides which payment methods may carry it, before any gateway is contacted.
   let editionAmount = 0;
   let editionMeta: { code: string; app: string; cycle: EditionCycle } | undefined;
   if (edition) {
-    const e = getEdition(String(b.edition))!;
-    const price = editionPrice(e.code, b.cycle as EditionCycle, await getEditionPrices(db));
+    const e = getEdition(win?.edition ? win.edition.code : String(b.edition))!;
+    const ecycle = (win?.edition ? win.edition.cycle : b.cycle) as EditionCycle;
+    const price = win ? win.amountUsd : editionPrice(e.code, ecycle, await getEditionPrices(db));
     if (price === null) return fail("That edition is not on sale right now.");
     const planLic = (await findLicence(db, ctx.session.sub, e.app, "plan"))?.status === "active";
     if (planLic) return fail("This app is already included in your plan at the top edition.");
     if (!editionGatewayAllowed(gateway, price, CARD_MAX_USD)) return fail(`For more than $${EDITION_ANY_GATEWAY_MAX.toLocaleString("en-US")} please pay by bank/wire transfer, crypto or card.`);
     editionAmount = price;
-    editionMeta = { code: e.code, app: e.app, cycle: b.cycle as EditionCycle };
+    editionMeta = { code: e.code, app: e.app, cycle: ecycle };
   }
   const creds = await gatewayCreds(db, gateway);
   if (!creds) return fail("That payment method is not available right now. Please choose another.", 503);
@@ -83,14 +94,15 @@ export async function POST(req: NextRequest) {
   if (edition) {
     amountUsd = editionAmount;
   } else if (lifetime) {
-    const tier = (await getLifetimePrices(db)).find((x) => x.devices === Number(b?.devices));
+    const tier = (await getLifetimePrices(db)).find((x) => x.devices === Number(win?.lifetime ? win.lifetime.devices : b?.devices));
     if (!tier) return fail("Choose the number of devices.");
-    const scope = b.scope as LifetimeScope;
-    amountUsd = tier[scope];
+    const scope = (win?.lifetime ? win.lifetime.scope : b.scope) as LifetimeScope;
+    const product = win?.lifetime ? win.lifetime.product : String(b.product);
+    amountUsd = win ? win.amountUsd : tier[scope];
     if (!gatewayAllowed(gateway, amountUsd)) {
       return fail(`For a lifetime licence of this size please pay by bank/wire transfer or crypto${amountUsd <= CARD_MAX_USD ? " or card" : ""}${amountUsd <= PAYPAL_MAX_USD ? " or PayPal" : ""}.`);
     }
-    lifetimeMeta = { scope, product: scope === "suite" ? "suite" : String(b.product), devices: tier.devices };
+    lifetimeMeta = { scope, product: scope === "suite" ? "suite" : product, devices: tier.devices };
   } else {
     amountUsd = priceFor(await getPlanPrices(db), plan, cycle);
   }
@@ -105,20 +117,22 @@ export async function POST(req: NextRequest) {
   const apps: string[] = Array.isArray(b?.apps) ? Array.from(new Set<string>(b.apps.map(String))).filter((x) => !!getSelfHosted(x)) : [];
   if (lim && lim.selfHostedApps > 0 && apps.length > lim.selfHostedApps) return fail(`${PLANS[plan as keyof typeof PLANS].name} includes ${lim.selfHostedApps} self-hosted apps — choose up to ${lim.selfHostedApps}.`);
   const crypto = gateway === "crypto" ? await quoteCrypto(db, amountUsd, creds) : null;
-  const description = editionMeta
+  const auction = win ? { lot: win.lot.id, seq: win.lot.winner_seq } : undefined;
+  const description = (win ? "Auction win: " : "") + (editionMeta
     ? `${productName(editionMeta.app)} ${getEdition(editionMeta.code)!.name} edition — ${editionMeta.cycle === "yearly" ? "1 year" : "1 month"}`
     : lifetimeMeta
       ? `${SITE.name} Lifetime licence — ${productName(lifetimeMeta.product)}, up to ${lifetimeMeta.devices} device${lifetimeMeta.devices === 1 ? "" : "s"}`
-      : `${SITE.name} ${PLANS[plan as keyof typeof PLANS].name} — ${cycle === "yearly" ? "1 year" : "1 month"}`;
+      : `${SITE.name} ${PLANS[plan as keyof typeof PLANS].name} — ${cycle === "yearly" ? "1 year" : "1 month"}`);
 
   await db.orders.create(newOrder({
     id, user_id: ctx.session.sub, email: ctx.session.email, plan: edition ? "edition" : lifetime ? "lifetime" : plan, cycle: edition ? editionMeta!.cycle : lifetime ? "once" : cycle,
     amount_usd: amountUsd, currency: orderCurrency, amount_local: amountIdr, gateway: orderGateway,
-    meta: JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, edition: editionMeta, method: card ? "card" : undefined }),
+    meta: JSON.stringify({ env, rate: rate || undefined, uniqueCode: unique?.code, apps: lim && lim.selfHostedApps > 0 ? apps : undefined, crypto: crypto || undefined, lifetime: lifetimeMeta, edition: editionMeta, auction, method: card ? "card" : undefined }),
   }));
-  await audit(db, ctx.session, "order.created", "order", id, { plan: edition ? "edition" : lifetime ? "lifetime" : plan, cycle: edition ? editionMeta!.cycle : lifetime ? "once" : cycle, gateway, processor: card?.processor, env, amountUsd, lifetime: lifetimeMeta, edition: editionMeta }, req);
+  if (win) await noteAuctionOrder(db, win.lot.id, id, ctx.session.sub);
+  await audit(db, ctx.session, "order.created", "order", id, { plan: edition ? "edition" : lifetime ? "lifetime" : plan, cycle: edition ? editionMeta!.cycle : lifetime ? "once" : cycle, gateway, processor: card?.processor, env, amountUsd, lifetime: lifetimeMeta, edition: editionMeta, auction }, req);
 
-  const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: edition ? "/app/self-hosted" : lifetime ? "/app/lifetime" : undefined };
+  const o: OrderForPayment = { id, email: ctx.session.email, description, amountUsd, amountIdr, returnPath: win ? "/app/auction" : edition ? "/app/self-hosted" : lifetime ? "/app/lifetime" : undefined };
   try {
     let url = "", ref = "";
     switch (gateway) {

@@ -1,7 +1,7 @@
 /* ==============================================================================
  * AXTO — the AXTO-only investor round end to end on the LOCAL runtime:
- *   hidden by default (§26.4: no page, no footer link, no sitemap entry, no
- *   public API, no applications, no member menu item) → the admin shows it
+ *   shown by default; hidden by the admin (§26.4: no page, no footer link, no
+ *   sitemap entry, no public API, no applications, no member menu item) → shown again
  *   (audited) → public terms + page + sitemap → application errors (min, ack,
  *   e-mail) → an application (WhatsApp only after applying) → admin verifies
  *   the capital → paid AXTO orders after that day count, sandbox / acquisition
@@ -54,7 +54,7 @@ before(async () => {
   const g = await admin.get("/api/admin/investors");
   assert.equal(g.status, 200, g.text);
   saved = g.json.settings;
-  assert.equal(g.json.defaults.visible, false, "the round is hidden by default");
+  assert.equal(g.json.defaults.visible, true, "the round is shown by default (owner, 27 Oct 2026)");
   const r = await admin.put("/api/admin/investors", { settings: { ...g.json.defaults, status: "open" } });
   assert.equal(r.status, 200, r.text);
   const h = await admin.put("/api/admin/investors", { visible: false });

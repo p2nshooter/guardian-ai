@@ -219,6 +219,16 @@ menghormati batas 1 tulis/detik per kunci), dijumlahkan cron ke `n/visits/<yyyy-
    `managed_usage`, `managed_subscriptions`, `ai_provider_keys`.
 6. Migrasi data + jendela pindah + 7 hari pengamatan → D1 dilepas (bagian 4).
 
+**Fitur baru langsung di R2 (tidak pernah D1):** lelang lisensi (27 Okt 2026, `BLUEPRINT-V4.md` §26.5/§27.2):
+`auction_lots` (satu dokumen per lot, id deterministik `lot_<yyyymmdd>_<paket>` dibuat create-once; setiap tawaran,
+penutupan, pengalihan ke penawar berikutnya, pembayaran dan pembatalan = satu compare-and-swap pada lot; indeks `all`,
+`status` dengan ringkasan `ends_at`/`pay_by` agar cron tidak membaca dokumen, `cycle`, `winner`, `sold`),
+`auction_bids` (create-once `<lot>.<seq>`, tidak pernah diubah; indeks `lot` tertinggi dulu dan `user`),
+`auction_bidders` (id = user id: kode verifikasi e-mail sebagai hash SHA-256, berlaku 15 menit, maks. 5 percobaan,
+dan nama tampilan). Pengaturan di `config/auction_settings`; penanda siklus `config/auction_cycle_ready`. Kunci panas:
+lot yang ramai ditulis sekali per tawaran (batas R2 ±1 tulis/detik per kunci) — tawaran yang kalah balapan diulang dan
+diperiksa ulang terhadap tawaran tertinggi yang baru, jadi tidak ada tawaran yang hilang atau ganda.
+
 ## 8. axto.io — animasi panduan (10 bahasa)
 
 | # | Panduan | Tempat tombol „Lihat panduan" |

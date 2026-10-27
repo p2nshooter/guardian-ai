@@ -40,7 +40,8 @@ function firstCurrency(banks: BankQuote[], lang: string): BankQuote["currency"] 
 
 const decimals = (c: string, n: number) => (c === "IDR" ? String(Math.round(n)) : n.toFixed(2));
 
-export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; onBack: () => void; onPaid: () => void; paidText: string }) {
+/** `requireReceipt`: the transfer screenshot is mandatory (an auction win paid by hand — an administrator approves it). */
+export default function PayPanel({ pay, onBack, onPaid, paidText, requireReceipt = false }: { pay: Pay; onBack: () => void; onPaid: () => void; paidText: string; requireReceipt?: boolean }) {
   const { lang } = useI18n();
   const t = pick(L, lang);
   const banks = pay.kind === "bank" ? pay.banks : [];
@@ -177,7 +178,7 @@ export default function PayPanel({ pay, onBack, onPaid, paidText }: { pay: Pay; 
                 ) : null}
                 <input className="input min-w-[220px] flex-1" placeholder={pay.kind === "bank" ? t.refPh : t.hashPh}
                   value={pay.kind === "bank" ? proof.reference : proof.tx} onChange={(e) => setProof(pay.kind === "bank" ? { ...proof, reference: e.target.value } : { ...proof, tx: e.target.value })} />
-                <button className="btn-primary" onClick={sendProof} disabled={busy || (pay.kind === "bank" ? !proof.reference.trim() && !receipt : proof.tx.trim().length < 32)}>{busy ? <Spinner /> : null} {pay.kind === "bank" ? t.sentBtn : t.verify}</button>
+                <button className="btn-primary" onClick={sendProof} disabled={busy || (pay.kind === "bank" ? (requireReceipt ? !receipt : !proof.reference.trim() && !receipt) : proof.tx.trim().length < 32)}>{busy ? <Spinner /> : null} {pay.kind === "bank" ? t.sentBtn : t.verify}</button>
               </div>
               {msg ? <div className="mt-3"><Alert tone={msg.tone}>{msg.text}</Alert></div> : null}
             </div>

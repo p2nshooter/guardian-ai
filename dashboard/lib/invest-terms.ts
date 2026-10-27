@@ -16,11 +16,12 @@
  * US$50,000, paid monthly until a full acquisition of AXTO, when the capital is
  * returned in full.
  *
- * Owner, 26 Oct 2026 (docs/BLUEPRINT-V4.md §26.4): the round is HIDDEN by
- * default — `visible` is false until the owner switches it on in Admin →
- * Investors. While hidden there is no footer link, no sitemap entry, /invest is
- * a 404 (noindex), the public API and applications are refused, and the member
- * menu shows "Investment" only to someone who already has a stake.
+ * Show / hide (docs/BLUEPRINT-V4.md §26.4, §27.4): the owner switches the round
+ * on or off in Admin → Investors. Owner, 27 Oct 2026: "Investor defoultnya
+ * ganti jadi show" — it is SHOWN by default. While hidden there is no footer
+ * link, no sitemap entry, /invest is a 404 (noindex), the public API and
+ * applications are refused, and the member menu shows "Investment" only to
+ * someone who already has a stake.
  *
  * This file is pure (no database) so the public page and the tests can use it;
  * lib/invest.ts adds the storage.
@@ -38,7 +39,7 @@ export type InvestStatus = "open" | "paused" | "closed";
 export type InvestorStatus = "applied" | "verified" | "declined" | "returned";
 
 export interface InvestOffer {
-  /** Shown on the public site and in the member menu at all (§26.4). Off by default. */
+  /** Shown on the public site and in the member menu at all (§26.4). On by default (owner, 27 Oct 2026). */
   visible: boolean;
   status: InvestStatus;
   targetUsd: number;
@@ -50,7 +51,7 @@ export interface InvestOffer {
   updatedAt?: string;
 }
 
-export const INVEST_DEFAULTS: InvestOffer = { visible: false, status: "open", targetUsd: 2_000_000, minUsd: 50_000, poolPct: 30, whatsapp: "+6285691234561" };
+export const INVEST_DEFAULTS: InvestOffer = { visible: true, status: "open", targetUsd: 2_000_000, minUsd: 50_000, poolPct: 30, whatsapp: "+6285691234561" };
 
 const num = (v: unknown) => Number(String(v ?? "").replace(/[^\d.]/g, ""));
 

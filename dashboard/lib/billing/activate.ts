@@ -27,6 +27,7 @@ import { SITE, absoluteUrl } from "../site";
 import { issueForOrder, productName } from "../lifetime-service";
 import { issueEdition } from "../edition-service";
 import { getEdition, isEditionCycle } from "../editions";
+import { auctionOrderPaid } from "../auction";
 
 export type OrderRow = OrderDoc;
 
@@ -183,9 +184,18 @@ export async function markOrderPaid(db: Data, orderId: string, opts: { gatewayRe
   // Amount check (1% tolerance for FX/rounding on the gateway side).
   if (o.status !== "paid" && typeof opts.paidUsd === "number" && opts.paidUsd + 0.01 < o.amount_usd * 0.99) return { ok: false, reason: "amount_mismatch" };
   if (o.status !== "paid" && typeof opts.paidLocal === "number" && o.amount_local > 0 && opts.paidLocal < o.amount_local * 0.99) return { ok: false, reason: "amount_mismatch" };
-  if (o.plan === "lifetime") return markLifetimePaid(db, o, opts);
   if (o.plan === "acquisition") return markAcquisitionPaid(db, o, opts);
-  if (o.plan === "edition") return markEditionPaid(db, o, opts);
+  // An auction win paid by bank transfer is approved by an administrator only with the payment screenshot on file.
+  if (o.status !== "paid" && o.gateway === "manual" && readMeta(o.meta).auction && !readMeta(o.meta).bank_proof?.receipt) return { ok: false, reason: "receipt_required" };
+  if (o.plan === "lifetime" || o.plan === "edition") {
+    const r = o.plan === "lifetime" ? await markLifetimePaid(db, o, opts) : await markEditionPaid(db, o, opts);
+    // An auction win (§26.5): the licence above is issued like any other; the lot is marked sold once (idempotent).
+    if (r.ok && readMeta(o.meta).auction) {
+      const paid = await db.orders.get(o.id);
+      if (paid?.status === "paid") await auctionOrderPaid(db, paid).catch(() => "none");
+    }
+    return r;
+  }
   if (!isPlanId(o.plan) || !isCycle(o.cycle)) return { ok: false, reason: "bad_order" };
 
   const claimed = await claimOrder(db, o.id, opts.gatewayRef, true);
