@@ -929,3 +929,15 @@ akan di acc admin manual" (REQUESTS 95). Ini mengganti aturan "48 jam lalu jatuh
 | 27.5b | Pemenang belum bayar tetap tampil | status "Belum membayar" di beranda, portal member dan portal admin; tidak ada pengalihan otomatis ke penawar berikutnya (bawaan mati — admin tetap bisa "Pass on" atau "Cancel" secara manual, dan bisa menyalakan pengalihan otomatis di Admin → Licence auction) | 🔄 |
 | 27.5c | Kenaikan tiap tawaran 10 % dari harga awal | harga awal = 25 % harga normal; setiap tawaran menaikkan harga **tepat** 10 % dari harga awal (contoh: normal $990 → awal $248 → naik $25 per tawaran: $273, $298, …), maksimal harga normal | 🔄 |
 | 27.5d | Bayar manual wajib bukti | transfer bank: pemenang wajib mengunggah screenshot bukti bayar; admin menyetujui secara manual (Admin → Orders / Support); tanpa screenshot persetujuan ditolak; setelah disetujui lisensi terkirim otomatis | 🔄 |
+
+### 27.6 Perintah pemilik 27 Okt 2026 (4) — SEO dulu, lalu lelang di depan, satu kotak surat
+
+Urutan dari pemilik (REQUESTS 96–100): **(1) perbaiki SEO seluruh situs** (per kata kunci, sitemap XML, berkas
+pendukung, tautan antarsitus yang aman untuk AdSense) → **(2) lanjutkan lelang** axto.io dan xaa.es. Rencana:
+
+| # | Pekerjaan | Rincian | Status |
+|---|---|---|---|
+| 27.6a | Lelang lisensi paling depan di axto.io | bagian pertama beranda: lelang yang sedang berjalan, hitung mundur ke Jumat 07.00 WIB, lot terpanas, pemenang (lunas / belum membayar) | 📝 setelah SEO |
+| 27.6b | Semua e-mail ke hello@axto.io | notifikasi order, dukungan, lelang, investor dan kontak dari axto.io **dan** xaa.es masuk ke satu kotak surat hello@axto.io (satu manajemen); alamat balas tetap per situs | 📝 setelah SEO |
+| 27.6c | Lelang xaa.es (website, bukan lisensi) | blueprint di repo xaa `docs/BLUEPRINT.md` §9 dan di blueprint HTML | 📝 blueprint |
+| 27.6d | Blueprint HTML yang bisa diunduh | satu berkas `docs/BLUEPRINT.html` (repo ulyah.com) berisi semua perintah, aturan, status dan rencana | 🔄 |
