@@ -478,7 +478,8 @@ bukan dari perkiraan.
 | 13 | Semua situs ke R2, tidak pernah D1 (20 Okt 2026, `REQUESTS.md` 81, §24) | aturan dicatat di semua repo ✅ · xaa.es pindah ✅ · axto.io pindah ✅ (21 Okt) · ulyah.com (+ xad.es, 1fr.fr, tilawa.de) pindah · Quantum pindah | 3/5 | **60 %** |
 | 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 ✅ (tayang 21 Okt, §25.3) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 1/4 | **25 %** |
 | 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
-| | **Total** (bobot = jumlah fase) | | **55/95** | **≈ 58 %** |
+| 16 | Rekening ulyah.com/donasi + konversi + panduan bayar manual (27 Okt 2026, `REQUESTS.md` 104, §28) | 13 rekening BNI + 5 dompet (impor terenkripsi) · QR per dompet · konversi kurs harian ke mata uang rekening · panduan langkah + pelacak status, 10 bahasa · uji unit + E2E + browser | 0/5 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **55/100** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -955,3 +956,22 @@ pernah di axto.io.
 | 27.7a | Penawar terverifikasi otomatis | tidak ada lagi kode 6 digit lewat e-mail: anggota yang sudah masuk (login) langsung menjadi penawar begitu memilih nama yang ditampilkan saat menang (tetap disaring: kata kasar, merek orang lain, kontak); dokumen `auction_bidders` dibuat saat nama disimpan | ✅ 27 Okt (E2E lelang 6/6, browser desktop & HP) |
 | 27.7b | Admin tidak menawar | akun admin melihat keterangan "Akun admin menjalankan lelang dan tidak ikut menawar" di halaman Lelang, bukan formulir menawar | ✅ 27 Okt (E2E lelang 6/6, browser desktop & HP) |
 | 27.7c | Teks 10 bahasa | langkah "Verifikasi e-mail", aturan dan FAQ diganti: cukup masuk dan memilih nama | ✅ 27 Okt (E2E lelang 6/6, browser desktop & HP) |
+
+## 28. Perintah pemilik 27 Okt 2026 (6) — rekening dari ulyah.com/donasi, konversi, panduan bayar manual
+
+"Baik axto.io dan xaa.es tolong ambil rek pembayaranya dari https://ulyah.com/donasi / dari repo termasuk jaringannya
+barcode nya … Pastikan konversi mata uang sesuai dengan rekening BNI untuk manual, dan pandu customer untuk pembayaran
+manual sampai sukses" (REQUESTS 104). Rencana xaa.es yang sama: repo xaa `docs/BLUEPRINT.md` §12.
+
+Keadaan sekarang (`lib/billing/gateways.ts`): metode "Bank transfer (BNI)" hanya IDR, USD dan EUR; metode kripto
+langsung memuat USDT (TRC20/ERC20/BEP20), USDC, BTC, ETH, SOL — belum BNB dan DOGE, belum QR; jumlah transfer non-USD
+belum mengikuti kurs harian.
+
+| # | Pekerjaan | Rincian | Status |
+|---|---|---|---|
+| 28a | Impor rekening | tombol Admin → Payment & email → "Impor dari ulyah.com/donasi": membaca sumber publik ulyah.com (13 rekening wondr by BNI: IDR, USD, SGD, AUD, GBP, CNY, EUR, HKD, JPY, MYR, SAR, KRW, THB; SWIFT BNINIDJA; kode bank 009; nama penerima; 5 dompet: BTC, USDT TRC20, BNB/USDT BEP20, SOL, DOGE dengan jaringannya), menampilkan perbedaan, lalu menyimpan ke penyimpanan terenkripsi. **Nomor rekening dan alamat tidak pernah ditulis di repo ini, halaman publik, log, atau prompt AI**; hanya tampil di checkout pembeli yang sudah masuk (§4 CLAUDE.md) | ⏳ |
+| 28b | QR per dompet | QR dibuat di server dari alamat tersimpan (tanpa layanan luar), nama jaringan tercetak besar, peringatan "kirim hanya lewat jaringan ini" | ⏳ |
+| 28c | Konversi sesuai rekening BNI | harga USD → mata uang rekening yang dipilih pembeli dengan kurs acuan harian (ECB lewat frankfurter.app; SAR lewat patokan 3,75/USD), satu dokumen R2 per hari, pembulatan ke atas sesuai satuan (IDR/JPY/KRW tanpa desimal), kode unik 3 digit untuk IDR, jumlah terkunci 72 jam di invoice, selisih biaya bank ≤ 2 % diterima dan dicatat | ⏳ |
+| 28d | Panduan bayar manual sampai sukses | 6 langkah di checkout dan portal member: pilih cara → salin data persis → cara transfer sesuai asal dana (bank Indonesia, SWIFT luar negeri, Wise/Revolut, dompet kripto) → unggah bukti (wajib untuk transfer bank) → pelacak status (menunggu → disetujui → lisensi terkirim otomatis, atau "perlu perhatian" dengan langkah perbaikan) → pengingat & chat; animasi panduan sesuai §18 dan `prefers-reduced-motion`; 10 bahasa | ⏳ |
+| 28e | Uji | unit (konversi, pembulatan, kode unik, kunci 72 jam), E2E (checkout → bukti → admin setuju → lisensi), browser desktop & HP tanpa error konsol | ⏳ |
+
