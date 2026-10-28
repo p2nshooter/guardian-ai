@@ -1246,6 +1246,9 @@ nyata, tenggat nyata, dan pemenang yang membayar tawarannya sendiri.
   - Browser: desktop dan ponsel.
 - **xaa.es**: lelang yang sama dibangun di repositori xaa (`src/app/acquire`, `src/app/auction`), dicatat di
   `docs/BLUEPRINT.md` repositori itu.
+- **Rupa (REQUESTS 124)**: panel lelang adalah "rumah lelang" gelap bernuansa emas kerajaan: kartu kaca bertepi emas,
+  Playfair Display untuk judul dan harga (angka lining, kilau emas pelan), ubin hitung mundur emas, dan tombol emas
+  (saat nonaktif tampil sebagai garis emas). Semua gerak mati di bawah `prefers-reduced-motion`.
 
 ## 35. Posting LinkedIn otomatis: dua posting sehari, axto.io dan xaa.es (REQUESTS 123)
 
