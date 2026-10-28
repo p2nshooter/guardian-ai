@@ -52,6 +52,7 @@ jobs:
       matrix:
         include:
           - { engine: orchestra, dir: orchestra/orchestra_core, requirements: orchestra/orchestra_core/requirements.txt }
+          - { engine: orchestra-worker, dir: orchestra/orchestra_worker, requirements: orchestra/orchestra_worker/requirements.txt }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

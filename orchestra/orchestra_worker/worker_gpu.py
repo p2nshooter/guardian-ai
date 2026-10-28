@@ -21,7 +21,7 @@ Capabilities exposed per GPU spec:
   8–16 GB VRAM → chat + embedding + transcription
   > 16 GB VRAM → all: chat + image + embedding + transcription + local SD
 """
-import base64, json, logging, os, subprocess, sys, threading, time, urllib.request
+import base64, json, logging, os, re, subprocess, sys, threading, time, urllib.request
 from pathlib import Path
 from typing import Optional
 import uvicorn
@@ -29,6 +29,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
+from orchestra_worker import gpu_inventory
 
 # ── Config ────────────────────────────────────────────────────────────────────
 ORCHESTRA_URL     = os.environ.get("ORCHESTRA_CORE_URL",         "http://orchestra-core:8080")
@@ -63,140 +65,19 @@ logger = logging.getLogger("worker.gpu")
 
 # ── GPU Detection ─────────────────────────────────────────────────────────────
 def _detect_gpu() -> dict:
-    """
-    Auto-detect GPU in priority order:
-      1. NVIDIA  — nvidia-smi (exposed via nvidia-container-toolkit at runtime)
-      2. NVIDIA  — /proc/driver/nvidia/gpus (kernel module)
-      3. AMD     — rocm-smi
-      4. AMD     — lspci (pciutils) — works without ROCm installed
-      5. AMD     — /sys/class/drm/renderD* (sysfs — always available)
-      6. Intel   — lspci Arc/Iris detection
-      7. PyTorch — torch.cuda / torch.backends.mps (Apple Silicon)
-      8. CPU     — fallback
-    """
-    import re as _re
+    """Every GPU of every brand, best first (gpu_inventory.py: lspci or sysfs on Linux,
+    vendor tools for exact models, Ollama's /api/ps for what really runs on the GPU).
+    PyTorch in the image is the last word for a device the inventory cannot name."""
+    inv = gpu_inventory.inventory()
+    if inv["primary"]:
+        p = inv["primary"]
+        gpus = inv["gpus"]
+        return {"available": True, "backend": p["backend"], "vendor": p["vendor"],
+                "vendor_label": p["vendor_label"], "gpus": gpus,
+                "vram_gb": round(sum(g["vram_gb"] for g in gpus), 1),
+                "name": p["name"], "driver": p.get("driver", ""), "count": len(gpus),
+                "sources": inv["sources"]}
 
-    # ── 1. NVIDIA via nvidia-smi (primary — works with nvidia-container-toolkit) ──
-    try:
-        out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=name,memory.total,driver_version,utilization.gpu",
-             "--format=csv,noheader,nounits"],
-            timeout=5, stderr=subprocess.DEVNULL,
-        ).decode().strip().split("\n")
-        gpus = []
-        for line in out:
-            p = [x.strip() for x in line.split(",")]
-            if not p[0]: continue
-            vram = round(float(p[1])/1024, 1) if len(p)>1 and p[1].replace(".","").isdigit() else 0
-            gpus.append({"name": p[0], "vram_gb": vram,
-                         "driver": p[2] if len(p)>2 else "",
-                         "util_pct": int(p[3]) if len(p)>3 and p[3].isdigit() else 0})
-        if gpus:
-            total_vram = sum(g["vram_gb"] for g in gpus)
-            return {"available": True, "backend": "cuda", "vendor": "nvidia",
-                    "gpus": gpus, "vram_gb": total_vram,
-                    "name": gpus[0]["name"], "driver": gpus[0].get("driver",""),
-                    "count": len(gpus)}
-    except Exception:
-        pass
-
-    # ── 2. NVIDIA via /proc (kernel module present) ───────────────────────────
-    try:
-        import glob
-        nvidia_dirs = glob.glob("/proc/driver/nvidia/gpus/*/information")
-        if nvidia_dirs:
-            gpus = []
-            for f in nvidia_dirs:
-                info = open(f).read()
-                name = _re.search(r"Model:\s*(.+)", info)
-                name = name.group(1).strip() if name else "NVIDIA GPU"
-                gpus.append({"name": name, "vram_gb": 0, "driver": "", "util_pct": 0})
-            return {"available": True, "backend": "cuda", "vendor": "nvidia",
-                    "gpus": gpus, "vram_gb": 0,
-                    "name": gpus[0]["name"], "driver": "kernel-module",
-                    "count": len(gpus),
-                    "note": "nvidia-smi not available — run with --gpus all"}
-    except Exception:
-        pass
-
-    # ── 3. AMD via rocm-smi ───────────────────────────────────────────────────
-    try:
-        out = subprocess.check_output(
-            ["rocm-smi", "--showmeminfo", "vram", "--json"],
-            timeout=5, stderr=subprocess.DEVNULL).decode()
-        data = __import__("json").loads(out)
-        gpus = []
-        for k, v in data.items():
-            if k.startswith("card"):
-                vram = round(int(v.get("VRAM Total Memory (B)", 0)) / 1e9, 1)
-                gpus.append({"name": v.get("Card series", "AMD GPU"), "vram_gb": vram,
-                              "driver": "rocm"})
-        if gpus:
-            return {"available": True, "backend": "rocm", "vendor": "amd",
-                    "gpus": gpus, "vram_gb": sum(g["vram_gb"] for g in gpus),
-                    "name": gpus[0]["name"], "driver": "rocm", "count": len(gpus)}
-    except Exception:
-        pass
-
-    # ── 4. AMD via lspci (pciutils — no ROCm needed) ─────────────────────────
-    try:
-        out = subprocess.check_output(["lspci", "-mm"], timeout=5,
-                                       stderr=subprocess.DEVNULL).decode()
-        amd_gpus = []
-        for line in out.splitlines():
-            if "VGA" in line or "Display" in line or "3D" in line:
-                if any(x in line.upper() for x in ["AMD", "ATI", "RADEON", "NAVI", "POLARIS", "VEGA", "RDNA"]):
-                    name_match = _re.search(r'"([^"]*(?:Radeon|RX|Vega|Navi|RDNA|AMD)[^"]*)"', line, _re.I)
-                    name = name_match.group(1) if name_match else "AMD GPU"
-                    amd_gpus.append({"name": name, "vram_gb": 0, "driver": "amdgpu"})
-        if amd_gpus:
-            return {"available": True, "backend": "rocm", "vendor": "amd",
-                    "gpus": amd_gpus, "vram_gb": 0,
-                    "name": amd_gpus[0]["name"], "driver": "amdgpu",
-                    "count": len(amd_gpus),
-                    "note": "ROCm not installed — install for GPU acceleration"}
-    except Exception:
-        pass
-
-    # ── 5. AMD via /sys/class/drm (sysfs — always available on Linux) ─────────
-    try:
-        import glob, os
-        render_nodes = glob.glob("/sys/class/drm/renderD*/device/vendor")
-        for vf in render_nodes:
-            vendor_id = open(vf).read().strip()
-            if vendor_id == "0x1002":  # AMD PCI vendor ID
-                dev_dir = os.path.dirname(vf)
-                try: name = open(f"{dev_dir}/product").read().strip()
-                except: name = "AMD GPU"
-                try:
-                    mem_file = f"{dev_dir}/mem_info_vram_total"
-                    vram = round(int(open(mem_file).read().strip()) / 1e9, 1) if os.path.exists(mem_file) else 0
-                except: vram = 0
-                return {"available": True, "backend": "rocm", "vendor": "amd",
-                        "gpus": [{"name": name, "vram_gb": vram, "driver": "amdgpu"}],
-                        "vram_gb": vram, "name": name, "driver": "amdgpu", "count": 1,
-                        "note": "ROCm not installed — GPU detected via sysfs"}
-    except Exception:
-        pass
-
-    # ── 6. Intel Arc / Iris via lspci ─────────────────────────────────────────
-    try:
-        out = subprocess.check_output(["lspci", "-mm"], timeout=5,
-                                       stderr=subprocess.DEVNULL).decode()
-        for line in out.splitlines():
-            if "VGA" in line or "Display" in line or "3D" in line:
-                if "INTEL" in line.upper() or "Intel" in line:
-                    if any(x in line.upper() for x in ["ARC", "IRIS", "UHD", "HD GRAPHICS"]):
-                        name_match = _re.search(r'"([^"]*(?:Arc|Iris|UHD|Intel)[^"]*)"', line, _re.I)
-                        name = name_match.group(1) if name_match else "Intel GPU"
-                        return {"available": True, "backend": "opencl", "vendor": "intel",
-                                "gpus": [{"name": name, "vram_gb": 0, "driver": "i915"}],
-                                "vram_gb": 0, "name": name, "driver": "i915", "count": 1,
-                                "note": "Intel GPU via OpenCL (limited support)"}
-    except Exception:
-        pass
-
-    # ── 7. PyTorch (CUDA or Apple MPS) ───────────────────────────────────────
     try:
         import torch  # type: ignore
         if torch.cuda.is_available():
@@ -207,30 +88,31 @@ def _detect_gpu() -> dict:
                               "vram_gb": round(props.total_memory / 1e9, 1),
                               "driver": f"torch-{torch.__version__}"})
             total = sum(g["vram_gb"] for g in gpus)
-            return {"available": True, "backend": "cuda", "vendor": "nvidia",
+            return {"available": True, "backend": "cuda", "vendor": "nvidia", "vendor_label": "NVIDIA",
                     "gpus": gpus, "vram_gb": total,
                     "name": gpus[0]["name"], "driver": f"torch-{torch.__version__}",
-                    "count": len(gpus)}
+                    "count": len(gpus), "sources": ["torch"]}
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return {"available": True, "backend": "mps", "vendor": "apple",
+            return {"available": True, "backend": "mps", "vendor": "apple", "vendor_label": "Apple",
                     "gpus": [{"name": "Apple Silicon GPU", "vram_gb": 0, "driver": "mps"}],
-                    "vram_gb": 0, "name": "Apple Silicon GPU", "driver": "mps", "count": 1}
+                    "vram_gb": 0, "name": "Apple Silicon GPU", "driver": "mps", "count": 1,
+                    "sources": ["torch"]}
     except ImportError:
         pass
 
-    # ── 8. CPU fallback ───────────────────────────────────────────────────────
     try:
         cpu_name = open("/proc/cpuinfo").read()
-        m = _re.search(r"model name\s*:\s*(.+)", cpu_name)
+        m = re.search(r"model name\s*:\s*(.+)", cpu_name)
         cpu = m.group(1).strip() if m else "CPU"
         cores = cpu_name.count("processor")
     except Exception:
         cpu, cores = "CPU", 1
-    return {"available": False, "backend": "cpu", "vendor": "cpu",
+    return {"available": False, "backend": "cpu", "vendor": "cpu", "vendor_label": "CPU",
             "name": f"CPU fallback ({cpu}, {cores} threads)",
-            "vram_gb": 0, "driver": "", "gpus": [], "count": 0}
+            "vram_gb": 0, "driver": "", "gpus": [], "count": 0, "sources": []}
 
 GPU_INFO = _detect_gpu()
+
 
 def _capabilities() -> list:
     vram    = GPU_INFO.get("vram_gb", 0)
@@ -642,6 +524,8 @@ async def gpu_status():
         "thermal": thermal,
         "capabilities": _capabilities(),
         "alerts": _gpu_alerts(thermal),
+        # The model server's view: does a loaded model really run on the GPU? (any brand)
+        "inference": gpu_inventory.ollama_gpu_status(OLLAMA_URL),
     }
 
 

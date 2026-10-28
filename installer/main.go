@@ -232,12 +232,15 @@ func main() {
 			fmt.Printf("WSL 2: %s\n", d.WSL)
 		}
 		if d.GPU != "" {
-			fmt.Printf("NVIDIA GPU: %s\n", d.GPU)
+			fmt.Printf("GPU: %s\n", d.GPU)
+			if d.OllamaGPU {
+				fmt.Println("  the model server here already runs its models on the GPU")
+			}
 			if d.GPUNote != "" {
 				fmt.Printf("  %s\n", d.GPUNote)
 			}
 		} else {
-			fmt.Println("NVIDIA GPU: none found (Orchestra's GPU worker needs one)")
+			fmt.Println("GPU: none found (Orchestra's GPU worker needs an NVIDIA card)")
 		}
 		if !d.Ready {
 			fmt.Printf("\n✖ %s\n  %s %s\n", d.Problem, d.Fix, d.FixURL)
