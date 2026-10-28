@@ -3,6 +3,36 @@
 Halaman penawaran publik: **https://axto.io/acquire** — menu khusus 🏛️ **Beli AXTO** di header, footer, dan banner di beranda.
 Pengaturan: **Admin → Business → Site sale** (`/admin/acquisition`).
 
+## Mode lelang (bawaan sejak 28 Okt 2026, REQUESTS 120, BLUEPRINT-V4 §34)
+
+Penjualan berjalan sebagai **lelang sungguhan**. Pilihan "How it is sold" di Admin → Site sale mengembalikannya ke harga
+tetap bila diperlukan.
+
+- **Putaran**:
+  - Putaran pertama dibuka otomatis dalam satu menit setelah penjualan berstatus *open*.
+  - Tawaran pembuka diundi acak antara **US$10 juta dan US$100 juta** (dibulatkan ke US$100.000) lalu disimpan, sehingga
+    sama untuk semua pengunjung.
+  - Centang "Draw a new random opening bid…" bila ingin undian baru di setiap putaran. Bila tidak dicentang, isi angka
+    sendiri dalam rentang itu atau tekan 🎲.
+- **Penawar**:
+  - Member mendaftar dengan nama tampil, perusahaan, negara dan telepon.
+  - Anda menyetujui atau menolak di kartu *Bidders* (persetujuan bisa dimatikan).
+  - Admin tidak bisa menawar. Di halaman publik nama disamarkan; e-mail dan telepon hanya terlihat di Admin.
+- **Aturan**:
+  - Tawaran pertama minimal sebesar pembukaan, berikutnya minimal tawaran tertinggi + langkah (bawaan US$250.000).
+  - Tawaran dalam 10 menit terakhir memperpanjang putaran 10 menit.
+  - Tanpa reserve tersembunyi.
+- **Akhir putaran**:
+  - Bila ada tawaran, pemenang diminta membayar dalam 7 hari (bawaan) lewat checkout yang sama: wire BNI, kripto atau
+    PayPal, sebesar tawarannya. Checkout hanya terbuka untuk pemenang.
+  - Bila tidak ada tawaran, putaran ditutup "unsold" dan putaran baru langsung dibuka (bisa dimatikan).
+- **Pembayaran terverifikasi**: putaran menjadi *sold*, pembeli otomatis menjadi admin, dan situs ditandai terjual, seperti
+  sebelumnya.
+- **Pemenang tidak membayar**: tekan **Pass to next bidder** untuk memberi putaran ke penawar berikutnya dengan tawaran
+  tertingginya sendiri, atau **Cancel round** lalu **Start a new round**.
+- **Refund**: pesanan dikembalikan, peran admin dicabut, penawaran dibuka lagi, dan putaran dibatalkan.
+- Setiap tawaran dan pendaftaran dikirim ke inbox admin. Penawar yang tersalip menerima e-mail.
+
 ## Yang terjadi saat pembeli membayar
 
 1. Pembeli membuat akun / masuk (akun inilah yang akan menjadi administrator). Akun admin tidak bisa membeli.

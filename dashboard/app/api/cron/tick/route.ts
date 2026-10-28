@@ -10,7 +10,9 @@
  *                retry due Connect webhook deliveries; the next slice of the
  *                daily backup; the first trial pool, until it is complete; the
  *                licence auction (open this cycle's lots, close ended ones, pass
- *                unpaid wins on — lib/auction.ts); the daily LinkedIn posts of
+ *                unpaid wins on — lib/auction.ts); the site-sale auction (open
+ *                the first round, close an ended one, open the next after an
+ *                unsold one — lib/sale-auction.ts); the daily LinkedIn posts of
  *                axto.io and xaa.es once their time has come (lib/linkedin)
  *   hourly       renewal reminders, expiries, stale orders (lib/billing/lifecycle);
  *                Connect events past the retention period are deleted; the
@@ -31,6 +33,7 @@ import { backupStep } from "@/lib/data/backup-job";
 import { ensureTrialPool, getTrialConfig, TRIAL_BATCH_MAX } from "@/lib/trials";
 import { auctionTick } from "@/lib/auction";
 import { linkedinTick, linkedinMaintenance } from "@/lib/linkedin/autopost";
+import { saleAuctionTick } from "@/lib/sale-auction";
 
 const HOURLY_MS = 55 * 60_000;
 
@@ -50,6 +53,7 @@ export async function GET(req: NextRequest) {
     if (cfg.enabled) out.trialPool = await ensureTrialPool(db, cfg, TRIAL_BATCH_MAX);
   } catch (e: any) { out.trialPool = { error: String(e?.message || e) }; }
   try { out.auction = await auctionTick(db); } catch (e: any) { out.auction = { error: String(e?.message || e) }; }
+  try { out.siteAuction = await saleAuctionTick(db); } catch (e: any) { out.siteAuction = { error: String(e?.message || e) }; }
   // Two LinkedIn posts a day (axto.io, xaa.es); the images are read from this site's own public folder.
   try { out.linkedin = await linkedinTick(db, { fetch, origin: new URL(req.url).origin }); } catch (e: any) { out.linkedin = { error: String(e?.message || e) }; }
 

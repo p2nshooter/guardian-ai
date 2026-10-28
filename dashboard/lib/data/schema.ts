@@ -142,6 +142,29 @@ export interface AuctionBidderDoc {
 }
 
 /**
+ * One round of the site-sale auction (docs/BLUEPRINT-V4.md §34, lib/sale-auction.ts). Every bid is a
+ * compare-and-swap on this document; the next round's id is "sr_<no>" created once (with a claim nonce).
+ */
+export interface SaleRoundDoc {
+  id: string; no: number; status: string; open_usd: number; step_usd: number; snipe_minutes: number; pay_days: number;
+  starts_at: string; ends_at: string; bids_count: number; high_usd: number; high_seq: number; high_user: string; high_name: string;
+  winner_user: string; winner_email: string; winner_name: string; winner_seq: number; winner_usd: number; pay_by: string;
+  order_id: string; passed: string[]; closed_at: string; paid_at: string; note: string; claim: string;
+  created_by: string; created_at: string; updated_at: string;
+}
+const roundSummary = (r: SaleRoundDoc) => ({
+  no: r.no, status: r.status, open_usd: r.open_usd, step_usd: r.step_usd, starts_at: r.starts_at, ends_at: r.ends_at, bids_count: r.bids_count,
+  high_usd: r.high_usd, high_name: r.high_name, winner_name: r.winner_name, winner_usd: r.winner_usd, pay_by: r.pay_by, closed_at: r.closed_at, paid_at: r.paid_at,
+});
+/** One bid in a sale round, created once under "<round>.<seq>" — never changed. */
+export interface SaleBidDoc { id: string; round_id: string; seq: number; user_id: string; email: string; display_name: string; company: string; amount_usd: number; created_at: string }
+/** A member registered to bid for the site (id = user id); approved by the owner unless approval is switched off. */
+export interface SaleBidderDoc {
+  id: string; email: string; display_name: string; company: string; country: string; phone: string; message: string;
+  status: string; decided_by: string; decided_at: string; created_at: string; updated_at: string;
+}
+
+/**
  * One LinkedIn post by the auto-poster (docs/BLUEPRINT-V4.md §35). A daily post's id is
  * "li_<brand>_<YYYYMMDD>" and is created once, so overlapping cron ticks never post twice;
  * a post made by hand is "li_<brand>_m_<ulid>".
@@ -347,6 +370,25 @@ export function collections(store: Store) {
       ],
     }),
     auctionBidders: store.collection<AuctionBidderDoc>({ name: "auction_bidders" }),
+    saleRounds: store.collection<SaleRoundDoc>({
+      name: "sale_rounds",
+      indexes: [
+        { name: "all", key: () => "all", sort: (r) => String(9_999_999 - r.no).padStart(7, "0"), meta: roundSummary },
+        { name: "status", key: (r) => r.status, meta: roundSummary },
+      ],
+    }),
+    saleBids: store.collection<SaleBidDoc>({
+      name: "sale_bids",
+      indexes: [
+        // Highest first: whole dollars fill 12 digits, inverted; the earlier bid wins a tie.
+        { name: "round", key: (b) => b.round_id, sort: (b) => `${String(999_999_999_999 - Math.round(b.amount_usd)).padStart(12, "0")}_${String(b.seq).padStart(6, "0")}` },
+        { name: "user", key: (b) => b.user_id, sort: (b) => newestFirst(b.created_at) },
+      ],
+    }),
+    saleBidders: store.collection<SaleBidderDoc>({
+      name: "sale_bidders",
+      indexes: [{ name: "status", key: (b) => b.status, sort: (b) => newestFirst(b.created_at), meta: (b) => ({ email: b.email, display_name: b.display_name, company: b.company, country: b.country, phone: b.phone, message: b.message.slice(0, 300), created_at: b.created_at }) }],
+    }),
     // Admin → LinkedIn reads the log from the summaries, newest first.
     socialPosts: store.collection<SocialPostDoc>({
       name: "social_posts",

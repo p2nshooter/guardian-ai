@@ -48,7 +48,8 @@ export function useNow(): number {
   return t;
 }
 
-export function Countdown({ to, dark = false, testid }: { to: string; dark?: boolean; testid?: string }) {
+/** `tone="gold"`: the site-sale auction's gilded tiles (dark backgrounds). */
+export function Countdown({ to, dark = false, tone, testid }: { to: string; dark?: boolean; tone?: "gold"; testid?: string }) {
   const { t } = useAucCopy();
   const now = useNow();
   const left = Math.max(0, Date.parse(to) - (now || Date.parse(to)));
@@ -57,8 +58,13 @@ export function Countdown({ to, dark = false, testid }: { to: string; dark?: boo
     [Math.floor(left / 60_000) % 60, t.units.m], [Math.floor(left / 1000) % 60, t.units.s],
   ];
   return (
-    <span className="inline-flex gap-1.5 tabular-nums" data-testid={testid} aria-live="off">
-      {parts.map(([n, u], i) => (
+    <span className={`inline-flex tabular-nums ${tone === "gold" ? "gap-2" : "gap-1.5"}`} data-testid={testid} aria-live="off">
+      {parts.map(([n, u], i) => tone === "gold" ? (
+        <span key={i} className="auc-tile flex min-w-[3.4rem] flex-col items-center rounded-xl px-2.5 py-2 text-center">
+          <span className="auc-nums font-display text-2xl font-semibold leading-none text-gold-100">{now ? String(n).padStart(i ? 2 : 1, "0") : "–"}</span>
+          <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-300/80">{u}</span>
+        </span>
+      ) : (
         <span key={i} className={`rounded-lg px-2 py-1 text-center font-extrabold ${dark ? "bg-white/10 text-white" : "bg-slate-100 text-slate-900"}`}>
           {now ? String(n).padStart(i ? 2 : 1, "0") : "–"}<span className={`ml-0.5 text-[11px] font-semibold ${dark ? "text-slate-300" : "text-slate-500"}`}>{u}</span>
         </span>

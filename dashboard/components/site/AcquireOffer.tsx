@@ -14,10 +14,12 @@ import { LOCALE, type Lang } from "@/lib/i18n-shared";
 import { Spinner } from "@/components/ui";
 import Reveal from "@/components/site/Reveal";
 import { ACQ_EN, type AcqCopy } from "@/lib/acquire-copy";
+import SaleAuctionPanel, { useSaleAucCopy, type SaleAuctionInfo } from "@/components/site/SaleAuctionPanel";
+import { Countdown } from "@/components/site/auction-ui";
 
 export interface OfferApp { slug: string; name: string; icon: string; short: string; features: string[] }
 export interface OfferProduct { slug: string; name: string; emoji: string; tagline: string }
-interface Info { status: "open" | "paused" | "sold"; priceUsd: number; gateways: { id: string; label: string; methods: string; test: boolean; limit?: number }[] }
+interface Info { status: "open" | "paused" | "sold"; mode: "auction" | "fixed"; priceUsd: number; gateways: { id: string; label: string; methods: string; test: boolean; limit?: number }[]; auction: SaleAuctionInfo | null }
 interface Me { email: string; role: string; name?: string }
 type Wire = { kind: "wire"; orderId: string; amountUsd: number; amountIdr: number; whatsapp: string; bank: { name: string; holder: string; swift: string; code: string; branch: string; primary?: { currency: string; number: string }; accounts: { currency: string; number: string }[] } };
 type Crypto = { kind: "crypto"; orderId: string; amountUsd: number; whatsapp: string; wallets: { key: string; asset: string; network: string; address: string; amount: string; auto: boolean }[]; note: string };
@@ -63,6 +65,7 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
     import("@/lib/i18n-pages/acquire").then((m) => setDict(m.ACQ)).catch(() => {});
   }, [lang, dict]);
   const t: AcqCopy = lang === "en" ? ACQ_EN : dict?.[lang] || ACQ_EN;
+  const { t: ta } = useSaleAucCopy();
   const locale = LOCALE[lang] || "en-US";
   const money = (n: number, c = "USD") => formatMoney(n, c, lang);
 
@@ -79,8 +82,19 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
   const [proofMsg, setProofMsg] = useState("");
   const [canceled, setCanceled] = useState(false);
 
+  const loadInfo = useCallback(async () => {
+    const r = await api<Info>("/api/acquire");
+    if (r.ok) { setInfo(r.data); setGateway((g) => g || r.data.gateways[0]?.id || ""); }
+  }, []);
+  // A live auction refreshes itself: new bids, the extended deadline, the close.
+  const live = info?.mode === "auction" && info.auction?.round?.status === "open";
   useEffect(() => {
-    api<Info>("/api/acquire").then((r) => { if (r.ok) { setInfo(r.data); setGateway(r.data.gateways[0]?.id || ""); } });
+    if (!live) return;
+    const iv = setInterval(loadInfo, 20_000);
+    return () => clearInterval(iv);
+  }, [live, loadInfo]);
+  useEffect(() => {
+    loadInfo();
     api<{ user: Me | null }>("/api/auth/me?optional=1").then((r) => { const u = r.ok ? r.data.user : null; setMe(u); if (u) setForm((f) => ({ ...f, name: f.name || u.name || "" })); });
     const q = new URLSearchParams(window.location.search);
     const paidQ = q.get("paid");
@@ -124,6 +138,12 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
   }
 
   const open = info?.status === "open";
+  const auction = info?.mode === "auction" ? info.auction : null;
+  const round = auction?.round || null;
+  // In an auction only the winner reaches the payment form, at the winning bid.
+  const winner = !!auction?.me?.winner && round?.status === "awaiting_payment";
+  const payAmount = auction ? (winner ? auction.me!.amountUsd : 0) : info?.priceUsd || 0;
+  const steps = auction ? ta.steps : t.steps;
   const isAdmin = me?.role === "admin";
   const paid = status?.order.status === "paid";
   const nf = useMemo(() => new Intl.NumberFormat(locale), [locale]);
@@ -142,20 +162,34 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
         <span className="acq-orb acq-orb-a pointer-events-none absolute -z-10" aria-hidden="true" />
         <span className="acq-orb acq-orb-b pointer-events-none absolute -z-10" aria-hidden="true" />
         <div className="container-page relative">
-          <p className="anim-in inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-200">🏛️ {t.eyebrow}</p>
+          <p className="anim-in inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-amber-200">{auction ? `🔨 ${ta.eyebrow}` : `🏛️ ${t.eyebrow}`}</p>
           <h1 className="anim-in anim-delay-1 mt-6 max-w-5xl text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-6xl">{t.title}</h1>
           <p className="anim-in anim-delay-2 mt-6 max-w-3xl text-lg leading-relaxed text-slate-300">{t.lead}</p>
           <div className="anim-in anim-delay-3 mt-10 flex flex-wrap items-end gap-x-10 gap-y-6">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{t.price}</div>
-              <div className="acq-price mt-1 text-5xl font-black tracking-tight sm:text-7xl" data-testid="acquire-price">{info ? money(info.priceUsd) : "…"}</div>
-              <p className="mt-2 max-w-md text-sm text-slate-400">{t.priceNote}</p>
-            </div>
+            {auction && round ? (
+              <div data-testid="acquire-auction-hero">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{round.status === "open" ? (round.bidsCount ? ta.currentBid : ta.openingBid) : ta.winningBid}</div>
+                <div className="acq-price mt-1 text-5xl font-black tracking-tight sm:text-7xl" data-testid="acquire-price">{money(round.status === "open" ? (round.bidsCount ? round.highUsd : round.openUsd) : round.winnerUsd || round.highUsd)}</div>
+                {round.status === "open" ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                    <span>{ta.endsIn}</span><Countdown to={round.endsAt} tone="gold" />
+                    <span className="text-slate-400">· {ta.bids.replace("{n}", String(round.bidsCount))}</span>
+                  </div>
+                ) : null}
+                <p className="mt-3 max-w-md text-sm font-semibold text-amber-200">{ta.noReserve}</p>
+              </div>
+            ) : (
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{t.price}</div>
+                <div className="acq-price mt-1 text-5xl font-black tracking-tight sm:text-7xl" data-testid="acquire-price">{info ? money(info.priceUsd) : "…"}</div>
+                <p className="mt-2 max-w-md text-sm text-slate-400">{t.priceNote}</p>
+              </div>
+            )}
             {info && info.status !== "open" ? (
               <div className="rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-200">{info.status === "sold" ? t.sold : t.paused}</div>
             ) : (
               <div className="flex flex-wrap gap-3">
-                <a href="#checkout" className="acq-cta anim-pulse-ring rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 px-7 py-4 text-base font-extrabold text-ink-950 no-underline shadow-lg shadow-amber-500/20 transition hover:brightness-110">{t.buy} →</a>
+                <a href={auction ? (winner ? "#checkout" : "#bid") : "#checkout"} className="acq-cta anim-pulse-ring rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 px-7 py-4 text-base font-extrabold text-ink-950 no-underline shadow-lg shadow-amber-500/20 transition hover:brightness-110" data-testid="acquire-cta">{auction ? (winner ? ta.payNow : ta.placeBid) : t.buy} →</a>
                 <a href="#guide" className="rounded-xl border border-white/20 bg-white/5 px-6 py-4 text-base font-semibold text-white no-underline backdrop-blur transition hover:bg-white/10">{t.guideCta}</a>
                 <Link href="/contact?topic=acquisition" className="rounded-xl px-4 py-4 text-base font-semibold text-slate-300 no-underline hover:text-white">{t.talk}</Link>
               </div>
@@ -171,6 +205,8 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
           </dl>
         </div>
       </section>
+
+      {auction ? <SaleAuctionPanel info={auction} signedIn={me === undefined ? undefined : !!me} onChange={loadInfo} /> : null}
 
       {/* ── Why own it ── */}
       <section className="relative py-20">
@@ -293,7 +329,7 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
           <Reveal className="mt-16 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-7">
             <h3 className="text-2xl font-bold text-slate-900">{t.stepsTitle}</h3>
             <ol className="mt-5 grid gap-5 md:grid-cols-3">
-              {t.steps.map(([h, d], i) => (
+              {steps.map(([h, d], i) => (
                 <li key={h} className="flex gap-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-950 font-bold text-amber-300">{i + 1}</span><div><div className="font-bold text-slate-900">{h}</div><div className="text-sm text-slate-600">{d}</div></div></li>
               ))}
             </ol>
@@ -399,6 +435,8 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
                 </div>
               ) : isAdmin ? (
                 <p className="text-sm text-amber-800">{t.adminNote}</p>
+              ) : auction && !winner ? (
+                <p className="text-sm text-slate-700" data-testid="acquire-winner-only">{ta.checkoutWinnerOnly} <a href="#bid" className="font-semibold">{ta.placeBid} →</a></p>
               ) : (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -424,7 +462,7 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
                   </div>
                   {err ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">{err}</p> : null}
                   <button type="button" className="w-full rounded-xl bg-ink-950 px-6 py-3.5 text-base font-bold text-amber-300 hover:bg-ink-900 disabled:opacity-60" onClick={checkout} disabled={busy || !gateway} data-testid="acquire-pay">
-                    {busy ? <><Spinner /> {t.paying}</> : t.pay.replace("{amount}", money(info.priceUsd))}
+                    {busy ? <><Spinner /> {t.paying}</> : t.pay.replace("{amount}", money(payAmount))}
                   </button>
                 </div>
               )}

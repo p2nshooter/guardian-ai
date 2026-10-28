@@ -9,12 +9,18 @@
  * the transfer of external accounts (domain registrar, Cloudflare, GitHub,
  * payment providers) is then completed together (checklist on /acquire).
  *
+ * Since 28 Oct 2026 (owner, REQUESTS 120; docs/BLUEPRINT-V4.md §34) the sale runs
+ * as an AUCTION by default: rounds with a random opening bid between US$10M and
+ * US$100M, real bids and a real deadline (lib/sale-auction.ts); the winner pays
+ * the winning bid through this same checkout. "fixed" keeps the asking price.
+ *
  * Settings live in the setting "site_sale" (Admin → Site sale). The bank
  * accounts below are the owner's public BNI receiving accounts (the same ones
  * published on ulyah.com); the admin can change every value.
  * ============================================================================ */
 import { now } from "./db";
 import type { Data } from "./data";
+import { SALE_AUCTION_DEFAULTS, sanitizeSaleAuction, type SaleAuctionSettings } from "./sale-auction-terms";
 
 export const SALE_KEY = "site_sale";
 export const DEFAULT_PRICE_USD = 10_000_000;
@@ -26,8 +32,12 @@ export const PAYPAL_TYPICAL_MAX_USD = 60_000;
 export const STRIPE_MAX_USD = 999_999;
 
 export interface BankAccount { currency: string; number: string }
+export type SaleMode = "auction" | "fixed";
 export interface SaleSettings {
   status: "open" | "paused" | "sold";
+  /** "auction" (owner, 28 Oct 2026): rounds, bids, the winner pays; "fixed": anyone pays `priceUsd`. */
+  mode: SaleMode;
+  auction: SaleAuctionSettings;
   priceUsd: number;
   autoGrantAdmin: boolean;          // make the buyer an admin the moment the payment is verified
   gateways: SaleGateway[];          // offered on /acquire (each must also be active in Admin → Payments)
@@ -39,6 +49,8 @@ export interface SaleSettings {
 
 export const SALE_DEFAULTS: SaleSettings = {
   status: "open",
+  mode: "auction",
+  auction: { ...SALE_AUCTION_DEFAULTS },
   priceUsd: DEFAULT_PRICE_USD,
   autoGrantAdmin: true,
   gateways: [...SALE_GATEWAYS],
@@ -71,7 +83,7 @@ const str = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().slice(0
 
 /** Accept stored / submitted settings and return valid ones (unknown fields dropped). */
 export function sanitizeSale(v: any, base: SaleSettings = SALE_DEFAULTS): SaleSettings {
-  if (!v || typeof v !== "object") return { ...base };
+  if (!v || typeof v !== "object") return { ...base, auction: { ...base.auction } };
   const price = Number(v.priceUsd);
   const gws = Array.isArray(v.gateways) ? v.gateways.filter((g: unknown): g is SaleGateway => (SALE_GATEWAYS as readonly string[]).includes(String(g))) : base.gateways;
   const b = v.bank && typeof v.bank === "object" ? v.bank : {};
@@ -81,6 +93,8 @@ export function sanitizeSale(v: any, base: SaleSettings = SALE_DEFAULTS): SaleSe
     : base.bank.accounts;
   return {
     status: v.status === "paused" || v.status === "sold" ? v.status : "open",
+    mode: v.mode === "fixed" || v.mode === "auction" ? v.mode : base.mode,
+    auction: sanitizeSaleAuction(v.auction, base.auction),
     priceUsd: Number.isFinite(price) && price >= 1000 ? Math.round(price) : base.priceUsd,
     autoGrantAdmin: typeof v.autoGrantAdmin === "boolean" ? v.autoGrantAdmin : base.autoGrantAdmin,
     gateways: Array.from(new Set(gws)),

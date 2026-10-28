@@ -23,6 +23,7 @@ import { audit } from "../http";
 import { PLANS, addPeriod, isPlanId, isCycle, formatUsd, type PlanId, type Cycle } from "../plans";
 import { sendMail, mails, mailLayout, adminInbox } from "../mail";
 import { getSale, saveSale } from "../acquisition";
+import { saleRoundPaid } from "../sale-auction";
 import { SITE, absoluteUrl } from "../site";
 import { issueForOrder, productName } from "../lifetime-service";
 import { issueEdition } from "../edition-service";
@@ -265,8 +266,10 @@ async function markAcquisitionPaid(db: Data, o: OrderRow, opts: { gatewayRef?: s
   if (!test && !duplicate) {
     await saveSale(db, { ...sale, status: "sold", soldTo: { userId: o.user_id, email: o.email, orderId: o.id, paidAt: paid.paid_at, company: String(meta?.buyer?.company || "") || undefined } });
   }
+  // From the auction (§34): the round the winner paid for is sold (test money leaves it awaiting payment).
+  const round = !test ? await saleRoundPaid(db, paid) : "none";
   const outcome = test ? "test_payment" : duplicate ? "duplicate_after_sale" : grant ? "admin_granted" : "awaiting_manual_grant";
-  await audit(db, system(opts.actor), "site.sale.paid", "order", o.id, { amount_usd: o.amount_usd, gateway: o.gateway, buyer: o.email, outcome });
+  await audit(db, system(opts.actor), "site.sale.paid", "order", o.id, { amount_usd: o.amount_usd, gateway: o.gateway, buyer: o.email, outcome, round: round === "none" ? undefined : round });
 
   const money = formatUsd(o.amount_usd);
   const buyerMail = test
@@ -278,7 +281,7 @@ async function markAcquisitionPaid(db: Data, o: OrderRow, opts: { gatewayRef?: s
           <p>Send your payment proof and coordinate the handover on WhatsApp: <b>${sale.whatsapp}</b>.</p>` };
   await sendMail(o.email, buyerMail.subject, mailLayout(buyerMail.subject, buyerMail.body, { label: "Open the admin portal", href: absoluteUrl(grant ? "/admin" : "/acquire") }));
   await sendMail(await adminInbox(), `${SITE.name} acquisition payment: ${money} from ${o.email} (${outcome})`,
-    mailLayout("Acquisition payment", `<p>Order <b>${o.id}</b> · ${money} via ${o.gateway} · buyer <b>${o.email}</b>${meta?.buyer?.company ? ` (${String(meta.buyer.company).replace(/[<>&"]/g, "")})` : ""}.</p><p>Outcome: <b>${outcome}</b>.</p>`));
+    mailLayout("Acquisition payment", `<p>Order <b>${o.id}</b> · ${money} via ${o.gateway} · buyer <b>${o.email}</b>${meta?.buyer?.company ? ` (${String(meta.buyer.company).replace(/[<>&"]/g, "")})` : ""}.</p><p>Outcome: <b>${outcome}</b>.${round === "late" ? " The auction round had already passed on or been cancelled — review it in Admin → Site sale." : ""}</p>`));
   return { ok: true, reason: outcome };
 }
 
