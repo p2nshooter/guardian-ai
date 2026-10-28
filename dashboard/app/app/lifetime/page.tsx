@@ -7,7 +7,9 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/client";
-import { useI18n, formatDate, formatMoney, statusLabel } from "@/lib/i18n";
+import { useI18n, formatDate, formatMoney, statusLabel, pick } from "@/lib/i18n";
+import { L as SH } from "@/lib/i18n-pages/selfhosted";
+import { buildSize } from "@/lib/byte-range";
 import { Alert, CopyButton, EmptyState, Field, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
 import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { openSupport } from "@/components/support/ChatWidget";
@@ -17,7 +19,7 @@ interface Tier { devices: number; label: string; app: number; suite: number }
 interface Activation { id: string; product: string; machine_id: string; label: string; created_at: string; revoked_at: string }
 interface Licence {
   id: string; scope: "app" | "suite"; product: string; name: string; devices: number; updates_until: string; status: string; created_at: string; install_key?: string;
-  updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; arm64?: string[] } }[];
+  updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; arm64?: string[]; sizes?: Record<string, number>; offline?: number } }[];
 }
 interface Data { licenses: Licence[]; tiers: Tier[]; cardMaxUsd: number }
 interface Options { gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; lifetime: { gateways: string[]; cardMaxUsd: number; paypalMaxUsd?: number } }
@@ -116,11 +118,14 @@ function LicenceCard({ lic, onChange }: { lic: Licence; onChange: () => void }) 
               {lic.updatesActive && lic.status === "active" ? (
                 <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                   <span className="text-slate-500">{t("lt.downloads")}:</span>
+                  {p.files?.offline ? (
+                    <a href={`/api/selfhosted/download?product=${p.slug}&file=offline`} className="font-semibold">📦 {pick(SH, lang).offlineDl} ({buildSize(p.files.offline)})</a>
+                  ) : null}
                   {(p.files?.images || []).map((name) => (
-                    <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz</a>
+                    <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz{p.files?.sizes?.[name] ? ` (${buildSize(p.files.sizes[name])})` : ""}</a>
                   ))}
                   {(p.files?.arm64 || []).map((name) => (
-                    <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz (ARM64)</a>
+                    <a key={name} href={`/api/selfhosted/download?product=${p.slug}&file=${name}`}>🐳 {name}.tar.gz (ARM64{p.files?.sizes?.[name] ? `, ${buildSize(p.files.sizes[name])}` : ""})</a>
                   ))}
                   {!p.files?.images.length ? <span className="text-slate-400">{t("sh.preparing")}</span> : null}
                   {/* Windows: the one installer (runs the same images in Docker Desktop / WSL 2). */}

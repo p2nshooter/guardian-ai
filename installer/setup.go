@@ -39,6 +39,12 @@ type Options struct {
 	LAN      bool   // expose on the network (servers) instead of localhost only
 	Portal   string // https://axto.io
 	KeepData bool   // uninstall: keep Docker volumes
+	// With names the optional images to install as well (Orchestra's GPU worker);
+	// nil keeps what is installed, an empty list installs none.
+	With []string
+	// ImagesDir is an offline package's image folder ("" = images/ next to AXTO Setup).
+	ImagesDir string
+	Profiles  []string // compose profiles to enable (from the optional images)
 }
 
 type Installed struct {
@@ -51,6 +57,7 @@ type Installed struct {
 	InstalledAt time.Time `json:"installed_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	Images      []string  `json:"images"`
+	Profiles    []string  `json:"profiles,omitempty"`
 }
 
 var (
@@ -290,7 +297,72 @@ func download(ctx context.Context, url, path string, expected int64, onBytes fun
 func projectName(p *Product) string { return "axto-" + p.Slug }
 
 func composeArgs(o Options, rest ...string) []string {
-	return append([]string{"compose", "-p", projectName(o.Product), "-f", filepath.Join(o.Dir, o.Product.Compose)}, rest...)
+	args := []string{"compose", "-p", projectName(o.Product), "-f", filepath.Join(o.Dir, o.Product.Compose)}
+	for _, pr := range o.Profiles {
+		args = append(args, "--profile", pr)
+	}
+	return append(args, rest...)
+}
+
+// optionalWanted decides which optional images to install: the ones asked for, or —
+// when none are named (an update) — the ones already installed.
+func optionalWanted(p *Product, with []string, prev *Installed) map[string]bool {
+	src := with
+	if src == nil && prev != nil {
+		src = prev.Images
+	}
+	out := map[string]bool{}
+	for _, n := range src {
+		if _, ok := p.Optional[n]; ok {
+			out[n] = true
+		}
+	}
+	return out
+}
+
+// offlineDirs lists where an offline package keeps its images: --images first,
+// then images/ next to AXTO Setup and AXTO Setup's own folder.
+func offlineDirs(o Options) []string {
+	var dirs []string
+	if o.ImagesDir != "" {
+		dirs = append(dirs, o.ImagesDir)
+	}
+	if exe, err := os.Executable(); err == nil {
+		if real, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = real
+		}
+		d := filepath.Dir(exe)
+		dirs = append(dirs, filepath.Join(d, "images"), d)
+	}
+	return dirs
+}
+
+// localImage finds <file>.tar.gz of an offline package. It must have the size of the
+// portal's current build, or the size the package's images/manifest.json records
+// (a package built before the latest image: still complete, the next Update refreshes it).
+func localImage(dirs []string, file string, size int64) string {
+	for _, d := range dirs {
+		path := filepath.Join(d, file+".tar.gz")
+		st, err := os.Stat(path)
+		if err != nil || st.IsDir() {
+			continue
+		}
+		if size > 0 && st.Size() == size {
+			return path
+		}
+		var man map[string]struct {
+			Size int64 `json:"size"`
+		}
+		if b, err := os.ReadFile(filepath.Join(d, "manifest.json")); err == nil && json.Unmarshal(b, &man) == nil {
+			if m, ok := man[file+".tar.gz"]; ok && m.Size == st.Size() {
+				return path
+			}
+		}
+		if size <= 0 {
+			return path
+		}
+	}
+	return ""
 }
 
 func servicesFor(p *Product) []string {
@@ -391,47 +463,90 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	}
 	pr.Step(10, "Configuration written to "+o.Dir)
 
-	var need []imageLink
+	prev := LoadState()[p.Slug]
+	wanted := optionalWanted(p, o.With, prev)
+	dirs := offlineDirs(o)
+	type plan struct {
+		imageLink
+		local string // offline package file ("" = download)
+	}
+	var need []plan
 	for _, im := range info.Images {
-		if im.Optional {
+		if im.Optional && !wanted[im.Name] {
 			continue
 		}
-		if !im.Available {
+		file := im.Name
+		if info.Arch == "arm64" {
+			file += "-arm64"
+		}
+		local := localImage(dirs, file, im.Size)
+		if !im.Available && local == "" {
 			if info.Arch == "arm64" {
 				return nil, fmt.Errorf("%s is not available for ARM64 computers yet — install it on an x86-64 (Intel/AMD) machine, or try again later", im.Label)
 			}
 			return nil, fmt.Errorf("the %s build is being prepared on our side — please try again in a few minutes", im.Label)
 		}
-		need = append(need, im)
+		need = append(need, plan{im, local})
+	}
+	o.Profiles = nil
+	for _, im := range need {
+		if prof := p.Optional[im.Name]; prof != "" && !contains(o.Profiles, prof) {
+			o.Profiles = append(o.Profiles, prof)
+		}
 	}
 	var total int64
 	for _, im := range need {
-		total += im.Size
+		if im.local == "" {
+			total += im.Size
+		}
 	}
 	imgDir := filepath.Join(o.Dir, "images")
 	_ = os.MkdirAll(imgDir, 0o755)
 	var before int64
 	loaded := []string{}
-	for _, im := range need {
-		file := filepath.Join(imgDir, im.Name+".tar.gz")
-		label := im.Label
-		err := download(ctx, im.URL, file, im.Size, func(done, all int64) {
-			pct := 10
-			if total > 0 {
-				pct = 10 + int(float64(before+done)/float64(total)*60)
+	for i, im := range need {
+		file, label := im.local, im.Label
+		if file == "" {
+			file = filepath.Join(imgDir, im.Name+".tar.gz")
+			err := download(ctx, im.URL, file, im.Size, func(done, all int64) {
+				pct := 10
+				if total > 0 {
+					pct = 10 + int(float64(before+done)/float64(total)*60)
+				}
+				pr.Step(pct, fmt.Sprintf("Downloading %s — %s of %s", label, fmtBytes(done), fmtBytes(all)))
+			})
+			if err != nil {
+				return nil, err
 			}
-			pr.Step(pct, fmt.Sprintf("Downloading %s — %s of %s", label, fmtBytes(done), fmtBytes(all)))
-		})
-		if err != nil {
-			return nil, err
+			before += im.Size
+			pr.Step(10+int(float64(before)/float64(max64(total, 1))*60), "Loading "+label+" into Docker…")
+		} else {
+			pr.Step(10+60*i/len(need), fmt.Sprintf("Loading %s from the offline package (%s)…", label, fmtBytes(fileSize(file))))
 		}
-		before += im.Size
-		pr.Step(10+int(float64(before)/float64(max64(total, 1))*60), "Loading "+label+" into Docker…")
 		if out, err := dockerCmd(ctx, "load", "-i", file); err != nil {
 			return nil, fmt.Errorf("docker could not load %s: %s", label, lastLines(out, 5))
 		}
-		_ = os.Remove(file)
+		if im.local == "" {
+			_ = os.Remove(file)
+		}
 		loaded = append(loaded, im.Name)
+	}
+
+	// An optional part that was installed before and is not wanted now is stopped and removed.
+	if prev != nil {
+		for _, prof := range prev.Profiles {
+			if contains(o.Profiles, prof) {
+				continue
+			}
+			var svcs []string
+			for img, pp := range p.Optional {
+				if pp == prof {
+					svcs = append(svcs, img)
+				}
+			}
+			off := Options{Product: p, Dir: o.Dir, Profiles: []string{prof}}
+			_, _ = dockerCmd(ctx, composeArgs(off, append([]string{"rm", "-s", "-f"}, svcs...)...)...)
+		}
 	}
 
 	pr.Step(75, "Starting "+p.Name+"…")
@@ -447,8 +562,8 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	}
 
 	now := time.Now().UTC()
-	st := &Installed{Slug: p.Slug, Name: p.Name, Dir: o.Dir, Port: o.Port, LAN: o.LAN, KeyTail: keyTail(o.Key), InstalledAt: now, UpdatedAt: now, Images: loaded}
-	if prev := LoadState()[p.Slug]; prev != nil {
+	st := &Installed{Slug: p.Slug, Name: p.Name, Dir: o.Dir, Port: o.Port, LAN: o.LAN, KeyTail: keyTail(o.Key), InstalledAt: now, UpdatedAt: now, Images: loaded, Profiles: o.Profiles}
+	if prev != nil {
 		st.InstalledAt = prev.InstalledAt
 	}
 	SaveInstalled(st)
@@ -502,6 +617,22 @@ func keyTail(k string) string {
 	return k[:strings.Index(k, "-")+1] + "…" + k[len(k)-4:]
 }
 
+func contains(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func fileSize(path string) int64 {
+	if st, err := os.Stat(path); err == nil {
+		return st.Size()
+	}
+	return 0
+}
+
 func max64(a, b int64) int64 {
 	if a > b {
 		return a
@@ -542,7 +673,7 @@ func Control(ctx context.Context, st *Installed, action string) (string, error) 
 	if p == nil {
 		return "", errors.New("unknown product")
 	}
-	o := Options{Product: p, Dir: st.Dir, Port: st.Port}
+	o := Options{Product: p, Dir: st.Dir, Port: st.Port, Profiles: st.Profiles}
 	switch action {
 	case "start":
 		return dockerCmd(ctx, composeArgs(o, append([]string{"up", "-d"}, servicesFor(p)...)...)...)
@@ -564,7 +695,7 @@ func Uninstall(ctx context.Context, st *Installed, keepData bool) error {
 	if p == nil {
 		return errors.New("unknown product")
 	}
-	o := Options{Product: p, Dir: st.Dir}
+	o := Options{Product: p, Dir: st.Dir, Profiles: st.Profiles}
 	args := composeArgs(o, "down", "--remove-orphans")
 	if !keepData {
 		args = append(args, "-v")

@@ -188,3 +188,94 @@ func TestLifetimeConfigHasNoKey(t *testing.T) {
 		t.Fatalf("expected an empty licence key:\n%s", out)
 	}
 }
+
+func TestOptionalImagesHaveTheirProfiledService(t *testing.T) {
+	o := ProductBySlug("orchestra")
+	if o.Optional["orchestra-worker-gpu"] != "gpu" {
+		t.Fatalf("orchestra must offer the GPU worker under the gpu profile, got %v", o.Optional)
+	}
+	for _, p := range Products {
+		c, err := readBundle(p.Compose)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for img, prof := range p.Optional {
+			i := strings.Index(string(c), "\n  "+img+":\n")
+			if i < 0 {
+				t.Fatalf("%s: optional image %s has no service of the same name in %s", p.Slug, img, p.Compose)
+			}
+			block := string(c)[i+1:]
+			if j := strings.Index(block[3:], "\n  "); j >= 0 && !strings.HasPrefix(block[3+j+3:], " ") {
+				block = block[:3+j]
+			}
+			if !strings.Contains(block, `profiles: ["`+prof+`"]`) {
+				t.Fatalf("%s: service %s must run only with the %q profile", p.Slug, img, prof)
+			}
+			if !strings.Contains(block, "image: axto/"+img+":latest") {
+				t.Fatalf("%s: service %s must run image axto/%s", p.Slug, img, img)
+			}
+		}
+	}
+}
+
+func TestComposeArgsCarryProfiles(t *testing.T) {
+	p := ProductBySlug("orchestra")
+	o := Options{Product: p, Dir: "/opt/axto/orchestra", Profiles: []string{"gpu"}}
+	got := strings.Join(composeArgs(o, "up", "-d"), " ")
+	want := "compose -p axto-orchestra -f " + filepath.Join("/opt/axto/orchestra", "orchestra-compose.yml") + " --profile gpu up -d"
+	if got != want {
+		t.Fatalf("composeArgs = %q, want %q", got, want)
+	}
+	o.Profiles = nil
+	if strings.Contains(strings.Join(composeArgs(o, "ps"), " "), "--profile") {
+		t.Fatal("no profile without optional images")
+	}
+}
+
+func TestOptionalWanted(t *testing.T) {
+	p := ProductBySlug("orchestra")
+	prev := &Installed{Images: []string{"orchestra-core", "orchestra-worker-cpu", "orchestra-worker-gpu"}}
+	if w := optionalWanted(p, nil, prev); !w["orchestra-worker-gpu"] || len(w) != 1 {
+		t.Fatalf("an update keeps the installed GPU worker, got %v", w)
+	}
+	if w := optionalWanted(p, []string{}, prev); len(w) != 0 {
+		t.Fatalf("an empty choice removes it, got %v", w)
+	}
+	if w := optionalWanted(p, []string{"orchestra-worker-gpu", "orchestra-core", "nope"}, nil); !w["orchestra-worker-gpu"] || len(w) != 1 {
+		t.Fatalf("only known optional images count, got %v", w)
+	}
+	if w := optionalWanted(ProductBySlug("vault"), []string{"orchestra-worker-gpu"}, nil); len(w) != 0 {
+		t.Fatalf("vault has no optional images, got %v", w)
+	}
+}
+
+func TestLocalImageFromOfflinePackage(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name string, n int) {
+		if err := os.WriteFile(filepath.Join(dir, name), make([]byte, n), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("orchestra-core.tar.gz", 100)
+	if got := localImage([]string{dir}, "orchestra-core", 100); got != filepath.Join(dir, "orchestra-core.tar.gz") {
+		t.Fatalf("same size as the portal's build → used, got %q", got)
+	}
+	if got := localImage([]string{dir}, "orchestra-core", 120); got != "" {
+		t.Fatalf("a different size without a manifest → download instead, got %q", got)
+	}
+	man, _ := json.Marshal(map[string]any{"orchestra-core.tar.gz": map[string]int64{"size": 100}})
+	write("manifest.json", 0)
+	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), man, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := localImage([]string{dir}, "orchestra-core", 120); got == "" {
+		t.Fatal("an older but complete package image (manifest size) → used")
+	}
+	write("orchestra-worker-cpu.tar.gz", 50) // truncated copy: not the manifest's size
+	if got := localImage([]string{dir}, "orchestra-worker-cpu", 80); got != "" {
+		t.Fatalf("a truncated file is never used, got %q", got)
+	}
+	if got := localImage([]string{filepath.Join(dir, "missing"), dir}, "orchestra-core", 100); got == "" {
+		t.Fatal("later folders are searched too")
+	}
+}

@@ -75,6 +75,12 @@ test("installer: licence → signed download → docker load → run → manage 
   const put = sh("npx", ["wrangler", "r2", "object", "put", "axto-builds/builds/latest/raw/vault-core.tar.gz", "--file", tar, "--local", "--persist-to", "../persist"],
     { cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" } });
   assert.equal(put.status, 0, put.stderr);
+  // An offline package for vault (BLUEPRINT-V4 §30): any bytes do for the download checks.
+  const zip = path.join(work, "axto-vault-offline-amd64.zip");
+  fs.writeFileSync(zip, Buffer.alloc(4096, 7));
+  const putZip = sh("npx", ["wrangler", "r2", "object", "put", "axto-builds/builds/latest/offline/axto-vault-offline-amd64.zip", "--file", zip, "--local", "--persist-to", "../persist"],
+    { cwd: CTL_DIR, env: { ...process.env, CI: "1", WRANGLER_SEND_METRICS: "false" } });
+  assert.equal(putZip.status, 0, putZip.stderr);
 
   // 3. A Business member with a Vault licence.
   await seedAdmin("e2e-admin@axto.io");
@@ -102,6 +108,34 @@ test("installer: licence → signed download → docker load → run → manage 
   assert.equal(ranged.headers.get("content-range"), `bytes 100-${img.size - 1}/${img.size}`);
   assert.equal((await ranged.arrayBuffer()).byteLength, img.size - 100, "exactly the rest of the file");
 
+  // 4b. The member portal download resumes too (a dropped 6 GB download continues where it stopped).
+  const dl = (file: string) => `${BASE}/api/selfhosted/download?product=vault&file=${file}`;
+  const auth = { Cookie: member.cookie };
+  const head = await fetch(dl("vault-core"), { method: "HEAD", headers: auth });
+  assert.equal(head.status, 200);
+  assert.equal(Number(head.headers.get("content-length")), img.size);
+  assert.equal(head.headers.get("accept-ranges"), "bytes");
+  const etag = head.headers.get("etag")!;
+  assert.ok(etag, "ETag for If-Range");
+  const tail = await fetch(dl("vault-core"), { headers: { ...auth, Range: `bytes=${img.size - 10}-`, "If-Range": etag } });
+  assert.equal(tail.status, 206);
+  assert.equal(tail.headers.get("content-range"), `bytes ${img.size - 10}-${img.size - 1}/${img.size}`);
+  assert.equal((await tail.arrayBuffer()).byteLength, 10);
+  const stale = await fetch(dl("vault-core"), { headers: { ...auth, Range: "bytes=10-", "If-Range": '"an-older-build"' } });
+  assert.equal(stale.status, 200, "a file that changed since is sent whole");
+  assert.equal((await stale.arrayBuffer()).byteLength, img.size);
+  const past = await fetch(dl("vault-core"), { headers: { ...auth, Range: `bytes=${img.size}-` } });
+  assert.equal(past.status, 416);
+  assert.equal(past.headers.get("content-range"), `bytes */${img.size}`);
+  const off = await fetch(dl("offline"), { headers: { ...auth, Range: "bytes=4000-" } });
+  assert.equal(off.status, 206, "the offline package resumes");
+  assert.match(off.headers.get("content-disposition") || "", /axto-vault-offline-amd64\.zip/);
+  assert.equal((await off.arrayBuffer()).byteLength, 96);
+  assert.equal((await fetch(dl("offline"), { redirect: "manual" })).status, 307, "signed-out visitors are sent to log in");
+  const ui = await call("GET", "/api/selfhosted", undefined, member.cookie);
+  const vaultImg = ui.json.products.find((p: any) => p.slug === "vault").images.find((i: any) => i.name === "vault-core");
+  assert.equal(typeof vaultImg.size, "number", "image sizes reach the page");
+
   // 5. Install with the CLI (same pipeline as the Windows wizard).
   const env = { ...process.env, NO_PROXY: "127.0.0.1,localhost", no_proxy: "127.0.0.1,localhost" };
   const baseDir = path.join(work, "axto");
@@ -115,6 +149,19 @@ test("installer: licence → signed download → docker load → run → manage 
   assert.ok(cfg.includes(key) && !cfg.includes("XXXXXXXX"), "licence key written into the config");
   assert.match(fs.readFileSync(path.join(baseDir, "vault", "vault-compose.yml"), "utf8"), /"18081:8080"/);
   assert.equal(sh("docker", ["image", "inspect", "axto/vault-core:latest"]).status, 0, "image loaded");
+
+  // 5b. Offline package: AXTO Setup next to images/ loads them instead of downloading.
+  const pkg = path.join(work, "axto-vault-offline-amd64");
+  fs.mkdirSync(path.join(pkg, "images"), { recursive: true });
+  fs.copyFileSync(bin, path.join(pkg, "axto-setup"));
+  fs.chmodSync(path.join(pkg, "axto-setup"), 0o755);
+  fs.copyFileSync(tar, path.join(pkg, "images", "vault-core.tar.gz"));
+  const offline = sh(path.join(pkg, "axto-setup"), ["update", "vault", "--portal", BASE, "--base", baseDir], { env, timeout: 600_000 });
+  assert.equal(offline.status, 0, offline.stdout + offline.stderr);
+  assert.match(offline.stdout, /from the offline package/);
+  assert.doesNotMatch(offline.stdout, /Downloading/);
+  assert.ok(fs.existsSync(path.join(pkg, "images", "vault-core.tar.gz")), "the package keeps its images");
+  assert.ok((await health()) > 0, "running after the offline update");
 
   // 6. Manage.
   assert.match(run("status", "vault").stdout, /vault-core\s+running/);

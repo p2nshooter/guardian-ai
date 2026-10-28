@@ -20,7 +20,9 @@ const T = {
     dockerOk: "Docker {v} is running", composeOk: "Docker Compose {v}", wslOk: "WSL 2 is enabled", wslBad: "WSL 2 is not enabled",
     res: "{gb} GB RAM · {cpu} CPUs available to Docker", lowRes: "Tip: give Docker at least 4 GB RAM (Docker Desktop → Settings → Resources).",
     keyHint: "Lifetime licence? Paste its installer key (LIFE-…) from axto.io/app/lifetime.", pick: "Which app do you want to install?",
-    lifetimeOk: "Lifetime licence for {app} — updates included until {date}. This device is activated automatically." },
+    lifetimeOk: "Lifetime licence for {app} — updates included until {date}. This device is activated automatically.",
+    optH: "Optional components", inPackage: "in the offline package", offline: "{n} image(s) come from the offline package next to AXTO Setup — no download needed for them.",
+    gpuFound: "NVIDIA GPU found: {gpu}", gpuNone: "No NVIDIA GPU found on this computer — the GPU worker needs an NVIDIA card with its driver (Docker Desktop uses it through WSL 2)." },
   id: { install: "Instal", manage: "Kelola aplikasi", s1: "Cek komputer", s2: "Kunci lisensi", s3: "Opsi", s4: "Instal",
     h1: "Mari jalankan aplikasi AXTO Anda", p1: "Aplikasi AXTO berjalan di Docker. Di Windows itu Docker Desktop dengan WSL 2 — semuanya kami cek untuk Anda.",
     checking: "Memeriksa…", recheck: "Cek lagi", startDocker: "Jalankan Docker Desktop", continue: "Lanjut", h2: "Masukkan kunci lisensi",
@@ -35,7 +37,9 @@ const T = {
     dockerOk: "Docker {v} berjalan", composeOk: "Docker Compose {v}", wslOk: "WSL 2 aktif", wslBad: "WSL 2 belum aktif",
     res: "{gb} GB RAM · {cpu} CPU tersedia untuk Docker", lowRes: "Tips: beri Docker minimal 4 GB RAM (Docker Desktop → Settings → Resources).",
     keyHint: "Lisensi Lifetime? Tempel kunci installer (LIFE-…) dari axto.io/app/lifetime.", pick: "Aplikasi mana yang ingin dipasang?",
-    lifetimeOk: "Lisensi Lifetime untuk {app} — pembaruan termasuk sampai {date}. Perangkat ini diaktifkan otomatis." },
+    lifetimeOk: "Lisensi Lifetime untuk {app} — pembaruan termasuk sampai {date}. Perangkat ini diaktifkan otomatis.",
+    optH: "Komponen opsional", inPackage: "ada di paket offline", offline: "{n} image diambil dari paket offline di sebelah AXTO Setup — tidak perlu diunduh.",
+    gpuFound: "GPU NVIDIA ditemukan: {gpu}", gpuNone: "Tidak ada GPU NVIDIA di komputer ini — worker GPU butuh kartu NVIDIA dengan drivernya (Docker Desktop memakainya lewat WSL 2)." },
 };
 let lang = localStorage.getItem("axto_lang") || (/^(id|in)\b/i.test(navigator.language) ? "id" : "en");
 const t = (k, v = {}) => (T[lang][k] || T.en[k] || k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");
@@ -87,6 +91,27 @@ async function check() {
   return d.ready;
 }
 
+const fmtBytes = (n) => n >= 1 << 30 ? (n / (1 << 30)).toFixed(2) + " GB" : n >= 1 << 20 ? (n / (1 << 20)).toFixed(1) + " MB" : Math.round(n / 1024) + " KB";
+function updateSize() {
+  let n = licence.download_bytes || 0;
+  document.querySelectorAll(".opt:checked").forEach((el) => { const o = licence.optional.find((x) => x.name === el.value); if (o && !o.local) n += o.bytes; });
+  $("#size").textContent = fmtBytes(n);
+}
+function renderOptional() {
+  const opts = licence.optional || [], inst = licence.installed;
+  $("#opts").innerHTML = opts.map((o) => {
+    const on = inst ? (inst.images || []).includes(o.name) : (o.profile === "gpu" && !!licence.gpu);
+    return `<label class="check"><input type="checkbox" class="opt" value="${esc(o.name)}"${on ? " checked" : ""}> <span>${esc(o.label)} — ${esc(o.size)}${o.local ? " · " + esc(t("inPackage")) : ""}</span></label>`;
+  }).join("");
+  const gpuOpt = opts.some((o) => o.profile === "gpu");
+  $("#gpuHint").textContent = gpuOpt ? (licence.gpu ? t("gpuFound", { gpu: licence.gpu }) : t("gpuNone")) : "";
+  show($("#optBox"), opts.length > 0);
+  $("#offlineNote").textContent = licence.local_images ? t("offline", { n: licence.local_images }) : "";
+  show($("#offlineNote"), !!licence.local_images);
+  document.querySelectorAll(".opt").forEach((el) => el.addEventListener("change", updateSize));
+  updateSize();
+}
+
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 async function verifyKey() {
@@ -114,6 +139,7 @@ async function verifyKey() {
     $("#lan").checked = licence.installed ? licence.installed.lan : info.docker.os === "linux";
     $("#where").textContent = licence.installed ? licence.installed.dir : `${info.base}${info.docker.os === "windows" ? "\\" : "/"}${p.Slug}`;
     $("#size").textContent = licence.download;
+    renderOptional();
     $("#next3").textContent = licence.installed ? t("reinstall") : t("installNow");
     setTimeout(() => stepTo(3), 500);
   } catch (e) { $("#keyErr").textContent = e.message; show($("#keyErr"), true); }
@@ -139,7 +165,8 @@ async function install() {
   show($("#done"), false); show($("#failed"), false);
   $("#h4").textContent = t("installing"); $("#log").textContent = ""; $("#bar").style.width = "0";
   try {
-    const { job } = await api("/api/install", { key: currentKey, app: currentApp, port: +$("#port").value, lan: $("#lan").checked });
+    const withImages = [...document.querySelectorAll(".opt:checked")].map((el) => el.value);
+    const { job } = await api("/api/install", { key: currentKey, app: currentApp, port: +$("#port").value, lan: $("#lan").checked, with: withImages });
     await follow(job, $("#log"), (j) => {
       if (j.status === "done") {
         $("#h4").textContent = "✔ " + licence.product.Name;

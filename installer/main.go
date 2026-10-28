@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-var Version = "3.2.1"
+var Version = "3.2.2"
 
 const defaultPortal = "https://axto.io"
 
@@ -44,9 +44,13 @@ func usage() {
 
 Usage:
   axto-setup                               open the guided installer (Windows default)
-  axto-setup install --key KEY [--port N] [--lan] [--dir PATH]
+  axto-setup install --key KEY [--port N] [--lan] [--dir PATH] [--gpu] [--with IMG,…] [--images DIR]
   axto-setup install <app> --key LIFE-…    lifetime licence: install + activate this device
   axto-setup update  <app>                 download the latest images and restart
+
+  --gpu         Orchestra: also install the NVIDIA GPU worker (≈ 6 GB image)
+  --with        optional images by name (orchestra-worker-gpu), or "none" to remove them
+  --images DIR  offline package: load images from DIR (default: images/ next to axto-setup)
   axto-setup status | start | stop | restart | logs  <app>
   axto-setup uninstall <app> [--keep-data]
   axto-setup doctor                        check Docker / WSL 2
@@ -89,6 +93,9 @@ func main() {
 	portal := fs.String("portal", envOr("AXTO_PORTAL", defaultPortal), "AXTO portal URL")
 	base := fs.String("base", "", "base directory for all apps")
 	keepData := fs.Bool("keep-data", false, "uninstall: keep the app's data volumes")
+	gpu := fs.Bool("gpu", false, "Orchestra: also install the NVIDIA GPU worker")
+	with := fs.String("with", "", "optional images to install (comma-separated), or none")
+	images := fs.String("images", "", "offline package: folder with the <image>.tar.gz files")
 	fs.Usage = usage
 	// flags may come after the app name: `axto-setup update vault --portal …`
 	var pos []string
@@ -164,6 +171,28 @@ func main() {
 		if st != nil {
 			o.LAN = st.LAN || *lan
 		}
+		o.ImagesDir = *images
+		if *with != "" || *gpu {
+			o.With = []string{}
+			for _, n := range strings.Split(*with, ",") {
+				if n = strings.TrimSpace(n); n != "" && n != "none" {
+					if _, ok := p.Optional[n]; !ok {
+						fail(fmt.Errorf("%s has no optional image %q (optional: %s)", p.Name, n, strings.Join(optionalNames(p), ", ")))
+					}
+					o.With = append(o.With, n)
+				}
+			}
+			if *gpu {
+				for n, prof := range p.Optional {
+					if prof == "gpu" && !contains(o.With, n) {
+						o.With = append(o.With, n)
+					}
+				}
+				if len(o.With) == 0 {
+					fail(fmt.Errorf("%s has no GPU worker — --gpu is for Orchestra AI", p.Name))
+				}
+			}
+		}
 		res, err := Install(ctx, o, &cliProgress{})
 		if err != nil {
 			fail(err)
@@ -202,6 +231,11 @@ func main() {
 		if d.WSL != "" {
 			fmt.Printf("WSL 2: %s\n", d.WSL)
 		}
+		if d.GPU != "" {
+			fmt.Printf("NVIDIA GPU: %s\n", d.GPU)
+		} else {
+			fmt.Println("NVIDIA GPU: none found (Orchestra's GPU worker needs one)")
+		}
 		if !d.Ready {
 			fmt.Printf("\n✖ %s\n  %s %s\n", d.Problem, d.Fix, d.FixURL)
 			os.Exit(1)
@@ -227,6 +261,18 @@ func main() {
 		usage()
 		os.Exit(2)
 	}
+}
+
+func optionalNames(p *Product) []string {
+	var out []string
+	for n := range p.Optional {
+		out = append(out, n)
+	}
+	sort.Strings(out)
+	if len(out) == 0 {
+		out = []string{"none"}
+	}
+	return out
 }
 
 func envOr(k, d string) string {

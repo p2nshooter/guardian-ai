@@ -27,6 +27,7 @@ type DockerStatus struct {
 	WSL            string `json:"wsl"`     // windows only: "ok" | "missing" | ""
 	Arch           string `json:"arch"`    // Docker engine architecture: "amd64" | "arm64"
 	OSType         string `json:"os_type"` // "linux" (required) | "windows" (Windows containers mode)
+	GPU            string `json:"gpu"`     // NVIDIA GPU(s) nvidia-smi reports ("" = none / no driver)
 	DesktopPath    string `json:"desktop_path"`
 	Ready          bool   `json:"ready"`
 	Problem        string `json:"problem"`
@@ -79,7 +80,7 @@ func engineArch(a string) string {
 }
 
 func CheckDocker(ctx context.Context) DockerStatus {
-	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe()}
+	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe(), GPU: DetectGPU(ctx)}
 	c, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 
@@ -154,6 +155,31 @@ func CheckDocker(ctx context.Context) DockerStatus {
 	s.ComposeVersion = strings.TrimPrefix(strings.TrimSpace(cv), "v")
 	s.Ready = true
 	return s
+}
+
+// DetectGPU names the NVIDIA GPUs the driver reports, e.g. "NVIDIA GeForce RTX 4090 (24564 MiB)".
+// Docker Desktop hands them to containers through WSL 2; on Linux the
+// nvidia-container-toolkit does. "" = no NVIDIA GPU or no driver.
+func DetectGPU(ctx context.Context) string {
+	c, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(c, "nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader")
+	hideWindow(cmd)
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	var gpus []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		f := strings.SplitN(line, ",", 2)
+		if name := strings.TrimSpace(f[0]); name != "" {
+			if len(f) == 2 {
+				name += " (" + strings.TrimSpace(f[1]) + ")"
+			}
+			gpus = append(gpus, name)
+		}
+	}
+	return strings.Join(gpus, " + ")
 }
 
 // StartDockerDesktop launches Docker Desktop on Windows (no-op elsewhere).

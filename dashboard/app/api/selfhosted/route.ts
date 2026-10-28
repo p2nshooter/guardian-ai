@@ -14,7 +14,7 @@ export const runtime = "edge";
 import { NextRequest } from "next/server";
 import { getData, now, background } from "@/lib/db";
 import { ids } from "@/lib/data/schema";
-import { availableBuilds, imageKey, archImageName } from "@/lib/builds";
+import { availableBuilds, imageKey, archImageName, offlineKey } from "@/lib/builds";
 import { loadSession, unauthorized, respond, effectiveTier, loadSessionFor } from "@/lib/auth";
 import { limitsFor, PLANS, isPlanId } from "@/lib/plans";
 import { SELF_HOSTED, getSelfHosted, catalogEntry, generateLicenseKey } from "@/lib/selfhosted";
@@ -62,7 +62,9 @@ export async function GET(req: NextRequest) {
     return {
       slug: p.slug, name: c?.name || p.slug, emoji: c?.emoji || "📦", tagline: c?.tagline || "", port: p.port,
       compose: p.compose, config: p.config, configTarget: p.configTarget, licenseField: p.licenseField,
-      images: p.images.map((i) => ({ ...i, available: builds.has(imageKey(i.name)), arm64: builds.has(imageKey(archImageName(i.name, "arm64"))) })),
+      images: p.images.map((i) => ({ ...i, available: builds.has(imageKey(i.name)), size: builds.get(imageKey(i.name)) || 0,
+                                     arm64: builds.has(imageKey(archImageName(i.name, "arm64"))), arm64Size: builds.get(imageKey(archImageName(i.name, "arm64"))) || 0 })),
+      offline: builds.get(offlineKey(p.slug)) || 0,
       license: mine.find((l) => l.source === "plan") || null,
       licenses: mine,
       trial: { available: open ? stats[p.slug].available : 0, total: stats[p.slug].total, used: !!used, rating: used?.rating || 0, edition: trialEdition(p.slug)?.name || "" },

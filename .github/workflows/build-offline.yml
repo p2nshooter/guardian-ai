@@ -1,0 +1,187 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 AXTO (axto.io). All rights reserved.
+# Platform: AXTO (axto.io) — Sovereign AI Infrastructure.
+# ==============================================================================
+# Offline packages: one .zip per self-hosted app with AXTO Setup (Windows .exe +
+# Linux) and every Docker image the installer loads for that app — for
+# Orchestra that includes the 6 GB NVIDIA GPU worker, ≈ 7 GB in all.
+# (Owner, 28 Oct 2026, REQUESTS 110 / BLUEPRINT-V4 §30: the Windows "exe" must
+# carry the images too. A single .exe above 4 GB does not run on Windows, so the
+# installer and the images travel together in one .zip instead.)
+#
+#   axto-<app>-offline-amd64/
+#     AXTO-Setup.exe        Windows: unzip, double-click — images load from images/
+#     axto-setup            Linux:   ./axto-setup install --key … (same)
+#     images/<image>.tar.gz + images/manifest.json (size + SHA-256 of each)
+#     README.txt, SHA256SUMS.txt
+#
+# → R2 axto-builds/builds/latest/offline/axto-<app>-offline-amd64.zip (+ .sha256),
+#   streamed to licence holders by /api/selfhosted/download?file=offline.
+# Images per app = the required images in dashboard/lib/selfhosted.ts plus the
+# ones AXTO Setup can install on request (gpu: true); tests/consistency.test.ts
+# keeps this list in step with that file.
+name: Offline packages → R2
+
+on:
+  workflow_dispatch:
+    inputs:
+      app: { description: "App slug (guardian, orchestra, …) or all", required: false, default: "all" }
+  # A new image or a new AXTO Setup refreshes the packages.
+  workflow_run:
+    workflows: ["Auto Build All Images", "Build Orchestra GPU Worker → R2", "AXTO Setup (installer)"]
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-offline.yml"
+  schedule:
+    - cron: "40 4 * * 0"     # weekly, so a package never lags its images for long
+
+concurrency:
+  group: offline-packages
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: "📦 ${{ matrix.app }}"
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - { app: guardian,   images: "guardian-core guardian-node" }
+          - { app: orchestra,  images: "orchestra-core orchestra-worker-cpu orchestra-worker-gpu" }
+          - { app: vault,      images: "vault-core" }
+          - { app: edge,       images: "edge-core" }
+          - { app: soc,        images: "soc-core" }
+          - { app: compliance, images: "compliance-core" }
+          - { app: sentinel,   images: "sentinel-core" }
+          - { app: antivirus,  images: "guardian-antivirus" }
+          - { app: studio,     images: "studio-core" }
+          - { app: legal,      images: "legal-core" }
+    env:
+      AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+      # Account ID & bucket are not secret (same as the other build workflows).
+      CF_ACCOUNT_ID: ec77c7422c83e094aa03df0b3f94e488
+      R2_BUCKET: axto-builds
+      AWS_DEFAULT_REGION: auto
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      APP: ${{ matrix.app }}
+      IMAGES: ${{ matrix.images }}
+      WANT: ${{ github.event.inputs.app || 'all' }}
+    steps:
+      - name: This app?
+        id: sel
+        run: |
+          if [ "$WANT" = "all" ] || [ "$WANT" = "$APP" ]; then echo "go=true" >> "$GITHUB_OUTPUT"; else echo "go=false" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4          # scripts/ci/r2-put.sh
+        if: steps.sel.outputs.go == 'true'
+
+      - name: Free disk space (the Orchestra package is ≈ 7 GB, written twice)
+        if: steps.sel.outputs.go == 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
+          df -h / | tail -1
+
+      - name: Fetch AXTO Setup and the images from R2
+        id: fetch
+        if: steps.sel.outputs.go == 'true'
+        run: |
+          set -uo pipefail
+          command -v aws >/dev/null 2>&1 || pip install -q "awscli>=1.32"
+          EP="https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          get() { aws s3 cp "s3://${R2_BUCKET}/$1" "$2" --endpoint-url "$EP" --no-progress --only-show-errors; }
+          PKG="axto-${APP}-offline-amd64"
+          mkdir -p "$PKG/images"
+          get builds/latest/installer/AXTO-Setup.exe "$PKG/AXTO-Setup.exe" || { echo "::error::AXTO Setup is not published yet"; exit 1; }
+          get builds/latest/installer/axto-setup-linux-amd64 "$PKG/axto-setup" || { echo "::error::AXTO Setup (Linux) is not published yet"; exit 1; }
+          chmod +x "$PKG/axto-setup"
+          for img in $IMAGES; do
+            if ! get "builds/latest/raw/${img}.tar.gz" "$PKG/images/${img}.tar.gz"; then
+              # Never publish a package that misses an image: the previous one stays.
+              echo "::warning title=${APP}: image ${img} not built yet::No offline package for ${APP} this time."
+              echo "ok=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "pkg=$PKG" >> "$GITHUB_OUTPUT"
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          du -sh "$PKG"/* "$PKG"/images/*
+
+      - name: Manifest, checksums and README
+        if: steps.fetch.outputs.ok == 'true'
+        env:
+          PKG: ${{ steps.fetch.outputs.pkg }}
+        run: |
+          set -euo pipefail
+          cd "$PKG/images"
+          # AXTO Setup accepts an image whose size matches this manifest even when
+          # the portal has a newer build (installer/setup.go localImage).
+          {
+            echo "{"
+            first=1
+            for f in *.tar.gz; do
+              [ $first = 1 ] || echo ","
+              first=0
+              printf '  "%s": {"size": %s, "sha256": "%s"}' "$f" "$(stat -c %s "$f")" "$(sha256sum "$f" | cut -d' ' -f1)"
+            done
+            echo
+            echo "}"
+          } > manifest.json
+          cat manifest.json
+          cd ..
+          GPU=""
+          if ls images/*-gpu.tar.gz >/dev/null 2>&1; then
+            GPU="
+          GPU worker (NVIDIA): ticked automatically in AXTO Setup when this computer has an
+          NVIDIA GPU; on Linux add --gpu. Needs the NVIDIA driver (Linux: + nvidia-container-toolkit).
+          Worker GPU (NVIDIA): otomatis dicentang di AXTO Setup bila komputer punya GPU NVIDIA;
+          di Linux tambahkan --gpu. Butuh driver NVIDIA (Linux: + nvidia-container-toolkit).
+          "
+          fi
+          cat > README.txt <<EOF
+          AXTO ${APP} — offline package (AXTO Setup + every image)
+
+          Windows: unzip this folder (right-click → Extract All), then double-click AXTO-Setup.exe
+                   inside it. Docker Desktop with WSL 2 is required; AXTO Setup checks it.
+          Linux:   unzip, then  ./axto-setup install --key YOUR-LICENCE-KEY
+                   (or --images /path/to/images when you move the images elsewhere)
+          ${GPU}
+          The images are loaded from images/ — nothing large is downloaded again. Your licence key
+          (https://axto.io/app/self-hosted) is still checked online. Integrity: SHA256SUMS.txt.
+
+          Windows: ekstrak folder ini (klik kanan → Extract All), lalu klik dua kali AXTO-Setup.exe
+                   di dalamnya. Butuh Docker Desktop dengan WSL 2; AXTO Setup memeriksanya.
+          Linux:   ekstrak, lalu  ./axto-setup install --key KUNCI-LISENSI-ANDA
+          Image dimuat dari images/ — tidak ada unduhan besar lagi. Kunci lisensi tetap dicek online.
+
+          Support: hello@axto.io · https://axto.io/help
+          EOF
+          sed -i 's/^          //' README.txt
+          find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum | sed 's#  \./#  #' > SHA256SUMS.txt
+          cat README.txt SHA256SUMS.txt
+
+      - name: Zip (stored — the images are already compressed) and upload
+        if: steps.fetch.outputs.ok == 'true'
+        env:
+          PKG: ${{ steps.fetch.outputs.pkg }}
+        run: |
+          set -euo pipefail
+          command -v zip >/dev/null 2>&1 || sudo apt-get install -y zip >/dev/null
+          # Zip64 is used automatically above 4 GB; Windows 10/11 Explorer and 7-Zip open it.
+          zip -0 -r -q "$PKG.zip" "$PKG"
+          rm -rf "$PKG"
+          unzip -tq "$PKG.zip"
+          sha256sum "$PKG.zip" | sed 's#  .*#  '"$PKG"'.zip#' > "$PKG.zip.sha256"
+          ls -lh "$PKG.zip"; cat "$PKG.zip.sha256"
+          bash scripts/ci/r2-put.sh "$PKG.zip" "${R2_BUCKET}/builds/latest/offline/$PKG.zip" application/zip
+          bash scripts/ci/r2-put.sh "$PKG.zip.sha256" "${R2_BUCKET}/builds/latest/offline/$PKG.zip.sha256" "text/plain; charset=utf-8"
+          echo "### 📦 ${APP}: $(du -h "$PKG.zip" | cut -f1) → r2://${R2_BUCKET}/builds/latest/offline/$PKG.zip" >> "$GITHUB_STEP_SUMMARY"

@@ -292,7 +292,7 @@ Urut dari dampak terbesar; semuanya harus **nyata**, bukan klaim:
 | A3 | Program 100 trial per aplikasi: tabel, admin `/admin/trials`, klaim member, kartu publik, `license-validate` (§4) | branch `ccr-e9111ca5-n0fcha` | ✅ tabel `sh_trials`, kolam 100/aplikasi terisi otomatis sekali; klaim zero-touch (lisensi 14 hari edisi Professional + e-mail); batas per akun/e-mail/IP, maks 2 aplikasi, satu trial per server; ditandatangani sebagai trial; kedaluwarsa → tautan beli; konversi saat membeli; rating; admin: setelan, buat/jeda/hapus batch, CSV, akhiri trial. Watermark di UI engine = fase A4 |
 | A4 | Engine menegakkan batas edisi + watermark trial (semua 10 engine) | — | ⏳ |
 | B1 | Rilis bertanda tangan: registry OCI, cosign, SBOM, Trivy, SHA256SUMS (§5) | — | ⏳ |
-| B2 | Installer: Authenticode, MSI, `install.sh`, .deb/.rpm, bundle air-gapped (§5) | — | ⏳ |
+| B2 | Installer: Authenticode, MSI, `install.sh`, .deb/.rpm, bundle air-gapped (§5) | paket offline per aplikasi (AXTO Setup + semua image, termasuk GPU Orchestra) — `BLUEPRINT-V4.md` §30 | 🔄 |
 | B3 | Matriks smoke-test per aplikasi Linux + Windows (§5) | — | ⏳ |
 | C1 | Baseline enterprise §6 (SSO/SCIM/RBAC/audit/HA/metrics) sebagai pustaka bersama Python, dipakai 10 engine | — | ⏳ |
 | C2 | Tes per engine (coverage ≥ 70 % logika inti) | — | ⏳ |

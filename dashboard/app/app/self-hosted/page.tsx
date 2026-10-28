@@ -18,6 +18,7 @@ import { L } from "@/lib/i18n-pages/selfhosted";
 import { SH_TAGLINES } from "@/lib/i18n-pages/shtaglines";
 import { ED } from "@/lib/i18n-pages/editions";
 import { APP_COLORS } from "@/lib/ecosystem";
+import { buildSize } from "@/lib/byte-range";
 
 interface Licence {
   id: string; source: "plan" | "edition" | "trial"; package_code: string; edition: string; license_key: string; status: string; expires_at: string;
@@ -25,7 +26,8 @@ interface Licence {
 }
 interface Product {
   slug: string; name: string; emoji: string; tagline: string; port: number; compose: string; config: string; configTarget: string; licenseField: string;
-  images: { name: string; label: string; optional?: boolean; available: boolean; arm64?: boolean }[];
+  images: { name: string; label: string; optional?: boolean; gpu?: boolean; available: boolean; size: number; arm64?: boolean; arm64Size?: number }[];
+  offline: number; // bytes of the offline package (AXTO Setup + every image), 0 = being built
   licenses: Licence[];
   trial: { available: number; total: number; used: boolean; rating: number; edition: string };
 }
@@ -168,10 +170,24 @@ function SelfHostedInner() {
                     );
                   })}
 
+                  {lics.some((l) => l.status === "active" && !l.held) ? (
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm" data-testid={`sh-offline-${p.slug}`}>
+                      <div className="font-semibold text-slate-900">📦 {t.offlineTitle}</div>
+                      {p.offline ? (
+                        <>
+                          <p className="mt-1 text-slate-600">{t.offlineBody.replace("{size}", buildSize(p.offline))}</p>
+                          <a href={`/api/selfhosted/download?product=${p.slug}&file=offline`} className="btn-primary btn-sm mt-2 inline-flex" data-testid={`sh-offline-dl-${p.slug}`}>⬇ {t.offlineDl} · {buildSize(p.offline)}</a>
+                        </>
+                      ) : <p className="mt-1 text-slate-500">{t.offlinePreparing}</p>}
+                      {p.images.filter((i) => i.gpu && i.available).map((i) => <p key={i.name} className="mt-2 text-xs text-slate-600">🎮 {t.gpuHint.replace("{size}", buildSize(i.size))}</p>)}
+                    </div>
+                  ) : null}
+
                   {open === p.slug ? (
                     <div className="mt-3 rounded-lg bg-slate-50 p-4 text-sm">
                       <div className="font-semibold">{t.images}</div>
-                      <ul className="mt-1 space-y-1">{p.images.map((i) => <li key={i.name}>{i.available ? <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>{i.label} — {i.name}.tar.gz</a> : <span className="text-slate-400">{i.label} ({tt("sh.preparing")})</span>}{i.arm64 ? <> · <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}-arm64`}>ARM64</a></> : null}{i.optional ? " · optional" : ""}</li>)}</ul>
+                      <ul className="mt-1 space-y-1">{p.images.map((i) => <li key={i.name}>{i.available ? <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}`}>{i.label} — {i.name}.tar.gz{i.size ? ` (${buildSize(i.size)})` : ""}</a> : <span className="text-slate-400">{i.label} ({tt("sh.preparing")})</span>}{i.arm64 ? <> · <a href={`/api/selfhosted/download?product=${p.slug}&file=${i.name}-arm64`}>ARM64{i.arm64Size ? ` (${buildSize(i.arm64Size)})` : ""}</a></> : null}{i.optional ? ` · ${t.optional}` : ""}</li>)}</ul>
+                      <p className="mt-1 text-xs text-slate-500">{t.resumeHint}</p>
                       <div className="mt-3 font-semibold">{t.configs}</div>
                       <ul className="mt-1 space-y-1"><li><a href={`/configs/${p.compose}`} download>{p.compose}</a></li><li><a href={`/configs/${p.config}`} download>{p.config}</a> → <code>{p.configTarget}</code></li></ul>
                       <ol className="mt-3 list-decimal space-y-1 pl-5 text-slate-700">
