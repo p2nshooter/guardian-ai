@@ -991,6 +991,26 @@ produksi" — audit ini sekarang diperintahkan, mulai setelah §30 tayang. Uruta
 kelas dunia; (2) portal member; (3) admin; (4) situs publik. Setiap temuan ditulis di tabel di bawah dulu, lalu
 dibangun dan diuji (unit, E2E, browser desktop & HP).
 
+### 29.A4 Temuan batas edisi di engine (dicatat sebelum dibangun, REQUESTS 111/113)
+
+Pembanding: lisensi bertanda tangan membawa edisi (`lib/editions.ts`, `lib/entitlements.ts`); engine harus menolak
+di atas batas, bukan hanya menampilkannya. Tabel ini adalah keadaan sebelum perbaikan:
+
+| Engine | Batas yang dibawa lisensi | Keadaan sebelum | Keadaan sesudah |
+|---|---|---|---|
+| Orchestra | worker CPU/GPU, autoscaling, federasi, cost analytics, jumlah node | `require_feature` membaca daftar fitur yang salah; tidak ada batas worker; autoscaler jalan di edisi Starter; kolom konsol tidak cocok dengan API | ✅ `enforcement.check_worker_slot` (402 `WORKER_LIMIT`), `has_feature` (402 `FEATURE_NOT_LICENSED`), node 402 `NODE_LIMIT`, autoscaler hanya di edisi yang punya fitur, GPU di batas `gpu_workers`; 24 tes pytest |
+| Vault | kuota harian | ✅ ditegakkan | ✅ |
+| Guardian | jumlah node | `/node/register` tanpa `max_nodes` | ⏳ fase C2 |
+| Edge | kunci pelanggan, request per hari | tidak ditegakkan | ⏳ |
+| SOC | sumber log, EPS | tidak ditegakkan | ⏳ |
+| Compliance | kerangka kerja | tidak ditegakkan | ⏳ |
+| Sentinel | perangkat (`/v1/devices/authorize`) | tidak ditegakkan | ⏳ |
+| Antivirus | endpoint, guardian_ml | tidak ditegakkan | ⏳ |
+| Studio | request per hari, GPU | tidak ditegakkan | ⏳ |
+| Legal | edisi | ✅ membaca edisi | ✅ |
+
+Semua engine sudah mengurai entitlement bertanda tangan ke `LicenseState.features`; yang kurang adalah penegakan di rute.
+
 ## 30. Perintah pemilik 28 Okt 2026 — Orchestra AI 6 GB bisa diunduh, paket offline Windows
 
 "Lanjut kembangkan axto.io, kenapa orchestra AI tar.gz yg 6gb lebih g bisa di download, dan kenapa yg .exe nya cuma
@@ -1020,3 +1040,64 @@ mb... Harusnya bisa di download di portal member, dan docker exe harusnya 6gb le
 | 30e | Admin → Releases | tautan unduh setiap berkas; grup "AXTO Setup", "Paket offline", dan "EXE lama (tidak ditawarkan ke member)" | ✅ 28 Okt (browser desktop & HP) |
 | 30f | Paket offline di CI | workflow `build-offline.yml`: AXTO-Setup.exe + installer Linux + image tiap aplikasi + README + SHA256 → `builds/latest/offline/axto-<app>-offline-amd64.zip` (multipart ke R2); jalan setelah build image/installer dan manual | ✅ dibangun + dry-run lokal (manifest, README, SHA-256, zip); run pertama setelah merge |
 | 30g | Uji | Go (pilihan image, profil compose, pencarian image lokal), unit dashboard (Range), typecheck, E2E, browser desktop & HP | ✅ 28 Okt: go test, tsc, unit 249/249, E2E 141/141, browser desktop & HP |
+
+## 31. Perintah pemilik 28 Okt 2026 (axto.io) — lelang di atas, Docker dengan lisensi, GPU, uji produksi
+
+REQUESTS 112–114. Dikerjakan berurutan; setiap butir hanya ditandai ✅ bila sudah diuji.
+
+| Butir | Keadaan |
+|---|---|
+| 112 lelang dan harga jual $10 juta di bagian atas beranda | ✅ `components/site/HomeSaleBand.tsx` di atas hero: harga dibaca langsung dari `/api/acquire` (pengaturan admin, bukan konstanta), hitung mundur lelang bila berjalan; lelang dipindah dari tengah ke tepat sesudah hero; band hilang bila sudah terjual |
+| 113 Docker dapat diunduh tetapi tidak bisa dipakai tanpa lisensi | ⏳ Orchestra ✅ (A4); sembilan engine lain — lihat tabel §29.A4 |
+| 113 worker GPU exe sesuai tar.gz | ✅ paket `axto-orchestra-offline-amd64.zip` (6,6 GB, CI run 40654790414): `images/orchestra-worker-gpu.tar.gz` = 6.524.739.678 byte, SHA-256 `d779ea53…b351`, sama dengan `manifest.json` dan `SHA256SUMS.txt`; image diambil apa adanya dari `raw/` R2 tanpa transformasi. `AXTO-Setup.exe` (6,5 MB) memuat installer; image ada di paket yang sama |
+| 113 deteksi GPU, auto dan manual scaling dengan indikator pintar dalam jatah lisensi GPU | ✅ Orchestra: `autoscale_config.py` (aturan konsol), autoscaler memakai beban GPU, batas `gpu_workers`, suhu GPU di heartbeat, rerouting panas, deteksi GPU per node (`/api/nodes/{id}/detect_gpu`); konsol dicek di browser desktop dan HP 
+| 113 deteksi GPU **semua merek** (NVIDIA, AMD, Intel, Apple, Moore Threads, Huawei Ascend, Biren, Iluvatar, MetaX, Enflame, Cambricon, Hygon, Qualcomm, Arm, Matrox, merek lain) | ✅ `orchestra_worker/gpu_inventory.py` dan `installer/gpu.go` memakai aturan yang sama: Linux `lspci` (database PCI dunia) → `/sys/bus/pci` bila lspci tidak ada; Windows `Win32_VideoController` + VRAM dari registry driver (`qwMemorySize`, karena `AdapterRAM` mentok di 4 GB); macOS `system_profiler`; `nvidia-smi`, `rocm-smi`, `xpu-smi` untuk model dan VRAM yang tepat; kartu virtual (Microsoft Basic, QEMU, VMware, VirtIO) tidak dihitung. Kesiapan: NVIDIA lewat runtime CUDA; merek lain lewat Ollama di komputer itu — `/api/ps` `size_vram > 0` dibuktikan, bukan diasumsikan. 27 tes Python + tes Go lintas merek; installer dan `doctor` menampilkan daftar GPU lengkap |
+| 113 container GPU worker untuk AMD (`/dev/kfd`, `/dev/dri`) dan Intel (`/dev/dri`, XPU) | ⏳ compose hanya memesan perangkat NVIDIA; kartu AMD/Intel dipakai lewat Ollama di komputer (sudah bisa), container worker khusus merek ini belum dibuat |
+| 113 auto dan manual scaling dengan indikator pintar dalam jatah lisensi GPU | ✅ Orchestra: `autoscale_config.py` (aturan konsol), autoscaler memakai beban GPU, batas `gpu_workers`, suhu GPU di heartbeat, rerouting panas, deteksi GPU per node (`/api/nodes/{id}/detect_gpu`); konsol dicek di browser desktop dan HP |
+| 114 uji penuh axto.io | ⏳ `npm test` 249/249 ✅; `tsc` ✅; E2E penuh lokal dan CI — lihat catatan commit |
+
+### 31.B Orchestra AI dan GPU worker di situs (REQUESTS 115–116)
+
+Permintaan pemilik 28 Okt: klien bingung apa itu Orchestra AI; GPU worker belum dipromosikan di beranda, termasuk
+harganya; perlu penjelasan jelas dan panduan penggunaan dengan tangkapan layar dan animasi.
+
+| Butir | Keadaan |
+|---|---|
+| Klaim publik yang tidak sesuai kode diperbaiki | ✅ katalog produk dan tagline 10 bahasa tidak lagi menjanjikan endpoint `/v1/chat/completions`, metrics format Grafana, atau budget harian: kode router tidak menyediakannya (`/api/jobs/submit` dilindungi kata sandi konsol, tidak untuk aplikasi klien; `central_ai_pool.py` tidak dipanggil). Integrasi ke Studio dan Vault dihapus dari halaman karena tidak ada kodenya; Guardian tetap (support bot memanggil Orchestra) |
+| Promo di beranda: Orchestra AI dan GPU worker, dengan harga live | ✅ `components/site/OrchestraSpotlight.tsx`: harga dari `/api/editions` (tabel admin), tombol beli dan panduan |
+| Penjelasan dan panduan di `/self-hosted/orchestra` | ✅ `components/site/OrchestraGuide.tsx`: apa itu Orchestra, alur permintaan (animasi CSS, berhenti bila reduced motion), GPU worker dan cara cek `ollama ps` 100% GPU, delapan langkah dengan tangkapan layar konsol nyata, rekaman video penggunaan (MP4) |
+| Bahasa | ✅ promo 10 bahasa; panduan dan teks halaman dalam Inggris dan Indonesia, bahasa lain memakai Inggris (fallback) — terjemahan lengkap belum |
+| Panduan penggunaan untuk sembilan aplikasi lain | ⏳ belum dibuat; satu per satu dengan tangkapan layar dan animasi, mengikuti pola Orchestra |
+| Klien API untuk aplikasi (endpoint OpenAI-compatible dengan kunci per aplikasi) | ⏳ belum ada di kode; dibangun bila disetujui pemilik |
+
+## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
+
+Pemilik, 28 Okt 2026: "Legal AI bukan hanya untuk indonesia, tp seluruh dunia, seluruh profinis, seluruh distrik, dari
+hukum terkecil hingga hukum terberat international."
+
+**Keadaan sekarang (kode):** prompt sistem 11 lapis (`lib/legal/prompt.ts`), 36 workspace, yurisdiksi dengan
+provinsi (`lib/legal/jurisdictions.ts`), pemeriksa sitasi dan pencarian di dokumen pengguna. Belum ada korpus sumber
+hukum primer: jawaban bersandar pada pengetahuan model, dokumen pengguna dan riset web opsional, sehingga nomor pasal
+bisa keliru atau usang. Menambah teks prompt saja tidak menyelesaikan ini.
+
+**Prinsip:** setiap sitasi harus bisa ditunjukkan teksnya dari sumber resmi, dengan tanggal versi; yang tidak bisa
+ditunjukkan ditandai "belum terverifikasi". Cakupan ditampilkan apa adanya per yurisdiksi dan per tingkat.
+
+**Tingkat hukum** (dari terkecil ke terberat): peraturan desa/kabupaten/kota/distrik (perda, ordinance, by-law) →
+provinsi/negara bagian → peraturan pemerintah/menteri → undang-undang → konstitusi → putusan pengadilan →
+hukum regional (EU, ASEAN, AU, OAS) → perjanjian dan konvensi internasional, putusan pengadilan internasional
+(ICJ, ICC, WTO, ECHR, ITLOS).
+
+| Fase | Isi | Keadaan |
+|---|---|---|
+| L1 | Arsitektur korpus di R2 (satu JSON per versi dokumen: yurisdiksi, tingkat, nomor, pasal, teks, URL sumber resmi, tanggal berlaku), indeks dengan `customMetadata`, log ingest append-only, backup harian 35 hari; verifikator sitasi; tes | ⏳ |
+| L2 | Konektor sumber resmi yang terbuka dan bisa dibaca mesin, dijalankan di CI/cron (bukan di browser): legislation.gov.uk (Inggris), EUR-Lex/CELLAR (EU), eCFR dan US Code (AS), JDIH BPK (Indonesia, termasuk perda provinsi dan kabupaten/kota), UN Treaty Collection; negara berikutnya berurutan | ⏳ |
+| L3 | Lapis riset di prompt memakai potongan korpus dengan pinpoint pasal dan tanggal versi; sitasi di jawaban dicocokkan ke korpus | ⏳ |
+| L4 | Set evaluasi per yurisdiksi (pertanyaan, otoritas yang benar); metrik: ketepatan sitasi, sitasi palsu, akurasi; dijalankan di CI | ⏳ |
+| L5 | Peta cakupan publik dan admin: yurisdiksi × tingkat, jumlah dokumen, pembaruan terakhir; jawaban menyebut bila yurisdiksi belum punya sumber terverifikasi | ⏳ |
+| L6+ | Perluasan ke seluruh negara, provinsi dan distrik, sumber demi sumber | ⏳ |
+
+Batas yang jujur: tidak semua negara menerbitkan hukumnya dalam format terbuka; sebagian sumber butuh izin atau
+punya syarat penggunaan yang harus dipatuhi sebelum diambil. Hukum berubah, jadi setiap jawaban memakai tanggal
+"per" dan menyarankan tinjauan advokat untuk keputusan penting.
+

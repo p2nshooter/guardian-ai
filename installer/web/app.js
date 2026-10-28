@@ -22,7 +22,7 @@ const T = {
     keyHint: "Lifetime licence? Paste its installer key (LIFE-…) from axto.io/app/lifetime.", pick: "Which app do you want to install?",
     lifetimeOk: "Lifetime licence for {app} — updates included until {date}. This device is activated automatically.",
     optH: "Optional components", inPackage: "in the offline package", offline: "{n} image(s) come from the offline package next to AXTO Setup — no download needed for them.",
-    gpuFound: "NVIDIA GPU found: {gpu}", gpuNone: "No NVIDIA GPU found on this computer — the GPU worker needs an NVIDIA card with its driver (Docker Desktop uses it through WSL 2)." },
+    gpuFound: "GPU found: {gpu}", gpuNone: "No GPU found on this computer — the GPU worker needs an NVIDIA card with its driver (Docker Desktop uses it through WSL 2)." },
   id: { install: "Instal", manage: "Kelola aplikasi", s1: "Cek komputer", s2: "Kunci lisensi", s3: "Opsi", s4: "Instal",
     h1: "Mari jalankan aplikasi AXTO Anda", p1: "Aplikasi AXTO berjalan di Docker. Di Windows itu Docker Desktop dengan WSL 2 — semuanya kami cek untuk Anda.",
     checking: "Memeriksa…", recheck: "Cek lagi", startDocker: "Jalankan Docker Desktop", continue: "Lanjut", h2: "Masukkan kunci lisensi",
@@ -39,7 +39,7 @@ const T = {
     keyHint: "Lisensi Lifetime? Tempel kunci installer (LIFE-…) dari axto.io/app/lifetime.", pick: "Aplikasi mana yang ingin dipasang?",
     lifetimeOk: "Lisensi Lifetime untuk {app} — pembaruan termasuk sampai {date}. Perangkat ini diaktifkan otomatis.",
     optH: "Komponen opsional", inPackage: "ada di paket offline", offline: "{n} image diambil dari paket offline di sebelah AXTO Setup — tidak perlu diunduh.",
-    gpuFound: "GPU NVIDIA ditemukan: {gpu}", gpuNone: "Tidak ada GPU NVIDIA di komputer ini — worker GPU butuh kartu NVIDIA dengan drivernya (Docker Desktop memakainya lewat WSL 2)." },
+    gpuFound: "GPU ditemukan: {gpu}", gpuNone: "Tidak ada GPU di komputer ini — worker GPU butuh kartu NVIDIA dengan drivernya (Docker Desktop memakainya lewat WSL 2)." },
 };
 let lang = localStorage.getItem("axto_lang") || (/^(id|in)\b/i.test(navigator.language) ? "id" : "en");
 const t = (k, v = {}) => (T[lang][k] || T.en[k] || k).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? "");

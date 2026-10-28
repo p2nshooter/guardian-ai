@@ -10,7 +10,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   en,
   id: {
     guardian: "Keamanan siber AI self-hosted untuk server Anda",
-    orchestra: "Satu endpoint untuk 15+ penyedia AI",
+    orchestra: "Satu konsol untuk kunci AI, worker CPU dan GPU Anda",
     vault: "Redaksi data pribadi sebelum sampai ke model mana pun",
     edge: "AI gateway & manajemen API untuk pelanggan Anda",
     soc: "SIEM + SOAR berbantuan AI",
@@ -22,7 +22,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   ms: {
     guardian: "Keselamatan siber AI hos sendiri untuk pelayan anda",
-    orchestra: "Satu endpoint untuk 15+ penyedia AI",
+    orchestra: "Satu konsol untuk kunci AI, worker CPU dan GPU anda",
     vault: "Redaksi data peribadi sebelum sampai ke mana-mana model",
     edge: "Gerbang AI & pengurusan API untuk pelanggan anda",
     soc: "SIEM + SOAR berbantukan AI",
@@ -34,7 +34,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   de: {
     guardian: "Selbst gehostete KI-Cybersicherheit für Ihre Server",
-    orchestra: "Ein Endpunkt für 15+ KI-Anbieter",
+    orchestra: "Eine Konsole für Ihre KI-Schlüssel sowie CPU- und GPU-Worker",
     vault: "Personenbezogene Daten schwärzen, bevor sie ein Modell erreichen",
     edge: "KI-Gateway & API-Management für Ihre Kunden",
     soc: "KI-gestütztes SIEM + SOAR",
@@ -46,7 +46,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   fr: {
     guardian: "Cybersécurité IA auto-hébergée pour vos serveurs",
-    orchestra: "Un seul endpoint pour 15+ fournisseurs d'IA",
+    orchestra: "Une seule console pour vos clés IA, workers CPU et GPU",
     vault: "Masquez les données personnelles avant qu'elles n'atteignent un modèle",
     edge: "Passerelle IA et gestion d'API pour vos clients",
     soc: "SIEM + SOAR assistés par IA",
@@ -58,7 +58,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   it: {
     guardian: "Cybersicurezza IA self-hosted per i tuoi server",
-    orchestra: "Un solo endpoint per 15+ provider di IA",
+    orchestra: "Una sola console per le chiavi IA, i worker CPU e GPU",
     vault: "Oscura i dati personali prima che raggiungano un modello",
     edge: "Gateway IA e gestione API per i tuoi clienti",
     soc: "SIEM + SOAR assistiti dall'IA",
@@ -70,7 +70,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   zh: {
     guardian: "为您的服务器提供自托管 AI 网络安全",
-    orchestra: "一个端点接入 15+ 家 AI 服务商",
+    orchestra: "一个控制台管理您的 AI 密钥、CPU 与 GPU 工作节点",
     vault: "在数据到达任何模型之前脱敏个人信息",
     edge: "面向您客户的 AI 网关与 API 管理",
     soc: "AI 辅助的 SIEM + SOAR",
@@ -82,7 +82,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   ja: {
     guardian: "サーバー向けのセルフホスト型 AI サイバーセキュリティ",
-    orchestra: "15 以上の AI プロバイダーを 1 つのエンドポイントで",
+    orchestra: "AIキーとCPU・GPUワーカーを一つのコンソールで管理",
     vault: "個人情報をモデルに届く前に墨消し",
     edge: "お客様向けの AI ゲートウェイ & API 管理",
     soc: "AI 支援の SIEM + SOAR",
@@ -94,7 +94,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   hi: {
     guardian: "आपके सर्वरों के लिए सेल्फ़-होस्टेड AI साइबर सुरक्षा",
-    orchestra: "15+ AI प्रदाताओं के लिए एक एंडपॉइंट",
+    orchestra: "एक कंसोल में अपनी AI कुंजियाँ, CPU और GPU वर्कर",
     vault: "किसी भी मॉडल तक पहुँचने से पहले निजी डेटा रिडैक्ट करें",
     edge: "आपके ग्राहकों के लिए AI गेटवे और API प्रबंधन",
     soc: "AI-सहायित SIEM + SOAR",
@@ -106,7 +106,7 @@ export const SH_TAGLINES: Record<Lang, Record<string, string>> = {
   },
   ar: {
     guardian: "أمن سيبراني بالذكاء الاصطناعي مستضاف ذاتيًا لخوادمك",
-    orchestra: "نقطة نهاية واحدة لأكثر من 15 مزوّد ذكاء اصطناعي",
+    orchestra: "وحدة تحكم واحدة لمفاتيح الذكاء الاصطناعي وعمال CPU وGPU",
     vault: "احجب البيانات الشخصية قبل وصولها إلى أي نموذج",
     edge: "بوابة ذكاء اصطناعي وإدارة واجهات API لعملائك",
     soc: "SIEM + SOAR بمساعدة الذكاء الاصطناعي",

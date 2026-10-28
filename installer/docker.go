@@ -24,12 +24,14 @@ type DockerStatus struct {
 	ComposeVersion string `json:"compose_version"`
 	MemoryGB       int    `json:"memory_gb"`
 	CPUs           int    `json:"cpus"`
-	WSL            string `json:"wsl"`       // windows only: "ok" | "missing" | ""
-	Arch           string `json:"arch"`      // Docker engine architecture: "amd64" | "arm64"
-	OSType         string `json:"os_type"`   // "linux" (required) | "windows" (Windows containers mode)
-	GPU            string `json:"gpu"`       // NVIDIA GPU(s) nvidia-smi reports ("" = none / no driver)
-	GPUReady       bool   `json:"gpu_ready"` // containers can use that GPU (Linux: nvidia runtime; Windows: WSL 2)
-	GPUNote        string `json:"gpu_note"`  // why a GPU that exists cannot be used yet, and how to fix it
+	WSL            string `json:"wsl"`        // windows only: "ok" | "missing" | ""
+	Arch           string `json:"arch"`       // Docker engine architecture: "amd64" | "arm64"
+	OSType         string `json:"os_type"`    // "linux" (required) | "windows" (Windows containers mode)
+	GPU            string `json:"gpu"`        // every GPU of every brand, one line ("" = none found)
+	GPUs           []GPU  `json:"gpus"`       // the same, as a list (brand, model, VRAM, source)
+	GPUReady       bool   `json:"gpu_ready"`  // the GPU worker's container can use an NVIDIA GPU (Linux: nvidia runtime; Windows: WSL 2)
+	OllamaGPU      bool   `json:"ollama_gpu"` // the model server here already runs a model on a GPU (any brand)
+	GPUNote        string `json:"gpu_note"`   // why a GPU that exists cannot be used by the GPU worker yet, and what works instead
 	DesktopPath    string `json:"desktop_path"`
 	Ready          bool   `json:"ready"`
 	Problem        string `json:"problem"`
@@ -82,7 +84,9 @@ func engineArch(a string) string {
 }
 
 func CheckDocker(ctx context.Context) DockerStatus {
-	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe(), GPU: DetectGPU(ctx)}
+	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe()}
+	s.GPUs = DetectGPUs(ctx)
+	s.GPU = gpuNames(s.GPUs)
 	c, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 
@@ -136,8 +140,8 @@ func CheckDocker(ctx context.Context) DockerStatus {
 		s.FixURL = "https://docs.docker.com/desktop/troubleshoot-and-support/faqs/windowsfaqs/"
 		return s
 	}
-	if s.GPU != "" {
-		s.GPUReady, s.GPUNote = gpuUsable(runtime.GOOS, func() string {
+	if len(s.GPUs) > 0 {
+		s.GPUReady, s.GPUNote, s.OllamaGPU = gpuReadiness(c, s.GPUs, runtime.GOOS, func() string {
 			out, _ := dockerCmd(c, "info", "--format", "{{json .Runtimes}}")
 			return out
 		})
@@ -165,29 +169,23 @@ func CheckDocker(ctx context.Context) DockerStatus {
 	return s
 }
 
-// DetectGPU names the NVIDIA GPUs the driver reports, e.g. "NVIDIA GeForce RTX 4090 (24564 MiB)".
-// Docker Desktop hands them to containers through WSL 2; on Linux the
-// nvidia-container-toolkit does. "" = no NVIDIA GPU or no driver.
-func DetectGPU(ctx context.Context) string {
-	c, cancel := context.WithTimeout(ctx, 8*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(c, "nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader")
-	hideWindow(cmd)
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-	var gpus []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		f := strings.SplitN(line, ",", 2)
-		if name := strings.TrimSpace(f[0]); name != "" {
-			if len(f) == 2 {
-				name += " (" + strings.TrimSpace(f[1]) + ")"
-			}
-			gpus = append(gpus, name)
+// gpuReadiness says whether the GPU worker can use a GPU here. Its container uses NVIDIA
+// CUDA; any other brand is used through the model server on this computer (Ollama), which
+// is reported, never assumed.
+func gpuReadiness(ctx context.Context, gpus []GPU, goos string, runtimes func() string) (ready bool, note string, ollamaOnGPU bool) {
+	reachable, onGPU, _ := OllamaOnGPU(ctx)
+	ollamaOnGPU = reachable && onGPU
+	names := gpuNames(gpus)
+	for _, g := range gpus {
+		if g.Vendor == "nvidia" {
+			ready, note = gpuUsable(goos, runtimes)
+			return ready, note, ollamaOnGPU
 		}
 	}
-	return strings.Join(gpus, " + ")
+	if ollamaOnGPU {
+		return false, names + ": the model server on this computer already runs its models on the GPU. Add an Ollama worker in Orchestra → Workers (provider Ollama) to use it. The GPU worker container itself needs an NVIDIA GPU (CUDA).", true
+	}
+	return false, names + " found. Install Ollama (https://ollama.com), run a model once (`ollama run llama3.2`) and check that `ollama ps` shows 100% GPU. Then add an Ollama worker in Orchestra → Workers to use this GPU.", false
 }
 
 const nvidiaToolkitURL = "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html"

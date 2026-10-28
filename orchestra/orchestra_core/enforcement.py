@@ -139,10 +139,60 @@ def require_active():
         raise EnforcementError(state.get("status", "UNKNOWN"), state.get("error") or "Licence not active")
 
 
+MANAGE_URL = "https://axto.io/app/self-hosted"
+
+# What each switchable feature is called on screen (editions: dashboard/lib/editions.ts).
+FEATURE_NAMES = {"autoscaler": "Autoscaling", "federation": "Federation", "cost_analytics": "Cost analytics",
+                 "gpu_workers": "GPU workers"}
+
+
+def has_feature(feature: str) -> bool:
+    """A feature is included unless the signed licence switches it off. Lower
+    editions carry `<feature>=false` (Starter: autoscaler, federation,
+    cost_analytics); top editions and older licences simply list everything."""
+    if _validator is None or not _validator.is_operational():
+        return False
+    state = _validator.current_state()
+    return (state.features or {}).get(feature, True) is not False if state else False
+
+
 def require_feature(feature: str):
     require_active()
-    if feature not in get_enforcement_state().get("features", []):
-        raise EnforcementError("FEATURE_NOT_LICENSED", f"'{feature}' is not included in your licence")
+    if not has_feature(feature):
+        name = FEATURE_NAMES.get(feature, feature)
+        raise EnforcementError("FEATURE_NOT_LICENSED",
+                               f"{name} is not included in your edition ({get_enforcement_state().get('tier')}). "
+                               f"Upgrade at {MANAGE_URL}")
+
+
+def worker_counts(workers) -> dict:
+    """Workers per type, as registered in the workers table (column worker_type). A worker
+    paused for heat or draining still holds its slot; only offline ones (no heartbeat) do not."""
+    out = {"cpu": 0, "gpu": 0}
+    for w in workers:
+        t = w.get("worker_type")
+        if t in out and w.get("status", "active") != "offline":
+            out[t] += 1
+    return out
+
+
+def worker_limit(worker_type: str) -> int:
+    state = get_enforcement_state()
+    return int(state.get("gpu_workers" if worker_type == "gpu" else "cpu_workers", 0) or 0)
+
+
+def check_worker_slot(worker_type: str, workers) -> None:
+    """Refuse a new worker beyond the edition's limit (Starter 10, Professional 50, Enterprise unlimited)."""
+    require_active()
+    if worker_type not in ("cpu", "gpu"):
+        raise EnforcementError("BAD_WORKER_TYPE", f"Unknown worker type '{worker_type}' (cpu or gpu)")
+    if worker_type == "gpu" and not has_feature("gpu_workers"):
+        require_feature("gpu_workers")
+    used, limit = worker_counts(workers)[worker_type], worker_limit(worker_type)
+    if used >= limit:
+        raise EnforcementError("WORKER_LIMIT",
+                               f"{worker_type.upper()} worker limit reached ({used}/{limit} for your edition). "
+                               f"Remove an idle worker or upgrade at {MANAGE_URL}")
 
 
 async def _use_key(key: str) -> dict:

@@ -306,3 +306,28 @@
 @keyframes pwa-drop { from { opacity: 0; transform: translateY(-8px); } }
 @keyframes pwa-nudge { 0%, 80%, 100% { transform: none; } 88% { transform: translateY(2px); } 94% { transform: translateY(-1px); } }
 @media (max-width: 420px) { .pwa-bar-text span { display: none; } .pwa-bar-inner { gap: .6rem; padding: .45rem .75rem; } }
+
+/* Orchestra AI request flow (components/site/OrchestraGuide.tsx): a dot travels along each track.
+   Stops for visitors who ask for reduced motion. */
+.orch-dot {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-top: -0.3rem;
+  border-radius: 9999px;
+  background: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+  animation: orch-travel 3.2s ease-in-out infinite;
+}
+.orch-dot-back { background: #059669; box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15); }
+@keyframes orch-travel {
+  0% { left: 0; opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: calc(100% - 0.6rem); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orch-dot { animation: none; display: none; }
+}

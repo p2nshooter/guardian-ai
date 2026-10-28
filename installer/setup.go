@@ -495,7 +495,7 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 			if d.GPUNote != "" {
 				return nil, errors.New(d.GPUNote)
 			}
-			return nil, fmt.Errorf("no NVIDIA GPU found on this computer (nvidia-smi) — %s needs one with its driver; install without it, or install the NVIDIA driver first", im.Label)
+			return nil, fmt.Errorf("no NVIDIA GPU found on this computer — %s needs an NVIDIA card with its driver (CUDA); install without it, or install the NVIDIA driver first", im.Label)
 		}
 	}
 	o.Profiles = nil

@@ -30,7 +30,7 @@ log = logging.getLogger("orchestra.db")
 
 DATA_DIR       = Path(os.environ.get("DATA_DIR", "./data"))
 DB_PATH        = DATA_DIR / "orchestra.db"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;
@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS workers (
     circuit_state  TEXT    DEFAULT 'closed',
     circuit_open_at REAL   DEFAULT NULL,
     idle_since     REAL    DEFAULT NULL,
+    temp_c         REAL    DEFAULT NULL,
     last_heartbeat REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     registered_at  REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
@@ -324,6 +325,13 @@ def init_db() -> None:
                     log.info("DB migration v4: added workers.worker_url")
                 except Exception:
                     pass  # column may already exist on fresh install from new SCHEMA
+            # v5: GPU temperature from the worker heartbeat (thermal rerouting)
+            if current < 5:
+                try:
+                    c.execute("ALTER TABLE workers ADD COLUMN temp_c REAL DEFAULT NULL")
+                    log.info("DB migration v5: added workers.temp_c")
+                except Exception:
+                    pass
             c.execute("INSERT INTO _schema_version(version) VALUES(?)", (SCHEMA_VERSION,))
         log.info(f"Orchestra DB schema v{SCHEMA_VERSION} applied")
     with _write_tx() as c:
@@ -490,14 +498,15 @@ def upsert_worker(w: Dict) -> None:
        w)
 
 
-def heartbeat_worker(worker_id: str, load_pct: int, tasks_active: int) -> bool:
+def heartbeat_worker(worker_id: str, load_pct: int, tasks_active: int,
+                     temp_c: Optional[float] = None, status: str = "active") -> bool:
     return ex(
-        """UPDATE workers SET last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status='active',
-           load_pct=?,tasks_active=?,
+        """UPDATE workers SET last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status=?,
+           load_pct=?,tasks_active=?,temp_c=COALESCE(?,temp_c),
            idle_since=CASE WHEN ?> 0 THEN NULL
                       ELSE COALESCE(idle_since,((julianday('now') - 2440587.5) * 86400.0)) END
            WHERE id=?""",
-        (load_pct, tasks_active, tasks_active, worker_id)) > 0
+        (status, load_pct, tasks_active, temp_c, tasks_active, worker_id)) > 0
 
 
 def update_worker_stats(worker_id: str, latency_ms: float, success: bool) -> None:
@@ -655,6 +664,23 @@ def get_performance_stats(hours: int = 24) -> Dict:
 def record_metric(metric: str, value: float, labels: dict = None) -> None:
     ex("INSERT INTO metrics(metric,value,labels) VALUES(?,?,?)",
        (metric, value, json.dumps(labels or {})))
+
+
+def record_cost_event(provider_id: str, model: str, input_tokens: int, output_tokens: int,
+                      cost_usd: float, caller_id: str = "console", job_id: str = "") -> None:
+    """Spend outside the job queue (the console's Local Chat / Multi-AI tester) — still in the Cost Tracker."""
+    if cost_usd <= 0:
+        return
+    ex("""INSERT INTO cost_events(job_id,provider_id,model,input_tokens,output_tokens,cost_usd,caller_id)
+          VALUES(?,?,?,?,?,?,?)""", (job_id, provider_id, model, input_tokens, output_tokens, cost_usd, caller_id))
+
+
+def count_metrics(metrics: List[str], seconds: int = 86400) -> int:
+    """How many times these metrics were recorded in the last `seconds` (e.g. scale events in 24 h)."""
+    marks = ",".join("?" * len(metrics))
+    row = q1(f"SELECT COUNT(*) AS n FROM metrics WHERE metric IN ({marks}) "
+             f"AND ts>((julianday('now') - 2440587.5) * 86400.0)-?", (*metrics, seconds))
+    return int((row or {}).get("n") or 0)
 
 
 def prune_metrics(days: int = 7) -> int:
