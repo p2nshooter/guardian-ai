@@ -141,6 +141,20 @@ export interface AuctionBidderDoc {
   code_hash: string; code_expires: string; code_attempts: number; code_sent_at: string; created_at: string; updated_at: string;
 }
 
+/**
+ * One LinkedIn post by the auto-poster (docs/BLUEPRINT-V4.md §35). A daily post's id is
+ * "li_<brand>_<YYYYMMDD>" and is created once, so overlapping cron ticks never post twice;
+ * a post made by hand is "li_<brand>_m_<ulid>".
+ */
+export interface SocialPostDoc {
+  id: string; network: string; brand: string; day: string; kind: string; post_id: string; org: string;
+  status: string; attempts: number; definite: number; urn: string; url: string; error: string;
+  /** Random per claim: the store treats an identical re-create as the same write, so two ticks never both "create" it. */
+  claim: string;
+  by: string; created_at: string; updated_at: string;
+}
+const socialSummary = (p: SocialPostDoc) => ({ brand: p.brand, day: p.day, kind: p.kind, post_id: p.post_id, org: p.org, status: p.status, attempts: p.attempts, url: p.url, error: (p.error || "").slice(0, 300), by: p.by, created_at: p.created_at, updated_at: p.updated_at });
+
 /** Pending orders oldest first; paid orders by the moment they were paid (revenue, investor statements). */
 const isSandbox = (o: OrderDoc) => { try { return JSON.parse(o.meta || "{}").env === "sandbox"; } catch { return false; } };
 
@@ -333,6 +347,11 @@ export function collections(store: Store) {
       ],
     }),
     auctionBidders: store.collection<AuctionBidderDoc>({ name: "auction_bidders" }),
+    // Admin → LinkedIn reads the log from the summaries, newest first.
+    socialPosts: store.collection<SocialPostDoc>({
+      name: "social_posts",
+      indexes: [{ name: "all", key: () => "all", sort: (p) => newestFirst(p.created_at), meta: socialSummary }],
+    }),
   };
 }
 
