@@ -12,7 +12,7 @@ test("homepage spotlight: every language has every line, nothing empty", () => {
   for (const lang of Object.keys(ORCH_SPOT)) {
     const got = Object.keys(ORCH_SPOT[lang as keyof typeof ORCH_SPOT]).sort();
     assert.deepEqual(got, keys, `keys of ${lang}`);
-    for (const k of keys) assert.ok(String((ORCH_SPOT as Record<string, Record<string, string>>)[lang][k]).trim().length > 0, `${lang}.${k}`);
+    for (const k of keys) assert.ok(String((ORCH_SPOT as unknown as Record<string, Record<string, string>>)[lang][k]).trim().length > 0, `${lang}.${k}`);
   }
 });
 
