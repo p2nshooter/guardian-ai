@@ -40,6 +40,12 @@ linkedin.com is outside the session's network. A page admin uploads these in a f
 **4. Connect the sites** — once the page URLs are final, the footers of axto.io, xaa.es and ulyah.com link to them
 (a small change in each site; tell Claude the final URLs).
 
+## Daily auto-post (REQUESTS 123)
+Once the pages exist, axto.io posts to them by itself: one post a day for axto.io and one for xaa.es, from a library of 28
+promotion posts per brand with images and hashtags. Set it up in **Admin → LinkedIn auto-post** (`/admin/linkedin`). The
+steps are in [`docs/admin/LINKEDIN_AUTOPOST.md`](../admin/LINKEDIN_AUTOPOST.md). The library images are drawn with the same
+design as this kit (`templates.mjs`) by `build-library.mts`.
+
 ## Checklist
 - [ ] AXTO Digital Global: logo, cover, tagline, About, details, specialties, button, posts 1–6
 - [ ] axto.io: page created, logo, cover, tagline, About, details, specialties, button, posts 1–8
@@ -47,3 +53,4 @@ linkedin.com is outside the session's network. A page admin uploads these in a f
 - [ ] The three pages linked as affiliated pages
 - [ ] Organization size, founded year, headquarters and phone filled in by the owner on all three (not guessed here)
 - [ ] Site footers link to the pages
+- [ ] Admin → LinkedIn auto-post connected, a page chosen for each brand, daily posting on

@@ -482,7 +482,8 @@ bukan dari perkiraan.
 | 17 | Orchestra AI 6 GB bisa diunduh + paket offline Windows (28 Okt 2026, `REQUESTS.md` 110, §30) | GPU di AXTO Setup ✅ · mode offline ✅ · unduhan bisa dilanjutkan ✅ · portal member ✅ · admin releases ✅ · paket offline CI ✅ (tayang setelah merge) · uji ✅ | 7/7 | **100 %** |
 | 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/11 | **73 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
-| | **Total** (bobot = jumlah fase) | | **71/124** | **≈ 57 %** |
+| 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
+| | **Total** (bobot = jumlah fase) | | **74/129** | **≈ 57 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1190,3 +1191,55 @@ Temuan (semua sudah diperbaiki):
 
 Bukti: tes sapu rute gagal pada kode lama (contoh nyata sebelum perbaikan: SOC tanpa kunci menjawab `/v1/dashboard` dari
 engine; Vault `/vault/policies` 200; Edge `/edge/plans` 200).
+
+## 35. Posting LinkedIn otomatis: dua posting sehari, axto.io dan xaa.es (REQUESTS 123)
+
+Pemilik, 28 Okt 2026: "auto post otomatis setiap hari ke linked, 2 post tiap hari dari xaa.es & axto.io, bikinin
+promosi yg di posting setiap hari termasuk hastag nya".
+
+**Rancangan**
+- **Admin → LinkedIn** (`/admin/linkedin`). Client ID dan Client Secret aplikasi LinkedIn disimpan di penyimpanan
+  terenkripsi (`secure/linkedin.json.enc`, AES-256-GCM, sama seperti kredensial pembayaran). Admin hanya pernah melihat
+  versi bertopeng. Token akses dan refresh token juga hanya ada di dokumen terenkripsi itu.
+- **Hubungkan**: tombol "Connect LinkedIn" membuka OAuth 3-legged LinkedIn (`/oauth/v2/authorization`). Callback
+  `https://axto.io/api/admin/linkedin/callback` hanya untuk admin, dan `state` acak dicek terhadap cookie httpOnly.
+  Scope bawaan `w_organization_social rw_organization_admin`, bisa diubah di Admin.
+- **Halaman tujuan per merek**: axto.io dan xaa.es masing-masing punya ID organisasi. "Find my pages" memakai
+  `organizationAcls` untuk mendaftar halaman yang dikelola akun itu. Sebelum halaman axto.io / xaa.es dibuat, keduanya
+  boleh memakai halaman AXTO Digital Global.
+- **Jadwal**: dua posting sehari, axto.io pukul 09:00 WIB dan xaa.es pukul 13:00 WIB, bisa diubah per merek. Detak cron
+  setiap menit (`/api/cron/tick`) memposting sekali per merek per hari. Penguncinya dokumen R2 `li_<merek>_<tanggal>`
+  yang dibuat sekali (create-once), sehingga detak yang tumpang tindih tidak pernah memposting dua kali. Gagal sebelum
+  posting dibuat dicoba lagi paling banyak 3 kali dengan jeda 15 menit. Gagal yang hasilnya tidak pasti tidak dicoba lagi
+  otomatis, supaya tidak ada posting ganda.
+- **Pustaka promosi** (`lib/linkedin/library.ts`): 28 posting per merek, cukup 4 minggu tanpa pengulangan, lalu berputar.
+  Setiap posting punya gambar 1200×627 (`public/social/linkedin/<merek>/<id>.jpg`, dibuat oleh
+  `docs/linkedin/build-kit.mjs`), teks bahasa Inggris, tautan ke halaman yang sesuai, dan hashtag. Isinya mengikuti
+  katalog dan kode (tidak ada klaim pendapatan, pengguna atau angka yang tidak benar). Admin bisa mematikan posting
+  tertentu, melihat pratinjau, dan "posting sekarang".
+- **Format LinkedIn**: teks dikirim lewat Posts API (`POST /rest/posts`, header `LinkedIn-Version` yang bisa diubah di
+  Admin). Karakter khusus little-text di-escape, hashtag ditulis sebagai `{hashtag|\#|Tag}`. Gambar diunggah lewat
+  Images API (`initializeUpload` lalu PUT).
+- **Token**: token akses berlaku sekitar 60 hari. Bila aplikasi diberi refresh token, token diperbarui otomatis 7 hari
+  sebelum habis. Bila tidak, admin menerima e-mail pengingat untuk menghubungkan ulang.
+- **Log**: setiap posting (otomatis atau manual) tercatat di R2 `social_posts` dengan status, URN dan tautan posting,
+  atau galatnya. Setiap tindakan admin masuk audit log.
+
+**Batasan LinkedIn (jujur)**: memposting atas nama halaman perusahaan butuh izin `w_organization_social` dari produk
+**Community Management API**. LinkedIn harus menyetujui produk itu untuk aplikasi (Development tier lalu Standard tier).
+Akun yang menghubungkan harus admin halaman. Tanpa persetujuan itu, LinkedIn menolak saat Connect dengan
+`unauthorized_scope_error`, dan Admin menampilkan pesan itu apa adanya.
+
+**Langkah pemilik**:
+1. Di LinkedIn Developer Portal → aplikasi → *Auth*, tambahkan redirect URL di atas.
+2. Ajukan produk *Community Management API*.
+3. Buat Client Secret baru, karena secret lama sempat ditulis di chat.
+4. Isi Client ID dan secret baru di Admin → LinkedIn, lalu tekan Connect.
+5. Pilih halaman untuk tiap merek, lalu aktifkan.
+
+**Tes**:
+- Unit: escape little-text, hashtag, pemilihan posting harian, jadwal WIB, kunci create-once, retry, refresh token, dan
+  alur posting penuh dengan `fetch` palsu (gambar diunggah, posting dibuat, URN tercatat).
+- E2E: halaman Admin → LinkedIn dan API-nya (kredensial bertopeng, pustaka, pratinjau).
+- Pengujian langsung ke api.linkedin.com tidak bisa dilakukan dari sesi Claude (jaringan memblokir linkedin.com). Uji
+  pertama berjalan di produksi setelah pemilik menekan Connect.

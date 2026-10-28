@@ -6,6 +6,8 @@
 [//]: # (==============================================================================)
 # 🚀 AXTO AutoPost — Panduan Setup Lengkap
 
+> **Arsip.** Panduan ini menjelaskan sistem AutoPost lama (Ayrshare, situs iklan baris) yang kodenya sudah tidak ada di repositori. Posting LinkedIn otomatis yang berjalan sekarang ada di [`LINKEDIN_AUTOPOST.md`](LINKEDIN_AUTOPOST.md) (Admin → LinkedIn auto-post).
+
 ## Daftar Isi
 1. [Overview](#overview)
 2. [Database Setup](#database-setup)
