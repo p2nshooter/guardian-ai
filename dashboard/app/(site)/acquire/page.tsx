@@ -18,7 +18,7 @@ import { DEVCOPY } from "@/lib/developers-copy";
 const DESCRIPTION = "Acquire AXTO outright: the axto.io domain, full source code, seven live cloud AI apps (Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst, Prompt Library), ten self-hosted products, the AXTO Connect real-time developer platform, Local Mode, worldwide payments and licensing, ten languages and the brand — with a buyer's guide, escrow option and an automatic administrator handover.";
 
 export const metadata: Metadata = pageMeta({
-  title: "Acquire AXTO — enterprise AI platform for sale by auction (bids from US$10M)",
+  title: "Acquire AXTO — enterprise AI platform for sale by auction (from US$10M, rising weekly)",
   description: DESCRIPTION,
   path: "/acquire",
   keywords: ["buy AI SaaS business", "AI platform for sale", "AI startup acquisition", "SaaS acquisition", "buy software company", "enterprise AI platform", "legal AI platform for sale", "turnkey AI business", "jual beli website AI", "akuisisi startup AI"],
@@ -36,7 +36,8 @@ export default function AcquirePage() {
     brand: { "@type": "Brand", name: SITE.name },
     category: "Business / Software company acquisition",
     offers: {
-      // Sold by auction (§34): every round opens between US$10M and US$100M, so the floor is all a static page can state.
+      // Sold by auction (§34, REQUESTS 125): the opening bid started at US$10M on 28 Oct 2026 and rises every week; a
+      // static page states the floor it started from, and the live minimum is on the page and in /api/acquire.
       "@type": "Offer", priceCurrency: "USD", priceSpecification: { "@type": "PriceSpecification", minPrice: OPEN_MIN_USD, priceCurrency: "USD" },
       availability: "https://schema.org/InStock", url: absoluteUrl("/acquire#bid"),
       seller: { "@id": `${SITE.url}/#organization` }, acceptedPaymentMethod: ["PayPal", "Cryptocurrency", "Bank transfer"].map((name) => ({ "@type": "PaymentMethod", name })),

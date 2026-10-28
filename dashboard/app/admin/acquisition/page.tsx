@@ -16,7 +16,7 @@ import type { SaleSettings } from "@/lib/acquisition";
 interface OrderRow { id: string; email: string; amountUsd: number; amountIdr: number; gateway: string; status: string; invoiceNo: string; createdAt: string; paidAt: string; env: string; buyer: { company?: string; name?: string; phone?: string; message?: string }; proof: any }
 interface Round { id: string; no: number; status: string; open_usd: number; step_usd: number; starts_at: string; ends_at: string; bids_count: number; high_usd: number; high_name: string; winner_name: string; winner_email: string; winner_usd: number; pay_by: string; order_id: string; next_min_usd: number; note: string }
 interface Auction {
-  range: { min: number; max: number }; round: Round | null;
+  range: { min: number; max: number }; ladder: { nowUsd: number; nextRiseAt: string }; round: Round | null;
   bids: { id: string; seq: number; name: string; email: string; company: string; amountUsd: number; at: string }[];
   rounds: { id: string; no: number; status: string; open_usd: number; bids_count: number; high_usd: number; winner_usd: number; starts_at: string; ends_at: string }[];
   bidders: { id: string; status: string; email: string; display_name: string; company: string; country: string; phone: string; message: string; created_at: string }[];
@@ -66,7 +66,6 @@ export default function AdminAcquisitionPage() {
   const set = (p: Partial<SaleSettings>) => setS({ ...s, ...p });
   const setA = (p: Partial<SaleSettings["auction"]>) => setS({ ...s, auction: { ...s.auction, ...p } });
   const A = d.auction;
-  const draw = () => Math.round((A.range.min + Math.random() * (A.range.max - A.range.min)) / 100_000) * 100_000;
   const setBank = (p: Partial<SaleSettings["bank"]>) => setS({ ...s, bank: { ...s.bank, ...p } });
 
   return (
@@ -143,18 +142,21 @@ export default function AdminAcquisitionPage() {
       </div>
       {s.mode === "auction" ? (
         <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2" data-testid="sale-auction-admin">
-          <Section title="Auction settings" description="Owner, 28 Oct 2026: the opening bid is random between US$10M and US$100M. It is drawn once when a round opens and stored, so every visitor sees the same figure.">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <input type="checkbox" className="accent-brand-600" checked={s.auction.randomOpen} onChange={(e) => setA({ randomOpen: e.target.checked })} data-testid="sale-random-open" />
-              Draw a new random opening bid (US$10M–100M) for every round
-            </label>
+          <Section title="Auction settings" description="Owner, 28 Oct 2026 (REQUESTS 125): the opening bid starts at US$10M and rises every week — counted from day one through every round, the same for every visitor.">
+            <p className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700" data-testid="sale-ladder-now">
+              Opening bid today <b>{usd(A.ladder.nowUsd)}</b>{A.ladder.nextRiseAt ? <> · next rise to <b>{usd(A.ladder.nowUsd + s.auction.weeklyUsd)}</b> on {A.ladder.nextRiseAt.slice(0, 16).replace("T", " ")} UTC</> : " · flat (no weekly rise)"}
+            </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="block text-sm font-semibold text-slate-700">Opening bid when not drawn (USD)
-                <div className="mt-1 flex gap-2">
-                  <input className="input min-w-0 flex-1" inputMode="numeric" disabled={s.auction.randomOpen} value={s.auction.openUsd ? String(s.auction.openUsd) : ""} placeholder="10000000 – 100000000"
-                    onChange={(e) => setA({ openUsd: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })} data-testid="sale-open" />
-                  <button type="button" className="btn-secondary" disabled={s.auction.randomOpen} onClick={() => setA({ openUsd: draw() })} title="Draw a random figure in the range">🎲</button>
-                </div>
+              <label className="block text-sm font-semibold text-slate-700">Opening bid on day one (USD)
+                <input className="input mt-1" inputMode="numeric" value={String(s.auction.startUsd)} placeholder="10000000 – 100000000"
+                  onChange={(e) => setA({ startUsd: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })} data-testid="sale-start-usd" />
+              </label>
+              <label className="block text-sm font-semibold text-slate-700">Weekly rise (USD, 0 = flat)
+                <input className="input mt-1" inputMode="numeric" value={String(s.auction.weeklyUsd)}
+                  onChange={(e) => setA({ weeklyUsd: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })} data-testid="sale-weekly-usd" />
+              </label>
+              <label className="block text-sm font-semibold text-slate-700">Day one (from 00:00 WIB)
+                <input className="input mt-1" type="date" value={s.auction.from} onChange={(e) => setA({ from: e.target.value })} data-testid="sale-from" />
               </label>
               <label className="block text-sm font-semibold text-slate-700">Minimum raise (USD)
                 <input className="input mt-1" inputMode="numeric" value={String(s.auction.stepUsd)} onChange={(e) => setA({ stepUsd: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })} />
@@ -177,14 +179,14 @@ export default function AdminAcquisitionPage() {
               <input type="checkbox" className="accent-brand-600" checked={s.auction.approval} onChange={(e) => setA({ approval: e.target.checked })} data-testid="sale-approval" />
               I approve every bidder before they can bid
             </label>
-            <p className="mt-2 text-xs text-slate-500">Changes apply to the next round; the running round keeps its opening bid, raise and deadline.</p>
+            <p className="mt-2 text-xs text-slate-500">The weekly ladder applies at once, also to the running round. The raise, length, anti-snipe and payment window apply to the next round; the running round keeps its own.</p>
           </Section>
 
           <Section title={A.round ? `Round ${A.round.no} — ${A.round.status.replace("_", " ")}` : "No round yet"} description="The first round opens by itself within a minute of the sale being open in auction mode.">
             {A.round ? (
               <div data-testid="sale-round">
                 <dl className="grid grid-cols-2 gap-3 text-sm">
-                  <div><dt className="text-xs text-slate-500">Opening bid</dt><dd className="font-bold">{usd(A.round.open_usd)}</dd></div>
+                  <div><dt className="text-xs text-slate-500">Opening bid today</dt><dd className="font-bold">{usd(A.ladder.nowUsd)} <span className="text-xs font-normal text-slate-500">(opened at {usd(A.round.open_usd)})</span></dd></div>
                   <div><dt className="text-xs text-slate-500">High bid</dt><dd className="font-bold">{A.round.bids_count ? `${usd(A.round.high_usd)} · ${A.round.high_name}` : "—"}</dd></div>
                   <div><dt className="text-xs text-slate-500">Bids</dt><dd className="font-bold">{A.round.bids_count}</dd></div>
                   <div><dt className="text-xs text-slate-500">Next bid from</dt><dd className="font-bold">{usd(A.round.next_min_usd)}</dd></div>

@@ -1,5 +1,6 @@
-/* AXTO — the site-sale auction (docs/BLUEPRINT-V4.md §34, REQUESTS 120): the
- * random opening bid in the owner's US$10M–100M range, the bid rules, anti-snipe,
+/* AXTO — the site-sale auction (docs/BLUEPRINT-V4.md §34, REQUESTS 120 and 125):
+ * the weekly ladder of the opening bid (US$10M from 28 Oct 2026, +US$100,000 a
+ * week, through every round), the bid rules, anti-snipe,
  * bidder registration and approval, races between bids, closing a round, the
  * winner-only checkout, a paid round, passing on, and the next round after an
  * unsold one. Run: npm test */
@@ -8,58 +9,71 @@ import assert from "node:assert/strict";
 import { testData } from "./helpers/data";
 import { SALE_DEFAULTS, saveSale, sanitizeSale } from "../lib/acquisition";
 import {
-  MAX_BID_USD, OPEN_MAX_USD, OPEN_MIN_USD, SALE_AUCTION_DEFAULTS, closeDueRound, decideBidder, latestRound, myAuction, nextMinBid, openingFor,
-  parseBid, passRound, placeSaleBid, publicRound, randomOpening, registerBidder, roundBids, saleAuctionTick, saleBidProblem, saleRoundPaid,
+  MAX_BID_USD, SALE_AUCTION_DEFAULTS, closeDueRound, decideBidder, ladderPrice, ladderStart, latestRound, myAuction, nextMinBid, nextRiseAt,
+  parseBid, passRound, placeSaleBid, publicRound, registerBidder, roundBids, saleAuctionTick, saleBidProblem, saleRoundPaid,
   sanitizeSaleAuction, startRound, winnerCheckout, type RoundState,
 } from "../lib/sale-auction";
 
-test("opening bid: random between US$10M and US$100M to the nearest US$100,000, or the admin's own figure", () => {
-  assert.equal(randomOpening(() => 0), OPEN_MIN_USD);
-  assert.equal(randomOpening(() => 0.999999), OPEN_MAX_USD);
-  for (let i = 0; i < 500; i++) {
-    const v = randomOpening();
-    assert.ok(v >= 10_000_000 && v <= 100_000_000 && v % 100_000 === 0, String(v));
-  }
-  assert.equal(openingFor({ ...SALE_AUCTION_DEFAULTS, randomOpen: false, openUsd: 37_250_000 }), 37_300_000);
-  assert.equal(openingFor({ ...SALE_AUCTION_DEFAULTS, randomOpen: false, openUsd: 0 }, () => 0.5), 55_000_000, "no figure set: drawn");
-  assert.equal(openingFor({ ...SALE_AUCTION_DEFAULTS, randomOpen: true, openUsd: 20_000_000 }, () => 0.5), 55_000_000, "random wins when switched on");
+const L = SALE_AUCTION_DEFAULTS;
+const WEEK = 7 * 86_400_000;
+
+test("opening bid: US$10M from 28 Oct 2026 (00:00 WIB), +US$100,000 for every full week", () => {
+  const day1 = ladderStart(L);
+  assert.equal(new Date(day1).toISOString(), "2026-10-27T17:00:00.000Z", "00:00 in Jakarta");
+  assert.equal(ladderPrice(L, day1 - 1), 10_000_000, "never below the start");
+  assert.equal(ladderPrice(L, day1), 10_000_000);
+  assert.equal(ladderPrice(L, day1 + WEEK - 1), 10_000_000);
+  assert.equal(ladderPrice(L, day1 + WEEK), 10_100_000, "week one ends 4 Nov");
+  assert.equal(ladderPrice(L, day1 + 10 * WEEK + 3), 11_000_000);
+  assert.equal(nextRiseAt(L, day1 + 1), "2026-11-03T17:00:00.000Z");
+  assert.equal(nextRiseAt({ ...L, weeklyUsd: 0 }, day1 + 1), "", "a flat opening bid never rises");
 });
 
 test("settings: only valid values are kept; the sale defaults to an auction", () => {
   assert.equal(SALE_DEFAULTS.mode, "auction");
-  const a = sanitizeSaleAuction({ openUsd: 5_000_000, stepUsd: 10, days: 400, snipeMinutes: "15", payDays: 3, approval: false, randomOpen: "yes" });
-  assert.equal(a.openUsd, 0, "below the owner's range");
+  const a = sanitizeSaleAuction({ startUsd: 5_000_000, weeklyUsd: 50_000, from: "28/10/2026", stepUsd: 10, days: 400, snipeMinutes: "15", payDays: 3, approval: false });
+  assert.equal(a.startUsd, 10_000_000, "never below the owner's US$10M");
+  assert.equal(a.weeklyUsd, 50_000);
+  assert.equal(a.from, "2026-10-28", "not a date");
   assert.equal(a.stepUsd, SALE_AUCTION_DEFAULTS.stepUsd);
   assert.equal(a.days, SALE_AUCTION_DEFAULTS.days);
   assert.equal(a.snipeMinutes, 15);
   assert.equal(a.payDays, 3);
   assert.equal(a.approval, false);
-  assert.equal(a.randomOpen, true);
-  assert.equal(sanitizeSaleAuction({ openUsd: 250_000_000 }).openUsd, 0);
+  assert.equal(sanitizeSaleAuction({ startUsd: 250_000_000 }).startUsd, 10_000_000);
+  assert.equal(sanitizeSaleAuction({ startUsd: 12_000_000, from: "2026-11-02" }).from, "2026-11-02");
+  // A setting saved before the ladder (random opening) reads as the ladder's defaults.
+  assert.deepEqual(sanitizeSaleAuction({ openUsd: 0, randomOpen: true, stepUsd: 250_000 }), SALE_AUCTION_DEFAULTS);
   assert.equal(sanitizeSale({ mode: "fixed" }).mode, "fixed");
   assert.equal(sanitizeSale({ mode: "lottery" }).mode, "auction");
 });
 
 const round = (o: Partial<RoundState> = {}): RoundState => ({
-  status: "open", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-11-15T00:00:00Z", open_usd: 42_000_000, step_usd: 250_000,
+  status: "open", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-11-15T00:00:00Z", open_usd: 10_000_000, step_usd: 250_000,
   bids_count: 0, high_usd: 0, high_user: "", ...o,
 });
-const MID = Date.parse("2026-11-05T00:00:00Z");
+const MID = Date.parse("2026-11-02T00:00:00Z");
+const F = ladderPrice(L, MID);
 
-test("bids: at least the opening bid, then the high bid plus a step; jump bids allowed; never against yourself", () => {
-  assert.equal(nextMinBid(round()), 42_000_000);
-  assert.equal(saleBidProblem(round(), 41_999_999, "a", MID), "too_low");
-  assert.equal(saleBidProblem(round(), 42_000_000, "a", MID), null);
-  const led = round({ bids_count: 1, high_usd: 42_000_000, high_user: "a" });
-  assert.equal(nextMinBid(led), 42_250_000);
-  assert.equal(saleBidProblem(led, 42_100_000, "b", MID), "too_low");
-  assert.equal(saleBidProblem(led, 50_000_000, "b", MID), null, "a jump bid");
-  assert.equal(saleBidProblem(led, 60_000_000, "a", MID), "already_highest");
-  assert.equal(saleBidProblem(led, MAX_BID_USD + 1, "b", MID), "too_high");
-  assert.equal(saleBidProblem(led, 42.5e6 + 0.5, "b", MID), "bad_amount");
-  assert.equal(saleBidProblem(round(), 42_000_000, "a", Date.parse("2026-10-31T00:00:00Z")), "not_started");
-  assert.equal(saleBidProblem(round(), 42_000_000, "a", Date.parse("2026-11-15T00:00:00Z")), "ended");
-  assert.equal(saleBidProblem(round({ status: "awaiting_payment" }), 42_000_000, "a", MID), "closed");
+test("bids: at least the opening bid of the day, then the high bid plus a step; the weekly rise applies mid-round; never against yourself", () => {
+  assert.equal(F, 10_000_000);
+  assert.equal(nextMinBid(round(), F), 10_000_000);
+  assert.equal(saleBidProblem(round(), 9_999_999, "a", MID, F), "too_low");
+  assert.equal(saleBidProblem(round(), 10_000_000, "a", MID, F), null);
+  const led = round({ bids_count: 1, high_usd: 10_000_000, high_user: "a" });
+  assert.equal(nextMinBid(led, F), 10_250_000);
+  assert.equal(saleBidProblem(led, 10_100_000, "b", MID, F), "too_low");
+  assert.equal(saleBidProblem(led, 50_000_000, "b", MID, F), null, "a jump bid");
+  assert.equal(saleBidProblem(led, 60_000_000, "a", MID, F), "already_highest");
+  assert.equal(saleBidProblem(led, MAX_BID_USD + 1, "b", MID, F), "too_high");
+  assert.equal(saleBidProblem(led, 10.5e6 + 0.5, "b", MID, F), "bad_amount");
+  assert.equal(saleBidProblem(round(), 10_000_000, "a", Date.parse("2026-10-31T00:00:00Z"), F), "not_started");
+  assert.equal(saleBidProblem(round(), 10_000_000, "a", Date.parse("2026-11-15T00:00:00Z"), F), "ended");
+  assert.equal(saleBidProblem(round({ status: "awaiting_payment" }), 10_000_000, "a", MID, F), "closed");
+  // After the rise of 4 Nov the opening bid of the day is US$10.1M, also in a round that opened earlier.
+  const later = Date.parse("2026-11-05T00:00:00Z");
+  assert.equal(saleBidProblem(round(), 10_000_000, "a", later, ladderPrice(L, later)), "too_low");
+  assert.equal(nextMinBid(round({ bids_count: 1, high_usd: 9_000_000 }), 10_100_000), 10_100_000, "the ladder is the floor of every bid");
   assert.equal(parseBid("42,250,000"), 42_250_000);
   assert.equal(parseBid("$ 42 250 000"), 42_250_000);
   assert.ok(Number.isNaN(parseBid("42.5M")));
@@ -80,7 +94,7 @@ async function setup(auction: Partial<typeof SALE_AUCTION_DEFAULTS> = {}) {
   return db;
 }
 
-test("the first round opens by itself with an opening bid in the range; ticks never open a second one", async () => {
+test("the first round opens by itself at the ladder's opening bid; ticks never open a second one", async () => {
   const db = await setup();
   const t0 = Date.parse("2026-11-01T00:00:00Z");
   const [x, y] = await Promise.all([saleAuctionTick(db, t0), saleAuctionTick(db, t0)]);
@@ -88,12 +102,13 @@ test("the first round opens by itself with an opening bid in the range; ticks ne
   const r = (await latestRound(db))!;
   assert.equal(r.id, "sr_0001");
   assert.equal(r.status, "open");
-  assert.ok(r.open_usd >= OPEN_MIN_USD && r.open_usd <= OPEN_MAX_USD && r.open_usd % 100_000 === 0);
+  assert.equal(r.open_usd, 10_000_000, "the ladder on 1 Nov 2026");
   assert.equal(r.ends_at, "2026-11-15T00:00:00.000Z", "14 days");
   assert.deepEqual(await saleAuctionTick(db, t0 + 60_000), {});
   assert.equal(await startRound(db, SALE_DEFAULTS, ADMIN), null, "one round at a time");
-  // Every visitor sees the same opening bid: it is stored on the round.
-  assert.equal(publicRound((await latestRound(db))!, []).openUsd, r.open_usd);
+  // Every visitor sees the same opening bid: the ladder of the moment.
+  assert.equal(publicRound((await latestRound(db))!, [], L, t0).openUsd, 10_000_000);
+  assert.equal(publicRound((await latestRound(db))!, [], L, t0 + 3 * WEEK).openUsd, 10_300_000);
 });
 
 test("bidders register and wait for approval; admins and unknown members cannot bid", async () => {
@@ -148,7 +163,7 @@ test("bidding: races, anti-snipe, closing, winner-only checkout, paid round", as
 
   const bids = await roundBids(db, r.id);
   assert.deepEqual(bids.map((b) => b.amount_usd), [amount + 1_000_000, amount, r.open_usd], "highest first");
-  const pub = publicRound((await latestRound(db))!, bids);
+  const pub = publicRound((await latestRound(db))!, bids, L, end);
   assert.equal(pub.bidsCount, 3);
   assert.equal(pub.nextMinUsd, amount + 1_250_000);
   assert.match(pub.leader, /^[A-Z]•+$/, "names are masked");

@@ -26,13 +26,18 @@ export function useSaleAucCopy() {
     import("@/lib/i18n-pages/sale-auction").then((m) => { cache = m.SALE_AUC; setDict(m.SALE_AUC); }).catch(() => {});
   }, [lang, dict]);
   const t: SaleAucCopy = lang === "en" ? SALE_AUC_EN : dict?.[lang] || SALE_AUC_EN;
-  return { t, lang, money: (n: number) => formatMoney(n, "USD", lang), date: (iso: string) => new Date(iso).toLocaleDateString(LOCALE[lang] || "en-US", { day: "numeric", month: "long", year: "numeric" }) };
+  return {
+    t, lang, money: (n: number) => formatMoney(n, "USD", lang),
+    date: (iso: string) => new Date(iso).toLocaleDateString(LOCALE[lang] || "en-US", { day: "numeric", month: "long", year: "numeric" }),
+    /** The day of the next weekly rise, in Jakarta time, where the ladder is counted (REQUESTS 125). */
+    riseDate: (iso: string) => new Date(iso).toLocaleDateString(LOCALE[lang] || "en-US", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Jakarta" }),
+  };
 }
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ""));
 
 export default function SaleAuctionPanel({ info, signedIn, onChange }: { info: SaleAuctionInfo; signedIn: boolean | undefined; onChange: () => void }) {
-  const { t, money, date } = useSaleAucCopy();
+  const { t, money, date, riseDate } = useSaleAucCopy();
   const r = info.round;
   const me = info.me;
   const [amount, setAmount] = useState("");
@@ -106,7 +111,12 @@ export default function SaleAuctionPanel({ info, signedIn, onChange }: { info: S
                       <span className="text-gold-300" aria-hidden="true">✦</span>{t.noReserve}
                     </p>
                     <p className="mt-4 font-display text-lg italic leading-snug text-slate-200">“{t.urgency}”</p>
-                    <p className="mt-3 text-xs leading-relaxed text-slate-400">{t.openingNote} {t.openingBid}: <b className="auc-nums font-semibold text-gold-100">{money(r.openUsd)}</b>.</p>
+                    {r.nextRiseAt ? (
+                      <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold-400/30 bg-gold-400/[0.08] px-3.5 py-1.5 text-xs font-semibold text-gold-200" data-testid="sale-auction-rise">
+                        <span aria-hidden="true">▲</span><span className="auc-nums">{fill(t.rises, { next: money(r.openUsd + r.weeklyUsd), date: riseDate(r.nextRiseAt) })}</span>
+                      </p>
+                    ) : null}
+                    <p className="mt-3 text-xs leading-relaxed text-slate-400">{fill(t.openingNote, { weekly: money(r.weeklyUsd) })} {t.openingBid}: <b className="auc-nums font-semibold text-gold-100">{money(r.openUsd)}</b>.</p>
                   </>
                 ) : (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300" data-testid="sale-auction-ended">
@@ -199,7 +209,7 @@ export default function SaleAuctionPanel({ info, signedIn, onChange }: { info: S
                 <div className="mb-5 h-px bg-gradient-to-r from-transparent via-gold-400/30 to-transparent" aria-hidden="true" />
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{t.rulesTitle}</h3>
                 <ul className="mt-4 space-y-3 text-sm leading-relaxed text-slate-300">
-                  {t.rules.map((x) => <li key={x} className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{fill(x, { step: money(r.stepUsd), min: r.snipeMinutes, days: r.payDays })}</li>)}
+                  {t.rules.map((x) => <li key={x} className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{fill(x, { step: money(r.stepUsd), weekly: money(r.weeklyUsd), min: r.snipeMinutes, days: r.payDays })}</li>)}
                   <li className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{info.approval ? t.ruleApproval : t.ruleOpen}</li>
                 </ul>
               </div>

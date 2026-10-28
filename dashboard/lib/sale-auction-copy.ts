@@ -5,8 +5,8 @@
  * the other nine languages are in lib/i18n-pages/sale-auction.ts, loaded on
  * demand). Owner, 28 Oct 2026 (REQUESTS 120): make it feel like the chance to get
  * the best price — and act now. Every line is true of lib/sale-auction.ts: real
- * bids, a real deadline, no hidden reserve, the opening bid drawn once per round
- * between US$10M and US$100M and the same for everyone.
+ * bids, a real deadline, no hidden reserve, and (REQUESTS 125) an opening bid that
+ * started at US$10M on 28 Oct 2026 and rises every week, the same for everyone.
  * ============================================================================ */
 
 export const SALE_AUC_EN = {
@@ -20,14 +20,15 @@ export const SALE_AUC_EN = {
   noBids: "No bids yet — a bid at the opening price can win.",
   placeBid: "Place a bid",
   noReserve: "No hidden reserve: the highest bid when the clock stops buys the whole of AXTO.",
-  openingNote: "This round's opening bid was drawn at random between US$10 million and US$100 million when the round opened — the same figure for every bidder.",
+  openingNote: "The opening bid started at US$10 million on 28 October 2026 and rises by {weekly} every week, the same for every bidder — a bid placed now can win at a price no later bid is allowed.",
+  rises: "Rises to {next} on {date}",
   urgency: "An opportunity measured in days: when this round closes, the price is whatever the best bid says.",
 
   boardTitle: "The auction",
   boardLead: "Real bids, a real deadline and one winner. Every bid appears here the moment it is placed.",
   rulesTitle: "How it works",
   rules: [
-    "The first bid is at least the opening bid; every later bid is at least the current bid plus {step}. You may bid higher at once.",
+    "Every bid is at least the opening bid of the day, which rises by {weekly} every week; after the first bid, also at least the current bid plus {step}. You may bid higher at once.",
     "A bid in the last {min} minutes extends the round by {min} minutes, so every bidder gets a fair last word.",
     "Every bid is binding: the winner completes the purchase within {days} days — bank wire (escrow can be arranged), crypto or PayPal.",
     "Administrator access is granted the moment the payment is verified; the domain, code and accounts follow the handover checklist.",

@@ -9,7 +9,8 @@ import { loadSession, unauthorized, respond } from "@/lib/auth";
 import { readJson, fail } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { formatUsd } from "@/lib/plans";
-import { latestRound, nextMinBid, placeSaleBid, publicRound, roundBids } from "@/lib/sale-auction";
+import { getSale } from "@/lib/acquisition";
+import { ladderPrice, latestRound, nextMinBid, placeSaleBid, publicRound, roundBids } from "@/lib/sale-auction";
 
 const WHY: Record<string, string> = {
   admin: "Administrator accounts run the sale and cannot bid — sign in with the bidder's account.",
@@ -36,10 +37,12 @@ export async function POST(req: NextRequest) {
   const r = await placeSaleBid(db, ctx.session, b?.amount);
   if ("error" in r) {
     if (r.error === "too_low") {
-      const cur = await latestRound(db);
-      return fail(`The lowest bid accepted now is ${formatUsd(cur ? nextMinBid(cur) : 0)}.`, 409);
+      const [cur, sale] = await Promise.all([latestRound(db), getSale(db)]);
+      const floor = ladderPrice(sale.auction);
+      return fail(`The lowest bid accepted now is ${formatUsd(cur ? nextMinBid(cur, floor) : floor)}.`, 409);
     }
     return fail(WHY[r.error] || "The bid was not accepted.", r.error === "not_registered" || r.error === "bad_amount" ? 400 : 409);
   }
-  return respond({ ok: true, extended: r.extended, round: publicRound(r.round, await roundBids(db, r.round.id, 10)) }, ctx);
+  const [sale, bids] = await Promise.all([getSale(db), roundBids(db, r.round.id, 10)]);
+  return respond({ ok: true, extended: r.extended, round: publicRound(r.round, bids, sale.auction) }, ctx);
 }

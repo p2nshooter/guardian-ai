@@ -483,7 +483,8 @@ bukan dari perkiraan.
 | 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/11 | **73 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
-| | **Total** (bobot = jumlah fase) | | **74/129** | **≈ 57 %** |
+| 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt 2026, `REQUESTS.md` 120, 124, 125, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan US$10 juta + US$100 ribu/minggu ✅ · lelang xaa.es tayang (xaa #33) ✅ · tangga di axto.io tayang | 4/5 | **80 %** |
+| | **Total** (bobot = jumlah fase) | | **78/134** | **≈ 58 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1200,9 +1201,14 @@ seperti lelang, yg mengejutkan seolah peluang mendapatkan harga terbaik … dan 
 **Keputusan (jujur, tetap meyakinkan)**: penjualan berubah dari harga tetap menjadi **lelang sungguhan**, dengan tawaran
 nyata, tenggat nyata, dan pemenang yang membayar tawarannya sendiri.
 
-- **Tawaran pembuka acak dalam rentang US$10–100 juta**. Angkanya diundi sekali saat sebuah putaran dibuka, lalu disimpan
-  di R2, sehingga sama untuk setiap pengunjung. Admin boleh mengundi ulang setiap putaran atau mengetik angka sendiri,
-  selama masih dalam rentang. Tidak ada harga acak per pengunjung, tawaran palsu, atau penghitung penonton palsu.
+- **Tawaran pembuka: tangga mingguan** (REQUESTS 125, menggantikan undian acak US$10–100 juta dari REQUESTS 120).
+  Pemilik: "jgn start langsung gede gitu … Start $10jt, setiap minggu naikin $100k".
+  - US$10.000.000 sejak 28 Okt 2026 00:00 WIB, ditambah US$100.000 di akhir setiap minggu penuh (4 Nov → US$10,1 juta,
+    11 Nov → US$10,2 juta, …). Dihitung dari tanggal, bukan per putaran: putaran baru tidak mulai dari awal.
+  - Setiap tawaran minimal tangga hari itu, juga di tengah putaran yang berjalan; setelah tawaran pertama juga minimal
+    tawaran tertinggi + langkah. Putaran mencatat tangga saat dibuka (`open_usd`) sebagai riwayat.
+  - Admin → Site sale: harga hari pertama (US$10–100 juta), kenaikan mingguan (0 = datar) dan tanggal hari pertama.
+  - Sama untuk setiap pengunjung. Tidak ada harga acak per pengunjung, tawaran palsu, atau penghitung penonton palsu.
 - **Tanpa reserve tersembunyi**: tawaran tertinggi yang sah saat tenggat (di atas pembukaan) memenangkan seluruh AXTO.
   Teks "peluang harga terbaik" menyampaikan hal itu apa adanya.
 - **Aturan tawar**:
