@@ -30,7 +30,7 @@ log = logging.getLogger("orchestra.db")
 
 DATA_DIR       = Path(os.environ.get("DATA_DIR", "./data"))
 DB_PATH        = DATA_DIR / "orchestra.db"
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;
@@ -210,6 +210,20 @@ CREATE TABLE IF NOT EXISTS audit_log (
     result   TEXT    DEFAULT 'ok'
 );
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts DESC);
+
+-- v6: client keys for the OpenAI-compatible client API (client_api.py). Only the
+-- SHA-256 of a key is kept; its rpm/tpm limits live in rate_limits (caller key:<id>).
+CREATE TABLE IF NOT EXISTS client_keys (
+    id                TEXT PRIMARY KEY,
+    name              TEXT NOT NULL,
+    key_hash          TEXT NOT NULL UNIQUE,
+    prefix            TEXT NOT NULL,
+    models            TEXT NOT NULL DEFAULT '[]',
+    monthly_usd_limit REAL NOT NULL DEFAULT 0,
+    created_at        REAL NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
+    last_used_at      REAL,
+    revoked_at        REAL
+);
 """
 
 DEFAULT_SETTINGS = {
@@ -380,14 +394,17 @@ def enqueue_job(job_id: str, task_type: str, messages: list,
              semantic_category))
 
 
-def dequeue_job(worker_id: str) -> Optional[Dict]:
+def dequeue_job(worker_id: str, job_id: str = "") -> Optional[Dict]:
+    """Claim the next queued job — or exactly `job_id` when given, so a thread started
+    for one job never marks another one running and then leaves it there."""
     with _write_tx() as c:
         row = c.execute(
             """SELECT j.* FROM jobs j WHERE j.status='queued'
+               AND (?='' OR j.id=?)
                AND (j.expires_at IS NULL OR j.expires_at > ((julianday('now') - 2440587.5) * 86400.0))
                AND (j.parent_job_id='' OR EXISTS(
                      SELECT 1 FROM jobs p WHERE p.id=j.parent_job_id AND p.status='done'))
-               ORDER BY j.priority_score DESC, j.queued_at ASC LIMIT 1"""
+               ORDER BY j.priority_score DESC, j.queued_at ASC LIMIT 1""", (job_id, job_id)
         ).fetchone()
         if not row:
             return None
@@ -423,12 +440,16 @@ def finish_job(job_id: str, result: str = "", error: str = "",
                      job["semantic_category"]))
 
 
-def retry_job(job_id: str) -> bool:
+def retry_job(job_id: str, error: str = "") -> bool:
+    """Queue the job again while attempts remain. `error` (why this attempt failed) is
+    kept on the job, so a job that finally fails still says what went wrong."""
+    if error:
+        ex("UPDATE jobs SET error=? WHERE id=?", (error[:2000], job_id))
     job = q1("SELECT attempt,max_attempts FROM jobs WHERE id=?", (job_id,))
     if not job or job["attempt"] >= job["max_attempts"]:
         return False
     delay = min(2 ** job["attempt"], 60)
-    ex("UPDATE jobs SET status='queued',worker_id='',error='',queued_at=? WHERE id=?",
+    ex("UPDATE jobs SET status='queued',worker_id='',queued_at=? WHERE id=?",
        (time.time() + delay, job_id))
     return True
 

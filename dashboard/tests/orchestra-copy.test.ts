@@ -3,6 +3,8 @@
 // catalogue makes no claim the code does not keep.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ORCH_SPOT, orchGuide } from "../lib/orchestra-copy";
 import { PRODUCT_CATALOG } from "../lib/product-catalog";
 import { SH_TAGLINES } from "../lib/i18n-pages/shtaglines";
@@ -33,11 +35,25 @@ test("the Orchestra tagline is translated in every language and no longer promis
   }
 });
 
-test("public catalogue: no unsupported Orchestra claim (endpoint, Grafana, budget caps)", () => {
+test("public catalogue: no unsupported Orchestra claim (Grafana, global budget caps, drop-in)", () => {
   const o = PRODUCT_CATALOG.find((p) => p.slug === "orchestra");
   assert.ok(o, "orchestra entry");
   const text = JSON.stringify(o).toLowerCase();
-  for (const bad of ["v1/chat/completions", "openai-compatible", "grafana", "budget cap", "drop-in", "single openai"]) {
+  for (const bad of ["grafana", "budget cap", "drop-in", "single openai"]) {
     assert.ok(!text.includes(bad), `catalogue still says "${bad}"`);
   }
+});
+
+test("public catalogue and guide: the client API they describe is the one Orchestra serves", () => {
+  const core = readFileSync(join(import.meta.dirname, "../../orchestra/orchestra_core/client_api.py"), "utf8");
+  const text = JSON.stringify(PRODUCT_CATALOG.find((p) => p.slug === "orchestra")).toLowerCase()
+    + JSON.stringify(orchGuide("en")).toLowerCase() + JSON.stringify(orchGuide("id")).toLowerCase();
+  for (const path of ["/v1/chat/completions", "/v1/models"]) {
+    if (text.includes(path)) assert.match(core, new RegExp(`@router\\.(get|post)\\("${path.replace(/\//g, "\\/")}"\\)`), `${path} is served`);
+  }
+  if (text.includes("monthly budget") || text.includes("anggaran bulanan")) assert.match(core, /budget_exceeded/);
+  if (text.includes("rate limit") || text.includes("requests per minute")) assert.match(core, /rate_limit_exceeded/);
+  // What the guide says is not supported really is refused.
+  assert.match(core, /tools_not_supported/);
+  assert.match(core, /only text content is supported/);
 });
