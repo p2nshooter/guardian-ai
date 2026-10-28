@@ -122,7 +122,7 @@ test("admin pages: plans & pricing, settings, managed AI and releases", async ()
   const rel = await admin.get("/api/admin/releases");
   assert.equal(rel.status, 200); assert.ok(Array.isArray(rel.json.files));
 
-  for (const p of ["/admin/plans", "/admin/settings", "/admin/managed", "/admin/releases", "/admin/licenses", "/admin/orders", "/admin/payments", "/admin/members", "/admin/support", "/admin/audit", "/admin/data"]) {
+  for (const p of ["/admin/plans", "/admin/settings", "/admin/managed", "/admin/releases", "/admin/licenses", "/admin/orders", "/admin/payments", "/admin/members", "/admin/support", "/admin/audit", "/admin/data", "/admin/legal"]) {
     assert.equal((await admin.get(p)).status, 200, `${p} exists`);
   }
   assert.equal((await member.get("/api/admin/plans")).status, 403, "members cannot use admin APIs");
