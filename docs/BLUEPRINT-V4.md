@@ -480,9 +480,9 @@ bukan dari perkiraan.
 | 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
 | 16 | Rekening ulyah.com/donasi + konversi + panduan bayar manual (27 Okt 2026, `REQUESTS.md` 104, §28) | 13 rekening BNI + 5 dompet (impor terenkripsi) · QR per dompet · konversi kurs harian ke mata uang rekening · panduan langkah + pelacak status, 10 bahasa · uji unit + E2E + browser | 0/5 | **0 %** |
 | 17 | Orchestra AI 6 GB bisa diunduh + paket offline Windows (28 Okt 2026, `REQUESTS.md` 110, §30) | GPU di AXTO Setup ✅ · mode offline ✅ · unduhan bisa dilanjutkan ✅ · portal member ✅ · admin releases ✅ · paket offline CI ✅ (tayang setelah merge) · uji ✅ | 7/7 | **100 %** |
-| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ⏳ · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 7/11 | **64 %** |
+| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/11 | **73 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
-| | **Total** (bobot = jumlah fase) | | **70/124** | **≈ 56 %** |
+| | **Total** (bobot = jumlah fase) | | **71/124** | **≈ 57 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1154,3 +1154,27 @@ punya syarat penggunaan yang harus dipatuhi sebelum diambil. Hukum berubah, jadi
 - **Belum** (fase berikutnya): pengisian korpus dari sumber resmi (L2), verifikator di layar Legal AI dan di jawaban (L3),
   halaman cakupan admin dan publik (L5).
 
+
+## 33. Gerbang lisensi semua engine diuji dengan menjalankannya (REQUESTS 113, 118, 119)
+
+Pemilik, 28 Okt 2026: Docker boleh diunduh dari portal, "tp tidak bisa d gunakan tanpa license resmi"; daftar celah di
+layar menyebut gerbang lisensi sembilan engine lain belum diuji. Setiap engine kini punya `tests/test_licence_gate.py`
+yang menyapu **semua** rute aplikasinya (bukan contoh): tanpa lisensi setiap rute di luar health/aktivasi ditolak, dengan
+lisensi sah atau grace offline yang terverifikasi rute terbuka. Semua jalan di CI (`engine-tests.yml`, Python 3.11 seperti
+image Docker).
+
+Temuan (semua sudah diperbaiki):
+
+| Engine | Celah sebelum | Sekarang |
+|---|---|---|
+| SOC, Antivirus | Saat start tanpa lisensi, API memasang `grace_start = sekarang` sehingga engine jalan penuh 4 jam; restart memberi 4 jam lagi tanpa batas | Terkunci sejak start (403 `license_inactive` + alasan); grace hanya dari validasi sah sebelumnya (`license.py`); cek ulang tiap menit saat terkunci, tiap 30 menit saat berlisensi |
+| Compliance, Sentinel | Sama seperti di atas, ditambah `lifespan` lupa `global` sehingga status lisensi modul tidak pernah diisi: gerbang tidak pernah menutup, heartbeat memanggil validator `None` | Status modul benar; terkunci sejak start; `_lic_warn` Compliance tidak lagi crash (`{{…}}` membuat set) |
+| Guardian (core) | Middleware hanya mengalihkan browser ke halaman aktivasi; ke-93 rute API (dan agen) tetap jalan tanpa lisensi; status lisensi dibekukan saat start (pencabutan/kedaluwarsa tidak mengunci); `/api/license/activate` memanggil atribut yang tidak ada lalu melaporkan gagal | Semua API dan WebSocket 403 tanpa lisensi, browser tetap mendapat halaman aktivasi; status dibaca langsung dari validator; aktivasi memakai pemeriksaan bertanda tangan yang sama dengan heartbeat dan menyimpan kunci hanya bila sah |
+| Vault | Hanya rute proxy yang dicek (dan status "belum divalidasi" lolos); semua `/vault/*` (kebijakan, audit, statistik, kepatuhan, penyedia) dan WebSocket audit terbuka | Semua rute selain halaman aktivasi, `/activate`, `/health`, `/support` 403; lisensi dicek sebelum kuota dipakai |
+| Edge | Tidak ada pengecekan lisensi sama sekali: gateway pelanggan `/v1/*` dan semua `/edge/*` jalan tanpa lisensi | Sama seperti Vault, gateway dan WebSocket penggunaan termasuk |
+| Antivirus | WebSocket `/ws/events` tanpa lisensi dan tanpa kunci API bisa memicu pemindaian file; nama file dan ancaman dirender sebagai HTML di dasbor | WebSocket butuh lisensi (dan `?key=` bila kunci API diatur); nama di dasbor di-escape |
+| Legal, Studio | Sudah benar (Legal: middleware 402; Studio: setiap rute dan WebSocket) | Dikunci dengan tes agar tetap benar; grace Studio berakhir setelah 4 jam (diuji) |
+| Orchestra | Sudah benar (§31) | — |
+
+Bukti: tes sapu rute gagal pada kode lama (contoh nyata sebelum perbaikan: SOC tanpa kunci menjawab `/v1/dashboard` dari
+engine; Vault `/vault/policies` 200; Edge `/edge/plans` 200).
