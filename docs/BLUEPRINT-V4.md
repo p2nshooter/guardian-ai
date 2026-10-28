@@ -1097,6 +1097,18 @@ aplikasi klien belum bisa memanggil Orchestra dengan aman.
 - **Situs**: katalog Orchestra (kemampuan + manfaat) dan panduan langkah 9 "Hubungkan aplikasi Anda" (Inggris/Indonesia,
   tangkapan layar `11-client-api.png`); tes `orchestra-copy.test.ts` memastikan setiap path yang disebut memang dilayani.
 
+### 31.D Saran GPU dan notifikasi (REQUESTS 119)
+
+Pemilik, 28 Okt 2026: "ada notif saran gpu mana yg tersedia". `orchestra_core/gpu_advisor.py` membaca heartbeat worker
+(beban, suhu, VRAM, status) dan aturan Auto-Scale, lalu `GET /api/gpu/advice` (konsol) memberi:
+- **GPU yang bisa bekerja sekarang, terbaik dulu**, dengan urutan yang sama seperti strategi termal (coolest first,
+  load balanced, VRAM available); GPU panas di atas batas kritis, yang dijeda, dan yang tidak mengirim heartbeat tidak ikut.
+- **Notifikasi** dengan id tetap: GPU tersedia (nama, beban, suhu, VRAM), GPU hangat/panas (ke mana pekerjaan berikutnya
+  dikirim), GPU dijeda karena suhu, worker tidak menjawab, semua GPU sibuk (dengan sisa slot GPU edisi, saran Auto-Scale
+  atau upgrade), GPU menganggur, belum ada GPU.
+- **Konsol**: panel "GPU suggestions" di GPU Pool; notifikasi baru yang penting muncul sekali di mana pun pengguna berada
+  (yang paling serius, dengan jumlah lainnya). Tes `tests/test_gpu_advisor.py` (5) dan uji browser desktop/ponsel.
+
 ## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
 
 Pemilik, 28 Okt 2026: "Legal AI bukan hanya untuk indonesia, tp seluruh dunia, seluruh profinis, seluruh distrik, dari
