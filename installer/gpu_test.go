@@ -88,11 +88,11 @@ func TestSysfsIsTheFallbackWithoutLspci(t *testing.T) {
 			}
 		}
 	}
-	card("0000:01:00.0", "0x030000", "0x10de", "0x2204")
-	card("0000:03:00.0", "0x030000", "0x1002", "0x744c")
-	card("0000:05:00.0", "0x120000", "0x19e5", "0xd802")
-	card("0000:06:00.0", "0x030000", "0x1414", "0x008c") // Microsoft: virtual
-	card("0000:08:00.0", "0x020000", "0x8086", "0x1533") // network card
+	card("pci-0000-01-00.0", "0x030000", "0x10de", "0x2204")
+	card("pci-0000-03-00.0", "0x030000", "0x1002", "0x744c")
+	card("pci-0000-05-00.0", "0x120000", "0x19e5", "0xd802")
+	card("pci-0000-06-00.0", "0x030000", "0x1414", "0x008c") // Microsoft: virtual
+	card("pci-0000-08-00.0", "0x020000", "0x8086", "0x1533") // network card
 	gpus := sysfsGPUs(root)
 	var keys []string
 	for _, g := range gpus {
