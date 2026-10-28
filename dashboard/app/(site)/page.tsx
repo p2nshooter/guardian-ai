@@ -18,6 +18,7 @@ import Reveal from "@/components/site/Reveal";
 import T from "@/components/site/T";
 import AuctionWinners from "@/components/site/AuctionWinners";
 import HomeSaleBand from "@/components/site/HomeSaleBand";
+import OrchestraSpotlight from "@/components/site/OrchestraSpotlight";
 
 export const metadata: Metadata = {
   ...pageMeta({
@@ -42,6 +43,9 @@ export default function HomePage() {
 
       {/* The licence auction: recent winners and their packages (§26.5) */}
       <AuctionWinners />
+
+      {/* Orchestra AI and the GPU worker, with the live edition prices (REQUESTS 115) */}
+      <OrchestraSpotlight />
 
       <Ecosystem />
 

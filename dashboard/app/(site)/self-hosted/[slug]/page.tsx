@@ -9,6 +9,7 @@ import Reveal from "@/components/site/Reveal";
 import AppIcon from "@/components/site/AppIcon";
 import ShTagline from "@/components/site/ShTagline";
 import EditionsPublic from "@/components/site/EditionsPublic";
+import OrchestraGuide from "@/components/site/OrchestraGuide";
 import T from "@/components/site/T";
 import { APP_COLORS } from "@/lib/ecosystem";
 import { PRODUCT_CATALOG } from "@/lib/product-catalog";
@@ -59,6 +60,8 @@ export default async function SelfHostedProduct({ params }: { params: Promise<{ 
           </div>
         </div>
       </section>
+
+      {p.slug === "orchestra" ? <OrchestraGuide /> : null}
 
       <EditionsPublic slug={p.slug} name={p.name} color={color} />
 

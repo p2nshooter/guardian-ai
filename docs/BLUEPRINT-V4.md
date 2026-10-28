@@ -1055,3 +1055,49 @@ REQUESTS 112–114. Dikerjakan berurutan; setiap butir hanya ditandai ✅ bila s
 | 113 container GPU worker untuk AMD (`/dev/kfd`, `/dev/dri`) dan Intel (`/dev/dri`, XPU) | ⏳ compose hanya memesan perangkat NVIDIA; kartu AMD/Intel dipakai lewat Ollama di komputer (sudah bisa), container worker khusus merek ini belum dibuat |
 | 113 auto dan manual scaling dengan indikator pintar dalam jatah lisensi GPU | ✅ Orchestra: `autoscale_config.py` (aturan konsol), autoscaler memakai beban GPU, batas `gpu_workers`, suhu GPU di heartbeat, rerouting panas, deteksi GPU per node (`/api/nodes/{id}/detect_gpu`); konsol dicek di browser desktop dan HP |
 | 114 uji penuh axto.io | ⏳ `npm test` 249/249 ✅; `tsc` ✅; E2E penuh lokal dan CI — lihat catatan commit |
+
+### 31.B Orchestra AI dan GPU worker di situs (REQUESTS 115–116)
+
+Permintaan pemilik 28 Okt: klien bingung apa itu Orchestra AI; GPU worker belum dipromosikan di beranda, termasuk
+harganya; perlu penjelasan jelas dan panduan penggunaan dengan tangkapan layar dan animasi.
+
+| Butir | Keadaan |
+|---|---|
+| Klaim publik yang tidak sesuai kode diperbaiki | ✅ katalog produk dan tagline 10 bahasa tidak lagi menjanjikan endpoint `/v1/chat/completions`, metrics format Grafana, atau budget harian: kode router tidak menyediakannya (`/api/jobs/submit` dilindungi kata sandi konsol, tidak untuk aplikasi klien; `central_ai_pool.py` tidak dipanggil). Integrasi ke Studio dan Vault dihapus dari halaman karena tidak ada kodenya; Guardian tetap (support bot memanggil Orchestra) |
+| Promo di beranda: Orchestra AI dan GPU worker, dengan harga live | ✅ `components/site/OrchestraSpotlight.tsx`: harga dari `/api/editions` (tabel admin), tombol beli dan panduan |
+| Penjelasan dan panduan di `/self-hosted/orchestra` | ✅ `components/site/OrchestraGuide.tsx`: apa itu Orchestra, alur permintaan (animasi CSS, berhenti bila reduced motion), GPU worker dan cara cek `ollama ps` 100% GPU, delapan langkah dengan tangkapan layar konsol nyata, rekaman video penggunaan (MP4) |
+| Bahasa | ✅ promo 10 bahasa; panduan dan teks halaman dalam Inggris dan Indonesia, bahasa lain memakai Inggris (fallback) — terjemahan lengkap belum |
+| Panduan penggunaan untuk sembilan aplikasi lain | ⏳ belum dibuat; satu per satu dengan tangkapan layar dan animasi, mengikuti pola Orchestra |
+| Klien API untuk aplikasi (endpoint OpenAI-compatible dengan kunci per aplikasi) | ⏳ belum ada di kode; dibangun bila disetujui pemilik |
+
+## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
+
+Pemilik, 28 Okt 2026: "Legal AI bukan hanya untuk indonesia, tp seluruh dunia, seluruh profinis, seluruh distrik, dari
+hukum terkecil hingga hukum terberat international."
+
+**Keadaan sekarang (kode):** prompt sistem 11 lapis (`lib/legal/prompt.ts`), 36 workspace, yurisdiksi dengan
+provinsi (`lib/legal/jurisdictions.ts`), pemeriksa sitasi dan pencarian di dokumen pengguna. Belum ada korpus sumber
+hukum primer: jawaban bersandar pada pengetahuan model, dokumen pengguna dan riset web opsional, sehingga nomor pasal
+bisa keliru atau usang. Menambah teks prompt saja tidak menyelesaikan ini.
+
+**Prinsip:** setiap sitasi harus bisa ditunjukkan teksnya dari sumber resmi, dengan tanggal versi; yang tidak bisa
+ditunjukkan ditandai "belum terverifikasi". Cakupan ditampilkan apa adanya per yurisdiksi dan per tingkat.
+
+**Tingkat hukum** (dari terkecil ke terberat): peraturan desa/kabupaten/kota/distrik (perda, ordinance, by-law) →
+provinsi/negara bagian → peraturan pemerintah/menteri → undang-undang → konstitusi → putusan pengadilan →
+hukum regional (EU, ASEAN, AU, OAS) → perjanjian dan konvensi internasional, putusan pengadilan internasional
+(ICJ, ICC, WTO, ECHR, ITLOS).
+
+| Fase | Isi | Keadaan |
+|---|---|---|
+| L1 | Arsitektur korpus di R2 (satu JSON per versi dokumen: yurisdiksi, tingkat, nomor, pasal, teks, URL sumber resmi, tanggal berlaku), indeks dengan `customMetadata`, log ingest append-only, backup harian 35 hari; verifikator sitasi; tes | ⏳ |
+| L2 | Konektor sumber resmi yang terbuka dan bisa dibaca mesin, dijalankan di CI/cron (bukan di browser): legislation.gov.uk (Inggris), EUR-Lex/CELLAR (EU), eCFR dan US Code (AS), JDIH BPK (Indonesia, termasuk perda provinsi dan kabupaten/kota), UN Treaty Collection; negara berikutnya berurutan | ⏳ |
+| L3 | Lapis riset di prompt memakai potongan korpus dengan pinpoint pasal dan tanggal versi; sitasi di jawaban dicocokkan ke korpus | ⏳ |
+| L4 | Set evaluasi per yurisdiksi (pertanyaan, otoritas yang benar); metrik: ketepatan sitasi, sitasi palsu, akurasi; dijalankan di CI | ⏳ |
+| L5 | Peta cakupan publik dan admin: yurisdiksi × tingkat, jumlah dokumen, pembaruan terakhir; jawaban menyebut bila yurisdiksi belum punya sumber terverifikasi | ⏳ |
+| L6+ | Perluasan ke seluruh negara, provinsi dan distrik, sumber demi sumber | ⏳ |
+
+Batas yang jujur: tidak semua negara menerbitkan hukumnya dalam format terbuka; sebagian sumber butuh izin atau
+punya syarat penggunaan yang harus dipatuhi sebelum diambil. Hukum berubah, jadi setiap jawaban memakai tanggal
+"per" dan menyarankan tinjauan advokat untuk keputusan penting.
+
