@@ -99,9 +99,12 @@ test("connect: LinkedIn's sign-in URL with a state cookie; the callback refuses 
 
   const wrong = await call("GET", `/api/admin/linkedin/callback?code=abc&state=nope`, { cookie: `${admin}; axto_li_state=${state}` });
   assert.equal(wrong.status, 307);
-  assert.match(decodeURIComponent(wrong.headers.get("location") || ""), /\/admin\/linkedin\?error=The sign-in expired/);
+  const back = new URL(wrong.headers.get("location") || "", BASE);
+  assert.equal(back.pathname, "/admin/linkedin");
+  assert.match(back.searchParams.get("error") || "", /^The sign-in expired/);
+  assert.match(wrong.headers.get("set-cookie") || "", /axto_li_state=;/, "the state cookie is cleared");
   const denied = await call("GET", `/api/admin/linkedin/callback?error=unauthorized_scope_error&error_description=Scope+not+authorized`, { cookie: admin });
-  assert.match(decodeURIComponent((denied.headers.get("location") || "").replace(/\+/g, " ")), /error=unauthorized_scope_error: Scope not authorized/);
+  assert.equal(new URL(denied.headers.get("location") || "", BASE).searchParams.get("error"), "unauthorized_scope_error: Scope not authorized");
 });
 
 test("the cron tick runs the poster (off until it is switched on)", async () => {

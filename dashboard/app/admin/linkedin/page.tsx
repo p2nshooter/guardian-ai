@@ -147,7 +147,7 @@ export default function AdminLinkedInPage() {
           </div>
           <div className="mt-3 rounded-lg border border-slate-200 p-3 text-sm">
             <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Redirect URL — add it in the LinkedIn app (Auth → Authorized redirect URLs)</div>
-            <div className="mt-1 flex items-center justify-between gap-2 break-all font-mono text-xs" data-testid="li-redirect">{v.redirectUri}<CopyButton text={v.redirectUri} /></div>
+            <div className="mt-1 flex items-center justify-between gap-2 break-all font-mono text-xs" data-testid="li-redirect">{v.redirectUri}<CopyButton text={v.redirectUri} className="btn-secondary btn-sm shrink-0" /></div>
           </div>
           <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm" data-testid="li-connection">
             {connected ? (
