@@ -332,8 +332,10 @@ def heartbeat_loop():
         with _lock: active = _tasks_active
         try:
             load = min(int((active/max(CONCURRENCY,1))*100), 100)
+            # temp_c drives thermal rerouting in Orchestra Core (console → Auto-Scale).
             _orch_post(f"/api/workers/{_worker_id}/heartbeat",
-                       {"load_pct": load, "tasks_active": active})
+                       {"load_pct": load, "tasks_active": active,
+                        "temp_c": _gpu_thermal().get("temperature_c")})
             if active == 0:
                 if _idle_since == 0: _idle_since = time.time()
             else:

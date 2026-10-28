@@ -8,8 +8,12 @@
 AXTO Orchestra — AI eXecution & Tools Orchestration | Autoscaler (Production)
 Monitors queue depth and spins up / shuts down workers on demand.
 
-Scale-UP  trigger:  queue depth > autoscale_threshold setting
-Scale-DOWN trigger:  worker idle_since > idle_worker_timeout setting
+Scale-UP  trigger:  queue depth > autoscale_threshold setting (CPU), or the
+                    average GPU load above the console's "up" % (GPU)
+Scale-DOWN trigger:  worker idle_since > idle_worker_timeout setting, or the
+                    average GPU load below the console's "down" % — never
+                    below the console's minimum GPU workers
+Cooldown, load thresholds and the minimum come from autoscale_config.py.
 
 How it works:
   - Runs as a background thread polling every POLL_INTERVAL seconds
@@ -29,7 +33,9 @@ from __future__ import annotations
 import json, logging, os, subprocess, threading, time, urllib.request, urllib.error
 from typing import Dict, List, Optional
 
+import autoscale_config
 import database as db
+import enforcement
 
 logger = logging.getLogger("orchestra.autoscaler")
 
@@ -75,13 +81,16 @@ class Autoscaler:
 
     def _tick(self) -> None:
         enabled   = db.get_setting("autoscale_enabled", "false").lower() == "true"
-        if not enabled:
+        # Autoscaling is an edition feature (Starter: off) — the switch alone is not enough.
+        if not enabled or not enforcement.has_feature("autoscaler"):
             return
 
         threshold  = int(db.get_setting("autoscale_threshold", "20"))
         max_cpu    = int(db.get_setting("autoscale_max_cpu", "10"))
         max_gpu    = int(db.get_setting("autoscale_max_gpu", "4"))
         idle_to    = int(db.get_setting("idle_worker_timeout", "300"))
+        cfg        = autoscale_config.get_config()
+        cooldown   = cfg["cool"]
         now        = time.time()
 
         snapshot   = db.get_queue_snapshot()
@@ -90,22 +99,37 @@ class Autoscaler:
         workers     = db.get_active_workers()
         cpu_workers = [w for w in workers if w.get("worker_type") == "cpu"]
         gpu_workers = [w for w in workers if w.get("worker_type") == "gpu"]
+        gpu_live    = [w for w in gpu_workers if w.get("status") == "active"]
+        gpu_load    = (sum(w.get("load_pct") or 0 for w in gpu_live) / len(gpu_live)) if gpu_live else 0
 
         # ── Scale UP ─────────────────────────────────────────────────────────
-        if (queue_depth > threshold
-                and now - self._last_scale_up > SCALE_COOLDOWN):
-            if len(cpu_workers) < max_cpu:
+        if now - self._last_scale_up > cooldown:
+            # Never beyond the edition's worker limit, whatever autoscale_max_* says.
+            if (queue_depth > threshold
+                    and len(cpu_workers) < min(max_cpu, enforcement.worker_limit("cpu"))):
                 logger.info(f"↑ Scale UP: queue={queue_depth} > threshold={threshold}, "
                             f"cpu_workers={len(cpu_workers)}/{max_cpu}")
-                success = self._spawn_worker("cpu")
-                if success:
+                if self._spawn_worker("cpu"):
                     self._last_scale_up = now
                     db.record_metric("autoscale_up", 1, {"type": "cpu"})
+            elif (gpu_live and gpu_load > cfg["up"] and enforcement.has_feature("gpu_workers")
+                    and len(gpu_workers) < min(max_gpu, enforcement.worker_limit("gpu"))):
+                logger.info(f"↑ Scale UP: GPU load {gpu_load:.0f}% > {cfg['up']}%, "
+                            f"gpu_workers={len(gpu_workers)}/{max_gpu}")
+                if self._spawn_worker("gpu"):
+                    self._last_scale_up = now
+                    db.record_metric("autoscale_up", 1, {"type": "gpu"})
 
-        # ── Scale DOWN (idle workers) ─────────────────────────────────────────
-        if now - self._last_scale_down > SCALE_COOLDOWN:
+        # ── Scale DOWN (idle workers; GPUs never below the console's minimum) ──
+        if now - self._last_scale_down > cooldown:
             idle = db.get_idle_workers(idle_threshold_sec=idle_to)
+            if gpu_live and gpu_load < cfg["down"]:
+                # Low GPU load: an idle GPU may go before its idle timeout.
+                idle += [w for w in db.get_idle_workers(idle_threshold_sec=0)
+                         if w.get("worker_type") == "gpu" and w not in idle]
             for worker in idle:
+                if worker.get("worker_type") == "gpu" and len(gpu_workers) <= cfg["min"]:
+                    continue
                 logger.info(f"↓ Scale DOWN: worker {worker['id']} idle >{idle_to}s")
                 self._drain_worker(worker)
                 self._last_scale_down = now
@@ -225,7 +249,7 @@ class Autoscaler:
             "spawn_type":         SPAWN_TYPE,
             "spawned_containers": len(self._spawned_containers),
             "poll_interval":      POLL_INTERVAL,
-            "scale_cooldown":     SCALE_COOLDOWN,
+            "scale_cooldown":     autoscale_config.get_config()["cool"],
             "last_scale_up":      self._last_scale_up,
             "last_scale_down":    self._last_scale_down,
         }

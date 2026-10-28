@@ -30,6 +30,7 @@ from __future__ import annotations
 import logging, threading, time
 from typing import Dict, List, Optional, Tuple
 
+import autoscale_config
 import database as db
 from semantic_router import get_classifier, CATEGORY_ROUTING, CATEGORY_CHEAP
 
@@ -205,6 +206,12 @@ def select_worker(
     if not candidates:
         return None
 
+    # Thermal rerouting (console → Auto-Scale): hot GPUs get no new jobs while a cooler one is free.
+    thermal = autoscale_config.get_config()
+    candidates, rerouted = autoscale_config.thermal_route(candidates, gpu_required, thermal)
+    if rerouted:
+        return rerouted
+
     # Round-robin mode: pure distribution, no scoring
     if mode == "round_robin":
         with _rr_lock:
@@ -212,16 +219,13 @@ def select_worker(
             return candidates[_rr_idx % len(candidates)]
 
     # Score all candidates
-    scored = [
-        (w, _score_worker(w, mode, task_type, semantic_category, sla_ms))
-        for w in candidates
-    ]
-    scored.sort(key=lambda x: x[1], reverse=True)
-
-    best_worker, best_score = scored[0]
-    if best_score < 0:
+    # A negative score means unusable; a warm GPU only ranks lower (it stays usable).
+    scored = [(w, _score_worker(w, mode, task_type, semantic_category, sla_ms)) for w in candidates]
+    usable = [(w, sc - autoscale_config.warm_penalty(w, thermal)) for w, sc in scored if sc >= 0]
+    if not usable:
         return None
-    return best_worker
+    usable.sort(key=lambda x: x[1], reverse=True)
+    return usable[0][0]
 
 
 # ── Public status ─────────────────────────────────────────────────────────────

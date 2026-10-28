@@ -991,6 +991,26 @@ produksi" — audit ini sekarang diperintahkan, mulai setelah §30 tayang. Uruta
 kelas dunia; (2) portal member; (3) admin; (4) situs publik. Setiap temuan ditulis di tabel di bawah dulu, lalu
 dibangun dan diuji (unit, E2E, browser desktop & HP).
 
+### 29.A4 Temuan batas edisi di engine (dicatat sebelum dibangun, REQUESTS 111/113)
+
+Pembanding: lisensi bertanda tangan membawa edisi (`lib/editions.ts`, `lib/entitlements.ts`); engine harus menolak
+di atas batas, bukan hanya menampilkannya. Tabel ini adalah keadaan sebelum perbaikan:
+
+| Engine | Batas yang dibawa lisensi | Keadaan sebelum | Keadaan sesudah |
+|---|---|---|---|
+| Orchestra | worker CPU/GPU, autoscaling, federasi, cost analytics, jumlah node | `require_feature` membaca daftar fitur yang salah; tidak ada batas worker; autoscaler jalan di edisi Starter; kolom konsol tidak cocok dengan API | ✅ `enforcement.check_worker_slot` (402 `WORKER_LIMIT`), `has_feature` (402 `FEATURE_NOT_LICENSED`), node 402 `NODE_LIMIT`, autoscaler hanya di edisi yang punya fitur, GPU di batas `gpu_workers`; 24 tes pytest |
+| Vault | kuota harian | ✅ ditegakkan | ✅ |
+| Guardian | jumlah node | `/node/register` tanpa `max_nodes` | ⏳ fase C2 |
+| Edge | kunci pelanggan, request per hari | tidak ditegakkan | ⏳ |
+| SOC | sumber log, EPS | tidak ditegakkan | ⏳ |
+| Compliance | kerangka kerja | tidak ditegakkan | ⏳ |
+| Sentinel | perangkat (`/v1/devices/authorize`) | tidak ditegakkan | ⏳ |
+| Antivirus | endpoint, guardian_ml | tidak ditegakkan | ⏳ |
+| Studio | request per hari, GPU | tidak ditegakkan | ⏳ |
+| Legal | edisi | ✅ membaca edisi | ✅ |
+
+Semua engine sudah mengurai entitlement bertanda tangan ke `LicenseState.features`; yang kurang adalah penegakan di rute.
+
 ## 30. Perintah pemilik 28 Okt 2026 — Orchestra AI 6 GB bisa diunduh, paket offline Windows
 
 "Lanjut kembangkan axto.io, kenapa orchestra AI tar.gz yg 6gb lebih g bisa di download, dan kenapa yg .exe nya cuma
@@ -1020,3 +1040,15 @@ mb... Harusnya bisa di download di portal member, dan docker exe harusnya 6gb le
 | 30e | Admin → Releases | tautan unduh setiap berkas; grup "AXTO Setup", "Paket offline", dan "EXE lama (tidak ditawarkan ke member)" | ✅ 28 Okt (browser desktop & HP) |
 | 30f | Paket offline di CI | workflow `build-offline.yml`: AXTO-Setup.exe + installer Linux + image tiap aplikasi + README + SHA256 → `builds/latest/offline/axto-<app>-offline-amd64.zip` (multipart ke R2); jalan setelah build image/installer dan manual | ✅ dibangun + dry-run lokal (manifest, README, SHA-256, zip); run pertama setelah merge |
 | 30g | Uji | Go (pilihan image, profil compose, pencarian image lokal), unit dashboard (Range), typecheck, E2E, browser desktop & HP | ✅ 28 Okt: go test, tsc, unit 249/249, E2E 141/141, browser desktop & HP |
+
+## 31. Perintah pemilik 28 Okt 2026 (axto.io) — lelang di atas, Docker dengan lisensi, GPU, uji produksi
+
+REQUESTS 112–114. Dikerjakan berurutan; setiap butir hanya ditandai ✅ bila sudah diuji.
+
+| Butir | Keadaan |
+|---|---|
+| 112 lelang dan harga jual $10 juta di bagian atas beranda | ✅ `components/site/HomeSaleBand.tsx` di atas hero: harga dibaca langsung dari `/api/acquire` (pengaturan admin, bukan konstanta), hitung mundur lelang bila berjalan; lelang dipindah dari tengah ke tepat sesudah hero; band hilang bila sudah terjual |
+| 113 Docker dapat diunduh tetapi tidak bisa dipakai tanpa lisensi | ⏳ Orchestra ✅ (A4); sembilan engine lain — lihat tabel §29.A4 |
+| 113 worker GPU exe sesuai tar.gz | ✅ paket `axto-orchestra-offline-amd64.zip` (6,6 GB, CI run 40654790414): `images/orchestra-worker-gpu.tar.gz` = 6.524.739.678 byte, SHA-256 `d779ea53…b351`, sama dengan `manifest.json` dan `SHA256SUMS.txt`; image diambil apa adanya dari `raw/` R2 tanpa transformasi. `AXTO-Setup.exe` (6,5 MB) memuat installer; image ada di paket yang sama |
+| 113 deteksi GPU, auto dan manual scaling dengan indikator pintar dalam jatah lisensi GPU | ✅ Orchestra: `autoscale_config.py` (aturan konsol), autoscaler memakai beban GPU, batas `gpu_workers`, suhu GPU di heartbeat, rerouting panas, deteksi GPU per node (`/api/nodes/{id}/detect_gpu`); konsol dicek di browser desktop dan HP |
+| 114 uji penuh axto.io | ⏳ `npm test` 249/249 ✅; `tsc` ✅; E2E penuh lokal dan CI — lihat catatan commit |

@@ -17,6 +17,7 @@ import { SITE } from "@/lib/site";
 import Reveal from "@/components/site/Reveal";
 import T from "@/components/site/T";
 import AuctionWinners from "@/components/site/AuctionWinners";
+import HomeSaleBand from "@/components/site/HomeSaleBand";
 
 export const metadata: Metadata = {
   ...pageMeta({
@@ -34,25 +35,15 @@ export default function HomePage() {
     <>
       <JsonLd data={[faqJsonLd(FAQ), softwareJsonLd({ name: SITE.name, description: SITE.description, path: "/", offers })]} />
 
+      {/* The sale and the running auction come first, where the page opens (REQUESTS 112) */}
+      <HomeSaleBand />
+
       <PalaceHero />
-
-      {/* The site is for sale — the special offer menu */}
-      <section className="relative overflow-hidden border-y border-gold-400/25 bg-ink-950" data-testid="home-sale">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_120%_at_50%_0%,rgba(201,162,74,.16),transparent_70%)]" />
-        <div className="container-page relative flex flex-wrap items-center gap-4 py-5">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold-400/30 bg-gold-400/10 text-xl" aria-hidden="true">🏛️</span>
-          <div className="min-w-0 flex-1">
-            <div className="font-display text-lg font-bold text-gold-100"><T k="lp.sale" /></div>
-            <div className="text-sm text-slate-400"><T k="lp.saleSub" /></div>
-          </div>
-          <Link href="/acquire" className="btn-royal"><T k="lp.saleCta" /> →</Link>
-        </div>
-      </section>
-
-      <Ecosystem />
 
       {/* The licence auction: recent winners and their packages (§26.5) */}
       <AuctionWinners />
+
+      <Ecosystem />
 
       {/* How it works */}
       <section className="border-y border-slate-200 bg-slate-50 py-20">

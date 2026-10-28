@@ -1,0 +1,73 @@
+# ==============================================================================
+# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# ==============================================================================
+# Engine unit tests (BLUEPRINT-V4 §29, AXTO-APPS-BLUEPRINT phase C2): every
+# self-hosted engine's own pytest suite, run against the engine's pinned
+# requirements on the Python version of its Docker image. The first suites
+# prove the edition limits each signed licence carries (phase A4) — a Starter
+# licence must really stop at the Starter limits.
+# ==============================================================================
+name: Engine tests
+
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'engine/**'
+      - 'antivirus/**'
+      - 'orchestra/**'
+      - 'vault/**'
+      - 'edge/**'
+      - 'soc/**'
+      - 'compliance/**'
+      - 'sentinel/**'
+      - 'studio/**'
+      - 'legal/**'
+      - '.github/workflows/engine-tests.yml'
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'antivirus/**'
+      - 'orchestra/**'
+      - 'vault/**'
+      - 'edge/**'
+      - 'soc/**'
+      - 'compliance/**'
+      - 'sentinel/**'
+      - 'studio/**'
+      - 'legal/**'
+      - '.github/workflows/engine-tests.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: engine-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: "🧪 ${{ matrix.engine }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { engine: orchestra, dir: orchestra/orchestra_core, requirements: orchestra/orchestra_core/requirements.txt }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"          # the engines' Docker images run python:3.11-slim
+          cache: pip
+          cache-dependency-path: ${{ matrix.requirements }}
+      - name: Install
+        run: pip install -r "${{ matrix.requirements }}" pytest
+      - name: pytest
+        working-directory: ${{ matrix.dir }}
+        run: python -m pytest -q tests
+      - name: Older self-checks
+        working-directory: ${{ matrix.dir }}
+        run: |
+          for f in test_*.py; do
+            [ -f "$f" ] || continue
+            echo "▶ $f"; python "$f"
+          done

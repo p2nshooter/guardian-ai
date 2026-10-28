@@ -34,6 +34,7 @@ import worker_manager
 import job_router
 import routing_engine
 import database as db
+import autoscale_config
 from autoscaler import get_autoscaler
 from semantic_router import get_classifier, get_inj_detector
 
@@ -114,6 +115,18 @@ async def shutdown():
     logger.info("AXTO Orchestra — AI eXecution & Tools Orchestration shutdown complete")
 
 
+# ── Licence / edition errors → clear answers, never a 500 ─────────────────────
+# 402: the edition does not include it (upgrade); 403: the licence is not active.
+_ENFORCEMENT_STATUS = {"FEATURE_NOT_LICENSED": 402, "WORKER_LIMIT": 402, "NODE_LIMIT": 402, "BAD_WORKER_TYPE": 400}
+
+
+@app.exception_handler(enforcement.EnforcementError)
+async def _enforcement_error(request: Request, exc: enforcement.EnforcementError):
+    return JSONResponse(status_code=_ENFORCEMENT_STATUS.get(exc.category, 403),
+                        content={"error": exc.detail or exc.category, "category": exc.category,
+                                 "manage_url": enforcement.MANAGE_URL})
+
+
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
 async def require_console(request: Request):
@@ -145,6 +158,13 @@ async def serve_console():
     if console_html.exists():
         return HTMLResponse(console_html.read_text())
     return HTMLResponse("<h1>Orchestra Console</h1><p>Console UI not found.</p>")
+
+
+@app.get("/api/console/session")
+async def console_session(_=Depends(require_console)):
+    """The console's sign-in check: 200 only with the right console password
+    (/api/license/status stays open for the activation page, so it cannot be the check)."""
+    return {"ok": True}
 
 
 # ── License Wizard middleware — redirect to activation if no license ──────────
@@ -315,7 +335,8 @@ class RegisterWorkerRequest(BaseModel):
     timeout_sec: int   = 60
     retry_count: int   = 3
     priority:    str   = "normal"
-    gpu_vram_gb: Optional[int] = None
+    gpu_vram_gb: Optional[float] = None
+    vram_gb:     Optional[float] = None   # the console's name for gpu_vram_gb
     label:       str   = ""
     base_url:    str   = ""
     worker_url:  str   = ""   # GPU worker's own FastAPI endpoint (e.g. http://gpu-node:7892)
@@ -323,28 +344,20 @@ class RegisterWorkerRequest(BaseModel):
 
 @app.get("/api/workers")
 async def list_workers(_=Depends(require_console)):
-    return {"workers": worker_manager.get_all_workers()}
+    # The console reads `type` (cpu/gpu) and `vram_gb`; the table columns are worker_type and gpu_vram_gb.
+    return {"workers": [{**w, "type": w.get("worker_type"), "vram_gb": w.get("gpu_vram_gb")}
+                        for w in worker_manager.get_all_workers()]}
 
 
 @app.post("/api/workers/register")
 async def register_worker(req: RegisterWorkerRequest, _=Depends(require_console)):
-    enforcement.require_active()
-    state = enforcement.get_enforcement_state()
-
-    # Enforce worker limits
-    workers    = worker_manager.get_all_workers()
-    cpu_count  = sum(1 for w in workers if w.get("type") == "cpu" and w.get("status") == "active")
-    gpu_count  = sum(1 for w in workers if w.get("type") == "gpu" and w.get("status") == "active")
-
-    if req.type == "cpu" and cpu_count >= state.get("cpu_workers", 2):
-        raise HTTPException(400, f"CPU worker limit reached ({state.get('cpu_workers',2)} max for your license tier)")
-    if req.type == "gpu" and gpu_count >= state.get("gpu_workers", 0):
-        raise HTTPException(400, f"GPU worker limit reached ({state.get('gpu_workers',0)} max for your license tier)")
+    # Edition worker limit (Starter 10, Professional 50, Enterprise unlimited).
+    enforcement.check_worker_slot(req.type, worker_manager.get_all_workers())
 
     result = worker_manager.register_worker(
         node_id=req.node_id, worker_type=req.type, provider_id=req.provider_id,
         model=req.model, concurrency=req.concurrency, timeout_sec=req.timeout_sec,
-        retry_count=req.retry_count, priority=req.priority, gpu_vram_gb=req.gpu_vram_gb,
+        retry_count=req.retry_count, priority=req.priority, gpu_vram_gb=req.gpu_vram_gb or req.vram_gb,
         label=req.label, base_url=req.base_url, worker_url=req.worker_url,
     )
     return result
@@ -356,15 +369,58 @@ async def remove_worker(worker_id: str, _=Depends(require_console)):
     return {"ok": ok}
 
 
+class ScaleWorkersRequest(BaseModel):
+    action:             str            # add | remove
+    template_worker_id: str = ""       # add: copy this worker's provider, model, node and endpoints
+    worker_id:          str = ""       # remove: this one (default: the most idle GPU worker)
+    type:               str = "gpu"
+
+
+@app.post("/api/workers/scale")
+async def scale_workers(req: ScaleWorkersRequest, _=Depends(require_console)):
+    """Manual scale from the console (GPU Pool / Auto-Scale): one worker more or less.
+    Adding counts against the edition's worker limit like any registration."""
+    if req.action == "add":
+        tmpl = worker_manager.get_worker(req.template_worker_id) if req.template_worker_id else None
+        if not tmpl:
+            raise HTTPException(404, "Template worker not found — pick one in the Scale rules")
+        wtype = tmpl.get("worker_type", "gpu")
+        enforcement.check_worker_slot(wtype, worker_manager.get_all_workers())
+        result = worker_manager.register_worker(
+            node_id=tmpl["node_id"], worker_type=wtype, provider_id=tmpl["provider_id"], model=tmpl["model"],
+            concurrency=tmpl.get("concurrency") or 5, timeout_sec=tmpl.get("timeout_sec") or 60,
+            retry_count=tmpl.get("retry_count") or 3, priority=tmpl.get("priority") or "normal",
+            gpu_vram_gb=tmpl.get("gpu_vram_gb"), label=f"{tmpl.get('label') or tmpl['id']} (copy)",
+            base_url=tmpl.get("base_url") or "", worker_url=tmpl.get("worker_url") or "")
+        db.record_metric("autoscale_up", 1, {"type": wtype, "manual": True})
+        return result
+    if req.action == "remove":
+        if req.worker_id:
+            target = worker_manager.get_worker(req.worker_id)
+        else:
+            live = [w for w in worker_manager.get_all_workers()
+                    if w.get("worker_type") == req.type and w.get("status") != "offline"]
+            target = min(live, key=lambda w: (w.get("tasks_active") or 0, w.get("load_pct") or 0), default=None)
+        if not target:
+            raise HTTPException(404, f"No {req.type.upper()} worker to remove")
+        worker_manager.remove_worker(target["id"])
+        db.record_metric("autoscale_down", 1, {"worker_id": target["id"], "manual": True})
+        return {"ok": True, "removed": target["id"]}
+    raise HTTPException(400, "action must be 'add' or 'remove'")
+
+
 @app.post("/api/workers/{worker_id}/heartbeat")
 async def worker_heartbeat(worker_id: str, request: Request, _=Depends(require_worker_auth)):
     body = await request.json()
-    ok   = worker_manager.update_worker_heartbeat(
-        worker_id,
-        load_pct=body.get("load_pct", 0),
-        tasks_active=body.get("tasks_active", 0),
-    )
-    return {"ok": ok}
+    temp = body.get("temp_c")
+    temp = float(temp) if isinstance(temp, (int, float)) else None
+    prev = worker_manager.get_worker(worker_id) or {}
+    status = autoscale_config.heartbeat_status(prev.get("status"), temp)
+    if status == "paused" and prev.get("status") != "paused":
+        logger.critical(f"🔥 {worker_id} paused at {temp}°C (thermal emergency) — resumes below the critical temperature")
+        db.record_metric("thermal_pause", 1, {"worker_id": worker_id, "temp_c": temp})
+    ok = db.heartbeat_worker(worker_id, body.get("load_pct", 0), body.get("tasks_active", 0), temp, status)
+    return {"ok": ok, "status": status}
 
 
 # ── Nodes ─────────────────────────────────────────────────────────────────────
@@ -390,7 +446,9 @@ async def register_node(req: RegisterNodeRequest, _=Depends(require_console)):
     nodes = worker_manager.get_all_nodes()
     active_nodes = sum(1 for n in nodes if n.get("status") == "online")
     if active_nodes >= state.get("max_nodes", 50):
-        raise HTTPException(400, f"Node limit reached ({state.get('max_nodes',50)} max for your license tier)")
+        raise enforcement.EnforcementError(
+            "NODE_LIMIT", f"Node limit reached ({active_nodes}/{state.get('max_nodes', 50)} for your edition). "
+                          f"Remove a node or upgrade at {enforcement.MANAGE_URL}")
     result = worker_manager.register_node(
         name=req.name, endpoint=req.endpoint, node_type=req.type,
         max_workers=req.max_workers, region=req.region, tags=req.tags,
@@ -402,6 +460,27 @@ async def register_node(req: RegisterNodeRequest, _=Depends(require_console)):
 async def remove_node(node_id: str, _=Depends(require_console)):
     ok = worker_manager.remove_node(node_id)
     return {"ok": ok}
+
+
+@app.post("/api/nodes/{node_id}/detect_gpu")
+async def detect_node_gpu(node_id: str, _=Depends(require_console)):
+    """GPUs on a node, as its GPU worker reports them (GET <worker_url>/gpu/status)."""
+    import json, urllib.request
+    urls = {w.get("worker_url") for w in worker_manager.get_all_workers()
+            if w.get("node_id") == node_id and w.get("worker_type") == "gpu" and w.get("worker_url")}
+    gpus, errors = [], []
+    for url in sorted(u for u in urls if u):
+        try:
+            with urllib.request.urlopen(f"{url.rstrip('/')}/gpu/status", timeout=8) as r:
+                info = json.loads(r.read()).get("gpu") or {}
+        except Exception as e:
+            errors.append(f"{url}: {e}")
+            continue
+        for g in info.get("gpus") or ([info] if info.get("name") else []):
+            gpus.append({"name": g.get("name", ""), "vendor": g.get("vendor") or info.get("vendor", ""),
+                         "vram_gb": g.get("vram_gb", 0), "driver": g.get("driver") or info.get("driver", "")})
+    note = "" if urls else "No GPU worker runs on this node yet — start orchestra-worker-gpu there (AXTO Setup: tick GPU worker)."
+    return {"node_id": node_id, "gpus": gpus, "errors": errors, "note": note}
 
 
 @app.post("/api/nodes/{node_id}/heartbeat")
@@ -502,10 +581,52 @@ async def get_routing_status(_=Depends(require_console)):
 
 @app.get("/api/cost/summary")
 async def cost_summary(_=Depends(require_console)):
+    enforcement.require_feature("cost_analytics")
     return job_router.get_cost_summary()
 
 
 # ── Provider Info ─────────────────────────────────────────────────────────────
+
+class DirectChatRequest(BaseModel):
+    provider:    str
+    model:       str = ""
+    messages:    List[dict]
+    temperature: float = 0.7
+    max_tokens:  int   = 1024
+
+
+@app.post("/api/chat/direct")
+async def chat_direct(req: DirectChatRequest, _=Depends(require_console)):
+    """Local Chat and the Multi-AI tester: one call to one provider with the key in the
+    Credential Vault (BYOK — the request goes from this server to the provider, nowhere else)."""
+    enforcement.require_active()
+    pid = req.provider.strip().lower()
+    if pid not in ai_providers.PROVIDER_CONFIGS and pid != "ollama":
+        raise HTTPException(400, f"Unknown provider '{req.provider}'")
+    msgs = [{"role": m.get("role"), "content": m.get("content")} for m in req.messages[-100:]]
+    if not msgs or any(m["role"] not in ("system", "user", "assistant") or not isinstance(m["content"], str)
+                       for m in msgs):
+        raise HTTPException(400, "messages must be a list of {role: system|user|assistant, content: text}")
+    if sum(len(m["content"]) for m in msgs) > 400_000:
+        raise HTTPException(413, "Conversation too long — start a new chat")
+    model = req.model or (ai_providers.PROVIDER_CONFIGS.get(pid, {}).get("models") or [""])[0]
+    key, base_url = credential_vault.get_key(pid) or "", ""
+    if pid == "ollama":
+        base_url = key or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+    elif not key:
+        raise HTTPException(400, f"No API key for {pid} in the Credential Vault — add it there first")
+    r = await asyncio.to_thread(ai_providers.dispatch, pid, key, model, msgs,
+                                max(1, min(req.max_tokens, 8192)), max(0.0, min(req.temperature, 2.0)),
+                                base_url, 120)
+    if not r.get("ok"):
+        raise HTTPException(502, f"{pid}: {r.get('error') or 'no answer'}")
+    in_tok, out_tok = r.get("input_tokens", 0), r.get("output_tokens", 0)
+    cost = routing_engine.get_cost_estimate(pid, model, in_tok + out_tok)
+    db.record_cost_event(pid, model, in_tok, out_tok, cost, caller_id="console")
+    return {"content": r.get("content", ""), "input_tokens": in_tok, "output_tokens": out_tok,
+            "cost_usd": cost, "latency_ms": r.get("latency_ms"), "model_used": r.get("model_used", model),
+            "provider": pid}
+
 
 @app.get("/api/providers/catalog")
 async def providers_catalog(_=Depends(require_console)):
@@ -538,13 +659,41 @@ async def get_brand():
 
 # ── Autoscaler ─────────────────────────────────────────────────────────────────
 
+@app.get("/api/autoscale/config")
+async def autoscale_config_get(_=Depends(require_console)):
+    """The console's Auto-Scale page: saved rules plus what happened in the last 24 h."""
+    return {**autoscale_config.get_config(),
+            "licensed": enforcement.has_feature("autoscaler"),
+            "scale_events_24h": db.count_metrics(["autoscale_up", "autoscale_down"]),
+            "thermal_reroutes_24h": db.count_metrics(["thermal_reroute"]),
+            "thermal_pauses_24h": db.count_metrics(["thermal_pause"])}
+
+
+@app.put("/api/autoscale/config")
+async def autoscale_config_put(request: Request, _=Depends(require_console)):
+    body = await request.json()
+    # Thermal rules work in every edition; switching automatic scaling on needs the Autoscaling feature.
+    if body.get("enabled"):
+        enforcement.require_feature("autoscaler")
+    try:
+        cfg = autoscale_config.save_config(body)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    if cfg["enabled"]:
+        a = get_autoscaler()
+        if not a._running:
+            a.start()
+    return {"ok": True, **cfg}
+
+
 @app.get("/api/autoscaler/status")
 async def autoscaler_status(_=Depends(require_console)):
-    return get_autoscaler().get_status()
+    return {**get_autoscaler().get_status(), "licensed": enforcement.has_feature("autoscaler")}
 
 
 @app.post("/api/autoscaler/toggle")
 async def autoscaler_toggle(request: Request, _=Depends(require_console)):
+    enforcement.require_feature("autoscaler")
     body = await request.json()
     enabled = body.get("enabled", False)
     db.set_setting("autoscale_enabled", "true" if enabled else "false")
@@ -556,6 +705,7 @@ async def autoscaler_toggle(request: Request, _=Depends(require_console)):
 @app.post("/api/autoscaler/settings")
 async def autoscaler_settings(request: Request, _=Depends(require_console)):
     """Update autoscaler thresholds (hot-reloadable, takes effect immediately)."""
+    enforcement.require_feature("autoscaler")
     body = await request.json()
     if "threshold" in body:
         db.set_setting("autoscale_threshold", str(body["threshold"]))
@@ -575,30 +725,25 @@ async def autoscaler_settings(request: Request, _=Depends(require_console)):
 
 @app.post("/api/autoscaler/scale-up")
 async def manual_scale_up(request: Request, _=Depends(require_console)):
-    """Manually spawn a new worker (respects license limits)."""
-    enforcement.require_active()
+    """Manually spawn a new worker (respects the edition's worker limit)."""
+    enforcement.require_feature("autoscaler")
     body = await request.json()
     worker_type = body.get("type", "cpu")
 
-    state = enforcement.get_enforcement_state()
     workers = worker_manager.get_all_workers()
-    cpu_count = sum(1 for w in workers if w.get("worker_type") == "cpu" and w.get("status") == "active")
-    gpu_count = sum(1 for w in workers if w.get("worker_type") == "gpu" and w.get("status") == "active")
-
-    if worker_type == "cpu" and cpu_count >= state.get("cpu_workers", 2):
-        raise HTTPException(400, f"CPU worker limit reached ({cpu_count}/{state.get('cpu_workers',2)} for your license tier). Upgrade your plan for more workers.")
-    if worker_type == "gpu" and gpu_count >= state.get("gpu_workers", 0):
-        raise HTTPException(400, f"GPU worker limit reached ({gpu_count}/{state.get('gpu_workers',0)} for your license tier). Upgrade your plan for GPU workers.")
+    enforcement.check_worker_slot(worker_type, workers)
+    counts = enforcement.worker_counts(workers)
 
     autoscaler = get_autoscaler()
     success = autoscaler._spawn_worker(worker_type)
-    return {"ok": success, "type": worker_type, "current": {"cpu": cpu_count, "gpu": gpu_count},
-            "limits": {"max_cpu": state.get("cpu_workers", 2), "max_gpu": state.get("gpu_workers", 0)}}
+    return {"ok": success, "type": worker_type, "current": counts,
+            "limits": {"max_cpu": enforcement.worker_limit("cpu"), "max_gpu": enforcement.worker_limit("gpu")}}
 
 
 @app.post("/api/autoscaler/scale-down")
 async def manual_scale_down(request: Request, _=Depends(require_console)):
     """Manually drain and remove an idle worker."""
+    enforcement.require_feature("autoscaler")
     body = await request.json()
     worker_id = body.get("worker_id", "")
 

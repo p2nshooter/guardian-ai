@@ -1027,7 +1027,7 @@ async function doLogin(){
   const pw = document.getElementById('pw-input').value;
   if(!pw){document.getElementById('login-err').textContent='Enter password';return}
   try{
-    const r = await fetch('/api/license/status',{headers:{'X-Console-Token':pw}});
+    const r = await fetch('/api/console/session',{headers:{'X-Console-Token':pw}});
     if(r.ok){
       TOKEN = pw;
       document.getElementById('login-screen').style.display='none';
@@ -1076,9 +1076,13 @@ async function api(method,path,body){
   const opts={method,headers:{'X-Console-Token':TOKEN,'Content-Type':'application/json'}};
   if(body) opts.body=JSON.stringify(body);
   const r=await fetch(API+path,opts);
-  if(!r.ok){const e=await r.json().catch(()=>({detail:'Error'}));throw new Error(e.detail||r.status)}
+  if(!r.ok){const e=await r.json().catch(()=>({detail:'Error'}));throw new Error(e.error||e.detail||r.status)}
   return r.json();
 }
+// Edition limits: the licence sends 1000000 for "unlimited" (enforcement.UNLIMITED).
+function lim(n){return n>=1000000?'unlimited':n}
+// Model answers and error texts are text, never markup.
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
 
 // ── App startup ──────────────────────────────────────────────────────────────
 async function startApp(){
@@ -1236,8 +1240,8 @@ async function loadWorkers(){
     const gpuW = workers.filter(w=>w.type==='gpu'&&w.status==='active').length;
     setEl('cpu-worker-count',cpuW);
     setEl('gpu-worker-count',gpuW);
-    setEl('cpu-worker-limit',cpuW+' / '+(ld.cpu_workers||2)+' licensed');
-    setEl('gpu-worker-limit',gpuW+' / '+(ld.gpu_workers||0)+' licensed');
+    setEl('cpu-worker-limit',cpuW+' / '+lim(ld.cpu_workers||0)+' licensed');
+    setEl('gpu-worker-limit',gpuW+' / '+lim(ld.gpu_workers||0)+' licensed');
     if(!workers.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text3)">No workers deployed</td></tr>';return}
     tbody.innerHTML = workers.map(w=>`<tr>
       <td style="font-weight:700;color:var(--primary2)">${w.id}</td>
@@ -1417,7 +1421,11 @@ async function loadCost(){
           </div>`).join('')}
         </div>`
       : '<div style="color:var(--text3);font-size:.78rem">No spend data yet</div>';
-  }catch(e){}
+  }catch(e){
+    // e.g. Starter: "Cost analytics is not included in your edition (…). Upgrade at https://axto.io/app/self-hosted"
+    const box=document.getElementById('daily-cost-chart');
+    if(box){box.textContent='';const d=document.createElement('div');d.style.cssText='color:var(--amber);font-size:.8rem;line-height:1.6';d.textContent=e.message;box.appendChild(d);}
+  }
 }
 
 // ── Vault ─────────────────────────────────────────────────────────────────────
@@ -1494,26 +1502,7 @@ async function loadHardening(){
 }
 
 // ── License ───────────────────────────────────────────────────────────────────
-async function loadLicenseStatus(){
-  try{
-    const d = await api('GET','/api/license/status');
-    const ok = d.status==='ACTIVE';
-    setEl('lic-status', d.status); document.getElementById('lic-status').style.color=ok?'var(--green)':'var(--red)';
-    setEl('lic-id',      d.license_id||'—');
-    setEl('lic-tier',    d.tier||'—');
-    setEl('lic-mode',    d.license_mode||'—');
-    setEl('lic-client',  d.client_name||'—');
-    setEl('lic-wl',      d.wl_name||'—');
-    setEl('lic-expires', d.expires_at?new Date(d.expires_at).toLocaleDateString():'Lifetime / None');
-    setEl('lic-cpu',     d.cpu_workers||'—');
-    setEl('lic-gpu',     d.gpu_workers||'—');
-    setEl('lic-nodes',   d.max_nodes||'—');
-    setEl('lic-users',   d.max_end_users||'—');
-    setEl('lic-gpuod',   d.gpu_on_demand?'✅ Enabled':'—');
-    setEl('lic-wlr',     d.can_wl_rebrand?'✅ Enabled':'—');
-    setEl('lic-unitid',  d.unit_id||'—');
-  }catch(e){}
-}
+// loadLicenseStatus() is defined once, with the licence page, at the end of this script.
 
 async function installLicense(){
   const artifact = document.getElementById('lic-artifact').value.trim();
@@ -1567,7 +1556,6 @@ let _gpuWorkers = [];
 let _chatHistory = [];
 let _chatStats = {in:0, out:0, cost:0};
 let _asConfig = {enabled:false,up:75,down:20,min:1,cool:120,thermal:true,warn:72,crit:82,kill:90,strat:'coolest_first'};
-let _blacklist = [];
 
 const MODELS = {
   openai:    ['gpt-4o','gpt-4o-mini','gpt-4-turbo','o1-preview','gpt-3.5-turbo'],
@@ -1622,9 +1610,9 @@ async function loadGPUPool(){
     const used = gpus.filter(w=>w.status!=='removed').length;
     const pct = licensed>0 ? Math.min(100,(used/licensed)*100) : 0;
 
-    setEl('gpu-lic-badge',`${used}/${licensed} GPU licensed`);
-    setEl('gpu-bar-lbl',`${used} / ${licensed}`);
-    setEl('gpu-lim-val', licensed);
+    setEl('gpu-lic-badge',`${used}/${lim(licensed)} GPU licensed`);
+    setEl('gpu-bar-lbl',`${used} / ${lim(licensed)}`);
+    setEl('gpu-lim-val', lim(licensed));
     const bar=document.getElementById('gpu-lic-bar');
     if(bar){bar.style.width=pct+'%';bar.className='meter-fill '+(pct>=100?'meter-fill-red':pct>=80?'meter-fill-amber':'');}
     document.getElementById('gpu-lim-warn') && (document.getElementById('gpu-lim-warn').style.display=used>=licensed?'block':'none');
@@ -1649,7 +1637,7 @@ async function loadGPUPool(){
       if(!gpus.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3)">No GPU workers</td></tr>';}
       else{tbody.innerHTML=gpus.map(w=>{
         const temp=w.temp_c||0;
-        const tcls=temp>=82?'tc-crit':temp>=72?'tc-hot':temp>=60?'tc-warn':'tc-ok';
+        const tcls=temp>=(_asConfig.crit||82)?'tc-crit':temp>=(_asConfig.warn||72)?'tc-hot':temp>=60?'tc-warn':'tc-ok';
         const vram_u=w.vram_used_gb||0, vram_t=w.vram_gb||0;
         const load=w.load_pct||0;
         return `<tr>
@@ -1657,7 +1645,7 @@ async function loadGPUPool(){
           <td><span class="vbadge ${VCLASS[w.vendor||'nvidia']}">${VICON[w.vendor||'nvidia']} ${(w.vendor||'GPU').toUpperCase()}</span></td>
           <td>${w.label||'—'}</td>
           <td style="color:var(--text3)">${w.node_id}</td>
-          <td class="${tcls}" style="font-weight:700;font-family:var(--mono)">${temp}°C</td>
+          <td class="${tcls}" style="font-weight:700;font-family:var(--mono)">${w.temp_c==null?'—':temp+'°C'}</td>
           <td style="font-family:var(--mono)">${vram_u}/${vram_t}GB</td>
           <td><div class="meter-bar" style="width:60px;display:inline-block"><div class="meter-fill${load>80?' meter-fill-red':load>50?' meter-fill-amber':''}" style="width:${load}%"></div></div> ${load}%</td>
           <td>${w.tasks_total||0}</td>
@@ -1676,9 +1664,9 @@ function renderGPUCard(w){
   const temp=w.temp_c||0, load=w.load_pct||0;
   const vramU=w.vram_used_gb||0, vramT=w.vram_gb||0;
   const vramPct=vramT>0?Math.min(100,(vramU/vramT)*100):0;
-  const tempCls=temp>=82?'tc-crit':temp>=72?'tc-hot':temp>=60?'tc-warn':'tc-ok';
-  const cardExtra=temp>=82?'gpu-hot':temp>=72?'gpu-warn':'gpu-ok';
-  const tiCls=temp>=82?'ti-crit':temp>=72?'ti-hot':temp>=60?'ti-warn':'ti-ok';
+  const tempCls=temp>=(_asConfig.crit||82)?'tc-crit':temp>=(_asConfig.warn||72)?'tc-hot':temp>=60?'tc-warn':'tc-ok';
+  const cardExtra=temp>=(_asConfig.crit||82)?'gpu-hot':temp>=(_asConfig.warn||72)?'gpu-warn':'gpu-ok';
+  const tiCls=temp>=(_asConfig.crit||82)?'ti-crit':temp>=(_asConfig.warn||72)?'ti-hot':temp>=60?'ti-warn':'ti-ok';
   const vendor=w.vendor||'nvidia';
   const hot=temp>=(_asConfig.warn||72);
   const crit=temp>=(_asConfig.crit||82);
@@ -1686,7 +1674,7 @@ function renderGPUCard(w){
     <div class="thermal-indicator ${tiCls}"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <span class="vbadge ${VCLASS[vendor]}">${VICON[vendor]} ${vendor.toUpperCase()}</span>
-      <span class="${tempCls} gpu-temp">${temp}°C</span>
+      <span class="${tempCls} gpu-temp">${w.temp_c==null?'—':temp+'°C'}</span>
     </div>
     <div style="font-weight:700;font-size:.82rem;margin-bottom:3px">${w.label||w.id}</div>
     <div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin-bottom:8px">${w.model||'—'} · Node: ${w.node_id||'?'}</div>
@@ -1725,9 +1713,9 @@ async function runGPUDetect(){
       document.getElementById('gpu-add-vram') && (document.getElementById('gpu-add-vram').value=fg.vram_gb||'');
       document.getElementById('gpu-add-lbl') && (document.getElementById('gpu-add-lbl').value=fg.name||'');
     } else {
-      if(el) el.innerHTML='<span style="color:var(--amber)">⚠️ No GPUs detected (CPU fallback available)</span>';
+      if(el) el.innerHTML='<span style="color:var(--amber)">⚠️ No GPUs detected (CPU fallback available)</span>'+(r.note?'<div style="font-size:.7rem;color:var(--text3);margin-top:4px">'+esc(r.note)+'</div>':'');
     }
-  }catch(e){if(el) el.innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;}
+  }catch(e){if(el) el.innerHTML=`<span style="color:var(--red)">❌ ${esc(e.message)}</span>`;}
 }
 
 async function addGPUWorker(){
@@ -1776,13 +1764,13 @@ function updateThermalMap(gpus){
   if(!gpus||!gpus.length){el.innerHTML='<div style="color:var(--text3);font-size:.78rem;padding:10px">No GPU workers</div>';return;}
   el.innerHTML=gpus.map(w=>{
     const temp=w.temp_c||0;
-    const bg=temp>=82?'var(--red2)':temp>=72?'rgba(251,146,60,.12)':temp>=60?'var(--amber2)':'var(--green2)';
-    const fc=temp>=82?'var(--red)':temp>=72?'#fb923c':temp>=60?'var(--amber)':'var(--green)';
-    const bc=temp>=82?'rgba(248,113,113,.4)':temp>=72?'rgba(251,146,60,.35)':temp>=60?'rgba(251,191,36,.3)':'rgba(34,211,168,.2)';
-    const label=temp>=82?'🚨 CRITICAL':temp>=72?'🔥 HOT':temp>=60?'⚠️ WARM':'✅ OK';
+    const bg=temp>=(_asConfig.crit||82)?'var(--red2)':temp>=(_asConfig.warn||72)?'rgba(251,146,60,.12)':temp>=60?'var(--amber2)':'var(--green2)';
+    const fc=temp>=(_asConfig.crit||82)?'var(--red)':temp>=(_asConfig.warn||72)?'#fb923c':temp>=60?'var(--amber)':'var(--green)';
+    const bc=temp>=(_asConfig.crit||82)?'rgba(248,113,113,.4)':temp>=(_asConfig.warn||72)?'rgba(251,146,60,.35)':temp>=60?'rgba(251,191,36,.3)':'rgba(34,211,168,.2)';
+    const label=temp>=(_asConfig.crit||82)?'🚨 CRITICAL':temp>=(_asConfig.warn||72)?'🔥 HOT':temp>=60?'⚠️ WARM':'✅ OK';
     return `<div style="background:${bg};border:1px solid ${bc};border-radius:10px;padding:12px;text-align:center">
       <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-bottom:3px">${w.id}</div>
-      <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:${fc}">${temp}°C</div>
+      <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:${fc}">${w.temp_c==null?'—':temp+'°C'}</div>
       <div style="font-size:.6rem;color:var(--text3);margin-top:3px">${w.label||(w.vendor||'GPU').toUpperCase()}</div>
       <div style="font-size:.58rem;color:${fc};margin-top:3px">${label}</div>
     </div>`;
@@ -1790,13 +1778,22 @@ function updateThermalMap(gpus){
 }
 
 // ── Auto-Scale ────────────────────────────────────────────────────────────
-function loadASConfig(){
+async function loadASConfig(){
+  // Saved rules, 24 h counters and the edition come from Orchestra Core, not from this page.
+  let cfg=null;
+  try{
+    const [c, wd, ld] = await Promise.all([api('GET','/api/autoscale/config'), api('GET','/api/workers'), api('GET','/api/license/status')]);
+    cfg=c; _licData=ld; _gpuWorkers=(wd.workers||[]).filter(w=>w.type==='gpu');
+    _asConfig={..._asConfig, ...c};
+    setEl('as-events', c.scale_events_24h||0);
+    setEl('as-reroutes', c.thermal_reroutes_24h||0);
+  }catch(e){toast('Auto-Scale: '+e.message,'error');}
   const lic=_licData;
   const licensed=lic.gpu_workers||0;
   const used=_gpuWorkers.filter(w=>w.status==='active').length;
-  setEl('as-remain',licensed-used);
+  setEl('as-remain',licensed>=1000000?'unlimited':licensed-used);
   setEl('manual-gpu-n',used);
-  setEl('manual-lim-note','license: '+licensed+' GPU max');
+  setEl('manual-lim-note','license: '+lim(licensed)+' GPU max');
   setEl('as-status',_asConfig.enabled?'ON':'OFF');
   setEl('as-sub',_asConfig.enabled?'auto-scaling active':'manual only');
   document.getElementById('as-enabled') && (document.getElementById('as-enabled').checked=_asConfig.enabled);
@@ -1813,6 +1810,12 @@ function loadASConfig(){
   document.getElementById('tc-v') && (document.getElementById('tc-v').textContent=_asConfig.crit+'°C');
   document.getElementById('therm-kill') && (document.getElementById('therm-kill').value=_asConfig.kill);
   document.getElementById('tk-v') && (document.getElementById('tk-v').textContent=_asConfig.kill+'°C');
+  document.getElementById('therm-strat') && (document.getElementById('therm-strat').value=_asConfig.strat||'coolest_first');
+  const asT=document.getElementById('as-enabled');
+  if(cfg&&asT){
+    asT.disabled=!cfg.licensed;
+    if(!cfg.licensed){asT.checked=false;setEl('as-status','OFF');setEl('as-sub','not in your edition — upgrade at axto.io/app/self-hosted');}
+  }
   // Template dropdown
   const sel=document.getElementById('as-tmpl');
   if(sel) sel.innerHTML=_gpuWorkers.length?_gpuWorkers.map(w=>`<option value="${w.id}">${w.label||w.id} (${w.vendor||'?'} · ${w.model||'?'})</option>`).join(''):'<option value="">No GPU workers deployed</option>';
@@ -1863,9 +1866,10 @@ async function saveASConfig(){
     strat: document.getElementById('therm-strat')?.value||'coolest_first',
   };
   try{
-    await api('PUT','/api/autoscale/config',_asConfig);
+    const saved=await api('PUT','/api/autoscale/config',_asConfig);
+    _asConfig={..._asConfig, ...saved};
     toast('✅ Auto-Scale config saved','ok');
-  }catch(e){toast('Config saved locally (API offline)','ok');}
+  }catch(e){toast('Not saved: '+e.message,'error');return;}
   addScaleLog('ok','Config saved — AutoScale:'+(_asConfig.enabled?'ON':'OFF')+' Thermal:'+(_asConfig.thermal?'ON':'OFF'));
 }
 
@@ -1998,10 +2002,10 @@ async function runMultiAI(){
       const lat=Date.now()-t0;
       const reply=r.content||r.text||'(empty)';
       const el=document.getElementById('ma-r-'+prov);
-      if(el) el.innerHTML=`<div style="font-weight:700;font-size:.78rem;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:var(--primary2);font-family:var(--mono)">${prov}</span><span class="badge badge-green">✅ ${lat}ms</span></div><div style="font-size:.74rem;color:var(--text2);margin-bottom:8px;line-height:1.6">${reply.substring(0,400)}${reply.length>400?'...':''}</div><div style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">In: ${r.input_tokens||0} · Out: ${r.output_tokens||0} · $${(r.cost_usd||0).toFixed(5)}</div>`;
+      if(el) el.innerHTML=`<div style="font-weight:700;font-size:.78rem;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:var(--primary2);font-family:var(--mono)">${prov}</span><span class="badge badge-green">✅ ${lat}ms</span></div><div style="font-size:.74rem;color:var(--text2);margin-bottom:8px;line-height:1.6">${esc(reply.substring(0,400))}${reply.length>400?'...':''}</div><div style="font-size:.62rem;color:var(--text3);font-family:var(--mono)">In: ${r.input_tokens||0} · Out: ${r.output_tokens||0} · $${(r.cost_usd||0).toFixed(5)}</div>`;
     }catch(e){
       const el=document.getElementById('ma-r-'+prov);
-      if(el) el.innerHTML=`<div style="font-weight:700;font-size:.78rem;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:var(--primary2);font-family:var(--mono)">${prov}</span><span class="badge badge-red">❌ Error</span></div><div style="font-size:.74rem;color:var(--red)">${e.message}</div>`;
+      if(el) el.innerHTML=`<div style="font-weight:700;font-size:.78rem;margin-bottom:6px;display:flex;justify-content:space-between"><span style="color:var(--primary2);font-family:var(--mono)">${prov}</span><span class="badge badge-red">❌ Error</span></div><div style="font-size:.74rem;color:var(--red)">${esc(e.message)}</div>`;
     }
   }));
   if(btn){btn.disabled=false;btn.textContent='▶ Run on All Selected';}
@@ -2076,9 +2080,9 @@ async function loadLicenseStatus(){
     }
 
     // Entitlements
-    setEl('lic-cpu2', d.cpu_workers||'—');
-    setEl('lic-gpu2', d.gpu_workers||'—');
-    setEl('lic-nodes2', d.max_nodes||'—');
+    setEl('lic-cpu2', lim(d.cpu_workers)||'—');
+    setEl('lic-gpu2', lim(d.gpu_workers)||'—');
+    setEl('lic-nodes2', lim(d.max_nodes)||'—');
     setEl('lic-users2', d.max_end_users||'—');
     setEl('lic-domains', d.max_domains||'—');
     setEl('lic-gpuod2', d.gpu_on_demand?'✅ Enabled':'—');
@@ -2089,9 +2093,9 @@ async function loadLicenseStatus(){
     setEl('lic-id', d.license_id||'—');
     setEl('lic-tier', (d.tier||'trial').toUpperCase());
     setEl('lic-status', d.status||'—');
-    setEl('lic-cpu', d.cpu_workers||'—');
-    setEl('lic-gpu', d.gpu_workers||'—');
-    setEl('lic-nodes', d.max_nodes||'—');
+    setEl('lic-cpu', lim(d.cpu_workers)||'—');
+    setEl('lic-gpu', lim(d.gpu_workers)||'—');
+    setEl('lic-nodes', lim(d.max_nodes)||'—');
     setEl('lic-users', d.max_end_users||'—');
     setEl('lic-gpuod', d.gpu_on_demand?'✅':'—');
     setEl('lic-wlr', d.can_wl_rebrand?'✅':'—');
