@@ -116,6 +116,10 @@ func TestVendorToolsGiveExactModelAndVRAM(t *testing.T) {
 	if len(rocm) != 1 || rocm[0].Name != "AMD Radeon RX 7900 XTX" || rocm[0].VRAMGB != 24 {
 		t.Errorf("rocm-smi = %+v", rocm)
 	}
+	// Only a PCI id: no made-up name.
+	if r := parseRocmSMI(`{"card0":{"Card model":"0x744c"}}`); len(r) != 1 || r[0].Name != "AMD Radeon GPU" {
+		t.Errorf("rocm-smi without a series = %+v", r)
+	}
 	xpu := parseXpuSMI(`{"device_list":[{"device_id":0,"device_name":"Intel(R) Arc(TM) A770 Graphics","memory_physical_size_byte":17179869184}]}`)
 	if len(xpu) != 1 || xpu[0].Name != "Intel(R) Arc(TM) A770 Graphics" || xpu[0].VRAMGB != 16 {
 		t.Errorf("xpu-smi = %+v", xpu)

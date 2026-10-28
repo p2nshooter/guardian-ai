@@ -104,6 +104,10 @@ def test_rocm_smi_json_gives_card_series_and_vram():
     gpus = gi.parse_rocm_smi(text)
     assert [g["name"] for g in gpus] == ["AMD Radeon RX 7900 XTX"]
     assert gpus[0]["vram_gb"] == 24.0 and gpus[0]["backend"] == "rocm"
+    # The PCI id first in the object, or alone, never becomes the name.
+    swapped = json.dumps({"card0": {"Card model": "0x744c", "Card series": "Radeon RX 7900 XTX"}})
+    assert gi.parse_rocm_smi(swapped)[0]["name"] == "AMD Radeon RX 7900 XTX"
+    assert gi.parse_rocm_smi(json.dumps({"card0": {"Card model": "0x744c"}}))[0]["name"] == "AMD Radeon GPU"
 
 
 def test_xpu_smi_json_gives_intel_arc_model_and_vram():

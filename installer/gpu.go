@@ -249,13 +249,23 @@ func parseRocmSMI(text string) []GPU {
 		if !ok {
 			continue
 		}
+		// Map order is random: pick the name by preference, never by iteration order.
+		// "Card series" is the marketing name; "Card model" is often a PCI id (0x744c).
 		model, vram := "", 0.0
-		for k, v := range info {
-			lk := strings.ToLower(k)
-			if model == "" && (strings.Contains(lk, "series") || strings.Contains(lk, "model")) {
-				model = fmt.Sprint(v)
+		for _, want := range []string{"series", "model", "sku"} {
+			for k, v := range info {
+				s := strings.TrimSpace(fmt.Sprint(v))
+				if strings.Contains(strings.ToLower(k), want) && s != "" && !strings.HasPrefix(strings.ToLower(s), "0x") && (model == "" || k < model) {
+					model = k
+				}
 			}
-			if strings.Contains(lk, "vram total memory") {
+			if model != "" {
+				model = strings.TrimSpace(fmt.Sprint(info[model]))
+				break
+			}
+		}
+		for k, v := range info {
+			if strings.Contains(strings.ToLower(k), "vram total memory") {
 				vram = toFloat(v) / (1 << 30)
 			}
 		}

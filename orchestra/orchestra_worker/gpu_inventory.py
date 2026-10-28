@@ -174,7 +174,9 @@ def parse_rocm_smi(text: str) -> list[dict]:
     for card, info in sorted(data.items()) if isinstance(data, dict) else []:
         if not card.startswith("card") or not isinstance(info, dict):
             continue
-        model = next((str(v) for k, v in info.items() if "series" in k.lower() or "model" in k.lower()), "")
+        # "Card series" is the marketing name; "Card model" is often a PCI id (0x744c).
+        model = next((str(v).strip() for want in ("series", "model", "sku") for k, v in sorted(info.items())
+                      if want in k.lower() and str(v).strip() and not str(v).strip().lower().startswith("0x")), "")
         total = next((v for k, v in info.items() if "vram total memory" in k.lower()), 0)
         try:
             vram = float(total) / 1024 ** 3
