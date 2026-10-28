@@ -299,7 +299,10 @@ export async function migrationStep(d: Data, env: StepEnv): Promise<MigrationSta
         if (!p.conflicts.some((x) => x.table === def.table && x.id === id)) p.conflicts.push({ table: def.table, id, field });
       }
     };
-    for (let i = 0; i < rows.length; i += PARALLEL) await Promise.all(rows.slice(i, i + PARALLEL).map(copyRow));
+    // A collection with a uniqueness guard is copied one row at a time in D1 order, so the earlier row always keeps a
+    // shared value and the later one becomes the conflict; in parallel either could win the guard.
+    const width = coll.def.unique?.length ? 1 : PARALLEL;
+    for (let i = 0; i < rows.length; i += width) await Promise.all(rows.slice(i, i + width).map(copyRow));
     p.offset += rows.length;
     budget -= rows.length;
     await save();
