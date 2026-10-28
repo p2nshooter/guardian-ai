@@ -36,6 +36,7 @@ import routing_engine
 import database as db
 import autoscale_config
 import client_api
+import gpu_advisor
 from autoscaler import get_autoscaler
 from semantic_router import get_classifier, get_inj_detector
 
@@ -727,6 +728,14 @@ async def autoscale_config_put(request: Request, _=Depends(require_console)):
         if not a._running:
             a.start()
     return {"ok": True, **cfg}
+
+
+@app.get("/api/gpu/advice")
+async def gpu_advice(_=Depends(require_console)):
+    """GPU suggestions for the console: the GPUs free now (best first) and what needs
+    attention (hot, paused, offline, all busy with the slots left, idle)."""
+    return gpu_advisor.advise(worker_manager.get_all_workers(check_heartbeat=False),
+                              autoscale_config.get_config(), enforcement.worker_limit("gpu"))
 
 
 @app.get("/api/autoscaler/status")

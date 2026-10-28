@@ -328,6 +328,8 @@ async function learnHash(){
 async function refreshFeed(){try{await api('/feed/refresh',{});toast('Feeds refreshing…');}catch(e){toast(e.message,false);}}
 // Live event WebSocket
 let liveFeed=[];
+// File names and threat names come from scanned files: text, never markup.
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
 function connectWS(){
   const p=location.protocol==='https:'?'wss:':'ws:';
   const ws=new WebSocket(`${p}//${location.host}/ws/events`);
@@ -336,7 +338,7 @@ function connectWS(){
     try{const d=JSON.parse(e.data);if(d.type==='ping')return;
       liveFeed.unshift(d);if(liveFeed.length>50)liveFeed.pop();
       const el=document.getElementById('live-feed');
-      el.innerHTML=liveFeed.map(ev=>`<div style="padding:8px 12px;border-radius:8px;border:1px solid ${ev.infected||ev.threat_found?'rgba(239,68,68,.2)':'rgba(22,40,24,.5)'};background:${ev.infected||ev.threat_found?'rgba(239,68,68,.06)':'var(--surf2)'};font-size:12px"><div style="display:flex;align-items:center;gap:8px"><span>${ev.infected||ev.threat_found?'🔴':'✅'}</span><span class="mono" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.file_path||ev.path||'scan event'}</span><span style="color:var(--text3);white-space:nowrap">${ev.timestamp?new Date(ev.timestamp).toLocaleTimeString():'now'}</span></div>${ev.threat_name?`<div style="margin-top:4px;color:#f87171">${ev.threat_name}</div>`:''}</div>`).join('');
+      el.innerHTML=liveFeed.map(ev=>`<div style="padding:8px 12px;border-radius:8px;border:1px solid ${ev.infected||ev.threat_found?'rgba(239,68,68,.2)':'rgba(22,40,24,.5)'};background:${ev.infected||ev.threat_found?'rgba(239,68,68,.06)':'var(--surf2)'};font-size:12px"><div style="display:flex;align-items:center;gap:8px"><span>${ev.infected||ev.threat_found?'🔴':'✅'}</span><span class="mono" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ev.file_path||ev.path||'scan event')}</span><span style="color:var(--text3);white-space:nowrap">${ev.timestamp?new Date(ev.timestamp).toLocaleTimeString():'now'}</span></div>${ev.threat_name?`<div style="margin-top:4px;color:#f87171">${esc(ev.threat_name)}</div>`:''}</div>`).join('');
     }catch(err){}
   };
   ws.onclose=()=>{document.getElementById('ws-status').className='badge br';document.getElementById('ws-status').textContent='Disconnected';setTimeout(connectWS,4000);}

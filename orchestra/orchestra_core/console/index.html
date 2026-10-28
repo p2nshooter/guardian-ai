@@ -587,6 +587,11 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
       </div>
     </div>
   </div>
+  <div class="card2" id="gpu-advice" style="margin-bottom:14px">
+    <div class="card-title">🧭 GPU suggestions</div>
+    <div id="gpu-advice-best" style="font-size:.75rem;color:var(--text2)">Loading…</div>
+    <div id="gpu-advice-notices" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+  </div>
   <div class="card2" id="add-gpu-panel" style="display:none;margin-bottom:14px;border-color:rgba(56,189,248,.25)">
     <div class="card-title">🖥️ Add GPU Worker</div>
     <div id="gpu-lim-warn" style="display:none;background:var(--red2);border:1px solid var(--red);border-radius:8px;padding:10px;font-size:.78rem;color:var(--red);margin-bottom:10px">⚠️ GPU license limit reached. Upgrade your package to add more.</div>
@@ -1113,7 +1118,7 @@ function go(page, el){
   if(page==='vault') loadVault();
   if(page==='hardening') loadHardening();
   if(page==='license') loadLicenseStatus();
-  if(page==='gpu') loadGPUPool();
+  if(page==='gpu') { loadGPUPool(); loadGPUAdvice(false); }
   if(page==='autoscale') loadASConfig();
   if(page==='monitor') loadMonitor();
   if(page==='chat') initChat();
@@ -1161,7 +1166,35 @@ async function startApp(){
   }catch(e){console.warn('brand fetch',e);}
 }
 
+// ── GPU suggestions (gpu_advisor.py): free GPUs best first, and notices ─────────
+const _seenNotices = new Set();
+function _noticeHtml(n){
+  const c = n.level==='crit'?'var(--red)':n.level==='warn'?'var(--amber)':'var(--cyan)';
+  const i = n.level==='crit'?'🔥':n.level==='warn'?'⚠️':'💡';
+  return `<div style="border:1px solid ${c};border-radius:8px;padding:8px 10px;font-size:.74rem"><b style="color:${c}">${i} ${esc(n.title)}</b><div style="color:var(--text2);margin-top:2px">${esc(n.text)}</div></div>`;
+}
+async function loadGPUAdvice(notify){
+  let d; try{ d = await api('GET','/api/gpu/advice'); }catch(e){ return; }
+  const best = document.getElementById('gpu-advice-best');
+  if(best){
+    best.innerHTML = d.best.length
+      ? '<div style="margin-bottom:4px">Free now, best first ('+esc(d.summary.strategy.replace('_',' '))+'):</div>' +
+        d.best.slice(0,5).map((g,i)=>`<div style="font-family:var(--mono);font-size:.7rem">${i+1}. ${esc(g.name)} — ${esc(g.facts)}</div>`).join('')
+      : 'No GPU can take work right now.';
+    document.getElementById('gpu-advice-notices').innerHTML = d.notices.map(_noticeHtml).join('');
+  }
+  // New warnings and critical notices are shown once, wherever you are in the console:
+  // the most serious one (notices come critical first), with a count of the others.
+  const fresh = d.notices.filter(n=>!_seenNotices.has(n.id) && n.level!=='info');
+  d.notices.forEach(n=>_seenNotices.add(n.id));
+  if(notify && fresh.length){
+    const n = fresh[0];
+    toast((n.level==='crit'?'🔥 ':'⚠️ ')+n.title+(fresh.length>1?` (+${fresh.length-1} more in GPU Pool)`:''), n.level==='crit'?'error':'info');
+  }
+}
+
 async function refreshAll(){
+  loadGPUAdvice(true);
   try{
     const [status,queue] = await Promise.all([
       api('GET','/status'),

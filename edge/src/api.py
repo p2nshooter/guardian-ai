@@ -50,7 +50,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import structlog
 
@@ -70,6 +70,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── Licence gate ─────────────────────────────────────────────────────────────
+# Owner, 28 Oct 2026: downloadable by anyone, usable only with an official licence.
+# Without a valid licence (signed online validation, verified offline grace or a
+# lifetime offline activation) every route except the activation page, /activate,
+# health and the support page answers 403 — the customer gateway included.
+MANAGE_URL = "https://axto.io/app/self-hosted"
+OPEN_PATHS = {"/", "/activate", "/health", "/support", "/favicon.ico"}
+
+
+def _licensed() -> bool:
+    info = EdgeCore.get().license_info
+    return bool(info and info.valid)
+
+
+def _locked_body() -> dict:
+    info = EdgeCore.get().license_info
+    return {"error": "license_inactive", "reason": info.reason if info else "not_validated",
+            "product": "axto-edge",
+            "message": "AXTO Edge needs a valid licence. Activate it on this server's start page or manage it online.",
+            "manage_url": MANAGE_URL}
+
+
+@app.middleware("http")
+async def _license_gate(request: Request, call_next):
+    if request.url.path not in OPEN_PATHS and request.method != "OPTIONS" and not _licensed():
+        return JSONResponse(status_code=403, content={"detail": _locked_body()})
+    return await call_next(request)
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -634,6 +663,9 @@ async def support():
 @app.websocket("/ws/usage")
 async def ws_usage(ws: WebSocket):
     """Real-time usage stream — per-subscriber queue, no stealing."""
+    if not _licensed():                    # the HTTP gate does not see WebSockets
+        await ws.close(code=4403)
+        return
     await ws.accept()
     core  = EdgeCore.get()
     sub_q = await core.ws_mgr.subscribe()

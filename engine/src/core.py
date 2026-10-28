@@ -74,7 +74,6 @@ class GuardianCore:
         self.threat_intel  = ThreatIntelEngine()
         self.compliance    = ComplianceEngine()
         self.ebpf          = get_ebpf()
-        self.license_info: LicenseInfo | None = None
         self._node_count = 0
         self._started = False
         self._start_lock = asyncio.Lock()  # guard against concurrent startup() calls
@@ -106,7 +105,7 @@ class GuardianCore:
         log.info("🛡️  AXTO Guardian — AI eXecution & Tools Orchestration starting...")
 
         # License validation
-        self.license_info = await self.license_validator.validate(0)
+        await self.license_validator.validate(0)
         if self.license_info.valid:
             log.info(f"License: {self.license_info.package} — expires {self.license_info.expires_at}")
         else:
@@ -212,6 +211,13 @@ class GuardianCore:
         s = self.detector.feed_stats
         log.info("🔄 Threat feed → detector synced",
                  hashes=s["hashes"], ips=s["ips"], domains=s["domains"])
+
+    @property
+    def license_info(self) -> "LicenseInfo | None":
+        """Always the validator's current state, so the heartbeat's re-validation (an
+        expiry, a revocation, a restored network) and a key activated from the wizard
+        take effect at once. None until the first validation has run."""
+        return self.license_validator.current_state()
 
     # ── Background collector ──────────────────────────────────────
 
