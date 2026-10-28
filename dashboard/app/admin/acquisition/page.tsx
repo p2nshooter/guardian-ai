@@ -142,7 +142,7 @@ export default function AdminAcquisitionPage() {
         </Section>
       </div>
       {s.mode === "auction" ? (
-        <div className="mt-5 grid gap-5 xl:grid-cols-2" data-testid="sale-auction-admin">
+        <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2" data-testid="sale-auction-admin">
           <Section title="Auction settings" description="Owner, 28 Oct 2026: the opening bid is random between US$10M and US$100M. It is drawn once when a round opens and stored, so every visitor sees the same figure.">
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
               <input type="checkbox" className="accent-brand-600" checked={s.auction.randomOpen} onChange={(e) => setA({ randomOpen: e.target.checked })} data-testid="sale-random-open" />
@@ -151,7 +151,7 @@ export default function AdminAcquisitionPage() {
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="block text-sm font-semibold text-slate-700">Opening bid when not drawn (USD)
                 <div className="mt-1 flex gap-2">
-                  <input className="input" inputMode="numeric" disabled={s.auction.randomOpen} value={s.auction.openUsd ? String(s.auction.openUsd) : ""} placeholder="10000000 – 100000000"
+                  <input className="input min-w-0 flex-1" inputMode="numeric" disabled={s.auction.randomOpen} value={s.auction.openUsd ? String(s.auction.openUsd) : ""} placeholder="10000000 – 100000000"
                     onChange={(e) => setA({ openUsd: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })} data-testid="sale-open" />
                   <button type="button" className="btn-secondary" disabled={s.auction.randomOpen} onClick={() => setA({ openUsd: draw() })} title="Draw a random figure in the range">🎲</button>
                 </div>

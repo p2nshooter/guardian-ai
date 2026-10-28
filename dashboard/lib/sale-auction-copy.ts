@@ -16,7 +16,7 @@ export const SALE_AUC_EN = {
   currentBid: "Current bid",
   winningBid: "Winning bid",
   endsIn: "Ends in",
-  bids: "{n} bids",
+  bids: "Bids: {n}",
   noBids: "No bids yet — a bid at the opening price can win.",
   placeBid: "Place a bid",
   noReserve: "No hidden reserve: the highest bid when the clock stops buys the whole of AXTO.",
