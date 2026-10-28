@@ -1,5 +1,7 @@
 /* AXTO — POST /api/acquire/checkout {gateway, company?, name?, phone?, message?}
- * Starts the purchase of the whole site at OUR price (Admin → Site sale).
+ * Starts the purchase of the whole site: in auction mode only the winning bidder,
+ * at the winning bid (lib/sale-auction.ts); at a fixed price, anyone at OUR price
+ * (Admin → Site sale).
  *   paypal · stripe · nowpayments → hosted payment page URL (back to /acquire)
  *   crypto                         → wallets + exact amounts (confirmed on-chain)
  *   manual                         → the owner's BNI accounts (wire), WhatsApp for the receipt
@@ -16,6 +18,7 @@ import { gatewayCreds, gatewayInfo, usdIdrRate, toIdr, CRYPTO_ASSETS, ENV_KEY, t
 import { stripeCreate, paypalCreate, nowpaymentsCreate, type OrderForPayment } from "@/lib/billing/providers";
 import { quoteCrypto } from "@/lib/billing/crypto-watch";
 import { getSale, saleGatewayAllowed, accountFor } from "@/lib/acquisition";
+import { noteRoundOrder, winnerCheckout } from "@/lib/sale-auction";
 import { cleanText } from "@/lib/support/store";
 import { SITE } from "@/lib/site";
 
@@ -29,17 +32,21 @@ export async function POST(req: NextRequest) {
   const sale = await getSale(db);
   if (sale.status !== "open") return fail(sale.status === "sold" ? `${SITE.name} has been sold.` : "The offer is paused at the moment.", 409);
 
+  // Auction (owner, 28 Oct 2026): only the winner pays, and pays the winning bid.
+  const win = sale.mode === "auction" ? await winnerCheckout(db, ctx.session.sub) : null;
+  if (win && "error" in win) return fail(win.error, 409);
+  const amountUsd = win ? win.amountUsd : sale.priceUsd;
+
   const b = await readJson(req);
   const gateway = String(b?.gateway || "") as GatewayId;
   const info = gatewayInfo(gateway);
-  if (!info || !saleGatewayAllowed(sale, gateway, sale.priceUsd)) return fail("Choose a payment method.");
+  if (!info || !saleGatewayAllowed(sale, gateway, amountUsd)) return fail("Choose a payment method.");
   const buyer = { company: cleanText(b?.company, 160), name: cleanText(b?.name, 120) || ctx.session.name || "", phone: cleanText(b?.phone, 40), message: cleanText(b?.message, 2000) };
 
   // A wire goes straight to the owner's BNI accounts; every other method needs its gateway to be live in Admin → Payments.
   const creds = gateway === "manual" ? null : await gatewayCreds(db, gateway);
   if (gateway !== "manual" && !creds) return fail("That payment method is not available right now. Please choose another.", 503);
   const env = creds?.[ENV_KEY] === "sandbox" ? "sandbox" : "live";
-  const amountUsd = sale.priceUsd;
   const rate = gateway === "manual" ? await usdIdrRate(db, getEnv(req).KV) : 0;
   const amountIdr = rate ? toIdr(amountUsd, rate) : 0;
   const crypto = gateway === "crypto" && creds ? await quoteCrypto(db, amountUsd, creds) : null;
@@ -47,13 +54,14 @@ export async function POST(req: NextRequest) {
   // One open order per buyer and method: reuse it instead of piling up duplicates.
   const since = new Date(Date.now() - 6 * 3600_000).toISOString();
   const open = (await db.orders.listDocs("user", ctx.session.sub, { limit: 50 })).docs
-    .find((x) => x.plan === "acquisition" && x.gateway === gateway && x.status === "pending" && x.created_at > since);
+    .find((x) => x.plan === "acquisition" && x.gateway === gateway && x.status === "pending" && x.created_at > since && x.amount_usd === amountUsd);
   const id = gateway === "manual" && open ? open.id : newId("ord");
   if (id !== open?.id) {
     await db.orders.create(newOrder({
       id, user_id: ctx.session.sub, email: ctx.session.email, plan: "acquisition", cycle: "once", amount_usd: amountUsd, amount_local: amountIdr, gateway,
-      meta: JSON.stringify({ env, rate: rate || undefined, buyer, crypto: crypto || undefined }),
+      meta: JSON.stringify({ env, rate: rate || undefined, buyer, crypto: crypto || undefined, saleRound: win ? win.round.id : undefined }),
     }));
+    if (win) await noteRoundOrder(db, win.round.id, id, ctx.session.sub);
     await audit(db, ctx.session, "site.sale.checkout", "order", id, { gateway, env, amountUsd, company: buyer.company }, req);
   }
 

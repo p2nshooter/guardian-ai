@@ -48,8 +48,8 @@ before(async () => {
   const g = await admin.get("/api/admin/acquisition");
   assert.equal(g.status, 200, g.text);
   saved = g.json.settings;
-  // A known state: open, $10,000,000, wire offered.
-  const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open" } });
+  // A known state: open, a fixed price of $10,000,000, wire offered (the auction has its own file, sale-auction.e2e.ts).
+  const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open", mode: "fixed" } });
   assert.equal(r.status, 200, r.text);
   await signUp(buyer, `buyer-${RUN}@example.com`);
   await signUp(rival, `rival-${RUN}@example.com`);

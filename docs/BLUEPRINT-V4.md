@@ -1192,6 +1192,61 @@ Temuan (semua sudah diperbaiki):
 Bukti: tes sapu rute gagal pada kode lama (contoh nyata sebelum perbaikan: SOC tanpa kunci menjawab `/v1/dashboard` dari
 engine; Vault `/vault/policies` 200; Edge `/edge/plans` 200).
 
+## 34. Penjualan axto.io (dan xaa.es) menjadi lelang sungguhan (REQUESTS 120)
+
+Pemilik, 28 Okt 2026: "Untuk axto.io & xaa.es minimal penawaran range random dari $10jt-$100jt, ubah bentuk penjualannya
+seperti lelang, yg mengejutkan seolah peluang mendapatkan harga terbaik … dan segera ambil".
+
+**Keputusan (jujur, tetap meyakinkan)**: penjualan berubah dari harga tetap menjadi **lelang sungguhan**, dengan tawaran
+nyata, tenggat nyata, dan pemenang yang membayar tawarannya sendiri.
+
+- **Tawaran pembuka acak dalam rentang US$10–100 juta**. Angkanya diundi sekali saat sebuah putaran dibuka, lalu disimpan
+  di R2, sehingga sama untuk setiap pengunjung. Admin boleh mengundi ulang setiap putaran atau mengetik angka sendiri,
+  selama masih dalam rentang. Tidak ada harga acak per pengunjung, tawaran palsu, atau penghitung penonton palsu.
+- **Tanpa reserve tersembunyi**: tawaran tertinggi yang sah saat tenggat (di atas pembukaan) memenangkan seluruh AXTO.
+  Teks "peluang harga terbaik" menyampaikan hal itu apa adanya.
+- **Aturan tawar**:
+  - Tawaran pertama minimal sebesar pembukaan. Tawaran berikutnya minimal tawaran tertinggi ditambah satu langkah
+    (bawaan US$250.000, diatur admin). Bidder boleh menawar lebih tinggi sekaligus.
+  - Pemimpin tawaran tidak bisa menawar melawan dirinya sendiri.
+  - Tawaran dalam 10 menit terakhir memperpanjang lelang 10 menit (anti-snipe).
+- **Bidder**:
+  - Hanya member yang masuk, dan akun admin tidak menawar.
+  - Bidder mendaftar dengan nama yang ditampilkan (filter kata kasar dan merek sama seperti lelang lisensi), perusahaan,
+    negara, dan telepon/WhatsApp.
+  - Bawaannya, pemilik menyetujui setiap bidder sebelum ia bisa menawar. Untuk nilai sebesar ini, pendaftaran
+    terverifikasi lazim dipakai balai lelang. Persetujuan bisa dimatikan di Admin.
+  - Di halaman publik nama bidder disamarkan (A••••).
+- **Putaran**:
+  - Lama bawaan 14 hari, diatur admin.
+  - Putaran tanpa tawaran ditutup "unsold", lalu putaran baru langsung dibuka (bisa dimatikan).
+  - Putaran dengan tawaran ditutup "awaiting payment": pemenang diminta membayar dalam 7 hari (diatur admin), lewat
+    checkout yang sama (wire BNI, kripto, PayPal), sebesar tawaran menangnya.
+  - Pembayaran terverifikasi menandai putaran "sold", dan alur lama tetap berjalan: pembeli otomatis menjadi admin dan
+    situs ditandai terjual.
+  - Admin bisa memberikan putaran ke penawar berikutnya bila pemenang tidak membayar, atau membatalkan putaran.
+- **Penyimpanan R2** (tanpa D1/KV):
+  - `sale_rounds` berisi satu dokumen per putaran. Setiap tawaran adalah compare-and-swap pada dokumen putaran, dan
+    putaran berikutnya punya id deterministik yang dibuat sekali dengan nonce.
+  - `sale_bids` berisi satu dokumen per tawaran, `<putaran>.<urutan>`, dibuat sekali.
+  - `sale_bidders` berisi pendaftaran bidder.
+  - Pengaturan disimpan di setting `site_sale` (`mode: auction | fixed`, `auction: {...}`).
+- **Tampilan**:
+  - `/acquire` hero: tawaran saat ini atau pembukaan, hitung mundur, dan jumlah tawaran.
+  - Panel lelang `#bid` berisi papan tawaran langsung, aturan, pendaftaran bidder, dan formulir tawaran. Checkout hanya
+    terbuka untuk pemenang.
+  - Banner beranda menampilkan tawaran saat ini dan hitung mundur.
+  - Admin → Site sale: mode, pengaturan lelang (dengan tombol 🎲 acak), putaran berjalan, persetujuan bidder, daftar
+    tawaran, beri ke penawar berikutnya, dan batal.
+  - Teks tersedia dalam 10 bahasa.
+- **Tes**:
+  - Unit: aturan tawar, undian dalam rentang, anti-snipe, perlombaan tawaran (CAS), penutupan, putaran baru, dan
+    pembayaran yang menandai putaran terjual.
+  - E2E: alur lengkap, yaitu pendaftaran → persetujuan → tawaran → penutupan → checkout pemenang → admin.
+  - Browser: desktop dan ponsel.
+- **xaa.es**: lelang yang sama dibangun di repositori xaa (`src/app/acquire`, `src/app/auction`), dicatat di
+  `docs/BLUEPRINT.md` repositori itu.
+
 ## 35. Posting LinkedIn otomatis: dua posting sehari, axto.io dan xaa.es (REQUESTS 123)
 
 Pemilik, 28 Okt 2026: "auto post otomatis setiap hari ke linked, 2 post tiap hari dari xaa.es & axto.io, bikinin

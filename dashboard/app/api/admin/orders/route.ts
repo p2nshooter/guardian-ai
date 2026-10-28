@@ -13,6 +13,7 @@ import { requireAdmin, respond } from "@/lib/auth";
 import { parseIdrQuery } from "@/lib/billing/unique-amount";
 import { markOrderPaid, syncLicenses } from "@/lib/billing/activate";
 import { getSale, saveSale } from "@/lib/acquisition";
+import { saleRoundRefunded } from "@/lib/sale-auction";
 import { readJson, fail, audit } from "@/lib/http";
 import { sendMail, mailLayout } from "@/lib/mail";
 import { absoluteUrl } from "@/lib/site";
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
       await db.users.update(o.user_id, (x) => ({ ...x, role: "client", updated_at: now() }));   // 'client' = member in the users table
       const sale = await getSale(db);
       if (sale.soldTo?.orderId === o.id) await saveSale(db, { ...sale, status: "open", soldTo: undefined });
+      await saleRoundRefunded(db, o, ctx.session);
     }
     if (sub?.last_order_id === o.id && b?.endAccess) {
       const at = now();
