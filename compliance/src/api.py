@@ -10,7 +10,7 @@ import asyncio, logging, os, time, yaml, json
 from contextlib import asynccontextmanager
 from typing import Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Depends, Header, BackgroundTasks
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import httpx
@@ -22,8 +22,6 @@ log = logging.getLogger("compliance.api")
 CONFIG_PATH = os.environ.get("COMPLIANCE_CONFIG", "/compliance/config/compliance.yml")
 _config: Dict = {}
 _engine: Optional[ComplianceEngine] = None
-_license_valid = False
-_grace_start   = 0.0
 _lic_state:  LicenseState = LicenseState()
 _validator:  Optional[LicenseValidator] = None
 
@@ -42,30 +40,19 @@ def _mid() -> str:
         import hashlib, socket
         return hashlib.sha256(socket.gethostname().encode()).hexdigest()[:32]
 
-async def _validate(cfg: Dict) -> bool:
-    key = cfg.get("compliance", {}).get("license_key", "")
-    url = cfg.get("compliance", {}).get("license_validate_url", "https://axto.io/api/license-validate")
-    if not key or "XXXX" in key:
-        return False
-    try:
-        async with httpx.AsyncClient(timeout=15) as c:
-            r = await c.post(url, json={"license_key": key, "machine_id": _mid(), "product": "compliance"})
-            return r.json().get("valid", False)
-    except Exception:
-        return False
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _config, _engine, _license_valid, _grace_start
+    # _lic_state and _validator are module state: the gate and the heartbeat read them.
+    global _config, _engine, _lic_state, _validator
     _config   = _load()
     _validator = LicenseValidator(_config.get("compliance", {}))
     _lic_state = await _validator.validate()
-    _license_valid = _lic_state.valid
 
     if not _lic_state.valid:
-        _lic_state.grace_start = time.time()
-        _grace_start = time.time()
-        log.warning("LICENSE NOT VALID — 4-hour grace period started. Renew: https://axto.io/renew")
+        # Locked: every API answers 403 until a licence validates (license.py grants
+        # offline grace only from a verified earlier validation, never on its own).
+        log.warning(f"LICENSE NOT VALID ({_lic_state.reason}) — AXTO Compliance is LOCKED. Activate or renew at: {MANAGE_URL}")
     else:
         log.info(f"License active — package={_lic_state.package} expires={_lic_state.expires_at or 'perpetual'}")
 
@@ -85,25 +72,20 @@ async def lifespan(app: FastAPI):
         await _validator.close()
 
 async def _heartbeat():
-    global _license_valid, _lic_state
-    failures = 0
+    """Re-validate: every minute while locked (a new key or restored network unlocks
+    without a restart), every 30 minutes while licensed."""
+    global _lic_state
     while True:
-        await asyncio.sleep(3600)
+        await asyncio.sleep(LOCKED_RECHECK_SECS if not _lic_state.valid else LICENSED_RECHECK_SECS)
         try:
-            _lic_state = await _validator.validate(force=True)
-            _license_valid = _lic_state.valid
-            if _lic_state.valid:
-                _lic_state.grace_start = 0.0
-                failures = 0
-                if _lic_state.is_expiring_soon:
-                    log.warning(f"LICENSE EXPIRING IN {_lic_state.days_until_expiry} DAYS — Renew: https://axto.io/renew")
-            else:
-                if not _lic_state.grace_start:
-                    _lic_state.grace_start = time.time()
-                failures += 1
+            new = await _validator.validate(force=True)
+            if new.valid != _lic_state.valid:
+                log.warning(f"License state changed: valid={new.valid} reason={new.reason}")
+            _lic_state = new
+            if new.valid and new.is_expiring_soon:
+                log.warning(f"LICENSE EXPIRING IN {new.days_until_expiry} DAYS — Renew: {MANAGE_URL}")
         except Exception as ex:
-            failures += 1
-            log.error(f"License heartbeat error (attempt {failures}): {ex}")
+            log.error(f"License heartbeat error: {ex}")
 
 async def _initial_assessment():
     await asyncio.sleep(5)
@@ -131,25 +113,41 @@ app.add_middleware(
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
 )
 
+# ── Licence gate ─────────────────────────────────────────────────────────────
+# Without a valid licence (signed online validation, verified offline grace or a
+# lifetime offline activation) every route except these answers 403.
+MANAGE_URL            = "https://axto.io/app/self-hosted"
+OPEN_PATHS            = {"/health", "/", "/favicon.ico"}
+LOCKED_RECHECK_SECS   = 60
+LICENSED_RECHECK_SECS = 1800
+
+
+def _locked_body() -> dict:
+    return {
+        "error":      "license_inactive",
+        "reason":     _lic_state.reason,
+        "product":    "axto-compliance",
+        "message":    "AXTO Compliance needs a valid licence. Activate or renew it, then this engine unlocks within a minute.",
+        "manage_url": MANAGE_URL,
+    }
+
+
+@app.middleware("http")
+async def _license_gate(request, call_next):
+    if request.url.path not in OPEN_PATHS and request.method != "OPTIONS" and not _lic_state.valid:
+        return JSONResponse(status_code=403, content={"detail": _locked_body()})
+    return await call_next(request)
+
+
 def _lic():
-    """
-    Per-request license enforcement gate.
-    Called as the FIRST line of every protected endpoint.
-    Raises HTTP 503 when grace period has expired.
-    """
-    if _lic_state.grace_expired:
-        raise HTTPException(503, detail={
-            "error":      "license_expired",
-            "product":    "axto-compliance",
-            "message":    "Your AXTO license has expired. All operations are suspended.",
-            "renew_url":  "https://axto.io/renew",
-            "support":    "support@axto.io",
-        })
+    """Second line of defence inside each protected endpoint (the middleware is the first)."""
+    if not _lic_state.valid:
+        raise HTTPException(403, detail=_locked_body())
 
 def _lic_warn() -> dict:
     """Returns expiry warning dict to merge into responses, or empty dict."""
     w = _lic_state.warning_message()
-    return {{"_license_warning": w}} if w else {{}}
+    return {"_license_warning": w} if w else {}
 
 def _auth(x: Optional[str] = Header(None, alias="X-Compliance-Key")):
     k = _config.get("compliance", {}).get("api_key", "")
@@ -191,9 +189,9 @@ class ExclusionReq(BaseModel):
 async def health():
     """Service health check — used by Docker / load-balancer probes."""
     _status = "ok"
-    if _lic_state.grace_expired:
-        _status = "license_expired"
-    elif not _lic_state.valid and _lic_state.grace_start:
+    if not _lic_state.valid:
+        _status = "locked"
+    elif _lic_state.reason == "offline_grace":
         _status = "grace_period"
     _warn = _lic_state.warning_message()
     return {

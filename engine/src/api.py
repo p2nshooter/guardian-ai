@@ -21,6 +21,7 @@ import asyncio
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import structlog
 from src.core import GuardianCore
@@ -195,81 +196,75 @@ async def node_alert(req: NodeAlertRequest):
 async def list_nodes():
     return {"nodes": list(_nodes.values()), "count": len(_nodes)}
 
-# ── License Wizard — redirect to activation page if no valid license ──────────
+# ── Licence gate ─────────────────────────────────────────────────────────────
+# Owner, 28 Oct 2026: downloadable by anyone, usable only with an official licence.
+# Without a valid licence (signed online validation, verified offline grace or a
+# lifetime offline activation) a browser gets the activation page and every API
+# call — agents included — answers 403. Only health and activation stay open.
+MANAGE_URL = "https://axto.io/app/self-hosted"
 ACTIVATION_BYPASS_PATHS = {"/health", "/api/license/activate", "/api/license/status",
-                            "/license/info", "/favicon.ico", "/static"}
+                           "/license/info", "/favicon.ico", "/static"}
+
+
+def _licensed() -> bool:
+    info = GuardianCore.get().license_info
+    return bool(info and info.valid)
+
+
+def _locked_body() -> dict:
+    info = GuardianCore.get().license_info
+    return {"error": "license_inactive", "reason": info.reason if info else "not_validated",
+            "product": "axto-guardian",
+            "message": "AXTO Guardian needs a valid licence. Activate it at /activate or manage it online.",
+            "manage_url": MANAGE_URL}
+
 
 @app.middleware("http")
 async def license_wizard_middleware(request: Request, call_next):
-    """If no valid license key is set, redirect all web requests to /activate."""
     path = request.url.path
-    # Always allow API health + activation endpoints + static assets
-    if any(path.startswith(p) for p in ACTIVATION_BYPASS_PATHS):
+    if request.method == "OPTIONS" or any(path.startswith(p) for p in ACTIVATION_BYPASS_PATHS):
         return await call_next(request)
-    # Check if license is configured
-    c = GuardianCore.get()
-    if c.license_info is None or not c.license_info.valid:
-        # Only redirect browser requests (not API calls from agents)
+    if not _licensed():
         accept = request.headers.get("accept", "")
         if "text/html" in accept or path in ("/", "/activate"):
             import os
             html_path = os.path.join(os.path.dirname(__file__), "activation.html")
             if os.path.exists(html_path):
                 html = open(html_path).read()
-                # Inject product meta tag
                 html = html.replace('</head>', '<meta name="axto-product" content="guardian"></head>', 1)
                 from fastapi.responses import HTMLResponse
                 return HTMLResponse(html)
+        return JSONResponse(status_code=403, content={"detail": _locked_body()})
     return await call_next(request)
 
 # ── License activate endpoint (called by wizard) ─────────────────────────────
 @app.post("/api/license/activate")
 async def license_activate(request: Request):
-    """Receives license key from first-run wizard, validates and saves it."""
-    import json, os, httpx
+    """First-run wizard: validate the key through the signed licence check (the same one
+    every heartbeat uses) and keep it only if axto.io's signed answer says it is valid."""
+    import os
     body = await request.json()
     key = (body.get("license_key") or "").strip().upper()
     if not key:
         return {"valid": False, "error": "No license key provided"}
-
-    cfg = GuardianCore.get()._cfg
-    validate_url = cfg.license_validate_url or "https://axto.io/api/license-validate"
-
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            import socket as _sock
-            # Must be the SAME fingerprint the licence validator sends on every
-            # heartbeat — otherwise the first activation binds the key to an id
-            # the engine never sends again and the licence locks (machine_mismatch).
-            from src.license import machine_id as _machine_id
-            machine_id = _machine_id()
-
-            resp = await client.post(validate_url, json={
-                "license_key": key,
-                "machine_id":  machine_id,
-                "product":     "guardian",
-                "hostname":    _sock.gethostname(),
-            })
-            data = resp.json()
-
-        if data.get("valid"):
-            # Save license key to persistent file so it survives restarts
-            data_dir = os.environ.get("DATA_DIR", "/guardian/data")
-            os.makedirs(data_dir, exist_ok=True)
-            with open(os.path.join(data_dir, "license.key"), "w") as f:
-                f.write(key)
-            # Also update in-memory config
-            cfg.license_key = key
-            # Force re-validate on next request
-            core = GuardianCore.get()
-            core.license_info = None
-            await core._validator.validate(force=True)
-            return {**data, "machine_id": machine_id[:16]}
-        else:
-            return {"valid": False, **data}
-
-    except Exception as e:
-        return {"valid": False, "error": str(e), "reason": "network_error"}
+    core = GuardianCore.get()
+    validator = core.license_validator
+    previous = validator._key
+    validator._key = key
+    state = await validator.validate(force=True)
+    if not state.valid:
+        validator._key = previous          # keep running on the key that worked, if any
+        if previous:
+            await validator.validate(force=True)
+        return {"valid": False, "reason": state.reason, "error": state.message or state.reason}
+    data_dir = os.environ.get("DATA_DIR", "/guardian/data")
+    os.makedirs(data_dir, exist_ok=True)
+    with open(os.path.join(data_dir, "license.key"), "w") as f:
+        f.write(key)
+    core._cfg.license_key = key
+    from src.license import machine_id as _machine_id
+    return {"valid": True, "package": state.package, "expires_at": state.expires_at,
+            "machine_id": _machine_id()[:16]}
 
 @app.get("/api/license/status")
 async def license_status():
@@ -604,6 +599,9 @@ async def clear_support_history(session_id: str):
 @app.websocket("/support/ws/{session_id}")
 async def support_ws(websocket: WebSocket, session_id: str):
     """WebSocket for real-time streaming support chat."""
+    if not _licensed():                    # the HTTP gate does not see WebSockets
+        await websocket.close(code=4403)
+        return
     await websocket.accept()
     bot = get_guardian_bot()
     try:
@@ -661,6 +659,9 @@ from fastapi.responses import FileResponse
 @app.websocket("/ws/events/{session_id}")
 async def ws_events(websocket: WebSocket, session_id: str, request: Request = None):
     """Real-time event stream. Connect once, receive all alerts pushed immediately."""
+    if not _licensed():                    # the HTTP gate does not see WebSockets
+        await websocket.close(code=4403)
+        return
     tenant_id = "default"
     client = await get_hub().connect(websocket, session_id, tenant_id)
     try:

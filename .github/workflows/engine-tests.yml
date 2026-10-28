@@ -3,9 +3,10 @@
 # ==============================================================================
 # Engine unit tests (BLUEPRINT-V4 §29, AXTO-APPS-BLUEPRINT phase C2): every
 # self-hosted engine's own pytest suite, run against the engine's pinned
-# requirements on the Python version of its Docker image. The first suites
-# prove the edition limits each signed licence carries (phase A4) — a Starter
-# licence must really stop at the Starter limits.
+# requirements on the Python version of its Docker image. The suites prove
+# the edition limits each signed licence carries (phase A4) — a Starter
+# licence must really stop at the Starter limits — and that every engine is
+# locked without an official licence (tests/test_licence_gate.py).
 # ==============================================================================
 name: Engine tests
 
@@ -53,6 +54,16 @@ jobs:
         include:
           - { engine: orchestra, dir: orchestra/orchestra_core, requirements: orchestra/orchestra_core/requirements.txt }
           - { engine: orchestra-worker, dir: orchestra/orchestra_worker, requirements: orchestra/orchestra_worker/requirements.txt }
+          # Licence gates (owner, 28 Oct 2026): no engine answers without an official licence.
+          - { engine: guardian, dir: engine, requirements: engine/requirements.txt }
+          - { engine: vault, dir: vault, requirements: vault/requirements.txt }
+          - { engine: edge, dir: edge, requirements: edge/requirements.txt }
+          - { engine: soc, dir: soc, requirements: soc/requirements.txt }
+          - { engine: compliance, dir: compliance, requirements: compliance/requirements.txt }
+          - { engine: sentinel, dir: sentinel, requirements: sentinel/requirements.txt }
+          - { engine: antivirus, dir: antivirus, requirements: antivirus/requirements.txt }
+          - { engine: legal, dir: legal, requirements: legal/requirements.txt }
+          - { engine: studio, dir: studio, requirements: studio/requirements.txt }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

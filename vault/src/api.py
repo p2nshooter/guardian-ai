@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import structlog
 
@@ -50,6 +50,35 @@ app.add_middleware(
 )
 
 
+# ── Licence gate ─────────────────────────────────────────────────────────────
+# Owner, 28 Oct 2026: downloadable by anyone, usable only with an official licence.
+# Without a valid licence (signed online validation, verified offline grace or a
+# lifetime offline activation) every route except the activation page, /activate,
+# health and the support page answers 403 — the AI proxy included.
+MANAGE_URL = "https://axto.io/app/self-hosted"
+OPEN_PATHS = {"/", "/activate", "/health", "/support", "/favicon.ico"}
+
+
+def _licensed() -> bool:
+    info = VaultCore.get().license_info
+    return bool(info and info.valid)
+
+
+def _locked_body() -> dict:
+    info = VaultCore.get().license_info
+    return {"error": "license_inactive", "reason": info.reason if info else "not_validated",
+            "product": "axto-vault",
+            "message": "AXTO Vault needs a valid licence. Activate it on this server's start page or manage it online.",
+            "manage_url": MANAGE_URL}
+
+
+@app.middleware("http")
+async def _license_gate(request: Request, call_next):
+    if request.url.path not in OPEN_PATHS and request.method != "OPTIONS" and not _licensed():
+        return JSONResponse(status_code=403, content={"detail": _locked_body()})
+    return await call_next(request)
+
+
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup():
@@ -63,7 +92,14 @@ async def on_shutdown():
 
 # ── Rate limit + license guard (shared middleware) ────────────────────────────
 async def _guard(core: VaultCore):
-    """Check rate limit and daily request limit. Raise 429 or 402 if exceeded."""
+    """Check the licence, then the rate limit and the daily request limit (402 / 429)."""
+    # 0. License validity first — no quota is spent for an unlicensed call
+    if not (core.license_info and core.license_info.valid):
+        raise HTTPException(
+            status_code=402,
+            detail="Vault license invalid or expired. Activate it on this server's start page.",
+        )
+
     # 1. Rate limiting (per-minute token bucket)
     allowed = await core.rate_limiter.acquire()
     if not allowed:
@@ -85,12 +121,6 @@ async def _guard(core: VaultCore):
                      "X-Vault-Requests-Limit": str(max_daily)},
         )
 
-    # 3. License validity
-    if core.license_info and not core.license_info.valid:
-        raise HTTPException(
-            status_code=402,
-            detail="Vault license invalid or expired. Activate at http://localhost:8080",
-        )
 
 
 # ── Activation wizard (first-run) ─────────────────────────────────────────────
@@ -517,6 +547,9 @@ async def ws_audit(ws: WebSocket):
     Each client gets its own subscription queue.
     No event stealing between subscribers.
     """
+    if not _licensed():                    # the HTTP gate does not see WebSockets
+        await ws.close(code=4403)
+        return
     await ws.accept()
     core  = VaultCore.get()
     sub_q = await core.audit.subscribe()
