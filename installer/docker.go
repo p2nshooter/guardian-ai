@@ -24,9 +24,12 @@ type DockerStatus struct {
 	ComposeVersion string `json:"compose_version"`
 	MemoryGB       int    `json:"memory_gb"`
 	CPUs           int    `json:"cpus"`
-	WSL            string `json:"wsl"`     // windows only: "ok" | "missing" | ""
-	Arch           string `json:"arch"`    // Docker engine architecture: "amd64" | "arm64"
-	OSType         string `json:"os_type"` // "linux" (required) | "windows" (Windows containers mode)
+	WSL            string `json:"wsl"`       // windows only: "ok" | "missing" | ""
+	Arch           string `json:"arch"`      // Docker engine architecture: "amd64" | "arm64"
+	OSType         string `json:"os_type"`   // "linux" (required) | "windows" (Windows containers mode)
+	GPU            string `json:"gpu"`       // NVIDIA GPU(s) nvidia-smi reports ("" = none / no driver)
+	GPUReady       bool   `json:"gpu_ready"` // containers can use that GPU (Linux: nvidia runtime; Windows: WSL 2)
+	GPUNote        string `json:"gpu_note"`  // why a GPU that exists cannot be used yet, and how to fix it
 	DesktopPath    string `json:"desktop_path"`
 	Ready          bool   `json:"ready"`
 	Problem        string `json:"problem"`
@@ -79,7 +82,7 @@ func engineArch(a string) string {
 }
 
 func CheckDocker(ctx context.Context) DockerStatus {
-	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe()}
+	s := DockerStatus{OS: runtime.GOOS, DesktopPath: desktopExe(), GPU: DetectGPU(ctx)}
 	c, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 
@@ -133,6 +136,12 @@ func CheckDocker(ctx context.Context) DockerStatus {
 		s.FixURL = "https://docs.docker.com/desktop/troubleshoot-and-support/faqs/windowsfaqs/"
 		return s
 	}
+	if s.GPU != "" {
+		s.GPUReady, s.GPUNote = gpuUsable(runtime.GOOS, func() string {
+			out, _ := dockerCmd(c, "info", "--format", "{{json .Runtimes}}")
+			return out
+		})
+	}
 	composeStandalone = false
 	cv, err := dockerCmd(c, "compose", "version", "--short")
 	if err != nil {
@@ -154,6 +163,46 @@ func CheckDocker(ctx context.Context) DockerStatus {
 	s.ComposeVersion = strings.TrimPrefix(strings.TrimSpace(cv), "v")
 	s.Ready = true
 	return s
+}
+
+// DetectGPU names the NVIDIA GPUs the driver reports, e.g. "NVIDIA GeForce RTX 4090 (24564 MiB)".
+// Docker Desktop hands them to containers through WSL 2; on Linux the
+// nvidia-container-toolkit does. "" = no NVIDIA GPU or no driver.
+func DetectGPU(ctx context.Context) string {
+	c, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(c, "nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader")
+	hideWindow(cmd)
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	var gpus []string
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		f := strings.SplitN(line, ",", 2)
+		if name := strings.TrimSpace(f[0]); name != "" {
+			if len(f) == 2 {
+				name += " (" + strings.TrimSpace(f[1]) + ")"
+			}
+			gpus = append(gpus, name)
+		}
+	}
+	return strings.Join(gpus, " + ")
+}
+
+const nvidiaToolkitURL = "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html"
+
+// gpuUsable says whether Docker can hand an NVIDIA GPU to containers. Docker Desktop
+// (Windows, macOS) passes it through WSL 2 by itself; a Linux engine needs the
+// nvidia runtime that nvidia-container-toolkit registers.
+func gpuUsable(goos string, runtimes func() string) (bool, string) {
+	if goos != "linux" {
+		return true, ""
+	}
+	if strings.Contains(runtimes(), `"nvidia"`) {
+		return true, ""
+	}
+	return false, "An NVIDIA GPU is present, but Docker cannot use it yet: install nvidia-container-toolkit, run `sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker`, then run AXTO Setup again — " + nvidiaToolkitURL
 }
 
 // StartDockerDesktop launches Docker Desktop on Windows (no-op elsewhere).

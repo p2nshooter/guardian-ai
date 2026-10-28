@@ -73,43 +73,55 @@ services:
       driver: "json-file"
       options: { max-size: "10m", max-file: "3" }
 
-  # ── GPU Worker (uncomment if you have NVIDIA GPU) ──────────────
-  # orchestra-worker-gpu:
-  #   image: axto/orchestra-worker-gpu:latest
-  #   container_name: orchestra-worker-gpu-1
-  #   restart: unless-stopped
-  #   runtime: nvidia
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [gpu]
-  #   depends_on:
-  #     orchestra-core:
-  #       condition: service_healthy
-  #   environment:
-  #     - ORCHESTRA_CORE_URL=http://orchestra-core:8080
-  #     - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-}
-  #     - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-}
-  #     - WORKER_MODEL=llama3.2
-  #     - OLLAMA_BASE_URL=http://localhost:11434
-  #     - WORKER_PORT=7892
-  #     - NODE_ID=gpu-node-1
-  #     # WORKER_SELF_URL: address reachable from orchestra-core container
-  #     # Use the container name + port so core can POST tasks to /run
-  #     - WORKER_SELF_URL=http://orchestra-worker-gpu-1:7892
-  #   volumes:
-  #     - orchestra-data:/app/data:ro
-  #   ports:
-  #     - "7892:7892"
-  #   networks:
-  #     - orchestra-net
+  # ── GPU worker (NVIDIA) — only with the "gpu" profile ─────────────────────
+  # Image axto/orchestra-worker-gpu (≈ 6 GB: CUDA PyTorch, Whisper, SDXL,
+  # embeddings). AXTO Setup starts it when "GPU worker" is ticked (CLI: --gpu);
+  # by hand: docker compose -f orchestra-compose.yml --profile gpu up -d
+  # Needs the NVIDIA driver (+ nvidia-container-toolkit on Linux; Docker
+  # Desktop on Windows passes the GPU through WSL 2). Chat on local models goes
+  # to Ollama on the host (OLLAMA_BASE_URL), everything else runs in here.
+  orchestra-worker-gpu:
+    image: axto/orchestra-worker-gpu:latest
+    container_name: orchestra-worker-gpu-1
+    profiles: ["gpu"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      orchestra-core:
+        condition: service_healthy
+    environment:
+      - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-}
+      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-}
+      - WORKER_MODEL=${GPU_WORKER_MODEL:-llama3.2}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - WORKER_PORT=7892
+      - NODE_ID=gpu-node-1
+      # Address orchestra-core uses to POST GPU tasks to this worker's /run.
+      - WORKER_SELF_URL=http://orchestra-worker-gpu-1:7892
+      # Hugging Face models (Whisper, SDXL, embeddings) are kept in a volume.
+      - HF_HOME=/app/models
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - orchestra-data:/app/data:ro
+      - orchestra-models:/app/models
+    networks:
+      - orchestra-net
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
 
 volumes:
   orchestra-data:
   orchestra-logs:
+  orchestra-models:
 
 networks:
   orchestra-net:

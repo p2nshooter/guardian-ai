@@ -6,7 +6,7 @@
 # ==============================================================================
 set -euo pipefail
 cd "$(dirname "$0")"
-VERSION="${1:-3.2.1}"
+VERSION="${1:-3.2.2}"
 rm -rf bundle && mkdir -p bundle dist
 for f in docker-compose.yml orchestra-compose.yml vault-compose.yml edge-compose.yml soc-compose.yml \
          compliance-compose.yml sentinel-compose.yml antivirus-compose.yml studio-compose.yml legal-compose.yml \

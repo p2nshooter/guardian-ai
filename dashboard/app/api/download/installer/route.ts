@@ -4,7 +4,7 @@
  * images are only released to licence holders (see /api/selfhosted/installer). */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
-import { getR2Builds } from "@/lib/db";
+import { serveBuild } from "@/lib/builds";
 
 const FILES: Record<string, { key: string; name: string; type: string }> = {
   windows: { key: "builds/latest/installer/AXTO-Setup.exe", name: "AXTO-Setup.exe", type: "application/vnd.microsoft.portable-executable" },
@@ -14,23 +14,12 @@ const FILES: Record<string, { key: string; name: string; type: string }> = {
   sha256: { key: "builds/latest/installer/SHA256SUMS.txt", name: "SHA256SUMS.txt", type: "text/plain; charset=utf-8" },
 };
 
-async function serve(req: NextRequest, head: boolean) {
+async function serve(req: NextRequest) {
   const f = FILES[new URL(req.url).searchParams.get("os") || "windows"];
   if (!f) return new NextResponse("Unknown platform.", { status: 404 });
-  const bucket = getR2Builds(req);
-  const obj = head ? await bucket.head(f.key) : await bucket.get(f.key);
-  if (!obj) return new NextResponse("This download is being prepared. Please try again shortly.", { status: 404, headers: { "Cache-Control": "no-store" } });
-  return new NextResponse(head ? null : obj.body, {
-    headers: {
-      "Content-Type": f.type,
-      "Content-Disposition": `attachment; filename="${f.name}"`,
-      ...(obj.size ? { "Content-Length": String(obj.size) } : {}),
-      ...(obj.httpEtag ? { ETag: obj.httpEtag } : {}),
-      "Cache-Control": "public, max-age=300",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+  const res = await serveBuild(req, f.key, { filename: f.name, type: f.type, cache: "public, max-age=300" });
+  return res || new NextResponse("This download is being prepared. Please try again shortly.", { status: 404, headers: { "Cache-Control": "no-store" } });
 }
 
-export const GET = (req: NextRequest) => serve(req, false);
-export const HEAD = (req: NextRequest) => serve(req, true);
+export const GET = serve;
+export const HEAD = serve;

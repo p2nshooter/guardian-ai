@@ -198,7 +198,8 @@ func (w *wizard) licence(r *http.Request) (any, error) {
 	if !ValidKeyShape(b.Key) && !IsLifetimeKey(b.Key) {
 		return nil, fmt.Errorf("that doesn't look like an AXTO licence key — it has the form PREFIX-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX (lifetime: LIFE-…)")
 	}
-	info, err := CheckLicence(r.Context(), w.portal, b.Key, b.App, CheckDocker(r.Context()).Arch)
+	d := CheckDocker(r.Context())
+	info, err := CheckLicence(r.Context(), w.portal, b.Key, b.App, d.Arch)
 	if err != nil {
 		return nil, err
 	}
@@ -210,13 +211,33 @@ func (w *wizard) licence(r *http.Request) (any, error) {
 	if p == nil {
 		return nil, fmt.Errorf("this installer version doesn't know %s yet — download the latest AXTO Setup", info.Name)
 	}
+	// Required images count towards the download unless the offline package next
+	// to AXTO Setup already has them; optional ones (the GPU worker) are offered.
+	dirs := offlineDirs(Options{})
 	var total int64
+	local := 0
+	optional := []map[string]any{}
 	for _, im := range info.Images {
+		file := im.Name
+		if info.Arch == "arm64" {
+			file += "-arm64"
+		}
+		have := localImage(dirs, file, im.Size) != ""
+		if have {
+			local++
+		}
 		if !im.Optional {
-			total += im.Size
+			if !have {
+				total += im.Size
+			}
+			continue
+		}
+		if prof, ok := p.Optional[im.Name]; ok && (im.Available || have) {
+			optional = append(optional, map[string]any{"name": im.Name, "label": im.Label, "profile": prof, "bytes": im.Size, "size": fmtBytes(im.Size), "local": have})
 		}
 	}
-	return map[string]any{"product": p, "expires_at": info.ExpiresAt, "lifetime": info.Lifetime, "download_bytes": total, "download": fmtBytes(total), "installed": LoadState()[p.Slug]}, nil
+	return map[string]any{"product": p, "expires_at": info.ExpiresAt, "lifetime": info.Lifetime, "download_bytes": total, "download": fmtBytes(total),
+		"optional": optional, "gpu": d.GPU, "gpu_ready": d.GPUReady, "gpu_note": d.GPUNote, "local_images": local, "installed": LoadState()[p.Slug]}, nil
 }
 
 func (w *wizard) install(r *http.Request) (any, error) {
@@ -225,6 +246,7 @@ func (w *wizard) install(r *http.Request) (any, error) {
 		App  string
 		Port int
 		LAN  bool
+		With []string // optional images ticked in the wizard
 	}
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		return nil, err
@@ -261,7 +283,11 @@ func (w *wizard) install(r *http.Request) (any, error) {
 	w.jobs[j.ID] = j
 	w.mu.Unlock()
 	go func() {
-		st, err := Install(w.ctx, Options{Product: p, Key: b.Key, Dir: dir, Port: b.Port, LAN: b.LAN, Portal: w.portal}, j)
+		with := b.With
+		if with == nil {
+			with = []string{}
+		}
+		st, err := Install(w.ctx, Options{Product: p, Key: b.Key, Dir: dir, Port: b.Port, LAN: b.LAN, Portal: w.portal, With: with}, j)
 		j.mu.Lock()
 		defer j.mu.Unlock()
 		if err != nil {

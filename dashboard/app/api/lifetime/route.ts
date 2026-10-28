@@ -11,7 +11,7 @@ import { readJson, fail, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { SigningUnavailable } from "@/lib/license-sign";
 import { getLifetimePrices, productsOf, LIFETIME_INCLUDES, CARD_MAX_USD } from "@/lib/lifetime";
-import { availableBuilds, imageKey, archImageName } from "@/lib/builds";
+import { availableBuilds, imageKey, archImageName, offlineKey } from "@/lib/builds";
 import { getSelfHosted } from "@/lib/selfhosted";
 import { licensesFor, activateDevice, productName, installKeyFor } from "@/lib/lifetime-service";
 
@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
     return {
       images: (p?.images || []).filter((i) => builds.has(imageKey(i.name))).map((i) => i.name),
       arm64: (p?.images || []).filter((i) => builds.has(imageKey(archImageName(i.name, "arm64")))).map((i) => `${i.name}-arm64`),
+      sizes: Object.fromEntries((p?.images || []).flatMap((i) => [i.name, `${i.name}-arm64`]).filter((n) => builds.has(imageKey(n))).map((n) => [n, builds.get(imageKey(n)) || 0])),
+      offline: p ? builds.get(offlineKey(p.slug)) || 0 : 0,
     };
   };
   // AXTO Setup key per active licence (created on first view).

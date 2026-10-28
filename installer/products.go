@@ -8,20 +8,21 @@ package main
 import "strings"
 
 type Product struct {
-	Slug        string   // matches the portal
-	Name        string   // shown to the user
-	KeyPrefix   string   // licence key prefix
-	Port        int      // default host port of the web UI
-	Service     string   // compose service that serves the UI on Port
-	StateDir    string   // AXTO_STATE_DIR inside Service (machine id + Lifetime activation file)
-	Compose     string   // compose file in bundle/
-	Config      string   // example config in bundle/ ("" = none)
-	ConfigAs    string   // file name the compose file mounts
-	Services    []string // services to start ("" = all); see WindowsServices
-	WindowsOnly []string // on Windows start only these (e.g. no host agent)
-	Extra       []string // extra bundle files copied as-is
-	Dirs        []string // directories the compose file bind-mounts
-	Note        string   // shown on the product card
+	Slug        string            // matches the portal
+	Name        string            // shown to the user
+	KeyPrefix   string            // licence key prefix
+	Port        int               // default host port of the web UI
+	Service     string            // compose service that serves the UI on Port
+	StateDir    string            // AXTO_STATE_DIR inside Service (machine id + Lifetime activation file)
+	Compose     string            // compose file in bundle/
+	Config      string            // example config in bundle/ ("" = none)
+	ConfigAs    string            // file name the compose file mounts
+	Services    []string          // services to start ("" = all); see WindowsServices
+	WindowsOnly []string          // on Windows start only these (e.g. no host agent)
+	Extra       []string          // extra bundle files copied as-is
+	Dirs        []string          // directories the compose file bind-mounts
+	Optional    map[string]string // optional image → compose profile that runs it (service = image name)
+	Note        string            // shown on the product card
 	WindowsNote string
 }
 
@@ -33,7 +34,8 @@ var Products = []Product{
 		WindowsNote: "On Windows the dashboard runs locally; install the node agent on the Linux servers you want to protect."},
 	{Slug: "orchestra", Name: "Orchestra AI", KeyPrefix: "ORCH", Port: 8088, Service: "orchestra-core", StateDir: "/app/data/.axto",
 		Compose: "orchestra-compose.yml", Config: "orchestra.example.yml", ConfigAs: "orchestra.yml",
-		Note: "AI orchestration core + CPU worker. Your own AI vendor keys stay on this machine."},
+		Optional: map[string]string{"orchestra-worker-gpu": "gpu"},
+		Note:     "AI orchestration core + CPU worker (+ optional NVIDIA GPU worker). Your own AI vendor keys stay on this machine."},
 	{Slug: "vault", Name: "Vault AI", KeyPrefix: "VAULT", Port: 8081, Service: "vault-core", StateDir: "/vault/data/.axto",
 		Compose: "vault-compose.yml", Config: "vault.example.yml", ConfigAs: "vault.yml",
 		Note: "Privacy proxy: redacts personal data before prompts leave your network."},

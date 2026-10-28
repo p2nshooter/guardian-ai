@@ -479,7 +479,8 @@ bukan dari perkiraan.
 | 14 | axto.io 100 % siap produksi setelah xaa.es (20 Okt 2026, `REQUESTS.md` 82–84, §25) | data ke R2 ✅ (tayang 21 Okt, §25.3) · 10 aplikasi Docker lulus „selesai bila" — tetap dijual dengan klaim jujur, dilengkapi satu per satu (keputusan „a", §25.2) · semua pembayaran Live terbukti (PayPal + NOWPayments Live ✅; BNI/kartu belum aktif) · uji ulang + CI hijau (audit live di browser dibangun §25.1, temuan situs diperbaiki) | 1/4 | **25 %** |
 | 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
 | 16 | Rekening ulyah.com/donasi + konversi + panduan bayar manual (27 Okt 2026, `REQUESTS.md` 104, §28) | 13 rekening BNI + 5 dompet (impor terenkripsi) · QR per dompet · konversi kurs harian ke mata uang rekening · panduan langkah + pelacak status, 10 bahasa · uji unit + E2E + browser | 0/5 | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **55/100** | **≈ 55 %** |
+| 17 | Orchestra AI 6 GB bisa diunduh + paket offline Windows (28 Okt 2026, `REQUESTS.md` 110, §30) | GPU di AXTO Setup ✅ · mode offline ✅ · unduhan bisa dilanjutkan ✅ · portal member ✅ · admin releases ✅ · paket offline CI ✅ (tayang setelah merge) · uji ✅ | 7/7 | **100 %** |
+| | **Total** (bobot = jumlah fase) | | **62/107** | **≈ 58 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -975,3 +976,47 @@ belum mengikuti kurs harian.
 | 28d | Panduan bayar manual sampai sukses | 6 langkah di checkout dan portal member: pilih cara → salin data persis → cara transfer sesuai asal dana (bank Indonesia, SWIFT luar negeri, Wise/Revolut, dompet kripto) → unggah bukti (wajib untuk transfer bank) → pelacak status (menunggu → disetujui → lisensi terkirim otomatis, atau "perlu perhatian" dengan langkah perbaikan) → pengingat & chat; animasi panduan sesuai §18 dan `prefers-reduced-motion`; 10 bahasa | ⏳ |
 | 28e | Uji | unit (konversi, pembulatan, kode unik, kunci 72 jam), E2E (checkout → bukti → admin setuju → lisensi), browser desktop & HP tanpa error konsol | ⏳ |
 
+
+## 29. Perintah pemilik 27 Okt 2026 (7) — periksa seluruh axto.io, kembangkan yang masih sederhana
+
+"Setelah pekerjaan terbuka selesai & siap produksi tanpa membuka rahasia: periksa seluruh axto.io (publik, member,
+admin) dan kembangkan semua yang masih sederhana atas inisiatif sendiri" (REQUESTS 108). Dikerjakan setelah §27–§28;
+setiap temuan dicatat di sini dulu (halaman, apa yang kurang, pembanding kelas dunia), lalu dibangun. Unit iklan
+in-article + multiplex (REQUESTS 109) **ditahan pemilik**, rencananya hanya di repo ulyah.com
+`docs/ADSENSE-BLUEPRINT.md` §16.
+
+28 Okt 2026 (REQUESTS 111): "Cek seluruh aplikasi sampe ke puncak pengetahuan lu, kembangkan dan pastikan 100% siap
+produksi" — audit ini sekarang diperintahkan, mulai setelah §30 tayang. Urutan: (1) aplikasi Docker yang dijual
+(10, `AXTO-APPS-BLUEPRINT.md` §16) — instal nyata lewat AXTO Setup, uji fitur inti, bandingkan dengan pembanding
+kelas dunia; (2) portal member; (3) admin; (4) situs publik. Setiap temuan ditulis di tabel di bawah dulu, lalu
+dibangun dan diuji (unit, E2E, browser desktop & HP).
+
+## 30. Perintah pemilik 28 Okt 2026 — Orchestra AI 6 GB bisa diunduh, paket offline Windows
+
+"Lanjut kembangkan axto.io, kenapa orchestra AI tar.gz yg 6gb lebih g bisa di download, dan kenapa yg .exe nya cuma
+mb... Harusnya bisa di download di portal member, dan docker exe harusnya 6gb lebih jg" (REQUESTS 110).
+
+**Akar masalah (diperiksa, bukan ditebak):**
+
+1. Image GPU Orchestra (`orchestra-worker-gpu.tar.gz`, **6,1 GB**, dibangun `auto-build-gpu.yml` 30 Sep, ada di R2
+   `axto-builds/builds/latest/raw/`) ditandai *optional*. AXTO Setup melewati **semua** image optional
+   (`installer/setup.go`: `if im.Optional { continue }`) dan layanan GPU di `orchestra-compose.yml` masih berupa
+   komentar — jadi lewat installer image 6 GB itu tidak pernah terunduh dan tidak pernah jalan.
+2. Di portal member, tautan image ada di balik tombol "Docker manual", tanpa ukuran, dan
+   `/api/selfhosted/download` tidak mendukung `Range`: unduhan 6 GB yang terputus harus mulai dari nol.
+3. `.exe` yang "cuma MB" adalah AXTO Setup: installer daring yang mengunduh image Docker saat instalasi (memang kecil),
+   plus sisa EXE per aplikasi model lama di `builds/latest/exe/` (pipeline-nya dihapus, REQUESTS 1) yang di Admin →
+   Releases salah diberi judul "Windows installer".
+4. Satu berkas `.exe` di atas 4 GB tidak bisa dijalankan Windows (batas format PE), jadi "exe 6 GB" dibuat sebagai
+   **paket offline**: satu `.zip` berisi AXTO-Setup.exe + installer Linux + semua image aplikasi (Orchestra ≈ 7 GB
+   termasuk GPU). AXTO Setup yang dijalankan dari folder paket memakai image di sebelahnya, tanpa mengunduh lagi.
+
+| # | Pekerjaan | Rincian | Status |
+|---|---|---|---|
+| 30a | GPU di AXTO Setup (= fase G1 `AXTO-APPS-BLUEPRINT.md` §16.3 untuk NVIDIA) | pilihan "Worker GPU (NVIDIA) — 6,1 GB" di wizard (otomatis dicentang bila `nvidia-smi` menemukan GPU yang bisa dipakai Docker) dan `--gpu` / `--with` di CLI; di Linux tanpa runtime `nvidia` (nvidia-container-toolkit) atau tanpa GPU: berhenti **sebelum** unduhan dengan cara memperbaikinya; image diunduh (bisa dilanjutkan) dan dimuat; layanan GPU di `orchestra-compose.yml` aktif lewat compose profile `gpu`; start/stop/update/uninstall ikut profil yang dipasang; `doctor` melaporkan GPU. AMD/Intel (profil `gpu-amd`/`gpu-intel`) menyusul — image ROCm/OpenVINO belum ada | ✅ 28 Okt (go test: profil, pilihan, GPU siap/tidak) |
+| 30b | Mode offline AXTO Setup | image dicari dulu di `images/` di sebelah AXTO-Setup.exe (atau `--images DIR`); ukuran harus sama dengan build di portal; lisensi tetap diperiksa online (lifetime: aktivasi file seperti biasa) | ✅ 28 Okt (go test + E2E: update dari folder paket "from the offline package", tanpa unduhan) |
+| 30c | Unduhan portal yang bisa dilanjutkan | `Range` + `HEAD` + `ETag` di unduhan member, image bertanda tangan, installer dan admin (satu helper `lib/builds.ts`) | ✅ 28 Okt (unit Range + E2E: HEAD, 206, If-Range → 200, 416, paket offline 206) |
+| 30d | Portal member | ukuran setiap image tampil; tombol "Paket offline (Windows/Linux)" per aplikasi dengan ukurannya; penjelasan GPU & offline dalam 10 bahasa | ✅ 28 Okt (browser desktop & HP: 0 error konsol, tanpa geser horizontal) |
+| 30e | Admin → Releases | tautan unduh setiap berkas; grup "AXTO Setup", "Paket offline", dan "EXE lama (tidak ditawarkan ke member)" | ✅ 28 Okt (browser desktop & HP) |
+| 30f | Paket offline di CI | workflow `build-offline.yml`: AXTO-Setup.exe + installer Linux + image tiap aplikasi + README + SHA256 → `builds/latest/offline/axto-<app>-offline-amd64.zip` (multipart ke R2); jalan setelah build image/installer dan manual | ✅ dibangun + dry-run lokal (manifest, README, SHA-256, zip); run pertama setelah merge |
+| 30g | Uji | Go (pilihan image, profil compose, pencarian image lokal), unit dashboard (Range), typecheck, E2E, browser desktop & HP | ✅ 28 Okt: go test, tsc, unit 249/249, E2E 141/141, browser desktop & HP |

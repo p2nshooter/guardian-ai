@@ -1,5 +1,7 @@
-/* Admin → Releases. The self-hosted builds CI has published to R2 (Docker
- * images, Windows installer, setup guides) — what members download. */
+/* Admin → Releases. The self-hosted builds CI has published to R2 — AXTO Setup,
+ * offline packages, Docker images, setup guides — what members download, each
+ * downloadable here (resumable). builds/latest/exe/ holds the per-app EXEs of
+ * the removed legacy pipeline (REQUESTS 1): listed, never offered to members. */
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
@@ -8,9 +10,11 @@ import { formatBytes } from "@/lib/i18n";
 
 interface FileRow { key: string; size: number; uploaded: string }
 const GROUPS: { prefix: string; title: string; hint: string }[] = [
-  { prefix: "builds/latest/raw/", title: "Docker images", hint: "Loaded by the installer / docker load on the customer's server." },
-  { prefix: "builds/latest/exe/", title: "Windows installer", hint: "The AXTO installer members download." },
+  { prefix: "builds/latest/installer/", title: "AXTO Setup", hint: "The installer members download (Windows .exe, Linux, macOS). Small on purpose: it downloads the Docker images during installation." },
+  { prefix: "builds/latest/offline/", title: "Offline packages", hint: "One .zip per app: AXTO Setup + every image (Orchestra includes the 6 GB GPU worker). Built by the “Offline packages” workflow; members download them from Self-hosted." },
+  { prefix: "builds/latest/raw/", title: "Docker images", hint: "Loaded by AXTO Setup or docker load on the customer's server. Optional images (GPU worker) are installed when ticked in AXTO Setup or with --gpu." },
   { prefix: "builds/latest/guides/", title: "Setup guides", hint: "Per-product install guides." },
+  { prefix: "builds/latest/exe/", title: "Legacy per-app EXEs (not offered to members)", hint: "Left over from the removed per-app EXE pipeline; Windows customers use AXTO Setup or the offline package instead." },
 ];
 
 export default function AdminReleasesPage() {
@@ -38,7 +42,10 @@ export default function AdminReleasesPage() {
                     {rows.map((f) => (
                       <li key={f.key} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
                         <span className="font-mono text-xs text-slate-800">{f.key.slice(g.prefix.length)}</span>
-                        <span className="text-xs text-slate-500">{formatBytes(f.size)} · {f.uploaded ? new Date(f.uploaded).toLocaleString() : "—"}</span>
+                        <span className="flex items-center gap-3 text-xs text-slate-500">
+                          {formatBytes(f.size)} · {f.uploaded ? new Date(f.uploaded).toLocaleString() : "—"}
+                          <a href={`/api/admin/releases?key=${encodeURIComponent(f.key)}`} className="font-semibold" download>⬇ Download</a>
+                        </span>
                       </li>
                     ))}
                   </ul>
