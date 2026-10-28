@@ -518,7 +518,7 @@ WCAG, tes ≥ 70 %).
 | `AXTO-Setup.exe` (Windows, Go) + installer Linux/macOS | ✅ dibangun CI (`build-installer.yml`) dengan `SHA256SUMS.txt` | tanda tangan Authenticode (sertifikat EV pemilik), `.msi`, `install.sh` bertanda tangan, `.deb`/`.rpm`, bundle air-gapped (fase B2) |
 | Agen native Windows (Antivirus, Guardian) | ❌ | layanan Windows Go yang melapor ke core |
 | Matriks uji OS | Ubuntu saja | Debian 12, RHEL 9, Windows Server 2022 / Windows 11 (fase B3) |
-| Pilih worker GPU otomatis saat instal | ❌ (worker GPU masih dikomentari di `orchestra-compose.yml`) | lihat 16.3 |
+| Pilih worker GPU otomatis saat instal | ✅ NVIDIA (28 Okt, `BLUEPRINT-V4.md` §30a): profil compose `gpu`, dicentang otomatis bila Docker bisa memakai GPU, berhenti dengan cara memperbaiki bila toolkit belum ada | AMD/Intel (16.3) |
 
 ### 16.3 Orchestra GPU on-demand & CPU — logika deteksi GPU di host (permintaan 56)
 
@@ -552,7 +552,7 @@ dan unduhan tidak ditutup. Setiap fase yang lulus dicatat di sini dengan buktiny
 
 | Urutan | Fase | Isi | Status |
 |---|---|---|---|
-| 1 | G1 | Deteksi GPU di host + profil compose otomatis Windows & Linux (16.3) | ❌ |
+| 1 | G1 | Deteksi GPU di host + profil compose otomatis Windows & Linux (16.3) | 🔄 NVIDIA ✅ 28 Okt (§30a); AMD/Intel menunggu image ROCm/OpenVINO |
 | 2 | A4 | Engine menegakkan batas edisi + watermark trial (10 engine; Legal sudah membaca edisi) | ❌ |
 | 3 | C2 | Tes per engine (sekarang 0 file tes di 12 dari 14 direktori) | ❌ |
 | 4 | D10 | AXTO Legal: UI lengkap (sekarang satu halaman HTML di dalam `api.py`) + paritas Legal AI cloud | ❌ |

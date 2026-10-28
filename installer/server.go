@@ -237,7 +237,7 @@ func (w *wizard) licence(r *http.Request) (any, error) {
 		}
 	}
 	return map[string]any{"product": p, "expires_at": info.ExpiresAt, "lifetime": info.Lifetime, "download_bytes": total, "download": fmtBytes(total),
-		"optional": optional, "gpu": d.GPU, "local_images": local, "installed": LoadState()[p.Slug]}, nil
+		"optional": optional, "gpu": d.GPU, "gpu_ready": d.GPUReady, "gpu_note": d.GPUNote, "local_images": local, "installed": LoadState()[p.Slug]}, nil
 }
 
 func (w *wizard) install(r *http.Request) (any, error) {

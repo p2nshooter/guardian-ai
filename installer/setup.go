@@ -488,6 +488,16 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 		}
 		need = append(need, plan{im, local})
 	}
+	// The GPU worker reserves an NVIDIA device: without a usable GPU its container
+	// cannot start, so say so now instead of after a 6 GB download.
+	for _, im := range need {
+		if p.Optional[im.Name] == "gpu" && !d.GPUReady {
+			if d.GPUNote != "" {
+				return nil, errors.New(d.GPUNote)
+			}
+			return nil, fmt.Errorf("no NVIDIA GPU found on this computer (nvidia-smi) — %s needs one with its driver; install without it, or install the NVIDIA driver first", im.Label)
+		}
+	}
 	o.Profiles = nil
 	for _, im := range need {
 		if prof := p.Optional[im.Name]; prof != "" && !contains(o.Profiles, prof) {

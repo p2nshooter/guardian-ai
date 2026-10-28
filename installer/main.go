@@ -233,6 +233,9 @@ func main() {
 		}
 		if d.GPU != "" {
 			fmt.Printf("NVIDIA GPU: %s\n", d.GPU)
+			if d.GPUNote != "" {
+				fmt.Printf("  %s\n", d.GPUNote)
+			}
 		} else {
 			fmt.Println("NVIDIA GPU: none found (Orchestra's GPU worker needs one)")
 		}

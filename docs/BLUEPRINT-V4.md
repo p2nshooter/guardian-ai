@@ -1013,7 +1013,7 @@ mb... Harusnya bisa di download di portal member, dan docker exe harusnya 6gb le
 
 | # | Pekerjaan | Rincian | Status |
 |---|---|---|---|
-| 30a | GPU di AXTO Setup | pilihan "Worker GPU (NVIDIA) — 6,1 GB" di wizard (otomatis dicentang bila `nvidia-smi` menemukan GPU) dan `--gpu` / `--with` di CLI; image diunduh (bisa dilanjutkan) dan dimuat; layanan GPU di `orchestra-compose.yml` aktif lewat compose profile `gpu`; start/stop/update ikut profil yang dipasang | ⏳ |
+| 30a | GPU di AXTO Setup (= fase G1 `AXTO-APPS-BLUEPRINT.md` §16.3 untuk NVIDIA) | pilihan "Worker GPU (NVIDIA) — 6,1 GB" di wizard (otomatis dicentang bila `nvidia-smi` menemukan GPU yang bisa dipakai Docker) dan `--gpu` / `--with` di CLI; di Linux tanpa runtime `nvidia` (nvidia-container-toolkit) atau tanpa GPU: berhenti **sebelum** unduhan dengan cara memperbaikinya; image diunduh (bisa dilanjutkan) dan dimuat; layanan GPU di `orchestra-compose.yml` aktif lewat compose profile `gpu`; start/stop/update/uninstall ikut profil yang dipasang; `doctor` melaporkan GPU. AMD/Intel (profil `gpu-amd`/`gpu-intel`) menyusul — image ROCm/OpenVINO belum ada | ⏳ |
 | 30b | Mode offline AXTO Setup | image dicari dulu di `images/` di sebelah AXTO-Setup.exe (atau `--images DIR`); ukuran harus sama dengan build di portal; lisensi tetap diperiksa online (lifetime: aktivasi file seperti biasa) | ⏳ |
 | 30c | Unduhan portal yang bisa dilanjutkan | `Range` + `HEAD` + `ETag` di unduhan member, image bertanda tangan, installer dan admin (satu helper `lib/builds.ts`) | ⏳ |
 | 30d | Portal member | ukuran setiap image tampil; tombol "Paket offline (Windows/Linux)" per aplikasi dengan ukurannya; penjelasan GPU & offline dalam 10 bahasa | ⏳ |

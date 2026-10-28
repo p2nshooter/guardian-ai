@@ -279,3 +279,19 @@ func TestLocalImageFromOfflinePackage(t *testing.T) {
 		t.Fatal("later folders are searched too")
 	}
 }
+
+func TestGPUUsable(t *testing.T) {
+	never := func() string { t.Fatal("Docker Desktop needs no runtime check"); return "" }
+	if ok, note := gpuUsable("windows", never); !ok || note != "" {
+		t.Fatalf("Docker Desktop passes the GPU through WSL 2, got %v %q", ok, note)
+	}
+	if ok, _ := gpuUsable("linux", func() string {
+		return `{"io.containerd.runc.v2":{"path":"runc"},"nvidia":{"path":"nvidia-container-runtime"},"runc":{"path":"runc"}}`
+	}); !ok {
+		t.Fatal("nvidia runtime registered → usable")
+	}
+	ok, note := gpuUsable("linux", func() string { return `{"io.containerd.runc.v2":{"path":"runc"},"runc":{"path":"runc"}}` })
+	if ok || !strings.Contains(note, "nvidia-container-toolkit") || !strings.Contains(note, "nvidia-ctk runtime configure") {
+		t.Fatalf("no nvidia runtime → a clear fix, got %v %q", ok, note)
+	}
+}
