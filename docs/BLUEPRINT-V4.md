@@ -1337,6 +1337,10 @@ Zone → Change visibility).
     dan ini diuji.
   - Bagian milik pemilik dimatikan di instans mitra: /acquire, /invest, lelang situs, LinkedIn auto-post dan halaman
     perusahaan.
+  - **Dua bahasa saja** (REQUESTS 130): Inggris ditambah satu bahasa ibu mitra, dipilih dari sembilan bahasa lain axto.io
+    (Indonesia, Melayu, Jerman, Prancis, Italia, Mandarin, Jepang, Hindi, Arab; Arab kanan-ke-kiri). Pemilih bahasa,
+    sitemap dan hreflang hanya memuat dua bahasa itu, dan bundel build hanya membawa kamus keduanya. Bahasa kedua dipilih
+    di studio merek dan bisa diganti; instans dibangun ulang otomatis.
 - **Status yang diinginkan + rekonsiliasi.**
   - axto.io (pusat) menyimpan status yang diinginkan untuk setiap mitra di R2: merek, domain, versi rilis, aktif atau
     ditangguhkan.
@@ -1371,7 +1375,7 @@ Zone → Change visibility).
 | Fase | Isi | Tes |
 |---|---|---|
 | WL1 | Penawaran publik `/white-label`, pengajuan, perjanjian, checkout US$500.000, akun mitra aktif otomatis saat lunas | unit + E2E alur bayar → mitra aktif |
-| WL2 | Studio merek dan domain, pratinjau langsung | E2E + browser |
+| WL2 | Studio merek dan domain (termasuk bahasa kedua), pratinjau langsung | E2E + browser |
 | WL3 | `whitelabel.yml`: rekonsiliasi, build bermerek, deploy, domain, laporan status; uji "tanpa teks AXTO" pada build mitra | build mitra contoh di CI |
 | WL4 | Buku besar bertanda tangan, bagi hasil per tahun kontrak, tagihan bulanan dan tahunan, pengingat, tenggang, penangguhan | unit (tahun 1/2, refund, idempoten) + E2E |
 | WL5 | Rilis berjalan: setiap deploy `main` memperbarui semua instans aktif | CI |
