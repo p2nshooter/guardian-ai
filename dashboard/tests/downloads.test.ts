@@ -39,7 +39,7 @@ test("sizes read like the build list (binary units)", () => {
 });
 
 test("offline packages: every app is packaged with the images AXTO Setup loads (build-offline.yml)", () => {
-  const wf = fs.readFileSync(path.join(REPO, ".github/workflows/build-offline.yml"), "utf8");
+  const wf = fs.readFileSync(path.join(REPO, ".github/workflows/build-offline.yml"), "utf8").replace(/\r\n/g, "\n");
   const rows = [...wf.matchAll(/- \{ app: ([a-z-]+),\s+images: "([^"]+)" \}/g)].map((m) => ({ app: m[1], images: m[2].split(" ") }));
   assert.equal(rows.length, SELF_HOSTED.length);
   for (const p of SELF_HOSTED) {
@@ -57,7 +57,7 @@ test("Orchestra's GPU worker is the one optional image AXTO Setup installs on re
   assert.deepEqual(orch.images.filter((i) => i.gpu).map((i) => i.name), ["orchestra-worker-gpu"]);
   const go = fs.readFileSync(path.join(REPO, "installer/products.go"), "utf8");
   assert.match(go, /Optional: map\[string\]string\{"orchestra-worker-gpu": "gpu"\}/);
-  const compose = fs.readFileSync(path.join(REPO, "orchestra-compose.yml"), "utf8");
+  const compose = fs.readFileSync(path.join(REPO, "orchestra-compose.yml"), "utf8").replace(/\r\n/g, "\n");
   assert.match(compose, /\n  orchestra-worker-gpu:\n    image: axto\/orchestra-worker-gpu:latest\n    container_name: orchestra-worker-gpu-1\n    profiles: \["gpu"\]/);
 });
 

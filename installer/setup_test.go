@@ -195,16 +195,17 @@ func TestOptionalImagesHaveTheirProfiledService(t *testing.T) {
 		t.Fatalf("orchestra must offer the GPU worker under the gpu profile, got %v", o.Optional)
 	}
 	for _, p := range Products {
-		c, err := readBundle(p.Compose)
+		raw, err := readBundle(p.Compose)
 		if err != nil {
 			t.Fatal(err)
 		}
+		c := strings.ReplaceAll(string(raw), "\r\n", "\n") // Windows checkouts use CRLF
 		for img, prof := range p.Optional {
-			i := strings.Index(string(c), "\n  "+img+":\n")
+			i := strings.Index(c, "\n  "+img+":\n")
 			if i < 0 {
 				t.Fatalf("%s: optional image %s has no service of the same name in %s", p.Slug, img, p.Compose)
 			}
-			block := string(c)[i+1:]
+			block := c[i+1:]
 			if j := strings.Index(block[3:], "\n  "); j >= 0 && !strings.HasPrefix(block[3+j+3:], " ") {
 				block = block[:3+j]
 			}
