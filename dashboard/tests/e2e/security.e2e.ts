@@ -230,7 +230,8 @@ test("members cannot read or change anyone else's data, and every admin API refu
   assert.equal(act.status, 404);
 
   for (const p of ["/api/admin/stats", "/api/admin/members", "/api/admin/orders", "/api/admin/licenses", "/api/admin/lifetime", "/api/admin/gateways",
-                   "/api/admin/plans", "/api/admin/settings", "/api/admin/audit", "/api/admin/support", "/api/admin/releases", "/api/admin/managed"]) {
+                   "/api/admin/plans", "/api/admin/settings", "/api/admin/audit", "/api/admin/support", "/api/admin/releases", "/api/admin/managed",
+                   "/api/admin/legal/corpus"]) {
     assert.equal((await b.c.get(p)).status, 403, `GET ${p}`);
     assert.equal((await b.c.post(p, { action: "x" })).status >= 400, true, `POST ${p}`);
   }

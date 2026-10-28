@@ -76,8 +76,8 @@ def enqueue(task_type, messages, model=None, provider_id=None, max_tokens=2048,
 
 def _process_job(job_id: str) -> None:
     wid = f"thread-{threading.get_ident()}"
-    job = db.dequeue_job(wid)
-    if not job or job["id"] != job_id: return
+    job = db.dequeue_job(wid, job_id)
+    if not job: return
     try: _dispatch(job)
     except Exception as e:
         logger.exception(f"Job {job_id} fatal: {e}")
@@ -151,14 +151,26 @@ _GPU_NATIVE_TASKS = frozenset({"image", "transcribe", "embedding"})
 def _dispatch(job: dict) -> None:
     job_id = job["id"]; cat = job.get("semantic_category","default"); t0 = time.time()
     workers = db.get_active_workers()
+    # A client-API job may be limited to some models (the model asked for, or the key's list).
+    allow = ((job.get("metadata") or {}).get("route") or {}).get("allow") or []
+    if allow:
+        workers = [w for w in workers if f"{w.get('provider_id') or 'worker'}/{w.get('model') or 'default'}" in allow
+                   or (w.get("model") or "") in allow]
     worker  = routing_engine.select_worker(
         workers, task_type=job["task_type"],
         gpu_required=job["task_type"] in ("image","transcribe"),
         messages=job["messages"], sla_ms=job.get("sla_ms",0),
         semantic_category=cat, caller_id=job.get("caller_id",""))
     if not worker:
-        time.sleep(5); db.retry_job(job_id)
-        if not _paused: _executor.submit(_process_job, job_id)
+        # Retry while attempts remain; after the last one the job ends with a reason
+        # instead of staying "running" for ever.
+        if db.retry_job(job_id):
+            time.sleep(5)
+            if not _paused: _executor.submit(_process_job, job_id)
+        else:
+            last = f"{job['error']} — " if job.get("error") else ""
+            db.finish_job(job_id, error=f"{last}No active worker could take this job (none matches it, or all "
+                                        "are offline, cooling down or failing). Check Workers in the console.")
         return
 
     # ── GPU worker: dispatch native GPU tasks (image/transcribe/embedding/chat)
@@ -184,7 +196,7 @@ def _dispatch(job: dict) -> None:
                           provider_used="gpu_worker")
         else:
             err = result.get("error", "GPU worker error")
-            if db.retry_job(job_id):
+            if db.retry_job(job_id, err):
                 if not _paused: _executor.submit(_process_job, job_id)
             else:
                 db.finish_job(job_id, error=err, latency_ms=latency,
@@ -196,8 +208,11 @@ def _dispatch(job: dict) -> None:
     mdl  = worker.get("model")       or job.get("model","gpt-4o-mini")
     burl = worker.get("base_url","")
     if db.circuit_check(pid) == "open":
-        db.retry_job(job_id)
-        if not _paused: _executor.submit(_process_job, job_id)
+        if db.retry_job(job_id):
+            if not _paused: _executor.submit(_process_job, job_id)
+        else:
+            db.finish_job(job_id, error=f"Provider '{pid}' is failing (circuit open); try again shortly.",
+                          provider_used=pid)
         return
     api_key = credential_vault.get_key(pid)
     if not api_key:
@@ -214,7 +229,7 @@ def _dispatch(job: dict) -> None:
         err = result.get("error","Provider error")
         db.circuit_record_failure(pid, err)
         db.update_worker_stats(worker["id"], latency, False)
-        if db.retry_job(job_id):
+        if db.retry_job(job_id, err):
             if not _paused: _executor.submit(_process_job, job_id)
         else:
             db.finish_job(job_id, error=err, latency_ms=latency, model_used=mdl, provider_used=pid)

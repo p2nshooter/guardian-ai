@@ -480,7 +480,9 @@ bukan dari perkiraan.
 | 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
 | 16 | Rekening ulyah.com/donasi + konversi + panduan bayar manual (27 Okt 2026, `REQUESTS.md` 104, §28) | 13 rekening BNI + 5 dompet (impor terenkripsi) · QR per dompet · konversi kurs harian ke mata uang rekening · panduan langkah + pelacak status, 10 bahasa · uji unit + E2E + browser | 0/5 | **0 %** |
 | 17 | Orchestra AI 6 GB bisa diunduh + paket offline Windows (28 Okt 2026, `REQUESTS.md` 110, §30) | GPU di AXTO Setup ✅ · mode offline ✅ · unduhan bisa dilanjutkan ✅ · portal member ✅ · admin releases ✅ · paket offline CI ✅ (tayang setelah merge) · uji ✅ | 7/7 | **100 %** |
-| | **Total** (bobot = jumlah fase) | | **62/107** | **≈ 58 %** |
+| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ⏳ · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 7/11 | **64 %** |
+| 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
+| | **Total** (bobot = jumlah fase) | | **70/124** | **≈ 56 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1065,10 +1067,35 @@ harganya; perlu penjelasan jelas dan panduan penggunaan dengan tangkapan layar d
 |---|---|
 | Klaim publik yang tidak sesuai kode diperbaiki | ✅ katalog produk dan tagline 10 bahasa tidak lagi menjanjikan endpoint `/v1/chat/completions`, metrics format Grafana, atau budget harian: kode router tidak menyediakannya (`/api/jobs/submit` dilindungi kata sandi konsol, tidak untuk aplikasi klien; `central_ai_pool.py` tidak dipanggil). Integrasi ke Studio dan Vault dihapus dari halaman karena tidak ada kodenya; Guardian tetap (support bot memanggil Orchestra) |
 | Promo di beranda: Orchestra AI dan GPU worker, dengan harga live | ✅ `components/site/OrchestraSpotlight.tsx`: harga dari `/api/editions` (tabel admin), tombol beli dan panduan |
-| Penjelasan dan panduan di `/self-hosted/orchestra` | ✅ `components/site/OrchestraGuide.tsx`: apa itu Orchestra, alur permintaan (animasi CSS, berhenti bila reduced motion), GPU worker dan cara cek `ollama ps` 100% GPU, delapan langkah dengan tangkapan layar konsol nyata, rekaman video penggunaan (MP4) |
+| Penjelasan dan panduan di `/self-hosted/orchestra` | ✅ `components/site/OrchestraGuide.tsx`: apa itu Orchestra, alur permintaan (animasi CSS, berhenti bila reduced motion), GPU worker dan cara cek `ollama ps` 100% GPU, sembilan langkah (termasuk Client API) dengan tangkapan layar konsol nyata, rekaman video penggunaan (MP4) |
 | Bahasa | ✅ promo 10 bahasa; panduan dan teks halaman dalam Inggris dan Indonesia, bahasa lain memakai Inggris (fallback) — terjemahan lengkap belum |
 | Panduan penggunaan untuk sembilan aplikasi lain | ⏳ belum dibuat; satu per satu dengan tangkapan layar dan animasi, mengikuti pola Orchestra |
-| Klien API untuk aplikasi (endpoint OpenAI-compatible dengan kunci per aplikasi) | ⏳ belum ada di kode; dibangun bila disetujui pemilik |
+| Klien API untuk aplikasi (endpoint OpenAI-compatible dengan kunci per aplikasi) | ✅ dibangun 28 Okt atas perintah pemilik (REQUESTS 118) — §31.C |
+
+### 31.C Orchestra client API (REQUESTS 118)
+
+Pemilik, 28 Okt 2026, menunjuk daftar celah di layar ("Jgn lupa kerjoan yg d screen shoot … Kerjaon"); butir pertama:
+aplikasi klien belum bisa memanggil Orchestra dengan aman.
+
+- **Endpoint** (`orchestra/orchestra_core/client_api.py`): `GET /v1/models` dan `POST /v1/chat/completions` dengan format
+  OpenAI (SDK OpenAI apa pun cukup mengganti base URL ke `http://server:8088/v1`). Permintaan masuk antrean, router memilih
+  worker (GPU, CPU, atau penyedia cloud dengan kunci dari Credential Vault) menurut aturan routing; jawaban membawa `usage`,
+  model yang benar-benar dipakai, `job_id`, biaya dan latensi. `model: "auto"` atau `penyedia/model`; model yang tidak
+  dilayani worker mana pun ditolak dengan jelas (404/503), tidak menggantung.
+- **Kunci klien**: dibuat di konsol (halaman Client API), ditampilkan sekali, disimpan hanya SHA-256-nya (tabel
+  `client_keys`, skema v6). Per kunci: permintaan/menit dan token/menit (tabel `rate_limits`), anggaran bulanan US$
+  (biaya penyedia berbayar bulan berjalan, dicek sebelum setiap permintaan), daftar model yang boleh dipakai; bisa dicabut.
+  Setiap buat/ubah/cabut tercatat di audit log. Tanpa lisensi aktif: 403 `licence_inactive`.
+- **Batas yang jujur** (tertulis di konsol dan panduan): hanya pesan teks; gambar/audio di pesan dan tool calling ditolak
+  dengan pesan jelas; `stream: true` mengirim jawaban sebagai satu potongan setelah worker selesai.
+- **Perbaikan router yang ditemukan saat membangun**: pekerjaan yang tidak mendapat worker setelah percobaan habis kini
+  selesai dengan alasan (sebelumnya tetap "running" selamanya); thread untuk satu pekerjaan tidak lagi mengambil pekerjaan
+  lain lalu meninggalkannya; kesalahan setiap percobaan disimpan sehingga pekerjaan yang gagal menyebut sebabnya.
+- **Tes**: `tests/test_client_api.py` (9 tes: kunci di-hash, format OpenAI, routing per model dan daftar model kunci,
+  stream SSE, kunci/permintaan salah, worker gagal, batas, anggaran, pencabutan, tanpa lisensi, tanpa worker); uji nyata di
+  server lokal (`/v1/models`, model tak dikenal, cabut kunci); halaman konsol di desktop dan ponsel tanpa error.
+- **Situs**: katalog Orchestra (kemampuan + manfaat) dan panduan langkah 9 "Hubungkan aplikasi Anda" (Inggris/Indonesia,
+  tangkapan layar `11-client-api.png`); tes `orchestra-copy.test.ts` memastikan setiap path yang disebut memang dilayani.
 
 ## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
 
@@ -1090,7 +1117,7 @@ hukum regional (EU, ASEAN, AU, OAS) → perjanjian dan konvensi internasional, p
 
 | Fase | Isi | Keadaan |
 |---|---|---|
-| L1 | Arsitektur korpus di R2 (satu JSON per versi dokumen: yurisdiksi, tingkat, nomor, pasal, teks, URL sumber resmi, tanggal berlaku), indeks dengan `customMetadata`, log ingest append-only, backup harian 35 hari; verifikator sitasi; tes | ⏳ |
+| L1 | Arsitektur korpus di R2 (satu JSON per versi dokumen: yurisdiksi, tingkat, nomor, pasal, teks, URL sumber resmi, tanggal berlaku), indeks dengan `customMetadata`, log ingest append-only, backup harian 35 hari; verifikator sitasi; tes | ✅ dibangun dan dites 28 Okt (§32.A); korpus produksi masih kosong sampai konektor L2 mengisinya |
 | L2 | Konektor sumber resmi yang terbuka dan bisa dibaca mesin, dijalankan di CI/cron (bukan di browser): legislation.gov.uk (Inggris), EUR-Lex/CELLAR (EU), eCFR dan US Code (AS), JDIH BPK (Indonesia, termasuk perda provinsi dan kabupaten/kota), UN Treaty Collection; negara berikutnya berurutan | ⏳ |
 | L3 | Lapis riset di prompt memakai potongan korpus dengan pinpoint pasal dan tanggal versi; sitasi di jawaban dicocokkan ke korpus | ⏳ |
 | L4 | Set evaluasi per yurisdiksi (pertanyaan, otoritas yang benar); metrik: ketepatan sitasi, sitasi palsu, akurasi; dijalankan di CI | ⏳ |
@@ -1100,4 +1127,30 @@ hukum regional (EU, ASEAN, AU, OAS) → perjanjian dan konvensi internasional, p
 Batas yang jujur: tidak semua negara menerbitkan hukumnya dalam format terbuka; sebagian sumber butuh izin atau
 punya syarat penggunaan yang harus dipatuhi sebelum diambil. Hukum berubah, jadi setiap jawaban memakai tanggal
 "per" dan menyarankan tinjauan advokat untuk keputusan penting.
+
+### 32.A Fase L1 — korpus dan verifikator (dibangun 28 Okt 2026)
+
+- **Korpus** (`lib/legal/corpus.ts`, R2 Store): koleksi `legal_instruments` (satu dokumen per instrumen, kunci unik
+  `YURISDIKSI|jenis|nomor`, alias seperti "KUHPerdata" atau "GDPR", URL sumber resmi wajib https, status berlaku/dicabut,
+  daftar versi dengan tanggal, SHA-256 teks dan jumlah pasal) dan `legal_provisions` (satu dokumen per pasal per versi,
+  pinpoint seperti `art:6(1)(a)`). Yurisdiksi memakai kode ISO sampai distrik: `ID`, `ID-JB`, `ID-JB.3273`, `US-CA`,
+  ditambah `EU`, `ASEAN`, `AU`, `OAS`, `COE`, `INT`; tingkatnya (lokal, subnasional, nasional, regional, internasional)
+  diturunkan dari kode. Impor ulang teks yang sama tidak membuat duplikat. Data ini ikut backup harian bucket data (35 hari).
+- **Pembaca sitasi** (`lib/legal/cite-parse.ts`): Indonesia (UU, Perppu, PP, Perpres, Perma, SEMA, POJK, Perda, putusan MK
+  dan MA, KUHPerdata/KUHP/KUHAP/KUHD/HIR/RBg/UUD 1945), AS (U.S.C., C.F.R., Federal Rules), Inggris (Act + section,
+  putusan bernomor netral), EU (regulation/directive/decision, alias), perjanjian internasional.
+- **Verifikator** (`lib/legal/verify.ts`): setiap sitasi mendapat satu status — `verified` (teks resmi ada, potongannya
+  ditampilkan), `verified_parent`, `not_found` (instrumen lengkap di korpus dan pasal itu tidak ada: hampir pasti salah),
+  `instrument_only`, `unknown_instrument`, `not_covered`, `needs_region` (perda tanpa daerah), `unparsed`. Tidak ada
+  sitasi yang disebut terverifikasi tanpa teks yang memverifikasinya.
+- **API**: `POST /api/legal/verify` (anggota dengan paket Legal AI, 60 cek per 10 menit, maks. 200.000 karakter);
+  `GET/POST /api/admin/legal/corpus` (cakupan per yurisdiksi; impor oleh admin atau importer CI dengan token
+  `LEGAL_IMPORT_TOKEN` minimal 32 karakter yang diisi pemilik di secret; setiap impor dicatat di audit log
+  `legal.corpus.import`).
+- **Admin → Legal corpus** (`/admin/legal`): cakupan per yurisdiksi dan tingkat (instrumen, teks lengkap, pasal, pembaruan
+  terakhir) dan impor satu instrumen dengan teks resminya (JSON yang sama dengan importer CI).
+- **Tes**: `tests/legal-corpus.test.ts` (kunci, versi, semua status pada sitasi nyata ID/EU/US/UK/SG, cakupan) dan
+  `tests/e2e/legal-corpus.e2e.ts` (impor terjaga, verifikasi oleh anggota, cakupan).
+- **Belum** (fase berikutnya): pengisian korpus dari sumber resmi (L2), verifikator di layar Legal AI dan di jawaban (L3),
+  halaman cakupan admin dan publik (L5).
 

@@ -198,7 +198,7 @@ const GUIDE_EN: OrchestraGuideCopy = {
   ],
   gpuCheckTitle: "Check that a model runs on the GPU",
   gpuCheck: "Run a model once (for example `ollama run llama3.2`), then run `ollama ps`. The PROCESSOR column must say 100% GPU. Orchestra's GPU Pool shows the same card, its memory and its load.",
-  stepsTitle: "Use it in eight steps",
+  stepsTitle: "Use it in nine steps",
   steps: [
     { title: "Install and activate", text: "Install Orchestra AI with AXTO Setup (Windows or Linux) and enter your licence key. The licence is checked online; if the check cannot be reached, Orchestra keeps working for a short grace period." },
     { title: "Sign in to the console", text: "Open http://localhost:8088/console and sign in with the console password you set in orchestra.yml (console_password). Keep it private: it controls every worker and key.", shot: "01-sign-in.png", shotAlt: "Orchestra console sign-in" },
@@ -208,6 +208,7 @@ const GUIDE_EN: OrchestraGuideCopy = {
     { title: "Add GPU workers from your graphics card", text: "In GPU Pool, a worker shows its card, memory, load and status. Add one with + Add GPU Worker, or tick the GPU worker in AXTO Setup. Swap replaces a GPU worker: remove it, then add the replacement, so the total stays within your limit.", shot: "05-gpu-pool.png", shotAlt: "GPU Pool with the detected card" },
     { title: "Let Auto-Scale work within your limit", text: "On Professional and Enterprise, Auto-Scale adds a GPU worker when the average load is high and removes idle ones, always within the GPU limit of your edition. Set the thresholds, the minimum and the cooldown; the thermal rules pause a hot card and move jobs to a cooler one.", shot: "06-auto-scale.png", shotAlt: "Auto-Scale rules and thermal settings" },
     { title: "Send a test and watch the cost", text: "Local Chat sends your message to the provider you choose, with its key from the vault, and shows the answer, the tokens and the cost. The Cost Tracker shows spend per provider. Routing Rules shows the active mode: smart balance, cost-first, quality-first, local-first, failover, semantic or round-robin.", shot: "07-local-chat.png", shotAlt: "Local Chat with an answer and cost" },
+    { title: "Connect your apps", text: "In Client API, create a key for each app and set its requests per minute, tokens per minute, monthly budget and allowed models. The app then calls http://your-server:8088/v1/chat/completions like OpenAI (any OpenAI SDK, with its base URL changed); Orchestra routes each request to a worker and the provider keys never leave the vault. Text messages are supported; images in messages and tool calling are not.", shot: "11-client-api.png", shotAlt: "Client API page with app keys and limits" },
   ],
   videoTitle: "Watch the walkthrough",
   videoLead: "A recording of the console from sign-in to the cost tracker, on demo data.",
@@ -231,7 +232,7 @@ const GUIDE_ID: OrchestraGuideCopy = {
   ],
   gpuCheckTitle: "Pastikan model berjalan di GPU",
   gpuCheck: "Jalankan satu model (misalnya `ollama run llama3.2`), lalu jalankan `ollama ps`. Kolom PROCESSOR harus menulis 100% GPU. GPU Pool di Orchestra menampilkan kartu yang sama, memorinya dan bebannya.",
-  stepsTitle: "Pakai dalam delapan langkah",
+  stepsTitle: "Pakai dalam sembilan langkah",
   steps: [
     { title: "Pasang dan aktifkan", text: "Pasang Orchestra AI dengan AXTO Setup (Windows atau Linux), lalu masukkan kunci lisensi Anda. Lisensi diperiksa online; bila pemeriksaan tidak terjangkau, Orchestra tetap berjalan selama masa tenggang singkat." },
     { title: "Masuk ke konsol", text: "Buka http://localhost:8088/console dan masuk dengan kata sandi konsol yang Anda atur di orchestra.yml (console_password). Jaga kerahasiaannya: kata sandi ini mengendalikan semua worker dan kunci.", shot: "01-sign-in.png", shotAlt: "Masuk ke konsol Orchestra" },
@@ -241,6 +242,7 @@ const GUIDE_ID: OrchestraGuideCopy = {
     { title: "Tambah worker GPU dari kartu grafis Anda", text: "Di GPU Pool, setiap worker menampilkan kartu, memori, beban dan statusnya. Tambahkan dengan + Add GPU Worker, atau centang worker GPU di AXTO Setup. Swap mengganti worker GPU: hapus, lalu tambahkan penggantinya, sehingga total tetap dalam batas Anda.", shot: "05-gpu-pool.png", shotAlt: "GPU Pool dengan kartu yang terdeteksi" },
     { title: "Biarkan Auto-Scale bekerja dalam batas Anda", text: "Di Professional dan Enterprise, Auto-Scale menambah worker GPU saat beban rata-rata tinggi dan menghapus yang menganggur, selalu dalam batas GPU edisi Anda. Atur ambang, minimum dan jeda; aturan suhu menjeda kartu yang panas dan memindahkan pekerjaan ke kartu yang lebih dingin.", shot: "06-auto-scale.png", shotAlt: "Aturan Auto-Scale dan pengaturan suhu" },
     { title: "Kirim uji coba dan pantau biaya", text: "Local Chat mengirim pesan Anda ke penyedia yang Anda pilih, memakai kuncinya dari vault, lalu menampilkan jawaban, token dan biayanya. Cost Tracker menampilkan belanja per penyedia. Routing Rules menampilkan mode yang aktif: smart balance, cost-first, quality-first, local-first, failover, semantic atau round-robin.", shot: "07-local-chat.png", shotAlt: "Local Chat dengan jawaban dan biaya" },
+    { title: "Hubungkan aplikasi Anda", text: "Di Client API, buat satu kunci untuk setiap aplikasi dan atur permintaan per menit, token per menit, anggaran bulanan dan model yang boleh dipakai. Aplikasi lalu memanggil http://server-anda:8088/v1/chat/completions seperti OpenAI (SDK OpenAI apa pun, cukup ganti base URL-nya); Orchestra meneruskan setiap permintaan ke worker dan kunci penyedia tidak pernah keluar dari vault. Pesan teks didukung; gambar di dalam pesan dan tool calling belum.", shot: "11-client-api.png", shotAlt: "Halaman Client API dengan kunci aplikasi dan batasnya" },
   ],
   videoTitle: "Tonton panduan video",
   videoLead: "Rekaman konsol dari masuk hingga Cost Tracker, dengan data contoh.",

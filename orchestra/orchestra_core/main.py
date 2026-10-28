@@ -35,6 +35,7 @@ import job_router
 import routing_engine
 import database as db
 import autoscale_config
+import client_api
 from autoscaler import get_autoscaler
 from semantic_router import get_classifier, get_inj_detector
 
@@ -626,6 +627,48 @@ async def chat_direct(req: DirectChatRequest, _=Depends(require_console)):
     return {"content": r.get("content", ""), "input_tokens": in_tok, "output_tokens": out_tok,
             "cost_usd": cost, "latency_ms": r.get("latency_ms"), "model_used": r.get("model_used", model),
             "provider": pid}
+
+
+# ── Client API keys (console → Client API) ──────────────────────────────────
+# Apps call /v1/chat/completions and /v1/models (client_api.py) with these keys.
+
+app.include_router(client_api.router)
+
+
+@app.get("/api/client-keys")
+async def client_keys_list(_=Depends(require_console)):
+    return {"keys": client_api.list_keys(), "base_path": "/v1"}
+
+
+@app.post("/api/client-keys")
+async def client_keys_create(request: Request, _=Depends(require_console)):
+    enforcement.require_active()
+    try:
+        key, secret = client_api.create_key(await request.json())
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    db.audit("console", "client_key.create", key["id"], key["name"])
+    return {"key": key, "secret": secret, "note": "Shown once — Orchestra keeps only its hash."}
+
+
+@app.patch("/api/client-keys/{key_id}")
+async def client_keys_update(key_id: str, request: Request, _=Depends(require_console)):
+    try:
+        key = client_api.update_key(key_id, await request.json())
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    if not key:
+        raise HTTPException(404, "No active key with that id")
+    db.audit("console", "client_key.update", key_id)
+    return {"key": key}
+
+
+@app.delete("/api/client-keys/{key_id}")
+async def client_keys_revoke(key_id: str, _=Depends(require_console)):
+    if not client_api.revoke_key(key_id):
+        raise HTTPException(404, "No active key with that id")
+    db.audit("console", "client_key.revoke", key_id)
+    return {"ok": True}
 
 
 @app.get("/api/providers/catalog")

@@ -270,6 +270,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
     <div class="sb-label">AI Operations</div>
     <div class="nav-item" onclick="go('chat',this)"><span class="nav-icon">💬</span>Local Chat</div>
     <div class="nav-item" onclick="go('multiai',this)"><span class="nav-icon">🔌</span>Multi-AI Tester</div>
+    <div class="nav-item" onclick="go('clientapi',this)"><span class="nav-icon">🧩</span>Client API</div>
     <div class="nav-item" onclick="go('monitor',this)"><span class="nav-icon">💻</span>Server Monitor</div>
   </div>
 
@@ -771,6 +772,56 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
   </div>
 </div>
 
+<!-- ═══ CLIENT API ═══ -->
+<div class="page" id="page-clientapi">
+  <div class="section-hdr">
+    <div><div class="section-title">🧩 Client API</div><div class="section-sub">Your apps call Orchestra like OpenAI — Orchestra routes each request to a worker</div></div>
+    <button class="btn btn-primary btn-sm" onclick="togglePanel('ck-panel')">+ New client key</button>
+  </div>
+
+  <div class="card2" style="margin-bottom:16px">
+    <div class="card-title">How an app connects</div>
+    <div style="font-size:.75rem;color:var(--text2);line-height:1.7;margin-bottom:8px">
+      Base URL <code id="ck-base" style="color:var(--text)">http://this-server:8080/v1</code> · key in <code>Authorization: Bearer orch_…</code>.
+      Any OpenAI SDK works by changing its base URL. <code>model</code> is <code>auto</code> (Orchestra's routing rules choose) or one of the models listed by <code>GET /v1/models</code>, e.g. <code>ollama/llama3.2</code>.
+      Provider keys stay in the Credential Vault — apps never see them.
+    </div>
+<pre id="ck-sample" style="font-family:var(--mono);font-size:.68rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;white-space:pre">curl http://this-server:8080/v1/chat/completions \
+  -H "Authorization: Bearer orch_…" -H "Content-Type: application/json" \
+  -d '{"model":"auto","messages":[{"role":"user","content":"Hello"}]}'
+
+from openai import OpenAI
+client = OpenAI(base_url="http://this-server:8080/v1", api_key="orch_…")
+print(client.chat.completions.create(model="auto", messages=[{"role": "user", "content": "Hello"}]).choices[0].message.content)</pre>
+    <div style="font-size:.7rem;color:var(--text3);margin-top:8px;line-height:1.6">
+      Supported: text messages (system, user, assistant), <code>max_tokens</code>, <code>temperature</code>, <code>stream</code> (the answer arrives as one chunk when the worker has finished).
+      Not supported: images or audio inside messages, tool / function calling, <code>n</code> above 1.
+    </div>
+  </div>
+
+  <div class="card2" id="ck-panel" style="display:none;margin-bottom:16px">
+    <div class="card-title">New client key</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Name (the app that uses it)</label><input class="form-input" id="ck-name" placeholder="e.g. CRM, support bot"></div>
+      <div class="form-group"><label class="form-label">Models it may use (comma-separated, empty = all)</label><input class="form-input" id="ck-models" placeholder="ollama/llama3.2, openai/gpt-4o-mini"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Requests per minute (0 = no limit)</label><input class="form-input" id="ck-rpm" type="number" min="0" value="60"></div>
+      <div class="form-group"><label class="form-label">Tokens per minute (0 = no limit)</label><input class="form-input" id="ck-tpm" type="number" min="0" value="100000"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Monthly budget, US$ (paid providers; 0 = none)</label><input class="form-input" id="ck-budget" type="number" min="0" step="0.01" value="0"></div>
+      <div class="form-group" style="display:flex;align-items:flex-end"><button class="btn btn-primary" onclick="createClientKey()">Create key</button></div>
+    </div>
+    <div id="ck-secret" style="display:none;margin-top:6px" class="card2"></div>
+  </div>
+
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Key</th><th>Models</th><th>Limits</th><th>This month</th><th>Last used</th><th></th></tr></thead>
+    <tbody id="ck-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text3)">No client keys yet</td></tr></tbody>
+  </table></div>
+</div>
+
 <!-- ═══ MULTI-AI TESTER ═══ -->
 <div class="page" id="page-multiai">
   <div class="section-hdr">
@@ -1052,7 +1103,7 @@ function go(page, el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   if(el) el.classList.add('active');
-  const titles={dashboard:'Dashboard',logs:'Live Logs',monitor:'Server Monitor',gpu:'GPU Pool',autoscale:'Auto-Scale',nodes:'Nodes',workers:'Workers',routing:'Routing Rules',chat:'Local Chat',multiai:'Multi-AI Tester',queue:'Task Queue',history:'Job History',cost:'Cost Tracker',vault:'Credential Vault',hardening:'Security Hardening',license:'License'};
+  const titles={dashboard:'Dashboard',logs:'Live Logs',monitor:'Server Monitor',gpu:'GPU Pool',autoscale:'Auto-Scale',nodes:'Nodes',workers:'Workers',routing:'Routing Rules',chat:'Local Chat',multiai:'Multi-AI Tester',clientapi:'Client API',queue:'Task Queue',history:'Job History',cost:'Cost Tracker',vault:'Credential Vault',hardening:'Security Hardening',license:'License'};
   document.getElementById('topbar-title').textContent = titles[page]||page;
   if(page==='nodes') loadNodes();
   if(page==='workers') loadWorkers();
@@ -1067,6 +1118,7 @@ function go(page, el){
   if(page==='monitor') loadMonitor();
   if(page==='chat') initChat();
   if(page==='multiai') initMultiAI();
+  if(page==='clientapi') loadClientKeys();
 }
 
 function togglePanel(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none'}
@@ -1477,6 +1529,48 @@ async function testProviderKey(pid){
 }
 
 async function deleteVaultKey(pid){if(!confirm('Delete key for '+pid+'?'))return;await api('DELETE','/api/vault/'+pid);loadVault();toast('Key deleted','ok')}
+
+// ── Client API keys ──────────────────────────────────────────────────────────
+async function loadClientKeys(){
+  const base = location.origin + '/v1';
+  document.getElementById('ck-base').textContent = base;
+  document.getElementById('ck-sample').textContent = document.getElementById('ck-sample').textContent.split('http://this-server:8080/v1').join(base);
+  const tbody = document.getElementById('ck-tbody');
+  try{
+    const d = await api('GET','/api/client-keys');
+    if(!d.keys.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3)">No client keys yet</td></tr>';return}
+    tbody.innerHTML = d.keys.map(k=>`<tr style="${k.revoked?'opacity:.5':''}">
+      <td>${esc(k.name)}${k.revoked?' <span class="badge badge-red">revoked</span>':''}</td>
+      <td style="font-family:var(--mono)">${esc(k.prefix)}…</td>
+      <td style="font-size:.68rem">${k.models.length?k.models.map(esc).join('<br>'):'all'}</td>
+      <td style="font-size:.68rem">${k.rpm_limit||'∞'} req/min · ${k.tpm_limit||'∞'} tok/min${k.monthly_usd_limit?'<br>US$'+k.monthly_usd_limit.toFixed(2)+'/month':''}</td>
+      <td style="font-size:.68rem">${k.requests_month} requests<br>US$${k.spend_month_usd.toFixed(4)}${k.monthly_usd_limit?' of '+k.monthly_usd_limit.toFixed(2):''}</td>
+      <td style="color:var(--text3);font-size:.68rem">${k.last_used_at?new Date(k.last_used_at*1000).toLocaleString():'never'}</td>
+      <td>${k.revoked?'':`<button class="btn btn-danger btn-sm" onclick="revokeClientKey('${esc(k.id)}','${esc(k.name)}')">Revoke</button>`}</td>
+    </tr>`).join('');
+  }catch(e){tbody.innerHTML=`<tr><td colspan="7" style="color:var(--red)">${esc(e.message)}</td></tr>`}
+}
+
+async function createClientKey(){
+  const body={name:val('ck-name').trim(),models:val('ck-models').split(',').map(x=>x.trim()).filter(Boolean),
+    rpm_limit:Number(val('ck-rpm')||0),tpm_limit:Number(val('ck-tpm')||0),monthly_usd_limit:Number(val('ck-budget')||0)};
+  if(!body.name){toast('Give the key a name','error');return}
+  try{
+    const r = await api('POST','/api/client-keys',body);
+    const box = document.getElementById('ck-secret');
+    box.style.display='block';
+    box.innerHTML = `<div style="font-weight:700;color:var(--amber);margin-bottom:6px">Copy this key now — it is shown only once.</div>
+      <code id="ck-secret-value" style="font-family:var(--mono);word-break:break-all;color:var(--text)">${esc(r.secret)}</code>
+      <div style="margin-top:8px"><button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('ck-secret-value').textContent);toast('Copied','ok')">Copy</button></div>`;
+    toast('Client key created','ok');
+    loadClientKeys();
+  }catch(e){toast('Error: '+e.message,'error')}
+}
+
+async function revokeClientKey(id,name){
+  if(!confirm('Revoke the key "'+name+'"? Apps using it stop working at once.'))return;
+  try{await api('DELETE','/api/client-keys/'+id);toast('Key revoked','ok');loadClientKeys()}catch(e){toast('Error: '+e.message,'error')}
+}
 
 // ── Hardening ─────────────────────────────────────────────────────────────────
 async function loadHardening(){

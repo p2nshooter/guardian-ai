@@ -106,6 +106,7 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
       { icon: "💰", title: "Zero token markup", desc: "You pay providers directly, and the Cost Tracker shows spend per provider and per model." },
       { icon: "🎮", title: "Mix cloud and local GPUs", desc: "Blend cloud providers with your own GPU workers and balance the load between them." },
       { icon: "🖥️", title: "One live console", desc: "Workers, queue, logs, nodes, history and cost on one screen — no separate tools." },
+      { icon: "🧩", title: "Your apps plug straight in", desc: "Any OpenAI SDK works: point its base URL at Orchestra and give each app its own client key, limits and monthly budget." },
     ],
     capabilities: [
       "16 provider adapters, including Ollama on your own computer and custom endpoints",
@@ -116,6 +117,7 @@ export const PRODUCT_CATALOG: ProductCatalogEntry[] = [
       "Seven routing modes with a circuit breaker and fallback",
       "Cost analytics per provider and model in Professional and Enterprise",
       "Encrypted Credential Vault for your provider keys",
+      "OpenAI-compatible client API for your own apps (/v1/chat/completions, /v1/models) with a key per app, rate limits and a monthly budget",
     ],
     integrations: [
       { slug: "guardian", emoji: "🛡️", name: "Guardian AI", desc: "Guardian's support assistant can send its AI requests through Orchestra." },

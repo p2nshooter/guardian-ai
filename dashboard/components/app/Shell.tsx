@@ -75,6 +75,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/managed", label: "Managed AI", icon: "☁️", badge: "locked" },
       { href: "/admin/connect", label: "Connect (developer API)", icon: "⚡" },
       { href: "/admin/releases", label: "Releases", icon: "📦" },
+      { href: "/admin/legal", label: "Legal corpus", icon: "⚖️" },
       { href: "/admin/settings", label: "Settings", icon: "⚙️" },
       { href: "/admin/data", label: "Data & backups", icon: "🗄️" },
       { href: "/admin/audit", label: "Audit log", icon: "🕵️" },
