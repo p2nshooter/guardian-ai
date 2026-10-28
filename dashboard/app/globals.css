@@ -157,7 +157,42 @@
   }
   @keyframes acq-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 }
+/* ── /acquire — the site-sale auction: a dark auction house in royal gold (owner, 28 Oct 2026: "high class, super premium, indah") ── */
+@layer utilities {
+  @keyframes auc-glow { 0%,100% { opacity: .85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+  .auc-house { background: linear-gradient(180deg, #04060c 0%, #070b16 45%, #04060c 100%);
+    border-top: 1px solid rgba(224,180,77,.18); border-bottom: 1px solid rgba(224,180,77,.18); }
+  .auc-house-glow { background:
+      radial-gradient(760px 420px at 50% -12%, rgba(224,180,77,.22), transparent 62%),
+      radial-gradient(620px 520px at 6% 72%, rgba(201,162,74,.12), transparent 60%),
+      radial-gradient(620px 520px at 96% 60%, rgba(99,102,241,.10), transparent 62%);
+    animation: auc-glow 16s ease-in-out infinite; }
+  .auc-house-grid { background-image: linear-gradient(rgba(224,180,77,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(224,180,77,.05) 1px, transparent 1px);
+    background-size: 64px 64px; mask-image: radial-gradient(ellipse at 50% 20%, #000 25%, transparent 72%); -webkit-mask-image: radial-gradient(ellipse at 50% 20%, #000 25%, transparent 72%); }
+  .auc-glass { background: linear-gradient(160deg, rgba(255,255,255,.06), rgba(255,255,255,.015) 45%, rgba(224,180,77,.04));
+    border: 1px solid rgba(224,180,77,.22); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 30px 80px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.02); }
+  .auc-glass::before { content: ""; position: absolute; left: 24px; right: 24px; top: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(243,217,139,.7), transparent); }
+  /* Playfair Display draws old-style figures; prices and clocks read better on lining, equal-width digits. */
+  .auc-nums { font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum" 1, "tnum" 1; }
+  .auc-tile { background: linear-gradient(180deg, rgba(243,217,139,.14), rgba(243,217,139,.03)); border: 1px solid rgba(224,180,77,.3);
+    box-shadow: 0 1px 0 rgba(255,255,255,.08) inset; }
+  .auc-input { width: 100%; border-radius: .9rem; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); color: #fff;
+    padding: .75rem 1rem; outline: none; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+  .auc-input::placeholder { color: rgb(148 163 184 / .8); }
+  .auc-input:focus { border-color: rgba(224,180,77,.65); box-shadow: 0 0 0 3px rgba(224,180,77,.18); background: rgba(255,255,255,.06); }
+  .auc-chip { border-radius: 9999px; border: 1px solid rgba(224,180,77,.3); padding: .35rem .85rem; font-size: .8rem; font-weight: 600;
+    color: #f9eccb; background: rgba(224,180,77,.06); transition: background-color .2s, border-color .2s; font-variant-numeric: tabular-nums; }
+  /* A gilded button that cannot be pressed yet reads as an outline, not as a dimmed gold block. */
+  .auc-house .btn-royal:disabled { background: rgba(224,180,77,.07); color: rgba(243,217,139,.6); box-shadow: inset 0 0 0 1px rgba(224,180,77,.32);
+    opacity: 1; cursor: not-allowed; }
+  .auc-house .btn-royal:disabled::after { display: none; }
+  .auc-chip:hover, .auc-chip-on { background: rgba(224,180,77,.18); border-color: rgba(243,217,139,.6); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .auc-house-glow { animation: none !important; }
   .acq-aurora, .acq-orb, .acq-price, .acq-timeline::before { animation: none !important; }
   .acq-card, .acq-card:hover { transition: none !important; transform: none !important; }
 }

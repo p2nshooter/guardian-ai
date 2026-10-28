@@ -64,131 +64,143 @@ export default function SaleAuctionPanel({ info, signedIn, onChange }: { info: S
   const bidNum = Number(amount.replace(/[^\d]/g, "")) || 0;
 
   return (
-    <section id="bid" className="scroll-mt-20 border-b border-slate-200 bg-gradient-to-b from-amber-50/60 to-white py-16" data-testid="sale-auction">
+    <section id="bid" className="auc-house relative isolate scroll-mt-20 overflow-hidden py-20 text-white sm:py-24" data-testid="sale-auction">
+      <div className="auc-house-glow pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+      <div className="auc-house-grid pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
       <div className="container-page">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">🔨 {r ? fill(t.round, { n: r.no }) : t.boardTitle}</p>
-            <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">{t.boardTitle}</h2>
-            <p className="mt-2 max-w-2xl text-slate-600">{t.boardLead}</p>
-          </div>
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="flex items-center justify-center gap-3 text-[11px] font-semibold uppercase tracking-[0.42em] text-gold-300">
+            <span className="h-px w-10 bg-gradient-to-r from-transparent to-gold-400/70" aria-hidden="true" />
+            {r ? fill(t.round, { n: r.no }) : t.boardTitle}
+            <span className="h-px w-10 bg-gradient-to-l from-transparent to-gold-400/70" aria-hidden="true" />
+          </p>
+          <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight text-white sm:text-6xl">
+            <span className="gold-text italic">{t.boardTitle}</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">{t.boardLead}</p>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
+        <div className="mt-12 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
           {/* ── the board ── */}
-          <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-card">
-            {!r ? <p className="text-slate-600">{t.nextRound}</p> : (
+          <div className="auc-glass relative rounded-[28px] p-6 sm:p-8">
+            {!r ? <p className="text-slate-300">{t.nextRound}</p> : (
               <>
-                <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+                <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-6">
                   <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{won ? t.winningBid : r.bidsCount ? t.currentBid : t.openingBid}</div>
-                    <div className="mt-1 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl" data-testid="sale-auction-amount">{money(won ? r.winnerUsd : shown)}</div>
-                    <div className="mt-1 text-sm text-slate-500">{fill(t.bids, { n: r.bidsCount })}{r.bidsCount ? ` · ${r.leader}` : ""}</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{won ? t.winningBid : r.bidsCount ? t.currentBid : t.openingBid}</div>
+                    <div className="acq-price auc-nums mt-2 font-display text-5xl font-semibold leading-none tracking-tight sm:text-6xl" data-testid="sale-auction-amount">{money(won ? r.winnerUsd : shown)}</div>
+                    <div className="mt-3 text-sm text-slate-400">{fill(t.bids, { n: r.bidsCount })}{r.bidsCount ? <> · <span className="text-gold-100">{r.leader}</span></> : null}</div>
                   </div>
                   {open ? (
                     <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t.endsIn}</div>
-                      <div className="mt-1"><Countdown to={r.endsAt} testid="sale-auction-countdown" /></div>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{t.endsIn}</div>
+                      <div className="mt-2"><Countdown to={r.endsAt} tone="gold" testid="sale-auction-countdown" /></div>
                     </div>
                   ) : null}
                 </div>
+                <div className="my-6 h-px bg-gradient-to-r from-transparent via-gold-400/30 to-transparent" aria-hidden="true" />
                 {open ? (
                   <>
-                    {!r.bidsCount ? <p className="mt-4 text-sm font-semibold text-emerald-800">{t.noBids}</p> : null}
-                    <p className="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">⚡ {t.noReserve}</p>
-                    <p className="mt-2 text-sm text-slate-600">{t.urgency}</p>
-                    <p className="mt-2 text-xs text-slate-500">{t.openingNote} {t.openingBid}: <b>{money(r.openUsd)}</b>.</p>
+                    {!r.bidsCount ? <p className="text-sm font-medium text-emerald-300">{t.noBids}</p> : null}
+                    <p className="mt-3 flex gap-3 rounded-2xl border border-gold-400/25 bg-gradient-to-r from-gold-400/[0.12] via-gold-400/[0.05] to-transparent px-4 py-3 text-sm font-medium leading-relaxed text-gold-100">
+                      <span className="text-gold-300" aria-hidden="true">✦</span>{t.noReserve}
+                    </p>
+                    <p className="mt-4 font-display text-lg italic leading-snug text-slate-200">“{t.urgency}”</p>
+                    <p className="mt-3 text-xs leading-relaxed text-slate-400">{t.openingNote} {t.openingBid}: <b className="auc-nums font-semibold text-gold-100">{money(r.openUsd)}</b>.</p>
                   </>
                 ) : (
-                  <div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-700" data-testid="sale-auction-ended">
-                    <div className="font-bold text-slate-900">{r.status === "sold" ? t.sold : t.endedTitle}</div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300" data-testid="sale-auction-ended">
+                    <div className="font-display text-lg text-white">{r.status === "sold" ? t.sold : t.endedTitle}</div>
                     {r.status === "awaiting_payment" ? <p className="mt-1">{fill(t.awaiting, { amount: money(r.winnerUsd) })}</p> : null}
                     {r.status === "unsold" || r.status === "cancelled" ? <p className="mt-1">{t.nextRound}</p> : null}
                   </div>
                 )}
 
-                <h3 className="mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">{t.latestBids}</h3>
+                <h3 className="mt-8 text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{t.latestBids}</h3>
                 {r.bids.length ? (
-                  <ol className="mt-2 divide-y divide-slate-100" data-testid="sale-auction-bids">
+                  <ol className="mt-3 space-y-1.5" data-testid="sale-auction-bids">
                     {r.bids.map((b, i) => (
-                      <li key={`${b.at}-${i}`} className="flex items-center justify-between gap-3 py-2 text-sm">
-                        <span className="font-semibold text-slate-800">{i === 0 ? "🏆 " : ""}{b.name}</span>
-                        <span className="tabular-nums font-bold text-slate-900">{money(b.amountUsd)}</span>
-                        <span className="hidden text-xs text-slate-400 sm:inline">{new Date(b.at).toLocaleString()}</span>
+                      <li key={`${b.at}-${i}`} className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm ${i === 0 ? "border border-gold-400/25 bg-gradient-to-r from-gold-400/[0.14] to-transparent" : "border border-transparent bg-white/[0.02]"}`}>
+                        <span className={`font-medium ${i === 0 ? "text-gold-100" : "text-slate-200"}`}>{i === 0 ? <span className="mr-1.5 text-gold-300" aria-hidden="true">♛</span> : null}{b.name}</span>
+                        <span className={`auc-nums font-display text-base font-semibold ${i === 0 ? "text-gold-200" : "text-white"}`}>{money(b.amountUsd)}</span>
+                        <span className="hidden text-xs text-slate-500 sm:inline">{new Date(b.at).toLocaleString()}</span>
                       </li>
                     ))}
                   </ol>
-                ) : <p className="mt-2 text-sm text-slate-500">{t.noneYet}</p>}
+                ) : <p className="mt-3 text-sm text-slate-400">{t.noneYet}</p>}
               </>
             )}
           </div>
 
           {/* ── the member's side ── */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-card" data-testid="sale-auction-action">
+          <div className="auc-glass relative rounded-[28px] p-6 sm:p-8" data-testid="sale-auction-action">
             {won && me?.winner ? (
               <div data-testid="sale-auction-won">
-                <div className="text-xl font-extrabold text-emerald-800">🎉 {fill(t.youWon, { amount: money(me.amountUsd), date: date(me.payBy) })}</div>
-                <a href="#checkout" className="btn-primary mt-4 inline-flex">{t.payNow} →</a>
+                <div className="font-display text-2xl leading-snug text-gold-100">♛ {fill(t.youWon, { amount: money(me.amountUsd), date: date(me.payBy) })}</div>
+                <a href="#checkout" className="btn-royal mt-5 inline-flex">{t.payNow} →</a>
               </div>
             ) : !open ? (
-              <p className="text-slate-600">{r?.status === "sold" ? t.sold : t.nextRound}</p>
+              <p className="text-slate-300">{r?.status === "sold" ? t.sold : t.nextRound}</p>
             ) : signedIn === undefined ? <Spinner /> : !signedIn ? (
               <div>
-                <p className="text-slate-700">{t.signInToBid}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <a href="/register?redirect=%2Facquire%23bid" className="btn-primary">{t.register}</a>
-                  <a href="/login?redirect=%2Facquire%23bid" className="btn-secondary">{t.signIn}</a>
+                <p className="font-display text-xl leading-snug text-white">{t.signInToBid}</p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <a href="/register?redirect=%2Facquire%23bid" className="btn-royal">{t.register}</a>
+                  <a href="/login?redirect=%2Facquire%23bid" className="btn-crystal">{t.signIn}</a>
                 </div>
               </div>
             ) : me?.admin ? (
-              <p className="text-sm text-amber-800">{t.adminNote}</p>
+              <p className="text-sm text-gold-100">{t.adminNote}</p>
             ) : !me?.bidder || (me.bidder.status !== "approved" && me.bidder.status !== "pending" && me.bidder.status !== "rejected") ? (
               <div data-testid="sale-auction-register">
-                <h3 className="text-lg font-bold text-slate-900">{t.registerTitle}</h3>
-                <p className="mt-1 text-sm text-slate-600">{t.registerLead}</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <input className="input sm:col-span-2" placeholder={t.displayName} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} data-testid="sale-bidder-name" />
-                  <input className="input" placeholder={t.company} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
-                  <input className="input" placeholder={t.country} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} data-testid="sale-bidder-country" />
-                  <input className="input sm:col-span-2" placeholder={t.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} data-testid="sale-bidder-phone" />
-                  <textarea className="input sm:col-span-2" rows={2} placeholder={t.message} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+                <h3 className="font-display text-2xl text-white">{t.registerTitle}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{t.registerLead}</p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <input className="auc-input sm:col-span-2" placeholder={t.displayName} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} data-testid="sale-bidder-name" />
+                  <input className="auc-input" placeholder={t.company} value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} />
+                  <input className="auc-input" placeholder={t.country} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} data-testid="sale-bidder-country" />
+                  <input className="auc-input sm:col-span-2" placeholder={t.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} data-testid="sale-bidder-phone" />
+                  <textarea className="auc-input sm:col-span-2" rows={2} placeholder={t.message} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
                 </div>
-                <button type="button" className="btn-primary mt-4 w-full" onClick={register} disabled={busy || !form.displayName.trim() || !form.country.trim() || !form.phone.trim()} data-testid="sale-bidder-submit">
+                <button type="button" className="btn-royal mt-5 w-full py-3.5 text-base" onClick={register} disabled={busy || !form.displayName.trim() || !form.country.trim() || !form.phone.trim()} data-testid="sale-bidder-submit">
                   {busy ? <Spinner /> : null} {t.registerBtn}
                 </button>
               </div>
             ) : me.bidder.status === "pending" ? (
-              <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900" data-testid="sale-auction-pending">⏳ {t.pending}</p>
+              <p className="rounded-2xl border border-gold-400/25 bg-gold-400/[0.08] p-4 text-sm leading-relaxed text-gold-100" data-testid="sale-auction-pending">⏳ {t.pending}</p>
             ) : me.bidder.status === "rejected" ? (
-              <p className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800">{t.rejected}</p>
+              <p className="rounded-2xl border border-rose-400/25 bg-rose-500/10 p-4 text-sm text-rose-200">{t.rejected}</p>
             ) : (
               <div data-testid="sale-auction-bid">
-                {me.leading ? <p className="mb-3 rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">🏆 {t.leading}</p>
-                  : me.myBestUsd ? <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">{fill(t.outbid, { amount: money(me.myBestUsd) })}</p> : null}
-                <label className="block text-sm font-semibold text-slate-700">{t.yourBid}
-                  <input className="input mt-1 text-lg font-bold tabular-nums" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))} data-testid="sale-bid-amount" />
+                {me.leading ? <p className="mb-5 flex items-center gap-2 rounded-2xl border border-gold-400/30 bg-gradient-to-r from-gold-400/[0.16] to-transparent px-4 py-3 text-sm font-semibold text-gold-100"><span className="text-gold-300" aria-hidden="true">♛</span>{t.leading}</p>
+                  : me.myBestUsd ? <p className="mb-5 rounded-2xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">{fill(t.outbid, { amount: money(me.myBestUsd) })}</p> : null}
+                {me.leading ? null : <>
+                <label className="block text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{t.yourBid}
+                  <input className="auc-input auc-nums mt-2 font-display text-2xl font-semibold tracking-tight" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))} data-testid="sale-bid-amount" />
                 </label>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {[0, 1, 4].map((k) => {
                     const v = nextMin + k * (r?.stepUsd || 0);
-                    return <button key={k} type="button" className="btn-ghost btn-sm" onClick={() => setAmount(String(v))}>{money(v)}</button>;
+                    return <button key={k} type="button" className={`auc-chip ${bidNum === v ? "auc-chip-on" : ""}`} onClick={() => setAmount(String(v))}>{money(v)}</button>;
                   })}
                 </div>
-                <button type="button" className="mt-4 w-full rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 px-6 py-3.5 text-base font-extrabold text-ink-950 shadow-lg shadow-amber-500/20 transition hover:brightness-110 disabled:opacity-60"
-                  onClick={bid} disabled={busy || bidNum < nextMin || !!me.leading} data-testid="sale-bid-submit">
+                <button type="button" className="btn-royal mt-6 w-full py-4 text-base font-bold"
+                  onClick={bid} disabled={busy || bidNum < nextMin} data-testid="sale-bid-submit">
                   {busy ? <><Spinner /> {t.bidding}</> : fill(t.bidBtn, { amount: money(bidNum || nextMin) })}
                 </button>
-                <p className="mt-2 text-xs text-slate-500">{t.binding}</p>
+                </>}
+                <p className="mt-3 text-xs leading-relaxed text-slate-400">{t.binding}</p>
               </div>
             )}
-            {msg ? <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-rose-50 text-rose-800"}`} data-testid="sale-auction-msg">{msg.text}</p> : null}
+            {msg ? <p className={`mt-4 rounded-xl border px-4 py-3 text-sm ${msg.ok ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-200" : "border-rose-400/25 bg-rose-500/10 text-rose-200"}`} data-testid="sale-auction-msg">{msg.text}</p> : null}
 
             {r && open ? (
-              <div className="mt-6 border-t border-slate-100 pt-4">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">{t.rulesTitle}</h3>
-                <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                  {t.rules.map((x) => <li key={x} className="flex gap-2"><span className="text-amber-600">◆</span>{fill(x, { step: money(r.stepUsd), min: r.snipeMinutes, days: r.payDays })}</li>)}
-                  <li className="flex gap-2"><span className="text-amber-600">◆</span>{info.approval ? t.ruleApproval : t.ruleOpen}</li>
+              <div className="mt-8">
+                <div className="mb-5 h-px bg-gradient-to-r from-transparent via-gold-400/30 to-transparent" aria-hidden="true" />
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{t.rulesTitle}</h3>
+                <ul className="mt-4 space-y-3 text-sm leading-relaxed text-slate-300">
+                  {t.rules.map((x) => <li key={x} className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{fill(x, { step: money(r.stepUsd), min: r.snipeMinutes, days: r.payDays })}</li>)}
+                  <li className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{info.approval ? t.ruleApproval : t.ruleOpen}</li>
                 </ul>
               </div>
             ) : null}

@@ -172,7 +172,7 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
                 <div className="acq-price mt-1 text-5xl font-black tracking-tight sm:text-7xl" data-testid="acquire-price">{money(round.status === "open" ? (round.bidsCount ? round.highUsd : round.openUsd) : round.winnerUsd || round.highUsd)}</div>
                 {round.status === "open" ? (
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
-                    <span>{ta.endsIn}</span><Countdown to={round.endsAt} dark />
+                    <span>{ta.endsIn}</span><Countdown to={round.endsAt} tone="gold" />
                     <span className="text-slate-400">· {ta.bids.replace("{n}", String(round.bidsCount))}</span>
                   </div>
                 ) : null}
