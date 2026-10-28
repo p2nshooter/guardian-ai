@@ -11,7 +11,14 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
-os.environ.setdefault("DATA_DIR", tempfile.mkdtemp(prefix="guardian-test-"))
+_TMP = tempfile.mkdtemp(prefix="guardian-test-")
+# Modules create their folders at import; point every one at a temp dir so the test
+# runs as an ordinary user (CI) and never touches /guardian.
+for _var, _sub in (("DATA_DIR", "data"), ("GUARDIAN_DATA_DIR", "data"), ("GUARDIAN_CERTS_DIR", "certs"),
+                   ("GUARDIAN_CONFIG", "config/guardian.yml"), ("SIEM_CEF_FILE", "logs/guardian.cef"),
+                   ("SIEM_JSON_FILE", "logs/guardian.jsonl")):
+    os.environ.setdefault(_var, os.path.join(_TMP, _sub))
+os.makedirs(os.environ["DATA_DIR"], exist_ok=True)
 
 import pytest
 from fastapi.routing import APIRoute
