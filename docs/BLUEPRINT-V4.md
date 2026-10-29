@@ -484,8 +484,8 @@ bukan dari perkiraan.
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
 | 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt 2026, `REQUESTS.md` 120, 124, 125, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan US$10 juta + US$100 ribu/minggu ✅ · lelang xaa.es tayang (xaa #33) ✅ · tangga di axto.io tayang | 4/5 | **80 %** |
-| 22 | White label axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 126–127, §36) | WL1 penawaran + bayar → mitra aktif · WL2 studio merek & domain · WL3 rekonsiliasi & build bermerek · WL4 buku besar & bagi hasil · WL5 rilis berjalan · WL6 panduan A–Z · WL7 xaa.es | 0/7 | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **78/141** | **≈ 55 %** |
+| 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | P0 blueprint induk · P1 program & saklar · P2 afiliasi · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 0/11 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **78/145** | **≈ 54 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1309,7 +1309,13 @@ Akun yang menghubungkan harus admin halaman. Tanpa persetujuan itu, LinkedIn men
 - Pengujian langsung ke api.linkedin.com tidak bisa dilakukan dari sesi Claude (jaringan memblokir linkedin.com). Uji
   pertama berjalan di produksi setelah pemilik menekan Connect.
 
-## 36. White label axto.io dan xaa.es (REQUESTS 126–127) — rancangan sebelum dibangun
+## 36. ~~White label axto.io dan xaa.es (REQUESTS 126–127)~~ — DIBATALKAN 29 Okt 2026 (REQUESTS 131)
+
+> **Dibatalkan pemilik.** Rancangan bisnis yang berlaku: **`docs/BUSINESS-MASTER-BLUEPRINT.md`**. Bagian teknis di bawah
+> (instans khusus per mitra, rekonsiliator) dipakai ulang oleh fase P5 rancangan itu. Ketentuan komersial di bawah
+> (US$500.000, bagi hasil 30%/20%) tidak berlaku lagi.
+
+### (arsip) Rancangan lama
 
 Pemilik, 28 Okt 2026: "Bikin bisnis white label axto.io, 100% white label bisa menggunakan brand sendiri, bikinin dari A-Z
 kebutuhan white label sampe client terkoneksi, bikin panduanya … axto.io wajib memiliki rancangan dan sistem yg kuat serta

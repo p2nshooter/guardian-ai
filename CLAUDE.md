@@ -1,5 +1,19 @@
 # AXTO (axto.io) — standing rules for every change
 
+## 0. ★ READ FIRST: THE BUSINESS MASTER BLUEPRINT ★
+**`docs/BUSINESS-MASTER-BLUEPRINT.md` is the master design of the whole business of axto.io AND xaa.es** (owner, 29 Oct 2026,
+REQUESTS 131). Read it before any work. In one breath:
+- **Everything runs by itself (zero-touch).** No daily operator.
+- **AXTO is paid first.** Partner channels use prepaid credits. No revenue share, no credit extended.
+- **Partners (white label, reseller) own their clients completely**: setup, support, complaints, renewals, revoke, ban.
+- **One strict Licence Authority** issues every licence: signed, credit-debited atomically, bound to machines,
+  revocable.
+- **MANAGE (AXTO-provided AI) is sold ONLY inside white label.** axto.io itself stays BYOX.
+- **Admin controls every member.**
+- **Affiliate, Reseller and White Label can each be shown or hidden in Admin** (default shown).
+- **The AI chat answers everything public and never reveals company secrets.**
+- **Build phase by phase (P0–P10), one at a time.**
+
 These rules come from the owner and apply to **every** new feature or change, whatever it is.
 **Before any work:** write the owner's command into the blueprint first (`docs/REQUESTS.md` + the plan in `docs/BLUEPRINT-V4.md` / `docs/AXTO-APPS-BLUEPRINT.md`), then build it. Never assume or invent — read the command and the blueprint. Keep the progress table in `docs/BLUEPRINT-V4.md` §19 current.
 The running log of the owner's requests is in [`docs/REQUESTS.md`](docs/REQUESTS.md) — add each new request there.
