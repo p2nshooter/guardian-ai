@@ -9,6 +9,7 @@ import { getUsage } from "@/lib/usage";
 import { PLANS, limitsFor, isPlanId } from "@/lib/plans";
 import { localModeFor } from "@/lib/ai/local-settings";
 import { hasInvestorRecord, investVisible } from "@/lib/invest";
+import { getPrograms, isShown } from "@/lib/programs";
 
 export async function GET(req: NextRequest) {
   const ctx = await loadSession(req, { fresh: true });
@@ -17,13 +18,15 @@ export async function GET(req: NextRequest) {
   const s = ctx.session;
   const db = getData(req);
   const tier = effectiveTier(s);
-  const [profile, sub, usage, localMode, investShown, investRecord] = await Promise.all([
+  const [profile, sub, usage, localMode, investShown, investRecord, programs, affiliate] = await Promise.all([
     db.users.get(s.sub),
     db.subscriptions.get(ids.subscription(s.sub)),
     getUsage(db, s.sub, tier),
     localModeFor(db, tier),
     investVisible(db),
     hasInvestorRecord(db, s.email),
+    getPrograms(db).catch(() => null),
+    db.affiliates.get(s.sub).catch(() => null),
   ]);
   return respond({
     user: { id: s.sub, email: s.email, role: s.role, name: profile?.name || "", organization: profile?.organization || "", country: profile?.country || "", createdAt: profile?.created_at || "" },
@@ -34,5 +37,7 @@ export async function GET(req: NextRequest) {
     usage,
     localMode,          // Local Mode (AI on this device) allowed: plan + operator switch
     investor: investShown || investRecord,   // §26.4: "Investment" in the menu only while the round is shown, or for an investor
+    // "Affiliate" in the menu while the programme is shown, and always for a member who joined (§3).
+    affiliate: s.role !== "admin" && (!!affiliate || (!!programs && isShown(programs, "affiliate"))),
   }, ctx);
 }

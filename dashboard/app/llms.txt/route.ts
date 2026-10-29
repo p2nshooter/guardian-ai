@@ -1,14 +1,20 @@
 /* /llms.txt (llmstxt.org) — what AXTO is and where its public pages are, for AI search engines and
  * assistants (owner, 27 Oct 2026: "perbaiki dulu seluruh SEO websitenya … file2 lain yg d butuhkan").
- * The same pages as sitemap.xml, with their one-line summaries. Static, rebuilt on deploy. */
+ * The same pages as sitemap.xml, with their one-line summaries. Rendered per request so a partner
+ * programme the owner hides (Admin → Programs) disappears from it at once. */
+export const runtime = "edge";
 import { CLOUD_APPS } from "@/lib/apps";
 import { BLOG_POSTS } from "@/lib/blog-posts";
 import { PRODUCT_CATALOG } from "@/lib/product-catalog";
 import { SITE, absoluteUrl } from "@/lib/site";
+import { getData } from "@/lib/db";
+import { getPrograms, isShown } from "@/lib/programs";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export function GET() {
+export async function GET() {
+  const programs = await getPrograms(getData()).catch(() => null);
+  const shown = (id: "affiliate" | "reseller" | "whitelabel") => !!programs && isShown(programs, id);
   const link = (name: string, path: string, note = "") => `- [${name}](${absoluteUrl(path)})${note ? `: ${note}` : ""}`;
   const posts = [...BLOG_POSTS].sort((a, b) => b.date.localeCompare(a.date));
   const text = [
@@ -33,6 +39,15 @@ export function GET() {
     link("Licence auction", "/auction", "every package auctioned every two weeks, ending Friday 07:00 WIB, opening at 25 % of the price"),
     link("Acquire AXTO", "/acquire", "the platform itself is for sale"),
     "",
+    ...(shown("affiliate") || shown("reseller") || shown("whitelabel") ? [
+      "## Partner programmes",
+      "",
+      link("All partner programmes", "/partners"),
+      ...(shown("affiliate") ? [link("Affiliate programme", "/affiliate", "free to join; a commission on every paid order of the customers you refer")] : []),
+      ...(shown("reseller") ? [link("Reseller programme", "/resellers", "sell AXTO under the AXTO brand at a wholesale discount, prepaid credit")] : []),
+      ...(shown("whitelabel") ? [link("White-label programme", "/white-label", "the AXTO platform under your own brand, domain and languages, for your own clients")] : []),
+      "",
+    ] : []),
     "## Libraries",
     "",
     link("Legal AI by jurisdiction", "/legal-ai"),
@@ -49,5 +64,5 @@ export function GET() {
     ...[["About", "/about"], ["Contact", "/contact"], ["Security", "/security"], ["Privacy policy", "/privacy"], ["Terms", "/terms"], ["Editorial policy", "/editorial-policy"], ["Refund policy", "/refund"], ["Status", "/status"]].map(([n, p]) => link(n, p)),
     "",
   ].join("\n");
-  return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
+  return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=300" } });
 }

@@ -12,6 +12,7 @@ import { findLicence } from "@/lib/licences";
 import { requireAdmin, respond } from "@/lib/auth";
 import { parseIdrQuery } from "@/lib/billing/unique-amount";
 import { markOrderPaid, syncLicenses } from "@/lib/billing/activate";
+import { commissionRefunded } from "@/lib/affiliate";
 import { getSale, saveSale } from "@/lib/acquisition";
 import { saleRoundRefunded } from "@/lib/sale-auction";
 import { readJson, fail, audit } from "@/lib/http";
@@ -70,6 +71,8 @@ export async function POST(req: NextRequest) {
   } else if (b?.action === "refund") {
     if (o.status !== "paid") return fail("Only paid orders can be refunded.");
     await db.orders.update(o.id, (x) => ({ ...x, status: "refunded", meta: patchMeta(x.meta, (mm) => { mm.refund_note = note; }) }));
+    // An affiliate's commission on it is reversed, or clawed back from the next payout if already paid.
+    await commissionRefunded(db, o.id).catch((e) => console.error("affiliate reversal failed:", e));
     const sub = await db.subscriptions.get(ids.subscription(o.user_id));
     if (o.plan === "lifetime" && b?.endAccess) {
       // New activations and downloads stop; devices already activated offline cannot be reached.

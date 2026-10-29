@@ -21,6 +21,7 @@ export const all = <T = any>(coll: string) => data<T[]>({ op: "all", coll });
 export const create = (coll: string, d: Record<string, unknown>) => data<boolean>({ op: "create", coll, doc: d });
 export const update = <T = any>(coll: string, id: string, set: Record<string, unknown> = {}, meta?: Record<string, unknown>) => data<T>({ op: "update", coll, id, set, meta });
 export const config = (key: string, value?: string) => data<string | null>({ op: "config", key, value });
+export const knowledge = () => data<string>({ op: "knowledge" });
 export const mails = (to: string) => data<{ subject: string; html: string; at: string }[]>({ op: "mails", to });
 
 export const userByEmail = (email: string) => find("users", "email", email);

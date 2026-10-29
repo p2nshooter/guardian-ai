@@ -29,6 +29,7 @@ import { issueForOrder, productName } from "../lifetime-service";
 import { issueEdition } from "../edition-service";
 import { getEdition, isEditionCycle } from "../editions";
 import { auctionOrderPaid } from "../auction";
+import { commissionForOrder } from "../affiliate";
 
 export type OrderRow = OrderDoc;
 
@@ -175,6 +176,17 @@ ${local}<tr class="tot"><td>Total paid (USD)</td><td style="text-align:right">${
  * link must never grant access again (webhooks acknowledge it, see isFinal).
  */
 export async function markOrderPaid(db: Data, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string; env?: "live" | "sandbox" } = {}): Promise<{ ok: boolean; reason?: string }> {
+  const r = await grantPaidOrder(db, orderId, opts);
+  // An affiliate's commission (docs/BUSINESS-MASTER-BLUEPRINT.md §7.1): created once per paid order, so a replayed
+  // webhook or a second confirmation repairs a missed one and never pays twice. It never blocks the payment itself.
+  if (r.ok) {
+    const paid = await db.orders.get(orderId).catch(() => null);
+    if (paid?.status === "paid") await commissionForOrder(db, paid).catch((e) => console.error("affiliate commission failed:", e));
+  }
+  return r;
+}
+
+async function grantPaidOrder(db: Data, orderId: string, opts: { gatewayRef?: string; paidUsd?: number; paidLocal?: number; actor?: string; gateway?: string; env?: "live" | "sandbox" } = {}): Promise<{ ok: boolean; reason?: string }> {
   const o = await db.orders.get(orderId);
   if (!o) return { ok: false, reason: "order_not_found" };
   if (o.status === "refunded") return { ok: false, reason: "refunded" };
