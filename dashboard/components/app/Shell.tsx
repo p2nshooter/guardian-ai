@@ -25,6 +25,7 @@ export interface Me {
   usage: { month: string; requests: number; clipperVideos: number; clipperLimit: number; storageBytes: number; storageLimit: number };
   localMode?: boolean;           // Local Mode allowed now (plan + operator switch)
   investor?: boolean;            // the investor round is shown, or this member has a record in it (§26.4)
+  affiliate?: boolean;           // the affiliate programme is shown, or this member joined it
 }
 
 const MeCtx = createContext<{ me: Me | null; reload: () => Promise<void> }>({ me: null, reload: async () => {} });
@@ -48,6 +49,7 @@ function memberNav(me: Me | null): { section: Key; items: NavItem[] }[] {
     { section: "nav.section.account", items: [
       { href: "/app/billing", label: "nav.billing", icon: "💳" },
       ...(me?.investor ? [{ href: "/app/investor", label: "nav.investor", icon: "📈" }] : []),
+      ...(me?.affiliate ? [{ href: "/app/affiliate", label: "nav.affiliate", icon: "🤝" }] : []),
       { href: "/app/settings", label: "nav.settings", icon: "⚙️" },
       { href: "/help", label: "nav.help", icon: "📘" },
     ] },
@@ -67,6 +69,8 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/support", label: "Support inbox", icon: "💬" },
       { href: "/admin/acquisition", label: "Site sale", icon: "🏛️" },
       { href: "/admin/investors", label: "Investors", icon: "📈" },
+      { href: "/admin/programs", label: "Partner programmes", icon: "🤝" },
+      { href: "/admin/affiliates", label: "Affiliates & payouts", icon: "💸" },
     ] },
     { section: "Configuration", items: [
       { href: "/admin/plans", label: "Plans & pricing", icon: "🏷️" },

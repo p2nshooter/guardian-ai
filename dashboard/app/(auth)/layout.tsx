@@ -7,10 +7,11 @@ import { dirOf } from "@/lib/i18n-shared";
 import { serverLang } from "@/lib/i18n-server";
 import AuthFrame from "@/components/auth/AuthFrame";
 import { InstallBar } from "@/components/pwa/Pwa";
+import RefCapture from "@/components/site/RefCapture";
 
 export const metadata: Metadata = { robots: { index: false, follow: true } };
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const lang = await serverLang();
-  return <I18nProvider initial={lang}><InstallBar /><div dir={dirOf(lang)}><AuthFrame>{children}</AuthFrame></div></I18nProvider>;
+  return <I18nProvider initial={lang}><InstallBar /><div dir={dirOf(lang)}><AuthFrame>{children}</AuthFrame></div><RefCapture /></I18nProvider>;
 }

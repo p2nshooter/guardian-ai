@@ -1,11 +1,13 @@
 /* sitemap.xml — every public, indexable page (static routes + generated pages).
  * Built per request so /invest is listed only while the owner shows the
- * investor round (§26.4, hidden by default — Admin → Investors). */
+ * investor round (§26.4, hidden by default — Admin → Investors), and each partner
+ * programme only while it is shown (Admin → Programs, shown by default). */
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 import type { MetadataRoute } from "next";
 import { getData } from "@/lib/db";
 import { investVisible } from "@/lib/invest";
+import { PROGRAM_IDS, PROGRAM_PATH, anyShown, getPrograms, isShown } from "@/lib/programs";
 import { absoluteUrl } from "@/lib/site";
 import { CLOUD_APPS } from "@/lib/apps";
 import { COUNTRIES } from "@/lib/legal/jurisdictions";
@@ -17,6 +19,7 @@ const BUILT = new Date();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const invest = await investVisible(getData()).catch(() => false);
+  const programs = await getPrograms(getData()).catch(() => null);
   const page = (path: string, priority: number, changeFrequency: "daily" | "weekly" | "monthly" = "weekly") =>
     ({ url: absoluteUrl(path), lastModified: BUILT, changeFrequency, priority });
   return [
@@ -25,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page("/acquire", 0.8),
     page("/auction", 0.8, "daily"),
     ...(invest ? [page("/invest", 0.7)] : []),
+    ...(programs && anyShown(programs) ? [page("/partners", 0.7), ...PROGRAM_IDS.filter((id) => isShown(programs, id)).map((id) => page(PROGRAM_PATH[id], 0.7))] : []),
     page("/apps", 0.9),
     ...CLOUD_APPS.map((a) => page(`/apps/${a.slug}`, a.slug === "legal" ? 0.9 : 0.8)),
     page("/legal-ai", 0.8),

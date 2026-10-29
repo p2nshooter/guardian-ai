@@ -16,7 +16,8 @@
  *                axto.io and xaa.es once their time has come (lib/linkedin)
  *   hourly       renewal reminders, expiries, stale orders (lib/billing/lifecycle);
  *                Connect events past the retention period are deleted; the
- *                LinkedIn token is refreshed (or the admin reminded) before it ends
+ *                LinkedIn token is refreshed (or the admin reminded) before it ends;
+ *                affiliate commissions mature and the month's payouts are made
  * Storage-lean: the hourly marker is one setting, claimed with compare-and-swap
  * so overlapping ticks never run the hourly work twice.
  * ============================================================================ */
@@ -34,6 +35,10 @@ import { ensureTrialPool, getTrialConfig, TRIAL_BATCH_MAX } from "@/lib/trials";
 import { auctionTick } from "@/lib/auction";
 import { linkedinTick, linkedinMaintenance } from "@/lib/linkedin/autopost";
 import { saleAuctionTick } from "@/lib/sale-auction";
+import { affiliateTick } from "@/lib/affiliate";
+import { gatewayCreds } from "@/lib/billing/gateways";
+import { paypalPayout } from "@/lib/billing/providers";
+import { decryptJson } from "@/lib/secure-store";
 
 const HOURLY_MS = 55 * 60_000;
 
@@ -68,6 +73,11 @@ export async function GET(req: NextRequest) {
     try { out.housekeeping = await runHousekeeping(db); } catch (e: any) { out.housekeeping = { error: String(e?.message || e) }; }
     try { out.connectPruned = await pruneEvents(db, (await getConnectSettings(db)).retentionDays); } catch (e: any) { out.connectPruned = { error: String(e?.message || e) }; }
     try { out.linkedinToken = await linkedinMaintenance(db, { fetch }); } catch (e: any) { out.linkedinToken = { error: String(e?.message || e) }; }
+    // Affiliate commissions leave the refund window; from the 5th, the month's payouts (BUSINESS-MASTER-BLUEPRINT §7.4).
+    try {
+      const pp = await gatewayCreds(db, "paypal").catch(() => null);
+      out.affiliate = await affiliateTick(db, { decrypt: decryptJson, paypal: pp ? (p) => paypalPayout(pp, p) : undefined });
+    } catch (e: any) { out.affiliate = { error: String(e?.message || e) }; }
   }
   return NextResponse.json(out);
 }

@@ -180,12 +180,12 @@ export default function InvestOffer() {
       {/* ── Steps ── */}
       <section className="border-b border-slate-800 bg-ink-950 py-20 text-white">
         <div className="container-page">
-          <Reveal><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t.stepsTitle}</h2></Reveal>
+          <Reveal><h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{t.stepsTitle}</h2></Reveal>
           <ol className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4" data-testid="invest-steps">
             {t.steps.map(([h, d], i) => (
               <Reveal as="li" key={h} delay={(i % 4) * 90} className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 to-teal-400 text-base font-black text-ink-950">{i + 1}</span>
-                <h3 className="mt-4 text-lg font-bold">{h}</h3>
+                <h3 className="mt-4 text-lg font-bold text-white">{h}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-slate-300">{d}</p>
               </Reveal>
             ))}

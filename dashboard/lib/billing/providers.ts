@@ -122,6 +122,26 @@ export async function paypalCreate(c: Record<string, string>, o: OrderForPayment
 }
 
 /** Capture an approved PayPal order. Returns captured USD amount and our order id. */
+/**
+ * One PayPal payout (affiliate commissions, docs/BUSINESS-MASTER-BLUEPRINT.md §7.4). The batch id is our payout
+ * id, so PayPal itself refuses a second batch with the same id: a retry can never pay twice. Needs a PayPal app
+ * with Payouts enabled; otherwise PayPal answers 403 and the payout waits for the owner's one approval instead.
+ */
+export async function paypalPayout(c: Record<string, string>, p: { id: string; email: string; amountUsd: number; note: string }): Promise<{ batchId: string; status: string }> {
+  const r = await fetch(`${paypalBase(c)}/v1/payments/payouts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${await paypalToken(c)}`, "Content-Type": "application/json", "PayPal-Request-Id": p.id },
+    body: JSON.stringify({
+      sender_batch_header: { sender_batch_id: p.id, email_subject: "You have a payout", email_message: p.note },
+      items: [{ recipient_type: "EMAIL", receiver: p.email, note: p.note, sender_item_id: p.id, amount: { value: p.amountUsd.toFixed(2), currency: "USD" } }],
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const j: any = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(`PayPal payout refused (${r.status}${j?.name ? ` ${j.name}` : ""})`);
+  return { batchId: String(j?.batch_header?.payout_batch_id || ""), status: String(j?.batch_header?.batch_status || "PENDING") };
+}
+
 export async function paypalCapture(c: Record<string, string>, paypalOrderId: string): Promise<{ ok: boolean; amount: number; orderId: string; captureId: string }> {
   const token = await paypalToken(c);
   const r = await fetch(`${paypalBase(c)}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {

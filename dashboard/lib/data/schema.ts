@@ -176,6 +176,38 @@ export interface SocialPostDoc {
   claim: string;
   by: string; created_at: string; updated_at: string;
 }
+/* ---- the affiliate programme (docs/BUSINESS-MASTER-BLUEPRINT.md §4, §7.1) ---- */
+/** An affiliate: one per member (id = user id). The payout destination is stored encrypted; `payout_label` is the masked hint. */
+export interface AffiliateDoc {
+  id: string; user_id: string; email: string; name: string; code: string; status: "active" | "suspended" | "banned";
+  terms_version: string; accepted_at: string; join_ip: string; payout_method: "" | "paypal" | "usdt" | "wire"; payout_enc: string; payout_label: string;
+  note: string; created_at: string; updated_at: string;
+}
+/** A referred member (id = the referred user id): created once at sign-up, never moved to another affiliate. */
+export interface ReferralDoc {
+  id: string; affiliate_id: string; code: string; email: string; attributed_at: string; until: string; ip: string; flagged: string; created_at: string;
+}
+/** A commission, created once per paid order ("cm_<order>"); a clawback of a paid one is "cm_<order>_cb" with a negative amount. */
+export interface CommissionDoc {
+  id: string; affiliate_id: string; order_id: string; user_id: string; kind: "customer" | "partner_fee" | "clawback";
+  base_usd: number; pct: number; amount_usd: number; status: "held" | "review" | "payable" | "paid" | "reversed";
+  hold_until: string; payout_id: string; reason: string; created_at: string; updated_at: string;
+}
+/** A monthly payout ("po_<affiliate>_<YYYYMM>"), created once. */
+export interface AffPayoutDoc {
+  id: string; affiliate_id: string; period: string; amount_usd: number; method: string; label: string;
+  status: "approval" | "processing" | "paid" | "failed"; commission_ids: string[]; reference: string; failure: string;
+  created_at: string; paid_at: string; updated_at: string;
+}
+/** An application to the reseller or white-label programme ("<program>_<user>"), one per member and programme. */
+export interface PartnerAppDoc {
+  id: string; program: "reseller" | "whitelabel"; user_id: string; email: string; name: string; company: string; country: string;
+  website: string; languages: string; volume: string; message: string; status: "new" | "contacted" | "invited" | "declined";
+  terms_version: string; ip: string; note: string; created_at: string; updated_at: string;
+}
+const commissionSummary = (c: CommissionDoc) => ({ affiliate_id: c.affiliate_id, order_id: c.order_id, user_id: c.user_id, kind: c.kind, amount_usd: c.amount_usd, status: c.status, hold_until: c.hold_until, payout_id: c.payout_id, created_at: c.created_at });
+const payoutSummary = (p: AffPayoutDoc) => ({ affiliate_id: p.affiliate_id, period: p.period, amount_usd: p.amount_usd, method: p.method, label: p.label, status: p.status, reference: p.reference, created_at: p.created_at, paid_at: p.paid_at });
+
 const socialSummary = (p: SocialPostDoc) => ({ brand: p.brand, day: p.day, kind: p.kind, post_id: p.post_id, org: p.org, status: p.status, attempts: p.attempts, url: p.url, error: (p.error || "").slice(0, 300), by: p.by, created_at: p.created_at, updated_at: p.updated_at });
 
 /** Pending orders oldest first; paid orders by the moment they were paid (revenue, investor statements). */
@@ -388,6 +420,33 @@ export function collections(store: Store) {
     saleBidders: store.collection<SaleBidderDoc>({
       name: "sale_bidders",
       indexes: [{ name: "status", key: (b) => b.status, sort: (b) => newestFirst(b.created_at), meta: (b) => ({ email: b.email, display_name: b.display_name, company: b.company, country: b.country, phone: b.phone, message: b.message.slice(0, 300), created_at: b.created_at }) }],
+    }),
+    affiliates: store.collection<AffiliateDoc>({
+      name: "affiliates",
+      unique: [{ name: "code", value: (a) => a.code }],
+      indexes: [{ name: "status", key: (a) => a.status, sort: (a) => newestFirst(a.created_at), meta: (a) => ({ email: a.email, name: a.name, code: a.code, payout_method: a.payout_method, created_at: a.created_at }) }],
+    }),
+    referrals: store.collection<ReferralDoc>({
+      name: "referrals",
+      indexes: [{ name: "affiliate", key: (r) => r.affiliate_id, sort: (r) => newestFirst(r.created_at), meta: (r) => ({ email: r.email, attributed_at: r.attributed_at, until: r.until, flagged: r.flagged }) }],
+    }),
+    commissions: store.collection<CommissionDoc>({
+      name: "commissions",
+      indexes: [
+        { name: "affiliate", key: (c) => c.affiliate_id, sort: (c) => newestFirst(c.created_at), meta: commissionSummary },
+        { name: "status", key: (c) => c.status, sort: (c) => `${c.hold_until}_${c.id}`, meta: commissionSummary },
+      ],
+    }),
+    affPayouts: store.collection<AffPayoutDoc>({
+      name: "aff_payouts",
+      indexes: [
+        { name: "affiliate", key: (p) => p.affiliate_id, sort: (p) => newestFirst(p.created_at), meta: payoutSummary },
+        { name: "status", key: (p) => p.status, sort: (p) => newestFirst(p.created_at), meta: payoutSummary },
+      ],
+    }),
+    partnerApps: store.collection<PartnerAppDoc>({
+      name: "partner_apps",
+      indexes: [{ name: "program", key: (a) => a.program, sort: (a) => newestFirst(a.created_at), meta: (a) => ({ email: a.email, name: a.name, company: a.company, country: a.country, status: a.status, created_at: a.created_at }) }],
     }),
     // Admin → LinkedIn reads the log from the summaries, newest first.
     socialPosts: store.collection<SocialPostDoc>({

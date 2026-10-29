@@ -7,6 +7,7 @@ import { hashPassword, passwordProblem, normEmail, isEmail, issueSession, loadEn
 import { readJson, fail, str, ipOf, audit } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendMail, mails } from "@/lib/mail";
+import { attributeSignup, REF_COOKIE } from "@/lib/affiliate";
 
 export async function POST(req: NextRequest) {
   const b = await readJson(req);
@@ -40,9 +41,14 @@ export async function POST(req: NextRequest) {
     throw err;
   }
   await audit(db, { sub: id, email }, "user.register", "user", id, {}, req);
+  // Brought by an affiliate's link (docs/BUSINESS-MASTER-BLUEPRINT.md §7.1): tied once, never to oneself.
+  const ref = req.cookies.get(REF_COOKIE)?.value;
+  if (ref) await attributeSignup(db, { id, email }, ref, ipOf(req) || "").catch((e) => console.error("referral failed:", e));
   const m = mails.welcome(name);
   await sendMail(email, m.subject, m.html);
 
   const ent = await loadEntitlement(db, id);
-  return issueSession(NextResponse.json({ ok: true, redirect: "/app/billing?welcome=1" }), ent!);
+  const res = await issueSession(NextResponse.json({ ok: true, redirect: "/app/billing?welcome=1" }), ent!);
+  if (ref) res.cookies.set(REF_COOKIE, "", { path: "/", maxAge: 0 });
+  return res;
 }

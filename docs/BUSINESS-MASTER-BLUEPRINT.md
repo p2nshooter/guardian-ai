@@ -248,6 +248,11 @@ dengan nonce anti-replay, dan gerbang lisensi di setiap engine. OL v4 menambahka
 - **Wire dan USDT**: masuk batch mingguan yang menunggu **satu persetujuan pemilik**. Ini disengaja: uang keluar adalah
   satu-satunya titik yang butuh satu sentuhan manusia, demi keamanan.
 - Minimum pembayaran US$50, dibayar tanggal 5 setiap bulan.
+- **Sebagaimana dibangun di P2 (29 Okt 2026):**
+  - satu pembayaran per afiliasi per bulan, mulai tanggal 5, untuk semua metode;
+  - wire dan USDT menunggu satu persetujuan;
+  - PayPal keluar sendiri bila diaktifkan di Admin → Programs;
+  - pilihan "kredit akun +10%" menyusul bersama dompet kredit di P3.
 
 ---
 
@@ -358,6 +363,21 @@ dokumentasi, tayang) sebelum fase berikutnya dimulai. Kemajuan dicatat di `docs/
 | **P8** | Paket dan koneksi (§10) | E2E paket → lisensi paket |
 | **P9** | xaa.es: afiliasi, reseller, white label (§4.2) | E2E di repo xaa |
 | **P10** | Uji keamanan menyeluruh: lisensi, API mitra, rahasia chat; lalu templat SaaS untuk lelang xaa.es (REQUESTS 129) | laporan uji |
+
+**Kemajuan:**
+- **P0** ✅ (PR #97).
+- **P1** ✅:
+  - Admin → Partner programmes;
+  - `/partners`, `/affiliate`, `/resellers` dan `/white-label` dalam 10 bahasa;
+  - pengetahuan chat dan aturan rahasia;
+  - E2E saklar sembunyi.
+- **P2** ✅:
+  - afiliasi lengkap dan portal `/app/affiliate`;
+  - Admin → Affiliates & payouts;
+  - E2E dari daftar sampai bayar dan tarik balik.
+
+Sampai portalnya selesai (P4, P5), halaman reseller dan white label menerima **lamaran** (satu per anggota per program,
+dikelola di Admin → Programs). Tidak ada pembayaran sebelum portalnya ada. Panduan pemilik: `docs/admin/AFFILIATE.md`.
 
 ---
 

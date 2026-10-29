@@ -10,6 +10,7 @@ import { SITE } from "@/lib/site";
 import ChatWidget from "@/components/support/ChatWidget";
 import { I18nProvider } from "@/lib/i18n";
 import { InstallBar } from "@/components/pwa/Pwa";
+import RefCapture from "@/components/site/RefCapture";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -22,6 +23,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main id="main">{children}</main>
       <SiteFooter />
       <ChatWidget />
+      <RefCapture />
       {/* A plain async <script>, not next/script: it must be in the HTML the
           server sends, because the AdSense verification crawler reads that
           HTML and does not run JavaScript (afterInteractive scripts are only

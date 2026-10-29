@@ -8,6 +8,7 @@
  *   {op:"get", coll, id} · {op:"find", coll, unique, value} · {op:"list", coll, index, value}
  *   {op:"all", coll} · {op:"create", coll, doc} · {op:"update", coll, id, set?, meta?}
  *   {op:"config", key, value?} · {op:"mails", to} · {op:"migration"}
+ *   {op:"knowledge"} — the support chat's public knowledge pack, as the model would see it
  * ============================================================================ */
 export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
@@ -16,6 +17,7 @@ import { patchMeta } from "@/lib/data/meta";
 import { migrationProgress } from "@/lib/data/migrate";
 import type { Collection, Doc } from "@/lib/r2/store";
 import { testDataEnabled, testMails } from "@/lib/test-data";
+import { publicKnowledge } from "@/lib/support/ai";
 
 const nope = () => NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -44,6 +46,7 @@ export async function POST(req: NextRequest) {
       return ok(await db.config.get(String(b.key)));
     case "mails": return ok(await testMails(String(b.to || "")));
     case "migration": return ok(await migrationProgress(getRawData(req)));
+    case "knowledge": return ok(await publicKnowledge(db));
     default: return NextResponse.json({ error: "Unknown op" }, { status: 400 });
   }
 }
