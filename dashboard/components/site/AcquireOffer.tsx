@@ -65,7 +65,7 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
     import("@/lib/i18n-pages/acquire").then((m) => setDict(m.ACQ)).catch(() => {});
   }, [lang, dict]);
   const t: AcqCopy = lang === "en" ? ACQ_EN : dict?.[lang] || ACQ_EN;
-  const { t: ta } = useSaleAucCopy();
+  const { t: ta, riseDate } = useSaleAucCopy();
   const locale = LOCALE[lang] || "en-US";
   const money = (n: number, c = "USD") => formatMoney(n, c, lang);
 
@@ -175,6 +175,9 @@ export default function AcquireOffer({ apps, products, stats }: { apps: OfferApp
                     <span>{ta.endsIn}</span><Countdown to={round.endsAt} tone="gold" />
                     <span className="text-slate-400">· {ta.bids.replace("{n}", String(round.bidsCount))}</span>
                   </div>
+                ) : null}
+                {round.status === "open" && round.nextRiseAt ? (
+                  <p className="mt-3 text-sm font-semibold text-gold-200" data-testid="acquire-rise"><span className="mr-1.5" aria-hidden="true">▲</span>{ta.rises.replace("{next}", money(round.openUsd + round.weeklyUsd)).replace("{date}", riseDate(round.nextRiseAt))}</p>
                 ) : null}
                 <p className="mt-3 max-w-md text-sm font-semibold text-amber-200">{ta.noReserve}</p>
               </div>

@@ -2,10 +2,11 @@
  *   GET → settings + every acquisition order + the auction: the running round with
  *         its bids (e-mails and companies — admins only), recent rounds, bidders
  *   PUT {settings} → status (open / paused / sold), auction or fixed price, the
- *       auction settings (opening bid or random in US$10M–100M, step, length,
- *       anti-snipe, payment window, restart, bidder approval), asking price,
+ *       auction settings (the weekly ladder of the opening bid: day-one price in
+ *       US$10M–100M, weekly rise, day one; step, length, anti-snipe, payment
+ *       window, restart, bidder approval), asking price,
  *       automatic admin grant, payment methods, WhatsApp, BNI receiving accounts
- *   POST {action} → start_round {openUsd?} · cancel_round {id, note} · pass_round {id}
+ *   POST {action} → start_round · cancel_round {id, note} · pass_round {id}
  *       · approve_bidder / reject_bidder {id} */
 export const runtime = "edge";
 import { NextRequest } from "next/server";
@@ -16,12 +17,13 @@ import { readJson, fail, audit } from "@/lib/http";
 import { getSale, saveSale, sanitizeSale, SALE_DEFAULTS, SALE_GATEWAYS } from "@/lib/acquisition";
 import { activeGateways } from "@/lib/billing/gateways";
 import {
-  OPEN_MAX_USD, OPEN_MIN_USD, cancelRound, decideBidder, latestRound, nextMinBid, passRound, roundBids, startRound,
+  OPEN_MAX_USD, OPEN_MIN_USD, cancelRound, decideBidder, ladderPrice, latestRound, nextMinBid, nextRiseAt, passRound, roundBids, startRound,
 } from "@/lib/sale-auction";
 
 async function auctionView(req: NextRequest) {
   const db = getData(req);
-  const round = await latestRound(db);
+  const [round, sale] = await Promise.all([latestRound(db), getSale(db)]);
+  const floor = ladderPrice(sale.auction);
   const [bids, rounds, pending, approved, rejected] = await Promise.all([
     round ? roundBids(db, round.id, 200) : Promise.resolve([]),
     db.saleRounds.list("all", "all", { limit: 12 }).then((p) => p.entries.map((e) => ({ id: e.id, ...e.meta }))),
@@ -32,7 +34,8 @@ async function auctionView(req: NextRequest) {
   const bidder = (status: string) => (e: { id: string; meta: Record<string, unknown> }) => ({ id: e.id, status, ...e.meta });
   return {
     range: { min: OPEN_MIN_USD, max: OPEN_MAX_USD },
-    round: round ? { ...round, next_min_usd: nextMinBid(round) } : null,
+    ladder: { nowUsd: floor, nextRiseAt: nextRiseAt(sale.auction) },
+    round: round ? { ...round, next_min_usd: nextMinBid(round, floor) } : null,
     bids: bids.map((b) => ({ id: b.id, seq: b.seq, name: b.display_name, email: b.email, company: b.company, amountUsd: b.amount_usd, at: b.created_at })),
     rounds,
     bidders: [...pending.map(bidder("pending")), ...approved.map(bidder("approved")), ...rejected.map(bidder("rejected"))],
@@ -68,11 +71,10 @@ export async function PUT(req: NextRequest) {
   const b = await readJson(req);
   if (!b?.settings) return fail("Nothing to save.");
   const current = await getSale(db);
-  const open = Number(b.settings?.auction?.openUsd || 0);
-  if (open && (open < OPEN_MIN_USD || open > OPEN_MAX_USD)) return fail("The opening bid must be between US$10,000,000 and US$100,000,000.");
+  const start = b.settings?.auction?.startUsd;
+  if (start !== undefined && (Number(start) < OPEN_MIN_USD || Number(start) > OPEN_MAX_USD)) return fail("The opening bid on day one must be between US$10,000,000 and US$100,000,000.");
   const next = sanitizeSale({ ...b.settings, soldTo: b.settings.status === "sold" ? current.soldTo : undefined }, current);
   if (!next.gateways.length) return fail("Offer at least one payment method.");
-  if (!next.auction.randomOpen && !next.auction.openUsd) return fail("Set the opening bid, or let it be drawn at random.");
   await saveSale(db, next);
   await audit(db, ctx.session, "admin.site_sale", "platform_config", "site_sale", { status: next.status, mode: next.mode, auction: next.auction, priceUsd: next.priceUsd, autoGrantAdmin: next.autoGrantAdmin, gateways: next.gateways }, req);
   return respond({ ok: true, settings: next, auction: await auctionView(req) }, ctx);
@@ -90,9 +92,7 @@ export async function POST(req: NextRequest) {
     const sale = await getSale(db);
     if (sale.mode !== "auction") return fail("Switch the sale to auction first.");
     if (sale.status !== "open") return fail("Open the sale first (status: open).");
-    const open = Number(b?.openUsd || 0);
-    if (open && (open < OPEN_MIN_USD || open > OPEN_MAX_USD)) return fail("The opening bid must be between US$10,000,000 and US$100,000,000.");
-    out = await startRound(db, sale, ctx.session, Date.now(), { openUsd: open || undefined });
+    out = await startRound(db, sale, ctx.session, Date.now());
     if (!out) return fail("A round is already running or awaiting the winner's payment — cancel or finish it first.");
   } else if (action === "cancel_round") {
     out = await cancelRound(db, id, String(b?.note || ""), ctx.session);

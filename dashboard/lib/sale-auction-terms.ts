@@ -2,14 +2,15 @@
  * Copyright (c) 2024-2026 Axto AI. All rights reserved.
  * ==============================================================================
  * SITE-SALE AUCTION — the rules (docs/BLUEPRINT-V4.md §34; owner, 28 Oct 2026,
- * REQUESTS 120: "minimal penawaran range random dari $10jt-$100jt, ubah bentuk
- * penjualannya seperti lelang").
+ * REQUESTS 120: "ubah bentuk penjualannya seperti lelang", then REQUESTS 125:
+ * "jgn start langsung gede gitu … Start $10jt, setiap minggu naikin $100k").
  *
- *   opening bid  drawn at random between US$10 million and US$100 million (to the
- *                nearest US$100,000) when a round opens, or set by the admin in
- *                that range; stored on the round, so every visitor sees the same
- *   bids         the first at least the opening bid, every later one at least the
- *                high bid plus one step; jump bids allowed; never against yourself
+ *   opening bid  a weekly ladder, the same for everyone: US$10 million from
+ *                28 Oct 2026 (00:00 WIB) plus US$100,000 for every full week since,
+ *                through every round, so the price never starts over
+ *   bids         every bid at least the opening bid of the moment; after the first,
+ *                also at least the high bid plus one step; jump bids allowed;
+ *                never against yourself
  *   anti-snipe   a bid in the last N minutes moves the end to N minutes after it
  *   no reserve   the highest valid bid at the deadline wins
  *
@@ -17,17 +18,22 @@
  * lib/sale-auction.ts adds the R2 storage.
  * ============================================================================ */
 
+/** The owner's floor: the ladder never starts below US$10 million. */
 export const OPEN_MIN_USD = 10_000_000;
 export const OPEN_MAX_USD = 100_000_000;
-export const OPEN_ROUND_TO = 100_000;
 /** A sanity ceiling on any one bid (a typo with three extra zeros is refused, not recorded). */
 export const MAX_BID_USD = 5_000_000_000;
+const WEEK = 7 * 86_400_000;
+/** Day one of the ladder starts at 00:00 in Jakarta (WIB, UTC+7), where the owner is. */
+const WIB_MS = 7 * 3_600_000;
 
 export interface SaleAuctionSettings {
-  /** The admin's opening bid (used when `randomOpen` is off). */
-  openUsd: number;
-  /** Draw a new random opening bid between US$10M and US$100M for every round. */
-  randomOpen: boolean;
+  /** The opening bid on day one of the ladder. */
+  startUsd: number;
+  /** Added to the opening bid at the end of every full week. */
+  weeklyUsd: number;
+  /** Day one of the ladder (YYYY-MM-DD, from 00:00 WIB). */
+  from: string;
   /** The smallest raise over the high bid. */
   stepUsd: number;
   /** Length of a round. */
@@ -42,7 +48,7 @@ export interface SaleAuctionSettings {
 }
 
 export const SALE_AUCTION_DEFAULTS: SaleAuctionSettings = {
-  openUsd: 0, randomOpen: true, stepUsd: 250_000, days: 14, snipeMinutes: 10, payDays: 7, autoRestart: true, approval: true,
+  startUsd: 10_000_000, weeklyUsd: 100_000, from: "2026-10-28", stepUsd: 250_000, days: 14, snipeMinutes: 10, payDays: 7, autoRestart: true, approval: true,
 };
 
 const num = (v: unknown) => Number(String(v ?? "").replace(/[^\d.]/g, ""));
@@ -54,10 +60,11 @@ const within = (v: unknown, lo: number, hi: number, fallback: number) => {
 export function sanitizeSaleAuction(v: any, base: SaleAuctionSettings = SALE_AUCTION_DEFAULTS): SaleAuctionSettings {
   if (!v || typeof v !== "object") return { ...base };
   const bool = (x: unknown, d: boolean) => (typeof x === "boolean" ? x : d);
-  const open = num(v.openUsd);
+  const day = (x: unknown, d: string) => (typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x) && !Number.isNaN(Date.parse(`${x}T00:00:00Z`)) ? x : d);
   return {
-    openUsd: v.openUsd === 0 || v.openUsd === "0" ? 0 : Number.isFinite(open) && open >= OPEN_MIN_USD && open <= OPEN_MAX_USD ? roundOpen(open) : base.openUsd,
-    randomOpen: bool(v.randomOpen, base.randomOpen),
+    startUsd: within(v.startUsd, OPEN_MIN_USD, OPEN_MAX_USD, base.startUsd),
+    weeklyUsd: within(v.weeklyUsd, 0, 10_000_000, base.weeklyUsd),
+    from: day(v.from, base.from),
     stepUsd: within(v.stepUsd, 1_000, 10_000_000, base.stepUsd),
     days: within(v.days, 1, 90, base.days),
     snipeMinutes: within(v.snipeMinutes, 0, 120, base.snipeMinutes),
@@ -67,32 +74,35 @@ export function sanitizeSaleAuction(v: any, base: SaleAuctionSettings = SALE_AUC
   };
 }
 
-const roundOpen = (n: number) => Math.min(OPEN_MAX_USD, Math.max(OPEN_MIN_USD, Math.round(n / OPEN_ROUND_TO) * OPEN_ROUND_TO));
-/** A random opening bid in the owner's range, to the nearest US$100,000. */
-export const randomOpening = (rand: () => number = Math.random) => roundOpen(OPEN_MIN_USD + rand() * (OPEN_MAX_USD - OPEN_MIN_USD));
-/** The opening bid of a new round: drawn, or the admin's own figure. */
-export const openingFor = (s: SaleAuctionSettings, rand: () => number = Math.random) =>
-  s.randomOpen || !s.openUsd ? randomOpening(rand) : roundOpen(s.openUsd);
+type Ladder = Pick<SaleAuctionSettings, "startUsd" | "weeklyUsd" | "from">;
+/** 00:00 WIB on day one of the ladder. */
+export const ladderStart = (s: Pick<Ladder, "from">) => Date.parse(`${s.from}T00:00:00Z`) - WIB_MS;
+const weeksIn = (s: Ladder, nowMs: number) => Math.max(0, Math.floor((nowMs - ladderStart(s)) / WEEK));
+/** The opening bid at a moment: the start plus one weekly rise for every full week since day one. */
+export const ladderPrice = (s: Ladder, nowMs = Date.now()) => s.startUsd + s.weeklyUsd * weeksIn(s, nowMs);
+/** When the opening bid next rises ("" when it does not). */
+export const nextRiseAt = (s: Ladder, nowMs = Date.now()) =>
+  s.weeklyUsd > 0 ? new Date(ladderStart(s) + (weeksIn(s, nowMs) + 1) * WEEK).toISOString() : "";
 
 export interface RoundState {
   status: string; starts_at: string; ends_at: string; open_usd: number; step_usd: number; bids_count: number; high_usd: number; high_user: string;
 }
 
-/** The lowest bid that is accepted now. */
-export const nextMinBid = (r: Pick<RoundState, "bids_count" | "high_usd" | "open_usd" | "step_usd">) =>
-  r.bids_count > 0 ? r.high_usd + r.step_usd : r.open_usd;
+/** The lowest bid accepted now: the opening bid of the moment (`floorUsd`, the ladder), and after the first bid also the high bid plus a step. */
+export const nextMinBid = (r: Pick<RoundState, "bids_count" | "high_usd" | "step_usd">, floorUsd: number) =>
+  Math.max(floorUsd, r.bids_count > 0 ? r.high_usd + r.step_usd : 0);
 
 export type SaleBidProblem = "closed" | "not_started" | "ended" | "bad_amount" | "too_low" | "too_high" | "already_highest";
 
 /** Why a bid cannot be placed (null = it can). Decided again on every compare-and-swap attempt. */
-export function saleBidProblem(r: RoundState, amount: number, userId: string, nowMs: number): SaleBidProblem | null {
+export function saleBidProblem(r: RoundState, amount: number, userId: string, nowMs: number, floorUsd: number): SaleBidProblem | null {
   if (r.status !== "open") return "closed";
   if (nowMs < Date.parse(r.starts_at)) return "not_started";
   if (nowMs >= Date.parse(r.ends_at)) return "ended";
   if (!Number.isInteger(amount) || amount < 1) return "bad_amount";
   if (r.bids_count > 0 && r.high_user === userId) return "already_highest";
   if (amount > MAX_BID_USD) return "too_high";
-  if (amount < nextMinBid(r)) return "too_low";
+  if (amount < nextMinBid(r, floorUsd)) return "too_low";
   return null;
 }
 

@@ -10,16 +10,19 @@ tetap bila diperlukan.
 
 - **Putaran**:
   - Putaran pertama dibuka otomatis dalam satu menit setelah penjualan berstatus *open*.
-  - Tawaran pembuka diundi acak antara **US$10 juta dan US$100 juta** (dibulatkan ke US$100.000) lalu disimpan, sehingga
-    sama untuk semua pengunjung.
-  - Centang "Draw a new random opening bid…" bila ingin undian baru di setiap putaran. Bila tidak dicentang, isi angka
-    sendiri dalam rentang itu atau tekan 🎲.
+  - Tawaran pembuka mengikuti **tangga mingguan** (REQUESTS 125): **US$10 juta** sejak 28 Okt 2026 00:00 WIB, naik
+    **US$100.000** di akhir setiap minggu penuh, sama untuk semua pengunjung dan tidak mulai ulang di putaran baru.
+  - Di *Auction settings*: "Opening bid on day one" (US$10–100 juta), "Weekly rise" (0 = datar) dan "Day one". Kotak abu
+    di atasnya menunjukkan tawaran pembuka hari ini dan kenaikan berikutnya. Tangga berlaku seketika, juga untuk putaran
+    yang sedang berjalan.
+  - "Start a new round" membuka putaran di harga tangga hari itu.
 - **Penawar**:
   - Member mendaftar dengan nama tampil, perusahaan, negara dan telepon.
   - Anda menyetujui atau menolak di kartu *Bidders* (persetujuan bisa dimatikan).
   - Admin tidak bisa menawar. Di halaman publik nama disamarkan; e-mail dan telepon hanya terlihat di Admin.
 - **Aturan**:
-  - Tawaran pertama minimal sebesar pembukaan, berikutnya minimal tawaran tertinggi + langkah (bawaan US$250.000).
+  - Setiap tawaran minimal sebesar tawaran pembuka hari itu; setelah tawaran pertama juga minimal tawaran tertinggi +
+    langkah (bawaan US$250.000).
   - Tawaran dalam 10 menit terakhir memperpanjang putaran 10 menit.
   - Tanpa reserve tersembunyi.
 - **Akhir putaran**:

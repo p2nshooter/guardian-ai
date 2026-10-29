@@ -35,6 +35,6 @@ export async function GET(req: NextRequest) {
   });
   return NextResponse.json({
     status: sale.status, mode: sale.mode, priceUsd: sale.priceUsd, gateways, soldAt: sale.status === "sold" ? sale.soldTo?.paidAt || "" : "",
-    auction: auction ? { approval: sale.auction.approval, round: round ? publicRound(round, bids) : null, me } : null,
+    auction: auction ? { approval: sale.auction.approval, round: round ? publicRound(round, bids, sale.auction) : null, me } : null,
   }, { headers: { "Cache-Control": "no-store" } });
 }

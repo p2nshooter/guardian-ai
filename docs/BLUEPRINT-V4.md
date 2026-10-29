@@ -483,7 +483,9 @@ bukan dari perkiraan.
 | 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/11 | **73 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
-| | **Total** (bobot = jumlah fase) | | **74/129** | **≈ 57 %** |
+| 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt 2026, `REQUESTS.md` 120, 124, 125, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan US$10 juta + US$100 ribu/minggu ✅ · lelang xaa.es tayang (xaa #33) ✅ · tangga di axto.io tayang | 4/5 | **80 %** |
+| 22 | White label axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 126–127, §36) | WL1 penawaran + bayar → mitra aktif · WL2 studio merek & domain · WL3 rekonsiliasi & build bermerek · WL4 buku besar & bagi hasil · WL5 rilis berjalan · WL6 panduan A–Z · WL7 xaa.es | 0/7 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **78/141** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1200,9 +1202,14 @@ seperti lelang, yg mengejutkan seolah peluang mendapatkan harga terbaik … dan 
 **Keputusan (jujur, tetap meyakinkan)**: penjualan berubah dari harga tetap menjadi **lelang sungguhan**, dengan tawaran
 nyata, tenggat nyata, dan pemenang yang membayar tawarannya sendiri.
 
-- **Tawaran pembuka acak dalam rentang US$10–100 juta**. Angkanya diundi sekali saat sebuah putaran dibuka, lalu disimpan
-  di R2, sehingga sama untuk setiap pengunjung. Admin boleh mengundi ulang setiap putaran atau mengetik angka sendiri,
-  selama masih dalam rentang. Tidak ada harga acak per pengunjung, tawaran palsu, atau penghitung penonton palsu.
+- **Tawaran pembuka: tangga mingguan** (REQUESTS 125, menggantikan undian acak US$10–100 juta dari REQUESTS 120).
+  Pemilik: "jgn start langsung gede gitu … Start $10jt, setiap minggu naikin $100k".
+  - US$10.000.000 sejak 28 Okt 2026 00:00 WIB, ditambah US$100.000 di akhir setiap minggu penuh (4 Nov → US$10,1 juta,
+    11 Nov → US$10,2 juta, …). Dihitung dari tanggal, bukan per putaran: putaran baru tidak mulai dari awal.
+  - Setiap tawaran minimal tangga hari itu, juga di tengah putaran yang berjalan; setelah tawaran pertama juga minimal
+    tawaran tertinggi + langkah. Putaran mencatat tangga saat dibuka (`open_usd`) sebagai riwayat.
+  - Admin → Site sale: harga hari pertama (US$10–100 juta), kenaikan mingguan (0 = datar) dan tanggal hari pertama.
+  - Sama untuk setiap pengunjung. Tidak ada harga acak per pengunjung, tawaran palsu, atau penghitung penonton palsu.
 - **Tanpa reserve tersembunyi**: tawaran tertinggi yang sah saat tenggat (di atas pembukaan) memenangkan seluruh AXTO.
   Teks "peluang harga terbaik" menyampaikan hal itu apa adanya.
 - **Aturan tawar**:
@@ -1301,3 +1308,76 @@ Akun yang menghubungkan harus admin halaman. Tanpa persetujuan itu, LinkedIn men
 - E2E: halaman Admin → LinkedIn dan API-nya (kredensial bertopeng, pustaka, pratinjau).
 - Pengujian langsung ke api.linkedin.com tidak bisa dilakukan dari sesi Claude (jaringan memblokir linkedin.com). Uji
   pertama berjalan di produksi setelah pemilik menekan Connect.
+
+## 36. White label axto.io dan xaa.es (REQUESTS 126–127) — rancangan sebelum dibangun
+
+Pemilik, 28 Okt 2026: "Bikin bisnis white label axto.io, 100% white label bisa menggunakan brand sendiri, bikinin dari A-Z
+kebutuhan white label sampe client terkoneksi, bikin panduanya … axto.io wajib memiliki rancangan dan sistem yg kuat serta
+smart system … Biaya white label $500k … 30% dari setiap penjualan whitelabel di tahun pertama, tahun ke dua dan seterusnya
+biaya tahunan turun menjadi $100k dan axto.io mengambil keuntungan 20% dari setiap transaksi … Xaa.es juga dengan sistem yg
+sama".
+
+**Kerahasiaan.** Pemilik menyebut cara kerja zero-touch ini rahasia perusahaan. Halaman publik hanya menjelaskan
+penawaran. Panduan A–Z hanya tampil untuk mitra yang masuk dan untuk admin, dengan `noindex`, tanpa tautan publik dan
+tanpa sitemap. Catatan: repositori guardian-ai dan xaa saat ini **publik** di GitHub. Selama begitu, kode dan dokumen ini
+bisa dibaca siapa pun. Agar benar-benar rahasia, pemilik perlu menjadikan repositori privat (GitHub → Settings → Danger
+Zone → Change visibility).
+
+**Ketentuan komersial.**
+- Biaya masuk **US$500.000** untuk tahun pertama. Selama tahun pertama AXTO menerima **30%** dari setiap penjualan mitra.
+- Mulai tahun kedua: biaya tahunan **US$100.000**, dan AXTO menerima **20%** dari setiap transaksi.
+- Tahun kontrak dihitung dari tanggal aktivasi. Pengembalian dana mengurangi bagi hasil; tidak ada bagi hasil dari
+  transaksi sandbox.
+
+**Rancangan: satu instans khusus per mitra, dijalankan otomatis.**
+- **Instans khusus.** Setiap mitra mendapat salinan platform sendiri: proyek Cloudflare Pages sendiri, bucket R2 sendiri
+  (data, cadangan, berkas) dan rahasia sendiri.
+  - Data klien mitra terpisah total dari axto.io dan dari mitra lain.
+  - Merek dibakukan saat build: nama, logo, warna, domain, e-mail, entitas hukum. Tidak ada teks "AXTO" di instans mitra,
+    dan ini diuji.
+  - Bagian milik pemilik dimatikan di instans mitra: /acquire, /invest, lelang situs, LinkedIn auto-post dan halaman
+    perusahaan.
+  - **Dua bahasa saja** (REQUESTS 130): Inggris ditambah satu bahasa ibu mitra, dipilih dari sembilan bahasa lain axto.io
+    (Indonesia, Melayu, Jerman, Prancis, Italia, Mandarin, Jepang, Hindi, Arab; Arab kanan-ke-kiri). Pemilih bahasa,
+    sitemap dan hreflang hanya memuat dua bahasa itu, dan bundel build hanya membawa kamus keduanya. Bahasa kedua dipilih
+    di studio merek dan bisa diganti; instans dibangun ulang otomatis.
+- **Status yang diinginkan + rekonsiliasi.**
+  - axto.io (pusat) menyimpan status yang diinginkan untuk setiap mitra di R2: merek, domain, versi rilis, aktif atau
+    ditangguhkan.
+  - Alur kerja GitHub Actions `whitelabel.yml` berjalan setiap 15 menit dan setelah setiap deploy `main`. Alur ini membaca
+    status dari pusat (permintaan bertanda tangan), lalu untuk setiap mitra membuat atau memperbarui proyek Pages dan
+    bucket R2 (idempoten), build dengan merek mitra, deploy, memasang domain kustom dan melaporkan hasilnya ke pusat.
+  - Tidak perlu kredensial baru di pusat: alur kerja memakai token Cloudflare yang sudah ada di repositori.
+- **Zero-touch dari bayar sampai tayang.**
+  1. Calon mitra mengajukan dan menandatangani perjanjian white label secara elektronik.
+  2. Mitra membayar lewat checkout yang sudah ada: wire BNI, escrow, kripto, atau PayPal dalam batasnya.
+  3. Pembayaran terverifikasi → akun mitra aktif dan studio merek terbuka.
+  4. Mitra mengisi merek dan domain → rekonsiliasi membangun instansnya.
+  5. Mitra memasang CNAME → domain terverifikasi otomatis, SSL otomatis → situs mitra tayang.
+  6. Klien mitra mendaftar di domain mitra.
+- **Klien terhubung.** Di domain mitra, klien mendapat akun, aplikasi cloud, paket, lisensi aplikasi self-hosted dengan
+  merek mitra, dan API developer (AXTO Connect) dengan URL mitra.
+- **Uang tidak lewat AXTO (non-custodial).**
+  - Mitra memasang gateway pembayarannya sendiri (PayPal, kripto, rekening bank) di Admin instansnya, jadi uang klien
+    langsung masuk ke mitra.
+  - Setiap transaksi lunas atau dikembalikan di instans mitra dikirim ke pusat sebagai peristiwa bertanda tangan HMAC.
+    Pusat mencatatnya sekali per pesanan (create-once) di buku besar R2.
+  - Pusat menghitung bagi hasil 30% atau 20% sesuai tahun kontrak, menerbitkan tagihan bagi hasil bulanan dan tagihan
+    tahunan US$100.000 secara otomatis, dan mengirim pengingat.
+  - Jika lewat masa tenggang, checkout instans mitra ditangguhkan otomatis sampai lunas.
+  - Instans dibangun dari kode AXTO, dan mitra tidak memegang kodenya, sehingga buku besarnya bisa dipercaya.
+- **Portal mitra** di axto.io: status instans, studio merek, domain, buku besar dan bagi hasil, tagihan, perjanjian, dan
+  panduan A–Z (rahasia).
+- **Admin pusat**: daftar mitra, persetujuan, status rekonsiliasi per instans, buku besar, tagihan, penangguhan, dan log
+  audit.
+
+**Fase dan tes.**
+| Fase | Isi | Tes |
+|---|---|---|
+| WL1 | Penawaran publik `/white-label`, pengajuan, perjanjian, checkout US$500.000, akun mitra aktif otomatis saat lunas | unit + E2E alur bayar → mitra aktif |
+| WL2 | Studio merek dan domain (termasuk bahasa kedua), pratinjau langsung | E2E + browser |
+| WL3 | `whitelabel.yml`: rekonsiliasi, build bermerek, deploy, domain, laporan status; uji "tanpa teks AXTO" pada build mitra | build mitra contoh di CI |
+| WL4 | Buku besar bertanda tangan, bagi hasil per tahun kontrak, tagihan bulanan dan tahunan, pengingat, tenggang, penangguhan | unit (tahun 1/2, refund, idempoten) + E2E |
+| WL5 | Rilis berjalan: setiap deploy `main` memperbarui semua instans aktif | CI |
+| WL6 | Panduan A–Z untuk mitra (hanya setelah masuk) | E2E akses |
+| WL7 | xaa.es dengan sistem yang sama (studio, portal klien, katalog, lelang) | sama |

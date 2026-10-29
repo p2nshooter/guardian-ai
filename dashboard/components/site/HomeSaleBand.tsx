@@ -13,12 +13,12 @@ import T from "@/components/site/T";
 import { Countdown, useAucCopy, type Board } from "@/components/site/auction-ui";
 import { useSaleAucCopy } from "@/components/site/SaleAuctionPanel";
 
-interface Sale { status: string; mode: string; priceUsd: number; auction: { round: { status: string; openUsd: number; highUsd: number; bidsCount: number; endsAt: string } | null } | null }
+interface Sale { status: string; mode: string; priceUsd: number; auction: { round: { status: string; openUsd: number; weeklyUsd: number; nextRiseAt: string; highUsd: number; bidsCount: number; endsAt: string } | null } | null }
 
 export default function HomeSaleBand() {
   const { lang } = useI18n();
   const { t } = useAucCopy();
-  const { t: ts } = useSaleAucCopy();
+  const { t: ts, riseDate } = useSaleAucCopy();
   const [sale, setSale] = useState<Sale | null>(null);
   const [board, setBoard] = useState<Board | null>(null);
   useEffect(() => {
@@ -45,7 +45,9 @@ export default function HomeSaleBand() {
                 {ts.homeTitle} · <span data-testid="home-sale-price">{(round.bidsCount ? ts.homeCurrent : ts.homeOpening).replace("{amount}", money(round.bidsCount ? round.highUsd : round.openUsd))}</span>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400" data-testid="home-sale-round">
-                <span>{ts.endsIn}</span><Countdown to={round.endsAt} dark /><span className="hidden sm:inline">· {ts.noReserve}</span>
+                <span>{ts.endsIn}</span><Countdown to={round.endsAt} dark />
+                {round.nextRiseAt ? <span className="font-semibold text-gold-200" data-testid="home-sale-rise"><span className="hidden sm:inline">· </span>▲ {ts.rises.replace("{next}", money(round.openUsd + round.weeklyUsd)).replace("{date}", riseDate(round.nextRiseAt))}</span> : null}
+                <span className="hidden sm:inline">· {ts.noReserve}</span>
               </div>
             </>
           ) : (

@@ -1,6 +1,6 @@
 /* ==============================================================================
  * AXTO — the site-sale AUCTION end to end on the LOCAL runtime (BLUEPRINT-V4 §34):
- *   admin opens a round (opening bid in US$10M–100M) → a member registers as a
+ *   admin opens a round at the weekly ladder's opening bid (REQUESTS 125) → a member registers as a
  *   bidder and waits for approval → the owner approves → bids: too low refused,
  *   the opening bid, a rival outbids, admins cannot bid, the checkout is closed
  *   while the round runs → the round ends (cron tick) → only the winner can pay,
@@ -44,7 +44,9 @@ const tick = () => new Client().get("/api/cron/tick", { "x-cron-secret": "e2e-cr
 
 const admin = new Client(), ava = new Client(), ben = new Client(), anon = new Client();
 const AVA = `ava-${RUN}@example.com`, BEN = `ben-${RUN}@example.com`;
-const OPEN = 25_000_000;
+// A ladder that started 22 days ago (00:00 WIB) at US$25M, +US$100,000 a week: three full weeks → US$25.3M.
+const FROM = new Date(Date.now() + 7 * 3_600_000 - 22 * 86_400_000).toISOString().slice(0, 10);
+const OPEN = 25_000_000 + 3 * 100_000;
 let saved: any = null, roundId = "";
 
 before(async () => {
@@ -55,7 +57,7 @@ before(async () => {
   // Any round left by an earlier file is cancelled, so this run starts its own.
   const cur = g.json.auction.round;
   if (cur && (cur.status === "open" || cur.status === "awaiting_payment")) await admin.post("/api/admin/acquisition", { action: "cancel_round", id: cur.id, note: "e2e reset" });
-  const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open", mode: "auction", auction: { ...g.json.defaults.auction, approval: true, stepUsd: 250_000, snipeMinutes: 10, payDays: 7 } } });
+  const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open", mode: "auction", auction: { ...g.json.defaults.auction, startUsd: 25_000_000, weeklyUsd: 100_000, from: FROM, approval: true, stepUsd: 250_000, snipeMinutes: 10, payDays: 7 } } });
   assert.equal(r.status, 200, r.text);
   await signUp(ava, AVA, "Ava " + RUN);
   await signUp(ben, BEN, "Ben " + RUN);
@@ -64,16 +66,17 @@ after(async () => {
   if (saved) await admin.put("/api/admin/acquisition", { settings: { ...saved, status: saved.status === "sold" ? "open" : saved.status } });
 });
 
-test("admin settings: the opening bid must stay in the owner's US$10M–100M range", async () => {
-  const low = await admin.put("/api/admin/acquisition", { settings: { ...saved, mode: "auction", status: "open", auction: { ...saved.auction, randomOpen: false, openUsd: 9_000_000 } } });
+test("admin settings: the ladder starts in the owner's US$10M–100M range; the desk shows today's opening bid", async () => {
+  const low = await admin.put("/api/admin/acquisition", { settings: { ...saved, mode: "auction", status: "open", auction: { ...saved.auction, startUsd: 9_000_000 } } });
   assert.equal(low.status, 400);
   assert.match(low.json.error, /between US\$10,000,000 and US\$100,000,000/);
-  const bad = await admin.post("/api/admin/acquisition", { action: "start_round", openUsd: 150_000_000 });
-  assert.equal(bad.status, 400);
+  const g = await admin.get("/api/admin/acquisition");
+  assert.equal(g.json.auction.ladder.nowUsd, OPEN, "US$25M + three weekly rises");
+  assert.ok(Date.parse(g.json.auction.ladder.nextRiseAt) > Date.now());
 });
 
 test("a round opens with the opening bid; the public board shows it the same for everyone", async () => {
-  const s = await admin.post("/api/admin/acquisition", { action: "start_round", openUsd: OPEN });
+  const s = await admin.post("/api/admin/acquisition", { action: "start_round" });
   assert.equal(s.status, 200, s.text);
   roundId = s.json.auction.round.id;
   assert.equal(s.json.auction.round.open_usd, OPEN);
@@ -85,6 +88,8 @@ test("a round opens with the opening bid; the public board shows it the same for
   assert.equal(a.json.auction.round.openUsd, OPEN);
   assert.equal(b.json.auction.round.openUsd, OPEN);
   assert.equal(a.json.auction.round.nextMinUsd, OPEN);
+  assert.equal(a.json.auction.round.weeklyUsd, 100_000);
+  assert.ok(Date.parse(a.json.auction.round.nextRiseAt) - Date.now() <= 7 * 86_400_000, "the next rise is within a week");
   assert.equal(a.json.auction.me, null);
 });
 
@@ -115,8 +120,10 @@ test("bidders register and are approved by the owner before they can bid", async
 test("bids: too low refused, the opening bid, a rival outbids; admins cannot bid; names masked, no e-mails", async () => {
   const low = await ava.post("/api/acquire/bid", { amount: OPEN - 1 });
   assert.equal(low.status, 409);
-  assert.match(low.json.error, /lowest bid accepted now is \$25,000,000/);
-  const first = await ava.post("/api/acquire/bid", { amount: "25,000,000" });
+  assert.ok(low.json.error.includes(`lowest bid accepted now is $${OPEN.toLocaleString("en-US")}`), low.json.error);
+  const ladderLow = await ava.post("/api/acquire/bid", { amount: 25_000_000 });
+  assert.equal(ladderLow.status, 409, "the day-one price no longer buys a bid three weeks on");
+  const first = await ava.post("/api/acquire/bid", { amount: OPEN.toLocaleString("en-US") });
   assert.equal(first.status, 200, first.text);
   assert.equal(first.json.round.highUsd, OPEN);
   assert.equal((await ava.post("/api/acquire/bid", { amount: OPEN + 1_000_000 })).status, 409, "never against yourself");

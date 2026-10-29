@@ -30,8 +30,8 @@ import { absoluteUrl, SITE } from "./site";
 import { formatUsd } from "./plans";
 import { getSale, type SaleSettings } from "./acquisition";
 import {
-  cleanDisplayName, displayNameProblem, extendedEnd, maskName, nextMinBid, openingFor, parseBid, saleBidProblem,
-  type NameProblem, type SaleBidProblem,
+  cleanDisplayName, displayNameProblem, extendedEnd, ladderPrice, maskName, nextMinBid, nextRiseAt, parseBid, saleBidProblem,
+  type NameProblem, type SaleAuctionSettings, type SaleBidProblem,
 } from "./sale-auction-terms";
 
 export * from "./sale-auction-terms";
@@ -60,14 +60,15 @@ export async function latestRound(db: Data): Promise<SaleRoundDoc | null> {
 }
 
 /**
- * Open the next round with its opening bid. Created once: two ticks (or a tick and the admin) racing
- * for the same number make one round; the loser gets null.
+ * Open the next round. Created once: two ticks (or a tick and the admin) racing for the same number
+ * make one round; the loser gets null. The round records the ladder's opening bid of the day; the
+ * bids themselves follow the ladder of the moment (REQUESTS 125).
  */
-export async function startRound(db: Data, sale: SaleSettings, by: Actor, nowMs = Date.now(), opts: { openUsd?: number; rand?: () => number } = {}): Promise<SaleRoundDoc | null> {
+export async function startRound(db: Data, sale: SaleSettings, by: Actor, nowMs = Date.now()): Promise<SaleRoundDoc | null> {
   const last = await latestRound(db);
   if (last && (last.status === "open" || last.status === "awaiting_payment")) return null;
   const a = sale.auction;
-  const open = opts.openUsd ? openingFor({ ...a, randomOpen: false, openUsd: opts.openUsd }) : openingFor(a, opts.rand);
+  const open = ladderPrice(a, nowMs);
   const at = iso(nowMs);
   const doc: SaleRoundDoc = {
     id: roundId((last?.no || 0) + 1), no: (last?.no || 0) + 1, status: "open", open_usd: open, step_usd: a.stepUsd,
@@ -147,7 +148,7 @@ export async function placeSaleBid(db: Data, user: Actor & { role?: string }, am
   let seq = 0, extended = false as boolean, prev = { user: "", usd: 0 };
   const after = await db.saleRounds.update(cur.id, (r) => {
     // Decided again on every compare-and-swap attempt: a bid that lost a race is checked against the new high bid.
-    problem = saleBidProblem(r, amount, user.sub, nowMs);
+    problem = saleBidProblem(r, amount, user.sub, nowMs, ladderPrice(sale.auction, nowMs));
     if (problem) return null;
     seq = r.bids_count + 1;
     prev = { user: r.high_user, usd: r.high_usd };
@@ -165,7 +166,7 @@ export async function placeSaleBid(db: Data, user: Actor & { role?: string }, am
   if (prev.user && prev.user !== user.sub) {
     const p = await db.saleBidders.get(prev.user);
     if (p?.email) await tell(p.email, `You have been outbid — ${SITE.name}`, "You have been outbid",
-      `<p>A new bid of <b>${formatUsd(amount)}</b> leads the ${esc(SITE.name)} auction (your bid: ${formatUsd(prev.usd)}). The next bid starts at <b>${formatUsd(nextMinBid(after))}</b>.</p>`,
+      `<p>A new bid of <b>${formatUsd(amount)}</b> leads the ${esc(SITE.name)} auction (your bid: ${formatUsd(prev.usd)}). The next bid starts at <b>${formatUsd(nextMinBid(after, ladderPrice(sale.auction, nowMs)))}</b>.</p>`,
       { label: "Bid again", href: absoluteUrl("/acquire#bid") });
   }
   return { ok: true, round: after, bid, extended };
@@ -303,17 +304,19 @@ export async function saleRoundRefunded(db: Data, o: Pick<OrderDoc, "id" | "meta
 /* ---- what people see ------------------------------------------------------------- */
 
 export interface PublicRound {
-  no: number; status: string; openUsd: number; stepUsd: number; startsAt: string; endsAt: string; snipeMinutes: number; payDays: number;
+  /** openUsd is the opening bid of the moment (the ladder); weeklyUsd and nextRiseAt say when and by how much it rises. */
+  no: number; status: string; openUsd: number; weeklyUsd: number; nextRiseAt: string; stepUsd: number; startsAt: string; endsAt: string; snipeMinutes: number; payDays: number;
   bidsCount: number; highUsd: number; nextMinUsd: number; leader: string; winnerName: string; winnerUsd: number; paid: boolean;
   bids: { name: string; amountUsd: number; at: string }[];
 }
 
 /** The round as everyone sees it: no e-mail, no user id; bidders as masked names; the winner's chosen name once the round is won. */
-export function publicRound(r: SaleRoundDoc, bids: SaleBidDoc[]): PublicRound {
+export function publicRound(r: SaleRoundDoc, bids: SaleBidDoc[], a: SaleAuctionSettings, nowMs = Date.now()): PublicRound {
   const won = r.status === "awaiting_payment" || r.status === "sold";
+  const floor = ladderPrice(a, nowMs);
   return {
-    no: r.no, status: r.status, openUsd: r.open_usd, stepUsd: r.step_usd, startsAt: r.starts_at, endsAt: r.ends_at, snipeMinutes: r.snipe_minutes, payDays: r.pay_days,
-    bidsCount: r.bids_count, highUsd: r.high_usd, nextMinUsd: nextMinBid(r), leader: r.bids_count ? maskName(r.high_name) : "",
+    no: r.no, status: r.status, openUsd: floor, weeklyUsd: a.weeklyUsd, nextRiseAt: nextRiseAt(a, nowMs), stepUsd: r.step_usd, startsAt: r.starts_at, endsAt: r.ends_at, snipeMinutes: r.snipe_minutes, payDays: r.pay_days,
+    bidsCount: r.bids_count, highUsd: r.high_usd, nextMinUsd: nextMinBid(r, floor), leader: r.bids_count ? maskName(r.high_name) : "",
     winnerName: won ? maskName(r.winner_name) : "", winnerUsd: won ? r.winner_usd : 0, paid: r.status === "sold",
     bids: bids.map((b) => ({ name: maskName(b.display_name), amountUsd: b.amount_usd, at: b.created_at })),
   };
