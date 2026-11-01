@@ -38,6 +38,7 @@ function memberNav(me: Me | null): { section: Key; items: NavItem[] }[] {
     { section: "nav.section.workspace", items: [
       { href: "/app", label: "nav.home", icon: "🏠" },
       { href: "/app/apps", label: "nav.apps", icon: "🧩", match: "/app/apps" },
+      { href: "/app/ai-studio", label: "nav.aiStudio", icon: "🎞️" },
       { href: "/app/files", label: "nav.files", icon: "🗂️" },
       ...CLOUD_APPS.map((a) => ({ href: `/app/${a.slug}`, label: a.name, icon: a.icon, badge: a.live ? undefined : "soon" })),
       { href: "/app/self-hosted", label: "nav.selfhosted", icon: "🖥️" },

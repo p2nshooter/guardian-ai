@@ -51,8 +51,13 @@ export const TIER_RANK: Record<Tier, number> = { none: 0, starter: 1, pro: 2, bu
 // These are BYOX plans: every app runs on the member's OWN AI keys / models /
 // endpoints, so AI usage is unlimited on our side. AXTO-provided AI ("Managed")
 // is a separate, currently locked product — see MANAGED_PLANS below.
+// `studio` = AI Chat (multi-model chat). AI Studio, the film studio (REQUESTS 141, history app `film`), is granted with
+// `studio` until it is listed as its own cloud app at S12 (docs/apps/AI-STUDIO-BLUEPRINT.md §11.1); see planAppFor().
 const CORE_APPS = ["legal", "prompts", "studio", "vault", "clipper"];
 const ALL_APPS = ["legal", "prompts", "studio", "vault", "clipper", "compliance", "security"];
+
+/** The plan entitlement an app id is gated by: AI Studio (`film`) comes with AI Chat (`studio`) until S12. */
+export const planAppFor = (app: string): string => (app === "film" ? "studio" : app);
 
 export const PLANS: Record<PlanId, Plan> = {
   starter: {
@@ -68,7 +73,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Unlimited AI with your own keys (BYOK)",
       "Legal AI — 6 core workspaces",
       "Prompt Library — Basic & Pro prompts",
-      "AI Studio (multi-model chat)",
+      "AI Chat (multi-model chat)",
       "Clipper — 10 videos per month",
       "Privacy Vault (in-browser redaction)",
       "1 GB secure file storage",
@@ -91,7 +96,7 @@ export const PLANS: Record<PlanId, Plan> = {
       "Prompt Library — + Premium prompts",
       "Compliance Center & Security Analyst",
       "Clipper — 50 videos per month",
-      "AI Studio & Privacy Vault",
+      "AI Chat & Privacy Vault",
       "10 GB secure file storage",
       "Developer API & realtime — 5 keys, 300 requests/min, 5 webhooks",
       "Local Mode — run every app on a model on your own device",

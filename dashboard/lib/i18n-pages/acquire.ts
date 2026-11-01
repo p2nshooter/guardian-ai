@@ -34,7 +34,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "Tujuh aplikasi AI unggulan",
-        "Legal AI dengan 36 workspace ahli dan alat hukum di perangkat, Clipper untuk video pendek viral, AI Studio, Privacy Vault, Compliance Center, Security Analyst, dan pustaka 240 prompt ahli — live di setiap perangkat."
+        "Legal AI dengan 36 workspace ahli dan alat hukum di perangkat, Clipper untuk video pendek viral, AI Chat, Privacy Vault, Compliance Center, Security Analyst, dan pustaka 240 prompt ahli — live di setiap perangkat."
       ],
       [
         "🛡️",
@@ -328,7 +328,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "Tujuh aplikasi AI utama",
-        "Legal AI dengan 36 ruang kerja pakar dan alat undang-undang pada peranti, Clipper untuk video pendek tular, AI Studio, Privacy Vault, Compliance Center, Security Analyst dan pustaka 240 prompt pakar — aktif pada setiap peranti."
+        "Legal AI dengan 36 ruang kerja pakar dan alat undang-undang pada peranti, Clipper untuk video pendek tular, AI Chat, Privacy Vault, Compliance Center, Security Analyst dan pustaka 240 prompt pakar — aktif pada setiap peranti."
       ],
       [
         "🛡️",
@@ -622,7 +622,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "Sieben KI-Flaggschiff-Anwendungen",
-        "Legal AI mit 36 Experten-Arbeitsbereichen und Rechtswerkzeugen auf dem Gerät, Clipper für virale Kurzvideos, AI Studio, Privacy Vault, Compliance Center, Security Analyst und eine Bibliothek mit 240 Experten-Prompts — produktiv auf jedem Gerät."
+        "Legal AI mit 36 Experten-Arbeitsbereichen und Rechtswerkzeugen auf dem Gerät, Clipper für virale Kurzvideos, AI Chat, Privacy Vault, Compliance Center, Security Analyst und eine Bibliothek mit 240 Experten-Prompts — produktiv auf jedem Gerät."
       ],
       [
         "🛡️",
@@ -916,7 +916,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "Sept applications d'IA phares",
-        "Legal AI avec 36 espaces de travail experts et des outils juridiques sur l'appareil, Clipper pour les vidéos courtes virales, AI Studio, Privacy Vault, Compliance Center, Security Analyst et une bibliothèque de 240 prompts d'experts — en ligne, sur tous les appareils."
+        "Legal AI avec 36 espaces de travail experts et des outils juridiques sur l'appareil, Clipper pour les vidéos courtes virales, AI Chat, Privacy Vault, Compliance Center, Security Analyst et une bibliothèque de 240 prompts d'experts — en ligne, sur tous les appareils."
       ],
       [
         "🛡️",
@@ -1210,7 +1210,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "Sette applicazioni di IA di punta",
-        "Legal AI con 36 spazi di lavoro esperti e strumenti legali sul dispositivo, Clipper per video brevi virali, AI Studio, Privacy Vault, Compliance Center, Security Analyst e una libreria di 240 prompt esperti — attive, su ogni dispositivo."
+        "Legal AI con 36 spazi di lavoro esperti e strumenti legali sul dispositivo, Clipper per video brevi virali, AI Chat, Privacy Vault, Compliance Center, Security Analyst e una libreria di 240 prompt esperti — attive, su ogni dispositivo."
       ],
       [
         "🛡️",
@@ -1504,7 +1504,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "七款旗舰 AI 应用",
-        "Legal AI（含 36 个专家工作区和设备端法律工具）、用于病毒式短视频的 Clipper、AI Studio、Privacy Vault、Compliance Center、Security Analyst，以及包含 240 条专家提示词的提示词库——全部在线运行，支持所有设备。"
+        "Legal AI（含 36 个专家工作区和设备端法律工具）、用于病毒式短视频的 Clipper、AI Chat、Privacy Vault、Compliance Center、Security Analyst，以及包含 240 条专家提示词的提示词库——全部在线运行，支持所有设备。"
       ],
       [
         "🛡️",
@@ -1798,7 +1798,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "7つの主力 AI アプリ",
-        "36の専門ワークスペースとデバイス上の法務ツールを備えた Legal AI、バイラルなショート動画のための Clipper、AI Studio、Privacy Vault、Compliance Center、Security Analyst、そして240件の専門プロンプトライブラリ — すべて稼働中で、あらゆるデバイスに対応。"
+        "36の専門ワークスペースとデバイス上の法務ツールを備えた Legal AI、バイラルなショート動画のための Clipper、AI Chat、Privacy Vault、Compliance Center、Security Analyst、そして240件の専門プロンプトライブラリ — すべて稼働中で、あらゆるデバイスに対応。"
       ],
       [
         "🛡️",
@@ -2092,7 +2092,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "सात प्रमुख AI ऐप्लिकेशन",
-        "36 विशेषज्ञ वर्कस्पेस और डिवाइस पर चलने वाले क़ानूनी टूल के साथ Legal AI, वायरल शॉर्ट वीडियो के लिए Clipper, AI Studio, Privacy Vault, Compliance Center, Security Analyst और 240 विशेषज्ञ प्रॉम्प्ट की लाइब्रेरी — सब लाइव, हर डिवाइस पर।"
+        "36 विशेषज्ञ वर्कस्पेस और डिवाइस पर चलने वाले क़ानूनी टूल के साथ Legal AI, वायरल शॉर्ट वीडियो के लिए Clipper, AI Chat, Privacy Vault, Compliance Center, Security Analyst और 240 विशेषज्ञ प्रॉम्प्ट की लाइब्रेरी — सब लाइव, हर डिवाइस पर।"
       ],
       [
         "🛡️",
@@ -2386,7 +2386,7 @@ export const ACQ: Record<Lang, AcqCopy> = {
       [
         "🏛️",
         "سبعة تطبيقات ذكاء اصطناعي رائدة",
-        "Legal AI مع 36 مساحة عمل متخصصة وأدوات قانونية تعمل على الجهاز، وClipper لمقاطع الفيديو القصيرة الرائجة، وAI Studio، وPrivacy Vault، وCompliance Center، وSecurity Analyst، ومكتبة من 240 موجّهًا احترافيًا — تعمل كلها، وعلى كل جهاز."
+        "Legal AI مع 36 مساحة عمل متخصصة وأدوات قانونية تعمل على الجهاز، وClipper لمقاطع الفيديو القصيرة الرائجة، وAI Chat، وPrivacy Vault، وCompliance Center، وSecurity Analyst، ومكتبة من 240 موجّهًا احترافيًا — تعمل كلها، وعلى كل جهاز."
       ],
       [
         "🛡️",

@@ -27,7 +27,7 @@ const str = (v: unknown, max: number) => String(v ?? "").slice(0, max);
 
 export const TOOLS: Tool[] = [
   {
-    name: "ai_run", title: "Ask your AI (AXTO AI Studio)", scope: "ai:run",
+    name: "ai_run", title: "Ask your AI (AXTO AI Chat)", scope: "ai:run",
     description: "Send a prompt to the member's own AI model through AXTO (bring-your-own-key). Returns the full answer.",
     inputSchema: { type: "object", properties: { prompt: { type: "string", description: "What to ask" }, instructions: { type: "string", description: "Optional system instructions" }, provider: { type: "string" }, model: { type: "string" } }, required: ["prompt"] },
     async run(a, c, db) {

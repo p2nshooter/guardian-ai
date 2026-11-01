@@ -112,10 +112,10 @@ Monthly plans and lifetime licences:`,
 Legal AI on axto.io gives lawyers 36 expert workspaces across 200+ jurisdictions, down to the province — with a Case Builder, redline and playbook review, a clause library, and deadline and citation tools. Matters are encrypted per account.`,
     ["LegalAI", "LegalTech", "LawFirm", "ContractManagement", "LegalResearch"]),
   P("axto", "10-ai-studio", "/apps/studio",
-    { eyebrow: "AI Studio", title: "Every leading model, <em>side by side</em>", sub: "One private workspace.", bullets: ["Files, images and voice", "Live code and artifacts", "Your own key — or a model on your device"] },
+    { eyebrow: "AI Chat", title: "Every leading model, <em>side by side</em>", sub: "One private workspace.", bullets: ["Files, images and voice", "Live code and artifacts", "Your own key — or a model on your device"] },
     `Every leading AI model in one private workspace.
 
-AI Studio puts the models you use side by side — with files, images, voice, live code and artifacts, your own assistants and answer versions. It runs on your own key, or on a model on your own computer.`,
+AI Chat puts the models you use side by side — with files, images, voice, live code and artifacts, your own assistants and answer versions. It runs on your own key, or on a model on your own computer.`,
     ["GenerativeAI", "AITools", "Productivity", "LLM", "ArtificialIntelligence"]),
   P("axto", "11-clipper", "/apps/clipper",
     { eyebrow: "Clipper", title: "Long videos into <em>short clips</em>", sub: "Scored, reframed, captioned — rendered on your device.", bullets: ["Virality score with four sub-scores", "Auto-reframe with face tracking", "8 animated caption styles"] },

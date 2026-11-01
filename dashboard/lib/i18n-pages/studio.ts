@@ -1,9 +1,9 @@
-/* i18n for AI Studio (app/app/studio + components/studio) — all 10 portal languages.
+/* i18n for AI Chat (app/app/studio + components/studio) — all 10 portal languages.
  * Keys, array shapes and {placeholders} must match `en` exactly (tests/i18n-pages.test.ts). */
 import type { Lang } from "../i18n-shared";
 
 const en = {
-  title: "AI Studio",
+  title: "AI Chat",
   sub: "Every leading model in one private workspace — on your own keys.",
   newChat: "New chat",
   chats: "Chats",
@@ -21,11 +21,11 @@ const en = {
   folderPrompt: "Folder name (leave empty for none):",
   confirmDel: "Delete this chat?",
   renamePrompt: "New title:",
-  noPlan: "AI Studio is included from the Starter plan.",
+  noPlan: "AI Chat is included from the Starter plan.",
   upgrade: "See plans",
   addKey: "Add an AI key",
 
-  ask: "Message AI Studio…",
+  ask: "Message AI Chat…",
   send: "Send",
   stop: "Stop",
   thinking: "Thinking…",
@@ -113,7 +113,7 @@ export type StudioDict = typeof en;
 export const L: Record<Lang, StudioDict> = {
   en,
   id: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "Semua model terbaik dalam satu ruang kerja pribadi — dengan kunci Anda sendiri.",
     "newChat": "Chat baru",
     "chats": "Chat",
@@ -131,10 +131,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "Nama folder (kosongkan untuk tanpa folder):",
     "confirmDel": "Hapus chat ini?",
     "renamePrompt": "Judul baru:",
-    "noPlan": "AI Studio tersedia mulai paket Starter.",
+    "noPlan": "AI Chat tersedia mulai paket Starter.",
     "upgrade": "Lihat paket",
     "addKey": "Tambah kunci AI",
-    "ask": "Kirim pesan ke AI Studio…",
+    "ask": "Kirim pesan ke AI Chat…",
     "send": "Kirim",
     "stop": "Berhenti",
     "thinking": "Berpikir…",
@@ -217,7 +217,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   ms: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "Setiap model terkemuka dalam satu ruang kerja peribadi — dengan kunci anda sendiri.",
     "newChat": "Sembang baharu",
     "chats": "Sembang",
@@ -235,10 +235,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "Nama folder (biarkan kosong untuk tiada):",
     "confirmDel": "Padam sembang ini?",
     "renamePrompt": "Tajuk baharu:",
-    "noPlan": "AI Studio tersedia mulai pelan Starter.",
+    "noPlan": "AI Chat tersedia mulai pelan Starter.",
     "upgrade": "Lihat pelan",
     "addKey": "Tambah kunci AI",
-    "ask": "Hantar mesej kepada AI Studio…",
+    "ask": "Hantar mesej kepada AI Chat…",
     "send": "Hantar",
     "stop": "Henti",
     "thinking": "Berfikir…",
@@ -321,7 +321,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   de: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "Alle führenden Modelle in einem privaten Arbeitsbereich — mit Ihren eigenen Schlüsseln.",
     "newChat": "Neuer Chat",
     "chats": "Chats",
@@ -339,10 +339,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "Ordnername (leer lassen für keinen):",
     "confirmDel": "Diesen Chat löschen?",
     "renamePrompt": "Neuer Titel:",
-    "noPlan": "AI Studio ist ab dem Starter-Tarif enthalten.",
+    "noPlan": "AI Chat ist ab dem Starter-Tarif enthalten.",
     "upgrade": "Tarife ansehen",
     "addKey": "KI-Schlüssel hinzufügen",
-    "ask": "Nachricht an AI Studio…",
+    "ask": "Nachricht an AI Chat…",
     "send": "Senden",
     "stop": "Stopp",
     "thinking": "Denkt nach…",
@@ -425,7 +425,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   fr: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "Tous les grands modèles dans un espace de travail privé — avec vos propres clés.",
     "newChat": "Nouveau chat",
     "chats": "Chats",
@@ -443,10 +443,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "Nom du dossier (laisser vide pour aucun) :",
     "confirmDel": "Supprimer ce chat ?",
     "renamePrompt": "Nouveau titre :",
-    "noPlan": "AI Studio est inclus à partir de l'offre Starter.",
+    "noPlan": "AI Chat est inclus à partir de l'offre Starter.",
     "upgrade": "Voir les offres",
     "addKey": "Ajouter une clé IA",
-    "ask": "Écrire à AI Studio…",
+    "ask": "Écrire à AI Chat…",
     "send": "Envoyer",
     "stop": "Arrêter",
     "thinking": "Réflexion…",
@@ -529,7 +529,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   it: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "Tutti i principali modelli in un unico spazio di lavoro privato — con le tue chiavi.",
     "newChat": "Nuova chat",
     "chats": "Chat",
@@ -547,10 +547,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "Nome cartella (lascia vuoto per nessuna):",
     "confirmDel": "Eliminare questa chat?",
     "renamePrompt": "Nuovo titolo:",
-    "noPlan": "AI Studio è incluso dal piano Starter.",
+    "noPlan": "AI Chat è incluso dal piano Starter.",
     "upgrade": "Vedi i piani",
     "addKey": "Aggiungi chiave IA",
-    "ask": "Scrivi ad AI Studio…",
+    "ask": "Scrivi ad AI Chat…",
     "send": "Invia",
     "stop": "Ferma",
     "thinking": "Sto pensando…",
@@ -633,7 +633,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   zh: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "所有主流模型汇聚于一个私密工作区——使用您自己的密钥。",
     "newChat": "新聊天",
     "chats": "聊天",
@@ -651,10 +651,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "文件夹名称（留空表示不放入文件夹）：",
     "confirmDel": "删除此聊天？",
     "renamePrompt": "新标题：",
-    "noPlan": "Starter 及以上套餐包含 AI Studio。",
+    "noPlan": "Starter 及以上套餐包含 AI Chat。",
     "upgrade": "查看套餐",
     "addKey": "添加 AI 密钥",
-    "ask": "给 AI Studio 发消息…",
+    "ask": "给 AI Chat 发消息…",
     "send": "发送",
     "stop": "停止",
     "thinking": "思考中…",
@@ -737,7 +737,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   ja: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "主要なモデルをひとつのプライベートなワークスペースで——ご自身のキーで。",
     "newChat": "新しいチャット",
     "chats": "チャット",
@@ -755,10 +755,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "フォルダー名（空欄でフォルダーなし）：",
     "confirmDel": "このチャットを削除しますか？",
     "renamePrompt": "新しいタイトル：",
-    "noPlan": "AI Studio は Starter プラン以上で利用できます。",
+    "noPlan": "AI Chat は Starter プラン以上で利用できます。",
     "upgrade": "プランを見る",
     "addKey": "AI キーを追加",
-    "ask": "AI Studio にメッセージ…",
+    "ask": "AI Chat にメッセージ…",
     "send": "送信",
     "stop": "停止",
     "thinking": "考えています…",
@@ -841,7 +841,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   hi: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "हर प्रमुख मॉडल एक निजी वर्कस्पेस में — आपकी अपनी कुंजियों पर।",
     "newChat": "नई चैट",
     "chats": "चैट",
@@ -859,10 +859,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "फ़ोल्डर का नाम (कोई नहीं के लिए खाली छोड़ें):",
     "confirmDel": "यह चैट हटाएँ?",
     "renamePrompt": "नया शीर्षक:",
-    "noPlan": "AI Studio, Starter प्लान से शामिल है।",
+    "noPlan": "AI Chat, Starter प्लान से शामिल है।",
     "upgrade": "प्लान देखें",
     "addKey": "AI कुंजी जोड़ें",
-    "ask": "AI Studio को संदेश भेजें…",
+    "ask": "AI Chat को संदेश भेजें…",
     "send": "भेजें",
     "stop": "रोकें",
     "thinking": "सोच रहा है…",
@@ -945,7 +945,7 @@ export const L: Record<Lang, StudioDict> = {
     ]
   },
   ar: {
-    "title": "AI Studio",
+    "title": "AI Chat",
     "sub": "كل النماذج الرائدة في مساحة عمل خاصة واحدة — بمفاتيحك الخاصة.",
     "newChat": "محادثة جديدة",
     "chats": "المحادثات",
@@ -963,10 +963,10 @@ export const L: Record<Lang, StudioDict> = {
     "folderPrompt": "اسم المجلد (اتركه فارغًا لعدم وضعه في مجلد):",
     "confirmDel": "حذف هذه المحادثة؟",
     "renamePrompt": "العنوان الجديد:",
-    "noPlan": "يتوفر AI Studio بدءًا من باقة Starter.",
+    "noPlan": "يتوفر AI Chat بدءًا من باقة Starter.",
     "upgrade": "عرض الباقات",
     "addKey": "إضافة مفتاح ذكاء اصطناعي",
-    "ask": "اكتب رسالة إلى AI Studio…",
+    "ask": "اكتب رسالة إلى AI Chat…",
     "send": "إرسال",
     "stop": "إيقاف",
     "thinking": "جارٍ التفكير…",

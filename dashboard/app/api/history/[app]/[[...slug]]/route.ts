@@ -17,13 +17,14 @@ import { NextRequest } from "next/server";
 import { getData, getUserFiles } from "@/lib/db";
 import { loadSessionFor, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { readJson, fail } from "@/lib/http";
-import { limitsFor } from "@/lib/plans";
+import { limitsFor, planAppFor } from "@/lib/plans";
 import { getUsage, storageProblem } from "@/lib/usage";
 import { rateLimit } from "@/lib/rate-limit";
 import { History, HistoryError, VERSIONED, isHistoryApp } from "@/lib/history";
 import { STATE_ID as PROMPTS_STATE_ID } from "@/lib/prompts/library";
 import { ProjectError, projectMeta, readProject } from "@/lib/clipper/project";
 import { logClipper } from "@/lib/clipper/usage-log";
+import { FilmProjectError, filmMeta, readFilmProject } from "@/lib/film/project";
 
 type Params = { params: Promise<{ app: string; slug?: string[] }> };
 
@@ -32,9 +33,10 @@ const CLIPPER_SETTINGS = new Set(["brand-kit"]);
 
 async function guard(req: NextRequest, app: string) {
   if (!isHistoryApp(app)) return { res: fail("Unknown app.", 404) } as const;
-  const ctx = await loadSessionFor(req, (tier) => limitsFor(tier).apps.includes(app));
+  const gate = planAppFor(app);
+  const ctx = await loadSessionFor(req, (tier) => limitsFor(tier).apps.includes(gate));
   if (!ctx) return { res: unauthorized() } as const;
-  if (!limitsFor(effectiveTier(ctx.session)).apps.includes(app)) return { res: fail("This app needs a plan.", 402, { upgrade: true }) } as const;
+  if (!limitsFor(effectiveTier(ctx.session)).apps.includes(gate)) return { res: fail("This app needs a plan.", 402, { upgrade: true }) } as const;
   return { ctx, hist: new History(getUserFiles(req), getData(req), ctx.session.sub, app, { versions: VERSIONED[app] }) } as const;
 }
 const handle = (e: any) => { if (e instanceof HistoryError) return fail(e.message, e.status, e.extra); throw e; };
@@ -86,6 +88,11 @@ export async function POST(req: NextRequest, { params }: Params) {
       // One format on every surface: older Clippers' projects are upgraded, a newer Clipper's refused, every field bounded.
       try { body = readProject(body); } catch (e) { if (e instanceof ProjectError) return fail(e.message, 400, { project: e.code }); throw e; }
       meta = projectMeta(body);
+    }
+    if (app === "film") {
+      // AI Studio: the shared film format (lib/film/project.ts) — bounded, refused when made by a newer AI Studio.
+      try { body = readFilmProject(body); } catch (e) { if (e instanceof FilmProjectError) return fail(e.message, 400, { project: e.code }); throw e; }
+      meta = filmMeta(body);
     }
     const rev = b?.rev === undefined || b?.rev === null ? undefined : Number(b.rev);
     if (rev !== undefined && (!Number.isInteger(rev) || rev < 0)) return fail("Bad revision.");

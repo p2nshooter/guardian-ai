@@ -54,7 +54,7 @@ export const INV_EN: InvCopy = {
   ],
   todayTitle: "Built and live today",
   today: [
-    "Seven cloud AI apps: Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst and the Prompt Library",
+    "Seven cloud AI apps: Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst and the Prompt Library",
     "A self-hosted product line for Linux and Windows, with editions, trial licences and offline lifetime licences",
     "AXTO Connect, a real-time developer platform",
     "Local Mode: AI that runs entirely on the member's own device",

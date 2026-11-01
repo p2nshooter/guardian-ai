@@ -16,7 +16,7 @@ export { LANG_COOKIE };
 
 const EN = {
   // Shell
-  "nav.home": "Home", "nav.apps": "Apps", "nav.files": "My files", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lifetime licences", "nav.developers": "Developers",
+  "nav.home": "Home", "nav.apps": "Apps", "nav.aiStudio": "AI Studio", "nav.files": "My files", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lifetime licences", "nav.developers": "Developers",
   "nav.billing": "Plan & billing", "nav.settings": "Settings", "nav.help": "Help & guides", "nav.managed": "Managed AI",
   "nav.signout": "Sign out", "nav.language": "Language", "nav.admin": "Admin portal", "nav.member": "Member portal",
   "nav.section.workspace": "Workspace", "nav.section.account": "Account",
@@ -43,7 +43,7 @@ const EN = {
   "plan.starter.f1": "Unlimited AI with your own keys (BYOK)",
   "plan.starter.f2": "Legal AI — 6 core workspaces",
   "plan.starter.f3": "Prompt Library — Basic & Pro prompts",
-  "plan.starter.f4": "AI Studio (multi-model chat)",
+  "plan.starter.f4": "AI Chat (multi-model chat)",
   "plan.starter.f5": "Clipper — 10 videos per month",
   "plan.starter.f6": "Privacy Vault (in-browser redaction)",
   "plan.starter.f7": "1 GB secure file storage",
@@ -52,7 +52,7 @@ const EN = {
   "plan.pro.f3": "Prompt Library — + Premium prompts",
   "plan.pro.f4": "Compliance Center & Security Analyst",
   "plan.pro.f5": "Clipper — 50 videos per month",
-  "plan.pro.f6": "AI Studio & Privacy Vault",
+  "plan.pro.f6": "AI Chat & Privacy Vault",
   "plan.pro.f7": "10 GB secure file storage",
   "plan.business.f1": "Everything in Pro",
   "plan.business.f2": "Prompt Library — + Elite (global-scale) prompts",
@@ -171,7 +171,7 @@ const EN = {
   "apps.idx.lead": "Each app is built for a specific professional job, explains itself step by step, and runs on your own AI keys — or on a model on your own computer.",
   "lp.h1a": "The AI workspace for",
   "lp.h1grad": "legal, security & business work",
-  "lp.sub": "Seven professional AI apps in one place — Legal AI, a premium Prompt Library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst. Everything runs in your browser on your own AI keys.",
+  "lp.sub": "Seven professional AI apps in one place — Legal AI, a premium Prompt Library, AI Chat, Clipper, Privacy Vault, Compliance Center and Security Analyst. Everything runs in your browser on your own AI keys.",
   "lp.seePricing": "See pricing",
   "lp.f1": "Runs in the browser",
   "lp.f2": "Unlimited AI on your own keys",
@@ -274,7 +274,7 @@ const EN = {
 export type Key = keyof typeof EN;
 
 const ID: Record<Key, string> = {
-  "nav.home": "Beranda", "nav.apps": "Aplikasi", "nav.files": "File saya", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lisensi lifetime", "nav.developers": "Developer",
+  "nav.home": "Beranda", "nav.apps": "Aplikasi", "nav.aiStudio": "AI Studio", "nav.files": "File saya", "nav.selfhosted": "Self-hosted", "nav.lifetime": "Lisensi lifetime", "nav.developers": "Developer",
   "nav.billing": "Paket & tagihan", "nav.settings": "Pengaturan", "nav.help": "Bantuan & panduan", "nav.managed": "Managed AI",
   "nav.signout": "Keluar", "nav.language": "Bahasa", "nav.admin": "Portal admin", "nav.member": "Portal member",
   "nav.section.workspace": "Ruang kerja", "nav.section.account": "Akun",
@@ -301,7 +301,7 @@ const ID: Record<Key, string> = {
   "plan.starter.f1": "AI tanpa batas dengan kunci Anda sendiri (BYOK)",
   "plan.starter.f2": "Legal AI — 6 ruang kerja inti",
   "plan.starter.f3": "Perpustakaan Prompt — prompt Basic & Pro",
-  "plan.starter.f4": "AI Studio (obrolan multi-model)",
+  "plan.starter.f4": "AI Chat (obrolan multi-model)",
   "plan.starter.f5": "Clipper — 10 video per bulan",
   "plan.starter.f6": "Privacy Vault (redaksi di browser)",
   "plan.starter.f7": "Penyimpanan file aman 1 GB",
@@ -310,7 +310,7 @@ const ID: Record<Key, string> = {
   "plan.pro.f3": "Perpustakaan Prompt — + prompt Premium",
   "plan.pro.f4": "Compliance Center & Security Analyst",
   "plan.pro.f5": "Clipper — 50 video per bulan",
-  "plan.pro.f6": "AI Studio & Privacy Vault",
+  "plan.pro.f6": "AI Chat & Privacy Vault",
   "plan.pro.f7": "Penyimpanan file aman 10 GB",
   "plan.business.f1": "Semua di Pro",
   "plan.business.f2": "Perpustakaan Prompt — + prompt Elite (skala global)",
@@ -429,7 +429,7 @@ const ID: Record<Key, string> = {
   "lp.eco.self": "Self-hosted — Docker untuk Windows & Linux",
   "lp.h1a": "Ruang kerja AI untuk",
   "lp.h1grad": "pekerjaan hukum, keamanan & bisnis",
-  "lp.sub": "Tujuh aplikasi AI profesional dalam satu tempat — Legal AI, Perpustakaan Prompt premium, AI Studio, Clipper, Privacy Vault, Compliance Center, dan Security Analyst. Semua berjalan di browser Anda dengan kunci AI Anda sendiri.",
+  "lp.sub": "Tujuh aplikasi AI profesional dalam satu tempat — Legal AI, Perpustakaan Prompt premium, AI Chat, Clipper, Privacy Vault, Compliance Center, dan Security Analyst. Semua berjalan di browser Anda dengan kunci AI Anda sendiri.",
   "lp.seePricing": "Lihat harga",
   "lp.f1": "Berjalan di browser",
   "lp.f2": "AI tanpa batas dengan kunci Anda",

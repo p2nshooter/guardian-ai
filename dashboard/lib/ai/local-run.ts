@@ -9,7 +9,7 @@
  * catalogue prompt (plan-gated), and — for Legal AI, whose expert instructions
  * stay on the server — the instructions assembled around placeholders.
  * ============================================================================ */
-import "./tasks";                 // AI Studio
+import "./tasks";                 // AI Chat
 import "../security/task";
 import "../compliance/task";
 import "../clipper/task";

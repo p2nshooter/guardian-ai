@@ -80,14 +80,18 @@ export default function StudioApp() {
   const endRef = useRef<HTMLDivElement>(null);
   const assistant = assistants.find((a) => a.id === assistantId);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (): Promise<ChatEntry[]> => {
     const r = await api<{ items: ChatEntry[] }>("/api/history/studio");
-    if (r.ok) setItems(r.data.items.filter((i) => i.id !== ASSISTANTS_ID && i.meta?.kind !== "assistants"));
+    if (!r.ok) return [];
+    setItems(r.data.items.filter((i) => i.id !== ASSISTANTS_ID && i.meta?.kind !== "assistants"));
+    return r.data.items;
   }, []);
   useEffect(() => {
     if (!access) return;
-    reload();
-    api<{ item: { body: Assistant[] } }>(`/api/history/studio/${ASSISTANTS_ID}`).then((r) => { if (r.ok && Array.isArray(r.data.item?.body)) setAssistants(r.data.item.body); });
+    // Saved assistants are read only when the member has saved some (no request that can only answer 404).
+    reload().then((all) => {
+      if (all.some((i) => i.id === ASSISTANTS_ID)) api<{ item: { body: Assistant[] } }>(`/api/history/studio/${ASSISTANTS_ID}`).then((r) => { if (r.ok && Array.isArray(r.data.item?.body)) setAssistants(r.data.item.body); });
+    });
     const oid = new URLSearchParams(window.location.search).get("open");
     if (oid) openChat(oid);
     try { const pre = sessionStorage.getItem("axto_studio_prefill"); if (pre) { setInput(pre); sessionStorage.removeItem("axto_studio_prefill"); } } catch {}
@@ -361,7 +365,7 @@ export default function StudioApp() {
           {(() => { const name = (title || titleOf(messages)).replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 50) || "chat"; const md = toMarkdown(title || titleOf(messages), messages, settings); return (
             <>
               <button className="btn-secondary" onClick={() => { download(`${name}.md`, md, "text/markdown"); setPanel(""); }}>{t.exportMd}</button>
-              <button className="btn-secondary" onClick={() => { download(`${name}.docx`, markdownToDocx(md, { title: title || titleOf(messages), subtitle: "AXTO AI Studio" })); setPanel(""); }}>{t.exportDocx}</button>
+              <button className="btn-secondary" onClick={() => { download(`${name}.docx`, markdownToDocx(md, { title: title || titleOf(messages), subtitle: "AXTO AI Chat" })); setPanel(""); }}>{t.exportDocx}</button>
               <button className="btn-secondary" onClick={() => { download(`${name}.json`, toJson(title || titleOf(messages), { v: 2, messages, settings, folder, pinned }), "application/json"); setPanel(""); }}>{t.exportJson}</button>
               <button className="btn-secondary" onClick={() => { setPanel(""); setTimeout(() => window.print(), 100); }}>{t.print}</button>
             </>

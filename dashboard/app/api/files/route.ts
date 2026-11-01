@@ -9,6 +9,7 @@ import { loadSession, unauthorized, respond, effectiveTier } from "@/lib/auth";
 import { limitsFor } from "@/lib/plans";
 import { getUsage } from "@/lib/usage";
 import { History, HISTORY_APPS } from "@/lib/history";
+import { planAppFor } from "@/lib/plans";
 import { listMatters } from "@/lib/legal/matters";
 
 export interface FileEntry { app: string; id: string; title: string; updatedAt: string; detail: string }
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     apps.includes("legal")
       ? listMatters(bucket, uid).then((ms) => ms.map((m): FileEntry => ({ app: "legal", id: m.id, title: m.title, updatedAt: m.updatedAt, detail: [m.client, m.country, `${m.docs} docs · ${m.runs} results`].filter(Boolean).join(" · ") }))).catch(() => [])
       : Promise.resolve([] as FileEntry[]),
-    ...HISTORY_APPS.filter((a) => apps.includes(a)).map((a) =>
+    ...HISTORY_APPS.filter((a) => apps.includes(planAppFor(a))).map((a) =>
       new History(bucket, db, uid, a).list()
         .then((items) => items.map((i): FileEntry => ({ app: a, id: i.id, title: i.title, updatedAt: i.updatedAt, detail: Object.entries(i.meta || {}).map(([k, v]) => `${k}: ${v}`).join(" · ") })))
         .catch(() => [] as FileEntry[])),

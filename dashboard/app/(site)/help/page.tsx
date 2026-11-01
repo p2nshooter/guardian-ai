@@ -9,7 +9,7 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = pageMeta({
   title: "Guides & help — getting started with AXTO",
-  description: "How to get started with AXTO: connect your own AI key (BYOX), pick a plan, and use Legal AI, the Prompt Library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst.",
+  description: "How to get started with AXTO: connect your own AI key (BYOX), pick a plan, and use Legal AI, the Prompt Library, AI Chat, Clipper, Privacy Vault, Compliance Center and Security Analyst.",
   path: "/help",
   keywords: ["AXTO help", "AXTO guides", "how to use AXTO", "BYOK setup", "getting started"],
 });

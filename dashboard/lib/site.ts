@@ -17,7 +17,7 @@ export const SITE = {
   url: (process.env.NEXT_PUBLIC_APP_URL || "https://axto.io").replace(/\/$/, ""),
   tagline: "AI workspace for legal, security & business teams",
   description:
-    "AXTO is a subscription AI workspace: Legal AI with 36 expert workspaces across 200+ jurisdictions, a premium prompt library for every profession, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst — all in your browser, no installation. Self-hosted Docker editions included on Business and Enterprise.",
+    "AXTO is a subscription AI workspace: Legal AI with 36 expert workspaces across 200+ jurisdictions, a premium prompt library for every profession, AI Chat, Clipper, Privacy Vault, Compliance Center and Security Analyst — all in your browser, no installation. Self-hosted Docker editions included on Business and Enterprise.",
   email: "hello@axto.io",
   supportEmail: "hello@axto.io",
   twitter: "@axto_ai",

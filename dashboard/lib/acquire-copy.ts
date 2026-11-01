@@ -25,7 +25,7 @@ export const ACQ_EN = {
   highlightsTitle: "Why this platform is worth owning",
   highlightsLead: "A finished product with the operations around it — not a prototype, not a template.",
   highlights: [
-    ["🏛️", "Seven flagship AI applications", "Legal AI with 36 expert workspaces and on-device legal tools, Clipper for viral short video, AI Studio, Privacy Vault, Compliance Center, Security Analyst and a 240-prompt expert library — live, on every device."],
+    ["🏛️", "Seven flagship AI applications", "Legal AI with 36 expert workspaces and on-device legal tools, Clipper for viral short video, AI Chat, Privacy Vault, Compliance Center, Security Analyst and a 240-prompt expert library — live, on every device."],
     ["🛡️", "A privacy architecture buyers can verify", "Files are processed on the member's device, AI runs on the member's own keys or on a model on their own computer (Local Mode), and saved work is encrypted per account."],
     ["⚙️", "Zero-touch operations", "Payments, plan activation, licences, downloads — and this sale itself — complete automatically once a payment is verified. The admin portal covers everything else."],
     ["⚡", "A real-time developer platform", "AXTO Connect: REST, Server-Sent Events, WebSocket, long polling, HTTP/2 streaming, a gRPC-compatible Connect API, WebRTC, signed webhooks and an MCP server for AI agents."],

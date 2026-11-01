@@ -32,7 +32,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "Sudah dibangun dan berjalan",
     today: [
-      "Tujuh aplikasi AI cloud: Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst dan Prompt Library",
+      "Tujuh aplikasi AI cloud: Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst dan Prompt Library",
       "Lini produk self-hosted untuk Linux dan Windows, dengan edisi, lisensi uji coba dan lisensi seumur hidup offline",
       "AXTO Connect, platform developer realtime",
       "Local Mode: AI yang berjalan sepenuhnya di perangkat anggota",
@@ -129,7 +129,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "Sudah dibina dan beroperasi",
     today: [
-      "Tujuh aplikasi AI awan: Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst dan Prompt Library",
+      "Tujuh aplikasi AI awan: Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst dan Prompt Library",
       "Barisan produk hos sendiri untuk Linux dan Windows, dengan edisi, lesen percubaan dan lesen seumur hidup luar talian",
       "AXTO Connect, platform pembangun masa nyata",
       "Local Mode: AI yang berjalan sepenuhnya pada peranti ahli sendiri",
@@ -226,7 +226,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "Heute gebaut und in Betrieb",
     today: [
-      "Sieben Cloud-KI-Apps: Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst und die Prompt Library",
+      "Sieben Cloud-KI-Apps: Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst und die Prompt Library",
       "Eine Self-Hosting-Produktlinie für Linux und Windows mit Editionen, Testlizenzen und Offline-Lifetime-Lizenzen",
       "AXTO Connect, eine Echtzeit-Entwicklerplattform",
       "Local Mode: KI, die vollständig auf dem Gerät des Mitglieds läuft",
@@ -323,7 +323,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "Construit et en service aujourd'hui",
     today: [
-      "Sept applications d'IA cloud : Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst et la Prompt Library",
+      "Sept applications d'IA cloud : Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst et la Prompt Library",
       "Une gamme auto-hébergée pour Linux et Windows, avec éditions, licences d'essai et licences à vie hors ligne",
       "AXTO Connect, une plateforme développeur en temps réel",
       "Le mode local : une IA qui fonctionne entièrement sur l'appareil du membre",
@@ -420,7 +420,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "Già costruito e operativo",
     today: [
-      "Sette app di IA cloud: Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst e la Prompt Library",
+      "Sette app di IA cloud: Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst e la Prompt Library",
       "Una linea self-hosted per Linux e Windows, con edizioni, licenze di prova e licenze a vita offline",
       "AXTO Connect, una piattaforma per sviluppatori in tempo reale",
       "Local Mode: IA che funziona interamente sul dispositivo dell'utente",
@@ -517,7 +517,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "已建成并上线",
     today: [
-      "七款云端 AI 应用：Legal AI、AI Studio、Clipper、Privacy Vault、Compliance Center、Security Analyst 和 Prompt Library",
+      "七款云端 AI 应用：Legal AI、AI Chat、Clipper、Privacy Vault、Compliance Center、Security Analyst 和 Prompt Library",
       "面向 Linux 和 Windows 的自托管产品线，提供多个版本、试用许可和离线终身许可",
       "AXTO Connect 实时开发者平台",
       "本地模式：完全在会员自己的设备上运行的 AI",
@@ -614,7 +614,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "すでに構築・稼働中",
     today: [
-      "7 つのクラウド AI アプリ：Legal AI、AI Studio、Clipper、Privacy Vault、Compliance Center、Security Analyst、Prompt Library",
+      "7 つのクラウド AI アプリ：Legal AI、AI Chat、Clipper、Privacy Vault、Compliance Center、Security Analyst、Prompt Library",
       "Linux と Windows 向けのセルフホスト製品ライン（エディション、試用ライセンス、オフライン永久ライセンス付き）",
       "リアルタイム開発者プラットフォーム AXTO Connect",
       "ローカルモード：会員自身のデバイス上だけで動作する AI",
@@ -711,7 +711,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "आज बना हुआ और चालू",
     today: [
-      "सात क्लाउड AI ऐप: Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst और Prompt Library",
+      "सात क्लाउड AI ऐप: Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst और Prompt Library",
       "Linux और Windows के लिए सेल्फ़-होस्टेड उत्पाद शृंखला — संस्करणों, परीक्षण लाइसेंस और ऑफ़लाइन आजीवन लाइसेंस के साथ",
       "AXTO Connect, एक रियल-टाइम डेवलपर प्लेटफ़ॉर्म",
       "लोकल मोड: ऐसा AI जो पूरी तरह सदस्य के अपने डिवाइस पर चलता है",
@@ -808,7 +808,7 @@ export const INV: Record<Lang, InvCopy> = {
     ],
     todayTitle: "مبني ويعمل اليوم",
     today: [
-      "سبعة تطبيقات ذكاء اصطناعي سحابية: Legal AI وAI Studio وClipper وPrivacy Vault وCompliance Center وSecurity Analyst وPrompt Library",
+      "سبعة تطبيقات ذكاء اصطناعي سحابية: Legal AI وAI Chat وClipper وPrivacy Vault وCompliance Center وSecurity Analyst وPrompt Library",
       "خط منتجات للاستضافة الذاتية على Linux وWindows، مع إصدارات وتراخيص تجريبية وتراخيص دائمة تعمل دون اتصال",
       "AXTO Connect، منصة مطوّرين فورية",
       "الوضع المحلي: ذكاء اصطناعي يعمل بالكامل على جهاز العضو نفسه",
