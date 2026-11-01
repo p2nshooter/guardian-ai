@@ -4,7 +4,7 @@
 > itu... Coba perbaiki harga2 nya mengikuti harga pasaran ASIA."
 
 Status: ✅ **disetujui pemilik 1 Nov 2026** ("Pasang usulan ini"). Angka dipasang sebagai bawaan di kode dalam satu PR
-(revisi harga 2, `lib/price-rev.ts`; program mitra `TERMS_REV` 3). Admin tetap bisa mengubahnya kapan saja di Admin → Plans, Editions,
+(revisi harga 2, `lib/price-rev.ts`; program mitra `TERMS_REV` 3). Lifetime tidak diturunkan (REQUESTS 142, §2.2). Admin tetap bisa mengubahnya kapan saja di Admin → Plans, Editions,
 dan Lifetime. Harga lama yang sudah disimpan Admin di R2 dipindah sekali ke harga baru, dengan pola `priceRev` yang sama
 seperti REQUESTS 132. Saklar on/off edisi tetap dipertahankan.
 
@@ -54,17 +54,18 @@ sendiri, jadi wajar lebih murah dari layanan yang menanggung biaya AI.
 
 ### 2.2 Edisi self-hosted (10 aplikasi) dan lifetime
 
-- Harga sekarang setara perangkat lunak perusahaan Amerika. Contoh:
-  - Orchestra Starter US$34.900/tahun;
-  - lifetime satu aplikasi satu perangkat US$24.900.
-- **Usulan:** semua edisi dan lifetime **× 0,1**. Akhiran harga tetap rapi (34.900 → 3.490; 990 → 99; 24.900 → 2.490).
-  Contohnya:
+- **Edisi tahunan/bulanan:** harga sekarang setara perangkat lunak perusahaan Amerika (contoh: Orchestra Starter
+  US$34.900/tahun). Dipasang **× 0,1** dengan akhiran harga tetap rapi (34.900 → 3.490; 990 → 99). Contoh:
   - Studio Starter US$49/tahun;
   - Guardian Lite US$99/tahun;
   - Orchestra Starter US$3.490/tahun;
-  - lifetime satu aplikasi US$2.490;
-  - lifetime suite US$14.900.
-- Edisi Enterprise tetap di kisaran ribuan dolar, wajar untuk perusahaan.
+  - edisi Enterprise tetap di kisaran ribuan dolar, wajar untuk perusahaan.
+- **Lifetime: tetap sangat mahal, tidak diturunkan.** Pemilik, 1 Nov 2026 (REQUESTS 142): "Harga lifetime pastikan sangat
+  mahal jika aplikasi betul2 bisa d gunakan dan berfungsi 100%".
+  - Harga tetap: US$24.900 per aplikasi untuk 1 perangkat, sampai US$5,9 juta untuk suite 100 perangkat (`lib/lifetime.ts`).
+  - **Aturan:** lisensi lifetime sebuah aplikasi hanya dijual bila aplikasi itu terbukti berfungsi 100%: engine test,
+    docker-smoke Windows + Linux, e2e, dan uji instalasi lewat AXTO Setup hijau di rilis terakhir. Saklar per aplikasi di
+    Admin → Lifetime dibangun sebagai butir antrean W4 (`WORK-QUEUE.md`).
 
 ### 2.3 Program mitra (ikut ditinjau dalam PR yang sama)
 
@@ -88,7 +89,7 @@ sendiri, jadi wajar lebih murah dari layanan yang menanggung biaya AI.
 
 ## 3. Yang ikut berubah saat dipasang
 
-- **Kode:** `lib/plans.ts`, `lib/editions.ts`, `lib/lifetime.ts`, `lib/programs.ts` (bawaan).
+- **Kode:** `lib/plans.ts`, `lib/editions.ts`, `lib/programs.ts` (bawaan). `lib/lifetime.ts` tidak berubah (REQUESTS 142).
 - **Situs:** halaman /pricing, matriks paket, Admin → Plans, teks 10 bahasa yang menyebut harga.
 - **Tes:** tes paket, edisi, lifetime, dan program.
 - **Langganan berjalan** tetap dengan harga yang sudah dibayar sampai periodenya habis. Perpanjangan memakai harga baru

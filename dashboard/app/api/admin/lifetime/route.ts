@@ -10,7 +10,7 @@ import { getData } from "@/lib/db";
 import { requireAdmin, respond, normEmail } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { sendMail } from "@/lib/mail";
-import { getLifetimePrices, lifetimePricesToStore, mergeLifetimePrices, productsOf, LIFETIME_TIERS, type LifetimeScope } from "@/lib/lifetime";
+import { getLifetimePrices, mergeLifetimePrices, productsOf, LIFETIME_TIERS, type LifetimeScope } from "@/lib/lifetime";
 import { issueLifetime, lifetimeChoiceProblem, lifetimeMail, productName, revokeActivation, setLicenseStatus } from "@/lib/lifetime-service";
 
 export async function GET(req: NextRequest) {
@@ -83,7 +83,7 @@ export async function PUT(req: NextRequest) {
   }
   const clean = mergeLifetimePrices(JSON.stringify(b.tiers));
   const db = getData(req);
-  await db.config.set("lifetime_prices", lifetimePricesToStore(clean));
+  await db.config.set("lifetime_prices", JSON.stringify(clean));
   await audit(db, ctx.session, "admin.lifetime.prices", "platform_config", "lifetime_prices", { tiers: clean }, req);
   return respond({ ok: true, tiers: clean }, ctx);
 }

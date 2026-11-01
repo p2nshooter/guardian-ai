@@ -11,20 +11,19 @@
  * negotiated by a person through Support — never by the AI.
  * ============================================================================ */
 import { SELF_HOSTED_SLUGS } from "./selfhosted";
-import { PRICE_REV, currentRev } from "./price-rev";
 
 export type LifetimeScope = "app" | "suite";
 
 export interface LifetimeTier { devices: number; label: string; app: number; suite: number }
 
-/** Default list prices in USD (Asia market, REQUESTS 140). `app` = one self-hosted app, `suite` = all 10 apps. */
+/** Default list prices in USD. `app` = one self-hosted app, `suite` = all 10 apps. */
 export const LIFETIME_TIERS: LifetimeTier[] = [
-  { devices: 1,   label: "1 device",      app: 2_490,     suite: 14_900 },
-  { devices: 5,   label: "up to 5",       app: 9_900,     suite: 59_000 },
-  { devices: 10,  label: "up to 10",      app: 17_900,    suite: 99_000 },
-  { devices: 25,  label: "up to 25",      app: 39_000,    suite: 199_000 },
-  { devices: 50,  label: "up to 50",      app: 69_000,    suite: 349_000 },
-  { devices: 100, label: "up to 100",     app: 119_000,   suite: 590_000 },
+  { devices: 1,   label: "1 device",      app: 24_900,    suite: 149_000 },
+  { devices: 5,   label: "up to 5",       app: 99_000,    suite: 590_000 },
+  { devices: 10,  label: "up to 10",      app: 179_000,   suite: 990_000 },
+  { devices: 25,  label: "up to 25",      app: 390_000,   suite: 1_990_000 },
+  { devices: 50,  label: "up to 50",      app: 690_000,   suite: 3_490_000 },
+  { devices: 100, label: "up to 100",     app: 1_190_000, suite: 5_900_000 },
 ];
 
 export const LIFETIME_INCLUDES = [
@@ -54,8 +53,7 @@ export function mergeLifetimePrices(overrideJson: string | null | undefined): Li
   const tiers = LIFETIME_TIERS.map((t) => ({ ...t }));
   if (!overrideJson) return tiers;
   try {
-    const raw = JSON.parse(overrideJson);
-    const o = Array.isArray(raw) ? raw : Array.isArray(raw?.rows) ? raw.rows : null;
+    const o = JSON.parse(overrideJson);
     for (const t of tiers) {
       const r = Array.isArray(o) ? o.find((x: any) => Number(x?.devices) === t.devices) : null;
       const app = Number(r?.app), suite = Number(r?.suite);
@@ -66,17 +64,9 @@ export function mergeLifetimePrices(overrideJson: string | null | undefined): Li
   return tiers;
 }
 
-/** The stored admin override, or the defaults when it was saved before the current price revision (a bare list). */
-export function storedLifetimePrices(json: string | null | undefined): LifetimeTier[] {
-  try { return json && currentRev(JSON.parse(json)) ? mergeLifetimePrices(json) : mergeLifetimePrices(null); } catch { return mergeLifetimePrices(null); }
-}
-
-/** What Admin saves: the clean tiers at the current price revision. */
-export const lifetimePricesToStore = (rows: LifetimeTier[]): string => JSON.stringify({ priceRev: PRICE_REV, rows });
-
 export async function getLifetimePrices(db: { config: { get(key: string): Promise<string | null> } }): Promise<LifetimeTier[]> {
   try {
-    return storedLifetimePrices(await db.config.get("lifetime_prices"));
+    return mergeLifetimePrices(await db.config.get("lifetime_prices"));
   } catch {
     return mergeLifetimePrices(null);
   }

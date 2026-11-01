@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { PLANS, defaultPrices, storedPlanPrices, priceFor } from "../lib/plans";
 import { EDITIONS, editionPrice, editionPricesToStore, mergeEditionPrices, storedEditionPrices } from "../lib/editions";
-import { LIFETIME_TIERS, lifetimePricesToStore, mergeLifetimePrices, storedLifetimePrices } from "../lib/lifetime";
+import { LIFETIME_TIERS } from "../lib/lifetime";
 import { PRICE_REV } from "../lib/price-rev";
 
 test("cloud plans follow the Asia market: US$5 / 12 / 39 / 149 a month, a year = 10 months", () => {
@@ -14,11 +14,12 @@ test("cloud plans follow the Asia market: US$5 / 12 / 39 / 149 a month, a year =
   assert.equal(priceFor(defaultPrices(), "pro", "yearly"), 120);
 });
 
-test("self-hosted editions and lifetime licences are a tenth of the old list prices", () => {
+test("self-hosted editions are a tenth of the old list prices; lifetime licences stay very expensive", () => {
   const byCode = Object.fromEntries(EDITIONS.map((e) => [e.code, e]));
   assert.deepEqual([byCode.lite.yearly, byCode.orchestra_core.yearly, byCode.studio_starter.yearly], [99, 3_490, 49]);
   for (const e of EDITIONS) assert.ok(Math.abs(e.monthly * 10 - e.yearly) < 0.01, `${e.code}: monthly = yearly / 10`);
-  assert.deepEqual(LIFETIME_TIERS.map((t) => [t.app, t.suite]), [[2_490, 14_900], [9_900, 59_000], [17_900, 99_000], [39_000, 199_000], [69_000, 349_000], [119_000, 590_000]]);
+  // Owner, 1 Nov 2026: "Harga lifetime pastikan sangat mahal jika aplikasi betul2 bisa d gunakan dan berfungsi 100%".
+  assert.deepEqual(LIFETIME_TIERS.map((t) => [t.app, t.suite]), [[24_900, 149_000], [99_000, 590_000], [179_000, 990_000], [390_000, 1_990_000], [690_000, 3_490_000], [1_190_000, 5_900_000]]);
 });
 
 test("plan prices saved before the revision give way once; prices saved after it stay", () => {
@@ -41,10 +42,9 @@ test("edition prices: an old saved list keeps only its on/off switches; the new 
   assert.equal(editionPrice("lite", "yearly", storedEditionPrices(saved)), 120, "a price saved after the revision stays");
 });
 
-test("lifetime prices: an old saved table gives way; a table saved after the revision stays", () => {
-  const legacy = JSON.stringify(LIFETIME_TIERS.map((t) => ({ devices: t.devices, app: t.app * 10, suite: t.suite * 10 })));
-  assert.deepEqual(storedLifetimePrices(legacy), LIFETIME_TIERS);
-  const own = lifetimePricesToStore(mergeLifetimePrices(JSON.stringify([{ devices: 1, app: 1_990, suite: 9_900 }])));
-  assert.equal(storedLifetimePrices(own)[0]!.app, 1_990);
-  assert.equal(storedLifetimePrices(own)[1]!.app, 9_900);
+test("fractional prices always show cents", async () => {
+  const { formatUsd } = await import("../lib/plans");
+  assert.equal(formatUsd(32.5), "$32.50");
+  assert.equal(formatUsd(9.9), "$9.90");
+  assert.equal(formatUsd(390), "$390");
 });

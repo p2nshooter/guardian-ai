@@ -281,8 +281,8 @@ test("auction: admin opens a package now, cancels a lot; members cannot reach th
   assert.equal((await ada.put("/api/admin/auctions", { settings: { enabled: false } })).status, 403);
   const o = await admin.post("/api/admin/auctions", { action: "open", pkg: "lifetime:app:studio:1" });
   assert.equal(o.status, 200, o.text);
-  assert.equal(o.json.lot.normal_usd, 2_490);
-  assert.equal(o.json.lot.open_usd, 623);
+  assert.equal(o.json.lot.normal_usd, 24_900);
+  assert.equal(o.json.lot.open_usd, 6_225);
   assert.equal((await admin.post("/api/admin/auctions", { action: "open", pkg: "lifetime:app:studio:1" })).status, 400, "once per auction");
   const x = await admin.post("/api/admin/auctions", { action: "cancel", lot: o.json.lot.id, note: `test ${RUN}` });
   assert.equal(x.status, 200, x.text);

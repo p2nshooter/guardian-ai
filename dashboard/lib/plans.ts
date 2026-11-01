@@ -229,7 +229,7 @@ export function monthKey(d = new Date()): string {
 }
 
 export function formatUsd(n: number): string {
-  return `$${n.toLocaleString("en-US", { maximumFractionDigits: n % 1 ? 2 : 0 })}`;
+  return `$${n.toLocaleString("en-US", n % 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 0 })}`;
 }
 
 // ── MANAGED (AXTO-provided AI) — a separate product line, LOCKED ───────────

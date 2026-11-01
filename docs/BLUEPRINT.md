@@ -111,16 +111,14 @@ Harga default (bisa diubah admin di **Admin → Paket & Harga**). Tahunan = 10×
 
 Lisensi **seumur hidup** untuk edisi self-hosted — **tidak perlu koneksi lagi ke axto.io**. Setiap perangkat diaktifkan dengan *file aktivasi offline* yang ditandatangani Ed25519 dan terkunci ke ID mesin perangkat itu; engine memverifikasinya secara lokal (air-gapped). Jumlah perangkat dibatasi 1–100.
 
-Harga pasar Asia sejak 1 Nov 2026 (REQUESTS 140, `PRICING-BLUEPRINT.md`; sebelumnya 10× lipat):
-
 | Perangkat | Satu aplikasi | **Suite 10 aplikasi** |
 |---|---|---|
-| 1 | $2.490 | $14.900 |
-| s.d. 5 | $9.900 | $59.000 |
-| s.d. 10 | $17.900 | $99.000 |
-| s.d. 25 | $39.000 | $199.000 |
-| s.d. 50 | $69.000 | $349.000 |
-| s.d. 100 | $119.000 | $590.000 |
+| 1 | $24.900 | $149.000 |
+| s.d. 5 | $99.000 | $590.000 |
+| s.d. 10 | $179.000 | $990.000 |
+| s.d. 25 | $390.000 | $1.990.000 |
+| s.d. 50 | $690.000 | $3.490.000 |
+| s.d. 100 | $1.190.000 | $5.900.000 |
 
 - Termasuk: fitur **tier tertinggi**, penggunaan selamanya untuk versi mayor yang dibeli, pembaruan 12 bulan, EXE Windows + image Docker.
 - Pembayaran: transfer bank/wire (invoice), crypto, atau kartu (Stripe maks. $999.999 per transaksi). Nilai di atas itu otomatis lewat wire.

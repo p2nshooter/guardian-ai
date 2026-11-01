@@ -71,7 +71,7 @@ test("lifetime: live prices are public; checkout validates the choice and charge
   const o = await new Client().get("/api/billing/options");
   assert.equal(o.status, 200);
   assert.equal(o.json.lifetime.tiers.length, 6);
-  assert.deepEqual(o.json.lifetime.tiers[0], { devices: 1, label: "1 device", app: 2490, suite: 14900 });
+  assert.deepEqual(o.json.lifetime.tiers[0], { devices: 1, label: "1 device", app: 24900, suite: 149000 });
   assert.ok(o.json.lifetime.gateways.includes("manual"));
   assert.equal(o.json.lifetime.gateways[0], "paypal", "PayPal first — offered only up to its single-payment ceiling");
   assert.equal(o.json.lifetime.paypalMaxUsd, 10_000);
@@ -86,11 +86,11 @@ test("lifetime: live prices are public; checkout validates the choice and charge
   const c = await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual", amount: 1, amountUsd: 1 });
   assert.equal(c.status, 200, c.text);
   assert.equal(c.json.manual, true);
-  assert.equal(c.json.amountUsd, 9900, "the browser never sets the price");
+  assert.equal(c.json.amountUsd, 99000, "the browser never sets the price");
   orderId = c.json.orderId;
   const ord = await doc("orders", orderId);
   const row = { plan: ord.plan, cycle: ord.cycle, amount_usd: ord.amount_usd, status: ord.status, product: meta(ord).lifetime?.product, devices: meta(ord).lifetime?.devices };
-  assert.deepEqual(row, { plan: "lifetime", cycle: "once", amount_usd: 9900, status: "pending", product: "vault", devices: 5 });
+  assert.deepEqual(row, { plan: "lifetime", cycle: "once", amount_usd: 99000, status: "pending", product: "vault", devices: 5 });
 });
 
 test("lifetime: payment issues the licence with no admin step; idempotent; invoiced", async () => {
