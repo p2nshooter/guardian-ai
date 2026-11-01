@@ -23,7 +23,7 @@ sini pada urutan yang benar.
 
 | # | Pekerjaan | Rencana | Status |
 |---|---|---|---|
-| 2 | **Clipper kelas dunia** (REQUESTS 137) — mulai C1: format proyek bersama + sinkron proyek ke R2 + kuota dan log pemakaian | `apps/CLIPPER-BLUEPRINT.md` §11 | worker GPU (REQUESTS 136) selesai 1 Nov |
+| 2 | **Clipper kelas dunia** (REQUESTS 137) — C1: format proyek v5 + aman antar perangkat (revisi, bentrok, versi) + kuota dan log pemakaian; lalu C2 media di R2 + paket penyimpanan | `apps/CLIPPER-BLUEPRINT.md` §11, §11.1 | C1 dibangun 1 Nov (tes unit + e2e), menunggu CI → merge → tayang |
 
 ## Saat menunggu CI (butir kecil, dikerjakan di sela-sela)
 

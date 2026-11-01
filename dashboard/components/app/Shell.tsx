@@ -77,6 +77,7 @@ export function adminNav(): { section: string; items: NavItem[] }[] {
       { href: "/admin/editions", label: "App editions", icon: "🧩" },
       { href: "/admin/payments", label: "Payment & email", icon: "💳" },
       { href: "/admin/managed", label: "Managed AI", icon: "☁️", badge: "locked" },
+      { href: "/admin/clipper", label: "Clipper usage", icon: "🎬" },
       { href: "/admin/connect", label: "Connect (developer API)", icon: "⚡" },
       { href: "/admin/linkedin", label: "LinkedIn auto-post", icon: "📣" },
       { href: "/admin/releases", label: "Releases", icon: "📦" },

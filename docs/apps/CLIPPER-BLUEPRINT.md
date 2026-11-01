@@ -276,7 +276,7 @@ Prabayar, tidak pernah berutang.
 
 | Fase | Isi | Selesai bila |
 |---|---|---|
-| C1 | Format proyek bersama + sinkron proyek ke R2 + kuota dan log pemakaian | e2e: proyek dibuat di web, dibuka lagi; kuota menolak unggahan berlebih; tes konkurensi R2 |
+| C1 | Format proyek bersama + sinkron proyek ke R2 + kuota dan log pemakaian — **dibangun 1 Nov 2026** (§11.1) | e2e: proyek dibuat di web, dibuka lagi; kuota menolak unggahan berlebih; tes konkurensi R2 |
 | C2 | Simpan media di axto.io: unggah multipart lanjut, retensi, paket penyimpanan prabayar, tautan berbagi, pemindahan ke IA | e2e unggah 1 GB terputus lalu lanjut; beli paket menambah kuota; habis paket → hanya-baca |
 | C3 | Central Hub: konektor BYOK (transkripsi, LLM, cloud GPU), kebijakan, rantai cadangan, perkiraan biaya, anggaran | tes kontrak tiap konektor (server palsu); satu penyedia gagal → cadangan dipakai |
 | C4 | Desktop Tauri Windows + Linux: render GPU (NVENC/AMF/QSV/VAAPI), whisper.cpp, aktivasi Smart License, updater bertanda tangan | build CI Windows + Linux; render klip contoh di runner; aktivasi uji |
@@ -285,6 +285,69 @@ Prabayar, tidak pernah berutang.
 | C7 | Tim: ruang kerja, peran, komentar per detik, persetujuan, versi | e2e dua pengguna |
 | C8 | Central Compute (bila pemilik membuka), atau di dalam white label | meter atomik, saldo nol berhenti, harga = biaya × 2,5 |
 | C9 | Promosi nyata: tangkapan layar dan animasi asli masuk perpustakaan promosi; teks situs 10 bahasa diperbarui | `orchestra-copy`-style test: setiap klaim punya fitur |
+
+### 11.1 C1 — yang dibangun (1 Nov 2026)
+
+**Format proyek v5** (`dashboard/lib/clipper/project.ts`, satu kode untuk web, API, dan nanti desktop/server):
+- Satu JSON `format: "axto.clipper"`, `v: 5`: `media`, `settings`, transkrip + waktu kata, klip, edit, teks repurpose,
+  dan `surface` (web / desktop / server). Video **tidak pernah** ada di dalamnya.
+- Video dikenali dari **sidik jari**: SHA-256 atas ukuran + 2 MiB awal + 2 MiB akhir. Cepat walau berkas 20 GB, dan
+  tetap cocok bila nama berkas diganti. Proyek lama tanpa sidik jari dicocokkan lewat nama + ukuran, lalu
+  sidik jarinya ditambahkan saat video yang benar dipasang.
+- `readProject()`:
+  - menaikkan proyek v4 (dan lebih lama);
+  - membatasi setiap bidang (60 klip, 400 ribu kata, panjang teks, skor 0–100, id unik);
+  - membuang edit milik klip yang sudah tidak ada;
+  - menolak proyek dari Clipper yang lebih baru (`newer`) agar tidak rusak.
+  API memeriksa setiap proyek Clipper dengan kode yang sama sebelum disimpan (400 bila bukan proyek).
+- Berkas proyek **`.axclip`**: bisa diunduh dan dibuka lagi di perangkat lain.
+
+**Aman antar perangkat** (`dashboard/lib/history.ts`, R2 `USER_FILES`, terenkripsi per member):
+- Setiap simpan menaikkan **revisi** dan ditulis dengan compare-and-swap etag (`etagMatches`, item baru create-once).
+- Simpan yang menyebut revisi lama ditolak **409** dengan salinan terbaru, bukan menimpa diam-diam. Pengguna lalu memilih:
+  - **Simpan versi saya**: salinan perangkat lain disimpan dulu sebagai versi;
+  - **Buka versi yang lain**;
+  - **Simpan versi saya sebagai salinan**.
+- Ganti nama tidak menaikkan revisi, jadi editor yang terbuka tidak bentrok. Simpan otomatis tanpa judul tidak
+  membatalkan ganti nama.
+- Di halaman: satu simpan pada satu waktu. Perubahan selama menyimpan ikut disimpan sesudahnya, dan hasil simpan dari
+  proyek yang sudah ditutup diabaikan.
+
+**Versi** (Clipper: simpan 10 terakhir):
+- Kapan versi dibuat:
+  - otomatis paling banyak satu tiap 10 menit kerja;
+  - selalu sebelum karya perangkat lain ditimpa;
+  - selalu sebelum pemulihan.
+- Kunci `app/clipper/<akun>/versions/<proyek>/<revisi>.enc`, ditulis sekali, disegel ulang (AAD = kunci objek). Yang
+  terlama dipangkas.
+- Versi dihitung dalam penyimpanan member. Bila penyimpanan tidak cukup, **versinya yang dilewati**, bukan simpannya.
+- Pulihkan versi mana pun; menghapus proyek ikut menghapus versinya.
+
+**Kuota dan log pemakaian:**
+- Penyimpanan diperiksa terhadap **byte yang benar-benar bertambah**: pembaruan hanya menghitung selisihnya, dan simpan
+  yang mengecil selalu boleh. Tolak = 413 dengan tombol paket.
+- Total `storage_bytes` diperbarui **sekali per aksi** dan selalu sama dengan byte yang tersimpan. Ini dibuktikan tes,
+  termasuk saat balapan kalah.
+- Penulisan R2 yang kena batas 1 tulis/detik per kunci (429) menunggu lalu diulang.
+- Log `clipper_usage` (R2, ULID, indeks per member dan per bulan, terbaru dulu) mencatat:
+  - video yang dihitung kuota;
+  - penolakan di kuota video dan di penyimpanan;
+  - proyek dibuat, dipulihkan, dihapus;
+  - karya perangkat lain ditimpa.
+
+  Simpan otomatis tidak dicatat, karena hanya membuang biaya tulis.
+- Member: panel "Pemakaian Clipper Anda" (video bulan ini, penyimpanan, aktivitas terbaru), `GET /api/clipper/usage`.
+- Admin → **Clipper usage** (`/admin/clipper`, `GET /api/admin/clipper?month=`):
+  - video dan member per bulan;
+  - member terbanyak beserta penyimpanannya;
+  - jumlah tiap kejadian;
+  - kejadian terbaru.
+
+**Tes:**
+- `tests/clipper-projects.test.ts` (11 tes): format, sidik jari, revisi/bentrok, 6 simpan serentak = 1 menang, versi +
+  pangkas + pulihkan + hapus, ganti nama, kuota, item lama, balapan kalah tetap terhitung, log.
+- `tests/e2e/clipper.e2e.ts` di runtime Cloudflare lokal: proyek dibuat di web dan dibuka lagi; dua perangkat bentrok;
+  5 simpan serentak di R2; kuota menolak; log member + Admin; hapus mengembalikan penyimpanan.
 
 ## 12. Risiko dan jawabannya
 

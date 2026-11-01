@@ -15,6 +15,7 @@ import { transcribe } from "@/lib/ai/providers";
 import { limitsFor, planForApp, PLANS, isPlanId } from "@/lib/plans";
 import { getCloudApp } from "@/lib/apps";
 import { reserveClipperVideo } from "@/lib/usage";
+import { logClipper } from "@/lib/clipper/usage-log";
 import { fail } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -58,7 +59,8 @@ export async function POST(req: NextRequest) {
     if (!open) return fail("This transcription job has expired — upload the video again.", 409);
   } else {
     const quota = await reserveClipperVideo(db, s.sub, tier);
-    if (quota) return fail(quota, 402, { upgrade: true });
+    if (quota) { await logClipper(db, s.sub, "quota_full", { detail: quota }); return fail(quota, 402, { upgrade: true }); }
+    await logClipper(db, s.sub, "video", { bytes: file.size, detail: parts > 1 ? `${parts} parts` : "" });
     if (job) await getKV(req).put(jobKey, String(parts), { expirationTtl: 6 * 3600 });
   }
 

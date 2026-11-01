@@ -97,6 +97,16 @@ export interface AiProviderKeyDoc {
 }
 
 export interface ByoxUsageDoc { id: string; user_id: string; month: string; requests: number; clipper_videos: number }
+/**
+ * One Clipper usage event (Clipper C1, docs/apps/CLIPPER-BLUEPRINT.md §8): a video counted against the month, a
+ * refusal at the quota or storage limit, a project created, restored, deleted or saved over another device's copy.
+ * Autosaves are not logged (they would cost writes and say nothing); storage itself is users.storage_bytes.
+ */
+export interface ClipperUsageDoc {
+  id: string; user_id: string; month: string;
+  event: "video" | "quota_full" | "storage_full" | "project_created" | "project_restored" | "project_deleted" | "conflict_overwrite";
+  project_id: string; bytes: number; detail: string; created_at: string;
+}
 export interface ManagedUsageDoc { id: string; user_id: string; month: string; credits_used: number; tokens: number }
 export interface ManagedSubscriptionDoc { id: string; user_id: string; plan: string; status: string; current_period_end: string; created_at: string; updated_at: string }
 
@@ -351,6 +361,14 @@ export function collections(store: Store) {
     byoxUsage: store.collection<ByoxUsageDoc>({
       name: "byox_usage",
       indexes: [{ name: "month", key: (u) => u.month, sort: (u) => u.user_id, meta: (u) => ({ requests: u.requests, clipper_videos: u.clipper_videos }) }],
+    }),
+    // Member → Clipper usage reads "user"; Admin → Clipper reads "month". Both newest first, summaries only.
+    clipperUsage: store.collection<ClipperUsageDoc>({
+      name: "clipper_usage",
+      indexes: [
+        { name: "user", key: (e) => e.user_id, sort: (e) => newestFirst(e.created_at), meta: (e) => ({ event: e.event, project_id: e.project_id, bytes: e.bytes, detail: e.detail.slice(0, 200), created_at: e.created_at }) },
+        { name: "month", key: (e) => e.month, sort: (e) => newestFirst(e.created_at), meta: (e) => ({ user_id: e.user_id, event: e.event, project_id: e.project_id, bytes: e.bytes, created_at: e.created_at }) },
+      ],
     }),
     managedUsage: store.collection<ManagedUsageDoc>({ name: "managed_usage" }),
     managedSubscriptions: store.collection<ManagedSubscriptionDoc>({ name: "managed_subscriptions" }),

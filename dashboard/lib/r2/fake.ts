@@ -13,7 +13,8 @@
 import type { R2Body, R2Condition, R2Head, R2Like, R2ListOpts, R2ListResult, R2PutOpts } from './bucket';
 
 interface Stored {
-  body: string;
+  /** Text for the JSON store; bytes for buckets that hold encrypted or binary objects (USER_FILES). */
+  body: string | Uint8Array;
   etag: string;
   uploaded: Date;
   customMetadata: Record<string, string>;
@@ -28,6 +29,7 @@ export interface FakeOptions {
 }
 
 const bytes = (s: string): number => new TextEncoder().encode(s).length;
+const asBytes = (b: string | Uint8Array): Uint8Array => (typeof b === 'string' ? new TextEncoder().encode(b) : b);
 const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
 export class FakeR2 implements R2Like {
@@ -58,7 +60,12 @@ export class FakeR2 implements R2Like {
     const s = this.objects.get(key);
     if (!s) return null;
     const body = s.body;
-    return { ...this.head0(key, s), text: async () => body };
+    return {
+      ...this.head0(key, s),
+      size: asBytes(body).length,
+      text: async () => (typeof body === 'string' ? body : new TextDecoder().decode(body)),
+      arrayBuffer: async () => asBytes(body).slice().buffer,
+    } as R2Body;
   }
 
   private passes(cond: R2Condition | undefined, cur: Stored | undefined): boolean {
@@ -80,7 +87,7 @@ export class FakeR2 implements R2Like {
     return true;
   }
 
-  async put(key: string, value: string, options: R2PutOpts = {}): Promise<R2Head | null> {
+  async put(key: string, value: string | Uint8Array, options: R2PutOpts = {}): Promise<R2Head | null> {
     await tick();
     this.ops.classA += 1;
     if (bytes(key) > 1024) throw new Error('InvalidObjectName (10020): key longer than 1024 bytes');
@@ -94,7 +101,7 @@ export class FakeR2 implements R2Like {
       throw new Error('429 TooManyRequests (10058): more than one write per second to the same key');
     }
     const stored: Stored = {
-      body: value,
+      body: typeof value === 'string' ? value : value.slice(),
       etag: Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join(''),
       uploaded: new Date(t),
       customMetadata: { ...meta },
