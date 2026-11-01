@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PRIVACY VAULT v4 — find and redact personal data and secrets ON THE DEVICE:
  *   text       paste or open a document · 65 data types in 7 categories with a

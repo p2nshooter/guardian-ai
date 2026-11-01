@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * /api/admin/data (admin only) · Admin → Data: where the records live.
  *   GET  → the one-time move from D1 (per-table report, conflicts kept, the

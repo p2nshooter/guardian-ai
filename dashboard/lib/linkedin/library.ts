@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LINKEDIN — the promotion library posted automatically, one post a day per
  * brand (owner, 28 Oct 2026, REQUESTS 123: "2 post tiap hari dari xaa.es &

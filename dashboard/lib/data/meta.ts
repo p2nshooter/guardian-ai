@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Orders keep a small JSON object in `meta` (environment, chosen apps, bank
  * proof, notes…). These helpers read and change it the way SQLite's

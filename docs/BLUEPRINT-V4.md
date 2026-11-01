@@ -483,9 +483,9 @@ bukan dari perkiraan.
 | 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/11 | **73 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
-| 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt 2026, `REQUESTS.md` 120, 124, 125, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan US$10 juta + US$100 ribu/minggu ✅ · lelang xaa.es tayang (xaa #33) ✅ · tangga di axto.io tayang | 4/5 | **80 %** |
+| 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt–1 Nov 2026, `REQUESTS.md` 120, 124, 125, 132, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan ✅ · lelang xaa.es tayang (xaa #33) ✅ · **penawaran mulai US$500.000, datar, tanpa "US$10 juta"** di axto.io · sama di xaa.es | 4/6 | **67 %** |
 | 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | ✅ P0 blueprint induk · ✅ P1 program & saklar · ✅ P2 afiliasi · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 3/11 | **27 %** |
-| | **Total** (bobot = jumlah fase) | | **81/145** | **≈ 56 %** |
+| | **Total** (bobot = jumlah fase) | | **81/146** | **≈ 55 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1195,6 +1195,20 @@ Bukti: tes sapu rute gagal pada kode lama (contoh nyata sebelum perbaikan: SOC t
 engine; Vault `/vault/policies` 200; Edge `/edge/plans` 200).
 
 ## 34. Penjualan axto.io (dan xaa.es) menjadi lelang sungguhan (REQUESTS 120)
+
+> **1 Nov 2026 (REQUESTS 132) — harga baru, berlaku di atas semua angka di bawah.** Pemilik: "start penawaran di $500k,
+> jgn di tulis harga $10jt, penawaran mulai $500k".
+> - Tawaran pembuka **US$500.000**, datar: kenaikan mingguan bawaan 0 (Admin → Site sale masih bisa menyalakannya),
+>   langkah bawaan **US$25.000** (5 % dari pembukaan). Batas bawah pengaturan admin US$500.000, batas atas tetap
+>   US$100 juta. Harga tetap (mode `fixed`) bawaan juga US$500.000.
+> - Pengaturan lama di R2 (US$10 juta + US$100 ribu/minggu sejak 28 Okt) dipindah sekali: setting `site_sale` tanpa
+>   `priceRev` ≥ 2 dibaca dengan harga baru (pembukaan, kenaikan, hari pertama, langkah, harga tetap); simpanan admin
+>   berikutnya menulis `priceRev: 2`. Putaran yang sedang berjalan langsung mengikuti harga dan langkah baru (lantai dan
+>   langkah tawaran dibaca dari pengaturan saat itu; `open_usd`/`step_usd` di putaran tetap riwayat saat dibuka).
+> - Teks publik di 10 bahasa: "Penawaran dimulai dari US$500.000 … tanpa batas tersembunyi". Kalimat "naik setiap
+>   minggu" hanya muncul bila admin menyalakan kenaikan. Tidak ada "US$10 juta" di halaman, judul, JSON-LD, pesan API
+>   atau admin. Catatan di bawah (US$10 juta, REQUESTS 120/125) adalah riwayat.
+
 
 Pemilik, 28 Okt 2026: "Untuk axto.io & xaa.es minimal penawaran range random dari $10jt-$100jt, ubah bentuk penjualannya
 seperti lelang, yg mengejutkan seolah peluang mendapatkan harga terbaik … dan segera ambil".

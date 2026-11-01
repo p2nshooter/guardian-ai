@@ -1,7 +1,7 @@
 @REM ==============================================================================
-@REM Copyright (c) 2024-2026 Axto AI. All rights reserved.
-@REM Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
-@REM Maintained by: Axto AI <hello@axto.io>
+@REM Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
+@REM Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams
+@REM Maintained by: AXTO Digital Global <hello@axto.io>
 @REM Proprietary and Confidential. Unauthorized copying is strictly prohibited.
 @REM ==============================================================================
 @echo off

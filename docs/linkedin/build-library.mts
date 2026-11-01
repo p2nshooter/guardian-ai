@@ -1,5 +1,5 @@
 // ==============================================================================
-// Copyright (c) 2024-2026 Axto AI. All rights reserved.
+// Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
 // ==============================================================================
 // The images of the LinkedIn auto-post library (REQUESTS 123, BLUEPRINT-V4 §35):
 // one 1200×627 card per post in dashboard/lib/linkedin/library.ts, written to

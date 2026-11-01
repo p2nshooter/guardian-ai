@@ -2,8 +2,8 @@
  *   GET → settings + every acquisition order + the auction: the running round with
  *         its bids (e-mails and companies — admins only), recent rounds, bidders
  *   PUT {settings} → status (open / paused / sold), auction or fixed price, the
- *       auction settings (the weekly ladder of the opening bid: day-one price in
- *       US$10M–100M, weekly rise, day one; step, length, anti-snipe, payment
+ *       auction settings (the opening bid: day-one price in US$500k–100M (REQUESTS 132),
+ *       weekly rise (0 = flat), day one; step, length, anti-snipe, payment
  *       window, restart, bidder approval), asking price,
  *       automatic admin grant, payment methods, WhatsApp, BNI receiving accounts
  *   POST {action} → start_round · cancel_round {id, note} · pass_round {id}
@@ -16,8 +16,9 @@ import { requireAdmin, respond, forbidden } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
 import { getSale, saveSale, sanitizeSale, SALE_DEFAULTS, SALE_GATEWAYS } from "@/lib/acquisition";
 import { activeGateways } from "@/lib/billing/gateways";
+import { formatUsd } from "@/lib/plans";
 import {
-  OPEN_MAX_USD, OPEN_MIN_USD, cancelRound, decideBidder, ladderPrice, latestRound, nextMinBid, nextRiseAt, passRound, roundBids, startRound,
+  OPEN_MAX_USD, OPEN_MIN_USD, cancelRound, decideBidder, ladderPrice, latestRound, nextMinBid, nextRiseAt, passRound, roundBids, startRound, withLiveStep,
 } from "@/lib/sale-auction";
 
 async function auctionView(req: NextRequest) {
@@ -35,7 +36,7 @@ async function auctionView(req: NextRequest) {
   return {
     range: { min: OPEN_MIN_USD, max: OPEN_MAX_USD },
     ladder: { nowUsd: floor, nextRiseAt: nextRiseAt(sale.auction) },
-    round: round ? { ...round, next_min_usd: nextMinBid(round, floor) } : null,
+    round: round ? { ...round, next_min_usd: nextMinBid(withLiveStep(round, sale.auction), floor) } : null,
     bids: bids.map((b) => ({ id: b.id, seq: b.seq, name: b.display_name, email: b.email, company: b.company, amountUsd: b.amount_usd, at: b.created_at })),
     rounds,
     bidders: [...pending.map(bidder("pending")), ...approved.map(bidder("approved")), ...rejected.map(bidder("rejected"))],
@@ -72,7 +73,7 @@ export async function PUT(req: NextRequest) {
   if (!b?.settings) return fail("Nothing to save.");
   const current = await getSale(db);
   const start = b.settings?.auction?.startUsd;
-  if (start !== undefined && (Number(start) < OPEN_MIN_USD || Number(start) > OPEN_MAX_USD)) return fail("The opening bid on day one must be between US$10,000,000 and US$100,000,000.");
+  if (start !== undefined && (Number(start) < OPEN_MIN_USD || Number(start) > OPEN_MAX_USD)) return fail(`The opening bid on day one must be between US${formatUsd(OPEN_MIN_USD)} and US${formatUsd(OPEN_MAX_USD)}.`);
   const next = sanitizeSale({ ...b.settings, soldTo: b.settings.status === "sold" ? current.soldTo : undefined }, current);
   if (!next.gateways.length) return fail("Offer at least one payment method.");
   await saveSale(db, next);

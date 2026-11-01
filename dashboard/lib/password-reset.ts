@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Password-reset links: valid 30 minutes, usable once. Only the SHA-256 of the
  * token is stored (it is the document id), so a copy of the data cannot be

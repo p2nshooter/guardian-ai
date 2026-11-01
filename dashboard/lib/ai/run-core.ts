@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * BYOX RUN PIPELINE — shared by the member app (/api/byox/run) and the public
  * developer API (/api/v1/ai/run, Connect, MCP). Validates the app and plan,

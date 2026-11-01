@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * i18n primitives shared by server and client (NO "use client" — so server
  * layouts can read dirOf/isLang while the client provider lives in i18n.tsx).

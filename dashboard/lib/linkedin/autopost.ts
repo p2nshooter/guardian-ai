@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LINKEDIN AUTO-POST — two posts a day, one for axto.io and one for xaa.es
  * (owner, 28 Oct 2026, REQUESTS 123; docs/BLUEPRINT-V4.md §35).

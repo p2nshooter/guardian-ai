@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LEGAL AI v4 — CLAUSE LIBRARY: common commercial clauses in balanced and
  * one-sided variants with [placeholders]. Starting points to adapt to the

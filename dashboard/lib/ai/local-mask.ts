@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LOCAL MODE — placeholders. Legal AI's expert workspace instructions stay on
  * the server, so in Local Mode the browser asks the server to assemble them

@@ -87,7 +87,30 @@ const robots = await get("/robots.txt");
 report.robots = robots.status;
 if (robots.status !== 200) fail("/robots.txt", `HTTP ${robots.status}`);
 if (!/sitemap:\s*https?:\/\//i.test(robots.body)) fail("/robots.txt", "no Sitemap line");
-if (/^disallow:\s*\/\s*$/im.test(robots.body)) fail("/robots.txt", "Disallow: / blocks the whole site");
+// Owner, 1 Nov 2026 (REQUESTS 133): nothing may shut out Google or search. Read group by group (consecutive
+// User-agent lines share their rules): a group with "Disallow: /" and no "Allow: /" closes the whole site to its agents.
+const SEARCH_AGENT = /^\*$|google|bingbot/i;
+function robotsBlocks(body) {
+  const out = [];
+  let agents = [], rules = [], inRules = false;
+  const flush = () => {
+    if (agents.length && rules.some((r) => r === "disallow:/") && !rules.some((r) => r === "allow:/"))
+      for (const a of agents) if (SEARCH_AGENT.test(a)) out.push(a);
+    agents = []; rules = []; inRules = false;
+  };
+  for (const raw of String(body).split(/\r?\n/)) {
+    const line = raw.replace(/#.*/, "").trim();
+    const m = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
+    if (!m) continue;
+    const key = m[1].toLowerCase(), val = m[2].trim();
+    if (key === "user-agent") { if (inRules) flush(); agents.push(val); }
+    else if (key === "allow" || key === "disallow") { inRules = true; rules.push(`${key}:${val.replace(/\*$/, "") || (key === "disallow" ? "" : "/")}`); }
+  }
+  flush();
+  return out;
+}
+const blocked = robotsBlocks(robots.body);
+if (blocked.length) fail("/robots.txt", `blocks ${blocked.join(", ")} from the whole site`);
 const ads = await get("/ads.txt");
 report.adsTxt = ads.body.trim();
 if (!ads.body.includes(`google.com, ${ADSENSE.replace("ca-", "")}, DIRECT, f08c47fec0942fa0`)) fail("/ads.txt", `does not declare ${ADSENSE}`);

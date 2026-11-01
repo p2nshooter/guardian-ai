@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * THE AFFILIATE PROGRAMME (docs/BUSINESS-MASTER-BLUEPRINT.md §4.1 B, §7.1, §7.4;
  * REQUESTS 131). Runs by itself:

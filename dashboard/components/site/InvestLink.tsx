@@ -13,5 +13,5 @@ export default function InvestLink() {
   const [on, setOn] = useState(false);
   useEffect(() => { let live = true; shown().then((v) => { if (live) setOn(v); }); return () => { live = false; }; }, []);
   if (!on) return null;
-  return <li><Link href="/invest" prefetch={false} className="text-sm text-slate-400 no-underline hover:text-white" data-testid="footer-invest"><T k="foot.invest" /></Link></li>;
+  return <li><Link href="/invest" prefetch={false} className="text-sm text-slate-400 no-underline hyphens-auto [overflow-wrap:anywhere] hover:text-white" data-testid="footer-invest"><T k="foot.invest" /></Link></li>;
 }

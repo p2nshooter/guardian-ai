@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Frame for the auth pages: the form card on the right, the value of an AXTO
  * account on the left (hidden on phones so the form is first), language switch.

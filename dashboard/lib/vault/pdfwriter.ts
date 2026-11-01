@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PRIVACY VAULT — a minimal PDF writer: one JPEG per page, nothing else. A
  * redacted PDF built this way has NO text layer and no hidden objects, so a

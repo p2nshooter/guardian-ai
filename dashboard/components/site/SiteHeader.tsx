@@ -12,6 +12,7 @@ import AppIcon from "@/components/site/AppIcon";
 import { useI18n } from "@/lib/i18n";
 import { LANGS, dirOf, type Lang } from "@/lib/i18n-shared";
 import { ECOSYSTEM_CLOUD, ECOSYSTEM_SELF, type EcoApp } from "@/lib/ecosystem";
+import { usePartnersShown } from "@/components/site/PartnersLink";
 
 export default function SiteHeader() {
   const { t, lang, setLang } = useI18n();
@@ -19,27 +20,37 @@ export default function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mega, setMega] = useState(false);
+  const [more, setMore] = useState(false);
   const megaRef = useRef<HTMLDivElement | null>(null);
+  const moreRef = useRef<HTMLDivElement | null>(null);
   const taps = useRef<number[]>([]);
+  const partners = usePartnersShown();
 
-  const LINKS = [
-    { href: "/prompts", label: t("site.prompts") },
-    { href: "/self-hosted", label: t("site.selfhosted") },
+  // `more` links sit under "More" in the desktop bar, so no label ever wraps or overflows in any of the 10 languages
+  // (French and German are the longest); the mobile menu lists every link.
+  const LINKS: { href: string; label: string; more?: boolean }[] = [
+    { href: "/self-hosted", label: t("site.selfhosted"), more: true },
+    { href: "/prompts", label: t("site.prompts"), more: true },
     { href: "/pricing", label: t("site.pricing") },
-    { href: "/help", label: t("site.guides") },
-    { href: "/blog", label: t("site.blog") },
+    // Affiliate, reseller and white label — shown while Admin → Programs shows at least one (REQUESTS 131, 132).
+    ...(partners ? [{ href: "/partners", label: t("site.partners") }] : []),
+    { href: "/help", label: t("site.guides"), more: true },
+    { href: "/blog", label: t("site.blog"), more: true },
   ];
 
   // Close the menus whenever the route changes, on Escape, or on a click outside.
-  useEffect(() => { setOpen(false); setMega(false); }, [pathname]);
+  useEffect(() => { setOpen(false); setMega(false); setMore(false); }, [pathname]);
   useEffect(() => {
-    if (!open && !mega) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setMega(false); } };
-    const onDown = (e: MouseEvent) => { if (mega && megaRef.current && !megaRef.current.contains(e.target as Node)) setMega(false); };
+    if (!open && !mega && !more) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); setMega(false); setMore(false); } };
+    const onDown = (e: MouseEvent) => {
+      if (mega && megaRef.current && !megaRef.current.contains(e.target as Node)) setMega(false);
+      if (more && moreRef.current && !moreRef.current.contains(e.target as Node)) setMore(false);
+    };
     document.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onDown);
     return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("mousedown", onDown); };
-  }, [open, mega]);
+  }, [open, mega, more]);
 
   // Hidden admin entry — five quick taps on the logo opens the sign-in page.
   function onLogoTap(e: React.MouseEvent) {
@@ -73,11 +84,11 @@ export default function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/85 text-slate-200 backdrop-blur-xl">
-      <div className="container-page flex h-16 items-center gap-6">
+      <div className="container-page flex h-16 items-center gap-3 xl:gap-6">
         <Link href="/" onClick={onLogoTap} className="select-none no-underline" style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }} aria-label="AXTO home"><Logo dark /></Link>
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
           <div className="relative" ref={megaRef} onMouseLeave={() => setMega(false)}>
-            <button type="button" className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white" aria-expanded={mega} aria-haspopup="true"
+            <button type="button" className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white xl:px-3" aria-expanded={mega} aria-haspopup="true"
               onClick={() => setMega(true)} onMouseEnter={() => setMega(true)} data-testid="nav-apps">
               {t("site.apps")} <ChevronDown size={14} className={`transition-transform duration-300 ${mega ? "rotate-180" : ""}`} aria-hidden="true" />
             </button>
@@ -98,15 +109,31 @@ export default function SiteHeader() {
               </div>
             ) : null}
           </div>
-          {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 no-underline hover:bg-white/5 hover:text-white">{l.label}</Link>
+          {LINKS.filter((l) => !l.more).map((l) => (
+            <Link key={l.href} href={l.href} className="whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium text-slate-300 no-underline hover:bg-white/5 hover:text-white xl:px-3" data-testid={`nav-${l.href.slice(1)}`}>{l.label}</Link>
           ))}
-          <Link href="/acquire" className="ml-1 rounded-full border border-gold-400/40 bg-gold-400/10 px-3 py-1.5 text-sm font-semibold text-gold-100 no-underline hover:bg-gold-400/20 hover:text-gold-50" data-testid="nav-acquire">🏛️ {t("site.acquire")}</Link>
+          <div className="relative" ref={moreRef} onMouseLeave={() => setMore(false)}>
+            <button type="button" className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white xl:px-3" aria-expanded={more} aria-haspopup="true"
+              onClick={() => setMore(true)} onMouseEnter={() => setMore(true)} data-testid="nav-more">
+              {t("site.more")} <ChevronDown size={14} className={`transition-transform duration-300 ${more ? "rotate-180" : ""}`} aria-hidden="true" />
+            </button>
+            {more ? (
+              <div className="absolute left-0 top-full z-50 pt-2" data-testid="more-menu">
+                <div className="palace-rise grid min-w-[13rem] gap-0.5 rounded-2xl border border-white/10 bg-ink-900/95 p-2 shadow-crystal backdrop-blur-xl">
+                  {LINKS.filter((l) => l.more).map((l) => (
+                    <Link key={l.href} href={l.href} onClick={() => setMore(false)} className="whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium text-slate-200 no-underline hover:bg-white/[.06] hover:text-white" data-testid={`nav-${l.href.slice(1)}`}>{l.label}</Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <Link href="/acquire" className="ml-1 whitespace-nowrap rounded-full border border-gold-400/40 bg-gold-400/10 px-3 py-1.5 text-sm font-semibold text-gold-100 no-underline hover:bg-gold-400/20 hover:text-gold-50" data-testid="nav-acquire">🏛️ {t("site.acquire")}</Link>
         </nav>
         <div className="ml-auto hidden items-center gap-2 lg:flex">
-          <LangSelect />
-          <Link href="/login" className="btn text-slate-200 hover:bg-white/10 hover:text-white">{t("site.signin")}</Link>
-          <Link href="/register" className="btn-primary">{t("site.getstarted")}</Link>
+          {/* Narrow under 1280 px so the bar never overflows in long languages; the open list shows full names. */}
+          <LangSelect className="w-[6.5rem] xl:w-auto" />
+          <Link href="/login" className="btn whitespace-nowrap text-slate-200 hover:bg-white/10 hover:text-white">{t("site.signin")}</Link>
+          <Link href="/register" className="btn-primary whitespace-nowrap">{t("site.getstarted")}</Link>
         </div>
 
         {/* Mobile controls */}
@@ -126,7 +153,7 @@ export default function SiteHeader() {
               <div className="mt-1 grid grid-cols-2 gap-0.5">{[...ECOSYSTEM_CLOUD, ...ECOSYSTEM_SELF].map((a) => <MegaItem key={`${a.kind}-${a.slug}`} a={a} />)}</div>
               <div className="gilded-rule my-2" />
               {LINKS.map((l) => (
-                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-200 no-underline hover:bg-white/5">{l.label}</Link>
+                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-200 no-underline hover:bg-white/5" data-testid={`mnav-${l.href.slice(1)}`}>{l.label}</Link>
               ))}
               <Link href="/acquire" onClick={() => setOpen(false)} className="mt-1 block rounded-md border border-gold-400/30 bg-gold-400/10 px-3 py-2.5 text-sm font-semibold text-gold-100 no-underline">🏛️ {t("site.acquire")}</Link>
               <div className="mt-2 grid gap-2 border-t border-white/10 pt-2">

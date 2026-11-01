@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — browser calls: the member's own AI (streamed), the member's own
  * speech-to-text (one job, several parts for a long video), and project I/O.

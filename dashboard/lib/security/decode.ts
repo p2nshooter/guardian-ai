@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SECURITY ANALYST v4 — a CyberChef-style decoder ON THE DEVICE. Data flows as
  * bytes through a recipe of operations (base64, hex, URL, HTML entities,

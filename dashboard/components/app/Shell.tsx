@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * One portal shell for members AND admins: the same sidebar, top bar and
  * behaviour everywhere, only the menu differs. Loads the signed-in account

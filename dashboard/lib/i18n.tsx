@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Portal i18n (member + admin): English and Bahasa Indonesia.
  * The public website stays English for global SEO. The choice is stored in

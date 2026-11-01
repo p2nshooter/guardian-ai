@@ -10,19 +10,20 @@ tetap bila diperlukan.
 
 - **Putaran**:
   - Putaran pertama dibuka otomatis dalam satu menit setelah penjualan berstatus *open*.
-  - Tawaran pembuka mengikuti **tangga mingguan** (REQUESTS 125): **US$10 juta** sejak 28 Okt 2026 00:00 WIB, naik
-    **US$100.000** di akhir setiap minggu penuh, sama untuk semua pengunjung dan tidak mulai ulang di putaran baru.
-  - Di *Auction settings*: "Opening bid on day one" (US$10–100 juta), "Weekly rise" (0 = datar) dan "Day one". Kotak abu
-    di atasnya menunjukkan tawaran pembuka hari ini dan kenaikan berikutnya. Tangga berlaku seketika, juga untuk putaran
-    yang sedang berjalan.
-  - "Start a new round" membuka putaran di harga tangga hari itu.
+  - **Penawaran mulai US$500.000** (pemilik, 1 Nov 2026, REQUESTS 132), datar, sama untuk semua pengunjung. Pengaturan
+    lama (US$10 juta + US$100 ribu/minggu) dipindah sekali ke harga ini; setelah Anda menyimpan, angka Anda yang dipakai.
+  - Di *Auction settings*: "Opening bid on day one" (US$500 ribu – US$100 juta), "Weekly rise" (bawaan 0 = datar; bila
+    diisi, naik di akhir setiap minggu penuh sejak "Day one" dan tidak mulai ulang di putaran baru) dan "Day one". Kotak
+    abu di atasnya menunjukkan tawaran pembuka hari ini (dan kenaikan berikutnya bila ada). Tawaran pembuka dan langkah
+    berlaku seketika, juga untuk putaran yang sedang berjalan.
+  - "Start a new round" membuka putaran di tawaran pembuka hari itu.
 - **Penawar**:
   - Member mendaftar dengan nama tampil, perusahaan, negara dan telepon.
   - Anda menyetujui atau menolak di kartu *Bidders* (persetujuan bisa dimatikan).
   - Admin tidak bisa menawar. Di halaman publik nama disamarkan; e-mail dan telepon hanya terlihat di Admin.
 - **Aturan**:
   - Setiap tawaran minimal sebesar tawaran pembuka hari itu; setelah tawaran pertama juga minimal tawaran tertinggi +
-    langkah (bawaan US$250.000).
+    langkah (bawaan US$25.000).
   - Tawaran dalam 10 menit terakhir memperpanjang putaran 10 menit.
   - Tanpa reserve tersembunyi.
 - **Akhir putaran**:
@@ -82,7 +83,7 @@ Aktifkan kredensial **Live** di **Admin → Payment & email**:
 - **NOWPayments**: API key + IPN secret.
 - **Kripto langsung**: alamat dompet (USDT TRC20/ERC20/BEP20, USDC, BTC, ETH, SOL) + Etherscan API key untuk konfirmasi otomatis.
 
-Catatan jujur tentang PayPal: PayPal membatasi satu kali pembayaran (umumnya US$10.000–60.000 tergantung akun pembayar). Untuk harga penuh US$10.000.000, jalur yang realistis adalah wire bank (BNI) atau escrow, dan kripto untuk pembeli yang memilihnya; halaman memberi tahu pembeli hal ini dan menyarankan escrow untuk transaksi sebesar ini. Pembayaran PayPal juga dapat di-chargeback; kripto dan wire tidak.
+Catatan jujur tentang PayPal: PayPal membatasi satu kali pembayaran (umumnya US$10.000–60.000 tergantung akun pembayar). Untuk harga sebesar US$500.000 ke atas, jalur yang realistis adalah wire bank (BNI) atau escrow, dan kripto untuk pembeli yang memilihnya; halaman memberi tahu pembeli hal ini dan menyarankan escrow untuk transaksi sebesar ini. Pembayaran PayPal juga dapat di-chargeback; kripto dan wire tidak.
 
 ## Serah terima setelah lunas
 Akses admin otomatis; sisanya dikerjakan bersama pembeli sesuai daftar di halaman: domain axto.io, akun Cloudflare (Pages, D1, KV, R2, Workers, DNS), repositori GitHub, akun penyedia pembayaran, Resend, image Docker & pipeline rilis, merek/konten, dokumentasi.

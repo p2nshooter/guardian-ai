@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * The daily backup of the records (docs/R2-DATA-BLUEPRINT.md §3.7), taken in
  * parts so it fits any size: every minute the automation tick copies the next

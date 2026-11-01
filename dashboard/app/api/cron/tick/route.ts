@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * GET /api/cron/tick — the platform's heartbeat (Worker "axto-crypto-watch-cron",
  * every minute; header x-cron-secret or Bearer). Everything that must happen

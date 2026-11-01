@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * AI STUDIO — insert a Prompt Library prompt into the composer ("/" or 📚).
  * Locked levels show but can't be inserted; the full template is fetched from

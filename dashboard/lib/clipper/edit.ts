@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — pure editing logic shared by the editor, the renderer and the tests
  * (no DOM). Everything is in SOURCE seconds (the uploaded video's clock) unless

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * Editorial blog — batch 2. Twenty original long-form articles on practical
  * security, self-hosted AI and infrastructure, drawn from the platform's own
  * engineering practice. Static module, prerenderable, distinct slugs from

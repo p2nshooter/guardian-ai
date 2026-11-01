@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  * LEGAL AI — SYSTEM PROMPT ASSEMBLY (server only).

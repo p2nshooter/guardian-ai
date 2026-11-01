@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * AI STUDIO — the conversation model, pure (no DOM): messages with answer
  * versions (regenerate / compare), attached files as text + images, token

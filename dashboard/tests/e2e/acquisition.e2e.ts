@@ -48,7 +48,7 @@ before(async () => {
   const g = await admin.get("/api/admin/acquisition");
   assert.equal(g.status, 200, g.text);
   saved = g.json.settings;
-  // A known state: open, a fixed price of $10,000,000, wire offered (the auction has its own file, sale-auction.e2e.ts).
+  // A known state: open, the default fixed price of $500,000 (REQUESTS 132), wire offered (the auction has its own file, sale-auction.e2e.ts).
   const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open", mode: "fixed" } });
   assert.equal(r.status, 200, r.text);
   await signUp(buyer, `buyer-${RUN}@example.com`);
@@ -62,12 +62,14 @@ test("acquire: the public offer shows the price, the page and the menu", async (
   const r = await anon.get("/api/acquire");
   assert.equal(r.status, 200);
   assert.equal(r.json.status, "open");
-  assert.equal(r.json.priceUsd, 10_000_000);
+  assert.equal(r.json.priceUsd, 500_000);
   assert.ok(r.json.gateways.some((g: any) => g.id === "manual"), "BNI wire is offered");
   assert.ok(!JSON.stringify(r.json).includes("2090571495"), "bank accounts are not public before a checkout");
   const page = await anon.get("/acquire");
   assert.equal(page.status, 200);
   assert.match(page.text, /Acquire AXTO/);
+  assert.match(page.text, /offers from US\$500,000/, "the title states the owner's price");
+  assert.doesNotMatch(page.text, /US\$10 ?M\b|10 million|10,000,000/i, "the old price is gone (REQUESTS 132)");
   const home = await anon.get("/");
   assert.match(home.text, /href="\/acquire"/, "the homepage links to the offer");
 });
@@ -84,7 +86,7 @@ test("acquire: BNI wire checkout → owner's accounts, WhatsApp, proof → admin
   const r = await buyer.post("/api/acquire/checkout", { gateway: "manual", company: "Acme Holdings", name: "Budi", phone: "+62 811 0000", message: "Ready to wire" });
   assert.equal(r.status, 200, r.text);
   assert.equal(r.json.method, "wire");
-  assert.equal(r.json.amountUsd, 10_000_000);
+  assert.equal(r.json.amountUsd, 500_000);
   assert.equal(r.json.bank.swift, "BNINIDJA");
   assert.equal(r.json.bank.holder, "YUSRON EFENDI");
   assert.equal(r.json.bank.primary.number, "2090571495");

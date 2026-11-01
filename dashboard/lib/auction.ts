@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LICENCE AUCTION — storage and the zero-touch steps (docs/BLUEPRINT-V4.md
  * §26.5; the rules are in lib/auction-terms.ts).

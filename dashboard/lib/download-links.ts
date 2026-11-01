@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Signed, short-lived download links for self-hosted images, used by the
  * Windows/Linux installer (no browser session there — the licence key is the

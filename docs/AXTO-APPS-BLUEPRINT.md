@@ -272,7 +272,7 @@ pekerjaan.
   sitasi) lewat AXTO Workspace; mode air-gapped dengan model lokal untuk edisi Enterprise.
 - **Selesai bila:** semua alat v4 jalan di container, terjemahan 10 bahasa lulus tes i18n.
 
-## 8. Yang menaikkan nilai jual (situs US$10 juta & lisensi lifetime mahal)
+## 8. Yang menaikkan nilai jual (situs — penawaran mulai US$500 ribu sejak 1 Nov 2026 — & lisensi lifetime mahal)
 
 Urut dari dampak terbesar; semuanya harus **nyata**, bukan klaim:
 1. Semua 10 aplikasi lulus §6 dan matriks uji §5 (bukti: run CI publik di `/status`).

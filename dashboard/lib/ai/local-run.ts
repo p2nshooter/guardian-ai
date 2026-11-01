@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LOCAL MODE runner — loaded on demand (dynamic import) by aiFetch when the
  * member picks "This device". Builds the prompt IN THE BROWSER with the same

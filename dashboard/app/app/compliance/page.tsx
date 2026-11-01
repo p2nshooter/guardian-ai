@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * COMPLIANCE CENTER v4 — a compliance PROGRAMME workspace:
  *   overview   readiness per framework and domain, overdue controls, risks,

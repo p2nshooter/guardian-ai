@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PRIVACY VAULT — checksum and structure validators for identifiers, so the
  * detector reports real numbers and not random digit runs. Pure functions.

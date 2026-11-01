@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * APPLICATIONS TO THE RESELLER AND WHITE-LABEL PROGRAMMES (docs/BUSINESS-MASTER-
  * BLUEPRINT.md §7.2 step 1, REQUESTS 131). Until a programme's portal ships (P4,

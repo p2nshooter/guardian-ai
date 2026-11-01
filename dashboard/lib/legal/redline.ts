@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LEGAL AI v4 — REDLINE, on the device: split two versions of a document into
  * clauses, align them (by number, heading, then text similarity), diff each

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Top-tier entitlements per self-hosted engine — signed into every online
  * licence answer (/api/license-validate) AND every Lifetime activation file,

@@ -1,6 +1,6 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams
  * ==============================================================================
  * Small request/response helpers shared by every API route.
  * ============================================================================ */

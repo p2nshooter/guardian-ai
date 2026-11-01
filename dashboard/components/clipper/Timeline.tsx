@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — trim timeline: the clip window inside its surroundings, kept pieces
  * vs cuts, the playhead, and start/end handles that snap to word boundaries.

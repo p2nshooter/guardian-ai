@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * COMPLIANCE CENTER v4 — the member's compliance PROGRAMME: organisation
  * profile, frameworks in scope, per-control status (owner, due date, notes,

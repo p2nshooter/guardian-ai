@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — the ranked clip list: poster, virality score with its four
  * sub-scores and the reason, duration, and multi-select for batch rendering.

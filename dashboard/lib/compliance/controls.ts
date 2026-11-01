@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * COMPLIANCE CENTER v4 — the control library. Every framework's real control
  * identifiers with short, paraphrased titles (the official texts stay with

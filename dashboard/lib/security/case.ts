@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SECURITY ANALYST v4 — the investigation CASE: status, severity, tags, notes,
  * evidence artifacts (logs, e-mails, text), the analyst's IOC verdicts and

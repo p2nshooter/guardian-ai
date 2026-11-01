@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LEGAL AI — the member app. Everything the AI sees is assembled on the server
  * (/api/byox/run → lib/legal/prompt.ts); this page only collects choices,

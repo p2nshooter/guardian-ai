@@ -9,11 +9,13 @@ import InvestLink from "@/components/site/InvestLink";
 import PartnersLink from "@/components/site/PartnersLink";
 
 export default function SiteFooter() {
+  // min-w-0 + overflow-wrap:anywhere: long single words (German "Auftragsverarbeitungsvertrag") break inside the
+  // column instead of pushing the page sideways at 1024–1280 px.
   const col = (title: React.ReactNode, links: { href: string; label: React.ReactNode }[], extra?: React.ReactNode) => (
-    <div>
+    <div className="min-w-0">
       <h3 className="text-sm font-semibold text-white">{title}</h3>
       <ul className="mt-3 space-y-2">
-        {links.map((l) => <li key={l.href}><Link href={l.href} className="text-sm text-slate-400 no-underline hover:text-white">{l.label}</Link></li>)}
+        {links.map((l) => <li key={l.href}><Link href={l.href} className="text-sm text-slate-400 no-underline hyphens-auto [overflow-wrap:anywhere] hover:text-white">{l.label}</Link></li>)}
         {extra}
       </ul>
     </div>

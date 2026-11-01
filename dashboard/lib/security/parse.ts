@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SECURITY ANALYST v4 — log parsing ON THE DEVICE. Any mix of JSON / JSON lines,
  * AWS CloudTrail, Windows Event XML, syslog (RFC 3164 and 5424), CEF, LEEF,

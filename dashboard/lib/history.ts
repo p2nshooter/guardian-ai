@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * WORKSPACE HISTORY — one reusable, encrypted per-member store every cloud app
  * uses to save the client's work so they never lose it and can browse, reopen,

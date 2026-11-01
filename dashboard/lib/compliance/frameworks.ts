@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * COMPLIANCE CENTER — client-safe constants: the supported frameworks and the
  * analysis modes. Pure file (no "use client", no server imports) shared by the

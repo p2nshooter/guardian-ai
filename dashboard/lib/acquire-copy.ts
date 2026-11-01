@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * /acquire — the words of the site-sale offer (English; the other nine portal
  * languages are in lib/i18n-pages/acquire.ts and load on demand). Every claim

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * COMPLIANCE CENTER — the built-in catalogue in the member's language
  * (docs/BLUEPRINT-V4.md §17A): framework descriptions, AI modes, domain names,

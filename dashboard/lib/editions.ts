@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * EDITIONS PER SELF-HOSTED APP — the single source of truth
  * (docs/AXTO-APPS-BLUEPRINT.md §3). Each of the 10 apps is sold in the editions

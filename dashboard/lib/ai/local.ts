@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LOCAL MODE — AI on the member's own device. The BROWSER talks straight to a
  * model server on this computer (Ollama, LM Studio, or any OpenAI-compatible

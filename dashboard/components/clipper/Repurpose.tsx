@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — repurpose the whole video into written content on the member's own
  * AI: chapters, summary, blog, X thread, LinkedIn, newsletter, description,

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Orchestra AI and its GPU worker, in plain words (REQUESTS 115, BLUEPRINT-V4 §31).
  * Everything here describes what the product does today. Editions and prices are

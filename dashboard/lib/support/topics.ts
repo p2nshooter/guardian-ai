@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Support topics — the dropdown in the chat widget, the contact form and the
  * admin inbox. `handoff` topics always need a person (prices are negotiated,

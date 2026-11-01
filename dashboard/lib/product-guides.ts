@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Installation guides for the 10 self-hosted editions — ONE source for the
  * public pages (/self-hosted/<slug>/guide) and the PDF guides CI publishes to

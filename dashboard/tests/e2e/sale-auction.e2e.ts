@@ -1,6 +1,6 @@
 /* ==============================================================================
  * AXTO — the site-sale AUCTION end to end on the LOCAL runtime (BLUEPRINT-V4 §34):
- *   admin opens a round at the weekly ladder's opening bid (REQUESTS 125) → a member registers as a
+ *   admin opens a round at the opening bid (offers from US$500,000, REQUESTS 132; here with a weekly rise, REQUESTS 125) → a member registers as a
  *   bidder and waits for approval → the owner approves → bids: too low refused,
  *   the opening bid, a rival outbids, admins cannot bid, the checkout is closed
  *   while the round runs → the round ends (cron tick) → only the winner can pay,
@@ -44,9 +44,10 @@ const tick = () => new Client().get("/api/cron/tick", { "x-cron-secret": "e2e-cr
 
 const admin = new Client(), ava = new Client(), ben = new Client(), anon = new Client();
 const AVA = `ava-${RUN}@example.com`, BEN = `ben-${RUN}@example.com`;
-// A ladder that started 22 days ago (00:00 WIB) at US$25M, +US$100,000 a week: three full weeks → US$25.3M.
+// A ladder that started 22 days ago (00:00 WIB) at US$600,000, +US$10,000 a week: three full weeks → US$630,000.
 const FROM = new Date(Date.now() + 7 * 3_600_000 - 22 * 86_400_000).toISOString().slice(0, 10);
-const OPEN = 25_000_000 + 3 * 100_000;
+const OPEN = 600_000 + 3 * 10_000;
+const STEP = 25_000;
 let saved: any = null, roundId = "";
 
 before(async () => {
@@ -57,7 +58,7 @@ before(async () => {
   // Any round left by an earlier file is cancelled, so this run starts its own.
   const cur = g.json.auction.round;
   if (cur && (cur.status === "open" || cur.status === "awaiting_payment")) await admin.post("/api/admin/acquisition", { action: "cancel_round", id: cur.id, note: "e2e reset" });
-  const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open", mode: "auction", auction: { ...g.json.defaults.auction, startUsd: 25_000_000, weeklyUsd: 100_000, from: FROM, approval: true, stepUsd: 250_000, snipeMinutes: 10, payDays: 7 } } });
+  const r = await admin.put("/api/admin/acquisition", { settings: { ...g.json.defaults, status: "open", mode: "auction", auction: { ...g.json.defaults.auction, startUsd: 600_000, weeklyUsd: 10_000, from: FROM, approval: true, stepUsd: STEP, snipeMinutes: 10, payDays: 7 } } });
   assert.equal(r.status, 200, r.text);
   await signUp(ava, AVA, "Ava " + RUN);
   await signUp(ben, BEN, "Ben " + RUN);
@@ -66,12 +67,12 @@ after(async () => {
   if (saved) await admin.put("/api/admin/acquisition", { settings: { ...saved, status: saved.status === "sold" ? "open" : saved.status } });
 });
 
-test("admin settings: the ladder starts in the owner's US$10M–100M range; the desk shows today's opening bid", async () => {
-  const low = await admin.put("/api/admin/acquisition", { settings: { ...saved, mode: "auction", status: "open", auction: { ...saved.auction, startUsd: 9_000_000 } } });
+test("admin settings: offers start at US$500,000 or more (REQUESTS 132); the desk shows today's opening bid", async () => {
+  const low = await admin.put("/api/admin/acquisition", { settings: { ...saved, mode: "auction", status: "open", auction: { ...saved.auction, startUsd: 499_000 } } });
   assert.equal(low.status, 400);
-  assert.match(low.json.error, /between US\$10,000,000 and US\$100,000,000/);
+  assert.match(low.json.error, /between US\$500,000 and US\$100,000,000/);
   const g = await admin.get("/api/admin/acquisition");
-  assert.equal(g.json.auction.ladder.nowUsd, OPEN, "US$25M + three weekly rises");
+  assert.equal(g.json.auction.ladder.nowUsd, OPEN, "US$600,000 + three weekly rises");
   assert.ok(Date.parse(g.json.auction.ladder.nextRiseAt) > Date.now());
 });
 
@@ -88,7 +89,8 @@ test("a round opens with the opening bid; the public board shows it the same for
   assert.equal(a.json.auction.round.openUsd, OPEN);
   assert.equal(b.json.auction.round.openUsd, OPEN);
   assert.equal(a.json.auction.round.nextMinUsd, OPEN);
-  assert.equal(a.json.auction.round.weeklyUsd, 100_000);
+  assert.equal(a.json.auction.round.weeklyUsd, 10_000);
+  assert.equal(a.json.auction.round.stepUsd, STEP);
   assert.ok(Date.parse(a.json.auction.round.nextRiseAt) - Date.now() <= 7 * 86_400_000, "the next rise is within a week");
   assert.equal(a.json.auction.me, null);
 });
@@ -121,13 +123,13 @@ test("bids: too low refused, the opening bid, a rival outbids; admins cannot bid
   const low = await ava.post("/api/acquire/bid", { amount: OPEN - 1 });
   assert.equal(low.status, 409);
   assert.ok(low.json.error.includes(`lowest bid accepted now is $${OPEN.toLocaleString("en-US")}`), low.json.error);
-  const ladderLow = await ava.post("/api/acquire/bid", { amount: 25_000_000 });
+  const ladderLow = await ava.post("/api/acquire/bid", { amount: 600_000 });
   assert.equal(ladderLow.status, 409, "the day-one price no longer buys a bid three weeks on");
   const first = await ava.post("/api/acquire/bid", { amount: OPEN.toLocaleString("en-US") });
   assert.equal(first.status, 200, first.text);
   assert.equal(first.json.round.highUsd, OPEN);
   assert.equal((await ava.post("/api/acquire/bid", { amount: OPEN + 1_000_000 })).status, 409, "never against yourself");
-  const rival = await ben.post("/api/acquire/bid", { amount: OPEN + 250_000 });
+  const rival = await ben.post("/api/acquire/bid", { amount: OPEN + STEP });
   assert.equal(rival.status, 200, rival.text);
   const adminBid = await admin.post("/api/acquire/bid", { amount: OPEN + 5_000_000 });
   assert.equal(adminBid.status, 409);
@@ -135,8 +137,8 @@ test("bids: too low refused, the opening bid, a rival outbids; admins cannot bid
 
   const pub = await anon.get("/api/acquire");
   assert.equal(pub.json.auction.round.bidsCount, 2);
-  assert.equal(pub.json.auction.round.highUsd, OPEN + 250_000);
-  assert.equal(pub.json.auction.round.nextMinUsd, OPEN + 500_000);
+  assert.equal(pub.json.auction.round.highUsd, OPEN + STEP);
+  assert.equal(pub.json.auction.round.nextMinUsd, OPEN + 2 * STEP);
   assert.match(pub.json.auction.round.leader, /^B•+$/);
   assert.ok(!pub.text.includes("@example.com") && !pub.text.includes("+971"), "no contact details on the public board");
   const mine = (await ava.get("/api/acquire")).json.auction.me;
@@ -156,7 +158,7 @@ test("the round ends: only the winner pays, at the winning bid; the paid round i
   assert.equal(t.json.siteAuction.closed, "awaiting_payment");
   const pub = await anon.get("/api/acquire");
   assert.equal(pub.json.auction.round.status, "awaiting_payment");
-  assert.equal(pub.json.auction.round.winnerUsd, OPEN + 250_000);
+  assert.equal(pub.json.auction.round.winnerUsd, OPEN + STEP);
   assert.equal((await ava.post("/api/acquire/bid", { amount: OPEN + 9_000_000 })).status, 409, "closed");
 
   const loser = await ava.post("/api/acquire/checkout", { gateway: "manual" });
@@ -164,11 +166,11 @@ test("the round ends: only the winner pays, at the winning bid; the paid round i
   assert.match(loser.json.error, /only to the winning bidder/);
   const me = (await ben.get("/api/acquire")).json.auction.me;
   assert.equal(me.winner, true);
-  assert.equal(me.amountUsd, OPEN + 250_000);
+  assert.equal(me.amountUsd, OPEN + STEP);
   const pay = await ben.post("/api/acquire/checkout", { gateway: "manual", company: "Ben Holdings" });
   assert.equal(pay.status, 200, pay.text);
   assert.equal(pay.json.method, "wire");
-  assert.equal(pay.json.amountUsd, OPEN + 250_000, "the winning bid, not a fixed price");
+  assert.equal(pay.json.amountUsd, OPEN + STEP, "the winning bid, not a fixed price");
   const order = await doc("orders", pay.json.orderId);
   assert.equal(meta(order).saleRound, roundId);
   assert.equal((await doc("saleRounds", roundId)).order_id, pay.json.orderId);

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Member content encryption at rest (R2 USER_FILES bucket).
  *   cipher: AES-256-GCM, random 96-bit IV, AAD = the object key

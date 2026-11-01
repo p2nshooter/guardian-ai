@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * "100 TRIAL LICENSE" per self-hosted app (docs/AXTO-APPS-BLUEPRINT.md §4).
  *   • Pool: the admin creates codes per app (100 by default) in Admin → Trials.

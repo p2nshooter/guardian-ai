@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Floating live-support chat (public site + member portal).
  *   1. Visitor picks a topic from the dropdown (offer, lifetime licence

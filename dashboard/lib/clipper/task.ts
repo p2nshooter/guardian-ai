@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — AI tasks (system prompts are built here, on the server only):
  *   mode "clips"      timestamped transcript → ranked clips as strict JSON with a
