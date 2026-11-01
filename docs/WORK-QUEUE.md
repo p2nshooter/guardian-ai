@@ -23,7 +23,7 @@ sini pada urutan yang benar.
 
 | # | Pekerjaan | Rencana | Status |
 |---|---|---|---|
-| 1 | **Worker GPU sama di Windows & Linux, semua merek, scaling dan indikator pintar** (REQUESTS 136) | `BLUEPRINT-V4.md` §31.F | G1 ✅ (PR #103) · G2 ✅ (satu keputusan GPU + uji GPU nyata, PR G2) · **G3 berikutnya** (image CUDA/ROCm/Intel dari satu Dockerfile, profil compose per merek) · G4 · G5 |
+| 1 | **Worker GPU sama di Windows & Linux, semua merek, scaling dan indikator pintar** (REQUESTS 136) | `BLUEPRINT-V4.md` §31.F | G1 ✅ (PR #103) · G2 ✅ (#105) · G3 ✅ (#106: image NVIDIA + AMD dari satu Dockerfile, profil `gpu-amd`) · G4 ✅ (scaler: scaling nyata otomatis/manual, satu GPU per worker, dari nol) · **G5 berikutnya** (teks situs 10 bahasa + panduan) |
 
 ## Saat menunggu CI (butir kecil, dikerjakan di sela-sela)
 

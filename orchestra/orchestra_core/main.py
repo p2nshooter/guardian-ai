@@ -39,6 +39,7 @@ import database as db
 import autoscale_config
 import client_api
 import gpu_advisor
+import scaler_client
 from autoscaler import get_autoscaler
 from semantic_router import get_classifier, get_inj_detector
 
@@ -396,49 +397,106 @@ async def register_worker(req: RegisterWorkerRequest, _=Depends(require_console)
                                             "usable", "wsl", "access_note", "worker_version")},
         reuse_by_url=True,
     )
+    if req.type == "gpu" and req.usable is not False and (req.backend or req.vendor):
+        # Remembered so Auto-Scale can start this brand's worker again from zero.
+        db.set_setting("gpu_worker_kind", scaler_client.kind_for({"worker_type": "gpu", "backend": req.backend, "vendor": req.vendor}))
     return result
 
 
 @app.delete("/api/workers/{worker_id}")
 async def remove_worker(worker_id: str, _=Depends(require_console)):
+    w = worker_manager.get_worker(worker_id)
+    note = ""
+    if w and scaler_client.container_of(w):
+        # A scaled worker: stop its container too, so it does not keep running unseen.
+        try:
+            scaler_client.stop(scaler_client.container_of(w))
+        except scaler_client.ScalerError as e:
+            raise HTTPException(e.status or 502, str(e))
+    elif w and w.get("worker_url"):
+        note = "This worker was started by AXTO Setup; it registers again with its next heartbeat. Stop it with AXTO Setup (or untick the GPU worker) to remove it for good."
     ok = worker_manager.remove_worker(worker_id)
-    return {"ok": ok}
+    return {"ok": ok, **({"note": note} if note else {})}
 
 
 class ScaleWorkersRequest(BaseModel):
     action:             str            # add | remove
-    template_worker_id: str = ""       # add: copy this worker's provider, model, node and endpoints
-    worker_id:          str = ""       # remove: this one (default: the most idle GPU worker)
+    template_worker_id: str = ""       # add: a worker of the kind to add (its brand / CPU)
+    kind:               str = ""       # add: cpu | gpu | gpu-amd (instead of a template)
+    gpu_index:          Optional[int] = None   # add: pin to this GPU (default: the GPU with the most room)
+    worker_id:          str = ""       # remove: this one (default: the most idle scaled worker)
     type:               str = "gpu"
+
+
+@app.get("/api/scaler")
+async def scaler_status(_=Depends(require_console)):
+    """The scaling service: reachable, which worker images are installed, the workers it runs."""
+    h = scaler_client.health()
+    try:
+        h["workers"] = scaler_client.listed() if h.get("docker") else []
+    except scaler_client.ScalerError:
+        h["workers"] = []
+    return h
+
+
+@app.delete("/api/scaler/workers/{name}")
+async def scaler_stop(name: str, _=Depends(require_console)):
+    """Stop a container the scaler started — also one that never managed to register."""
+    try:
+        scaler_client.stop(name)
+    except scaler_client.ScalerError as e:
+        raise HTTPException(e.status or 502, str(e))
+    gone = [w["id"] for w in worker_manager.get_all_workers(check_heartbeat=False) if scaler_client.container_of(w) == name]
+    for wid in gone:
+        worker_manager.remove_worker(wid)
+    db.record_metric("autoscale_down", 1, {"container": name, "manual": True})
+    return {"ok": True, "removed_workers": gone}
 
 
 @app.post("/api/workers/scale")
 async def scale_workers(req: ScaleWorkersRequest, _=Depends(require_console)):
-    """Manual scale from the console (GPU Pool / Auto-Scale): one worker more or less.
+    """Manual scale from the console: a real worker container more or less (orchestra-scaler).
     Adding counts against the edition's worker limit like any registration."""
     if req.action == "add":
         tmpl = worker_manager.get_worker(req.template_worker_id) if req.template_worker_id else None
-        if not tmpl:
+        if req.template_worker_id and not tmpl:
             raise HTTPException(404, "Template worker not found — pick one in the Scale rules")
-        wtype = tmpl.get("worker_type", "gpu")
+        kind = req.kind or (scaler_client.kind_for(tmpl) if tmpl else "")
+        if kind not in ("cpu", "gpu", "gpu-amd"):
+            raise HTTPException(400, "Say which worker to add: kind cpu, gpu or gpu-amd, or a template worker")
+        wtype = "cpu" if kind == "cpu" else "gpu"
         enforcement.check_worker_slot(wtype, worker_manager.get_all_workers())
-        result = worker_manager.register_worker(
-            node_id=tmpl["node_id"], worker_type=wtype, provider_id=tmpl["provider_id"], model=tmpl["model"],
-            concurrency=tmpl.get("concurrency") or 5, timeout_sec=tmpl.get("timeout_sec") or 60,
-            retry_count=tmpl.get("retry_count") or 3, priority=tmpl.get("priority") or "normal",
-            gpu_vram_gb=tmpl.get("gpu_vram_gb"), label=f"{tmpl.get('label') or tmpl['id']} (copy)",
-            base_url=tmpl.get("base_url") or "", worker_url=tmpl.get("worker_url") or "")
-        db.record_metric("autoscale_up", 1, {"type": wtype, "manual": True})
-        return result
+        index = req.gpu_index
+        if wtype == "gpu" and index is None:
+            try:
+                scaled = scaler_client.listed()
+            except scaler_client.ScalerError:
+                scaled = []
+            index = scaler_client.pick_gpu(worker_manager.get_all_workers(), kind, scaled,
+                                           autoscale_config.get_config()["crit"])
+        try:
+            r = scaler_client.spawn(kind, index)
+        except scaler_client.ScalerError as e:
+            raise HTTPException(e.status or 502, str(e))
+        db.record_metric("autoscale_up", 1, {"type": wtype, "manual": True, "container": r.get("name")})
+        return {"ok": True, "spawned": r.get("name"), "kind": kind, "gpu_index": index,
+                "note": "The new worker registers itself within a few seconds."}
     if req.action == "remove":
         if req.worker_id:
             target = worker_manager.get_worker(req.worker_id)
+            if target and not scaler_client.container_of(target):
+                raise HTTPException(409, "This worker was started by AXTO Setup, not by scaling — stop it with AXTO "
+                                         "Setup (or untick the GPU worker). Scaling removes only the workers it added.")
         else:
             live = [w for w in worker_manager.get_all_workers()
-                    if w.get("worker_type") == req.type and w.get("status") != "offline"]
+                    if w.get("worker_type") == req.type and w.get("status") != "offline" and scaler_client.container_of(w)]
             target = min(live, key=lambda w: (w.get("tasks_active") or 0, w.get("load_pct") or 0), default=None)
         if not target:
-            raise HTTPException(404, f"No {req.type.upper()} worker to remove")
+            raise HTTPException(404, f"No scaled {req.type.upper()} worker to remove")
+        try:
+            scaler_client.stop(scaler_client.container_of(target))
+        except scaler_client.ScalerError as e:
+            raise HTTPException(e.status or 502, str(e))
         worker_manager.remove_worker(target["id"])
         db.record_metric("autoscale_down", 1, {"worker_id": target["id"], "manual": True})
         return {"ok": True, "removed": target["id"]}
@@ -754,6 +812,7 @@ async def get_brand():
 async def autoscale_config_get(_=Depends(require_console)):
     """The console's Auto-Scale page: saved rules plus what happened in the last 24 h."""
     return {**autoscale_config.get_config(),
+            "max_gpu": int(db.get_setting("autoscale_max_gpu", "4")),
             "licensed": enforcement.has_feature("autoscaler"),
             "scale_events_24h": db.count_metrics(["autoscale_up", "autoscale_down"]),
             "thermal_reroutes_24h": db.count_metrics(["thermal_reroute"]),
@@ -767,9 +826,19 @@ async def autoscale_config_put(request: Request, _=Depends(require_console)):
     if body.get("enabled"):
         enforcement.require_feature("autoscaler")
     try:
-        cfg = autoscale_config.save_config(body)
+        cfg = autoscale_config.save_config({k: v for k, v in body.items() if k != "max_gpu"})
     except ValueError as e:
         raise HTTPException(400, str(e))
+    if "max_gpu" in body:
+        # One place for the GPU cap: the Auto-Scale page (REQUESTS 136 G4).
+        try:
+            mg = int(body["max_gpu"])
+        except (TypeError, ValueError):
+            raise HTTPException(400, "max_gpu must be a whole number")
+        if not 0 <= mg <= 64:
+            raise HTTPException(400, "max_gpu must be 0–64")
+        db.set_setting("autoscale_max_gpu", str(mg))
+    cfg["max_gpu"] = int(db.get_setting("autoscale_max_gpu", "4"))
     if cfg["enabled"]:
         a = get_autoscaler()
         if not a._running:
