@@ -100,7 +100,7 @@ function updateSize() {
 function renderOptional() {
   const opts = licence.optional || [], inst = licence.installed;
   $("#opts").innerHTML = opts.map((o) => {
-    const on = inst ? (inst.images || []).includes(o.name) : (o.profile === "gpu" && !!licence.gpu_ready);
+    const on = inst ? (inst.images || []).includes(o.name) : (o.profile === "gpu" && !!(licence.gpu_plan ? licence.gpu_plan.auto : licence.gpu_ready));
     return `<label class="check"><input type="checkbox" class="opt" value="${esc(o.name)}"${on ? " checked" : ""}> <span>${esc(o.label)} — ${esc(o.size)}${o.local ? " · " + esc(t("inPackage")) : ""}</span></label>`;
   }).join("");
   const gpuOpt = opts.some((o) => o.profile === "gpu");
@@ -170,7 +170,7 @@ async function install() {
     await follow(job, $("#log"), (j) => {
       if (j.status === "done") {
         $("#h4").textContent = "✔ " + licence.product.Name;
-        $("#doneText").textContent = t("done", { app: licence.product.Name, url: j.url });
+        $("#doneText").textContent = t("done", { app: licence.product.Name, url: j.url }) + ((j.warnings || []).length ? "\n⚠ " + j.warnings.join("\n⚠ ") : "");
         $("#openApp").onclick = () => openUrl(j.url);
         show($("#done"), true);
         openUrl(j.url);

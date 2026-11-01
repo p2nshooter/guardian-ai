@@ -16,27 +16,28 @@ import (
 )
 
 type DockerStatus struct {
-	OS             string `json:"os"`
-	Installed      bool   `json:"installed"`
-	Running        bool   `json:"running"`
-	Compose        bool   `json:"compose"`
-	Version        string `json:"version"`
-	ComposeVersion string `json:"compose_version"`
-	MemoryGB       int    `json:"memory_gb"`
-	CPUs           int    `json:"cpus"`
-	WSL            string `json:"wsl"`        // windows only: "ok" | "missing" | ""
-	Arch           string `json:"arch"`       // Docker engine architecture: "amd64" | "arm64"
-	OSType         string `json:"os_type"`    // "linux" (required) | "windows" (Windows containers mode)
-	GPU            string `json:"gpu"`        // every GPU of every brand, one line ("" = none found)
-	GPUs           []GPU  `json:"gpus"`       // the same, as a list (brand, model, VRAM, source)
-	GPUReady       bool   `json:"gpu_ready"`  // the GPU worker's container can use an NVIDIA GPU (Linux: nvidia runtime; Windows: WSL 2)
-	OllamaGPU      bool   `json:"ollama_gpu"` // the model server here already runs a model on a GPU (any brand)
-	GPUNote        string `json:"gpu_note"`   // why a GPU that exists cannot be used by the GPU worker yet, and what works instead
-	DesktopPath    string `json:"desktop_path"`
-	Ready          bool   `json:"ready"`
-	Problem        string `json:"problem"`
-	Fix            string `json:"fix"`
-	FixURL         string `json:"fix_url"`
+	OS             string  `json:"os"`
+	Installed      bool    `json:"installed"`
+	Running        bool    `json:"running"`
+	Compose        bool    `json:"compose"`
+	Version        string  `json:"version"`
+	ComposeVersion string  `json:"compose_version"`
+	MemoryGB       int     `json:"memory_gb"`
+	CPUs           int     `json:"cpus"`
+	WSL            string  `json:"wsl"`        // windows only: "ok" | "missing" | ""
+	Arch           string  `json:"arch"`       // Docker engine architecture: "amd64" | "arm64"
+	OSType         string  `json:"os_type"`    // "linux" (required) | "windows" (Windows containers mode)
+	GPU            string  `json:"gpu"`        // every GPU of every brand, one line ("" = none found)
+	GPUs           []GPU   `json:"gpus"`       // the same, as a list (brand, model, VRAM, source)
+	GPUReady       bool    `json:"gpu_ready"`  // the GPU worker's container can use the GPU (gpu_plan.ready)
+	GPUPlan        GPUPlan `json:"gpu_plan"`   // the one GPU decision, the same on every OS (gpuplan.go)
+	OllamaGPU      bool    `json:"ollama_gpu"` // the model server here already runs a model on a GPU (any brand)
+	GPUNote        string  `json:"gpu_note"`   // why a GPU that exists cannot be used by the GPU worker yet, and what works instead
+	DesktopPath    string  `json:"desktop_path"`
+	Ready          bool    `json:"ready"`
+	Problem        string  `json:"problem"`
+	Fix            string  `json:"fix"`
+	FixURL         string  `json:"fix_url"`
 }
 
 const dockerDesktopURL = "https://www.docker.com/products/docker-desktop/"
@@ -141,10 +142,19 @@ func CheckDocker(ctx context.Context) DockerStatus {
 		return s
 	}
 	if len(s.GPUs) > 0 {
-		s.GPUReady, s.GPUNote, s.OllamaGPU = gpuReadiness(c, s.GPUs, runtime.GOOS, func() string {
-			out, _ := dockerCmd(c, "info", "--format", "{{json .Runtimes}}")
-			return out
-		})
+		reachable, onGPU, _ := OllamaOnGPU(c)
+		s.OllamaGPU = reachable && onGPU
+		h := hostGPUQuestions(c)
+		h.Ollama = func() (bool, bool) { return reachable, onGPU }
+		s.GPUPlan = planGPU(s.GPUs, runtime.GOOS, h)
+		s.GPUReady = s.GPUPlan.Ready
+		if !s.GPUPlan.Ready {
+			s.GPUNote = strings.TrimSpace(strings.Join([]string{s.GPUPlan.Note, s.GPUPlan.Fix, s.GPUPlan.FixURL}, " "))
+		} else if strings.Contains(s.GPUPlan.Note, "OLLAMA_HOST") {
+			s.GPUNote = s.GPUPlan.Note
+		}
+	} else {
+		s.GPUPlan = planGPU(nil, runtime.GOOS, gpuHost{})
 	}
 	composeStandalone = false
 	cv, err := dockerCmd(c, "compose", "version", "--short")
@@ -169,39 +179,7 @@ func CheckDocker(ctx context.Context) DockerStatus {
 	return s
 }
 
-// gpuReadiness says whether the GPU worker can use a GPU here. Its container uses NVIDIA
-// CUDA; any other brand is used through the model server on this computer (Ollama), which
-// is reported, never assumed.
-func gpuReadiness(ctx context.Context, gpus []GPU, goos string, runtimes func() string) (ready bool, note string, ollamaOnGPU bool) {
-	reachable, onGPU, _ := OllamaOnGPU(ctx)
-	ollamaOnGPU = reachable && onGPU
-	names := gpuNames(gpus)
-	for _, g := range gpus {
-		if g.Vendor == "nvidia" {
-			ready, note = gpuUsable(goos, runtimes)
-			return ready, note, ollamaOnGPU
-		}
-	}
-	if ollamaOnGPU {
-		return false, names + ": the model server on this computer already runs its models on the GPU. Add an Ollama worker in Orchestra → Workers (provider Ollama) to use it. The GPU worker container itself needs an NVIDIA GPU (CUDA).", true
-	}
-	return false, names + " found. Install Ollama (https://ollama.com), run a model once (`ollama run llama3.2`) and check that `ollama ps` shows 100% GPU. Then add an Ollama worker in Orchestra → Workers to use this GPU.", false
-}
-
 const nvidiaToolkitURL = "https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html"
-
-// gpuUsable says whether Docker can hand an NVIDIA GPU to containers. Docker Desktop
-// (Windows, macOS) passes it through WSL 2 by itself; a Linux engine needs the
-// nvidia runtime that nvidia-container-toolkit registers.
-func gpuUsable(goos string, runtimes func() string) (bool, string) {
-	if goos != "linux" {
-		return true, ""
-	}
-	if strings.Contains(runtimes(), `"nvidia"`) {
-		return true, ""
-	}
-	return false, "An NVIDIA GPU is present, but Docker cannot use it yet: install nvidia-container-toolkit, run `sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker`, then run AXTO Setup again — " + nvidiaToolkitURL
-}
 
 // StartDockerDesktop launches Docker Desktop on Windows (no-op elsewhere).
 func StartDockerDesktop() error {

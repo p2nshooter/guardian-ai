@@ -23,14 +23,14 @@ sini pada urutan yang benar.
 
 | # | Pekerjaan | Rencana | Status |
 |---|---|---|---|
-| 1 | **Worker GPU sama di Windows & Linux, semua merek, scaling dan indikator pintar** (REQUESTS 136) | `BLUEPRINT-V4.md` §31.F | G1 ✅ (PR #103) · **G2 berjalan** (satu keputusan GPU di installer: `installer/gpuplan.go`, uji GPU di dalam image: `orchestra_worker/probe.py`) · G3 · G4 · G5 |
+| 1 | **Worker GPU sama di Windows & Linux, semua merek, scaling dan indikator pintar** (REQUESTS 136) | `BLUEPRINT-V4.md` §31.F | G1 ✅ (PR #103) · G2 ✅ (satu keputusan GPU + uji GPU nyata, PR G2) · **G3 berikutnya** (image CUDA/ROCm/Intel dari satu Dockerfile, profil compose per merek) · G4 · G5 |
 
 ## Saat menunggu CI (butir kecil, dikerjakan di sela-sela)
 
 | # | Pekerjaan | Rencana |
 |---|---|---|
-| W1 | **Semua penawaran di semua situs ke hello@axto.io + WhatsApp +62 856-9123-4561** (REQUESTS 139): formulir dan teks penawaran ulyah.com, 1fr.fr, tilawa.de, dawa.im, xad.es (repo ulyah.com: bawaan `SALE_DEFAULTS.email`, nilai lama `salam@ulyah.com` di R2 dipindah sekali, notifikasi penawaran ke hello@axto.io), xaa.es (teks "tulis ke hello@xaa.es" pada penjualan/investor → hello@axto.io), axto.io (sudah hello@axto.io; tombol WhatsApp di semua halaman penawaran). | `PROMOTION-BLUEPRINT.md` §9 |
-| W2 | Cabang xaa `claude/ads-txt-domain-updates-uvhkwj` dimulai ulang dari main sebelum kerja xaa berikutnya. | — |
+| W1 | ✅ Semua penawaran di semua situs ke hello@axto.io + WhatsApp +62 856-9123-4561 (REQUESTS 139): ulyah.com + 4 situs saudara (ulyah #397), xaa.es (xaa #38), axto.io sudah. **Sisa:** email notifikasi penawaran xaa.es ke hello@axto.io (butuh pengirim email; ikut baris 6). | `PROMOTION-BLUEPRINT.md` §9 |
+| W2 | ✅ Cabang xaa dimulai ulang dari main (1 Nov). | — |
 
 ## Berikutnya (urut, satu per satu)
 
@@ -40,7 +40,7 @@ sini pada urutan yang benar.
 | 3 | P3 dompet kredit + Otoritas Lisensi v4 + API mitra · P4 portal reseller · P5 portal white label (perintah 1 Nov, REQUESTS 132–134) | `BUSINESS-MASTER-BLUEPRINT.md` §4–§7 | syarat agar promosi reseller/white label menunjuk ke portal yang benar-benar jalan |
 | 4 | **Mesin promosi otomatis** ke setiap member: perjalanan mingguan bahasa Inggris dari tahap awal, uji coba Smart License, lelang lisensi, tangga afiliasi → reseller → white label, portal member + email saat pendaftaran, 100–200 promosi A–Z, riwayat pengiriman di Admin, promosi usang dipisah dan dimatikan (REQUESTS 138) | `PROMOTION-BLUEPRINT.md` | fase PR1–PR4; posting reseller/white label menyala otomatis saat P4/P5 tayang |
 | 5 | **Setiap aplikasi lain sampai puncaknya, satu per satu**, dengan metode yang sama seperti Clipper | `apps/PEAK-METHOD.md` (urutan aplikasi §4) | blueprint aplikasi ditulis dulu, baru dibangun |
-| 6 | xaa.es: penawaran mulai US$500k, investor tersembunyi, portal P9 | repo xaa `docs/BLUEPRINT.md` | perintah 1 Nov |
+| 6 | xaa.es: penawaran mulai US$500k, investor tersembunyi, portal P9, email notifikasi penawaran ke hello@axto.io (permintaan 75) | repo xaa `docs/BLUEPRINT.md` | perintah 1 Nov |
 | 7 | Artikel sampai 60 per situs (22 situs, blog axto.io, axto.us, profity.in) | `BLUEPRINT-V4.md` §20 B, repo ulyah.com `docs/ADSENSE-BLUEPRINT.md` | perintah 31 Okt |
 | 8 | Nama AXTO Digital Global + hapus placeholder `your-org` di produk self-hosted, installer, workflow (jangan sentuh `certs/`) | `BLUEPRINT-V4.md` §19 baris 4 | memicu build ulang image |
 | 9 | Panduan bergambar + video untuk 9 aplikasi self-hosted lain | `BLUEPRINT-V4.md` §19 baris 12/18 | memakai perekam panduan; bahan promosi (baris 4) |

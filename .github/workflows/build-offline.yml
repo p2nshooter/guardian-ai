@@ -141,10 +141,12 @@ jobs:
           GPU=""
           if ls images/*-gpu.tar.gz >/dev/null 2>&1; then
             GPU="
-          GPU worker (NVIDIA): ticked automatically in AXTO Setup when this computer has an
-          NVIDIA GPU; on Linux add --gpu. Needs the NVIDIA driver (Linux: + nvidia-container-toolkit).
-          Worker GPU (NVIDIA): otomatis dicentang di AXTO Setup bila komputer punya GPU NVIDIA;
-          di Linux tambahkan --gpu. Butuh driver NVIDIA (Linux: + nvidia-container-toolkit).
+          GPU worker (NVIDIA): included by itself on Windows and Linux alike when the GPU is
+          ready, and tested inside its container before it starts (skip it with --no-gpu).
+          Needs the NVIDIA driver (Linux: + nvidia-container-toolkit).
+          Worker GPU (NVIDIA): otomatis ikut di Windows maupun Linux bila GPU siap, dan diuji
+          di dalam container-nya sebelum dinyalakan (lewati dengan --no-gpu).
+          Butuh driver NVIDIA (Linux: + nvidia-container-toolkit).
           "
           fi
           cat > README.txt <<EOF
