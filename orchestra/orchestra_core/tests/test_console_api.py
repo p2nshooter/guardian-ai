@@ -68,8 +68,11 @@ def use(features):
 
 
 def gpu(client, n=1, **extra):
+    """n more GPU workers, each at its own address (the same address is the same worker)."""
     ids = []
-    for i in range(n):
+    for _ in range(n):
+        taken = {w["worker_url"] for w in db.q("SELECT worker_url FROM workers")}
+        i = next(i for i in range(10_000) if f"http://gpu-{i}:7892" not in taken)
         r = client.post("/api/workers/register", headers=CONSOLE, json={
             "node_id": "node-gpu", "type": "gpu", "provider_id": "ollama", "model": "llama3.2",
             "worker_url": f"http://gpu-{i}:7892", "vram_gb": 24, **extra})

@@ -193,6 +193,9 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
 .gpu-ok{border-color:rgba(34,211,168,.22)!important}
 .thermal-indicator{position:absolute;top:0;right:0;width:4px;height:100%;border-radius:0 12px 12px 0;transition:background .3s}
 .ti-ok{background:var(--green)}.ti-warn{background:var(--amber)}.ti-hot{background:var(--orange,#fb923c)}.ti-crit{background:var(--red);animation:pulse-g 1.2s infinite}
+.ti-nodata{background:var(--text3)}.gpu-nodata{border-color:var(--border2)!important;opacity:.92}
+.gpu-sub{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:2px 8px;font-size:.62rem;font-family:var(--mono);color:var(--text2);margin:6px 0 8px;padding:6px 8px;border:1px solid var(--border);border-radius:8px}
+@media (prefers-reduced-motion: reduce){.ti-crit{animation:none}}
 .gpu-temp{font-size:1.4rem;font-weight:800;font-family:var(--mono)}
 .tc-ok{color:var(--green)}.tc-warn{color:var(--amber)}.tc-hot{color:#fb923c}.tc-crit{color:var(--red)}
 .vb-nvidia{background:rgba(118,185,0,.12);color:#76b900;border:1px solid rgba(118,185,0,.3)}
@@ -635,7 +638,7 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
   </div>
   <div class="card"><div class="card-title">📊 GPU Pool Summary</div>
     <div class="table-wrap"><table>
-      <thead><tr><th>GPU ID</th><th>Vendor</th><th>Label</th><th>Node</th><th>Temp</th><th>VRAM Used</th><th>Load</th><th>Tasks</th><th>Status</th><th>Actions</th></tr></thead>
+      <thead><tr><th>GPU ID</th><th>Vendor</th><th>Card</th><th>Node</th><th>Temp</th><th>VRAM Used</th><th title="GPU utilisation · Orchestra task slots">GPU · Slots</th><th>Tasks</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody id="gpu-tbl"><tr><td colspan="10" style="text-align:center;color:var(--text3)">No GPU workers</td></tr></tbody>
     </table></div>
   </div>
@@ -1195,6 +1198,7 @@ async function loadGPUAdvice(notify){
 
 async function refreshAll(){
   loadGPUAdvice(true);
+  if(document.getElementById('page-gpu')?.classList.contains('active')) loadGPUPool();
   try{
     const [status,queue] = await Promise.all([
       api('GET','/status'),
@@ -1693,8 +1697,24 @@ const MODELS = {
   ollama:    ['llama3.2','mistral','codellama','phi3','deepseek-r1:7b','qwen2.5'],
   custom:    ['custom-model'],
 };
-const VCLASS = {nvidia:'vb-nvidia',amd:'vb-amd',intel:'vb-intel',apple:'vb-apple',cpu_fallback:'vb-cpu',auto:'vb-auto'};
-const VICON  = {nvidia:'🟢',amd:'🔴',intel:'🔵',apple:'⬜',cpu_fallback:'⚙️',auto:'🔍'};
+const VCLASS = {nvidia:'vb-nvidia',amd:'vb-amd',intel:'vb-intel',apple:'vb-apple',cpu_fallback:'vb-cpu',cpu:'vb-cpu',auto:'vb-auto'};
+const VICON  = {nvidia:'🟢',amd:'🔴',intel:'🔵',apple:'⬜',cpu_fallback:'⚙️',cpu:'⚙️',auto:'🔍'};
+// The brand the worker reported (REQUESTS 136); older workers report none: "GPU", never a guessed NVIDIA.
+function vendorBadge(w){
+  const v=(w.vendor||'').toLowerCase();
+  const label=v&&v!=='cpu'?v.toUpperCase():(v==='cpu'?'CPU':'GPU');
+  return `<span class="vbadge ${VCLASS[v]||'vb-auto'}">${VICON[v]||'🔍'} ${esc(label)}</span>`;
+}
+// Heat class of a worker: no reading is "no telemetry", not a healthy 0 °C.
+function heat(w){
+  if(w.temp_c==null) return {card:'gpu-nodata',ti:'ti-nodata',tc:'',label:'… NO DATA',bg:'var(--surface2,rgba(148,163,184,.08))',fc:'var(--text3)',bc:'var(--border2)'};
+  const t=w.temp_c, crit=_asConfig.crit||82, warn=_asConfig.warn||72;
+  if(t>=crit) return {card:'gpu-hot',ti:'ti-crit',tc:'tc-crit',label:'🚨 CRITICAL',bg:'var(--red2)',fc:'var(--red)',bc:'rgba(248,113,113,.4)'};
+  if(t>=warn) return {card:'gpu-warn',ti:'ti-hot',tc:'tc-hot',label:'🔥 HOT',bg:'rgba(251,146,60,.12)',fc:'#fb923c',bc:'rgba(251,146,60,.35)'};
+  if(t>=60)   return {card:'gpu-ok',ti:'ti-warn',tc:'tc-warn',label:'⚠️ WARM',bg:'var(--amber2)',fc:'var(--amber)',bc:'rgba(251,191,36,.3)'};
+  return {card:'gpu-ok',ti:'ti-ok',tc:'tc-ok',label:'✅ OK',bg:'var(--green2)',fc:'var(--green)',bc:'rgba(34,211,168,.2)'};
+}
+function gb(v){return v==null?'—':(Math.round(v*10)/10)+''}
 
 function initModelSelectors(){
   updateGPUModels();
@@ -1743,7 +1763,7 @@ async function loadGPUPool(){
     const bar=document.getElementById('gpu-lic-bar');
     if(bar){bar.style.width=pct+'%';bar.className='meter-fill '+(pct>=100?'meter-fill-red':pct>=80?'meter-fill-amber':'');}
     document.getElementById('gpu-lim-warn') && (document.getElementById('gpu-lim-warn').style.display=used>=licensed?'block':'none');
-    setEl('sb-gpu-hot', gpus.filter(g=>(g.temp_c||0)>=(_asConfig.warn||72)).length+'🔥');
+    setEl('sb-gpu-hot', gpus.filter(g=>g.temp_c!=null&&g.temp_c>=(_asConfig.warn||72)).length+'🔥');
 
     // Populate node dropdown
     const nodeSel=document.getElementById('gpu-add-node');
@@ -1763,18 +1783,16 @@ async function loadGPUPool(){
     if(tbody){
       if(!gpus.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text3)">No GPU workers</td></tr>';}
       else{tbody.innerHTML=gpus.map(w=>{
-        const temp=w.temp_c||0;
-        const tcls=temp>=(_asConfig.crit||82)?'tc-crit':temp>=(_asConfig.warn||72)?'tc-hot':temp>=60?'tc-warn':'tc-ok';
-        const vram_u=w.vram_used_gb||0, vram_t=w.vram_gb||0;
-        const load=w.load_pct||0;
+        const h=heat(w);
+        const busy=Math.max(w.load_pct||0, w.util_pct||0);
         return `<tr>
-          <td style="color:var(--primary2)">${w.id}</td>
-          <td><span class="vbadge ${VCLASS[w.vendor||'nvidia']}">${VICON[w.vendor||'nvidia']} ${(w.vendor||'GPU').toUpperCase()}</span></td>
-          <td>${w.label||'—'}</td>
-          <td style="color:var(--text3)">${w.node_id}</td>
-          <td class="${tcls}" style="font-weight:700;font-family:var(--mono)">${w.temp_c==null?'—':temp+'°C'}</td>
-          <td style="font-family:var(--mono)">${vram_u}/${vram_t}GB</td>
-          <td><div class="meter-bar" style="width:60px;display:inline-block"><div class="meter-fill${load>80?' meter-fill-red':load>50?' meter-fill-amber':''}" style="width:${load}%"></div></div> ${load}%</td>
+          <td style="color:var(--primary2)">${esc(w.id)}</td>
+          <td>${vendorBadge(w)}</td>
+          <td>${esc(w.gpu_name||w.label||'—')}${w.gpu_count>1?` ×${w.gpu_count}`:''}</td>
+          <td style="color:var(--text3)">${esc(w.node_id)}</td>
+          <td class="${h.tc}" style="font-weight:700;font-family:var(--mono)">${w.temp_c==null?'<span style="color:var(--text3)">no data</span>':Math.round(w.temp_c)+'°C'}</td>
+          <td style="font-family:var(--mono)">${gb(w.vram_used_gb)}/${gb(w.vram_gb)}GB</td>
+          <td title="GPU utilisation / Orchestra task slots"><div class="meter-bar" style="width:60px;display:inline-block"><div class="meter-fill${busy>80?' meter-fill-red':busy>50?' meter-fill-amber':''}" style="width:${busy}%"></div></div> ${w.util_pct==null?'—':Math.round(w.util_pct)+'%'} · ${w.load_pct||0}%</td>
           <td>${w.tasks_total||0}</td>
           <td>${statusBadge(w.status)}</td>
           <td style="display:flex;gap:5px">
@@ -1788,40 +1806,46 @@ async function loadGPUPool(){
 }
 
 function renderGPUCard(w){
-  const temp=w.temp_c||0, load=w.load_pct||0;
-  const vramU=w.vram_used_gb||0, vramT=w.vram_gb||0;
-  const vramPct=vramT>0?Math.min(100,(vramU/vramT)*100):0;
-  const tempCls=temp>=(_asConfig.crit||82)?'tc-crit':temp>=(_asConfig.warn||72)?'tc-hot':temp>=60?'tc-warn':'tc-ok';
-  const cardExtra=temp>=(_asConfig.crit||82)?'gpu-hot':temp>=(_asConfig.warn||72)?'gpu-warn':'gpu-ok';
-  const tiCls=temp>=(_asConfig.crit||82)?'ti-crit':temp>=(_asConfig.warn||72)?'ti-hot':temp>=60?'ti-warn':'ti-ok';
-  const vendor=w.vendor||'nvidia';
-  const hot=temp>=(_asConfig.warn||72);
-  const crit=temp>=(_asConfig.crit||82);
-  return `<div class="gpu-card ${cardExtra}">
-    <div class="thermal-indicator ${tiCls}"></div>
+  const h=heat(w), load=w.load_pct||0, util=w.util_pct;
+  const vramU=w.vram_used_gb, vramT=w.vram_gb||0;
+  const vramPct=vramT>0&&vramU!=null?Math.min(100,(vramU/vramT)*100):0;
+  const hot=w.temp_c!=null&&w.temp_c>=(_asConfig.warn||72);
+  const crit=w.temp_c!=null&&w.temp_c>=(_asConfig.crit||82);
+  const subs=(w.gpus||[]).length>1?`<div class="gpu-sub">${w.gpus.map(g=>`<span>#${esc(g.index)}</span><span>${esc(g.name||'GPU')}</span><span>${g.temp_c==null?'—':Math.round(g.temp_c)+'°C'}</span><span>${g.util_pct==null?'—':Math.round(g.util_pct)+'%'}</span><span>${gb(g.vram_used_gb)}/${gb(g.vram_total_gb)}G</span>`).join('')}</div>`:'';
+  return `<div class="gpu-card ${h.card}">
+    <div class="thermal-indicator ${h.ti}"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span class="vbadge ${VCLASS[vendor]}">${VICON[vendor]} ${vendor.toUpperCase()}</span>
-      <span class="${tempCls} gpu-temp">${w.temp_c==null?'—':temp+'°C'}</span>
+      ${vendorBadge(w)}
+      <span class="${h.tc} gpu-temp">${w.temp_c==null?'<span style="color:var(--text3);font-size:.7rem">no telemetry</span>':Math.round(w.temp_c)+'°C'}</span>
     </div>
-    <div style="font-weight:700;font-size:.82rem;margin-bottom:3px">${w.label||w.id}</div>
-    <div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin-bottom:8px">${w.model||'—'} · Node: ${w.node_id||'?'}</div>
+    <div style="font-weight:700;font-size:.82rem;margin-bottom:3px">${esc(w.gpu_name||w.label||w.id)}</div>
+    <div style="font-size:.66rem;color:var(--text3);font-family:var(--mono);margin-bottom:8px">${esc(w.id)} · ${esc(w.model||'—')} · Node: ${esc(w.node_id||'?')}${w.driver?' · driver '+esc(w.driver):''}</div>
     <div class="meter-wrap" style="margin-bottom:5px">
-      <div class="meter-label"><span>Load</span><span>${load}%</span></div>
+      <div class="meter-label"><span>GPU utilisation</span><span>${util==null?'—':Math.round(util)+'%'}</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width:${util||0}%;background:${(util||0)>80?'var(--red)':(util||0)>50?'var(--amber)':'var(--primary)'}"></div></div>
+    </div>
+    <div class="meter-wrap" style="margin-bottom:5px">
+      <div class="meter-label"><span>Task slots</span><span>${load}%</span></div>
       <div class="meter-bar"><div class="meter-fill" style="width:${load}%;background:${load>80?'var(--red)':load>50?'var(--amber)':'var(--primary)'}"></div></div>
     </div>
-    <div class="meter-wrap" style="margin-bottom:10px">
-      <div class="meter-label"><span>VRAM</span><span>${vramU}/${vramT}GB</span></div>
-      <div class="meter-bar"><div class="meter-fill" style="width:${vramPct}%;background:${vramPct>80?'var(--amber)':'var(--cyan)'}"></div></div>
+    <div class="meter-wrap" style="margin-bottom:8px">
+      <div class="meter-label"><span>VRAM</span><span>${gb(vramU)}/${gb(vramT||null)} GB</span></div>
+      <div class="meter-bar"><div class="meter-fill" style="width:${vramPct}%;background:${vramPct>90?'var(--red)':vramPct>80?'var(--amber)':'var(--cyan)'}"></div></div>
     </div>
+    ${subs}
     <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
       ${statusBadge(w.status)}
-      <span style="font-size:.63rem;color:var(--text3);font-family:var(--mono)">Tasks: ${w.tasks_total||0}</span>
+      <span style="font-size:.63rem;color:var(--text3);font-family:var(--mono)">Tasks: ${w.tasks_total||0}${w.power_w!=null?' · '+Math.round(w.power_w)+' W':''}</span>
+      ${w.usable===false?`<span class="badge badge-amber" title="${esc(w.access_note||'')}">⚠️ GPU NOT USABLE</span>`:''}
+      ${w.throttled?`<span class="badge badge-amber">🐢 THROTTLED</span>`:''}
+      ${w.wsl?`<span class="badge" title="Docker Desktop on Windows (WSL 2)">WSL 2</span>`:''}
       ${hot?`<span class="badge badge-amber">🔥 HOT</span>`:''}
       ${crit?`<span class="badge badge-red">🚨 REROUTING</span>`:''}
     </div>
+    ${w.usable===false&&w.access_note?`<div style="font-size:.64rem;color:var(--amber);margin-bottom:8px">${esc(w.access_note)}</div>`:''}
     <div style="display:flex;gap:5px">
-      <button class="btn btn-outline btn-sm" style="flex:1" onclick="swapGPU('${w.id}')">🔄 Swap</button>
-      <button class="btn btn-danger btn-sm" onclick="removeGPUWorker('${w.id}')">✕</button>
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="swapGPU('${esc(w.id)}')">🔄 Swap</button>
+      <button class="btn btn-danger btn-sm" onclick="removeGPUWorker('${esc(w.id)}')">✕</button>
     </div>
   </div>`;
 }
@@ -1890,16 +1914,12 @@ function updateThermalMap(gpus){
   if(!el) return;
   if(!gpus||!gpus.length){el.innerHTML='<div style="color:var(--text3);font-size:.78rem;padding:10px">No GPU workers</div>';return;}
   el.innerHTML=gpus.map(w=>{
-    const temp=w.temp_c||0;
-    const bg=temp>=(_asConfig.crit||82)?'var(--red2)':temp>=(_asConfig.warn||72)?'rgba(251,146,60,.12)':temp>=60?'var(--amber2)':'var(--green2)';
-    const fc=temp>=(_asConfig.crit||82)?'var(--red)':temp>=(_asConfig.warn||72)?'#fb923c':temp>=60?'var(--amber)':'var(--green)';
-    const bc=temp>=(_asConfig.crit||82)?'rgba(248,113,113,.4)':temp>=(_asConfig.warn||72)?'rgba(251,146,60,.35)':temp>=60?'rgba(251,191,36,.3)':'rgba(34,211,168,.2)';
-    const label=temp>=(_asConfig.crit||82)?'🚨 CRITICAL':temp>=(_asConfig.warn||72)?'🔥 HOT':temp>=60?'⚠️ WARM':'✅ OK';
-    return `<div style="background:${bg};border:1px solid ${bc};border-radius:10px;padding:12px;text-align:center">
-      <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-bottom:3px">${w.id}</div>
-      <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:${fc}">${w.temp_c==null?'—':temp+'°C'}</div>
-      <div style="font-size:.6rem;color:var(--text3);margin-top:3px">${w.label||(w.vendor||'GPU').toUpperCase()}</div>
-      <div style="font-size:.58rem;color:${fc};margin-top:3px">${label}</div>
+    const h=heat(w);
+    return `<div style="background:${h.bg};border:1px solid ${h.bc};border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:.6rem;color:var(--text3);font-family:var(--mono);margin-bottom:3px">${esc(w.id)}</div>
+      <div style="font-size:1.5rem;font-weight:800;font-family:var(--mono);color:${h.fc}">${w.temp_c==null?'—':Math.round(w.temp_c)+'°C'}</div>
+      <div style="font-size:.6rem;color:var(--text3);margin-top:3px">${esc(w.gpu_name||w.label||(w.vendor||'GPU').toUpperCase())}</div>
+      <div style="font-size:.58rem;color:${h.fc};margin-top:3px">${h.label}</div>
     </div>`;
   }).join('');
 }
@@ -1984,7 +2004,7 @@ async function saveASConfig(){
     enabled: document.getElementById('as-enabled')?.checked||false,
     up: parseInt(document.getElementById('as-up')?.value)||75,
     down: parseInt(document.getElementById('as-down')?.value)||20,
-    min: parseInt(document.getElementById('as-min')?.value)||1,
+    min: (v=>Number.isNaN(v)?1:Math.max(0,v))(parseInt(document.getElementById('as-min')?.value)),
     cool: parseInt(document.getElementById('as-cool')?.value)||120,
     thermal: document.getElementById('therm-enabled')?.checked||false,
     warn: parseInt(document.getElementById('therm-warn')?.value)||72,

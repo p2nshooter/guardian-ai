@@ -125,7 +125,7 @@ def test_inventory_prefers_exact_vendor_tools_and_ranks_nvidia_first():
         if cmd[0] == "nvidia-smi":
             return "NVIDIA GeForce RTX 3090, 24576, 550.90\n"
         return ""
-    inv = gi.inventory(run=run, platform="linux")
+    inv = gi.inventory(run=run, platform="linux", dev_root="/nonexistent", drm_root="/nonexistent")
     assert inv["primary"]["vendor"] == "nvidia"
     assert inv["primary"]["vram_gb"] == 24.0
     nvidia = [g for g in inv["gpus"] if g["vendor"] == "nvidia"]
@@ -134,8 +134,10 @@ def test_inventory_prefers_exact_vendor_tools_and_ranks_nvidia_first():
 
 
 def test_inventory_without_any_gpu_is_empty():
-    inv = gi.inventory(run=lambda cmd: "", sysfs_root="/nonexistent", platform="linux")
-    assert inv == {"gpus": [], "primary": None, "sources": ["sysfs"]}
+    inv = gi.inventory(run=lambda cmd: "", sysfs_root="/nonexistent", platform="linux",
+                       dev_root="/nonexistent", drm_root="/nonexistent")
+    assert inv == {"gpus": [], "primary": None, "sources": ["sysfs"], "usable_count": 0,
+                   "access": {"nvidia": [], "kfd": False, "render": {}, "wsl": False}}
 
 
 def test_windows_rows_use_registry_vram_and_skip_basic_display():

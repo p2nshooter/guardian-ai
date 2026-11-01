@@ -17,8 +17,11 @@ Vendor tools, when they are installed, add the exact model and VRAM:
 nvidia-smi, rocm-smi and xpu-smi. Ollama's /api/ps says whether a model really
 runs on the GPU (size_vram > 0), the same test for every brand.
 
-Virtual adapters (Microsoft Basic Display, QEMU, VMware, VirtIO …) are not GPUs
-and are left out.
+Virtual adapters (Microsoft Basic Display / Basic Render Driver, QEMU, VMware,
+VirtIO …) are not GPUs and are left out. Found is not the same as usable: each GPU
+says whether this container has its device files (/dev/nvidia*, /dev/kfd with
+/dev/dri, /dev/dri for Intel; /dev/dxg means WSL 2) and a compute-capable kernel
+driver, and why not when it has not (REQUESTS 136).
 """
 from __future__ import annotations
 
@@ -53,7 +56,7 @@ BRAND_RANK = {key: i for i, (key, _, _) in enumerate(BRANDS)}
 BACKEND = {"nvidia": "cuda", "amd": "rocm", "intel": "xpu", "apple": "metal"}
 
 # Adapters that are not hardware GPUs (hypervisors, remote desktop, basic display).
-VIRTUAL_MARKERS = ("microsoft basic", "microsoft remote display", "remote display adapter", "vmware",
+VIRTUAL_MARKERS = ("microsoft basic", "basic render driver", "microsoft remote display", "remote display adapter", "vmware",
                    "virtualbox", "innotek", "qemu", "bochs", "virtio", "hyper-v", "parallels", "citrix",
                    "virtual display", "virtual desktop")
 
@@ -127,7 +130,11 @@ def parse_lspci(text: str) -> list[dict]:
         if is_virtual(vendor + " " + device):
             continue
         key, label = brand_of(vendor)
-        gpus.append(_gpu(key, label, _named(label, _model(device)), source="lspci"))
+        g = _gpu(key, label, _named(label, _model(device)), source="lspci")
+        slot = line.split(" ", 1)[0].strip()
+        if re.fullmatch(r"(?:[0-9a-fA-F]{4}:)?[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]", slot):
+            g["pci"] = slot.lower() if slot.count(":") == 2 else f"0000:{slot.lower()}"
+        gpus.append(g)
     return gpus
 
 
@@ -146,7 +153,9 @@ def sysfs_gpus(root: str = "/sys/bus/pci/devices") -> list[dict]:
         key, label = SYSFS_VENDORS.get(vendor, ("other", f"PCI {vendor:04x}"))
         if key == "virtual":
             continue
-        gpus.append(_gpu(key, label, f"{label} GPU (PCI {vendor:04x}:{device.replace('0x', '')})", source="sysfs"))
+        g = _gpu(key, label, f"{label} GPU (PCI {vendor:04x}:{device.replace('0x', '')})", source="sysfs")
+        g["pci"] = os.path.basename(dev).lower()
+        gpus.append(g)
     return gpus
 
 
@@ -257,17 +266,107 @@ def parse_system_profiler(text: str) -> list[dict]:
     return gpus
 
 
+# ── Can this container really use the GPU? (REQUESTS 136, BLUEPRINT-V4 §31.F G1) ──
+
+DRM_VENDORS = {"0x10de": "nvidia", "0x1002": "amd", "0x8086": "intel"}
+# Kernel drivers: the open-source ones cannot run CUDA / ROCm compute.
+COMPUTE_DRIVERS = {"nvidia": ("nvidia",), "amd": ("amdgpu",), "intel": ("i915", "xe")}
+
+
+def _read(path: str) -> str:
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def drm_cards(drm_root: str = "/sys/class/drm") -> dict[str, dict]:
+    """PCI address → {driver, vendor, vram_gb, render} for every DRM card the kernel shows."""
+    cards: dict[str, dict] = {}
+    for node in sorted(glob.glob(os.path.join(drm_root, "card[0-9]*")) + glob.glob(os.path.join(drm_root, "renderD*"))):
+        if "-" in os.path.basename(node):
+            continue
+        dev = os.path.join(node, "device")
+        addr = os.path.basename(os.path.realpath(dev)).lower()
+        if not re.fullmatch(r"[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-7]", addr):
+            continue
+        c = cards.setdefault(addr, {"driver": "", "vendor": DRM_VENDORS.get(_read(os.path.join(dev, "vendor")).lower(), "other"),
+                                    "vram_gb": 0.0, "render": ""})
+        try:
+            c["driver"] = c["driver"] or os.path.basename(os.readlink(os.path.join(dev, "driver")))
+        except OSError:
+            pass
+        total = _read(os.path.join(dev, "mem_info_vram_total"))
+        if total.isdigit() and not c["vram_gb"]:
+            c["vram_gb"] = round(int(total) / 1024 ** 3, 1)
+        if os.path.basename(node).startswith("renderD"):
+            c["render"] = os.path.basename(node)
+    return cards
+
+
+def device_access(dev_root: str = "/dev", drm_root: str = "/sys/class/drm") -> dict:
+    """The GPU device files this container was given, by brand."""
+    render = {}
+    for node in sorted(glob.glob(os.path.join(dev_root, "dri", "renderD*"))):
+        name = os.path.basename(node)
+        render[name] = DRM_VENDORS.get(_read(os.path.join(drm_root, name, "device", "vendor")).lower(), "other")
+    return {
+        "nvidia": sorted(os.path.basename(p) for p in glob.glob(os.path.join(dev_root, "nvidia[0-9]*"))),
+        "kfd": os.path.exists(os.path.join(dev_root, "kfd")),
+        "render": render,
+        "wsl": os.path.exists(os.path.join(dev_root, "dxg")),
+    }
+
+
+def mark_usable(gpus: list[dict], access: dict) -> None:
+    """Sets usable and access_note on each GPU: can a job in this container compute on it?"""
+    rendered = set(access.get("render", {}).values())
+    wsl = access.get("wsl")
+    for g in gpus:
+        v, drv = g["vendor"], (g.get("kernel_driver") or "")
+        ok, note = False, ""
+        if v == "nvidia":
+            ok = g.get("source") == "nvidia-smi" or bool(access.get("nvidia"))
+            if not ok:
+                note = ("the open-source nouveau driver cannot run CUDA — install the NVIDIA driver"
+                        if drv == "nouveau" else
+                        "this container has no /dev/nvidia* — start it with GPU access (compose profile gpu, "
+                        "NVIDIA Container Toolkit on Linux, Docker Desktop WSL 2 on Windows)")
+        elif v == "amd":
+            ok = bool(access.get("kfd")) and "amd" in rendered
+            if not ok:
+                note = ("Docker Desktop on Windows passes only NVIDIA GPUs into containers — this AMD card works "
+                        "through Ollama on the host" if wsl else
+                        "needs /dev/kfd and /dev/dri in the container (compose profile gpu-amd) and the amdgpu driver")
+        elif v == "intel":
+            ok = "intel" in rendered
+            if not ok:
+                note = ("Docker Desktop on Windows passes only NVIDIA GPUs into containers — this Intel GPU works "
+                        "through Ollama on the host" if wsl else
+                        "needs /dev/dri in the container (compose profile gpu-intel) and the i915 or xe driver")
+        elif v == "apple":
+            note = "Apple GPUs (Metal) are used by Ollama on the Mac itself; containers cannot reach them"
+        else:
+            note = f"no container runtime for {g.get('vendor_label') or 'this brand'} yet; Ollama or the vendor's runtime on the host can still use it"
+        if ok and drv and v in COMPUTE_DRIVERS and drv not in COMPUTE_DRIVERS[v]:
+            ok, note = False, f"kernel driver {drv} cannot run {g.get('backend', 'GPU').upper()} compute"
+        g["usable"], g["access_note"] = ok, note
+
+
 # ── The whole inventory ──────────────────────────────────────────────────────
 
 def _default_run(cmd: list[str]) -> str:
     return _run(cmd)
 
 
-def inventory(run: Runner = _default_run, sysfs_root: str = "/sys/bus/pci/devices", platform: Optional[str] = None) -> dict:
-    """Every GPU this computer has, with the best one first.
+def inventory(run: Runner = _default_run, sysfs_root: str = "/sys/bus/pci/devices", platform: Optional[str] = None,
+              dev_root: str = "/dev", drm_root: str = "/sys/class/drm") -> dict:
+    """Every GPU this computer has, the ones this container can really use first.
 
-    Returns {"gpus": [...], "primary": gpu-or-None, "sources": [...]}; each GPU carries
-    vendor, vendor_label, name, vram_gb, driver, source and backend."""
+    Returns {"gpus": [...], "primary": gpu-or-None, "sources": [...], "access": {...},
+    "usable_count": n}; each GPU carries vendor, vendor_label, name, vram_gb, driver,
+    kernel_driver, source, backend, usable and access_note."""
     import sys
     platform = platform or sys.platform
     gpus: list[dict] = []
@@ -288,8 +387,23 @@ def inventory(run: Runner = _default_run, sysfs_root: str = "/sys/bus/pci/device
         sources.append("system_profiler")
 
     gpus = [g for g in gpus if not g.get("virtual")]
-    gpus.sort(key=lambda g: (BRAND_RANK.get(g["vendor"], len(BRANDS)), -g["vram_gb"]))
-    return {"gpus": gpus, "primary": gpus[0] if gpus else None, "sources": sources}
+    access = {"nvidia": [], "kfd": False, "render": {}, "wsl": False}
+    if platform.startswith("linux"):
+        cards = drm_cards(drm_root)
+        for g in gpus:
+            c = cards.get(g.get("pci", ""))
+            if c:
+                g["kernel_driver"] = c["driver"]
+                if not g["vram_gb"] and c["vram_gb"]:
+                    g["vram_gb"] = c["vram_gb"]
+        access = device_access(dev_root, drm_root)
+        mark_usable(gpus, access)
+    else:
+        for g in gpus:
+            g["usable"], g["access_note"] = g["vendor"] == "apple", ""
+    gpus.sort(key=lambda g: (not g.get("usable"), BRAND_RANK.get(g["vendor"], len(BRANDS)), -g["vram_gb"]))
+    return {"gpus": gpus, "primary": gpus[0] if gpus else None, "sources": sources, "access": access,
+            "usable_count": sum(1 for g in gpus if g.get("usable"))}
 
 
 def ollama_gpu_status(base_url: str, timeout: int = 4) -> dict:

@@ -12,25 +12,28 @@ audio transcription (Whisper), embedding generation.
 On-demand idle behaviour:
   - Reports idle flag when tasks_active == 0
   - IDLE_SHUTDOWN_SEC > 0 → auto-deregister + exit after N idle seconds
-  - Autoscaler respawns on next GPU job (Docker/webhook)
 
-GPU detection priority: nvidia-smi → torch.cuda → ROCm (AMD) → Apple MPS → CPU fallback
+GPU detection (gpu_inventory.py): every brand on the PCI bus, exact models and VRAM
+from the vendor tools, and — what decides — whether this container really has the
+device (/dev/nvidia*, /dev/kfd + /dev/dri, /dev/dri) with a compute driver. PyTorch
+fills in VRAM the tools do not report. Live per-GPU telemetry (gpu_telemetry.py)
+goes to Orchestra Core with every heartbeat: utilisation, temperature, VRAM used,
+power, fan and real throttling (REQUESTS 136, BLUEPRINT-V4 §31.F G1).
 
-Capabilities exposed per GPU spec:
-  < 8 GB VRAM  → chat only (small models: phi3, llama3.2:1b)
-  8–16 GB VRAM → chat + embedding + transcription
-  > 16 GB VRAM → all: chat + image + embedding + transcription + local SD
+Capabilities:
+  every worker   chat, local_inference, embedding, transcription (CPU when no GPU)
+  GPU ≥ 8 GB     + local Stable Diffusion XL (CUDA, ROCm or Intel XPU builds of PyTorch)
+  GPU ≥ 24 GB    + large_models
 """
-import base64, json, logging, os, re, subprocess, sys, threading, time, urllib.request
+import base64, hmac, json, logging, os, re, signal, sys, threading, time, urllib.error, urllib.request
 from pathlib import Path
 from typing import Optional
 import uvicorn
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from orchestra_worker import gpu_inventory
+from orchestra_worker import gpu_inventory, gpu_telemetry
 
 # ── Config ────────────────────────────────────────────────────────────────────
 ORCHESTRA_URL     = os.environ.get("ORCHESTRA_CORE_URL",         "http://orchestra-core:8080")
@@ -64,19 +67,58 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger("worker.gpu")
 
 # ── GPU Detection ─────────────────────────────────────────────────────────────
+_TORCH_DEVICE: Optional[str] = None
+_TORCH_CHECKED = False
+
+
+def _torch_device() -> Optional[str]:
+    """The PyTorch device of this image: "cuda" (NVIDIA, and AMD on ROCm builds), "xpu" (Intel), "mps" or None."""
+    global _TORCH_DEVICE, _TORCH_CHECKED
+    if _TORCH_CHECKED:
+        return _TORCH_DEVICE
+    _TORCH_CHECKED = True
+    try:
+        import torch  # type: ignore
+        if torch.cuda.is_available():
+            _TORCH_DEVICE = "cuda"
+        elif hasattr(torch, "xpu") and torch.xpu.is_available():
+            _TORCH_DEVICE = "xpu"
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            _TORCH_DEVICE = "mps"
+    except Exception:
+        _TORCH_DEVICE = None
+    return _TORCH_DEVICE
+
+
+def _torch_vram_gb() -> float:
+    try:
+        import torch  # type: ignore
+        if _torch_device() == "cuda":
+            return round(sum(torch.cuda.get_device_properties(i).total_memory for i in range(torch.cuda.device_count())) / 1024 ** 3, 1)
+        if _torch_device() == "xpu":
+            return round(sum(torch.xpu.get_device_properties(i).total_memory for i in range(torch.xpu.device_count())) / 1024 ** 3, 1)
+    except Exception:
+        pass
+    return 0.0
+
+
 def _detect_gpu() -> dict:
-    """Every GPU of every brand, best first (gpu_inventory.py: lspci or sysfs on Linux,
-    vendor tools for exact models, Ollama's /api/ps for what really runs on the GPU).
-    PyTorch in the image is the last word for a device the inventory cannot name."""
+    """Every GPU of every brand, the ones this container can use first (gpu_inventory.py).
+    Found but not usable GPUs stay in `found` with the reason, so the console can say
+    exactly what to change; only usable ones make this a GPU worker."""
     inv = gpu_inventory.inventory()
-    if inv["primary"]:
-        p = inv["primary"]
-        gpus = inv["gpus"]
+    usable = [g for g in inv["gpus"] if g.get("usable")]
+    blocked = [g for g in inv["gpus"] if not g.get("usable")]
+    access = inv.get("access", {})
+    if usable:
+        p = usable[0]
+        vram = round(sum(g["vram_gb"] for g in usable), 1) or _torch_vram_gb()
         return {"available": True, "backend": p["backend"], "vendor": p["vendor"],
-                "vendor_label": p["vendor_label"], "gpus": gpus,
-                "vram_gb": round(sum(g["vram_gb"] for g in gpus), 1),
-                "name": p["name"], "driver": p.get("driver", ""), "count": len(gpus),
-                "sources": inv["sources"]}
+                "vendor_label": p["vendor_label"], "gpus": usable, "found": inv["gpus"],
+                "vram_gb": vram, "name": p["name"] + (f" ×{len(usable)}" if len(usable) > 1 else ""),
+                "driver": p.get("driver", "") or p.get("kernel_driver", ""), "count": len(usable),
+                "sources": inv["sources"], "wsl": bool(access.get("wsl")),
+                "access_note": "; ".join(f"{g['name']}: {g['access_note']}" for g in blocked if g.get("access_note"))}
 
     try:
         import torch  # type: ignore
@@ -109,39 +151,32 @@ def _detect_gpu() -> dict:
         cpu, cores = "CPU", 1
     return {"available": False, "backend": "cpu", "vendor": "cpu", "vendor_label": "CPU",
             "name": f"CPU fallback ({cpu}, {cores} threads)",
-            "vram_gb": 0, "driver": "", "gpus": [], "count": 0, "sources": []}
+            "vram_gb": 0, "driver": "", "gpus": [], "found": inv["gpus"], "count": 0, "sources": inv["sources"],
+            "wsl": bool(access.get("wsl")),
+            "access_note": "; ".join(f"{g['name']}: {g['access_note']}" for g in blocked if g.get("access_note"))
+                           or ("WSL 2 GPU (/dev/dxg) present but no NVIDIA GPU passed through" if access.get("wsl") else "")}
 
 GPU_INFO = _detect_gpu()
 
 
 def _capabilities() -> list:
-    vram    = GPU_INFO.get("vram_gb", 0)
+    vram    = GPU_INFO.get("vram_gb", 0) or 0
     backend = GPU_INFO.get("backend", "cpu")
-    vendor  = GPU_INFO.get("vendor", "cpu")
     avail   = GPU_INFO.get("available", False)
 
-    caps = ["chat", "local_inference", "embedding"]
+    # Chat and embeddings run on Ollama/vLLM; transcription falls back to the CPU.
+    caps = ["chat", "local_inference", "embedding", "transcription"]
 
-    # Transcription works on CPU too (slower), and on any GPU >= 4GB
-    if not avail or vram >= 4:
-        caps += ["transcription"]
-
-    # Image generation needs >= 8GB VRAM (CUDA/ROCm) or cloud (DALL-E)
-    if vram >= 8 and backend in ("cuda", "rocm"):
+    # Local Stable Diffusion needs a PyTorch GPU device and ≥ 8 GB; DALL-E needs an OpenAI key.
+    if avail and vram >= 8 and _torch_device() in ("cuda", "xpu"):
         caps += ["image_generation", "stable_diffusion"]
-    elif avail:
-        # Even with small VRAM we can do DALL-E via OpenAI API
+    elif _get_api_key("openai") or OPENAI_KEY:
         caps += ["image_generation"]
 
-    # GPU-specific caps
-    if backend == "cuda" and vram > 0:
-        caps += ["cuda_inference"]
+    if avail and backend in ("cuda", "rocm", "xpu", "metal", "mps"):
+        caps += [f"{'mps' if backend == 'metal' else backend}_inference"]
         if vram >= 24:
             caps += ["large_models"]  # 70B+ models
-    elif backend == "rocm":
-        caps += ["rocm_inference"]
-    elif backend == "mps":
-        caps += ["mps_inference"]
 
     return list(dict.fromkeys(caps))  # deduplicate
 
@@ -152,10 +187,35 @@ _avg_latency  = 0.0; _idle_since  = time.time()
 _semaphore    = threading.Semaphore(CONCURRENCY)
 _lock         = threading.Lock()
 
-app = FastAPI(title="Orchestra Worker GPU", version="2.0.0",
+app = FastAPI(title="Orchestra Worker GPU", version="2.1.0",
               docs_url=None, redoc_url=None)
-app.add_middleware(CORSMiddleware, allow_origins=["*"],
-                   allow_methods=["*"], allow_headers=["*"])
+# No CORS: only Orchestra Core calls this worker, server to server.
+
+
+def _require_core(request: Request):
+    """/run and /shutdown answer Orchestra Core only: the same worker token as the heartbeat."""
+    if not WORKER_TOKEN:
+        return
+    token = request.headers.get("X-Orchestra-Worker-Token") or request.headers.get("Authorization", "").replace("Bearer ", "")
+    if not token or not hmac.compare_digest(str(token), WORKER_TOKEN):
+        raise HTTPException(status_code=401, detail="Orchestra Core worker token required")
+
+
+# ── Telemetry (cached a few seconds: /health, heartbeats and /gpu/status share it) ──
+_TELEMETRY_TTL = 5.0
+_telemetry_cache: dict = {"at": 0.0, "rows": [], "summary": gpu_telemetry.summary([])}
+
+
+def _telemetry() -> tuple[list, dict]:
+    now = time.time()
+    if now - _telemetry_cache["at"] > _TELEMETRY_TTL:
+        try:
+            rows = gpu_telemetry.collect(gpu_inventory._run) if GPU_INFO.get("available") else []
+        except Exception as e:
+            logger.debug(f"telemetry failed: {e}")
+            rows = []
+        _telemetry_cache.update(at=now, rows=rows, summary=gpu_telemetry.summary(rows))
+    return _telemetry_cache["rows"], _telemetry_cache["summary"]
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _headers():
@@ -183,18 +243,28 @@ def _get_api_key(provider_id: str) -> str:
     return os.environ.get(f"{provider_id.upper()}_API_KEY", "")
 
 # ── Registration ──────────────────────────────────────────────────────────────
+def _register_payload() -> dict:
+    """What Orchestra Core stores about this worker: identity, every usable GPU and what it can do."""
+    return {
+        "node_id": NODE_ID, "type": "gpu",
+        "provider_id": "ollama", "model": DEFAULT_MODEL,
+        "concurrency": CONCURRENCY, "timeout_sec": 300,
+        "priority": "high", "gpu_vram_gb": GPU_INFO.get("vram_gb", 0),
+        "label": WORKER_LABEL, "base_url": OLLAMA_URL,
+        "worker_url": WORKER_SELF_URL,   # self endpoint for GPU task dispatch
+        "vendor": GPU_INFO.get("vendor", "cpu"), "gpu_name": GPU_INFO.get("name", ""),
+        "backend": GPU_INFO.get("backend", "cpu"), "gpu_count": GPU_INFO.get("count", 0),
+        "driver": GPU_INFO.get("driver", ""), "capabilities": _capabilities(),
+        "usable": bool(GPU_INFO.get("available")), "wsl": bool(GPU_INFO.get("wsl")),
+        "access_note": GPU_INFO.get("access_note", ""), "worker_version": app.version,
+    }
+
+
 def register():
     global _worker_id, _registered
     while _running and not _registered:
         try:
-            r = _orch_post("/api/workers/register", {
-                "node_id": NODE_ID, "type": "gpu",
-                "provider_id": "ollama", "model": DEFAULT_MODEL,
-                "concurrency": CONCURRENCY, "timeout_sec": 300,
-                "priority": "high", "gpu_vram_gb": GPU_INFO.get("vram_gb", 0),
-                "label": WORKER_LABEL, "base_url": OLLAMA_URL,
-                "worker_url": WORKER_SELF_URL,   # self endpoint for GPU task dispatch
-            })
+            r = _orch_post("/api/workers/register", _register_payload())
             _worker_id = r.get("worker_id", "W-GPU-001"); _registered = True
             logger.info(f"GPU Worker registered: {_worker_id} | {GPU_INFO['name']} "
                         f"{GPU_INFO['vram_gb']}GB | caps={_capabilities()} | url={WORKER_SELF_URL}")
@@ -206,23 +276,49 @@ def deregister():
     try: _orch_delete(f"/api/workers/{_worker_id}")
     except Exception: pass
 
+def _heartbeat_payload() -> dict:
+    with _lock: active = _tasks_active
+    rows, summ = _telemetry()
+    return {
+        "load_pct": min(int((active/max(CONCURRENCY,1))*100), 100),   # task slots in use
+        "tasks_active": active,
+        # temp_c (the hottest GPU) drives thermal rerouting in Orchestra Core (console → Auto-Scale).
+        "temp_c": summ["temp_c"], "util_pct": summ["util_pct"],
+        "vram_used_gb": summ["vram_used_gb"], "vram_total_gb": summ["vram_total_gb"],
+        "power_w": summ["power_w"], "throttled": summ["throttled"], "gpu_count": summ["gpu_count"],
+        "gpus": [{k: r.get(k) for k in ("index", "vendor", "name", "util_pct", "temp_c", "vram_used_gb",
+                                         "vram_total_gb", "power_w", "fan_pct", "throttled", "throttle_reasons")}
+                 for r in rows][:16],
+    }
+
+
+def heartbeat_once():
+    """One heartbeat with live telemetry; registers again when Orchestra Core lost this worker."""
+    global _idle_since, _registered
+    if not _worker_id: return
+    body = _heartbeat_payload()
+    try:
+        r = _orch_post(f"/api/workers/{_worker_id}/heartbeat", body)
+        if r.get("ok") is False:
+            # Orchestra Core no longer knows this worker (removed, restored backup): register again.
+            logger.warning(f"Orchestra Core does not know {_worker_id} — registering again")
+            _registered = False; register()
+    except urllib.error.HTTPError as e:
+        if e.code in (404, 410):
+            _registered = False; register()
+        elif e.code == 401:
+            logger.warning("Heartbeat refused (401): ORCHESTRA_WORKER_TOKEN differs from Orchestra Core's")
+    except Exception: pass
+    if body["tasks_active"] == 0:
+        if _idle_since == 0: _idle_since = time.time()
+    else:
+        _idle_since = 0
+
+
 def heartbeat_loop():
-    global _idle_since
     while _running:
         time.sleep(HB_INTERVAL)
-        if not _worker_id: continue
-        with _lock: active = _tasks_active
-        try:
-            load = min(int((active/max(CONCURRENCY,1))*100), 100)
-            # temp_c drives thermal rerouting in Orchestra Core (console → Auto-Scale).
-            _orch_post(f"/api/workers/{_worker_id}/heartbeat",
-                       {"load_pct": load, "tasks_active": active,
-                        "temp_c": _gpu_thermal().get("temperature_c")})
-            if active == 0:
-                if _idle_since == 0: _idle_since = time.time()
-            else:
-                _idle_since = 0
-        except Exception: pass
+        heartbeat_once()
 
 def idle_shutdown_loop():
     if IDLE_SHUTDOWN_SEC <= 0: return
@@ -334,9 +430,9 @@ def _handle_image_generation(prompt: str, model: str = "dall-e-3",
         try:
             from diffusers import StableDiffusionXLPipeline
             import torch
-            device = "cuda" if GPU_INFO["backend"] == "cuda" else "cpu"
+            device = _torch_device() if _torch_device() in ("cuda", "xpu") else "cpu"
             pipe   = StableDiffusionXLPipeline.from_pretrained(
-                SD_MODEL, torch_dtype=torch.float16 if device=="cuda" else torch.float32
+                SD_MODEL, torch_dtype=torch.float16 if device != "cpu" else torch.float32
             ).to(device)
             pipe.enable_attention_slicing()
             imgs   = pipe(prompt, num_images_per_prompt=n, num_inference_steps=20).images
@@ -351,7 +447,7 @@ def _handle_image_generation(prompt: str, model: str = "dall-e-3",
                     "latency_ms": lat, "provider": "local_sdxl", "gpu_used": True}
         except Exception as e:
             return {"ok": False, "error": f"Local SD failed: {e}"}
-    return {"ok": False, "error": "No image generation backend available (need OPENAI_API_KEY or GPU+16GB VRAM)"}
+    return {"ok": False, "error": "No image generation backend available (need OPENAI_API_KEY or a GPU with 8 GB+ VRAM)"}
 
 
 def _handle_transcription(audio_b64: str, language: str = "auto",
@@ -383,7 +479,8 @@ def _handle_transcription(audio_b64: str, language: str = "auto",
         from faster_whisper import WhisperModel
         import tempfile, io
         audio_bytes = base64.b64decode(audio_b64)
-        device      = "cuda" if GPU_INFO["available"] and GPU_INFO["backend"]=="cuda" else "cpu"
+        # faster-whisper (CTranslate2) runs on NVIDIA CUDA or the CPU.
+        device      = "cuda" if GPU_INFO["available"] and GPU_INFO["backend"]=="cuda" and _torch_device()=="cuda" else "cpu"
         wm          = WhisperModel("base", device=device, compute_type="int8")
         with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
             tmp.write(audio_bytes); tmp_path = tmp.name
@@ -399,103 +496,30 @@ def _handle_transcription(audio_b64: str, language: str = "auto",
 
 # ── GPU Thermal & Health Monitoring ──────────────────────────────────────────
 def _gpu_thermal() -> dict:
-    """
-    Real-time GPU thermal & health data.
-    Returns temperature, utilization, memory usage, fan speed, power draw.
-    Works with: NVIDIA (nvidia-smi), AMD (rocm-smi), fallback to sysfs.
-    """
+    """Thermal and health view of this worker, from the per-GPU telemetry: the hottest
+    GPU decides the status; "gpus" lists every GPU. None means "not reported"."""
+    rows, summ = _telemetry()
+    temp = summ["temp_c"]
+    used_mb = None if summ["vram_used_gb"] is None else round(summ["vram_used_gb"] * 1024)
+    total_mb = None if summ["vram_total_gb"] is None else round(summ["vram_total_gb"] * 1024)
+    fans = [r["fan_pct"] for r in rows if r.get("fan_pct") is not None]
+    limits = [r["power_limit_w"] for r in rows if r.get("power_limit_w") is not None]
+    reasons = sorted({x for r in rows for x in r.get("throttle_reasons") or []})
     thermal = {
-        "temperature_c": None, "temperature_status": "unknown",
-        "utilization_pct": None, "memory_used_mb": None, "memory_total_mb": None,
-        "memory_pct": None, "fan_speed_pct": None, "power_draw_w": None,
-        "power_limit_w": None, "throttle_reason": None, "health": "unknown",
+        "temperature_c": temp, "temperature_status": "NO TELEMETRY", "utilization_pct": summ["util_pct"],
+        "memory_used_mb": used_mb, "memory_total_mb": total_mb,
+        "memory_pct": round(used_mb / total_mb * 100, 1) if used_mb is not None and total_mb else None,
+        "fan_speed_pct": max(fans) if fans else None, "power_draw_w": summ["power_w"],
+        "power_limit_w": round(sum(limits), 1) if limits else None,
+        "throttle_reason": ", ".join(reasons) or None, "health": "unknown", "gpus": rows,
     }
-    
-    # ── NVIDIA via nvidia-smi ──
-    try:
-        out = subprocess.check_output([
-            "nvidia-smi",
-            "--query-gpu=temperature.gpu,utilization.gpu,memory.used,memory.total,"
-            "fan.speed,power.draw,power.limit,clocks_throttle_reasons.active",
-            "--format=csv,noheader,nounits"
-        ], timeout=5, stderr=subprocess.DEVNULL).decode().strip()
-        parts = [x.strip() for x in out.split(",")]
-        if len(parts) >= 4:
-            temp = int(parts[0]) if parts[0].isdigit() else None
-            util = int(parts[1]) if parts[1].isdigit() else None
-            mem_used = int(parts[2]) if parts[2].isdigit() else None
-            mem_total = int(parts[3]) if parts[3].isdigit() else None
-            fan = int(parts[4]) if len(parts) > 4 and parts[4].isdigit() else None
-            power = float(parts[5]) if len(parts) > 5 and parts[5].replace('.','').isdigit() else None
-            power_limit = float(parts[6]) if len(parts) > 6 and parts[6].replace('.','').isdigit() else None
-            throttle = parts[7] if len(parts) > 7 else None
-            
-            thermal["temperature_c"] = temp
-            thermal["utilization_pct"] = util
-            thermal["memory_used_mb"] = mem_used
-            thermal["memory_total_mb"] = mem_total
-            thermal["memory_pct"] = round((mem_used / mem_total) * 100, 1) if mem_used and mem_total else None
-            thermal["fan_speed_pct"] = fan
-            thermal["power_draw_w"] = power
-            thermal["power_limit_w"] = power_limit
-            thermal["throttle_reason"] = throttle if throttle and throttle != "0x0000000000000000" else None
-            
-            # Health assessment
-            if temp is not None:
-                if temp >= 95:
-                    thermal["temperature_status"] = "CRITICAL"
-                    thermal["health"] = "critical"
-                elif temp >= 85:
-                    thermal["temperature_status"] = "HOT"
-                    thermal["health"] = "warning"
-                elif temp >= 75:
-                    thermal["temperature_status"] = "WARM"
-                    thermal["health"] = "ok"
-                else:
-                    thermal["temperature_status"] = "NORMAL"
-                    thermal["health"] = "excellent"
-            
-            if thermal["throttle_reason"]:
-                thermal["health"] = "throttled"
-                thermal["temperature_status"] = "THROTTLED — GPU sedang di-throttle karena thermal/power"
-            
-            return thermal
-    except Exception:
-        pass
-    
-    # ── AMD via rocm-smi ──
-    try:
-        out = subprocess.check_output(
-            ["rocm-smi", "--showtemp", "--showuse", "--showmemuse", "--showfan", "--json"],
-            timeout=5, stderr=subprocess.DEVNULL
-        ).decode()
-        data = json.loads(out)
-        for k, v in data.items():
-            if k.startswith("card"):
-                thermal["temperature_c"] = int(v.get("Temperature (Sensor edge) (C)", 0))
-                thermal["utilization_pct"] = int(v.get("GPU use (%)", 0))
-                thermal["fan_speed_pct"] = int(v.get("Fan Speed (%)", 0))
-                thermal["memory_pct"] = int(v.get("GPU memory use (%)", 0))
-                t = thermal["temperature_c"]
-                thermal["temperature_status"] = "CRITICAL" if t >= 95 else "HOT" if t >= 85 else "WARM" if t >= 75 else "NORMAL"
-                thermal["health"] = "critical" if t >= 95 else "warning" if t >= 85 else "ok"
-                break
-    except Exception:
-        pass
-    
-    # ── sysfs fallback (Linux) ──
-    try:
-        import glob
-        hwmon = glob.glob("/sys/class/drm/card*/device/hwmon/hwmon*/temp1_input")
-        if hwmon:
-            temp_mc = int(open(hwmon[0]).read().strip())
-            t = temp_mc // 1000
-            thermal["temperature_c"] = t
-            thermal["temperature_status"] = "CRITICAL" if t >= 95 else "HOT" if t >= 85 else "WARM" if t >= 75 else "NORMAL"
-            thermal["health"] = "critical" if t >= 95 else "warning" if t >= 85 else "ok"
-    except Exception:
-        pass
-    
+    if temp is not None:
+        thermal["temperature_status"], thermal["health"] = (
+            ("CRITICAL", "critical") if temp >= 95 else ("HOT", "warning") if temp >= 85 else
+            ("WARM", "ok") if temp >= 75 else ("NORMAL", "excellent"))
+    if reasons:
+        thermal["health"] = "throttled"
+        thermal["temperature_status"] = "THROTTLED — " + ", ".join(reasons)
     return thermal
 
 
@@ -505,7 +529,7 @@ async def health():
     with _lock: active = _tasks_active
     thermal = _gpu_thermal()
     return {
-        "status": "ok", "worker_id": _worker_id, "type": "gpu",
+        "status": "ok", "worker_id": _worker_id, "type": "gpu", "version": app.version,
         "gpu": {**GPU_INFO, "thermal": thermal},
         "concurrency": CONCURRENCY, "tasks_active": active, "tasks_total": _tasks_total,
         "tasks_errors": _tasks_errors, "avg_latency_ms": round(_avg_latency, 1),
@@ -591,7 +615,7 @@ class GPUJobReq(BaseModel):
     language:     str   = "auto"
 
 
-@app.post("/run")
+@app.post("/run", dependencies=[Depends(_require_core)])
 async def run_job(req: GPUJobReq):
     global _tasks_active, _tasks_total, _tasks_errors, _avg_latency, _idle_since
     if not _semaphore.acquire(blocking=False):
@@ -648,16 +672,19 @@ async def list_models():
     return {"models": models, "gpu": GPU_INFO, "capabilities": _capabilities()}
 
 
-@app.post("/shutdown")
+@app.post("/shutdown", dependencies=[Depends(_require_core)])
 async def shutdown_ep():
+    """Drain: stop taking jobs, leave Orchestra Core, then exit once running jobs finish."""
     global _running; _running = False; deregister()
+    threading.Timer(0.5, lambda: os.kill(os.getpid(), signal.SIGTERM)).start()
     return {"ok": True}
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def on_startup():
-    logger.info(f"GPU Worker starting — {GPU_INFO['name']} {GPU_INFO['vram_gb']}GB VRAM")
+    logger.info(f"GPU Worker starting — {GPU_INFO['name']} {GPU_INFO['vram_gb']}GB VRAM"
+                + (f" — not usable here: {GPU_INFO['access_note']}" if GPU_INFO.get("access_note") else ""))
     threading.Thread(target=register,           daemon=True, name="gpu-register").start()
     threading.Thread(target=heartbeat_loop,     daemon=True, name="gpu-heartbeat").start()
     threading.Thread(target=idle_shutdown_loop, daemon=True, name="gpu-idle").start()

@@ -30,7 +30,7 @@ log = logging.getLogger("orchestra.db")
 
 DATA_DIR       = Path(os.environ.get("DATA_DIR", "./data"))
 DB_PATH        = DATA_DIR / "orchestra.db"
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 SCHEMA = """
 PRAGMA journal_mode = WAL;
@@ -123,6 +123,23 @@ CREATE TABLE IF NOT EXISTS workers (
     circuit_open_at REAL   DEFAULT NULL,
     idle_since     REAL    DEFAULT NULL,
     temp_c         REAL    DEFAULT NULL,
+    vendor         TEXT    DEFAULT '',
+    gpu_name       TEXT    DEFAULT '',
+    backend        TEXT    DEFAULT '',
+    gpu_count      INTEGER DEFAULT 0,
+    driver         TEXT    DEFAULT '',
+    capabilities   TEXT    DEFAULT '[]',
+    usable         INTEGER DEFAULT 1,
+    access_note    TEXT    DEFAULT '',
+    wsl            INTEGER DEFAULT 0,
+    worker_version TEXT    DEFAULT '',
+    util_pct       REAL    DEFAULT NULL,
+    vram_used_gb   REAL    DEFAULT NULL,
+    vram_total_gb  REAL    DEFAULT NULL,
+    power_w        REAL    DEFAULT NULL,
+    throttled      INTEGER DEFAULT 0,
+    gpus_json      TEXT    DEFAULT '[]',
+    telemetry_at   REAL    DEFAULT NULL,
     last_heartbeat REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0)),
     registered_at  REAL    NOT NULL DEFAULT (((julianday('now') - 2440587.5) * 86400.0))
 );
@@ -323,6 +340,16 @@ def ex_many(sql: str, rows: List[tuple]) -> int:
 
 # ── Init ──────────────────────────────────────────────────────────────────────
 
+WORKER_GPU_COLUMNS = [
+    ("vendor", "TEXT DEFAULT ''"), ("gpu_name", "TEXT DEFAULT ''"), ("backend", "TEXT DEFAULT ''"),
+    ("gpu_count", "INTEGER DEFAULT 0"), ("driver", "TEXT DEFAULT ''"), ("capabilities", "TEXT DEFAULT '[]'"),
+    ("usable", "INTEGER DEFAULT 1"), ("access_note", "TEXT DEFAULT ''"), ("wsl", "INTEGER DEFAULT 0"),
+    ("worker_version", "TEXT DEFAULT ''"), ("util_pct", "REAL DEFAULT NULL"), ("vram_used_gb", "REAL DEFAULT NULL"),
+    ("vram_total_gb", "REAL DEFAULT NULL"), ("power_w", "REAL DEFAULT NULL"), ("throttled", "INTEGER DEFAULT 0"),
+    ("gpus_json", "TEXT DEFAULT '[]'"), ("telemetry_at", "REAL DEFAULT NULL"),
+]
+
+
 def init_db() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = _get_conn()
@@ -346,6 +373,14 @@ def init_db() -> None:
                     log.info("DB migration v5: added workers.temp_c")
                 except Exception:
                     pass
+            # v7: what the GPU worker really has and live per-GPU telemetry (REQUESTS 136, §31.F G1)
+            if current < 7:
+                for col, decl in WORKER_GPU_COLUMNS:
+                    try:
+                        c.execute(f"ALTER TABLE workers ADD COLUMN {col} {decl}")
+                    except Exception:
+                        pass  # fresh install: the column is already in SCHEMA
+                log.info("DB migration v7: GPU identity and telemetry columns on workers")
             c.execute("INSERT INTO _schema_version(version) VALUES(?)", (SCHEMA_VERSION,))
         log.info(f"Orchestra DB schema v{SCHEMA_VERSION} applied")
     with _write_tx() as c:
@@ -508,26 +543,60 @@ def cache_evict_expired() -> int:
 
 # ── Workers ───────────────────────────────────────────────────────────────────
 
+GPU_META_KEYS = ("vendor", "gpu_name", "backend", "gpu_count", "driver", "capabilities",
+                 "usable", "access_note", "wsl", "worker_version")
+
+
 def upsert_worker(w: Dict) -> None:
+    row = {"vendor": "", "gpu_name": "", "backend": "", "gpu_count": 0, "driver": "", "capabilities": "[]",
+           "usable": 1, "access_note": "", "wsl": 0, "worker_version": "", **w}
+    if not isinstance(row["capabilities"], str):
+        row["capabilities"] = json.dumps(list(row["capabilities"] or []))
+    row["usable"], row["wsl"] = 1 if row["usable"] else 0, 1 if row["wsl"] else 0
     ex("""INSERT INTO workers(id,node_id,worker_type,provider_id,model,concurrency,timeout_sec,
-       retry_count,priority,gpu_vram_gb,base_url,worker_url,label,status)
+       retry_count,priority,gpu_vram_gb,base_url,worker_url,label,status,
+       vendor,gpu_name,backend,gpu_count,driver,capabilities,usable,access_note,wsl,worker_version)
        VALUES(:id,:node_id,:worker_type,:provider_id,:model,:concurrency,:timeout_sec,
-       :retry_count,:priority,:gpu_vram_gb,:base_url,:worker_url,:label,:status)
+       :retry_count,:priority,:gpu_vram_gb,:base_url,:worker_url,:label,:status,
+       :vendor,:gpu_name,:backend,:gpu_count,:driver,:capabilities,:usable,:access_note,:wsl,:worker_version)
        ON CONFLICT(id) DO UPDATE SET status=excluded.status,provider_id=excluded.provider_id,
        model=excluded.model,base_url=excluded.base_url,worker_url=excluded.worker_url,
+       node_id=excluded.node_id,concurrency=excluded.concurrency,gpu_vram_gb=excluded.gpu_vram_gb,
+       label=excluded.label,vendor=excluded.vendor,gpu_name=excluded.gpu_name,backend=excluded.backend,
+       gpu_count=excluded.gpu_count,driver=excluded.driver,capabilities=excluded.capabilities,
+       usable=excluded.usable,access_note=excluded.access_note,wsl=excluded.wsl,
+       worker_version=excluded.worker_version,
        last_heartbeat=((julianday('now') - 2440587.5) * 86400.0)""",
-       w)
+       row)
 
 
 def heartbeat_worker(worker_id: str, load_pct: int, tasks_active: int,
-                     temp_c: Optional[float] = None, status: str = "active") -> bool:
+                     temp_c: Optional[float] = None, status: str = "active",
+                     telemetry: Optional[Dict] = None) -> bool:
+    """A heartbeat. With `telemetry` (GPU workers since v7) the live GPU view is replaced
+    as a whole, so a sensor that stops reporting shows as "no telemetry", not as old data."""
+    if telemetry is None:
+        return ex(
+            """UPDATE workers SET last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status=?,
+               load_pct=?,tasks_active=?,temp_c=COALESCE(?,temp_c),
+               idle_since=CASE WHEN ?> 0 THEN NULL
+                          ELSE COALESCE(idle_since,((julianday('now') - 2440587.5) * 86400.0)) END
+               WHERE id=?""",
+            (status, load_pct, tasks_active, temp_c, tasks_active, worker_id)) > 0
+    t = telemetry
     return ex(
         """UPDATE workers SET last_heartbeat=((julianday('now') - 2440587.5) * 86400.0),status=?,
-           load_pct=?,tasks_active=?,temp_c=COALESCE(?,temp_c),
+           load_pct=?,tasks_active=?,temp_c=?,util_pct=?,vram_used_gb=?,vram_total_gb=?,power_w=?,
+           throttled=?,gpus_json=?,
+           telemetry_at=CASE WHEN ? THEN ((julianday('now') - 2440587.5) * 86400.0) ELSE telemetry_at END,
            idle_since=CASE WHEN ?> 0 THEN NULL
                       ELSE COALESCE(idle_since,((julianday('now') - 2440587.5) * 86400.0)) END
            WHERE id=?""",
-        (status, load_pct, tasks_active, temp_c, tasks_active, worker_id)) > 0
+        (status, load_pct, tasks_active, temp_c, t.get("util_pct"), t.get("vram_used_gb"),
+         t.get("vram_total_gb"), t.get("power_w"), 1 if t.get("throttled") else 0,
+         json.dumps(t.get("gpus") or [])[:20000],
+         1 if (temp_c is not None or t.get("util_pct") is not None or t.get("vram_used_gb") is not None) else 0,
+         tasks_active, worker_id)) > 0
 
 
 def update_worker_stats(worker_id: str, latency_ms: float, success: bool) -> None:

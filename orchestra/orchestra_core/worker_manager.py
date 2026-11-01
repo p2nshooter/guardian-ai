@@ -18,7 +18,25 @@ logger = logging.getLogger("orchestra.workers")
 def register_worker(node_id, worker_type, provider_id, model,
                     concurrency=5, timeout_sec=60, retry_count=3,
                     priority="normal", gpu_vram_gb=None, label="", base_url="",
-                    worker_url="") -> dict:
+                    worker_url="", meta: Optional[dict] = None, reuse_by_url: bool = False) -> dict:
+    """Register a worker. With reuse_by_url (a worker registering itself), the same
+    worker_url keeps its row and id across restarts instead of leaving a ghost behind."""
+    meta = {k: v for k, v in (meta or {}).items() if k in db.GPU_META_KEYS and v is not None}
+    if reuse_by_url and worker_url:
+        same = db.q1("SELECT id FROM workers WHERE worker_url=? AND worker_type=? AND node_id=? "
+                     "ORDER BY last_heartbeat DESC", (worker_url, worker_type, node_id))
+        if same:
+            wid = same["id"]
+            db.upsert_worker({
+                "id": wid, "node_id": node_id, "worker_type": worker_type,
+                "provider_id": provider_id, "model": model, "concurrency": concurrency,
+                "timeout_sec": timeout_sec, "retry_count": retry_count, "priority": priority,
+                "gpu_vram_gb": gpu_vram_gb or 0, "base_url": base_url, "worker_url": worker_url,
+                "label": label or f"{model} on {node_id}", "status": "active", **meta,
+            })
+            logger.info(f"Worker re-registered: {wid} ({worker_type}, {worker_url})")
+            return {"ok": True, "worker_id": wid, "reused": True,
+                    "worker": db.q1("SELECT * FROM workers WHERE id=?", (wid,))}
     workers = db.get_active_workers()
     cpu_count = sum(1 for w in workers if w.get("worker_type")=="cpu")
     gpu_count = sum(1 for w in workers if w.get("worker_type")=="gpu")
@@ -32,7 +50,7 @@ def register_worker(node_id, worker_type, provider_id, model,
         "provider_id": provider_id, "model": model, "concurrency": concurrency,
         "timeout_sec": timeout_sec, "retry_count": retry_count, "priority": priority,
         "gpu_vram_gb": gpu_vram_gb or 0, "base_url": base_url, "worker_url": worker_url,
-        "label": label or f"{model} on {node_id}", "status": "active",
+        "label": label or f"{model} on {node_id}", "status": "active", **meta,
     })
     logger.info(f"Worker registered: {wid} ({worker_type}, {provider_id}/{model})")
     return {"ok": True, "worker_id": wid, "worker": db.q1("SELECT * FROM workers WHERE id=?", (wid,))}
