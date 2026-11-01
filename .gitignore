@@ -71,3 +71,6 @@ certs/*.key
 *.backup
 *.orig
 guardian-ai-final-*.zip
+
+# Orchestra release integrity manifest: written at image build only (REQUESTS 135)
+orchestra/orchestra_core/module_hashes.release.json
