@@ -129,9 +129,11 @@ export default function ClipperApp() {
   const previewRef = useRef<PreviewHandle>(null);
   const dirty = useRef(false);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (): Promise<Entry[]> => {
     const r = await api<{ items: Entry[] }>("/api/history/clipper");
-    if (r.ok) setItems(r.data.items.filter((i) => i.id !== BRAND_ID && i.meta?.kind !== "brand"));
+    if (!r.ok) return [];
+    setItems(r.data.items.filter((i) => i.id !== BRAND_ID && i.meta?.kind !== "brand"));
+    return r.data.items;
   }, []);
   const loadUsage = useCallback(async () => {
     const r = await api<UsageView>("/api/clipper/usage");
@@ -139,9 +141,11 @@ export default function ClipperApp() {
   }, []);
   useEffect(() => {
     if (!access) return;
-    reload();
+    // The brand kit is read only when the member has saved one (no request that can only answer 404).
+    reload().then((all) => {
+      if (all.some((i) => i.id === BRAND_ID)) api<{ item: { body: Partial<BrandKit> } }>(`/api/history/clipper/${BRAND_ID}`).then((r) => { if (r.ok && r.data.item?.body) setBrand({ ...DEFAULT_BRAND, ...r.data.item.body }); });
+    });
     loadUsage();
-    api<{ item: { body: Partial<BrandKit> } }>(`/api/history/clipper/${BRAND_ID}`).then((r) => { if (r.ok && r.data.item?.body) setBrand({ ...DEFAULT_BRAND, ...r.data.item.body }); });
     const oid = new URLSearchParams(window.location.search).get("open");
     if (oid) openProject(oid);
   }, [access]); // eslint-disable-line react-hooks/exhaustive-deps
