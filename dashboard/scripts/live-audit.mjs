@@ -87,27 +87,32 @@ const robots = await get("/robots.txt");
 report.robots = robots.status;
 if (robots.status !== 200) fail("/robots.txt", `HTTP ${robots.status}`);
 if (!/sitemap:\s*https?:\/\//i.test(robots.body)) fail("/robots.txt", "no Sitemap line");
-// Owner, 1 Nov 2026 (REQUESTS 133): nothing may shut out Google or search. Read group by group (consecutive
-// User-agent lines share their rules): a group with "Disallow: /" and no "Allow: /" closes the whole site to its agents.
+// Owner, 1 Nov 2026 (REQUESTS 133): nothing may shut out Google or search. Read the way Google reads it: every
+// group that names the same crawler is merged, and "Allow: /" beats "Disallow: /" on a tie (Google's robots.txt
+// specification). A crawler among "*", Google's and Bingbot whose merged rules still close "/" fails the audit.
 const SEARCH_AGENT = /^\*$|google|bingbot/i;
 function robotsBlocks(body) {
-  const out = [];
-  let agents = [], rules = [], inRules = false;
-  const flush = () => {
-    if (agents.length && rules.some((r) => r === "disallow:/") && !rules.some((r) => r === "allow:/"))
-      for (const a of agents) if (SEARCH_AGENT.test(a)) out.push(a);
-    agents = []; rules = []; inRules = false;
-  };
+  const merged = new Map(); // crawler (lower case) → { name, disallowAll, allowAll }
+  let agents = [], inRules = false;
   for (const raw of String(body).split(/\r?\n/)) {
     const line = raw.replace(/#.*/, "").trim();
     const m = line.match(/^([A-Za-z-]+)\s*:\s*(.*)$/);
     if (!m) continue;
     const key = m[1].toLowerCase(), val = m[2].trim();
-    if (key === "user-agent") { if (inRules) flush(); agents.push(val); }
-    else if (key === "allow" || key === "disallow") { inRules = true; rules.push(`${key}:${val.replace(/\*$/, "") || (key === "disallow" ? "" : "/")}`); }
+    if (key === "user-agent") {
+      if (inRules) { agents = []; inRules = false; }
+      agents.push(val);
+      if (!merged.has(val.toLowerCase())) merged.set(val.toLowerCase(), { name: val, disallowAll: false, allowAll: false });
+    } else if (key === "allow" || key === "disallow") {
+      inRules = true;
+      for (const a of agents) {
+        const g = merged.get(a.toLowerCase());
+        if (val === "/" && key === "disallow") g.disallowAll = true;
+        if (val === "/" && key === "allow") g.allowAll = true;
+      }
+    }
   }
-  flush();
-  return out;
+  return [...merged.values()].filter((g) => g.disallowAll && !g.allowAll && SEARCH_AGENT.test(g.name)).map((g) => g.name);
 }
 const blocked = robotsBlocks(robots.body);
 if (blocked.length) fail("/robots.txt", `blocks ${blocked.join(", ")} from the whole site`);
