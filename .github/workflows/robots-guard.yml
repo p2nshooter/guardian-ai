@@ -1,0 +1,82 @@
+# ==============================================================================
+# AXTO — nothing may shut Google out of axto.io (owner, 1 Nov 2026, REQUESTS 133:
+# "Matikan seluruh robot yg memblokir crawler google … anda harus berhasil").
+# Cloudflare's Bot Preference Sync (and the older managed robots.txt) writes
+# "Disallow: /" lines for Google-Extended, GoogleOther and Google-CloudVertexBot
+# in front of the site's robots.txt. For every zone this token reaches, switch off
+# only those two robots.txt settings — no security setting is changed — then read
+# robots.txt as Googlebot. Runs weekly so a dashboard change never brings it back.
+# Statuses only; never a token.
+# ==============================================================================
+name: Robots guard (never block Google)
+on:
+  push:
+    branches: [main, claude/ads-txt-domain-updates-uvhkwj]
+    paths: ['.github/workflows/robots-guard.yml']
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Switch off Cloudflare's robots.txt directives (Bot Preference Sync, managed robots.txt)
+        run: |
+          set -uo pipefail
+          api() { curl -s -m 30 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          B=https://api.cloudflare.com/client/v4
+          echo "### Robots guard" >> "$GITHUB_STEP_SUMMARY"
+          api "$B/zones?per_page=50" | jq -r '.result[]? | "\(.id) \(.name)"' > /tmp/zones
+          [ -s /tmp/zones ] || { echo "::warning::This token lists no zone"; exit 0; }
+          while read -r zone d; do
+            cur=$(api "$B/zones/$zone/bot_management")
+            if [ "$(jq -r .success <<<"$cur")" != true ]; then
+              echo "- $d: cannot read Bot Management $(jq -c '[.errors[]?.message]' <<<"$cur") — give the token Zone → Bot Management → Edit" | tee -a "$GITHUB_STEP_SUMMARY"; continue
+            fi
+            body=$(jq -c '(if .result.bot_preference_sync_enabled == true then {bot_preference_sync_enabled:false} else {} end) + (if .result.is_robots_txt_managed == true then {is_robots_txt_managed:false} else {} end)' <<<"$cur")
+            if [ "$body" = "{}" ]; then echo "- $d: already off" | tee -a "$GITHUB_STEP_SUMMARY"; continue; fi
+            r=$(api -X PUT "$B/zones/$zone/bot_management" -d "$body")
+            echo "- $d: $(jq -c 'if .success then (.result | {bot_preference_sync_enabled, is_robots_txt_managed}) else {errors: [.errors[]?.message]} end' <<<"$r")" | tee -a "$GITHUB_STEP_SUMMARY"
+          done < /tmp/zones
+      - name: What Googlebot reads now (groups merged per crawler, as Google does)
+        run: |
+          set +e
+          sleep 25
+          cat > /tmp/robots_blocks.py <<'PY'
+          import re, sys
+          merged, agents, in_rules = {}, [], False
+          for raw in sys.stdin.read().splitlines():
+              line = re.sub(r"#.*", "", raw).strip()
+              m = re.match(r"^([A-Za-z-]+)\s*:\s*(.*)$", line)
+              if not m:
+                  continue
+              key, val = m.group(1).lower(), m.group(2).strip()
+              if key == "user-agent":
+                  if in_rules:
+                      agents, in_rules = [], False
+                  agents.append(val)
+                  merged.setdefault(val.lower(), [val, False, False])
+              elif key in ("allow", "disallow"):
+                  in_rules = True
+                  for a in agents:
+                      g = merged[a.lower()]
+                      if val == "/" and key == "disallow":
+                          g[1] = True
+                      if val == "/" and key == "allow":
+                          g[2] = True
+          print(" ".join(g[0] for g in merged.values() if g[1] and not g[2] and re.search(r"^\*$|google|bingbot", g[0], re.I)))
+          PY
+          UA="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+          bad=0
+          while read -r zone d; do
+            body=$(curl -s -m 20 -A "$UA" "https://$d/robots.txt?nocache=$RANDOM" | tr -d '\r')
+            blocked=$(printf '%s\n' "$body" | python3 /tmp/robots_blocks.py)
+            section=$(printf '%s\n' "$body" | grep -c 'BEGIN Cloudflare Managed')
+            echo "- $d robots.txt: Cloudflare section=$section · shut out: [${blocked}]" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ -n "$blocked" ] && bad=1
+          done < /tmp/zones
+          [ "$bad" = 0 ] || echo "::warning::A Google crawler is still shut out of a site (see the summary)."
