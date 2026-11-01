@@ -12,8 +12,10 @@ import { testData } from "./helpers/data";
 import { newOrder } from "../lib/billing/order-doc";
 import type { Data } from "../lib/data";
 import {
-  PROGRAM_DEFAULTS, anyShown, isOpen, isShown, programFacts, publicPrograms, sanitizePrograms, savePrograms, tierFor, getPrograms,
+  PROGRAM_DEFAULTS, TERMS_REV, anyShown, isOpen, isShown, programFacts, publicPrograms, reviseStoredPrograms, sanitizePrograms, savePrograms, tierFor, getPrograms,
 } from "../lib/programs";
+import { PARTNERS } from "../lib/i18n-pages/partners";
+import { usd as usdFmt, whitelabelClients, whitelabelVars, resellerVars } from "../lib/partners-copy";
 import { applyPartner, setApplicationStatus } from "../lib/partners";
 import { FORBIDDEN_FACTS, publicKnowledge } from "../lib/support/ai";
 import {
@@ -29,7 +31,7 @@ const dec = async <T,>(_n: string, b: string) => JSON.parse(b) as T;
 test("programmes: defaults, sanitising, all shown by default, hidden ones vanish", () => {
   const p = sanitizePrograms({});
   assert.deepEqual(p.affiliate.commissionPct, 20);
-  assert.equal(p.whitelabel.entryUsd, 150_000);
+  assert.equal(p.whitelabel.entryUsd, 60_000, "REQUESTS 134");
   assert.equal(p.reseller.tiers[1]!.pct, 30);
   const bad = sanitizePrograms({ affiliate: { commissionPct: 90, holdDays: 2 }, reseller: { tiers: [{ fromUsd: 10, pct: 5 }], includedCreditUsd: 9_999_999, entryUsd: 1000 } });
   assert.equal(bad.affiliate.commissionPct, 20, "above the 50 % ceiling");
@@ -215,9 +217,13 @@ test("chat facts: only shown programmes, only public terms, no company secrets",
   assert.match(all, /Affiliate programme/);
   assert.match(all, /Reseller programme/);
   assert.match(all, /White-label programme/);
-  assert.match(all, /US\$150,000/);
+  assert.match(all, /US\$60,000/);
+  assert.match(all, /bank wire, escrow or crypto/, "the entry fee is never paid by a reversible method (§4.3 no. 4)");
+  assert.match(all, /valid 24 months/);
+  assert.match(all, /continue directly with AXTO/, "the continuity promise");
+  assert.ok(!/academy|tier 2|tier-2/i.test(all), "no promise of human staff (zero-touch)");
   const none = programFacts(sanitizePrograms({ whitelabel: { visible: false } }), "https://axto.io");
-  assert.ok(!/White-label programme|150,000|white-label/i.test(none.replace(/reseller's or white-label partner's/g, "")), "a hidden programme is not in the chat's facts");
+  assert.ok(!/White-label programme|60,000|white-label/i.test(none.replace(/reseller's or white-label partner's/g, "")), "a hidden programme is not in the chat's facts");
   assert.equal(programFacts(sanitizePrograms({ affiliate: { visible: false }, reseller: { visible: false }, whitelabel: { visible: false } }), "https://axto.io"), "");
   const { db } = testData();
   const k = await publicKnowledge(db);
@@ -246,4 +252,72 @@ test("applications: reseller and white label, once per member, closed when not a
   assert.ok(!("error" in st) && st.status === "invited");
   assert.ok("error" in (await setApplicationStatus(db, "whitelabel_u-app", "approved", "")));
   assert.equal((await db.partnerApps.list("program", "whitelabel")).entries[0]!.meta.status, "invited");
+});
+
+/* ---- the white-label re-check (REQUESTS 134, BUSINESS-MASTER-BLUEPRINT §4.3) ------------------------------- */
+
+test("white label, revised: lower entry, a guaranteed yearly commitment, credit that expires, demo licences, continuity", () => {
+  const w = PROGRAM_DEFAULTS.whitelabel;
+  assert.deepEqual(
+    { entry: w.entryUsd, credit: w.includedCreditUsd, annual: w.annualUsd, reduced: w.annualReducedUsd, reducedFrom: w.annualReducedFromUsd, min: w.minAnnualUsd },
+    { entry: 60_000, credit: 20_000, annual: 24_000, reduced: 12_000, reducedFrom: 250_000, min: 48_000 });
+  assert.deepEqual(w.tiers, [{ fromUsd: 0, pct: 50 }, { fromUsd: 150_000, pct: 55 }, { fromUsd: 500_000, pct: 60 }]);
+  assert.equal(w.maxCombinedDiscountPct, 65);
+  assert.equal(w.aiMarkup, 2.5, "Manage AI keeps a 60 % margin");
+  assert.deepEqual([w.creditMonths, w.demoLicences, w.demoDays, w.continuityDays], [24, 10, 30, 30]);
+  assert.equal(PROGRAM_DEFAULTS.reseller.creditMonths, 24);
+  // AXTO's guaranteed money per partner: the fee up front, then platform fee + minimum purchases every year.
+  assert.equal(w.annualUsd + w.minAnnualUsd, 72_000);
+  // The partner breaks even on the first year's net brand cost with 50 Business clients at the first tier.
+  assert.equal(whitelabelClients(w, 1990), 50);
+  const v = whitelabelVars(publicPrograms(sanitizePrograms({})).whitelabel!, usdFmt, 1990);
+  assert.equal(v.gain, "$49,750");
+  assert.ok(Number(v.gain.replace(/[$,]/g, "")) > w.entryUsd - w.includedCreditUsd, "the example really covers the net cost");
+  assert.equal(v.clients, "50");
+  // Values out of range fall back.
+  const bad = sanitizePrograms({ whitelabel: { creditMonths: 2, demoLicences: 500, demoDays: 1, continuityDays: 999 } }).whitelabel;
+  assert.deepEqual([bad.creditMonths, bad.demoLicences, bad.demoDays, bad.continuityDays], [24, 10, 30, 30]);
+});
+
+test("white label, revised: stored settings move once to the new numbers; the admin's later numbers stay", async () => {
+  const old = { whitelabel: { visible: false, accepting: true, entryUsd: 150_000, includedCreditUsd: 50_000, annualUsd: 48_000, minAnnualUsd: 60_000,
+    tiers: [{ fromUsd: 0, pct: 50 }, { fromUsd: 250_000, pct: 55 }, { fromUsd: 1_000_000, pct: 60 }], maxCombinedDiscountPct: 60 }, affiliate: { commissionPct: 25 } };
+  const moved = sanitizePrograms(reviseStoredPrograms(old));
+  assert.equal(moved.whitelabel.entryUsd, 60_000);
+  assert.equal(moved.whitelabel.minAnnualUsd, 48_000);
+  assert.equal(moved.whitelabel.tiers[1]!.fromUsd, 150_000);
+  assert.equal(moved.whitelabel.visible, false, "the switches are kept");
+  assert.equal(moved.whitelabel.maxCombinedDiscountPct, 60, "numbers outside the revision are kept");
+  assert.equal(moved.affiliate.commissionPct, 25, "other programmes are untouched");
+  const own = { ...old, termsRev: TERMS_REV };
+  assert.equal(reviseStoredPrograms(own), own);
+  const { db } = testData();
+  await db.config.set("programs", JSON.stringify(old));
+  assert.equal((await getPrograms(db)).whitelabel.entryUsd, 60_000);
+  await savePrograms(db, { ...(await getPrograms(db)), whitelabel: { ...(await getPrograms(db)).whitelabel, entryUsd: 75_000 } });
+  assert.equal(JSON.parse((await db.config.get("programs"))!).termsRev, TERMS_REV);
+  assert.equal((await getPrograms(db)).whitelabel.entryUsd, 75_000, "the admin's own number stays");
+});
+
+test("partner pages, every language: same shape as English, the new terms filled, no PayPal entry fee, no human-staff promise", () => {
+  const en = PARTNERS.en;
+  const wv = whitelabelVars(publicPrograms(sanitizePrograms({})).whitelabel!, usdFmt, 1990);
+  const rv = resellerVars(publicPrograms(sanitizePrograms({})).reseller!, usdFmt, 49);
+  const fill = (s: string, v: Record<string, string>) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? v[k]! : m));
+  for (const [lang, t] of Object.entries(PARTNERS)) {
+    assert.equal(t.reseller.terms.length, en.reseller.terms.length, `${lang}: reseller terms`);
+    assert.equal(t.whitelabel.terms.length, en.whitelabel.terms.length, `${lang}: white-label terms`);
+    assert.equal(t.whitelabel.included.length, en.whitelabel.included.length, `${lang}: included`);
+    assert.equal(t.whitelabel.faq.length, en.whitelabel.faq.length, `${lang}: white-label FAQ`);
+    const wl = JSON.stringify([t.whitelabel.terms, t.whitelabel.included, t.whitelabel.example, t.whitelabel.steps, t.whitelabel.faq]);
+    for (const k of ["{creditMonths}", "{demo}", "{demoDays}", "{continuity}", "{clients}"]) assert.ok(wl.includes(k), `${lang}: white label uses ${k}`);
+    assert.ok(JSON.stringify(t.reseller.terms).includes("{creditMonths}"), `${lang}: reseller credit validity`);
+    // Every placeholder in the white-label and reseller copy has a value.
+    const left = (fill(wl, wv) + fill(JSON.stringify([t.reseller.terms, t.reseller.steps, t.reseller.faq, t.reseller.example]), rv)).match(/\{\w+\}/g);
+    assert.equal(left, null, `${lang}: unfilled ${left}`);
+    const pay = JSON.stringify([t.reseller.steps, t.whitelabel.steps]);
+    assert.ok(!pay.includes("PayPal"), `${lang}: entry fees are wire, escrow or crypto only`);
+    assert.ok(!/academy|Akademi|akademi|Akademie|académie|accademia|学院|アカデミー|अकादमी|أكاديمية/.test(JSON.stringify(t)), `${lang}: no academy promise (zero-touch)`);
+    assert.ok(!/350/.test(t.whitelabel.example), `${lang}: the old 350-client example is gone`);
+  }
 });

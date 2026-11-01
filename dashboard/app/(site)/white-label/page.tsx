@@ -18,7 +18,7 @@ import { PARTNERS_EN, fillCopy, usd, whitelabelVars } from "@/lib/partners-copy"
 async function load() {
   const db = getData();
   const [p, prices] = await Promise.all([getPrograms(db).catch(() => null), getPlanPrices(db).catch(() => null)]);
-  return { w: p ? publicPrograms(p).whitelabel : null, pro: prices?.pro.monthly ?? PLANS.pro.monthly };
+  return { w: p ? publicPrograms(p).whitelabel : null, business: prices?.business.yearly ?? PLANS.business.yearly };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -33,13 +33,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function WhiteLabelPage() {
-  const { w, pro } = await load();
+  const { w, business } = await load();
   if (!w) notFound();
-  const v = whitelabelVars(w, usd, pro);
+  const v = whitelabelVars(w, usd, business);
   return (
     <>
       <JsonLd data={partnerJsonLd({ name: "AXTO white-label programme", description: PARTNERS_EN.whitelabel.lead, path: "/white-label", faq: PARTNERS_EN.whitelabel.faq.map(([q, x]) => [q!, fillCopy(x!, v)]), offer: { name: "White-label entry (first year)", priceUsd: w.entryUsd } })} />
-      <WhiteLabelOffer terms={w} proMonthlyUsd={pro} />
+      <WhiteLabelOffer terms={w} businessYearlyUsd={business} />
     </>
   );
 }

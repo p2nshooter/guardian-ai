@@ -39,14 +39,19 @@ Setiap simpan tercatat di **Audit log** (`programs.update`), lengkap dengan apa 
   - biaya masuk US$5.000, termasuk kredit US$2.500;
   - tingkat diskon 25/30/35% mulai pembelian 12 bulan US$0 / 25.000 / 100.000;
   - biaya tahunan US$1.200, dihapus mulai pembelian US$25.000;
-  - harga iklan minimal harga daftar − 10%.
-- **White label**:
-  - biaya masuk US$150.000, termasuk kredit US$50.000;
-  - tingkat diskon 50/55/60% mulai US$0 / 250.000 / 1.000.000;
-  - biaya platform US$48.000 (US$24.000 mulai pembelian US$500.000);
-  - pembelian minimum US$60.000 setahun;
+  - harga iklan minimal harga daftar − 10%;
+  - kredit berlaku 24 bulan sejak dibeli.
+- **White label** (direvisi 1 Nov 2026, REQUESTS 134, alasan di `docs/BUSINESS-MASTER-BLUEPRINT.md` §4.3):
+  - biaya masuk US$60.000, termasuk kredit US$20.000 (wire, escrow atau kripto — bukan kartu atau PayPal);
+  - tingkat diskon 50/55/60% mulai US$0 / 150.000 / 500.000;
+  - biaya platform US$24.000 setahun mulai tahun kedua (US$12.000 mulai pembelian US$250.000);
+  - pembelian minimum US$48.000 setahun mulai tahun kedua (kekurangan ditagih sebagai kredit);
+  - kredit berlaku 24 bulan; 10 lisensi demo masing-masing 30 hari;
+  - klien mitra ditawari melanjutkan langsung dengan AXTO bila mitra pergi atau ditangguhkan lebih dari 30 hari;
   - diskon gabungan maksimal 65%;
   - pengali grosir AI Manage 2,5× (internal, tidak pernah tampil).
+  - Pengaturan yang tersimpan sebelum revisi ini dipindah sekali ke angka di atas; angka yang Anda simpan sesudahnya
+    dipakai apa adanya.
 
 Angka yang tidak sah (di luar batas, tingkat yang turun, kredit melebihi biaya) tidak disimpan; nilai lama tetap berlaku.
 "Reset numbers to defaults" mengembalikan semua angka tanpa menyentuh saklar.
