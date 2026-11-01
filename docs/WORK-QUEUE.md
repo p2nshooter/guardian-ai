@@ -1,0 +1,52 @@
+# AXTO — Antrean kerja tunggal (mulai dari sini)
+
+> Pemilik, 1 Nov 2026: "Kerjakan satu persatu, jgn di tinggal yg sedang d kerjakan, d catat d blue print dengan logika
+> yg sempurna … agar sy tidak selalu mengulang2. Rapikan blueprintnya agar tidak tercecer." dan "Kerjakan secara
+> bertahap, jgn lompat2… Masukan saja sebagai urutan2 pekerjaan atau kerjakan saat sesi menunggu."
+
+Ini **satu-satunya daftar urutan kerja** untuk semua repo pemilik (axto.io = guardian-ai, xaa.es = xaa, ulyah.com dan
+situs saudaranya = ulyah.com, serta repo artikel). Setiap baris menunjuk ke **satu** dokumen rencana. Perintah baru
+pemilik: dicatat dulu di `docs/REQUESTS.md`, rencananya ditulis di dokumen yang ditunjuk, lalu barisnya dimasukkan di
+sini pada urutan yang benar.
+
+## Aturan antrean
+
+1. **AdSense selalu didahulukan** (kode AdSense, ads.txt, cuplikan, meta tag) sampai tayang dan audit **OK** — aturan
+   tetap di `CLAUDE.md` repo ulyah.com.
+2. **Satu pekerjaan sampai selesai**: kode → tes → PR → CI hijau → merge → terverifikasi tayang. Pekerjaan yang
+   sedang berjalan tidak ditinggal; perintah baru dicatat dan masuk antrean.
+3. **Saat menunggu CI/deploy** dikerjakan butir kecil dari bagian "Saat menunggu" (tidak boleh membuka pekerjaan besar).
+4. **Penyimpanan selalu R2, tidak pernah D1**; tidak ada rahasia di repo, log, atau prompt.
+5. Setiap fase punya kriteria "selesai bila" di dokumen rencananya; tanda ✅ hanya setelah kode, tes dan tayang.
+
+## Sedang dikerjakan
+
+| # | Pekerjaan | Rencana | Status |
+|---|---|---|---|
+| 1 | **Worker GPU sama di Windows & Linux, semua merek, scaling dan indikator pintar** (REQUESTS 136) | `BLUEPRINT-V4.md` §31.F | G1 ✅ (PR #103) · **G2 berjalan** (satu keputusan GPU di installer: `installer/gpuplan.go`, uji GPU di dalam image: `orchestra_worker/probe.py`) · G3 · G4 · G5 |
+
+## Saat menunggu CI (butir kecil, dikerjakan di sela-sela)
+
+| # | Pekerjaan | Rencana |
+|---|---|---|
+| W1 | **Semua penawaran di semua situs ke hello@axto.io + WhatsApp +62 856-9123-4561** (REQUESTS 139): formulir dan teks penawaran ulyah.com, 1fr.fr, tilawa.de, dawa.im, xad.es (repo ulyah.com: bawaan `SALE_DEFAULTS.email`, nilai lama `salam@ulyah.com` di R2 dipindah sekali, notifikasi penawaran ke hello@axto.io), xaa.es (teks "tulis ke hello@xaa.es" pada penjualan/investor → hello@axto.io), axto.io (sudah hello@axto.io; tombol WhatsApp di semua halaman penawaran). | `PROMOTION-BLUEPRINT.md` §9 |
+| W2 | Cabang xaa `claude/ads-txt-domain-updates-uvhkwj` dimulai ulang dari main sebelum kerja xaa berikutnya. | — |
+
+## Berikutnya (urut, satu per satu)
+
+| # | Pekerjaan | Rencana | Catatan urutan |
+|---|---|---|---|
+| 2 | **Clipper kelas dunia**: web + Windows + Linux, semua layanan cloud GPU & AI, AXTO Central GPU & AI, BYOK, simpan video di axto.io dengan biaya dan harga yang menguntungkan (REQUESTS 137) | `apps/CLIPPER-BLUEPRINT.md` | pemilik: "jadikan pekerjaan selanjutnya" setelah GPU |
+| 3 | P3 dompet kredit + Otoritas Lisensi v4 + API mitra · P4 portal reseller · P5 portal white label (perintah 1 Nov, REQUESTS 132–134) | `BUSINESS-MASTER-BLUEPRINT.md` §4–§7 | syarat agar promosi reseller/white label menunjuk ke portal yang benar-benar jalan |
+| 4 | **Mesin promosi otomatis** ke setiap member: perjalanan mingguan bahasa Inggris dari tahap awal, uji coba Smart License, lelang lisensi, tangga afiliasi → reseller → white label, portal member + email saat pendaftaran, 100–200 promosi A–Z, riwayat pengiriman di Admin, promosi usang dipisah dan dimatikan (REQUESTS 138) | `PROMOTION-BLUEPRINT.md` | fase PR1–PR4; posting reseller/white label menyala otomatis saat P4/P5 tayang |
+| 5 | **Setiap aplikasi lain sampai puncaknya, satu per satu**, dengan metode yang sama seperti Clipper | `apps/PEAK-METHOD.md` (urutan aplikasi §4) | blueprint aplikasi ditulis dulu, baru dibangun |
+| 6 | xaa.es: penawaran mulai US$500k, investor tersembunyi, portal P9 | repo xaa `docs/BLUEPRINT.md` | perintah 1 Nov |
+| 7 | Artikel sampai 60 per situs (22 situs, blog axto.io, axto.us, profity.in) | `BLUEPRINT-V4.md` §20 B, repo ulyah.com `docs/ADSENSE-BLUEPRINT.md` | perintah 31 Okt |
+| 8 | Nama AXTO Digital Global + hapus placeholder `your-org` di produk self-hosted, installer, workflow (jangan sentuh `certs/`) | `BLUEPRINT-V4.md` §19 baris 4 | memicu build ulang image |
+| 9 | Panduan bergambar + video untuk 9 aplikasi self-hosted lain | `BLUEPRINT-V4.md` §19 baris 12/18 | memakai perekam panduan; bahan promosi (baris 4) |
+| 10 | ulyah.com: semua data ke R2 (sisa modul D1), audit terjemahan 5 situs, pelafalan Arab untuk anak | repo ulyah.com `docs/R2-DATA-BLUEPRINT.md` §5 | |
+
+## Selesai baru-baru ini
+
+- 1 Nov: robots.txt tidak menutup Google di semua situs (ulyah #395, guardian-ai #101, axto.us #34) · Orchestra tidak
+  berhenti setelah update (guardian-ai #102, REQUESTS 135) · Worker GPU G1 (guardian-ai #103, REQUESTS 136).

@@ -15,6 +15,7 @@ REQUESTS 131). Read it before any work. In one breath:
 - **Build phase by phase (P0–P10), one at a time.**
 
 These rules come from the owner and apply to **every** new feature or change, whatever it is.
+**The order of work is `docs/WORK-QUEUE.md`** (one queue for every repository; per-app plans in `docs/apps/`, promotions in `docs/PROMOTION-BLUEPRINT.md`): finish the running item before the next, record new commands there.
 **Before any work:** write the owner's command into the blueprint first (`docs/REQUESTS.md` + the plan in `docs/BLUEPRINT-V4.md` / `docs/AXTO-APPS-BLUEPRINT.md`), then build it. Never assume or invent — read the command and the blueprint. Keep the progress table in `docs/BLUEPRINT-V4.md` §19 current.
 The running log of the owner's requests is in [`docs/REQUESTS.md`](docs/REQUESTS.md) — add each new request there.
 
