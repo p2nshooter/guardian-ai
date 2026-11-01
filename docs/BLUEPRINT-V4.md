@@ -480,12 +480,12 @@ bukan dari perkiraan.
 | 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
 | 16 | Rekening ulyah.com/donasi + konversi + panduan bayar manual (27 Okt 2026, `REQUESTS.md` 104, §28) | 13 rekening BNI + 5 dompet (impor terenkripsi) · QR per dompet · konversi kurs harian ke mata uang rekening · panduan langkah + pelacak status, 10 bahasa · uji unit + E2E + browser | 0/5 | **0 %** |
 | 17 | Orchestra AI 6 GB bisa diunduh + paket offline Windows (28 Okt 2026, `REQUESTS.md` 110, §30) | GPU di AXTO Setup ✅ · mode offline ✅ · unduhan bisa dilanjutkan ✅ · portal member ✅ · admin releases ✅ · paket offline CI ✅ (tayang setelah merge) · uji ✅ | 7/7 | **100 %** |
-| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/11 | **73 %** |
+| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, 135, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · update tidak lagi mematikan Orchestra pelanggan (manifest integritas rilis) ✅ (§31.E) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 9/12 | **75 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
 | 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt–1 Nov 2026, `REQUESTS.md` 120, 124, 125, 132, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan ✅ · lelang xaa.es tayang (xaa #33) ✅ · **penawaran mulai US$500.000, datar, tanpa "US$10 juta"** di axto.io · sama di xaa.es | 4/6 | **67 %** |
 | 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | ✅ P0 blueprint induk · ✅ P1 program & saklar · ✅ P2 afiliasi · ✅ tinjauan ulang white label (REQUESTS 134, master §4.3: biaya masuk US$60 ribu + komitmen tahunan ≥ US$72 ribu, kredit 24 bulan, demo, klausul kelanjutan, tanpa staf; peta sinkronisasi §13) · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 3/11 | **27 %** |
-| | **Total** (bobot = jumlah fase) | | **81/146** | **≈ 55 %** |
+| | **Total** (bobot = jumlah fase) | | **82/147** | **≈ 56 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1111,6 +1111,29 @@ Pemilik, 28 Okt 2026: "ada notif saran gpu mana yg tersedia". `orchestra_core/gp
   atau upgrade), GPU menganggur, belum ada GPU.
 - **Konsol**: panel "GPU suggestions" di GPU Pool; notifikasi baru yang penting muncul sekali di mana pun pengguna berada
   (yang paling serius, dengan jumlah lainnya). Tes `tests/test_gpu_advisor.py` (5) dan uji browser desktop/ponsel.
+
+### 31.E Update tidak boleh mematikan Orchestra pelanggan (REQUESTS 135)
+
+**Bug yang ditemukan:** pemeriksaan integritas modul (`orchestra_core/security_hardening.py`) memakai cara
+"percaya pada pemakaian pertama": hash enam modul yang dijaga (`enforcement`, `credential_vault`, `job_router`,
+`worker_manager`, `routing_engine`, `ai_providers`) disimpan di `DATA_DIR/module_hashes.json`, yaitu di volume data
+pelanggan yang tetap ada setelah update. Begitu image baru mengubah salah satu modul itu (misalnya client API, §31.C),
+hash tidak cocok lagi, dianggap "tampering", lalu `main.py` berhenti dengan `SystemExit(1)`. Setiap instalasi lama akan
+gagal menyala setelah update, tanpa ada yang bisa memperbaikinya dari jauh (zero-touch).
+
+**Perbaikan:**
+- Saat image dibangun, `orchestra/Dockerfile` menulis `module_hashes.release.json` di samping modul
+  (`security_hardening.write_release_manifest()`): hash modul persis seperti yang dikirim rilis itu. Setiap rilis
+  membawa manifesnya sendiri, jadi update resmi tidak pernah dianggap perusakan.
+- Saat start, modul dibandingkan dengan manifes itu. Modul yang diubah, dihapus, atau ditambahkan di dalam container
+  tetap tertangkap dan Orchestra tetap berhenti (kritis). Manifes yang rusak juga dianggap gagal (fail closed).
+- File lama `module_hashes.json` di volume data tidak dibaca dan tidak ditulis lagi, tetapi juga tidak dihapus
+  (data pelanggan tidak disentuh). Izinnya tetap dijaga 0600.
+- Dijalankan dari source tanpa manifes (pengembangan, tes): dilaporkan sebagai `mode: development`, tidak berhenti.
+- **Tes:** `tests/test_hardening.py` (7): tanpa manifes, manifes cocok, modul diubah, modul dihapus/ditambah, manifes
+  rusak, skenario update dengan `module_hashes.json` lama di volume, dan `run_all()` tanpa kegagalan kritis setelah
+  update. Diuji juga dengan container nyata: image lama berhenti dengan file hash lama, image baru menyala dengan
+  volume yang sama, modul yang diubah di dalam container baru tetap menghentikannya.
 
 ## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
 
