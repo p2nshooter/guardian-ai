@@ -20,5 +20,5 @@ export function usePartnersShown() {
 export default function PartnersLink() {
   const on = usePartnersShown();
   if (!on) return null;
-  return <li><Link href="/partners" prefetch={false} className="text-sm text-slate-400 no-underline hover:text-white" data-testid="footer-partners"><T k="foot.partners" /></Link></li>;
+  return <li><Link href="/partners" prefetch={false} className="text-sm text-slate-400 no-underline hyphens-auto [overflow-wrap:anywhere] hover:text-white" data-testid="footer-partners"><T k="foot.partners" /></Link></li>;
 }
