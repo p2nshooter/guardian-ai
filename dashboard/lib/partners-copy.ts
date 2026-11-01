@@ -115,7 +115,7 @@ export const PARTNERS_EN: PartnersCopy = {
     ],
     faq: [
       ["Can I join more than one programme?", "Yes. Many partners start as affiliates and later become resellers or white-label partners. Each programme has its own terms."],
-      ["Do I need technical staff?", "Affiliates don't. Resellers and white-label partners should be able to install and support the products for their clients; AXTO trains and certifies your team."],
+      ["Do I need technical staff?", "Affiliates don't. Resellers and white-label partners should be able to install and support the products for their clients; self-paced training and an automatic certification prepare your team."],
       ["In which currency are the terms?", "All programme amounts are in US dollars."],
     ],
   },
@@ -172,14 +172,16 @@ export const PARTNERS_EN: PartnersCopy = {
       ["Net cost of joining", "{net}"],
       ["Annual fee", "{annual} from the second year — waived from {waived} of purchases in 12 months"],
       ["Advertised prices", "At least list price minus {map}%"],
+      ["Credit validity", "{creditMonths} months from purchase, oldest credit used first"],
+      ["Payment", "Bank wire, escrow or crypto"],
     ],
     includesTitle: "What you get",
     includes: [
       "Every AXTO product at a wholesale price: cloud plans, self-hosted editions and lifetime licences",
       "A partner portal to issue, renew and revoke your clients' licences",
       "A discount that rises with your purchases, by the published tiers",
-      "Sales material, product training and a partner badge",
-      "Partner support for you and your team",
+      "Sales material, self-paced product training and a partner badge",
+      "Partner support for you and your team: a partner assistant, the knowledge base and the status page",
     ],
     yoursTitle: "Your clients, your responsibility",
     yours: [
@@ -195,14 +197,14 @@ export const PARTNERS_EN: PartnersCopy = {
     steps: [
       ["Apply", "Tell us about your company and your market below."],
       ["Accept the agreement", "Accept the reseller agreement electronically when your invitation arrives."],
-      ["Pay the entry fee", "By bank wire, escrow, crypto or PayPal; {credit} of it becomes your credit at once."],
+      ["Pay the entry fee", "By bank wire, escrow or crypto; {credit} of it becomes your credit at once."],
       ["Start selling", "Your partner portal opens: buy licences from your credit and issue them to your clients."],
     ],
     faq: [
       ["Can I set my own prices?", "Yes, you sell at any price you choose. Prices you advertise publicly stay at least list price minus {map}%, which keeps the market healthy for every partner."],
       ["How does my discount rise?", "It follows your purchases over the last 12 months, by the tiers on this page — no negotiation needed."],
       ["What does the annual fee cover?", "Your partner portal, the programme and partner support from the second year: {annual} a year, waived once your purchases over 12 months reach {waived}."],
-      ["Can credit be paid out?", "Credit is prepaid value for buying AXTO licences; it is not exchanged for cash."],
+      ["Can credit be paid out?", "Credit is prepaid value for buying AXTO licences, valid for {creditMonths} months from purchase; it is not exchanged for cash."],
       ["Who supports my clients?", "You do: setup, support, renewals and complaints are yours. AXTO supports you, the partner."],
     ],
   },
@@ -216,6 +218,8 @@ export const PARTNERS_EN: PartnersCopy = {
       ["Platform fee", "{annual} a year from the second year ({reduced} from {reducedFrom} of purchases)"],
       ["Minimum purchases", "{minAnnual} a year from the second year — any shortfall is issued to you as credit"],
       ["Combined discounts", "Never above {cap}% of list price"],
+      ["Credit validity", "{creditMonths} months from purchase, oldest credit used first"],
+      ["Payment", "Bank wire, escrow or crypto"],
     ],
     brandTitle: "Everything under your brand",
     brand: [
@@ -232,19 +236,20 @@ export const PARTNERS_EN: PartnersCopy = {
       "A dedicated, isolated instance",
       "Manage: AI provided for your clients, from your prepaid AI wallet",
       "The partner portal, the partner API and licence issuing",
-      "An onboarding academy and certification for your team",
+      "{demo} demo licences of {demoDays} days to show your clients",
+      "Self-paced onboarding guides and an automatic certification for your team",
     ],
     manageTitle: "Manage — only for white-label partners",
     manageBody: "On axto.io every member brings their own AI keys. Your clients don't have to: with Manage you offer AI that simply works, drawn from your prepaid AI wallet, at the price you set. Manage is available only inside white label.",
     ownTitle: "You own your clients completely",
     own: ["Setup and onboarding", "Support and complaints", "Renewals and upgrades", "Revocations and bans", "Your prices, your contracts, your invoices"],
     exampleTitle: "A worked example",
-    example: "At a {pct}% discount, selling at list price doubles your money. 350 clients on Pro ({list} a month) for one year bring you about {gain} of gross profit — more than the net cost of the brand licence in the first year ({net}) — before your own setup, support and AI services.",
+    example: "At a {pct}% discount, selling at list price doubles your money. {clients} clients on Business ({list} a year each) bring you about {gain} of gross profit in a year — more than the net cost of the brand licence in the first year ({net}) — before your own setup, support and AI services.",
     exampleNote: "An illustration at the first tier and the current list price. Your prices and volumes are your own.",
     stepsTitle: "How to launch",
     steps: [
       ["Apply", "Tell us about your company, your market and your second language."],
-      ["Sign and pay", "Accept the white-label agreement electronically and pay the entry fee by bank wire, escrow, crypto or PayPal."],
+      ["Sign and pay", "Accept the white-label agreement electronically and pay the entry fee by bank wire, escrow or crypto."],
       ["Brand it", "Upload your logo and choose your colours, your domain and your second language in the brand studio."],
       ["Go live", "Point your domain to your instance; its certificate is issued and your platform opens to your clients."],
     ],
@@ -253,7 +258,9 @@ export const PARTNERS_EN: PartnersCopy = {
       ["Which languages can my platform use?", "English plus one more language of your choice — for example Arabic and English, or German and English."],
       ["What happens from the second year?", "A platform fee of {annual} a year ({reduced} from {reducedFrom} of purchases) and minimum purchases of {minAnnual} a year. Any shortfall is issued to you as credit, so you keep its full value."],
       ["How is Manage priced?", "You buy AI usage for your prepaid AI wallet at wholesale and set your own price to your clients. When the wallet is empty, AI requests pause — there is never a debt."],
-      ["Who supports my clients?", "You do, completely. AXTO supports your team: onboarding, certification and partner support."],
+      ["Who supports my clients?", "You do, completely. AXTO supports your team automatically: a partner assistant, the knowledge base, diagnostics for your instance and the status page."],
+      ["Does credit expire?", "Wholesale credit is valid for {creditMonths} months from purchase and the oldest is used first; your portal reminds you 30 days before any of it expires."],
+      ["What if I stop?", "Your clients are never stranded: if you leave the programme, or your account stays suspended for more than {continuity} days, each client is offered to continue directly with AXTO, with their data."],
       ["Can I issue licences myself?", "Yes. Your clients' licences are issued from your credit in the partner portal or through the partner API. Every licence is signed, bound to your client's machines and can be revoked by you."],
     ],
   },
@@ -325,18 +332,28 @@ export function resellerVars(r: NonNullable<PublicPrograms["reseller"]>, money: 
   const gain = r2((40 * proMonthlyUsd * first.pct) / 100);
   return {
     max: String(maxTier(r.tiers)), entry: money(r.entryUsd), credit: money(r.includedCreditUsd), net: money(r.entryUsd - r.includedCreditUsd),
-    annual: money(r.annualUsd), waived: money(r.annualWaivedFromUsd), map: String(r.mapPct),
+    annual: money(r.annualUsd), waived: money(r.annualWaivedFromUsd), map: String(r.mapPct), creditMonths: String(r.creditMonths),
     list: money(proMonthlyUsd), pct: String(first.pct), cost: money(r2(40 * proMonthlyUsd - gain)), gain: money(gain), year: money(r2(gain * 12)),
   };
 }
 
-/** The white-label example: 350 Pro clients for a year at list price, bought at the first tier. */
-export function whitelabelVars(w: NonNullable<PublicPrograms["whitelabel"]>, money: Money, proMonthlyUsd: number): Record<string, string> {
+/** The clients on Business (yearly, list price, first tier) whose margin first covers the net cost of the brand licence, in tens. */
+export function whitelabelClients(w: Pick<NonNullable<PublicPrograms["whitelabel"]>, "entryUsd" | "includedCreditUsd" | "tiers">, businessYearlyUsd: number): number {
+  const perClient = (businessYearlyUsd * w.tiers[0]!.pct) / 100;
+  const net = w.entryUsd - w.includedCreditUsd;
+  return Math.max(10, Math.ceil((net + 1) / Math.max(perClient, 1) / 10) * 10);
+}
+
+/** The white-label example: enough Business clients for a year, at list price, bought at the first tier, to cover the brand licence. */
+export function whitelabelVars(w: NonNullable<PublicPrograms["whitelabel"]>, money: Money, businessYearlyUsd: number): Record<string, string> {
   const first = w.tiers[0]!;
+  const clients = whitelabelClients(w, businessYearlyUsd);
   return {
     max: String(maxTier(w.tiers)), entry: money(w.entryUsd), credit: money(w.includedCreditUsd), net: money(w.entryUsd - w.includedCreditUsd),
     annual: money(w.annualUsd), reduced: money(w.annualReducedUsd), reducedFrom: money(w.annualReducedFromUsd), minAnnual: money(w.minAnnualUsd),
-    cap: String(w.maxCombinedDiscountPct), list: money(proMonthlyUsd), pct: String(first.pct), gain: money(r2((350 * proMonthlyUsd * 12 * first.pct) / 100)),
+    cap: String(w.maxCombinedDiscountPct), list: money(businessYearlyUsd), pct: String(first.pct), clients: String(clients),
+    gain: money(r2((clients * businessYearlyUsd * first.pct) / 100)),
+    creditMonths: String(w.creditMonths), demo: String(w.demoLicences), demoDays: String(w.demoDays), continuity: String(w.continuityDays),
   };
 }
 

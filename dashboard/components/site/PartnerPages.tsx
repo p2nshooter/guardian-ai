@@ -260,9 +260,9 @@ export function ResellerOffer({ terms, proMonthlyUsd }: { terms: Res; proMonthly
   );
 }
 
-export function WhiteLabelOffer({ terms, proMonthlyUsd }: { terms: WL; proMonthlyUsd: number }) {
+export function WhiteLabelOffer({ terms, businessYearlyUsd }: { terms: WL; businessYearlyUsd: number }) {
   const { t, money } = usePartnersCopy();
-  const v = whitelabelVars(terms, money, proMonthlyUsd);
+  const v = whitelabelVars(terms, money, businessYearlyUsd);
   return (
     <div data-testid="whitelabel-page">
       <Hero eyebrow={t.whitelabel.eyebrow} title={t.whitelabel.title} lead={t.whitelabel.lead} icon="👑">
@@ -297,7 +297,7 @@ export function WhiteLabelOffer({ terms, proMonthlyUsd }: { terms: WL; proMonthl
           </Reveal>
         </div>
       </section>
-      <Steps title={t.whitelabel.stepsTitle} steps={t.whitelabel.steps} />
+      <Steps title={t.whitelabel.stepsTitle} steps={t.whitelabel.steps.map(([h, d]) => [h!, fill(d!, v)])} />
       {terms.open ? <ApplyForm program="whitelabel" /> : null}
       <FaqBlock title={t.common.faqTitle} items={t.whitelabel.faq.map(([q, a]) => [q!, fill(a!, v)])} />
     </div>

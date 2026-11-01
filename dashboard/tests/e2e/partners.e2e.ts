@@ -88,7 +88,9 @@ test("programmes: all shown — hub, pages, sitemap, llms.txt, public API and th
   assert.equal(api.json.any, true);
   assert.ok(api.json.programs.affiliate && api.json.programs.reseller && api.json.programs.whitelabel);
   assert.equal(api.json.programs.affiliate.commissionPct, 20);
-  assert.equal(api.json.programs.whitelabel.entryUsd, 150_000);
+  assert.equal(api.json.programs.whitelabel.entryUsd, 60_000, "REQUESTS 134");
+  assert.equal(api.json.programs.whitelabel.creditMonths, 24);
+  assert.equal(api.json.programs.whitelabel.demoLicences, 10);
   assert.ok(!("aiMarkup" in api.json.programs.whitelabel) && !("reviewAboveUsd" in api.json.programs.affiliate), "internal numbers never reach the public");
   const hub = await anon.get("/partners");
   assert.equal(hub.status, 200);
@@ -101,9 +103,14 @@ test("programmes: all shown — hub, pages, sitemap, llms.txt, public API and th
     assert.match(p.text, new RegExp(`<link rel="canonical" href="[^"]*${path}"`), `${path} canonical`);
   }
   const wl = await anon.get("/white-label");
-  assert.ok(wl.text.includes("$150,000"), "the white-label entry fee from Admin");
-  const gain = (350 * api.json.proMonthlyUsd * 12 * 50) / 100;
-  assert.ok(wl.text.includes(`$${gain.toLocaleString("en-US")}`), "the worked example: 350 Pro clients × list price × 12 × 50%");
+  assert.ok(wl.text.includes("$60,000"), "the white-label entry fee from Admin");
+  // The worked example: enough Business clients (yearly, list price, 50 %) to cover the net cost of the brand licence.
+  const per = (api.json.businessYearlyUsd * 50) / 100;
+  const clients = Math.max(10, Math.ceil((60_000 - 20_000 + 1) / per / 10) * 10);
+  assert.ok(wl.text.includes(`$${(clients * per).toLocaleString("en-US")}`), "the worked example's gross profit");
+  assert.ok(clients * per > 40_000, "and it really covers the net cost");
+  assert.ok(!/PayPal/.test(wl.text.match(/Sign and pay[\s\S]{0,400}/)?.[0] || ""), "the entry fee is wire, escrow or crypto");
+  assert.ok(wl.text.includes("continue directly with AXTO"), "the continuity promise is on the page");
   const sm = await anon.get("/sitemap.xml");
   for (const p of ["/partners", "/affiliate", "/resellers", "/white-label"]) assert.ok(sm.text.includes(`${p}</loc>`), `sitemap lists ${p}`);
   const llms = await anon.get("/llms.txt");

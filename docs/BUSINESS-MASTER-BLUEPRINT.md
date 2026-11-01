@@ -37,8 +37,9 @@ bahasa memperkecil beban dukungan. Pemilik bisa mengubahnya.
    AXTO tidak memberi utang, tidak menagih di belakang, dan tidak bergantung pada laporan penjualan mitra. Bagi hasil
    persentase ditiadakan karena butuh audit dan kepercayaan; harga grosir prabayar tidak.
 3. **TANGGUNG JAWAB DI TANGAN MITRA.** Pengusaha white label dan reseller memegang penuh klien mereka: setup, dukungan,
-   komplain, perpanjangan, cabut, blokir, refund dan kepatuhan di wilayahnya. AXTO hanya melayani mitra (dukungan tingkat
-   2), tidak pernah klien mitra secara langsung.
+   komplain, perpanjangan, cabut, blokir, refund dan kepatuhan di wilayahnya. AXTO melayani mitra **secara otomatis**
+   (asisten AI mitra, basis pengetahuan, diagnostik instans, halaman status — tanpa janji layanan manusia) dan tidak
+   pernah melayani klien mitra secara langsung, kecuali lewat klausul kelanjutan (§4.3 no. 7) saat mitra berhenti.
 4. **LISENSI KETAT.** Setiap lisensi terbit hanya lewat Otoritas Lisensi AXTO (§6): ditandatangani kunci akar AXTO,
    dihitung dari dompet kredit secara atomik, terikat mesin, dan bisa dicabut seketika. Tidak ada pihak luar yang bisa
    mencetak lisensi sendiri.
@@ -113,30 +114,37 @@ bahasa memperkecil beban dukungan. Pemilik bisa mengubahnya.
 - **Biaya tahunan US$1.200** mulai tahun kedua, dihapus bila pembelian 12 bulan terakhir mencapai US$25.000.
 - Harga jual bebas, tetapi harga yang diiklankan minimal harga daftar − 10% (MAP), supaya kanal langsung tidak rusak.
 
-**D. White Label** (merek sendiri 100%):
-- **Biaya masuk US$150.000** (tahun pertama), sudah termasuk:
-  - **kredit grosir US$50.000** yang langsung bisa dijual;
+**D. White Label** (merek sendiri 100%) — **angka direvisi 1 Nov 2026 (REQUESTS 134, alasan di §4.3)**:
+- **Biaya masuk US$60.000** (tahun pertama), dibayar lewat wire, escrow atau kripto (tidak bisa ditarik kembali),
+  sudah termasuk:
+  - **kredit grosir US$20.000** yang langsung bisa dijual (senilai US$40.000 harga daftar pada diskon 50%);
   - lisensi merek setahun: nama, logo, warna, domain, e-mail, dua bahasa;
-  - instans khusus terisolasi;
+  - instans khusus terisolasi yang dijalankan AXTO (mitra tidak pernah menerima kode sumber);
   - hak **MANAGE** (AI disediakan AXTO, §5);
   - portal mitra, API mitra dan akun di Otoritas Lisensi;
-  - akademi onboarding dan sertifikasi tim mitra.
+  - 10 lisensi demo (30 hari, bertanda "demo", tidak memotong kredit);
+  - panduan onboarding dan sertifikasi otomatis (kuis) untuk tim mitra.
 - **Diskon grosir** naik otomatis menurut pembelian 12 bulan terakhir:
-  - 50% (di bawah US$250.000);
-  - 55% (US$250.000 ke atas);
-  - 60% (US$1.000.000 ke atas).
-- **Biaya platform tahunan US$48.000** mulai tahun kedua (hosting instans, pembaruan, infrastruktur Manage). Turun ke
-  US$24.000 bila pembelian 12 bulan terakhir mencapai US$500.000.
-- **Pembelian minimum tahunan US$60.000** mulai tahun kedua. Kekurangannya ditagihkan **sebagai kredit**: mitra tetap
-  menerima nilainya, AXTO tetap menerima uangnya.
+  - 50% (di bawah US$150.000);
+  - 55% (US$150.000 ke atas);
+  - 60% (US$500.000 ke atas).
+- **Biaya platform tahunan US$24.000** mulai tahun kedua, ditagih di muka (hosting instans, pembaruan, infrastruktur
+  Manage). Turun ke US$12.000 bila pembelian 12 bulan terakhir mencapai US$250.000.
+- **Pembelian minimum tahunan US$48.000** mulai tahun kedua. Kekurangannya ditagihkan **sebagai kredit**: mitra tetap
+  menerima nilainya (US$96.000 harga daftar), AXTO tetap menerima uangnya.
+- Kredit grosir berlaku 24 bulan sejak dibeli (dipakai yang tertua lebih dulu), kredit AI 12 bulan; pengingat H-30.
 - Diskon gabungan (paket + tingkat mitra) dibatasi maksimal 65% dari harga daftar.
 
-**Mengapa ini tepat.**
-- **Bagi AXTO:** US$100.000 bersih dari biaya masuk, ditambah US$48.000 per tahun, ditambah 40–50% dari harga jual
-  setiap lisensi tanpa biaya produksi, ditambah margin AI Manage. Semuanya diterima di muka.
-- **Bagi mitra:** dengan diskon 50%, menjual di harga daftar berarti markup 100%. Contoh: paket Pro US$49/bulan; 350
-  klien Pro selama setahun menghasilkan margin kotor ≈ US$102.900, sudah menutup biaya merek bersih tahun pertama.
-  Ditambah jasa setup, dukungan dan AI Manage yang harganya ditentukan mitra sendiri.
+**Mengapa ini tepat (hitungan dengan harga daftar sekarang: Business US$1.990/tahun, Pro US$490/tahun).**
+- **Bagi AXTO:** US$60.000 di muka pada tahun pertama, lalu **minimal US$72.000 per tahun yang dijamin kontrak**
+  (US$24.000 + US$48.000), ditambah pembelian di atas minimum dan margin AI Manage ≥ 60%. Biaya langsung per mitra hampir
+  nol: instans di Cloudflare, tanpa staf. Lima mitra = US$300.000 tahun pertama dan ≥ US$360.000 setiap tahun berikutnya.
+- **Bagi mitra:** dengan diskon 50%, menjual di harga daftar berarti markup 100%. Biaya merek bersih tahun pertama
+  US$40.000 tertutup oleh ±40 klien Business setahun (margin US$995 per klien). Contoh 60 klien Business:
+  - tahun 1: membayar US$60.000 + kredit tambahan US$39.700 = US$99.700, menagih klien US$119.400 → **+US$19.700**;
+  - tahun 2: biaya platform US$24.000 + grosir US$59.700 = US$83.700, menagih US$119.400 → **+US$35.700**;
+  - ditambah jasa setup, dukungan dan AI Manage yang harganya ditentukan mitra sendiri.
+- Pembelian minimum bukan biaya hangus: setiap dolarnya kembali sebagai lisensi senilai dua kali lipat di harga daftar.
 
 ### 4.2 xaa.es (EUR) — sistem yang sama, disesuaikan dengan katalog studio
 
@@ -150,11 +158,60 @@ bahasa memperkecil beban dukungan. Pemilik bisa mengubahnya.
 - diskon 20/25/30% untuk templat dan script;
 - diskon 10% untuk paket studio.
 
-**White Label** (platform agensi: portal klien, katalog, lelang, merek sendiri):
-- biaya masuk €75.000, termasuk kredit €25.000;
-- diskon grosir templat dan script 40/45/50%, paket studio 25%;
-- biaya tahunan €24.000 mulai tahun kedua;
-- pembelian minimum €30.000 per tahun.
+**White Label** (platform agensi: portal klien, katalog, lelang, merek sendiri) — **direvisi 1 Nov 2026 (§4.3)**:
+- biaya masuk €30.000, termasuk kredit €10.000 (wire, escrow atau kripto);
+- diskon grosir templat dan script 40/45/50%;
+- paket studio (jasa yang dikerjakan orang) **tidak** termasuk white label secara bawaan, karena xaa.es berjalan tanpa
+  pengendali; Admin bisa menyalakannya (diskon 25%) bila kapasitas pengerjaan ada;
+- biaya tahunan €12.000 mulai tahun kedua;
+- pembelian minimum €24.000 per tahun (kekurangan ditagih sebagai kredit);
+- aturan uang, kredit, merek, demo, kelanjutan dan pajak sama dengan §4.3.
+
+### 4.3 Pemeriksaan ulang white label (1 Nov 2026, REQUESTS 134)
+
+Pemilik: "cek ulang kerja sama white label, apakah kerja sama itu benar, bikin yg saling menguntungkan, dan sangat
+menguntungkan axto.io… axto.io tanpa pengendali". Skema 29 Okt diperiksa terhadap tujuh hukum §1. Temuan dan perbaikannya:
+
+1. **Harga tidak sinkron dengan harga perusahaan.** Biaya masuk US$150.000 sama dengan 30% penawaran pembuka seluruh AXTO
+   (US$500.000, REQUESTS 132): tiga kontrak white label ≈ harga perusahaannya. Calon mitra yang rasional akan menawar
+   perusahaannya. → Biaya masuk turun ke US$60.000; uang AXTO dipindah ke komitmen tahunan yang dijamin (§4.1 D).
+2. **Titik impas mitra terlalu jauh.** Biaya bersih US$100.000 butuh ±101 klien Business setahun penuh (atau ±408 klien
+   Pro tahunan) sebelum mitra untung. → Biaya bersih US$40.000, impas di ±40 klien Business.
+3. **Dukungan tingkat 2 dan akademi mengandaikan staf.** Bertentangan dengan hukum 1. → Dukungan mitra otomatis (asisten
+   AI mitra yang hanya membaca dokumen mitra, status instans dan diagnostik), basis pengetahuan, halaman status;
+   sertifikasi lewat panduan dan kuis otomatis. Tidak ada janji SLA manusia di halaman maupun perjanjian.
+4. **Uang bisa ditarik kembali.** Kartu dan PayPal bisa di-chargeback setelah lisensi terbit; itu melanggar hukum 2.
+   → Biaya masuk reseller dan white label hanya lewat wire, escrow atau kripto. Isi ulang kredit lewat PayPal atau kartu
+   masuk sebagai **kredit tertahan 14 hari** sebelum bisa dipakai. Chargeback membekukan dompet, menangguhkan lisensi yang
+   terbit dari kredit itu, dan menariknya dari saldo.
+5. **Kewajiban kredit tanpa batas.** Kredit yang tidak pernah kedaluwarsa menumpuk sebagai utang layanan AXTO. → Kredit
+   grosir berlaku 24 bulan (yang tertua dipakai lebih dulu), kredit AI 12 bulan, pengingat H-30. Kredit tidak bisa
+   diuangkan.
+6. **"Merek sendiri 100%" belum benar di semua aplikasi.** Aplikasi self-hosted, e-mail, faktur/PDF dan chat AI masih
+   bermerek AXTO. → Lisensi OL v4 membawa **klaim merek bertanda tangan** (nama, logo, warna, domain dan e-mail dukungan);
+   setiap engine, e-mail, faktur, PDF dan chat di instans mitra membaca klaim itu, dan tes kontrak memastikan kata "AXTO"
+   tidak muncul di layar klien white label. Sampai sebuah aplikasi membacanya, halaman publik menyebut jujur aplikasi mana
+   yang sudah tampil dengan merek mitra.
+7. **Mitra berhenti atau gagal.** Klien mitra terputus, merugikan klien dan nama AXTO. → **Klausul kelanjutan**: bila
+   mitra berhenti atau ditangguhkan lebih dari 30 hari (setelah tenggang 14 hari §6.6), setiap klien mendapat tawaran
+   otomatis melanjutkan langsung dengan AXTO di harga daftar, datanya tetap. Klien yang beralih menjadi pelanggan langsung
+   AXTO; tidak ada operator.
+8. **Mitra butuh alat jual.** → 10 lisensi demo per mitra (30 hari, bertanda "demo", tidak diperpanjang, tidak memotong
+   kredit), terbit dan kedaluwarsa otomatis.
+9. **Pajak dan data.** Mitra adalah penjual kepada kliennya: pajak penjualan dan faktur ke klien urusan mitra. AXTO
+   menerbitkan faktur ke mitra otomatis. DPA disetujui bersama perjanjian: mitra pengendali data kliennya, AXTO pemroses.
+10. **Refund biaya masuk.** Penuh dalam 14 hari selama studio merek belum diisi (dikurangi biaya pembayaran); setelah
+    instans dibuat tidak bisa dikembalikan. Kredit yang belum dipakai tidak diuangkan.
+11. **Perubahan harga daftar.** AXTO boleh mengubahnya dengan pemberitahuan 30 hari di portal; kredit dihitung dalam
+    dolar, bukan dalam lisensi, dan lisensi yang berjalan tetap sampai perpanjangannya.
+
+Yang **tetap** karena sudah benar: kredit prabayar tanpa bagi hasil, Otoritas Lisensi tunggal, diskon bertingkat otomatis,
+batas diskon gabungan 65%, AI Manage dengan harga biaya × 2,5 dan dompet yang tidak pernah negatif, kaskade penangguhan,
+dua bahasa (REQUESTS 130), saklar tampil/sembunyi. Reseller (§4.1 C) dan afiliasi tidak berubah; biaya masuk reseller
+juga hanya lewat wire, escrow atau kripto (no. 4).
+
+Pengaturan yang tersimpan di R2 sebelum revisi ini dipindah sekali ke angka baru (revisi syarat), seperti harga situs
+(REQUESTS 132); angka yang disimpan admin sesudahnya dipakai apa adanya.
 
 ---
 
@@ -228,7 +285,7 @@ dengan nonce anti-replay, dan gerbang lisensi di setiap engine. OL v4 menambahka
 ### 7.2 Reseller dan White Label
 1. Mengajukan.
 2. Menyetujui perjanjian secara elektronik: nama lengkap, waktu, hash IP, versi perjanjian.
-3. Membayar biaya masuk lewat checkout yang ada: wire BNI, escrow, kripto, atau PayPal dalam batasnya.
+3. Membayar biaya masuk lewat checkout yang ada: wire BNI, escrow atau kripto (bukan kartu atau PayPal, §4.3 no. 4).
 4. Pembayaran terverifikasi → akun mitra aktif, dompet terisi kredit yang termasuk, portal terbuka. Tidak ada langkah
    manual.
 5. Khusus white label:
@@ -355,9 +412,9 @@ dokumentasi, tayang) sebelum fase berikutnya dimulai. Kemajuan dicatat di `docs/
 | **P0** | Dokumen ini; REQUESTS 131; pembatalan §36; penunjuk "baca dulu" di CLAUDE.md kedua repo | digabung |
 | **P1** | Admin → Programs (saklar tampil/terima/bekukan, semua angka §4); halaman publik `/partners` (hub), `/affiliate`, `/resellers`, `/white-label` dalam 10 bahasa; paket pengetahuan chat AI + aturan rahasia | E2E saklar sembunyi → 404 dan hilang dari chat/sitemap |
 | **P2** | Afiliasi lengkap: tautan, atribusi, buku besar komisi, tahan 30 hari, tarik balik, pembayaran §7.4, portal afiliasi, admin | E2E daftar → beli → komisi → bayar |
-| **P3** | Dompet kredit + OL v4 (§6) + API mitra; engine menerima kunci prefiks penerbit dan `kid` | uji ketat: balapan, saldo, anomali, cabut |
+| **P3** | Dompet kredit (kredit tertahan, masa berlaku 24 bulan, §4.3) + OL v4 (§6, dengan klaim merek bertanda tangan) + API mitra; engine menerima kunci prefiks penerbit dan `kid` | uji ketat: balapan, saldo, kedaluwarsa, chargeback, anomali, cabut |
 | **P4** | Portal reseller: daftar, perjanjian, bayar → aktif, beli kredit, terbitkan atau kelola lisensi klien, pelanggan, tingkat otomatis | E2E penuh |
-| **P5** | White label: studio merek, instans khusus (rekonsiliator), domain, dua bahasa, portal mitra, siklus tahunan | instans contoh tayang di CI |
+| **P5** | White label: studio merek, instans khusus (rekonsiliator), domain, dua bahasa, portal mitra, lisensi demo, siklus tahunan, klausul kelanjutan (§4.3) | instans contoh tayang di CI; tes kontrak "tanpa kata AXTO" di layar klien |
 | **P6** | MANAGE khusus white label (§5) | E2E dompet AI dan meter |
 | **P7** | Konsol anggota Admin terpadu (§8) | E2E tindakan admin + audit |
 | **P8** | Paket dan koneksi (§10) | E2E paket → lisensi paket |
@@ -396,3 +453,23 @@ dikelola di Admin → Programs). Tidak ada pembayaran sebelum portalnya ada. Pan
   - log audit untuk setiap tindakan yang berarti.
 - **Kualitas:** portal anggota dalam 10 bahasa, desain "Crystal Palace", gerak hormat `prefers-reduced-motion`, SEO di
   setiap halaman publik, dan tes di setiap perubahan (CLAUDE.md §1–§5).
+
+---
+
+## 13. PETA SINKRONISASI ANTARAPLIKASI (REQUESTS 134)
+
+Pemilik: "jgn ada miss koneksi, miss understanding, tidak singkron antar app". Aturannya: **setiap angka dan setiap saklar
+punya satu sumber**, semua halaman, API, e-mail, chat AI, `llms.txt`, sitemap dan JSON-LD membacanya dari sumber itu, dan
+sebuah tes kontrak gagal bila ada yang menyalin angka atau melewati sumbernya.
+
+| Sumber tunggal | Dibaca oleh | Tes kontrak |
+|---|---|---|
+| Harga paket `lib/plans.ts` (Admin → Plans) | /pricing, matriks paket, checkout, harga grosir mitra, chat AI, `llms.txt`, JSON-LD | harga yang tampil = sumber, di 10 bahasa |
+| Program `lib/programs.ts` (Admin → Programs) | /partners, /affiliate, /resellers, /white-label, tautan header dan footer, sitemap, chat AI, portal mitra, checkout biaya masuk, OL | sembunyi → 404, hilang dari header, footer, sitemap dan chat; angka halaman = sumber |
+| Penjualan situs `lib/acquisition.ts` + `lib/sale-auction-terms.ts` (Admin → Site sale) | /acquire, banner beranda, JSON-LD, pesan API, admin, chat AI | tawaran pembuka dan langkah = sumber; tidak ada harga lama di halaman |
+| Buku besar dompet (R2, append-only) | OL v4, portal mitra, admin, rekonsiliasi harian | jumlah buku besar = saldo; tidak pernah negatif |
+| Lisensi OL v4 (Ed25519, `kid`, klaim edisi dan merek) | 10 engine self-hosted, AXTO Setup, instans white label, portal | satu lisensi uji divalidasi oleh setiap engine; merek mitra tampil, kata "AXTO" tidak |
+| Pembayaran terverifikasi (webhook atau tanda terima admin) | aktivasi paket/lisensi/kredit/mitra, komisi afiliasi, e-mail, log audit | satu pesanan lunas → semua efek sekali (idempoten) |
+| Teks publik 10 bahasa (`lib/i18n-pages/*`) | semua halaman publik dan portal | `tests/i18n-pages.test.ts`: setiap kunci di setiap bahasa |
+| robots, sitemap, kanonik (`app/robots.ts`, `app/sitemap.ts`) | Google, Bing, audit live | audit live gagal bila `*`, Google atau Bing ditutup dari seluruh situs (REQUESTS 133) |
+| xaa.es | model program, aturan uang dan OL yang sama, di repo xaa | tes yang sama di repo xaa; angka xaa di §4.2 |

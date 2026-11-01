@@ -34,12 +34,17 @@ const FIELDS: { [P in ProgramId]: [NumKey<Programs[P]>, string, string?][] } = {
     ["entryUsd", "Entry fee (USD)"], ["includedCreditUsd", "Credit included in the entry fee (USD)", "never above the fee"],
     ["annualUsd", "Annual fee from year two (USD)"], ["annualWaivedFromUsd", "Annual fee waived from 12-month purchases of (USD)"],
     ["mapPct", "Minimum advertised price: list minus (%)", "0–50"],
+    ["creditMonths", "Credit valid for (months from purchase)", "6–60"],
   ],
   whitelabel: [
     ["entryUsd", "Entry fee, first year (USD)"], ["includedCreditUsd", "Wholesale credit included (USD)", "never above the fee"],
     ["annualUsd", "Platform fee from year two (USD)"], ["annualReducedUsd", "Reduced platform fee (USD)"], ["annualReducedFromUsd", "…from 12-month purchases of (USD)"],
     ["minAnnualUsd", "Minimum purchases a year from year two (USD)", "a shortfall is issued as credit"],
     ["maxCombinedDiscountPct", "Combined discounts never above (%)", "0–90"],
+    ["creditMonths", "Credit valid for (months from purchase)", "6–60"],
+    ["demoLicences", "Demo licences per partner", "0–100"],
+    ["demoDays", "…each valid for (days)", "7–90"],
+    ["continuityDays", "Clients offered to continue with AXTO after the partner is gone or suspended for (days)", "7–180"],
     ["aiMarkup", "Manage AI wholesale = supplier cost ×", "internal — never shown"],
   ],
 };
