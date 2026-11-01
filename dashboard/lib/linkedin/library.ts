@@ -187,7 +187,7 @@ Orchestra AI shows the temperature and load of every GPU, scales workers automat
     { eyebrow: "Licence auction", title: "Every package, <em>every two weeks</em>", sub: "Bidding opens below the normal price.", bullets: ["Real bids from signed-in members", "A last-minute bid extends the clock", "The winner pays through the normal checkout"] },
     `The axto.io licence auction.
 
-Every two weeks, the packages go up for auction — editions and lifetime licences. Bidding opens below the normal price, a bid in the last minutes extends the clock, and the winner pays through the normal checkout. The licence is issued the moment the payment is confirmed.`,
+Every two weeks, the editions go up for auction (and a lifetime licence when our team puts one up). Bidding opens below the normal price, a bid in the last minutes extends the clock, and the winner pays through the normal checkout. The licence is issued the moment the payment is confirmed.`,
     ["Auction", "SoftwareDeals", "SaaS", "Licensing", "Cybersecurity"]),
   P("axto", "23-lifetime", "/pricing",
     { eyebrow: "Lifetime licences", title: "Pay once. <em>Run it for life.</em>", bullets: ["1 to 100 devices", "Ed25519-signed offline activation", "Per app or for the whole suite"] },

@@ -63,6 +63,8 @@ sendiri, jadi wajar lebih murah dari layanan yang menanggung biaya AI.
 - **Lifetime: tetap sangat mahal, tidak diturunkan.** Pemilik, 1 Nov 2026 (REQUESTS 142): "Harga lifetime pastikan sangat
   mahal jika aplikasi betul2 bisa d gunakan dan berfungsi 100%".
   - Harga tetap: US$24.900 per aplikasi untuk 1 perangkat, sampai US$5,9 juta untuk suite 100 perangkat (`lib/lifetime.ts`).
+  - **Lewat admin sampai deal** (REQUESTS 144): tidak ada checkout mandiri untuk lifetime. Member menghubungi tim (chat,
+    WhatsApp, e-mail); admin menerbitkan lisensi setelah deal dan pembayaran. Lelang tidak membuka lot lifetime otomatis.
   - **Aturan:** lisensi lifetime sebuah aplikasi hanya dijual bila aplikasi itu terbukti berfungsi 100%: engine test,
     docker-smoke Windows + Linux, e2e, dan uji instalasi lewat AXTO Setup hijau di rilis terakhir. Saklar per aplikasi di
     Admin → Lifetime dibangun sebagai butir antrean W4 (`WORK-QUEUE.md`).

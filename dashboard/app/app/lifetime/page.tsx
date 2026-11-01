@@ -1,5 +1,6 @@
 /* Member: Lifetime licences — perpetual, OFFLINE self-hosted licences.
- * Buy (one app or the suite, 1–100 devices per app), then activate each device
+ * Agreed with the admin (REQUESTS 144: chat, WhatsApp or e-mail, then the admin issues the licence; there is no
+ * self-service checkout) for one app or the suite, 1–100 devices per app; then activate each device
  * with the machine id the app shows on first start: the portal returns a
  * signed .axto-license file the engine verifies locally, with no internet. */
 "use client";
@@ -11,8 +12,9 @@ import { useI18n, formatDate, formatMoney, statusLabel, pick } from "@/lib/i18n"
 import { L as SH } from "@/lib/i18n-pages/selfhosted";
 import { buildSize } from "@/lib/byte-range";
 import { Alert, CopyButton, EmptyState, Field, LoadingBlock, PageHeader, Section, Spinner, StatusBadge } from "@/components/ui";
-import PayPanel, { payFromCheckout, type Pay } from "@/components/app/PayPanel";
 import { openSupport } from "@/components/support/ChatWidget";
+import { useMe } from "@/components/app/Shell";
+import { LIFETIME_DEAL } from "@/lib/lifetime";
 import { SELF_HOSTED, catalogEntry } from "@/lib/selfhosted";
 
 interface Tier { devices: number; label: string; app: number; suite: number }
@@ -22,7 +24,6 @@ interface Licence {
   updatesActive: boolean; activations: Activation[]; products: { slug: string; name: string; used: number; files?: { images: string[]; arm64?: string[]; sizes?: Record<string, number>; offline?: number } }[];
 }
 interface Data { licenses: Licence[]; tiers: Tier[]; cardMaxUsd: number }
-interface Options { gateways: { id: string; label: string; methods: string; currency: string; test?: boolean }[]; lifetime: { gateways: string[]; cardMaxUsd: number; paypalMaxUsd?: number } }
 
 const APPS = SELF_HOSTED.map((p) => ({ slug: p.slug, name: catalogEntry(p.slug)?.name || p.slug }));
 
@@ -143,33 +144,26 @@ function LicenceCard({ lic, onChange }: { lic: Licence; onChange: () => void }) 
 function LifetimeInner() {
   const { t, lang } = useI18n();
   const q = useSearchParams();
+  const { me } = useMe();
   const [d, setD] = useState<Data | null>(null);
-  const [opts, setOpts] = useState<Options | null>(null);
   const [scope, setScope] = useState<"app" | "suite">("app");
   const [product, setProduct] = useState(APPS[0].slug);
   const [devices, setDevices] = useState(1);
-  const [gateway, setGateway] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
-  const [pay, setPay] = useState<Pay | null>(null);
 
   const load = useCallback(async () => { const r = await api<Data>("/api/lifetime"); if (r.ok) setD(r.data); }, []);
-  useEffect(() => { load(); api<Options>("/api/billing/options").then((r) => r.ok && setOpts(r.data)); }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const tier = d?.tiers.find((x) => x.devices === devices) || d?.tiers[0];
   const amount = tier ? tier[scope] : 0;
-  const methods = useMemo(() => (opts?.gateways || []).filter((g) => opts!.lifetime.gateways.includes(g.id) && (g.id !== "stripe" || amount <= opts!.lifetime.cardMaxUsd) && (g.id !== "paypal" || amount <= (opts!.lifetime.paypalMaxUsd ?? 0))), [opts, amount]);
-  useEffect(() => { if (!methods.some((m) => m.id === gateway)) setGateway(methods[0]?.id || ""); }, [methods, gateway]);
-
-  async function checkout() {
-    setBusy(true); setErr("");
-    const r = await api<any>("/api/billing/checkout", { body: { kind: "lifetime", scope, product: scope === "app" ? product : undefined, devices, gateway } });
-    setBusy(false);
-    if (!r.ok) { setErr(r.error); return; }
-    if (r.data.url) { window.location.href = r.data.url; return; }
-    setPay(payFromCheckout(r.data));
-    setTimeout(() => document.getElementById("pay-panel")?.scrollIntoView({ behavior: "smooth" }), 50);
-  }
+  // Lifetime licences are agreed with the admin, then issued to this account (REQUESTS 144): the choice made here is
+  // written into the message, so the team sees exactly what is asked for.
+  const dealMsg = useMemo(() => t("lt.dealMsg", {
+    what: scope === "suite" ? t("lt.scopeSuite") : APPS.find((a) => a.slug === product)?.name || product,
+    devices: scope === "suite" ? t("lt.devicesSuite", { n: devices }) : t("lt.devicesApp", { n: devices }),
+    amount: formatMoney(amount, "USD", lang), email: me?.user.email || "",
+  }), [t, scope, product, devices, amount, lang, me]);
+  const waHref = `https://wa.me/${LIFETIME_DEAL.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(dealMsg)}`;
+  const mailHref = `mailto:${LIFETIME_DEAL.email}?subject=${encodeURIComponent(t("lt.buy"))}&body=${encodeURIComponent(dealMsg)}`;
 
   if (!d) return <LoadingBlock />;
   return (
@@ -189,7 +183,7 @@ function LifetimeInner() {
         <Section title={t("lt.buy")}>
           <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
             {(["app", "suite"] as const).map((s) => (
-              <button key={s} onClick={() => { setScope(s); setPay(null); }} className={`rounded-md px-4 py-1.5 text-sm font-semibold ${scope === s ? "bg-ink-900 text-white" : "text-slate-600"}`}>
+              <button key={s} onClick={() => setScope(s)} className={`rounded-md px-4 py-1.5 text-sm font-semibold ${scope === s ? "bg-ink-900 text-white" : "text-slate-600"}`}>
                 {s === "app" ? t("lt.scopeApp") : t("lt.scopeSuite")}
               </button>
             ))}
@@ -197,7 +191,7 @@ function LifetimeInner() {
           {scope === "app" ? (
             <div className="mt-4 max-w-sm">
               <Field label={t("lt.chooseApp")}>
-                <select className="select" value={product} onChange={(e) => { setProduct(e.target.value); setPay(null); }}>
+                <select className="select" value={product} onChange={(e) => setProduct(e.target.value)}>
                   {APPS.map((a) => <option key={a.slug} value={a.slug}>{a.name}</option>)}
                 </select>
               </Field>
@@ -206,7 +200,7 @@ function LifetimeInner() {
           <div className="mt-4 text-sm font-semibold text-slate-900">{t("lt.chooseDevices")}</div>
           <div className="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {d.tiers.map((x) => (
-              <button key={x.devices} onClick={() => { setDevices(x.devices); setPay(null); }}
+              <button key={x.devices} onClick={() => setDevices(x.devices)}
                 className={`rounded-xl border p-3 text-left ${devices === x.devices ? "border-brand-500 bg-brand-50/50 ring-1 ring-brand-500" : "border-slate-200 bg-white"}`}>
                 <div className="text-xs font-semibold text-slate-500">{scope === "suite" ? t("lt.devicesSuite", { n: x.devices }) : t("lt.devicesApp", { n: x.devices })}</div>
                 <div className="mt-1 text-lg font-extrabold text-slate-900">{formatMoney(x[scope], "USD", lang)}</div>
@@ -217,30 +211,16 @@ function LifetimeInner() {
             {(["lt.inc1", "lt.inc2", "lt.inc3", "lt.inc4", "lt.inc5"] as const).map((k) => <li key={k} className="flex gap-2"><span className="text-brand-600">✓</span>{t(k)}</li>)}
           </ul>
 
-          <div className="mt-5 text-sm font-semibold text-slate-900">{t("lt.payMethod")}</div>
-          {methods.length ? (
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {methods.map((g) => (
-                <label key={g.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 ${gateway === g.id ? "border-brand-500 bg-brand-50/50 ring-1 ring-brand-500" : "border-slate-200"}`}>
-                  <input type="radio" name="lt-gw" className="mt-1" checked={gateway === g.id} onChange={() => { setGateway(g.id); setPay(null); }} />
-                  <span><span className="block font-semibold text-slate-900">{g.label}</span><span className="block text-xs text-slate-500">{g.methods}</span>{g.test ? <span className="mt-1 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold text-amber-800">{t("pay.testMode")}</span> : null}</span>
-                </label>
-              ))}
+          <div className="mt-5 rounded-2xl border border-brand-200 bg-brand-50/50 p-4">
+            <div className="font-semibold text-slate-900">{t("lt.dealTitle")}</div>
+            <p className="mt-1 text-sm text-slate-700">{t("lt.dealBody")}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button className="btn-primary" onClick={() => openSupport("lifetime")}>💬 {t("lt.chat")}</button>
+              <a className="btn-secondary" href={waHref} target="_blank" rel="noopener noreferrer">🟢 {t("lt.whatsapp")}</a>
+              <a className="btn-secondary" href={mailHref}>✉️ {t("lt.email")} · {LIFETIME_DEAL.email}</a>
             </div>
-          ) : <div className="mt-2"><Alert tone="warn">{t("lt.noMethods")}</Alert></div>}
-          {opts && amount > opts.lifetime.cardMaxUsd ? <p className="mt-2 text-xs text-slate-500">{t("lt.cardLimit", { max: formatMoney(opts.lifetime.cardMaxUsd, "USD", lang) })}</p> : null}
-          {err ? <div className="mt-3"><Alert tone="error">{err}</Alert></div> : null}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <button className="btn-ghost" onClick={() => openSupport("lifetime")}>💬 {t("lt.quote")} {t("lt.talk")} →</button>
-            {!pay ? (
-              <button className="btn-primary btn-lg" onClick={checkout} disabled={busy || !gateway}>
-                {busy ? <Spinner /> : null} {t("lt.pay", { amount: formatMoney(amount, "USD", lang) })} →
-              </button>
-            ) : null}
           </div>
         </Section>
-
-        {pay ? <PayPanel pay={pay} onBack={() => setPay(null)} onPaid={load} paidText={t("lt.paid")} /> : null}
 
         <Section title={t("lt.how")}>
           <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-700">

@@ -1,6 +1,6 @@
 /* ==============================================================================
  * AXTO v3.2 — Lifetime (offline) licences end to end on the LOCAL runtime:
- *   checkout at OUR price → payment → licence issued with no admin step →
+ *   no self-service checkout (REQUESTS 144: agreed with the admin) → the admin issues the licence →
  *   device activation (signed .axto-license, verified here exactly like an
  *   engine does) → device limit → admin retire / revoke / negotiated deal →
  *   build downloads → admin price override.
@@ -11,7 +11,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { Agent, setGlobalDispatcher } from "undici";
 import { adminCookie } from "./admin-session";
-import { auditFor, doc, find, meta, seedAdmin } from "./data";
+import { auditFor, ordersOf, seedAdmin, userByEmail } from "./data";
 
 setGlobalDispatcher(new Agent({ keepAliveTimeout: 10, keepAliveMaxTimeout: 10, pipelining: 0 }));
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:8788";
@@ -53,7 +53,7 @@ async function verifyFile(text: string): Promise<Record<string, string> | null> 
 const mid = (n: number) => (RUN + "0".repeat(32)).replace(/[^0-9a-f]/g, "a").slice(0, 30) + String(n).padStart(2, "0");
 const admin = new Client(), member = new Client(), other = new Client();
 const email = `lifetime-${RUN}@example.com`;
-let orderId = "", licenseId = "";
+let licenseId = "";
 
 before(async () => {
   await seedAdmin("e2e-admin@axto.io");
@@ -67,36 +67,30 @@ before(async () => {
   }
 });
 
-test("lifetime: live prices are public; checkout validates the choice and charges OUR price", async () => {
+test("lifetime: live prices are public; lifetime licences are agreed with the admin — no self-service checkout (REQUESTS 144)", async () => {
   const o = await new Client().get("/api/billing/options");
   assert.equal(o.status, 200);
   assert.equal(o.json.lifetime.tiers.length, 6);
   assert.deepEqual(o.json.lifetime.tiers[0], { devices: 1, label: "1 device", app: 24900, suite: 149000 });
-  assert.ok(o.json.lifetime.gateways.includes("manual"));
-  assert.equal(o.json.lifetime.gateways[0], "paypal", "PayPal first — offered only up to its single-payment ceiling");
-  assert.equal(o.json.lifetime.paypalMaxUsd, 10_000);
+  assert.equal(o.json.lifetime.byAdmin, true);
+  assert.deepEqual(o.json.lifetime.contact, { whatsapp: "+6285691234561", email: "hello@axto.io" });
 
   assert.equal((await new Client().post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" })).status, 401);
   const adminTry = await admin.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual" });
   assert.equal(adminTry.status, 400, `admins don't buy: ${adminTry.text}`);
-  assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", devices: 5, gateway: "manual" })).status, 400, "app required");
-  assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "galaxy", devices: 5, gateway: "manual" })).status, 400, "scope");
-  assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 3, gateway: "manual" })).status, 400, "devices must be a tier");
-
   const c = await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "vault", devices: 5, gateway: "manual", amount: 1, amountUsd: 1 });
-  assert.equal(c.status, 200, c.text);
-  assert.equal(c.json.manual, true);
-  assert.equal(c.json.amountUsd, 99000, "the browser never sets the price");
-  orderId = c.json.orderId;
-  const ord = await doc("orders", orderId);
-  const row = { plan: ord.plan, cycle: ord.cycle, amount_usd: ord.amount_usd, status: ord.status, product: meta(ord).lifetime?.product, devices: meta(ord).lifetime?.devices };
-  assert.deepEqual(row, { plan: "lifetime", cycle: "once", amount_usd: 99000, status: "pending", product: "vault", devices: 5 });
+  assert.equal(c.status, 403, c.text);
+  assert.equal(c.json.contact, true);
+  assert.equal(c.json.email, "hello@axto.io");
+  assert.match(c.json.error, /arranged with our team/);
+  const u = await userByEmail(email);
+  assert.deepEqual((await ordersOf(u.id)).filter((x: any) => x.plan === "lifetime"), [], "no lifetime order is created");
 });
 
-test("lifetime: payment issues the licence with no admin step; idempotent; invoiced", async () => {
+test("lifetime: the admin issues the agreed licence; it is the member's at once", async () => {
   assert.equal((await member.get("/api/lifetime")).json.licenses.length, 0);
-  assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: orderId })).status, 200);
-  assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: orderId })).status, 400, "already paid");
+  const deal = await admin.post("/api/admin/lifetime", { action: "issue", email, scope: "app", product: "vault", devices: 5, note: "deal agreed by WhatsApp" });
+  assert.equal(deal.status, 200, deal.text);
   const l = await member.get("/api/lifetime");
   assert.equal(l.status, 200);
   assert.equal(l.json.licenses.length, 1);
@@ -106,11 +100,6 @@ test("lifetime: payment issues the licence with no admin step; idempotent; invoi
   assert.equal(lic.scope, "app"); assert.equal(lic.product, "vault"); assert.equal(lic.devices, 5); assert.equal(lic.status, "active");
   assert.equal(lic.updatesActive, true);
   assert.deepEqual(lic.products.map((p: any) => p.slug), ["vault"]);
-  assert.ok(await find("lifetimeLicenses", "order_id", orderId), "one licence for the order");
-  const inv = await member.get(`/api/billing/invoice/${orderId}`);
-  assert.equal(inv.status, 200);
-  assert.match(inv.text, /Lifetime licence — .*up to 5 devices/);
-  assert.match(inv.text, /Updates included until/);
 });
 
 test("lifetime: signed activation files, per-device limit, re-download, admin retire", async () => {
@@ -164,16 +153,15 @@ test("lifetime: builds download while updates are included; revoke stops activat
   assert.ok(entitled((await member.get("/api/selfhosted/download?product=vault&file=vault-core")).status));
 });
 
-test("lifetime: admin prices flow into checkout; negotiated suite deal; admin-only", async () => {
+test("lifetime: admin prices are the public list; negotiated suite deal; admin-only", async () => {
   const cur = (await admin.get("/api/admin/lifetime")).json;
   assert.ok(cur.licenses.some((l: any) => l.id === licenseId && l.email === email));
   const tiers = cur.defaults.map((t: any) => (t.devices === 1 ? { ...t, app: 30000 } : t));
   assert.equal((await admin.put("/api/admin/lifetime", { tiers: tiers.slice(1) })).status, 400, "every tier required");
   assert.equal((await member.put("/api/admin/lifetime", { tiers })).status, 403);
   assert.equal((await admin.put("/api/admin/lifetime", { tiers })).status, 200);
-  assert.equal((await new Client().get("/api/billing/options")).json.lifetime.tiers[0].app, 30000);
-  const c = await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "legal", devices: 1, gateway: "manual" });
-  assert.equal(c.json.amountUsd, 30000);
+  assert.equal((await new Client().get("/api/billing/options")).json.lifetime.tiers[0].app, 30000, "the admin's list price is the public one");
+  assert.equal((await member.post("/api/billing/checkout", { kind: "lifetime", scope: "app", product: "legal", devices: 1, gateway: "manual" })).status, 403, "still agreed with the admin");
   assert.equal((await admin.put("/api/admin/lifetime", { tiers: cur.defaults })).status, 200);
 
   assert.equal((await admin.post("/api/admin/lifetime", { action: "issue", email: "nobody@example.com", scope: "suite", devices: 3 })).status, 400);
