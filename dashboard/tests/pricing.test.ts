@@ -48,3 +48,19 @@ test("fractional prices always show cents", async () => {
   assert.equal(formatUsd(9.9), "$9.90");
   assert.equal(formatUsd(390), "$390");
 });
+
+test("lifetime licences are agreed with the admin: no self-service checkout, no automatic auction lots (REQUESTS 144)", async () => {
+  const { LIFETIME_BY_ADMIN, LIFETIME_DEAL } = await import("../lib/lifetime");
+  assert.equal(LIFETIME_BY_ADMIN, true);
+  assert.deepEqual(LIFETIME_DEAL, { whatsapp: "+6285691234561", email: "hello@axto.io" });
+  const { testData } = await import("./helpers/data");
+  const { getAuctionSettings, saveAuctionSettings, ensureCycleLots, openLotNow } = await import("../lib/auction");
+  const { db } = testData();
+  await saveAuctionSettings(db, { ...(await getAuctionSettings(db)), enabled: true, packages: ["edition:lite:yearly", "lifetime:app:vault:1", "lifetime:suite:1"] });
+  const r = await ensureCycleLots(db);
+  assert.equal(r.created, 1, "only the edition lot opens by itself");
+  const lots = await db.auctionLots.listAll("cycle", r.cycle, 100);
+  assert.deepEqual(lots.length, 1);
+  const byHand = await openLotNow(db, "lifetime:app:vault:1", "admin");
+  assert.ok(!("error" in byHand), "the admin can still put a lifetime licence up by hand");
+});

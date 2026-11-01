@@ -119,21 +119,21 @@ test("catalogue: every edition of every app is issued on payment and validates a
   }
 });
 
-test("catalogue: every app's lifetime licence and the suite are issued on payment and activate offline", { timeout: 600_000 }, async () => {
-  const opts = await new Client().get("/api/billing/options");
-  const tier1 = opts.json.lifetime.tiers.find((t: any) => t.devices === 1);
+test("catalogue: every app's lifetime licence and the suite are issued by the admin after the deal and activate offline", { timeout: 600_000 }, async () => {
   const buyer = await member("lifetime");
+  const buyerEmail = (await buyer.get("/api/auth/me")).json.user.email;
   const apps = [...new Set(editions.map((e) => e.app))] as string[];
   for (const app of [...apps, "suite"]) {
+    // No self-service checkout for lifetime (REQUESTS 144): the member talks to the team, the admin issues the licence.
     const body = app === "suite" ? { kind: "lifetime", scope: "suite", devices: 1, gateway: "manual" } : { kind: "lifetime", scope: "app", product: app, devices: 1, gateway: "manual" };
-    const c = await buyer.post("/api/billing/checkout", body);
-    assert.equal(c.status, 200, `${app}: ${c.text}`);
-    assert.equal(c.json.amountUsd, app === "suite" ? tier1.suite : tier1.app, `${app} at the live lifetime price`);
-    assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: c.json.orderId })).status, 200, `${app} paid`);
+    assert.equal((await buyer.post("/api/billing/checkout", body)).status, 403, `${app}: agreed with the admin`);
+    const issue = app === "suite" ? { action: "issue", email: buyerEmail, scope: "suite", devices: 1 } : { action: "issue", email: buyerEmail, scope: "app", product: app, devices: 1 };
+    const r = await admin.post("/api/admin/lifetime", issue);
+    assert.equal(r.status, 200, `${app} issued: ${r.text}`);
   }
   const l = await buyer.get("/api/lifetime");
   assert.equal(l.status, 200);
-  assert.equal(l.json.licenses.length, apps.length + 1, "one licence per order");
+  assert.equal(l.json.licenses.length, apps.length + 1, "one licence per deal");
   for (const lic of l.json.licenses) {
     assert.equal(lic.status, "active");
     const products = lic.scope === "suite" ? apps.slice(0, 2) : [lic.product];      // the suite: two apps are enough to prove the scope

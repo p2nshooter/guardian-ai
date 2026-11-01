@@ -107,7 +107,9 @@ export async function ensureCycleLots(db: Data, nowMs = Date.now(), by = "system
   if ((await db.config.get("auction_cycle_ready").catch(() => null)) === marker) return { cycle, created: 0 };
   const have = new Set((await db.auctionLots.listAll("cycle", cycle, 2000)).map((e) => e.id));
   const prices = await loadPrices(db);
-  const todo = s.packages.filter((p) => !have.has(lotId(cycle, p))).map((p) => lotFor(p, end, nowMs, s, by, prices)).filter((l): l is AuctionLotDoc => !!l);
+  // Lifetime licences are sold through the admin (REQUESTS 144): the cycle opens edition lots; the admin can still put a
+  // lifetime package up by hand (openLotNow).
+  const todo = s.packages.filter((p) => !p.startsWith("lifetime:") && !have.has(lotId(cycle, p))).map((p) => lotFor(p, end, nowMs, s, by, prices)).filter((l): l is AuctionLotDoc => !!l);
   let created = 0;
   for (const lot of todo.slice(0, OPEN_BATCH)) if (await db.auctionLots.createIfAbsent(lot)) created += 1;
   const remaining = Math.max(0, todo.length - OPEN_BATCH);

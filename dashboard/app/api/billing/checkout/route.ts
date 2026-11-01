@@ -23,7 +23,7 @@ import { SITE } from "@/lib/site";
 import { getSelfHosted } from "@/lib/selfhosted";
 import { quoteCrypto } from "@/lib/billing/crypto-watch";
 import { uniqueIdrAmount } from "@/lib/billing/unique-amount";
-import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, PAYPAL_MAX_USD, type LifetimeScope } from "@/lib/lifetime";
+import { getLifetimePrices, gatewayAllowed, CARD_MAX_USD, PAYPAL_MAX_USD, LIFETIME_BY_ADMIN, LIFETIME_DEAL, LIFETIME_DEAL_MESSAGE, type LifetimeScope } from "@/lib/lifetime";
 import { lifetimeChoiceProblem, productName } from "@/lib/lifetime-service";
 import { getEdition, getEditionPrices, editionPrice, type EditionCycle } from "@/lib/editions";
 import { editionChoiceProblem, editionGatewayAllowed, EDITION_ANY_GATEWAY_MAX } from "@/lib/edition-service";
@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
     if ("error" in w) return fail(w.error, 409);
     win = w;
   }
+  // Lifetime licences are agreed with the admin (REQUESTS 144); only a lifetime lot won at auction is paid here.
+  if (b?.kind === "lifetime" && LIFETIME_BY_ADMIN) return fail(LIFETIME_DEAL_MESSAGE, 403, { contact: true, ...LIFETIME_DEAL });
   const lifetime = b?.kind === "lifetime" || !!win?.lifetime;
   const edition = b?.kind === "edition" || !!win?.edition;
   const plan = b?.plan, cycle = b?.cycle, gateway = String(b?.gateway || "") as GatewayId;

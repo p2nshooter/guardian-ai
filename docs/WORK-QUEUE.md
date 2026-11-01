@@ -35,7 +35,7 @@ C2–C9 dilanjutkan sesudahnya (baris 3a).
 |---|---|---|
 | W1 | ✅ Semua penawaran di semua situs ke hello@axto.io + WhatsApp +62 856-9123-4561 (REQUESTS 139): ulyah.com + 4 situs saudara (ulyah #397), xaa.es (xaa #38), axto.io sudah. **Sisa:** email notifikasi penawaran xaa.es ke hello@axto.io (butuh pengirim email; ikut baris 6). | `PROMOTION-BLUEPRINT.md` §9 |
 | W2 | ✅ Cabang xaa dimulai ulang dari main (1 Nov). | — |
-| W3 | Harga mengikuti pasar Asia (REQUESTS 140): riset + usulan ✅ · disetujui pemilik ✅ · PR harga (paket, edisi, program mitra; lifetime tetap sangat mahal, REQUESTS 142) 🔄 | `PRICING-BLUEPRINT.md` |
+| W3 | ✅ Harga mengikuti pasar Asia (REQUESTS 140, #109); lifetime tetap sangat mahal (REQUESTS 142) · lifetime hanya lewat admin sampai deal (REQUESTS 144) 🔄 | `PRICING-BLUEPRINT.md` |
 | W4 | Lifetime hanya untuk aplikasi yang terbukti berfungsi 100% (REQUESTS 142): saklar per aplikasi di Admin → Lifetime + syarat bukti (engine test, docker-smoke Windows + Linux, e2e, uji AXTO Setup) | `PRICING-BLUEPRINT.md` §2.2 |
 
 ## Berikutnya (urut, satu per satu)

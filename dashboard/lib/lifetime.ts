@@ -26,6 +26,16 @@ export const LIFETIME_TIERS: LifetimeTier[] = [
   { devices: 100, label: "up to 100",     app: 1_190_000, suite: 5_900_000 },
 ];
 
+/**
+ * Lifetime licences are agreed with the admin, then issued (owner, 1 Nov 2026, REQUESTS 144: "Lifetime call / chat
+ * admin" · "Lifetime dr admin aja sampe deal"). There is no self-service checkout for them: the member chooses the
+ * app and devices, talks to the team by chat, WhatsApp or e-mail, and the admin issues the licence once the deal is
+ * agreed and paid (Admin → Lifetime → issue). A lifetime lot the admin puts up for auction is the one exception.
+ */
+export const LIFETIME_BY_ADMIN = true;
+export const LIFETIME_DEAL = { whatsapp: "+6285691234561", email: "hello@axto.io" } as const;
+export const LIFETIME_DEAL_MESSAGE = "Lifetime licences are arranged with our team: chat with us, or write on WhatsApp or by e-mail, and we issue the licence to your account once the deal is agreed.";
+
 export const LIFETIME_INCLUDES = [
   "Top-tier features of the chosen app(s), forever, for the purchased major version",
   "Works fully offline — Ed25519-signed activation file per device, no calls to axto.io",
