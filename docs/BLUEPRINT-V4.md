@@ -457,6 +457,9 @@ sendiri, lencana „100 Trial License“; (2) istana Nabi Sulaiman yang lantainy
 
 ## 19. Urutan kerja gabungan & persentase progres (diperbarui setiap commit)
 
+> **Urutan kerja yang berlaku ada di `docs/WORK-QUEUE.md`** (satu daftar untuk semua repo). Tabel di bawah mencatat
+> progres per aliran kerja.
+
 Sumber perintah: `docs/REQUESTS.md`. Sumber rencana: dokumen ini (§9, §17, §18) dan
 `docs/AXTO-APPS-BLUEPRINT.md` (§9 fase A–E). Persentase dihitung dari fase yang **selesai dan teruji**,
 bukan dari perkiraan.
@@ -486,7 +489,9 @@ bukan dari perkiraan.
 | 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt–1 Nov 2026, `REQUESTS.md` 120, 124, 125, 132, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan ✅ · lelang xaa.es tayang (xaa #33) ✅ · **penawaran mulai US$500.000, datar, tanpa "US$10 juta"** di axto.io · sama di xaa.es | 4/6 | **67 %** |
 | 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | ✅ P0 blueprint induk · ✅ P1 program & saklar · ✅ P2 afiliasi · ✅ tinjauan ulang white label (REQUESTS 134, master §4.3: biaya masuk US$60 ribu + komitmen tahunan ≥ US$72 ribu, kredit 24 bulan, demo, klausul kelanjutan, tanpa staf; peta sinkronisasi §13) · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 3/11 | **27 %** |
 | 23 | Worker GPU sama di Windows & Linux, semua merek GPU, scaling dan indikator pintar (1 Nov 2026, `REQUESTS.md` 136, §31.F) | G1 deteksi = bisa dipakai + telemetri per GPU + indikator pintar ✅ · G2 Windows = Linux (satu keputusan kesiapan, uji GPU nyata, profil per merek) · G3 image per merek (CUDA, ROCm, Intel) dari satu Dockerfile · G4 scaling nyata (container dinyalakan/dimatikan, satu worker per GPU, dari nol) · G5 teks situs 10 bahasa + panduan sesuai kode | 1/5 | **20 %** |
-| | **Total** (bobot = jumlah fase) | | **82/152** | **≈ 54 %** |
+| 24 | Clipper kelas dunia: web + Windows + Linux, BYOK, Central GPU & AI, simpan di axto.io (1 Nov 2026, `REQUESTS.md` 137, `docs/apps/CLIPPER-BLUEPRINT.md`) | C1 proyek + sinkron + kuota · C2 media di R2 + paket penyimpanan · C3 Central Hub + konektor · C4 desktop Tauri · C5 server self-hosted · C6 publikasi + analitik · C7 tim · C8 Central Compute · C9 promosi nyata | 0/9 | **0 %** |
+| 25 | Mesin promosi otomatis ke member (1 Nov 2026, `REQUESTS.md` 138–139, `docs/PROMOTION-BLUEPRINT.md`) | PR1 data + perpustakaan + Admin · PR2 mesin + portal + email · PR3 media nyata + 100–200 pesan · PR4 tautan uji coba + metrik + A/B | 0/4 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **82/165** | **≈ 50 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
