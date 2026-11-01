@@ -10,6 +10,11 @@
 > - "Coba di sesi ini bikinin dulu blueprint nya yg AI studio yg sy maksud dengan pengetahuan anda yg paling tinggi, apa
 >   aja yg wajib ada baru implementasi kembangkan sampe betul2 AI studio high class dan bisa di sewa oleh film hollywood."
 
+> - "Riset dulu bentuk aplikasi seperti apa yg ada di aplikasi studio film kelas dunia, dmn mendapatkan efek suara efek
+>   gambar efek animasi dll, dan dimana AI bisa di tambahkan, apakah paketnya memerlukan orchestra dan worker gpu, apakah
+>   bisa AI gpu bisa menjadi aplikaai mandiri... Cara kerja dll riset dulu biar blurpintya makin hebat, cari contoh2nya di
+>   GitHub di website manapun di dunia ini" → hasil riset 1 Nov 2026 ada di §2.3–§2.5, §4.9–§4.10, §5.1, §6.1–§6.3.
+
 Blueprint ini mengikuti 12 bagian `PEAK-METHOD.md` dan menjadi satu-satunya rencana AI Studio. Yang ditulis di sini
 dibangun fase demi fase (§11). Tanda ✅ hanya diberikan setelah kode, tes, dan tayang.
 
@@ -81,6 +86,85 @@ Chat multi-model **tidak dibuang**: ia pindah nama menjadi **AI Chat** (§11 fas
 5. **Asal-usul dan izin.** Setiap shot membawa catatan model, kunci, prompt, referensi, dan izin wajah/suara, serta
    Content Credentials (C2PA). Ini syarat agar studio besar berani memakai AI.
 6. **Harga pasar Asia untuk kreator, harga studio untuk studio** (§8, REQUESTS 140).
+
+### 2.3 Riset: studio film AI yang sudah ada di dunia (1 Nov 2026)
+
+| Produk | Yang mereka lakukan | Pelajaran untuk AI Studio |
+|---|---|---|
+| **LTX Studio** (Lightricks) | naskah → storyboard otomatis per adegan; *Elements* untuk karakter dan lokasi yang tetap sama; *Director Mode* untuk kamera; ekspor resolusi tinggi hanya di paket mahal | konsistensi karakter adalah alasan orang memakai; pustaka Pemeran/Lokasi wajib sejak S2 |
+| **Google Flow** (Veo, Imagen, Gemini) | *Ingredients* (karakter, latar, objek dipakai ulang); *Scenebuilder* menyambung klip ±8 detik menjadi adegan panjang memakai frame terakhir klip sebelumnya; kontrol kamera; galeri contoh | "pendek jadi panjang" = rantai shot dari frame terakhir; ini inti fitur perpanjangan S2 |
+| **Runway** (Gen-4.5, Aleph, Act-Two) | Aleph mengedit video: tambah/hapus/ganti objek, relight, sudut kamera baru, "shot berikutnya"; Act-Two memindahkan penampilan aktor ke karakter; API tersedia | VFX AI (S5) dan performance capture (S2) lewat API BYOK |
+| **Autodesk Flow Studio** (dulu Wonder Studio) | rekam penampilan dengan kamera apa pun → gerak tubuh, tangan, wajah dipindah ke karakter CG; camera tracking, clean plate, alpha mask; ekspor USD ke Maya/Blender/Unreal; Wonder 3D membuat aset 3D dari teks/gambar | jalur ekspor ke alat studio (USD/OTIO) membuat studio besar mau memakai; S10 |
+| **Adobe Premiere Pro + Firefly** | Generative Extend (perpanjang video ±2 detik, audio sampai 10 detik); *Generate Sound Effect* untuk rentang timeline dengan "Sync to Video"; model pihak ketiga (Veo, Runway, Kling, Luma) dipasang di dalam Premiere | pemimpin pasar juga memakai banyak model dari banyak penyedia: rancangan BYOK multi-model kita sejalan; efek suara tersinkron ke gambar wajib (S4) |
+| **Moonvalley Marey** (bersama studio Asteria) | model video yang dilatih hanya dari data milik sendiri atau berlisensi; ditujukan ke pembuat film profesional; klip 1080p 24 fps | studio besar peduli asal data latih: AI Studio perlu kebijakan "hanya model aman-komersial" per produksi (§10) |
+
+**Aturan industri yang harus dipatuhi** (panduan Netflix untuk mitra produksi, Agustus 2025):
+- AI tidak boleh menggantikan atau membuat penampilan pemeran baru tanpa izin;
+- replika digital dan perubahan besar pada penampilan butuh izin tertulis dan mengikuti aturan serikat;
+- model yang dilatih untuk memanipulasi pemeran hanya untuk satu produksi;
+- penggunaan AI dilaporkan ke studio;
+- materi AI bersifat sementara sampai di-*clear* untuk hasil akhir.
+
+AI Studio membangun semua ini ke dalam alur (Registri Izin, kebijakan per produksi, laporan rantai hak), sehingga
+rumah produksi tidak perlu mencatatnya di luar aplikasi.
+
+### 2.4 Riset: contoh di GitHub dan proyek terbuka
+
+Lisensi pada tabel ini dicek ulang dari berkas LICENSE resminya sebelum dipakai. Aturan tetap:
+- kode GPL/AGPL **tidak** digabung ke kode AXTO; ia hanya jadi acuan, atau dijalankan sebagai layanan terpisah dengan
+  kewajiban lisensinya dipenuhi;
+- bobot model dengan lisensi non-komersial tidak dipakai untuk ekspor komersial.
+
+| Bidang | Proyek | Lisensi | Dipakai sebagai |
+|---|---|---|---|
+| Timeline standar industri | **OpenTimelineIO** (Academy Software Foundation) | Apache-2.0 | model timeline `axto.film` + adapter FCPXML/AAF/EDL |
+| Manajemen warna | **OpenColorIO** (ASWF) + ACES | BSD-3 | pipeline warna S6 |
+| Editor video web | **OpenCut** (alternatif CapCut, ditulis ulang 2026 dengan inti Rust), **OpenReel Video** (WebCodecs + WebGPU), **omniclip** | lihat repo | acuan arsitektur editor peramban S1 |
+| Editor desktop | **Kdenlive** di atas **MLT** (render lewat FFmpeg), **Shotcut**, **Olive**, **Blender** VSE | GPL | acuan saja |
+| Compositing | **Natron** (node, mirip Nuke) | GPL | acuan saja |
+| Audio (DAW) | **Ardour** | GPL | acuan saja |
+| Encode/decode | **FFmpeg** | LGPL (build tanpa komponen GPL) | mesin render desktop/server |
+| Pelacakan produksi | **Kitsu** (CGWire), **AYON** (dulu OpenPype; terhubung ke Kitsu/ShotGrid/ftrack) | lihat repo | acuan S9 |
+| Alur kerja generasi | **ComfyUI** (API HTTP/WebSocket `/prompt`) | GPL-3.0 | dijalankan sebagai layanan terpisah di GPU Node (§6.2) |
+| Video generatif terbuka | **Wan 2.2** | Apache-2.0 (bebas komersial) | model utama GPU Node |
+| | **LTX-2** (Lightricks) | lisensi komunitas: gratis untuk perusahaan di bawah US$10 juta pendapatan tahunan | opsional, ditandai |
+| | **HunyuanVideo 1.5** (Tencent) | lisensi Tencent dengan batas pengguna dan wilayah | opsional, ditandai |
+| Efek suara dari video (foley) | **HunyuanVideo-Foley** (48 kHz; varian XL ±16 GB VRAM, 8 GB dengan offload), **MMAudio** | lihat repo | foley otomatis S4 |
+| Musik | **ACE-Step** (lagu lengkap dengan vokal) | Apache-2.0 | musik S4 |
+| | Stable Audio Open (efek, loop) | lisensi komunitas Stability | ditandai |
+| Suara/TTS | **Kokoro** (Apache-2.0), **Chatterbox** (MIT, watermark suara bawaan), **CosyVoice2** (Apache-2.0, kloning) | sesuai kolom | dialog dan kloning berizin S4 |
+| Lip-sync | LatentSync, MuseTalk | lihat repo (bobot bisa berbeda dari kode) | dubbing S4 |
+| VFX/kualitas | SAM 2 (segmentasi video), Real-ESRGAN (upscale), RIFE (interpolasi), Demucs (pisah stem) | Apache-2.0 / BSD-3 / MIT / MIT | S5, S4 |
+| Asal-usul | **c2pa-rs** (Content Authenticity Initiative), c2patool | MIT/Apache-2.0 | Content Credentials S10 |
+| Naskah → storyboard → shot (agen) | MUSE agent (MIT; naskah → *style bible* → storyboard → tinjauan), FrameWork (skenario + storyboard + shot list), CineForge (bible + 16 shot per adegan → prompt Runway/Kling), Shortify AI | lihat repo | acuan agen pra-produksi S3 |
+
+**Temuan penting dari contoh-contoh itu:**
+1. Konsistensi karakter dicapai dengan **referensi gambar per karakter** (atau adaptor terlatih per karakter),
+   bukan dengan prompt saja. Pustaka Pemeran menyimpan lembar referensi dan, untuk GPU sendiri, adaptor karakter per
+   produksi (sesuai aturan Netflix: satu produksi, satu model).
+2. Biaya dan konsistensi adalah masalah utama yang disebut pembuat agen terbuka. Karena itu perkiraan biaya sebelum
+   generasi dan pemeriksa konsistensi wajib ada.
+3. Editor web modern memakai WebCodecs + WebGPU dengan cadangan bila peramban tidak mendukung. Editor desktop terbaik
+   memakai FFmpeg di belakang.
+
+### 2.5 Di mana AI ditambahkan (peta per meja kerja)
+
+| Meja kerja | Tanpa AI (alat studio biasa) | Dengan AI (dibantu atau dibangkitkan) |
+|---|---|---|
+| Naskah | editor format industri, revisi berwarna | logline, beat sheet, dialog, terjemahan, cek kontinuitas |
+| Breakdown | daftar manual | breakdown otomatis adegan/pemeran/properti/efek |
+| Storyboard | gambar tangan, unggah | panel dibangkitkan dari adegan, gerak kamera tertulis |
+| Pemeran dan Dunia | foto referensi | lembar karakter dari banyak sudut, lokasi, Look |
+| Shot | footage kamera | teks→video, foto→video, video→video, keyframe, perpanjangan, performance capture |
+| Edit | timeline, trim, multicam | rough cut dari naskah, cari footage dengan kata, trailer otomatis |
+| Suara | rekam, mixing, pustaka efek | TTS, kloning berizin, dubbing + lip-sync, efek dari teks, foley dari video, musik, pisah stem, bersihkan derau |
+| VFX | compositing node, masker manual | hapus/ganti objek, rotoscoping otomatis, relight, sudut baru, upscale, interpolasi |
+| Warna | roda, kurva, LUT, scope | cocokkan shot dari model berbeda, tiru look dari gambar |
+| Tinjauan | komentar per frame | ringkasan catatan peninjau, daftar perubahan otomatis |
+| Serah | ekspor, pemeriksa spesifikasi | teks/caption otomatis + terjemahan |
+| Produksi | jadwal, anggaran | perkiraan biaya generasi, saran penyedia termurah/tercepat |
+
+Setiap fitur AI punya **jalan manual** yang setara, sehingga editor profesional tidak pernah terkunci pada hasil AI.
 
 ---
 
@@ -245,6 +329,40 @@ Chat multi-model **tidak dibuang**: ia pindah nama menjadi **AI Chat** (§11 fas
   diperbaiki.
 - **Content Credentials (C2PA)** dan watermark AI pada setiap ekspor (bisa dimatikan hanya untuk shot tanpa AI).
 
+
+### 4.9 Cara kerja (di balik layar)
+
+1. **Proyek** `axto.film` menyimpan naskah, Pemeran, Look, timeline (OTIO), dan daftar shot. Setiap shot punya resep:
+   sumber, prompt, referensi, model, parameter.
+2. **Generasi:** resep shot menjadi pekerjaan dengan id `hash(resep)`.
+   - **Router (Central Hub)** memilih tempat jalannya menurut kebijakan produksi:
+     - API penyedia milik pengguna (BYOK);
+     - **GPU Node** pengguna (§6.2);
+     - render farm Orchestra (§6.3).
+   - Hasil yang sama tidak dibuat ulang. Gagal = coba penyedia berikutnya di rantai.
+3. **Media:** hasil dan unggahan disimpan sebagai berkas asli + proxy.
+   - Web: R2 (bila dipilih) atau perangkat;
+   - desktop/server: disk pengguna.
+   - Setiap berkas punya catatan lisensi dan asal-usul.
+4. **Edit:**
+   - Web memutar proxy dengan WebCodecs; efek dan warna dirender di GPU peramban (WebGPU) untuk pratinjau.
+   - Desktop/server memutar dan merender master dengan FFmpeg + GPU (NVENC/AMF/QSV/VAAPI).
+   - Timeline yang sama, hasil yang sama.
+5. **Render akhir:** dipecah per adegan atau rentang, dikerjakan paralel (beberapa GPU/worker), lalu disambung tanpa
+   kehilangan kualitas. Pekerjaan bisa dilanjut bila terputus.
+6. **Serah:** pemeriksa spesifikasi → encode → teks → C2PA + watermark → paket (berkas, IMF, atau unggah ke tujuan).
+
+### 4.10 Durasi 10 detik sampai 24 jam: bagaimana bisa
+
+- **Timeline:** angka timecode 64-bit dan struktur OTIO tidak punya batas praktis. Antarmuka memuat hanya bagian yang
+  terlihat (virtualisasi), jadi timeline 24 jam tetap ringan.
+- **Pemutaran:** proxy kecil per klip. Peramban memuat yang sedang diputar saja.
+- **Generasi:** satu shot = beberapa detik (batas model saat ini). Satu jam film ≈ 400–1.000 shot, dikerjakan antrean
+  dengan perkiraan biaya total di depan. Shot diperpanjang dengan rantai frame terakhir (cara Google Flow) atau
+  "shot berikutnya" (cara Runway).
+- **Potong di mana saja:** reel, episode, versi (potongan TV, trailer 30/60/90 detik) adalah sequence turunan dari
+  timeline yang sama.
+
 ---
 
 ## 5. Konektor (semuanya BYOK, diuji kontrak)
@@ -267,6 +385,37 @@ tidak punya API resmi **tidak** disambungkan lewat cara tidak resmi.
 Lisensi setiap model terbuka diperiksa sebelum dipakai untuk komersial. Model dengan lisensi non-komersial ditandai dan
 diblokir untuk ekspor komersial.
 
+
+### 5.1 Sumber efek suara, efek gambar, dan efek animasi
+
+AI Studio punya **Pustaka Aset** dengan tiga lapis. Setiap aset membawa label lisensi (komersial? perlu atribusi?
+boleh disebar ulang?). Label itu ikut ke laporan rantai hak saat ekspor.
+
+1. **Milik AXTO (dibuat sendiri, bebas dipakai pelanggan):**
+   - judul dan kredit animasi, transisi, lower third, partikel, light leak, glitch, bingkai, dan efek gerak;
+   - dibuat sebagai template kode (shader WebGPU, kanvas, Lottie);
+   - tidak ada masalah lisensi dan bisa dikembangkan tanpa batas.
+2. **Pustaka terbuka yang boleh dipakai komersial:**
+   - **Sonniss GDC Game Audio Bundle** (puluhan GB tiap tahun, bebas royalti, komersial, tanpa atribusi; cek klausul
+     larangan latih AI);
+   - **Freesound** hanya yang **CC0** (CC-BY ditampilkan dengan atribusi otomatis; **CC-BY-NC tidak dipakai**);
+   - **Pixabay** dan **Mixkit**, efek suara berlisensi gratis-komersial (Mixkit punya juga lisensi "Restricted"
+     non-komersial yang disaring);
+   - animasi **Lottie** yang lisensinya mengizinkan.
+   - Yang **tidak** dipakai untuk karya komersial: arsip **BBC Sound Effects** (lisensi RemArc pribadi/pendidikan).
+   - Aset dari pustaka luar yang tidak mengizinkan disebar ulang tidak disalin ke pustaka AXTO. Pengguna mengunduhnya
+     sendiri lalu mengimpor, dan labelnya tetap ikut.
+3. **Dibangkitkan AI saat dibutuhkan:**
+   - efek suara dari teks atau dari video (foley tersinkron ke gerakan);
+   - musik sesuai adegan;
+   - elemen VFX (asap, api, ledakan) dari model video;
+   - latar dan objek.
+   - Elemen VFX stok profesional (ProductionCrate/FootageCrate, ActionVFX, FXElements, Compositing Academy) punya paket
+     gratis berlisensi komersial yang bisa diimpor pengguna.
+
+Pustaka disimpan di R2 dengan indeks per kategori, bentuk gelombang dan pratinjau, pencarian kata ("pintu kayu
+dibanting"), dan pencarian makna lewat embedding.
+
 ---
 
 ## 6. AXTO Central GPU & AI
@@ -279,6 +428,58 @@ diblokir untuk ekspor komersial.
   yang sudah ada (VRAM paling longgar, suhu, throttle). Scaler menyalakan worker saat antrean menumpuk.
 - **Central Compute (GPU dan model milik AXTO, prabayar):** mengikuti `BUSINESS-MASTER-BLUEPRINT.md` §5. Hanya di dalam
   white label, kecuali pemilik membukanya (bawaan mati). Harga = biaya × 2,5, saldo nol = berhenti.
+
+
+### 6.1 Apakah AI Studio wajib Orchestra dan worker GPU? Tidak.
+
+| Cara pakai | Perlu GPU? | Perlu Orchestra? | Untuk |
+|---|---|---|---|
+| Web + API penyedia (BYOK) | tidak (penyedia yang menjalankan) | tidak | semua member; cara paling mudah |
+| Web/desktop + **GPU Node** di PC sendiri | ya, satu PC dengan GPU | **tidak** | kreator dengan GPU, gratis per detik |
+| Studio Server + **render farm** | ya, banyak GPU | ya (penjadwal, scaling, penempatan GPU) | studio, agensi, rumah produksi |
+| GPU awan sewaan pengguna (RunPod, Vast, Lambda, Modal, dll.) menjalankan image GPU Node | ya, sewaan | tidak (satu node) atau ya (banyak) | yang tidak punya GPU tetapi mau model terbuka |
+
+### 6.2 "AI GPU" sebagai aplikasi mandiri: **AXTO GPU Node**
+
+Ya, bisa dan dianjurkan. GPU Node adalah aplikasi tersendiri yang menjalankan model AI di GPU milik pengguna dan menjadi
+"mesin generasi" untuk AI Studio, Clipper, dan aplikasi AXTO lain. Ia penerus engine `gpu-studio`.
+
+- **Bentuk:**
+  - aplikasi desktop Windows/Linux, dibungkus Tauri, dengan satu klik pasang;
+  - image Docker yang sama untuk server dan GPU awan;
+  - profil per merek GPU (NVIDIA CUDA, AMD ROCm), memakai deteksi GPU yang sudah dibangun (REQUESTS 136).
+- **Isi:**
+  - **Pengelola model:** unduh, cek lisensi (komersial/non-komersial), cek muat di VRAM, versi.
+  - **Mesin alur kerja:** ComfyUI sebagai layanan terpisah, dengan template AXTO teruji untuk teks→video, foto→video,
+    perpanjangan, upscale, interpolasi, foley, musik, TTS, dan lip-sync.
+  - **Antrean** dengan id deterministik.
+  - **Telemetri GPU:** suhu, VRAM, throttle.
+- **Sambungan aman:**
+  - dipasangkan ke akun axto.io dengan kode pairing;
+  - hanya menerima pekerjaan dari akun itu (token per perangkat, TLS);
+  - hasil langsung ke disk pengguna atau R2 pengguna;
+  - bisa berjalan tanpa internet untuk desktop/server.
+- **Panduan VRAM** (perkiraan dari riset; diuji saat fase dibangun):
+
+| VRAM | Yang bisa dijalankan |
+|---|---|
+| 8 GB | gambar, Wan versi kecil (±1,3B), upscale, interpolasi, TTS, foley XL dengan offload |
+| 12–16 GB | video 720p model sedang/terdistilasi, foley, musik |
+| 24 GB | video 720p–1080p model 5B (satu RTX 4090), HunyuanVideo 1.5 dengan offload |
+| 48–80 GB | model 14B kualitas penuh, batch besar |
+
+- **Dijual:** termasuk dalam paket AI Studio (satu node), node tambahan per perangkat, atau lisensi Studio Server untuk
+  banyak node. Lisensi lewat Otoritas Lisensi (terikat mesin).
+
+### 6.3 Kapan Orchestra dipakai
+
+Orchestra dipakai saat ada **lebih dari satu GPU atau lebih dari satu mesin**, misalnya render farm studio:
+- penjadwal pekerjaan dan penempatan pintar per GPU (VRAM paling longgar, suhu, throttle);
+- scaling otomatis worker (orchestra-scaler);
+- indikator kesehatan GPU;
+- jatah per tim.
+
+GPU Node yang sama menjadi worker di bawah Orchestra, jadi tidak ada dua mesin berbeda yang harus dirawat.
 
 ---
 
@@ -368,6 +569,14 @@ Angka pastinya dipasang bersama penyesuaian harga seluruh situs (REQUESTS 140, `
   - izin disimpan di Registri Izin: siapa, untuk apa, sampai kapan, bisa dicabut;
   - tidak untuk tokoh publik tanpa hak, tidak untuk anak di bawah umur, tidak untuk konten seksual orang nyata;
   - ini sejalan dengan aturan industri tentang replika digital (persetujuan dan kompensasi pemeran).
+- **Kebijakan model per produksi:**
+  - "semua model";
+  - "hanya model aman-komersial": model yang dilatih dengan data berlisensi, atau yang penyedianya memberi jaminan
+    komersial;
+  - "hanya GPU sendiri" (tidak ada data keluar).
+  - Kebijakan dikunci oleh produser dan tercatat di laporan.
+- **Penggunaan AI dilaporkan per shot.** Materi AI ditandai "sementara" sampai produser meng-*clear* untuk hasil akhir
+  (sesuai panduan studio besar, §2.3).
 - **Label AI dan asal-usul:**
   - Content Credentials (C2PA) di setiap ekspor;
   - catatan rantai hak (chain-of-title) per shot: model, versi, lisensi model, kunci siapa, referensi, izin.
@@ -389,6 +598,7 @@ Angka pastinya dipasang bersama penyesuaian harga seluruh situs (REQUESTS 140, `
 | **S0** | Rumah baru: chat pindah ke **AI Chat** (`/app/chat`, `/app/studio` lama diarahkan; riwayat tetap); kerangka AI Studio film; format `axto.film` v1 (OTIO) + revisi/versi; pustaka media R2 (unggah multipart lanjut, proxy) | e2e: riwayat chat lama terbuka di AI Chat; proyek film dibuat, dibuka di perangkat lain, bentrok terdeteksi; unggahan terputus lanjut |
 | **S1** | Timeline profesional di web: multi-track, trim ripple/roll/slip/slide, marker, timecode, frame rate industri, durasi 10 detik–24 jam, potong di mana saja, putar presisi frame (WebCodecs), ekspor pendek di peramban | tes unit model timeline (presisi frame, timecode drop-frame); peramban nyata: proyek 24 jam bisa digulir dan dipotong tanpa macet |
 | **S2** | Generasi: teks→gambar, **foto→video**, teks→video, keyframe, gerak kamera, **perpanjangan shot (pendek → panjang)**, take; konektor BYOK + tes kontrak; perkiraan biaya + anggaran; antrean deterministik; Pemeran + Look untuk konsistensi | tes kontrak tiap konektor; generasi sama tidak dibayar dua kali; penyedia gagal → cadangan |
+| **S2G** | **AXTO GPU Node** (aplikasi mandiri, §6.2): desktop Windows/Linux + image Docker, pengelola model dengan cek lisensi dan VRAM, template alur kerja teruji, pairing aman ke akun, antrean, telemetri; menjadi worker Orchestra bila ada banyak GPU | uji pairing + pekerjaan contoh di runner (CPU untuk CI, GPU nyata diuji di mesin pemilik); model non-komersial terblokir untuk ekspor komersial |
 | **S3** | Pra-produksi: editor naskah (Fountain/FDX), asisten naskah, breakdown, storyboard → animatik, shot list, adegan → deretan shot | impor/ekspor FDX dan Fountain sama persis; naskah contoh jadi animatik |
 | **S4** | Suara: dialog TTS, kloning berizin, dubbing + lip-sync, **efek suara** dan foley otomatis, musik, stem, mixing, loudness | pengukur loudness cocok dengan nilai acuan; dubbing contoh sinkron |
 | **S5** | **Efek animasi** + VFX AI: pustaka efek/judul/transisi, hapus objek, ganti latar, rotoscoping, upscale, interpolasi, stabilisasi; pipeline kartun 2D karakter orisinal | render contoh di CI; penyaring karakter terlindungi teruji |
@@ -400,8 +610,8 @@ Angka pastinya dipasang bersama penyesuaian harga seluruh situs (REQUESTS 140, `
 | **S11** | Sewa Produksi: ruang produksi tersewa, harga, faktur prabayar, laporan rantai hak, Registri Izin, paket keamanan; DCP bioskop | e2e sewa dibuat → dibayar → aktif → kedaluwarsa hanya-baca |
 | **S12** | Promosi nyata: tangkapan layar dan animasi asli, teks situs 10 bahasa | setiap klaim situs punya fitur yang teruji |
 
-**Urutan:** S0 → S12 satu per satu. S0–S2 membuat AI Studio langsung berguna untuk kreator (foto→video, teks→video,
-edit, perpanjangan). S3–S6 menjadikannya studio. S7–S11 membuatnya layak disewa rumah produksi besar.
+**Urutan:** S0 → S12 satu per satu (14 fase termasuk S2G). S0–S2G membuat AI Studio langsung berguna untuk kreator:
+foto→video, teks→video, edit, perpanjangan, dan generasi gratis di GPU sendiri. S3–S6 menjadikannya studio. S7–S11 membuatnya layak disewa rumah produksi besar.
 
 ---
 
@@ -423,3 +633,36 @@ edit, perpanjangan). S3–S6 menjadikannya studio. S7–S11 membuatnya layak dis
 - Keputusan harga akhir (REQUESTS 140) dan harga Sewa Produksi.
 - Penilaian Trusted Partner Network dan asuransi/perjanjian bila menyewakan ke studio Hollywood.
 - Keputusan membuka Central Compute di luar white label.
+
+## 14. Sumber riset (1 Nov 2026)
+
+Sebagian besar sumber adalah halaman produk dan liputan pihak ketiga. Angka (VRAM, harga, lisensi) dicek ulang dari
+halaman resmi saat fasenya dibangun.
+
+- **LTX Studio:** techcrunch.com (Lightricks, 2024); jivochat.com (ulasan); ltx.studio.
+- **Google Flow:** techcrunch.com (20 Mei 2025); maginative.com; labs.google/fx/tools/flow/faq.
+- **Runway Aleph / Act-Two:** cometapi.com (spesifikasi API); conductatlas.com (perubahan situs Runway Mei 2026).
+- **Autodesk Flow Studio:** cgchannel.com (5 Mar 2026, Wonder 3D); autodesk.com/products/flow-studio;
+  digitalproduction.com.
+- **Adobe Premiere + Firefly:** nofilmschool.com (Generative Media); community.adobe.com (Generative Extend);
+  aiweekly.co (model pihak ketiga di Premiere).
+- **Moonvalley Marey:** techcrunch.com (12 Mar 2025); cined.com; getcoai.com.
+- **Panduan AI Netflix untuk mitra:** socialsamosa.com; cined.com; broadcastnow.co.uk; gigazine.net (Agustus 2025).
+- **Trusted Partner Network:** cdsaonline.org; postmagazine.com (program keamanan konten milik MPA).
+- **Editor web terbuka:** github.com/OpenCut-app/OpenCut; github.com/triniinteractive/openreel-video; mer.vin (penulisan
+  ulang OpenCut 2026).
+- **Pipeline terbuka:** github.com/AheadIO/OpenTimelineIO; aswf.io; ayon.app; blog.cg-wire.com (Kitsu + AYON).
+- **Model video terbuka:** thundercompute.com; aimagicx.com; ltx.io/blog (lisensi dan VRAM Wan 2.2, LTX-2,
+  HunyuanVideo 1.5).
+- **Foley:** github.com/Tencent-Hunyuan/HunyuanVideo-Foley; huggingface.co/tencent/HunyuanVideo-Foley.
+- **Musik terbuka:** comfyui-wiki.com (ACE-Step); spheron.network; learn.traeai.com.
+- **TTS terbuka:** tts.ai (tabel lisensi Kokoro, Chatterbox, CosyVoice2).
+- **Agen naskah → storyboard:** github.com/GrepAutomation/muse-agent; github.com/arkdutt/FrameWork;
+  github.com/milleniummike-del/cineforge.
+- **Efek suara:** rekkerd.org (Sonniss GDC 2026); app.cinevva.com (Freesound, BBC); pixabay.com/service/faq;
+  mixkit.co.
+- **Elemen VFX:** cgchannel.com (ProductionCrate, Compositing Academy, ActionVFX); fxelements.com.
+- **Animasi terprogram:** remotion.dev/docs/compare/motion-canvas (Remotion berlisensi berbayar untuk perusahaan; Motion
+  Canvas terbuka).
+- **ComfyUI sebagai API:** fal.ai/learn/serverless/comfyui-api; docs.runcomfy.com.
+- **C2PA:** learn.contentauthenticity.org; rubydoc.info (ruby-c2pa di atas c2pa-rs).

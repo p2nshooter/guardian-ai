@@ -41,7 +41,7 @@ dilanjutkan sesudahnya (baris 3a).
 
 | # | Pekerjaan | Rencana | Catatan urutan |
 |---|---|---|---|
-| 2a | **AI Studio = studio film kelas dunia dengan AI** (REQUESTS 141): S0 rumah baru (chat → AI Chat, format `axto.film`, pustaka media R2) → S1 timeline 10 detik–24 jam → S2 generasi foto/teks→video + perpanjangan → S3 naskah/storyboard → S4 suara → S5 efek/VFX/kartun → S6 warna → S7 desktop → S8 Studio Server → S9 tim → S10 serah film → S11 Sewa Produksi → S12 promosi | `apps/AI-STUDIO-BLUEPRINT.md` §11 | perintah pemilik: blueprint dulu, lalu dibangun sampai kelas Hollywood |
+| 2a | **AI Studio = studio film kelas dunia dengan AI** (REQUESTS 141): S0 rumah baru (chat → AI Chat, format `axto.film`, pustaka media R2) → S1 timeline 10 detik–24 jam → S2 generasi foto/teks→video + perpanjangan → S2G AXTO GPU Node (aplikasi GPU mandiri) → S3 naskah/storyboard → S4 suara → S5 efek/VFX/kartun → S6 warna → S7 desktop → S8 Studio Server → S9 tim → S10 serah film → S11 Sewa Produksi → S12 promosi | `apps/AI-STUDIO-BLUEPRINT.md` §11 | perintah pemilik: blueprint dulu, lalu dibangun sampai kelas Hollywood |
 | 3a | Clipper C2–C9 (lanjutan baris 2) | `apps/CLIPPER-BLUEPRINT.md` §11 | setelah AI Studio, atau ditukar bila pemilik meminta |
 | 3b | AI Chat sampai puncaknya (chat multi-model yang sekarang; REQUESTS 140) | blueprint `apps/AI-CHAT-BLUEPRINT.md` ditulis saat gilirannya | tolok ukur ChatGPT, Claude, Gemini |
 | 3 | P3 dompet kredit + Otoritas Lisensi v4 + API mitra · P4 portal reseller · P5 portal white label (perintah 1 Nov, REQUESTS 132–134) | `BUSINESS-MASTER-BLUEPRINT.md` §4–§7 | syarat agar promosi reseller/white label menunjuk ke portal yang benar-benar jalan |
