@@ -485,8 +485,8 @@ bukan dari perkiraan.
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
 | 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt–1 Nov 2026, `REQUESTS.md` 120, 124, 125, 132, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan ✅ · lelang xaa.es tayang (xaa #33) ✅ · **penawaran mulai US$500.000, datar, tanpa "US$10 juta"** di axto.io · sama di xaa.es | 4/6 | **67 %** |
 | 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | ✅ P0 blueprint induk · ✅ P1 program & saklar · ✅ P2 afiliasi · ✅ tinjauan ulang white label (REQUESTS 134, master §4.3: biaya masuk US$60 ribu + komitmen tahunan ≥ US$72 ribu, kredit 24 bulan, demo, klausul kelanjutan, tanpa staf; peta sinkronisasi §13) · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 3/11 | **27 %** |
-| 23 | Worker GPU sama di Windows & Linux, semua merek GPU, scaling dan indikator pintar (1 Nov 2026, `REQUESTS.md` 136, §31.F) | G1 deteksi = bisa dipakai + telemetri per GPU + indikator pintar · G2 Windows = Linux (satu keputusan kesiapan, uji GPU nyata, profil per merek) · G3 image per merek (CUDA, ROCm, Intel) dari satu Dockerfile · G4 scaling nyata (container dinyalakan/dimatikan, satu worker per GPU, dari nol) · G5 teks situs 10 bahasa + panduan sesuai kode | 0/5 | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **81/152** | **≈ 53 %** |
+| 23 | Worker GPU sama di Windows & Linux, semua merek GPU, scaling dan indikator pintar (1 Nov 2026, `REQUESTS.md` 136, §31.F) | G1 deteksi = bisa dipakai + telemetri per GPU + indikator pintar ✅ · G2 Windows = Linux (satu keputusan kesiapan, uji GPU nyata, profil per merek) · G3 image per merek (CUDA, ROCm, Intel) dari satu Dockerfile · G4 scaling nyata (container dinyalakan/dimatikan, satu worker per GPU, dari nol) · G5 teks situs 10 bahasa + panduan sesuai kode | 1/5 | **20 %** |
+| | **Total** (bobot = jumlah fase) | | **82/152** | **≈ 54 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1169,6 +1169,19 @@ scalling auto dan manual, smart indikator gpu dan smart2 lainya tambahkan yg men
   ulang. Konsol: merek dan nama kartu asli, utilisasi GPU nyata di samping slot tugas, VRAM terpakai/total, daya, rincian
   per GPU, status "tanpa telemetri" (abu-abu, bukan OK), GPU Pool diperbarui sendiri. `/run` dan `/shutdown` memakai
   token worker yang sama dengan heartbeat.
+  **G1 selesai (dibangun 1 Nov 2026):** `orchestra_worker/gpu_inventory.py` (`device_access`, `drm_cards`,
+  `mark_usable`: node perangkat, driver kernel, VRAM AMD dari sysfs, catatan "kenapa tidak bisa" per kartu — nouveau,
+  tanpa passthrough, WSL), `orchestra_worker/gpu_telemetry.py` (baru: NVIDIA multi-GPU dengan bit throttle yang benar —
+  idle bukan throttle —, rocm-smi, sysfs amdgpu/i915/xe, ringkasan: GPU terpanas, rata-rata utilisasi),
+  `worker_gpu.py` (registrasi lengkap, heartbeat dengan telemetri, daftar ulang otomatis, `/run` dan `/shutdown` dengan
+  token, `/shutdown` benar-benar keluar, tanpa CORS), Core skema v7 (kolom GPU di `workers`, baris yang sama dipakai
+  ulang untuk alamat + node yang sama, heartbeat ke id tak dikenal → `reregister`), saran GPU (utilisasi nyata dari
+  program lain ikut dihitung, VRAM bebas, GPU dengan VRAM penuh tidak pernah disarankan, notifikasi baru: tidak bisa
+  dipakai + alasannya, tanpa suhu, di-throttle, VRAM hampir penuh), konsol (merek dan nama kartu asli, utilisasi GPU dan
+  slot tugas terpisah, VRAM terpakai/total, daya, rincian per GPU, "no telemetry" abu-abu, GPU Pool diperbarui tiap
+  8 detik, Min GPU boleh 0), image GPU dibangun ulang bila kode worker/core berubah. Tes: 47 worker (+20) dan 54 core
+  (+9, termasuk upgrade database v6 → v7); uji nyata: worker asli terhadap Core lokal (registrasi, 401 tanpa token,
+  daftar ulang setelah dihapus, id sama setelah restart) dan konsol di Chromium desktop + ponsel tanpa error.
 - **G2 — Windows = Linux.** Satu fungsi keputusan di installer untuk kedua OS: uji GPU nyata (`docker run --gpus all`
   image worker dengan perintah uji) setelah image ada, cek driver; pilihan otomatis yang sama di wizard Windows dan CLI
   Linux (`--no-gpu` untuk menolak); pemeriksaan Ollama host dan petunjuk `OLLAMA_HOST` di Linux; profil per merek dipilih

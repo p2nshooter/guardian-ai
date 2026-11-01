@@ -6,7 +6,7 @@
 # uploads it to Cloudflare R2. Kept SEPARATE from auto-build-all because the
 # CUDA-based image is large (~4–5 GB) and needs extra runner disk space.
 #
-# Trigger: manual (workflow_dispatch) or when the GPU Dockerfile/source changes.
+# Trigger: manual (workflow_dispatch) or when the GPU Dockerfile, the worker or the core code changes.
 # Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY  (R2 S3 keys)
 name: Build Orchestra GPU Worker → R2
 
@@ -16,6 +16,10 @@ on:
     branches: [main]
     paths:
       - "orchestra/Dockerfile.worker-gpu"
+      # The image carries the worker and core code (COPY orchestra_worker/, orchestra_core/):
+      # a code change must ship a new GPU image too (REQUESTS 136).
+      - "orchestra/orchestra_worker/**"
+      - "orchestra/orchestra_core/**"
       - ".github/workflows/auto-build-gpu.yml"
 
 concurrency:

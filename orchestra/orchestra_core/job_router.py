@@ -132,7 +132,9 @@ def _dispatch_to_gpu_worker(worker: dict, job: dict) -> dict:
         data = json.dumps(payload).encode()
         req  = urllib.request.Request(
             f"{worker_url}/run", data=data,
-            headers={"Content-Type": "application/json"},
+            # The GPU worker answers Orchestra Core only (same token as its heartbeats).
+            headers={"Content-Type": "application/json",
+                     "X-Orchestra-Worker-Token": __import__("os").environ.get("ORCHESTRA_WORKER_TOKEN", "")},
         )
         with urllib.request.urlopen(req, timeout=300) as r:
             result = json.loads(r.read())

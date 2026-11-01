@@ -11,7 +11,9 @@ Serves local console UI at /console (localhost:8080)
 """
 import os
 import asyncio
+import json
 import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List
@@ -342,13 +344,42 @@ class RegisterWorkerRequest(BaseModel):
     label:       str   = ""
     base_url:    str   = ""
     worker_url:  str   = ""   # GPU worker's own FastAPI endpoint (e.g. http://gpu-node:7892)
+    # What a GPU worker reports about itself (REQUESTS 136, BLUEPRINT-V4 §31.F G1)
+    vendor:         Optional[str]  = None
+    gpu_name:       Optional[str]  = None
+    backend:        Optional[str]  = None
+    gpu_count:      Optional[int]  = None
+    driver:         Optional[str]  = None
+    capabilities:   Optional[List[str]] = None
+    usable:         Optional[bool] = None
+    wsl:            Optional[bool] = None
+    access_note:    Optional[str]  = None
+    worker_version: Optional[str]  = None
+
+
+TELEMETRY_STALE_S = 120   # four heartbeats
+
+
+def _worker_view(w: dict, now: Optional[float] = None) -> dict:
+    """A worker row as the console reads it: `type`, `vram_gb`, lists instead of JSON text,
+    and `telemetry` = live GPU data arrived within the last few heartbeats."""
+    now = now or time.time()
+    def _json(v, default):
+        try:
+            return json.loads(v) if isinstance(v, str) and v else default
+        except ValueError:
+            return default
+    return {**w, "type": w.get("worker_type"),
+            "vram_gb": w.get("vram_total_gb") or w.get("gpu_vram_gb"),
+            "capabilities": _json(w.get("capabilities"), []), "gpus": _json(w.get("gpus_json"), []),
+            "usable": bool(w.get("usable", 1)), "wsl": bool(w.get("wsl")), "throttled": bool(w.get("throttled")),
+            "telemetry": bool(w.get("telemetry_at")) and now - float(w.get("telemetry_at") or 0) < TELEMETRY_STALE_S}
 
 
 @app.get("/api/workers")
 async def list_workers(_=Depends(require_console)):
     # The console reads `type` (cpu/gpu) and `vram_gb`; the table columns are worker_type and gpu_vram_gb.
-    return {"workers": [{**w, "type": w.get("worker_type"), "vram_gb": w.get("gpu_vram_gb")}
-                        for w in worker_manager.get_all_workers()]}
+    return {"workers": [_worker_view(w) for w in worker_manager.get_all_workers()]}
 
 
 @app.post("/api/workers/register")
@@ -361,6 +392,9 @@ async def register_worker(req: RegisterWorkerRequest, _=Depends(require_console)
         model=req.model, concurrency=req.concurrency, timeout_sec=req.timeout_sec,
         retry_count=req.retry_count, priority=req.priority, gpu_vram_gb=req.gpu_vram_gb or req.vram_gb,
         label=req.label, base_url=req.base_url, worker_url=req.worker_url,
+        meta={k: getattr(req, k) for k in ("vendor", "gpu_name", "backend", "gpu_count", "driver", "capabilities",
+                                            "usable", "wsl", "access_note", "worker_version")},
+        reuse_by_url=True,
     )
     return result
 
@@ -421,7 +455,20 @@ async def worker_heartbeat(worker_id: str, request: Request, _=Depends(require_w
     if status == "paused" and prev.get("status") != "paused":
         logger.critical(f"🔥 {worker_id} paused at {temp}°C (thermal emergency) — resumes below the critical temperature")
         db.record_metric("thermal_pause", 1, {"worker_id": worker_id, "temp_c": temp})
-    ok = db.heartbeat_worker(worker_id, body.get("load_pct", 0), body.get("tasks_active", 0), temp, status)
+    if not prev:
+        # Unknown id (removed in the console, restored backup): the worker registers again.
+        return {"ok": False, "reregister": True}
+    telemetry = None
+    if any(k in body for k in ("util_pct", "vram_used_gb", "gpus")):
+        def _n(v):
+            return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+        gpus = body.get("gpus") if isinstance(body.get("gpus"), list) else []
+        telemetry = {"util_pct": _n(body.get("util_pct")), "vram_used_gb": _n(body.get("vram_used_gb")),
+                     "vram_total_gb": _n(body.get("vram_total_gb")), "power_w": _n(body.get("power_w")),
+                     "throttled": bool(body.get("throttled")), "gpus": [g for g in gpus if isinstance(g, dict)][:16]}
+        if telemetry["throttled"] and not prev.get("throttled"):
+            db.record_metric("gpu_throttled", 1, {"worker_id": worker_id})
+    ok = db.heartbeat_worker(worker_id, body.get("load_pct", 0), body.get("tasks_active", 0), temp, status, telemetry)
     return {"ok": ok, "status": status}
 
 

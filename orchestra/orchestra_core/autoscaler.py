@@ -218,7 +218,8 @@ class Autoscaler:
                 req = urllib.request.Request(
                     f"{endpoint}/shutdown",
                     data=b"{}",
-                    headers={"Content-Type": "application/json"},
+                    headers={"Content-Type": "application/json",
+                             "X-Orchestra-Worker-Token": os.environ.get("ORCHESTRA_WORKER_TOKEN", "")},
                     method="POST",
                 )
                 urllib.request.urlopen(req, timeout=5)
