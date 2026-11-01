@@ -68,7 +68,7 @@ di `WORK-QUEUE.md`.
 | Urutan | Aplikasi | Alasan |
 |---|---|---|
 | 1 | **Clipper** | perintah pemilik 1 Nov; pasar terbesar (kreator), sudah ada versi web |
-| 2 | Studio (AI Studio / GPU Studio / Hybrid Studio) | memakai Central Hub dan GPU yang sama dengan Clipper |
+| 2 | **AI Studio = studio film dengan AI** (REQUESTS 141, `AI-STUDIO-BLUEPRINT.md`); GPU Studio dan Hybrid Studio menjadi bagian Studio Server-nya | perintah pemilik 1 Nov; memakai Central Hub dan GPU yang sama dengan Clipper |
 | 3 | Orchestra AI | fondasi GPU; G1–G5 sedang dibangun (`BLUEPRINT-V4.md` §31.F) |
 | 4 | Privacy Vault | sudah kuat di web; versi desktop dan server |
 | 5 | Legal AI | korpus L1 ada; L2–L6 (`BLUEPRINT-V4.md` §32) |
