@@ -23,10 +23,16 @@ How it works:
   - All thresholds are read live from DB settings (hot-reloadable)
   - Respects license limits (max_cpu / max_gpu from enforcement module)
 
-Spawn integration options (set AUTOSCALE_SPAWN_TYPE env var):
-  docker   — run docker container (same node)
+Spawn integration options (AUTOSCALE_SPAWN_TYPE; default: scaler when
+ORCHESTRA_SCALER_URL is set, else noop):
+  scaler   — the orchestra-scaler service starts/stops AXTO worker containers on this
+             computer, one GPU each, on the GPU with the most room (REQUESTS 136 G4)
+  docker   — legacy: run docker here (needs the docker CLI and socket in this container)
   webhook  — POST to external URL (Kubernetes HPA, Nomad, ECS, etc.)
-  noop     — just log (testing / managed externally)
+  noop     — nothing is started (managed externally); no scale event is recorded
+Scale-down only ever stops workers the scaler started; the workers AXTO Setup started are
+the base the minimum counts on. With no GPU worker and GPU jobs waiting, a GPU worker is
+started from zero when its image is installed.
 """
 from __future__ import annotations
 
@@ -36,11 +42,13 @@ from typing import Dict, List, Optional
 import autoscale_config
 import database as db
 import enforcement
+import scaler_client
 
 logger = logging.getLogger("orchestra.autoscaler")
 
 POLL_INTERVAL     = int(os.environ.get("AUTOSCALE_POLL_INTERVAL",  "15"))   # seconds
-SPAWN_TYPE        = os.environ.get("AUTOSCALE_SPAWN_TYPE",         "noop")  # docker|webhook|noop
+SPAWN_TYPE        = os.environ.get("AUTOSCALE_SPAWN_TYPE") or ("scaler" if os.environ.get("ORCHESTRA_SCALER_URL") else "noop")
+GPU_JOB_TYPES     = ("image", "transcribe", "embedding")   # job_router._GPU_NATIVE_TASKS
 WEBHOOK_URL       = os.environ.get("AUTOSCALE_WEBHOOK_URL",        "")
 WEBHOOK_TOKEN     = os.environ.get("AUTOSCALE_WEBHOOK_TOKEN",      "")
 ORCHESTRA_URL     = os.environ.get("ORCHESTRA_CORE_URL",           "http://orchestra-core:8080")
@@ -100,7 +108,10 @@ class Autoscaler:
         cpu_workers = [w for w in workers if w.get("worker_type") == "cpu"]
         gpu_workers = [w for w in workers if w.get("worker_type") == "gpu"]
         gpu_live    = [w for w in gpu_workers if w.get("status") == "active"]
-        gpu_load    = (sum(w.get("load_pct") or 0 for w in gpu_live) / len(gpu_live)) if gpu_live else 0
+        # Busy = our task slots or the GPU's own utilisation, whichever is higher (G1 telemetry).
+        gpu_load    = (sum(max(w.get("load_pct") or 0, w.get("util_pct") or 0) for w in gpu_live) / len(gpu_live)) if gpu_live else 0
+        gpu_waiting = (db.q1("SELECT COUNT(*) AS n FROM jobs WHERE status='queued' AND task_type IN (?,?,?)",
+                             GPU_JOB_TYPES) or {}).get("n", 0) if not gpu_live else 0
 
         # ── Scale UP ─────────────────────────────────────────────────────────
         if now - self._last_scale_up > cooldown:
@@ -112,13 +123,15 @@ class Autoscaler:
                 if self._spawn_worker("cpu"):
                     self._last_scale_up = now
                     db.record_metric("autoscale_up", 1, {"type": "cpu"})
-            elif (gpu_live and gpu_load > cfg["up"] and enforcement.has_feature("gpu_workers")
+            elif (((gpu_live and gpu_load > cfg["up"]) or (not gpu_live and gpu_waiting > 0))
+                    and enforcement.has_feature("gpu_workers")
                     and len(gpu_workers) < min(max_gpu, enforcement.worker_limit("gpu"))):
-                logger.info(f"↑ Scale UP: GPU load {gpu_load:.0f}% > {cfg['up']}%, "
-                            f"gpu_workers={len(gpu_workers)}/{max_gpu}")
+                why = (f"GPU load {gpu_load:.0f}% > {cfg['up']}%" if gpu_live
+                       else f"{gpu_waiting} GPU job(s) waiting and no GPU worker (scale from zero)")
+                logger.info(f"↑ Scale UP: {why}, gpu_workers={len(gpu_workers)}/{max_gpu}")
                 if self._spawn_worker("gpu"):
                     self._last_scale_up = now
-                    db.record_metric("autoscale_up", 1, {"type": "gpu"})
+                    db.record_metric("autoscale_up", 1, {"type": "gpu", "from_zero": not gpu_live})
 
         # ── Scale DOWN (idle workers; GPUs never below the console's minimum) ──
         if now - self._last_scale_down > cooldown:
@@ -130,6 +143,8 @@ class Autoscaler:
             for worker in idle:
                 if worker.get("worker_type") == "gpu" and len(gpu_workers) <= cfg["min"]:
                     continue
+                if SPAWN_TYPE == "scaler" and not scaler_client.is_scaled(worker):
+                    continue   # AXTO Setup's base workers stay; only scaled ones are stopped
                 logger.info(f"↓ Scale DOWN: worker {worker['id']} idle >{idle_to}s")
                 self._drain_worker(worker)
                 self._last_scale_down = now
@@ -145,13 +160,42 @@ class Autoscaler:
     # ── Spawn worker ──────────────────────────────────────────────────────────
 
     def _spawn_worker(self, worker_type: str = "cpu") -> bool:
+        if SPAWN_TYPE == "scaler":
+            return self._spawn_scaler(worker_type)
         if SPAWN_TYPE == "docker":
             return self._spawn_docker(worker_type)
         elif SPAWN_TYPE == "webhook":
             return self._spawn_webhook(worker_type)
         else:
-            logger.info(f"[noop] Would spawn {worker_type} worker")
+            logger.info(f"[noop] Would spawn {worker_type} worker (nothing started)")
+            return False
+
+    def _spawn_scaler(self, worker_type: str) -> bool:
+        """One more worker through orchestra-scaler, a GPU worker on the GPU with the most room."""
+        workers = db.get_active_workers()
+        if worker_type == "cpu":
+            kind, index = "cpu", None
+        else:
+            gpus = [w for w in workers if w.get("worker_type") == "gpu"]
+            kind = scaler_client.kind_for(gpus[0]) if gpus else db.get_setting("gpu_worker_kind", "") or ""
+            try:
+                h = scaler_client.health()
+                if not kind:
+                    images = h.get("images") or {}
+                    kind = "gpu" if images.get("gpu") else "gpu-amd" if images.get("gpu-amd") else "gpu"
+                scaled = scaler_client.listed()
+            except scaler_client.ScalerError:
+                scaled = []
+            index = scaler_client.pick_gpu(workers, kind, scaled, autoscale_config.get_config()["crit"])
+        try:
+            r = scaler_client.spawn(kind, index)
+            self._spawned_containers.append(r.get("name", ""))
+            logger.info(f"Scaler started {r.get('name')} ({kind}, GPU {index if index is not None else 'all'})")
             return True
+        except scaler_client.ScalerError as e:
+            logger.warning(f"Scaler could not start a {kind} worker: {e}")
+            db.record_metric("autoscale_failed", 1, {"type": worker_type, "error": str(e)[:200]})
+            return False
 
     def _spawn_docker(self, worker_type: str) -> bool:
         image  = WORKER_CPU_IMAGE if worker_type == "cpu" else WORKER_GPU_IMAGE
@@ -211,6 +255,17 @@ class Autoscaler:
 
         # Mark draining in DB
         db.ex("UPDATE workers SET status='draining' WHERE id=?", (worker_id,))
+
+        # A worker the scaler started: stop its container (SIGTERM — running jobs finish).
+        name = scaler_client.container_of(worker)
+        if SPAWN_TYPE == "scaler" and name:
+            try:
+                scaler_client.stop(name)
+                db.remove_worker(worker_id)
+                logger.info(f"Worker {worker_id} ({name}) stopped by the scaler")
+                return
+            except scaler_client.ScalerError as e:
+                logger.warning(f"Scaler could not stop {name}: {e}")
 
         # Ask worker to deregister
         if endpoint:

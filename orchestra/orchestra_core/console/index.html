@@ -667,7 +667,19 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
     </div>
     <div style="font-size:.72rem;color:var(--text2);margin-top:10px;padding:8px 12px;background:var(--card2);border-radius:6px;font-family:var(--mono)">
       ✅ Swap GPU A → GPU D is always OK — total active count is what is checked against your license.
+      + starts a real worker container on the GPU with the most room; − stops the most idle worker that scaling started.
     </div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">🧩 Scaling service <span id="sc-state" class="badge" style="margin-left:6px">…</span></div>
+    <div id="sc-note" style="font-size:.72rem;color:var(--text2);margin-bottom:8px">Starts and stops worker containers on this computer (orchestra-scaler).</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn-outline btn-sm" id="sc-add-cpu" onclick="scaleKind('cpu')">+ CPU worker</button>
+      <button class="btn btn-outline btn-sm" id="sc-add-gpu" onclick="scaleKind('gpu')">+ GPU worker (NVIDIA)</button>
+      <button class="btn btn-outline btn-sm" id="sc-add-gpu-amd" onclick="scaleKind('gpu-amd')">+ GPU worker (AMD)</button>
+    </div>
+    <div class="table-wrap"><table class="tbl"><thead><tr><th>Container</th><th>Kind</th><th>GPU</th><th>State</th><th></th></tr></thead>
+      <tbody id="sc-tbl"><tr><td colspan="5" style="color:var(--text3)">No scaled workers</td></tr></tbody></table></div>
   </div>
   <div class="grid-2" style="margin-bottom:14px">
     <div class="card">
@@ -695,7 +707,10 @@ input:checked + .toggle-slider:before{transform:translateX(20px);background:#fff
         <div class="form-group"><label class="form-label">Min GPU Workers</label><input class="form-input" id="as-min" type="number" value="1" min="0"></div>
         <div class="form-group"><label class="form-label">Cooldown (sec)</label><input class="form-input" id="as-cool" type="number" value="120" min="30"></div>
       </div>
-      <div class="form-group"><label class="form-label">Clone Template — New workers from:</label>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Max GPU Workers (Auto-Scale)</label><input class="form-input" id="as-max-gpu" type="number" value="4" min="0" max="64"></div>
+      </div>
+      <div class="form-group"><label class="form-label">New GPU workers are like (brand):</label>
         <select class="form-select" id="as-tmpl"><option value="">No GPU workers yet</option></select>
       </div>
     </div>
@@ -1122,7 +1137,7 @@ function go(page, el){
   if(page==='hardening') loadHardening();
   if(page==='license') loadLicenseStatus();
   if(page==='gpu') { loadGPUPool(); loadGPUAdvice(false); }
-  if(page==='autoscale') loadASConfig();
+  if(page==='autoscale') { loadASConfig(); loadScaler(); }
   if(page==='monitor') loadMonitor();
   if(page==='chat') initChat();
   if(page==='multiai') initMultiAI();
@@ -1950,6 +1965,7 @@ async function loadASConfig(){
   document.getElementById('as-down') && (document.getElementById('as-down').value=_asConfig.down);
   document.getElementById('as-down-v') && (document.getElementById('as-down-v').textContent=_asConfig.down+'%');
   document.getElementById('as-min') && (document.getElementById('as-min').value=_asConfig.min);
+  document.getElementById('as-max-gpu') && _asConfig.max_gpu!=null && (document.getElementById('as-max-gpu').value=_asConfig.max_gpu);
   document.getElementById('as-cool') && (document.getElementById('as-cool').value=_asConfig.cool);
   document.getElementById('therm-warn') && (document.getElementById('therm-warn').value=_asConfig.warn);
   document.getElementById('tw-v') && (document.getElementById('tw-v').textContent=_asConfig.warn+'°C');
@@ -1979,24 +1995,51 @@ function toggleAS(cb){
 async function manualScale(delta){
   const licensed=_licData.gpu_workers||0;
   const used=_gpuWorkers.filter(w=>w.status==='active').length;
-  if(delta>0&&used>=licensed){toast('GPU license limit ('+licensed+'). Cannot add more.','error');return;}
-  if(delta<0&&used<=0){toast('No GPU workers to remove','error');return;}
+  if(delta>0&&licensed>0&&used>=licensed){toast('GPU license limit ('+licensed+'). Cannot add more.','error');return;}
   try{
     if(delta>0){
       const tmpl=document.getElementById('as-tmpl')?.value;
-      if(!tmpl){toast('Set a template worker in the Scale rules first','error');return;}
-      await api('POST','/api/workers/scale',{action:'add',template_worker_id:tmpl});
-      addScaleLog('ok','Manual scale-UP +1 GPU (clone of '+tmpl+')');
-      toast('✅ GPU worker added','ok');
+      const r=await api('POST','/api/workers/scale',tmpl?{action:'add',template_worker_id:tmpl}:{action:'add',kind:'gpu'});
+      addScaleLog('ok','Manual scale-UP: '+r.spawned+(r.gpu_index!=null?' on GPU '+r.gpu_index:''));
+      toast('✅ '+r.spawned+' starting — it registers in a few seconds','ok');
     } else {
-      await api('POST','/api/workers/scale',{action:'remove'});
-      addScaleLog('warn','Manual scale-DOWN -1 GPU worker removed');
-      toast('GPU worker removed','ok');
+      const r=await api('POST','/api/workers/scale',{action:'remove'});
+      addScaleLog('warn','Manual scale-DOWN: '+r.removed+' stopped (running jobs finish first)');
+      toast('Worker '+r.removed+' stopping','ok');
     }
-    await loadGPUPool();
-    const newUsed=_gpuWorkers.filter(w=>w.status==='active').length;
-    setEl('manual-gpu-n',newUsed);
-  }catch(e){toast('Scale error: '+e.message,'error');}
+    setTimeout(()=>{loadGPUPool();loadScaler();},4000);
+  }catch(e){toast('Scale: '+e.message,'error');}
+}
+
+async function scaleKind(kind){
+  try{
+    const r=await api('POST','/api/workers/scale',{action:'add',kind});
+    addScaleLog('ok','Started '+r.spawned+(r.gpu_index!=null?' on GPU '+r.gpu_index:''));
+    toast('✅ '+r.spawned+' starting','ok');
+    setTimeout(()=>{loadGPUPool();loadScaler();},4000);
+  }catch(e){toast('Scale: '+e.message,'error');}
+}
+
+async function stopScaled(name){
+  if(!confirm('Stop '+name+'? Running jobs finish first.')) return;
+  try{
+    await api('DELETE','/api/scaler/workers/'+encodeURIComponent(name));
+    addScaleLog('warn','Stopped '+name+' (running jobs finish first)');
+    toast(name+' stopping','ok'); setTimeout(()=>{loadScaler();loadGPUPool();},3000);
+  }catch(e){toast('Stop: '+e.message,'error');}
+}
+
+async function loadScaler(){
+  let h; try{ h=await api('GET','/api/scaler'); }catch(e){ return; }
+  const st=document.getElementById('sc-state');
+  if(st){ st.textContent=!h.configured?'not installed':h.docker?'running':'not answering'; st.className='badge '+(h.docker?'badge-green':'badge-amber'); }
+  const imgs=h.images||{};
+  setEl('sc-note', !h.configured ? 'Update Orchestra with AXTO Setup to add the scaling service.' :
+    !h.docker ? (h.error||'The scaling service is not answering.') :
+    'Installed worker images: '+(Object.keys(imgs).filter(k=>imgs[k]).join(', ')||'none')+' · running: '+(h.running||0)+' / '+(h.max||16));
+  for(const k of ['cpu','gpu','gpu-amd']){ const b=document.getElementById('sc-add-'+k); if(b){ b.disabled=!(h.docker&&imgs[k]); b.title=imgs[k]?'':'Image not installed — add it with AXTO Setup'; } }
+  const tb=document.getElementById('sc-tbl');
+  if(tb){ const ws=h.workers||[]; tb.innerHTML=ws.length?ws.map(w=>`<tr><td style="font-family:var(--mono)">${esc(w.name)}</td><td>${esc(w.kind)}</td><td>${esc(w.gpu)}</td><td>${esc(w.state)} · ${esc(w.status)}</td><td><button class="btn btn-danger btn-sm" onclick="stopScaled('${esc(w.name)}')">Stop</button></td></tr>`).join(''):'<tr><td colspan="5" style="color:var(--text3)">No scaled workers</td></tr>'; }
 }
 
 async function saveASConfig(){
@@ -2011,6 +2054,7 @@ async function saveASConfig(){
     crit: parseInt(document.getElementById('therm-crit')?.value)||82,
     kill: parseInt(document.getElementById('therm-kill')?.value)||90,
     strat: document.getElementById('therm-strat')?.value||'coolest_first',
+    max_gpu: (v=>Number.isNaN(v)?4:Math.max(0,v))(parseInt(document.getElementById('as-max-gpu')?.value)),
   };
   try{
     const saved=await api('PUT','/api/autoscale/config',_asConfig);

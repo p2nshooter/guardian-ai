@@ -124,21 +124,54 @@ def test_direct_chat_explains_what_is_missing(client, monkeypatch):
 
 # ── Manual scaling ────────────────────────────────────────────────────────────
 
-def test_manual_scale_clones_the_template_within_the_edition(client):
+def test_manual_scale_starts_and_stops_real_worker_containers_within_the_edition(client, monkeypatch):
+    """REQUESTS 136 G4: + and − in the console start and stop containers through orchestra-scaler."""
+    import scaler_client
+    calls = []
+    monkeypatch.setattr(scaler_client, "listed", lambda: [])
+    monkeypatch.setattr(scaler_client, "spawn", lambda kind, idx=None: calls.append(("spawn", kind, idx)) or {"name": f"orchestra-scaled-{kind}-all-abc123"})
+    monkeypatch.setattr(scaler_client, "stop", lambda name: calls.append(("stop", name)) or {"ok": True})
     use(STARTER)
     first = gpu(client)[0]
     r = client.post("/api/workers/scale", headers=CONSOLE, json={"action": "add", "template_worker_id": first})
     assert r.status_code == 200, r.text
-    clone = r.json()["worker"]
-    assert clone["worker_type"] == "gpu" and clone["model"] == "llama3.2" and clone["worker_url"] == "http://gpu-0:7892"
-    gpu(client, 8)                                              # 10 GPU workers now
-    r = client.post("/api/workers/scale", headers=CONSOLE, json={"action": "add", "template_worker_id": first})
+    assert r.json()["spawned"] == "orchestra-scaled-gpu-all-abc123" and calls == [("spawn", "gpu", None)]
+    gpu(client, 9)                                              # 10 GPU workers now
+    r = client.post("/api/workers/scale", headers=CONSOLE, json={"action": "add", "kind": "gpu"})
     assert r.status_code == 402 and r.json()["category"] == "WORKER_LIMIT"
+    assert len(calls) == 1, "the edition limit is checked before anything starts"
+    # Workers AXTO Setup started are never removed by scaling.
+    r = client.post("/api/workers/scale", headers=CONSOLE, json={"action": "remove", "worker_id": first})
+    assert r.status_code == 409 and "AXTO Setup" in r.json()["detail"]
+    assert client.post("/api/workers/scale", headers=CONSOLE, json={"action": "remove"}).status_code == 404
+    # A worker the scaler started registers itself; removing it stops its container.
+    use(PRO)
+    scaled = client.post("/api/workers/register", headers=CONSOLE, json={
+        "node_id": "scaled-orchestra-scaled-gpu-all-abc123", "type": "gpu", "provider_id": "ollama", "model": "llama3.2",
+        "worker_url": "http://orchestra-scaled-gpu-all-abc123:7892"}).json()["worker_id"]
     r = client.post("/api/workers/scale", headers=CONSOLE, json={"action": "remove"})
-    assert r.status_code == 200 and r.json()["ok"] is True
-    assert len(client.get("/api/workers", headers=CONSOLE).json()["workers"]) == 9
+    assert r.status_code == 200 and r.json()["removed"] == scaled
+    assert calls[-1] == ("stop", "orchestra-scaled-gpu-all-abc123")
     assert client.post("/api/workers/scale", headers=CONSOLE,
                        json={"action": "add", "template_worker_id": "W-NONE"}).status_code == 404
+
+
+def test_a_scaled_container_can_be_stopped_by_name_even_unregistered(client, monkeypatch):
+    import scaler_client
+    stopped = []
+    monkeypatch.setattr(scaler_client, "stop", lambda name: stopped.append(name) or {"ok": True})
+    r = client.delete("/api/scaler/workers/orchestra-scaled-cpu-all-abc123", headers=CONSOLE)
+    assert r.status_code == 200 and r.json() == {"ok": True, "removed_workers": []}
+    assert stopped == ["orchestra-scaled-cpu-all-abc123"]
+    assert client.delete("/api/scaler/workers/orchestra-scaled-cpu-all-abc123").status_code == 401
+
+
+def test_manual_scale_says_when_the_scaling_service_is_missing(client, monkeypatch):
+    monkeypatch.delenv("ORCHESTRA_SCALER_URL", raising=False)
+    r = client.post("/api/workers/scale", headers=CONSOLE, json={"action": "add", "kind": "cpu"})
+    assert r.status_code == 503 and "orchestra-scaler" in r.json()["detail"]
+    h = client.get("/api/scaler", headers=CONSOLE).json()
+    assert h["configured"] is False and h["docker"] is False
 
 
 # ── Auto-Scale & thermal rules ────────────────────────────────────────────────
