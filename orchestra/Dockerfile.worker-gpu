@@ -12,15 +12,21 @@
 #   8–16 GB → chat + embedding + transcription + DALL-E via API
 #   > 16 GB → ALL: chat + image gen (SDXL local) + embedding + transcription
 #
-# Multi-vendor GPU support:
-#   NVIDIA  → nvidia-container-toolkit  (docker run --gpus all ...)
-#   AMD     → ROCm sysfs detection      (docker run --device /dev/kfd --device /dev/dri ...)
-#   Apple   → MPS via torch             (not supported in Docker Linux)
-#   CPU     → fallback always works
+# One Dockerfile, one image per GPU brand (REQUESTS 136, BLUEPRINT-V4 §31.F G3).
+# Every layer is the same except the PyTorch build chosen by GPU_VARIANT:
+#   cuda (default) → axto/orchestra-worker-gpu        NVIDIA  (docker run --gpus all …)
+#   rocm           → axto/orchestra-worker-gpu-amd    AMD     (--device /dev/kfd --device /dev/dri)
+# The same image runs on Linux and on Windows (Docker Desktop, WSL 2); Docker
+# Desktop passes only NVIDIA GPUs into containers, so AMD images are for Linux.
+# Detection, telemetry and the GPU test (python -m orchestra_worker.probe) need
+# no vendor tool: sysfs and hwmon cover AMD; nvidia-smi comes with the NVIDIA runtime.
+# CPU fallback always works.
 #
-# PyTorch CUDA build is installed AFTER requirements to avoid pip wheel conflict.
+# PyTorch is installed AFTER requirements to avoid pip pulling a CPU-only wheel.
 # ─────────────────────────────────────────────────────────────────────────────
 FROM python:3.11-slim-bookworm
+
+ARG GPU_VARIANT=cuda
 
 LABEL org.opencontainers.image.source="https://github.com/your-org/guardian-ai"
 LABEL org.opencontainers.image.title="AXTO Orchestra Worker GPU"
@@ -50,14 +56,18 @@ RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt \
  && pip install --no-cache-dir -r requirements-gpu.txt
 
-# Step 2: Install PyTorch with CUDA 12.1 support
-# This is separate to avoid pip's CPU-only wheel being pulled by requirements.txt
-# ~2.5GB added here — this is what makes the image ~4-5GB total
-RUN pip install --no-cache-dir \
+# Step 2: PyTorch for this GPU brand (same version everywhere)
+# cuda: CUDA 12.1 wheels (~2.5 GB) · rocm: ROCm 6.2 wheels (bundle the ROCm runtime)
+RUN case "$GPU_VARIANT" in \
+      cuda) IDX=https://download.pytorch.org/whl/cu121 ;; \
+      rocm) IDX=https://download.pytorch.org/whl/rocm6.2 ;; \
+      *) echo "unknown GPU_VARIANT '$GPU_VARIANT' (cuda | rocm)" >&2; exit 1 ;; \
+    esac \
+ && pip install --no-cache-dir \
     torch==2.5.1 \
     torchvision==0.20.1 \
     torchaudio==2.5.1 \
-    --index-url https://download.pytorch.org/whl/cu121
+    --index-url "$IDX"
 
 # Step 3: Clean up build tools (keep runtime libs)
 RUN apt-get purge -y gcc g++ python3-dev libssl-dev libffi-dev 2>/dev/null || true \
@@ -78,5 +88,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('WORKER_PORT', '7892') + '/health', timeout=8)" || exit 1
 
 ENV WORKER_TYPE=gpu
+ENV GPU_VARIANT=${GPU_VARIANT}
 
 CMD ["python", "-m", "orchestra_worker.worker_gpu"]

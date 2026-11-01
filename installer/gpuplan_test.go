@@ -135,3 +135,50 @@ func TestParseProbe(t *testing.T) {
 		t.Fatalf("%+v", crash)
 	}
 }
+
+var radeon = []GPU{{Vendor: "amd", Label: "AMD", Name: "AMD Radeon RX 7900 XTX", VRAMGB: 24}}
+
+func TestAmdOnLinuxWithROCmDevicesGetsTheAMDWorker(t *testing.T) {
+	h := host("", "6.8", false)
+	h.AMDDevices = func() (bool, bool, string) { return true, true, "amdgpu" }
+	p := planGPU(radeon, "linux", h)
+	if !p.Ready || !p.Auto || p.Mode != "container" || p.Profile != "gpu-amd" || p.Vendor != "amd" {
+		t.Fatalf("%+v", p)
+	}
+	if gpuProfileVendor(p.Profile) != "amd" || !isGPUProfile(p.Profile) || isGPUProfile("ollama") {
+		t.Fatal("profile helpers")
+	}
+}
+
+func TestAmdOnLinuxWithoutROCmNamesTheFix(t *testing.T) {
+	for name, dev := range map[string][3]any{
+		"no kfd":     {false, true, "amdgpu"},
+		"no render":  {true, false, "amdgpu"},
+		"radeon drv": {true, true, "radeon"},
+	} {
+		h := host("", "6.8", false)
+		d := dev
+		h.AMDDevices = func() (bool, bool, string) { return d[0].(bool), d[1].(bool), d[2].(string) }
+		p := planGPU(radeon, "linux", h)
+		if p.Ready || p.Mode != "host" || p.Profile != "gpu-amd" || !strings.Contains(p.Fix, "amdgpu-install") || p.FixURL != rocmInstallURL {
+			t.Fatalf("%s: %+v", name, p)
+		}
+	}
+}
+
+func TestAmdOnWindowsStaysOnHostOllama(t *testing.T) {
+	h := host("", "microsoft-standard-WSL2", false)
+	h.AMDDevices = func() (bool, bool, string) { t.Fatal("Windows never checks Linux devices"); return false, false, "" }
+	if p := planGPU(radeon, "windows", h); p.Ready || p.Mode != "host" || p.Profile != "" {
+		t.Fatalf("%+v", p)
+	}
+}
+
+func TestNvidiaWinsWhenBothBrandsArePresent(t *testing.T) {
+	both := append(append([]GPU{}, radeon...), rtx...)
+	h := host(`{"nvidia":{}}`, "6.8", false)
+	h.AMDDevices = func() (bool, bool, string) { return true, true, "amdgpu" }
+	if p := planGPU(both, "linux", h); p.Profile != "gpu" || !p.Ready {
+		t.Fatalf("%+v", p)
+	}
+}

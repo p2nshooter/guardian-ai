@@ -74,6 +74,7 @@ services:
       options: { max-size: "10m", max-file: "3" }
 
   # ── GPU worker (NVIDIA) — only with the "gpu" profile ─────────────────────
+  # (AMD on Linux: the "gpu-amd" profile below — the same image built for ROCm.)
   # Image axto/orchestra-worker-gpu (≈ 6 GB: CUDA PyTorch, Whisper, SDXL,
   # embeddings). AXTO Setup starts it when "GPU worker" is ticked (CLI: --gpu);
   # by hand: docker compose -f orchestra-compose.yml --profile gpu up -d
@@ -106,6 +107,51 @@ services:
       # Address orchestra-core uses to POST GPU tasks to this worker's /run.
       - WORKER_SELF_URL=http://orchestra-worker-gpu-1:7892
       # Hugging Face models (Whisper, SDXL, embeddings) are kept in a volume.
+      - HF_HOME=/app/models
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - orchestra-data:/app/data:ro
+      - orchestra-models:/app/models
+    networks:
+      - orchestra-net
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  # ── GPU worker (AMD, Linux) — only with the "gpu-amd" profile ─────────────
+  # Image axto/orchestra-worker-gpu-amd: the same image as the NVIDIA worker with
+  # PyTorch for ROCm 6.2 (REQUESTS 136 G3). AXTO Setup starts it when the host has
+  # /dev/kfd, an AMD render node and the amdgpu driver, after a GPU test inside the
+  # image; by hand: docker compose -f orchestra-compose.yml --profile gpu-amd up -d
+  # Docker Desktop on Windows cannot pass AMD GPUs into containers: there, Ollama on
+  # the host uses the card and Orchestra reaches it through an Ollama worker.
+  # Consumer Radeon cards that ROCm does not list may need HSA_OVERRIDE_GFX_VERSION
+  # (e.g. 10.3.0 for RX 6000) in the environment below.
+  orchestra-worker-gpu-amd:
+    image: axto/orchestra-worker-gpu-amd:latest
+    container_name: orchestra-worker-gpu-amd-1
+    profiles: ["gpu-amd"]
+    restart: unless-stopped
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    depends_on:
+      orchestra-core:
+        condition: service_healthy
+    environment:
+      - ORCHESTRA_CORE_URL=http://orchestra-core:8080
+      - ORCHESTRA_WORKER_TOKEN=${WORKER_TOKEN:-}
+      - ORCHESTRA_CONSOLE_PASSWORD=${CONSOLE_PASSWORD:-}
+      - WORKER_MODEL=${GPU_WORKER_MODEL:-llama3.2}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - WORKER_PORT=7892
+      - NODE_ID=gpu-amd-node-1
+      - WORKER_LABEL=GPU Worker (AMD)
+      # Address orchestra-core uses to POST GPU tasks to this worker's /run.
+      - WORKER_SELF_URL=http://orchestra-worker-gpu-amd-1:7892
       - HF_HOME=/app/models
     extra_hosts:
       - "host.docker.internal:host-gateway"

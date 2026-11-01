@@ -100,10 +100,10 @@ function updateSize() {
 function renderOptional() {
   const opts = licence.optional || [], inst = licence.installed;
   $("#opts").innerHTML = opts.map((o) => {
-    const on = inst ? (inst.images || []).includes(o.name) : (o.profile === "gpu" && !!(licence.gpu_plan ? licence.gpu_plan.auto : licence.gpu_ready));
+    const on = inst ? (inst.images || []).includes(o.name) : (licence.gpu_plan ? (licence.gpu_plan.auto && o.profile === licence.gpu_plan.profile) : (o.profile === "gpu" && !!licence.gpu_ready));
     return `<label class="check"><input type="checkbox" class="opt" value="${esc(o.name)}"${on ? " checked" : ""}> <span>${esc(o.label)} — ${esc(o.size)}${o.local ? " · " + esc(t("inPackage")) : ""}</span></label>`;
   }).join("");
-  const gpuOpt = opts.some((o) => o.profile === "gpu");
+  const gpuOpt = opts.some((o) => (o.profile || "").startsWith("gpu"));
   $("#gpuHint").textContent = !gpuOpt ? "" : licence.gpu_note ? licence.gpu_note : licence.gpu ? t("gpuFound", { gpu: licence.gpu }) : t("gpuNone");
   show($("#optBox"), opts.length > 0);
   $("#offlineNote").textContent = licence.local_images ? t("offline", { n: licence.local_images }) : "";

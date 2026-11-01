@@ -200,4 +200,3 @@ func TestOllamaUnreachableAndOnCPU(t *testing.T) {
 		t.Error("a model with no VRAM use reported as on the GPU")
 	}
 }
-

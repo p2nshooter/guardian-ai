@@ -45,8 +45,10 @@ type Options struct {
 	// ImagesDir is an offline package's image folder ("" = images/ next to AXTO Setup).
 	ImagesDir string
 	Profiles  []string // compose profiles to enable (from the optional images)
-	// NoGPU skips the GPU worker even when the GPU plan would include it (CLI --no-gpu).
-	NoGPU bool
+	// NoGPU skips the GPU worker even when the GPU plan would include it (CLI --no-gpu);
+	// RequireGPU fails the install when the GPU plan is not ready (CLI --gpu).
+	NoGPU      bool
+	RequireGPU bool
 }
 
 type Installed struct {
@@ -471,15 +473,23 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	wanted := optionalWanted(p, o.With, prev)
 	// The same GPU decision as the wizard's tick (gpuplan.go): a fresh install from the
 	// command line includes the GPU worker by itself when the GPU is ready; --no-gpu skips it.
+	autoGPU := map[string]bool{}
+	if o.RequireGPU && !o.NoGPU && !d.GPUPlan.Ready {
+		return nil, errors.New(strings.TrimSpace("--gpu: the GPU worker cannot use this computer's GPU yet — " + d.GPUNote))
+	}
 	for n, prof := range p.Optional {
-		if prof != "gpu" {
+		if !isGPUProfile(prof) {
 			continue
 		}
 		switch {
 		case o.NoGPU:
 			delete(wanted, n)
-		case o.With == nil && prev == nil && d.GPUPlan.Auto && d.GPUPlan.Profile == prof:
+		case prof != d.GPUPlan.Profile:
+			// Another brand's worker image is never added by the plan.
+		case o.RequireGPU:
 			wanted[n] = true
+		case o.With == nil && prev == nil && d.GPUPlan.Auto:
+			wanted[n], autoGPU[n] = true, true
 			pr.Step(10, "GPU worker included: "+d.GPUPlan.Note+" (skip it with --no-gpu)")
 		}
 	}
@@ -499,6 +509,12 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 			file += "-arm64"
 		}
 		local := localImage(dirs, file, im.Size)
+		if !im.Available && local == "" && autoGPU[im.Name] {
+			// Added by the GPU plan, not asked for: install everything else and say why it is missing.
+			warnings = append(warnings, im.Label+" is not published yet, so the GPU worker was not installed — run AXTO Setup again (Update) later.")
+			o.Profiles = without(o.Profiles, p.Optional[im.Name])
+			continue
+		}
 		if !im.Available && local == "" {
 			if info.Arch == "arm64" {
 				return nil, fmt.Errorf("%s is not available for ARM64 computers yet — install it on an x86-64 (Intel/AMD) machine, or try again later", im.Label)
@@ -509,14 +525,27 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	}
 	// The GPU worker reserves an NVIDIA device: without a usable GPU its container
 	// cannot start, so say so now instead of after a 6 GB download.
+	kept := need[:0]
 	for _, im := range need {
-		if p.Optional[im.Name] == "gpu" && !d.GPUPlan.Ready {
-			if d.GPUNote != "" {
-				return nil, errors.New(d.GPUNote)
-			}
-			return nil, fmt.Errorf("no GPU the worker container can use was found — %s needs an NVIDIA card with its driver (CUDA); install without it, or install the NVIDIA driver first", im.Label)
+		prof := p.Optional[im.Name]
+		if !isGPUProfile(prof) || (d.GPUPlan.Ready && d.GPUPlan.Profile == prof) {
+			kept = append(kept, im)
+			continue
 		}
+		if !contains(o.With, im.Name) && !o.RequireGPU {
+			// Kept from an earlier install, but this computer cannot use it now: update the rest.
+			warnings = append(warnings, im.Label+" was left out: "+strings.TrimSpace(firstNonEmpty(d.GPUNote, d.GPUPlan.Note)))
+			continue
+		}
+		if d.GPUPlan.Ready {
+			return nil, fmt.Errorf("%s is for a %s GPU; this computer's GPU uses the %s worker — untick %s", im.Label, strings.ToUpper(gpuProfileVendor(prof)), d.GPUPlan.Profile, im.Label)
+		}
+		if d.GPUNote != "" {
+			return nil, errors.New(d.GPUNote)
+		}
+		return nil, fmt.Errorf("no GPU the worker container can use was found for %s; install without it, or fix the GPU driver first", im.Label)
 	}
+	need = kept
 	o.Profiles = nil
 	for _, im := range need {
 		if prof := p.Optional[im.Name]; prof != "" && !contains(o.Profiles, prof) {
@@ -564,13 +593,13 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	// Real GPU test inside the worker image, exactly as compose will hand the GPU over, on
 	// every OS. A failed test never breaks the install: the GPU worker stays off and the
 	// reason is shown; everything else starts.
-	if contains(o.Profiles, "gpu") {
-		for img, prof := range p.Optional {
-			if prof != "gpu" || !contains(loaded, img) {
-				continue
-			}
+	for img, prof := range p.Optional {
+		if !isGPUProfile(prof) || !contains(o.Profiles, prof) || !contains(loaded, img) {
+			continue
+		}
+		{
 			pr.Step(73, "Testing the GPU inside the GPU worker image…")
-			r := probeGPU(ctx, "axto/"+img+":latest", d.GPUPlan.Vendor)
+			r := probeGPU(ctx, "axto/"+img+":latest", gpuProfileVendor(prof))
 			if r.OK {
 				msg := "GPU test passed"
 				if len(r.GPUs) > 0 {
@@ -585,7 +614,7 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 					"Fix it, then run AXTO Setup again (Update) — everything else is running."
 				warnings = append(warnings, w)
 				pr.Step(74, w)
-				o.Profiles = without(o.Profiles, "gpu")
+				o.Profiles = without(o.Profiles, prof)
 			}
 		}
 	}

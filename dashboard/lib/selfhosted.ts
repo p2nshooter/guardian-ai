@@ -18,7 +18,10 @@ export interface SelfHostedProduct {
   slug: string;
   keyPrefix: string;          // licence key prefix the engine expects
   packageCode: string;        // top-tier package code signed into every licence
-  images: { name: string; label: string; optional?: boolean; gpu?: boolean }[];  // R2: builds/latest/raw/<name>.tar.gz (gpu: NVIDIA worker, AXTO Setup --gpu)
+  // R2: builds/latest/raw/<name>.tar.gz. gpu: a GPU worker image AXTO Setup adds when the GPU plan picks its
+  // brand (NVIDIA: orchestra-worker-gpu, AMD on Linux: orchestra-worker-gpu-amd); offline: false keeps a
+  // large image out of the offline package (installed online on request).
+  images: { name: string; label: string; optional?: boolean; gpu?: boolean; offline?: boolean }[];
   compose: string;            // /configs/<compose>
   config: string;             // /configs/<config>
   configTarget: string;       // filename the user saves it as
@@ -33,7 +36,7 @@ export const SELF_HOSTED: SelfHostedProduct[] = [
     images: [{ name: "guardian-core", label: "Guardian Core (API + dashboard)" }, { name: "guardian-node", label: "Guardian Node agent" }],
     compose: "docker-compose.yml", config: "guardian.example.yml", configTarget: "guardian.yml", port: 8080, licenseField: "guardian.license_key", service: "guardian-core", stateDir: "/guardian/data/.axto" },
   { slug: "orchestra", keyPrefix: "ORCH", packageCode: "orchestra_unlimited",
-    images: [{ name: "orchestra-core", label: "Orchestra Core (router + console)" }, { name: "orchestra-worker-cpu", label: "CPU worker" }, { name: "orchestra-worker-gpu", label: "GPU worker (NVIDIA)", optional: true, gpu: true }],
+    images: [{ name: "orchestra-core", label: "Orchestra Core (router + console)" }, { name: "orchestra-worker-cpu", label: "CPU worker" }, { name: "orchestra-worker-gpu", label: "GPU worker (NVIDIA)", optional: true, gpu: true }, { name: "orchestra-worker-gpu-amd", label: "GPU worker (AMD, Linux)", optional: true, gpu: true, offline: false }],
     compose: "orchestra-compose.yml", config: "orchestra.example.yml", configTarget: "orchestra.yml", port: 8088, licenseField: "orchestra.license_key", service: "orchestra-core", stateDir: "/app/data/.axto" },
   { slug: "vault", keyPrefix: "VAULT", packageCode: "vault_enterprise",
     images: [{ name: "vault-core", label: "Vault proxy" }],
