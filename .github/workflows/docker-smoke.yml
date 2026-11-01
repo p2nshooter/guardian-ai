@@ -157,6 +157,34 @@ jobs:
           fi
           docker logs smoke 2>&1 | tail -25
           echo "✅ $NAME ($ARCH)"
+      - name: Update keeps an existing install running (orchestra-core, REQUESTS 135)
+        if: matrix.name == 'orchestra-core'
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -u
+          tries=60; [ "$ARCH" = "arm64" ] && tries=240
+          state() {  # "up" once /health answers, "exit:<code>" if the container stopped
+            for i in $(seq 1 "$tries"); do
+              sleep 2
+              if [ "$(docker inspect -f '{{.State.Running}}' smoke)" != "true" ]; then echo "exit:$(docker inspect -f '{{.State.ExitCode}}' smoke)"; return; fi
+              code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/health || true)
+              [ "$code" = "200" ] && { echo up; return; }
+            done
+            echo timeout
+          }
+          # The data volume of an earlier release still holds its module hashes.
+          docker exec smoke python -c "import json; m=['enforcement.py','credential_vault.py','job_router.py','worker_manager.py','routing_engine.py','ai_providers.py']; json.dump({k: '0'*64 for k in m}, open('/app/data/module_hashes.json','w'))"
+          docker restart smoke >/dev/null
+          r=$(state); echo "after update: $r"
+          if [ "$r" != "up" ]; then echo "❌ an update stops an existing install"; docker logs smoke 2>&1 | tail -60; exit 1; fi
+          # A guarded module edited inside the container must still stop it.
+          docker exec smoke sh -c 'echo "# edited" >> /app/orchestra_core/enforcement.py'
+          docker restart smoke >/dev/null
+          r=$(state); echo "after editing a guarded module: $r"
+          case "$r" in exit:0|up|timeout) echo "❌ tampering not detected"; docker logs smoke 2>&1 | tail -60; exit 1;; esac
+          docker logs smoke 2>&1 | grep -m1 "module_integrity" || true
+          echo "✅ updates start, tampering stops"
       - name: Logs on failure
         if: failure()
         run: docker logs smoke 2>&1 | tail -200 || true

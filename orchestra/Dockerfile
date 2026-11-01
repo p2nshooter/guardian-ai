@@ -36,6 +36,12 @@ RUN mkdir -p /app/data /app/logs /app/console \
  && touch /app/orchestra_core/__init__.py \
  && touch /app/orchestra_worker/__init__.py
 
+# Release integrity manifest: hashes of the guarded modules exactly as this
+# image ships them. Startup compares against it, so an update never trips the
+# tamper check while an edited module inside the container still does.
+RUN cd /app/orchestra_core \
+ && python -c "import security_hardening as s; print('release manifest:', sorted(s.write_release_manifest()))"
+
 WORKDIR /app/orchestra_core
 
 EXPOSE 8080

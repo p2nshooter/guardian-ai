@@ -15,7 +15,17 @@ from pathlib import Path
 
 logger = logging.getLogger("orchestra.hardening")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "./data"))
-KNOWN_HASHES_PATH = DATA_DIR / "module_hashes.json"
+
+# Hashes of the guarded modules, written into the image when it is built
+# (see orchestra/Dockerfile). Each official release ships its own manifest,
+# so an update is never mistaken for tampering, while a module edited inside
+# a running container is still caught.
+RELEASE_MANIFEST_NAME = "module_hashes.release.json"
+
+# The old trust-on-first-use file in the data volume. It outlived updates and
+# shut Orchestra down after every release that changed a guarded module, so
+# it is no longer read or written. It is left in place, never deleted.
+LEGACY_HASHES_PATH = DATA_DIR / "module_hashes.json"
 
 GUARDED_MODULES = [
     "enforcement.py", "credential_vault.py", "job_router.py",
@@ -50,40 +60,59 @@ def check_clock_integrity() -> dict:
     return {"check": "clock_integrity", "passed": True}
 
 
-def check_module_integrity() -> dict:
-    base_dir = Path(__file__).parent
-    known = {}
-    if KNOWN_HASHES_PATH.exists():
-        try:
-            known = json.loads(KNOWN_HASHES_PATH.read_text())
-        except Exception:
-            pass
-
-    current_hashes = {}
-    violations = []
-
+def _module_hashes(base_dir: Path) -> dict:
+    hashes = {}
     for module_name in GUARDED_MODULES:
         path = base_dir / module_name
-        if not path.exists():
-            continue
-        h = _sha256_file(path)
-        current_hashes[module_name] = h
-        if module_name in known:
-            if known[module_name] != h:
-                violations.append(f"{module_name} hash mismatch — possible tampering")
-        else:
-            known[module_name] = h
+        if path.exists():
+            hashes[module_name] = _sha256_file(path)
+    return hashes
 
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    KNOWN_HASHES_PATH.write_text(json.dumps(known, indent=2))
-    if platform.system() != "Windows":
-        try: os.chmod(KNOWN_HASHES_PATH, 0o600)
-        except: pass
+
+def write_release_manifest(base_dir: Path | None = None) -> dict:
+    """Record the guarded modules' hashes next to them. Run once at image build."""
+    base_dir = Path(base_dir) if base_dir else Path(__file__).parent
+    hashes = _module_hashes(base_dir)
+    (base_dir / RELEASE_MANIFEST_NAME).write_text(json.dumps(hashes, indent=2, sort_keys=True) + "\n")
+    return hashes
+
+
+def check_module_integrity(base_dir: Path | None = None) -> dict:
+    base_dir = Path(base_dir) if base_dir else Path(__file__).parent
+    current = _module_hashes(base_dir)
+    manifest_path = base_dir / RELEASE_MANIFEST_NAME
+
+    if not manifest_path.exists():
+        # Running from source (development, tests): there is no release to
+        # compare against, so report it instead of stopping.
+        return {"check": "module_integrity", "passed": True, "mode": "development",
+                "note": f"{RELEASE_MANIFEST_NAME} not found — release integrity not enforced",
+                "modules_checked": list(current.keys())}
+
+    try:
+        expected = json.loads(manifest_path.read_text())
+        if not isinstance(expected, dict):
+            raise ValueError("manifest is not an object")
+    except Exception as e:
+        return {"check": "module_integrity", "passed": False, "mode": "release",
+                "error": f"Release manifest unreadable: {e}",
+                "violations": [f"{RELEASE_MANIFEST_NAME} unreadable"]}
+
+    violations = []
+    for module_name, h in current.items():
+        if module_name not in expected:
+            violations.append(f"{module_name} not in release manifest — possible tampering")
+        elif expected[module_name] != h:
+            violations.append(f"{module_name} hash mismatch — possible tampering")
+    for module_name in expected:
+        if module_name not in current:
+            violations.append(f"{module_name} missing — possible tampering")
 
     if violations:
-        return {"check": "module_integrity", "passed": False,
+        return {"check": "module_integrity", "passed": False, "mode": "release",
                 "error": f"Integrity violations: {', '.join(violations)}", "violations": violations}
-    return {"check": "module_integrity", "passed": True, "modules_checked": list(current_hashes.keys())}
+    return {"check": "module_integrity", "passed": True, "mode": "release",
+            "modules_checked": list(current.keys())}
 
 
 def check_environment() -> dict:
@@ -109,7 +138,7 @@ def check_data_permissions() -> dict:
         DATA_DIR / "license.orch1",
         DATA_DIR / "unit_fingerprint",
         DATA_DIR / "credential_vault.enc",
-        DATA_DIR / "module_hashes.json",
+        LEGACY_HASHES_PATH,
     ]
     if platform.system() != "Windows":
         for path in sensitive_files:
