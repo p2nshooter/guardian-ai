@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Which self-hosted builds exist in R2 right now (Docker images amd64 + arm64,
  * offline packages), cached in KV for 10 minutes — the portal only links files

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Lifetime (perpetual, OFFLINE) self-hosted licences — the single source of
  * truth for prices, payment rules and the activation-file format.

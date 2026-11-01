@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Support flows shared by the public and admin routes: AI auto-reply when no
  * admin is online, e-mail notifications to the admin inbox and to visitors.

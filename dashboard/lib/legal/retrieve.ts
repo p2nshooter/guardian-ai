@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LEGAL AI — ASK THE MATTER: search across every document of a matter
  * (runs in the browser). Documents are cut into overlapping passages and ranked

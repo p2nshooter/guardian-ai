@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * AI STUDIO — a fenced code block: syntax highlighting (highlight.js, loaded on
  * demand), the language, copy, download, and ▶ Preview for html / svg / mermaid

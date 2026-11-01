@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * HTTP Range parsing for build downloads (RFC 9110 §14.1.2), one range only:
  * a browser or AXTO Setup resuming a multi-GB image asks for `bytes=N-`.

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Registers Legal AI in the task registry: validates the workspace against the
  * member's plan, builds the layered system prompt and places the uploaded

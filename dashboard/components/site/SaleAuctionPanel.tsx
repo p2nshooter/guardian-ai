@@ -116,7 +116,13 @@ export default function SaleAuctionPanel({ info, signedIn, onChange }: { info: S
                         <span aria-hidden="true">▲</span><span className="auc-nums">{fill(t.rises, { next: money(r.openUsd + r.weeklyUsd), date: riseDate(r.nextRiseAt) })}</span>
                       </p>
                     ) : null}
-                    <p className="mt-3 text-xs leading-relaxed text-slate-400">{fill(t.openingNote, { weekly: money(r.weeklyUsd) })} {t.openingBid}: <b className="auc-nums font-semibold text-gold-100">{money(r.openUsd)}</b>.</p>
+                    {r.weeklyUsd > 0 ? (
+                      <p className="mt-3 text-xs leading-relaxed text-slate-400" data-testid="sale-auction-opening">{fill(t.openingNoteRising, { weekly: money(r.weeklyUsd) })} {t.openingBid}: <b className="auc-nums font-semibold text-gold-100">{money(r.openUsd)}</b>.</p>
+                    ) : (
+                      <p className="mt-3 text-xs leading-relaxed text-slate-400" data-testid="sale-auction-opening">
+                        {t.openingNote.split("{open}")[0]}<b className="auc-nums font-semibold text-gold-100">{money(r.openUsd)}</b>{t.openingNote.split("{open}").slice(1).join("")}
+                      </p>
+                    )}
                   </>
                 ) : (
                   <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300" data-testid="sale-auction-ended">
@@ -209,7 +215,7 @@ export default function SaleAuctionPanel({ info, signedIn, onChange }: { info: S
                 <div className="mb-5 h-px bg-gradient-to-r from-transparent via-gold-400/30 to-transparent" aria-hidden="true" />
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold-200/70">{t.rulesTitle}</h3>
                 <ul className="mt-4 space-y-3 text-sm leading-relaxed text-slate-300">
-                  {t.rules.map((x) => <li key={x} className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{fill(x, { step: money(r.stepUsd), weekly: money(r.weeklyUsd), min: r.snipeMinutes, days: r.payDays })}</li>)}
+                  {(r.weeklyUsd > 0 ? [t.ruleRising, ...t.rules.slice(1)] : t.rules).map((x) => <li key={x} className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{fill(x, { open: money(r.openUsd), step: money(r.stepUsd), weekly: money(r.weeklyUsd), min: r.snipeMinutes, days: r.payDays })}</li>)}
                   <li className="flex gap-3"><span className="mt-0.5 text-[10px] text-gold-400" aria-hidden="true">◆</span>{info.approval ? t.ruleApproval : t.ruleOpen}</li>
                 </ul>
               </div>

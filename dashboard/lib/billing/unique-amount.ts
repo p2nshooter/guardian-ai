@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * UNIQUE TRANSFER AMOUNT for manual bank transfers (BNI). Every order gets its
  * own 3-digit code added to the rupiah price (Rp 3.284.000 → Rp 3.284.517), so

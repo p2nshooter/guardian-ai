@@ -9,9 +9,9 @@ import { gatewayAllowed, PAYPAL_MAX_USD } from "../lib/lifetime";
 import { ACQ_EN } from "../lib/acquire-copy";
 import { ACQ } from "../lib/i18n-pages/acquire";
 
-test("defaults: $10,000,000, PayPal first, owner's BNI accounts and WhatsApp", () => {
+test("defaults: offers from $500,000 (REQUESTS 132), PayPal first, owner's BNI accounts and WhatsApp", () => {
   assert.equal(SALE_DEFAULTS.priceUsd, DEFAULT_PRICE_USD);
-  assert.equal(DEFAULT_PRICE_USD, 10_000_000);
+  assert.equal(DEFAULT_PRICE_USD, 500_000);
   assert.equal(SALE_GATEWAYS[0], "paypal");
   assert.equal(SALE_DEFAULTS.bank.swift, "BNINIDJA");
   assert.equal(SALE_DEFAULTS.bank.holder, "YUSRON EFENDI");
@@ -40,10 +40,10 @@ test("sanitizeSale drops junk and keeps what is valid", () => {
 
 test("gateway gating: offered methods only; Stripe under its ceiling; lifetime PayPal ceiling", () => {
   const s = { ...SALE_DEFAULTS, gateways: ["paypal", "crypto", "stripe"] as typeof SALE_DEFAULTS.gateways };
-  assert.ok(saleGatewayAllowed(s, "paypal", 10_000_000));
-  assert.ok(saleGatewayAllowed(s, "crypto", 10_000_000));
-  assert.ok(!saleGatewayAllowed(s, "manual", 10_000_000), "not offered");
-  assert.ok(!saleGatewayAllowed(s, "stripe", 10_000_000), "Stripe caps a single charge");
+  assert.ok(saleGatewayAllowed(s, "paypal", 2_000_000));
+  assert.ok(saleGatewayAllowed(s, "crypto", 2_000_000));
+  assert.ok(!saleGatewayAllowed(s, "manual", 2_000_000), "not offered");
+  assert.ok(!saleGatewayAllowed(s, "stripe", 2_000_000), "Stripe caps a single charge");
   assert.ok(saleGatewayAllowed(s, "stripe", 500_000));
   assert.ok(gatewayAllowed("paypal", PAYPAL_MAX_USD) && !gatewayAllowed("paypal", PAYPAL_MAX_USD + 1));
 });

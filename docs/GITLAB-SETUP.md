@@ -1,7 +1,7 @@
 [//]: # (==============================================================================)
-[//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
-[//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hello@axto.io>)
+[//]: # (Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.)
+[//]: # (Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams)
+[//]: # (Maintained by: AXTO Digital Global <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO — GitLab Setup Guide

@@ -1,6 +1,6 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams
  * ==============================================================================
  * AI TASK REGISTRY — every cloud app declares how its requests are turned into
  * a system prompt + messages, and which plan it needs. System prompts are

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * GET /api/cron/expire-licenses — daily housekeeping (axto-license-expiry-cron
  * Worker, header x-cron-secret). Same work as the hourly part of /api/cron/tick.

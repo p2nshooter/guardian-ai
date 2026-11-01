@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * AI STUDIO — assistants: saved personas with their own instructions (system
  * prompt) and creativity. Start from a template or write your own; the list is

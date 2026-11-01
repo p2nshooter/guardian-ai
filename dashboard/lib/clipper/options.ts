@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — client-safe constants and pure helpers shared by the page, the AI
  * task handler and the tests: platforms, aspect ratios, caption templates,

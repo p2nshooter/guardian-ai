@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * The pure half of a run: validate the app, the plan and the inputs, and build
  * the prompt with the app's task handler. No keys, no network, no storage — so

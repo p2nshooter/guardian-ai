@@ -1,6 +1,6 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams
  * ==============================================================================
  * Root layout: site-wide metadata, verification tags (Google AdSense +
  * Search Console + Bing), viewport and global styles. Public, member and admin

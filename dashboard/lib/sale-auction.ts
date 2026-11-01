@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SITE-SALE AUCTION — storage and the zero-touch steps (docs/BLUEPRINT-V4.md
  * §34; the rules are in lib/sale-auction-terms.ts).
@@ -61,8 +61,9 @@ export async function latestRound(db: Data): Promise<SaleRoundDoc | null> {
 
 /**
  * Open the next round. Created once: two ticks (or a tick and the admin) racing for the same number
- * make one round; the loser gets null. The round records the ladder's opening bid of the day; the
- * bids themselves follow the ladder of the moment (REQUESTS 125).
+ * make one round; the loser gets null. The round records the opening bid and step of the day; the
+ * bids themselves follow the settings of the moment (REQUESTS 125, 132), so a price the owner sets
+ * applies to the running round at once.
  */
 export async function startRound(db: Data, sale: SaleSettings, by: Actor, nowMs = Date.now()): Promise<SaleRoundDoc | null> {
   const last = await latestRound(db);
@@ -81,6 +82,9 @@ export async function startRound(db: Data, sale: SaleSettings, by: Actor, nowMs 
   await audit(db, by, "site.auction.round_opened", "sale_round", doc.id, { no: doc.no, openUsd: open, endsAt: doc.ends_at });
   return doc;
 }
+
+/** The round as the bid rules read it now: the step of the current settings (the stored step_usd is the step it opened with). */
+export const withLiveStep = <R extends Pick<SaleRoundDoc, "step_usd">>(r: R, a: Pick<SaleAuctionSettings, "stepUsd">): R => ({ ...r, step_usd: a.stepUsd });
 
 /* ---- bidders ------------------------------------------------------------------- */
 
@@ -148,7 +152,7 @@ export async function placeSaleBid(db: Data, user: Actor & { role?: string }, am
   let seq = 0, extended = false as boolean, prev = { user: "", usd: 0 };
   const after = await db.saleRounds.update(cur.id, (r) => {
     // Decided again on every compare-and-swap attempt: a bid that lost a race is checked against the new high bid.
-    problem = saleBidProblem(r, amount, user.sub, nowMs, ladderPrice(sale.auction, nowMs));
+    problem = saleBidProblem(withLiveStep(r, sale.auction), amount, user.sub, nowMs, ladderPrice(sale.auction, nowMs));
     if (problem) return null;
     seq = r.bids_count + 1;
     prev = { user: r.high_user, usd: r.high_usd };
@@ -166,7 +170,7 @@ export async function placeSaleBid(db: Data, user: Actor & { role?: string }, am
   if (prev.user && prev.user !== user.sub) {
     const p = await db.saleBidders.get(prev.user);
     if (p?.email) await tell(p.email, `You have been outbid — ${SITE.name}`, "You have been outbid",
-      `<p>A new bid of <b>${formatUsd(amount)}</b> leads the ${esc(SITE.name)} auction (your bid: ${formatUsd(prev.usd)}). The next bid starts at <b>${formatUsd(nextMinBid(after, ladderPrice(sale.auction, nowMs)))}</b>.</p>`,
+      `<p>A new bid of <b>${formatUsd(amount)}</b> leads the ${esc(SITE.name)} auction (your bid: ${formatUsd(prev.usd)}). The next bid starts at <b>${formatUsd(nextMinBid(withLiveStep(after, sale.auction), ladderPrice(sale.auction, nowMs)))}</b>.</p>`,
       { label: "Bid again", href: absoluteUrl("/acquire#bid") });
   }
   return { ok: true, round: after, bid, extended };
@@ -315,8 +319,8 @@ export function publicRound(r: SaleRoundDoc, bids: SaleBidDoc[], a: SaleAuctionS
   const won = r.status === "awaiting_payment" || r.status === "sold";
   const floor = ladderPrice(a, nowMs);
   return {
-    no: r.no, status: r.status, openUsd: floor, weeklyUsd: a.weeklyUsd, nextRiseAt: nextRiseAt(a, nowMs), stepUsd: r.step_usd, startsAt: r.starts_at, endsAt: r.ends_at, snipeMinutes: r.snipe_minutes, payDays: r.pay_days,
-    bidsCount: r.bids_count, highUsd: r.high_usd, nextMinUsd: nextMinBid(r, floor), leader: r.bids_count ? maskName(r.high_name) : "",
+    no: r.no, status: r.status, openUsd: floor, weeklyUsd: a.weeklyUsd, nextRiseAt: nextRiseAt(a, nowMs), stepUsd: a.stepUsd, startsAt: r.starts_at, endsAt: r.ends_at, snipeMinutes: r.snipe_minutes, payDays: r.pay_days,
+    bidsCount: r.bids_count, highUsd: r.high_usd, nextMinUsd: nextMinBid(withLiveStep(r, a), floor), leader: r.bids_count ? maskName(r.high_name) : "",
     winnerName: won ? maskName(r.winner_name) : "", winnerUsd: won ? r.winner_usd : 0, paid: r.status === "sold",
     bids: bids.map((b) => ({ name: maskName(b.display_name), amountUsd: b.amount_usd, at: b.created_at })),
   };

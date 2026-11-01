@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * POST /api/test/data — TEST-ONLY (lib/test-data.ts): lets the local
  * end-to-end suite read and adjust records the way a test needs (an expired

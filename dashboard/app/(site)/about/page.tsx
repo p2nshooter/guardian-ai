@@ -13,7 +13,7 @@ export default function AboutPage() {
     <>
       <JsonLd data={breadcrumbJsonLd([{ name: "Home", path: "/" }, { name: "About", path: "/about" }])} />
       <LegalDoc title="About AXTO" updated={UPDATED} contactEmail={SITE.email}
-        intro={`${SITE.name} — AI eXpert Toolkit Online — is an AI workspace for legal, security and business teams. It brings together focused apps that run on your own AI keys, keep your work encrypted and never use your content to train models.`}
+        intro={`${SITE.name} is an AI workspace for legal, security and business teams, built and run by ${SITE.legalName}. It brings together focused apps that run on your own AI keys, keep your work encrypted and never use your content to train models.`}
         sections={[
           { h: "What AXTO does", p: ["AXTO combines several professional tools in one workspace: Legal AI with expert workspaces for contract review, research and drafting; a prompt library organized by profession; AI Studio for building and testing prompts; Clipper for capturing and summarizing sources; Privacy Vault for redacting sensitive text in the browser; a Compliance Center; and a Security Analyst.", "Teams can use the cloud apps at axto.io or run self-hosted editions on their own infrastructure, so that no data leaves their environment."] },
           { h: "How we think about data", p: ["The apps are built privacy-first. Requests use the AI provider keys you choose, saved work is encrypted per member, and Privacy Vault processes text locally in your browser. We do not sell personal data or use customer content for training. Details are in our privacy policy, security page and list of subprocessors."] },

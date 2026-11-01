@@ -1,13 +1,14 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SITE-SALE AUCTION — the rules (docs/BLUEPRINT-V4.md §34; owner, 28 Oct 2026,
- * REQUESTS 120: "ubah bentuk penjualannya seperti lelang", then REQUESTS 125:
- * "jgn start langsung gede gitu … Start $10jt, setiap minggu naikin $100k").
+ * REQUESTS 120: "ubah bentuk penjualannya seperti lelang"; REQUESTS 125 added a
+ * weekly ladder; 1 Nov 2026, REQUESTS 132: "start penawaran di $500k … penawaran
+ * mulai $500k").
  *
- *   opening bid  a weekly ladder, the same for everyone: US$10 million from
- *                28 Oct 2026 (00:00 WIB) plus US$100,000 for every full week since,
- *                through every round, so the price never starts over
+ *   opening bid  US$500,000, the same for everyone. Flat by default; the admin may
+ *                add a weekly rise, counted from day one (00:00 WIB) through every
+ *                round, so the price never starts over
  *   bids         every bid at least the opening bid of the moment; after the first,
  *                also at least the high bid plus one step; jump bids allowed;
  *                never against yourself
@@ -18,8 +19,8 @@
  * lib/sale-auction.ts adds the R2 storage.
  * ============================================================================ */
 
-/** The owner's floor: the ladder never starts below US$10 million. */
-export const OPEN_MIN_USD = 10_000_000;
+/** The owner's floor (REQUESTS 132): offers start at US$500,000 and the admin cannot set less. */
+export const OPEN_MIN_USD = 500_000;
 export const OPEN_MAX_USD = 100_000_000;
 /** A sanity ceiling on any one bid (a typo with three extra zeros is refused, not recorded). */
 export const MAX_BID_USD = 5_000_000_000;
@@ -48,8 +49,15 @@ export interface SaleAuctionSettings {
 }
 
 export const SALE_AUCTION_DEFAULTS: SaleAuctionSettings = {
-  startUsd: 10_000_000, weeklyUsd: 100_000, from: "2026-10-28", stepUsd: 250_000, days: 14, snipeMinutes: 10, payDays: 7, autoRestart: true, approval: true,
+  startUsd: 500_000, weeklyUsd: 0, from: "2026-11-01", stepUsd: 25_000, days: 14, snipeMinutes: 10, payDays: 7, autoRestart: true, approval: true,
 };
+
+/**
+ * The revision of the owner's price. Settings stored before it (US$10M + US$100k a week, REQUESTS 125) are read with
+ * the price of this revision — opening bid, weekly rise, day one, step and the fixed price — until the admin saves again.
+ */
+export const SALE_PRICE_REV = 2;
+export const SALE_PRICE_FIELDS = ["startUsd", "weeklyUsd", "from", "stepUsd"] as const;
 
 const num = (v: unknown) => Number(String(v ?? "").replace(/[^\d.]/g, ""));
 const within = (v: unknown, lo: number, hi: number, fallback: number) => {

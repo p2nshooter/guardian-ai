@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Copyright (c) 2024-2026 Axto AI. All rights reserved.
+# Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
 # ==============================================================================
 # Upload one file to Cloudflare R2 with the settings R2 needs and a retry.
 #   Usage: bash scripts/ci/r2-put.sh <local file> <bucket/key> [content-type]

@@ -1,79 +1,135 @@
-/* AXTO — the site-sale auction (docs/BLUEPRINT-V4.md §34, REQUESTS 120 and 125):
- * the weekly ladder of the opening bid (US$10M from 28 Oct 2026, +US$100,000 a
- * week, through every round), the bid rules, anti-snipe,
- * bidder registration and approval, races between bids, closing a round, the
- * winner-only checkout, a paid round, passing on, and the next round after an
+/* AXTO — the site-sale auction (docs/BLUEPRINT-V4.md §34, REQUESTS 120, 125, 132):
+ * offers from US$500,000 (owner, 1 Nov 2026), flat by default; an optional weekly
+ * rise counted through every round; stored settings from before the price move
+ * once to it; the bid rules (the floor and the step of the settings of the moment),
+ * anti-snipe, bidder registration and approval, races between bids, closing a round,
+ * the winner-only checkout, a paid round, passing on, and the next round after an
  * unsold one. Run: npm test */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { testData } from "./helpers/data";
-import { SALE_DEFAULTS, saveSale, sanitizeSale } from "../lib/acquisition";
+import { DEFAULT_PRICE_USD, SALE_DEFAULTS, SALE_KEY, getSale, repriceStoredSale, saveSale, sanitizeSale } from "../lib/acquisition";
 import {
-  MAX_BID_USD, SALE_AUCTION_DEFAULTS, closeDueRound, decideBidder, ladderPrice, ladderStart, latestRound, myAuction, nextMinBid, nextRiseAt,
+  MAX_BID_USD, OPEN_MIN_USD, SALE_AUCTION_DEFAULTS, SALE_PRICE_REV, closeDueRound, decideBidder, ladderPrice, ladderStart, latestRound, myAuction, nextMinBid, nextRiseAt,
   parseBid, passRound, placeSaleBid, publicRound, registerBidder, roundBids, saleAuctionTick, saleBidProblem, saleRoundPaid,
-  sanitizeSaleAuction, startRound, winnerCheckout, type RoundState,
+  sanitizeSaleAuction, startRound, winnerCheckout, withLiveStep, type RoundState,
 } from "../lib/sale-auction";
+import { SALE_AUC } from "../lib/i18n-pages/sale-auction";
 
 const L = SALE_AUCTION_DEFAULTS;
+const STEP = L.stepUsd;
 const WEEK = 7 * 86_400_000;
 
-test("opening bid: US$10M from 28 Oct 2026 (00:00 WIB), +US$100,000 for every full week", () => {
+test("the owner's price (REQUESTS 132): offers from US$500,000, flat, raised by US$25,000 at a time", () => {
+  assert.equal(OPEN_MIN_USD, 500_000);
+  assert.equal(L.startUsd, 500_000);
+  assert.equal(L.weeklyUsd, 0, "flat unless the admin sets a weekly rise");
+  assert.equal(L.stepUsd, 25_000);
+  assert.equal(DEFAULT_PRICE_USD, 500_000, "the fixed price too");
   const day1 = ladderStart(L);
-  assert.equal(new Date(day1).toISOString(), "2026-10-27T17:00:00.000Z", "00:00 in Jakarta");
-  assert.equal(ladderPrice(L, day1 - 1), 10_000_000, "never below the start");
-  assert.equal(ladderPrice(L, day1), 10_000_000);
-  assert.equal(ladderPrice(L, day1 + WEEK - 1), 10_000_000);
-  assert.equal(ladderPrice(L, day1 + WEEK), 10_100_000, "week one ends 4 Nov");
-  assert.equal(ladderPrice(L, day1 + 10 * WEEK + 3), 11_000_000);
-  assert.equal(nextRiseAt(L, day1 + 1), "2026-11-03T17:00:00.000Z");
-  assert.equal(nextRiseAt({ ...L, weeklyUsd: 0 }, day1 + 1), "", "a flat opening bid never rises");
+  assert.equal(new Date(day1).toISOString(), "2026-10-31T17:00:00.000Z", "1 Nov 2026, 00:00 in Jakarta");
+  for (const t of [day1 - 1, day1, day1 + WEEK, day1 + 52 * WEEK]) assert.equal(ladderPrice(L, t), 500_000);
+  assert.equal(nextRiseAt(L, day1 + 1), "", "a flat opening bid never rises");
+});
+
+test("an optional weekly rise: counted from day one (00:00 WIB) through every round", () => {
+  const R = { ...L, weeklyUsd: 10_000, from: "2026-11-01" };
+  const day1 = ladderStart(R);
+  assert.equal(ladderPrice(R, day1 - 1), 500_000, "never below the start");
+  assert.equal(ladderPrice(R, day1 + WEEK - 1), 500_000);
+  assert.equal(ladderPrice(R, day1 + WEEK), 510_000, "week one ends 8 Nov");
+  assert.equal(ladderPrice(R, day1 + 10 * WEEK + 3), 600_000);
+  assert.equal(nextRiseAt(R, day1 + 1), "2026-11-07T17:00:00.000Z");
 });
 
 test("settings: only valid values are kept; the sale defaults to an auction", () => {
   assert.equal(SALE_DEFAULTS.mode, "auction");
-  const a = sanitizeSaleAuction({ startUsd: 5_000_000, weeklyUsd: 50_000, from: "28/10/2026", stepUsd: 10, days: 400, snipeMinutes: "15", payDays: 3, approval: false });
-  assert.equal(a.startUsd, 10_000_000, "never below the owner's US$10M");
+  const a = sanitizeSaleAuction({ startUsd: 400_000, weeklyUsd: 50_000, from: "28/10/2026", stepUsd: 10, days: 400, snipeMinutes: "15", payDays: 3, approval: false });
+  assert.equal(a.startUsd, 500_000, "never below the owner's US$500,000");
   assert.equal(a.weeklyUsd, 50_000);
-  assert.equal(a.from, "2026-10-28", "not a date");
+  assert.equal(a.from, "2026-11-01", "not a date");
   assert.equal(a.stepUsd, SALE_AUCTION_DEFAULTS.stepUsd);
   assert.equal(a.days, SALE_AUCTION_DEFAULTS.days);
   assert.equal(a.snipeMinutes, 15);
   assert.equal(a.payDays, 3);
   assert.equal(a.approval, false);
-  assert.equal(sanitizeSaleAuction({ startUsd: 250_000_000 }).startUsd, 10_000_000);
-  assert.equal(sanitizeSaleAuction({ startUsd: 12_000_000, from: "2026-11-02" }).from, "2026-11-02");
-  // A setting saved before the ladder (random opening) reads as the ladder's defaults.
-  assert.deepEqual(sanitizeSaleAuction({ openUsd: 0, randomOpen: true, stepUsd: 250_000 }), SALE_AUCTION_DEFAULTS);
+  assert.equal(sanitizeSaleAuction({ startUsd: 250_000_000 }).startUsd, 500_000);
+  assert.equal(sanitizeSaleAuction({ startUsd: 750_000 }).startUsd, 750_000, "the admin may set more");
+  assert.equal(sanitizeSaleAuction({ startUsd: 1_200_000, from: "2026-11-02" }).from, "2026-11-02");
+  // A setting saved before the ladder (random opening) reads as the defaults.
+  assert.deepEqual(sanitizeSaleAuction({ openUsd: 0, randomOpen: true, stepUsd: 25_000 }), SALE_AUCTION_DEFAULTS);
   assert.equal(sanitizeSale({ mode: "fixed" }).mode, "fixed");
   assert.equal(sanitizeSale({ mode: "lottery" }).mode, "auction");
 });
 
+test("settings stored before the new price move to it once; a price the admin saves afterwards is kept", async () => {
+  const old = { status: "open", mode: "auction", priceUsd: 10_000_000, gateways: ["paypal", "crypto"], whatsapp: "+62 811",
+    auction: { startUsd: 10_000_000, weeklyUsd: 100_000, from: "2026-10-28", stepUsd: 250_000, days: 21, snipeMinutes: 15, payDays: 5, autoRestart: false, approval: false } };
+  const moved = sanitizeSale(repriceStoredSale(old));
+  assert.deepEqual(
+    { start: moved.auction.startUsd, weekly: moved.auction.weeklyUsd, from: moved.auction.from, step: moved.auction.stepUsd, price: moved.priceUsd },
+    { start: 500_000, weekly: 0, from: "2026-11-01", step: 25_000, price: 500_000 });
+  assert.deepEqual(
+    { days: moved.auction.days, snipe: moved.auction.snipeMinutes, pay: moved.auction.payDays, restart: moved.auction.autoRestart, approval: moved.auction.approval, gateways: moved.gateways, mode: moved.mode },
+    { days: 21, snipe: 15, pay: 5, restart: false, approval: false, gateways: ["paypal", "crypto"], mode: "auction" }, "everything else is kept");
+  const own = { ...old, priceRev: SALE_PRICE_REV };
+  assert.equal(repriceStoredSale(own), own, "a setting saved under the current price is the admin's own");
+  assert.equal(sanitizeSale(repriceStoredSale(own)).auction.startUsd, 10_000_000);
+
+  const { db } = testData();
+  await db.config.set(SALE_KEY, JSON.stringify(old));
+  const read = await getSale(db);
+  assert.equal(read.auction.startUsd, 500_000);
+  assert.equal(read.priceUsd, 500_000);
+  await saveSale(db, { ...read, auction: { ...read.auction, startUsd: 800_000, weeklyUsd: 5_000 } });
+  assert.equal(JSON.parse((await db.config.get(SALE_KEY))!).priceRev, SALE_PRICE_REV);
+  const again = await getSale(db);
+  assert.equal(again.auction.startUsd, 800_000, "the admin's price stays");
+  assert.equal(again.auction.weeklyUsd, 5_000);
+});
+
+test("the words: offers from {open} in every language, no US$10 million anywhere; the rising lines only name the weekly rise", () => {
+  for (const [lang, t] of Object.entries(SALE_AUC)) {
+    assert.equal(t.openingNote.split("{open}").length, 2, `${lang}: {open} once in openingNote`);
+    assert.ok(!t.openingNote.includes("{weekly}"), `${lang}: the flat note has no weekly rise`);
+    assert.ok(t.rules[0].includes("{open}") && t.rules[0].includes("{step}") && !t.rules[0].includes("{weekly}"), `${lang}: flat rule`);
+    assert.ok(t.openingNoteRising.includes("{weekly}") && t.ruleRising.includes("{weekly}"), `${lang}: rising lines`);
+    const all = JSON.stringify(t);
+    assert.ok(!/10[\s,.]?000[\s,.]?000|10 ?(million|juta|Millionen|millions|milioni)|1,?000 ?万|करोड़|ملايين|2026 ?年 ?10 ?月 ?28|28 (October|Oktober|octobre|ottobre)/i.test(all), `${lang}: no old price or date`);
+  }
+});
+
 const round = (o: Partial<RoundState> = {}): RoundState => ({
-  status: "open", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-11-15T00:00:00Z", open_usd: 10_000_000, step_usd: 250_000,
+  status: "open", starts_at: "2026-11-01T00:00:00Z", ends_at: "2026-11-15T00:00:00Z", open_usd: 500_000, step_usd: STEP,
   bids_count: 0, high_usd: 0, high_user: "", ...o,
 });
 const MID = Date.parse("2026-11-02T00:00:00Z");
 const F = ladderPrice(L, MID);
 
-test("bids: at least the opening bid of the day, then the high bid plus a step; the weekly rise applies mid-round; never against yourself", () => {
-  assert.equal(F, 10_000_000);
-  assert.equal(nextMinBid(round(), F), 10_000_000);
-  assert.equal(saleBidProblem(round(), 9_999_999, "a", MID, F), "too_low");
-  assert.equal(saleBidProblem(round(), 10_000_000, "a", MID, F), null);
-  const led = round({ bids_count: 1, high_usd: 10_000_000, high_user: "a" });
-  assert.equal(nextMinBid(led, F), 10_250_000);
-  assert.equal(saleBidProblem(led, 10_100_000, "b", MID, F), "too_low");
-  assert.equal(saleBidProblem(led, 50_000_000, "b", MID, F), null, "a jump bid");
-  assert.equal(saleBidProblem(led, 60_000_000, "a", MID, F), "already_highest");
+test("bids: at least the opening price, then the high bid plus a step; a rise applies mid-round; never against yourself", () => {
+  assert.equal(F, 500_000);
+  assert.equal(nextMinBid(round(), F), 500_000);
+  assert.equal(saleBidProblem(round(), 499_999, "a", MID, F), "too_low");
+  assert.equal(saleBidProblem(round(), 500_000, "a", MID, F), null);
+  const led = round({ bids_count: 1, high_usd: 500_000, high_user: "a" });
+  assert.equal(nextMinBid(led, F), 525_000);
+  assert.equal(saleBidProblem(led, 510_000, "b", MID, F), "too_low");
+  assert.equal(saleBidProblem(led, 2_000_000, "b", MID, F), null, "a jump bid");
+  assert.equal(saleBidProblem(led, 3_000_000, "a", MID, F), "already_highest");
   assert.equal(saleBidProblem(led, MAX_BID_USD + 1, "b", MID, F), "too_high");
-  assert.equal(saleBidProblem(led, 10.5e6 + 0.5, "b", MID, F), "bad_amount");
-  assert.equal(saleBidProblem(round(), 10_000_000, "a", Date.parse("2026-10-31T00:00:00Z"), F), "not_started");
-  assert.equal(saleBidProblem(round(), 10_000_000, "a", Date.parse("2026-11-15T00:00:00Z"), F), "ended");
-  assert.equal(saleBidProblem(round({ status: "awaiting_payment" }), 10_000_000, "a", MID, F), "closed");
-  // After the rise of 4 Nov the opening bid of the day is US$10.1M, also in a round that opened earlier.
-  const later = Date.parse("2026-11-05T00:00:00Z");
-  assert.equal(saleBidProblem(round(), 10_000_000, "a", later, ladderPrice(L, later)), "too_low");
-  assert.equal(nextMinBid(round({ bids_count: 1, high_usd: 9_000_000 }), 10_100_000), 10_100_000, "the ladder is the floor of every bid");
+  assert.equal(saleBidProblem(led, 525_000.5, "b", MID, F), "bad_amount");
+  assert.equal(saleBidProblem(round(), 500_000, "a", Date.parse("2026-10-31T00:00:00Z"), F), "not_started");
+  assert.equal(saleBidProblem(round(), 500_000, "a", Date.parse("2026-11-15T00:00:00Z"), F), "ended");
+  assert.equal(saleBidProblem(round({ status: "awaiting_payment" }), 500_000, "a", MID, F), "closed");
+  // With a weekly rise set, the opening bid of the day applies also in a round that opened earlier.
+  const R = { ...L, weeklyUsd: 10_000 };
+  const later = Date.parse("2026-11-09T00:00:00Z");
+  assert.equal(saleBidProblem(round(), 500_000, "a", later, ladderPrice(R, later)), "too_low");
+  assert.equal(nextMinBid(round({ bids_count: 1, high_usd: 400_000 }), 510_000), 510_000, "the opening bid is the floor of every bid");
+  // A round opened with an older step follows the step of the settings of the moment.
+  const old = round({ bids_count: 1, high_usd: 500_000, high_user: "a", step_usd: 250_000 });
+  assert.equal(nextMinBid(withLiveStep(old, L), F), 525_000);
+  assert.equal(old.step_usd, 250_000, "the stored round is not changed");
   assert.equal(parseBid("42,250,000"), 42_250_000);
   assert.equal(parseBid("$ 42 250 000"), 42_250_000);
   assert.ok(Number.isNaN(parseBid("42.5M")));
@@ -94,7 +150,7 @@ async function setup(auction: Partial<typeof SALE_AUCTION_DEFAULTS> = {}) {
   return db;
 }
 
-test("the first round opens by itself at the ladder's opening bid; ticks never open a second one", async () => {
+test("the first round opens by itself at the opening price; ticks never open a second one", async () => {
   const db = await setup();
   const t0 = Date.parse("2026-11-01T00:00:00Z");
   const [x, y] = await Promise.all([saleAuctionTick(db, t0), saleAuctionTick(db, t0)]);
@@ -102,13 +158,15 @@ test("the first round opens by itself at the ladder's opening bid; ticks never o
   const r = (await latestRound(db))!;
   assert.equal(r.id, "sr_0001");
   assert.equal(r.status, "open");
-  assert.equal(r.open_usd, 10_000_000, "the ladder on 1 Nov 2026");
+  assert.equal(r.open_usd, 500_000, "the opening price on 1 Nov 2026");
   assert.equal(r.ends_at, "2026-11-15T00:00:00.000Z", "14 days");
   assert.deepEqual(await saleAuctionTick(db, t0 + 60_000), {});
   assert.equal(await startRound(db, SALE_DEFAULTS, ADMIN), null, "one round at a time");
-  // Every visitor sees the same opening bid: the ladder of the moment.
-  assert.equal(publicRound((await latestRound(db))!, [], L, t0).openUsd, 10_000_000);
-  assert.equal(publicRound((await latestRound(db))!, [], L, t0 + 3 * WEEK).openUsd, 10_300_000);
+  // Every visitor sees the same opening bid: the settings of the moment, also when the admin sets a weekly rise.
+  assert.equal(publicRound((await latestRound(db))!, [], L, t0).openUsd, 500_000);
+  assert.equal(publicRound((await latestRound(db))!, [], L, t0 + 3 * WEEK).openUsd, 500_000, "flat");
+  assert.equal(publicRound((await latestRound(db))!, [], { ...L, weeklyUsd: 10_000 }, t0 + 3 * WEEK).openUsd, 530_000);
+  assert.equal(publicRound((await latestRound(db))!, [], { ...L, stepUsd: 50_000 }, t0).stepUsd, 50_000, "the step of the moment");
 });
 
 test("bidders register and wait for approval; admins and unknown members cannot bid", async () => {
@@ -147,7 +205,7 @@ test("bidding: races, anti-snipe, closing, winner-only checkout, paid round", as
   const first = await placeSaleBid(db, A, String(r.open_usd), t0 + 1000);
   assert.ok("ok" in first && first.round.high_usd === r.open_usd);
   // Two bids of the same amount at the same moment: one wins, the other is now too low.
-  const amount = r.open_usd + 250_000;
+  const amount = r.open_usd + STEP;
   const [b1, b2] = await Promise.all([placeSaleBid(db, B, amount, t0 + 2000), placeSaleBid(db, C, amount, t0 + 2000)]);
   assert.equal([b1, b2].filter((x) => "ok" in x).length, 1);
   assert.deepEqual([b1, b2].find((x) => "error" in x), { error: "too_low" });
@@ -165,7 +223,7 @@ test("bidding: races, anti-snipe, closing, winner-only checkout, paid round", as
   assert.deepEqual(bids.map((b) => b.amount_usd), [amount + 1_000_000, amount, r.open_usd], "highest first");
   const pub = publicRound((await latestRound(db))!, bids, L, end);
   assert.equal(pub.bidsCount, 3);
-  assert.equal(pub.nextMinUsd, amount + 1_250_000);
+  assert.equal(pub.nextMinUsd, amount + 1_000_000 + STEP);
   assert.match(pub.leader, /^[A-Z]•+$/, "names are masked");
   assert.ok(!JSON.stringify(pub).includes("@example.com"), "no e-mail on the public board");
 

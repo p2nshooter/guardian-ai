@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * AI STUDIO — the message composer: auto-growing input, files (PDF, DOCX, code,
  * text — extracted on the device) and images (resized on the device) by button,

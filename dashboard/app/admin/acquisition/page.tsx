@@ -1,5 +1,5 @@
 /* Admin → Site sale. The /acquire offer: auction or fixed price, the auction
- * (opening bid drawn in US$10M–100M or set, step, length, anti-snipe, payment
+ * (opening bid from US$500k — REQUESTS 132 — optional weekly rise, step, length, anti-snipe, payment
  * window, restart, bidder approval; the running round with its bids, approve or
  * refuse bidders, pass an unpaid win on, cancel, start a round — §34), status,
  * automatic admin grant, payment methods (each must also be live in Payment &
@@ -142,13 +142,13 @@ export default function AdminAcquisitionPage() {
       </div>
       {s.mode === "auction" ? (
         <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2" data-testid="sale-auction-admin">
-          <Section title="Auction settings" description="Owner, 28 Oct 2026 (REQUESTS 125): the opening bid starts at US$10M and rises every week — counted from day one through every round, the same for every visitor.">
+          <Section title="Auction settings" description="Owner, 1 Nov 2026 (REQUESTS 132): offers start at US$500,000. A weekly rise is optional (0 = flat); when set, it is counted from day one through every round, the same for every visitor. Price and step changes apply to the running round at once.">
             <p className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700" data-testid="sale-ladder-now">
               Opening bid today <b>{usd(A.ladder.nowUsd)}</b>{A.ladder.nextRiseAt ? <> · next rise to <b>{usd(A.ladder.nowUsd + s.auction.weeklyUsd)}</b> on {A.ladder.nextRiseAt.slice(0, 16).replace("T", " ")} UTC</> : " · flat (no weekly rise)"}
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="block text-sm font-semibold text-slate-700">Opening bid on day one (USD)
-                <input className="input mt-1" inputMode="numeric" value={String(s.auction.startUsd)} placeholder="10000000 – 100000000"
+                <input className="input mt-1" inputMode="numeric" value={String(s.auction.startUsd)} placeholder={`${A.range.min} – ${A.range.max}`}
                   onChange={(e) => setA({ startUsd: Number(e.target.value.replace(/[^\d]/g, "")) || 0 })} data-testid="sale-start-usd" />
               </label>
               <label className="block text-sm font-semibold text-slate-700">Weekly rise (USD, 0 = flat)
@@ -179,7 +179,7 @@ export default function AdminAcquisitionPage() {
               <input type="checkbox" className="accent-brand-600" checked={s.auction.approval} onChange={(e) => setA({ approval: e.target.checked })} data-testid="sale-approval" />
               I approve every bidder before they can bid
             </label>
-            <p className="mt-2 text-xs text-slate-500">The weekly ladder applies at once, also to the running round. The raise, length, anti-snipe and payment window apply to the next round; the running round keeps its own.</p>
+            <p className="mt-2 text-xs text-slate-500">The opening bid (with any weekly rise) and the minimum raise apply at once, also to the running round. The length, anti-snipe and payment window apply to the next round; the running round keeps its own.</p>
           </Section>
 
           <Section title={A.round ? `Round ${A.round.no} — ${A.round.status.replace("_", " ")}` : "No round yet"} description="The first round opens by itself within a minute of the sale being open in auction mode.">

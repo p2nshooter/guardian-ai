@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PRIVACY VAULT v4 — a pure, client-side PII & secrets engine (no DOM, no network).
  * The original text never leaves the browser.

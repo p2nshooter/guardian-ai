@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PROMPT LIBRARY v4 — the member's own library, kept in ONE encrypted history
  * item: custom prompts ({{variables}}), collections, favourites, workflows

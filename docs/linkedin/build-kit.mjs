@@ -1,5 +1,5 @@
 // ==============================================================================
-// Copyright (c) 2024-2026 Axto AI. All rights reserved.
+// Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
 // ==============================================================================
 // LinkedIn kit (REQUESTS 122): logos, covers and post images for the three company
 // pages — AXTO Digital Global (parent, with ulyah.com), axto.io and xaa.es — drawn

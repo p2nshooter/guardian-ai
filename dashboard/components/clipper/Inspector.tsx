@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — the clip inspector: Captions · Reframe · Trim & cut · Hook & text ·
  * Brand · Render. Every control edits the ClipEdit the preview draws.

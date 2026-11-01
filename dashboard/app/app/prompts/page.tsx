@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PROMPT LIBRARY v4 —
  *   library      240 expert prompts in 24 fields × 4 levels: search, filters,

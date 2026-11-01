@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Self-hosted licence issuance — ONE implementation used by the member portal
  * (self-service) and by payment activation (automatic, no admin involved):

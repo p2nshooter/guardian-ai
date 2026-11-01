@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Buying one self-hosted app in an edition (docs/AXTO-APPS-BLUEPRINT.md §3):
  * the paid order becomes a licence (source = 'edition') with the edition's

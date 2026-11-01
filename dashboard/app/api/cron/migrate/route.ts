@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * POST /api/cron/migrate — one step of the one-time move of axto.io's records
  * from D1 to R2 (lib/data/migrate.ts), for the deploy job, which calls it until

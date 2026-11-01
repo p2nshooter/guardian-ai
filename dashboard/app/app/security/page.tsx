@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SECURITY ANALYST v4 — an investigation workspace built around the CASE:
  *   overview   counts, severity mix, timeline, top entities, detections,

@@ -12,6 +12,7 @@ import AppIcon from "@/components/site/AppIcon";
 import { useI18n } from "@/lib/i18n";
 import { LANGS, dirOf, type Lang } from "@/lib/i18n-shared";
 import { ECOSYSTEM_CLOUD, ECOSYSTEM_SELF, type EcoApp } from "@/lib/ecosystem";
+import { usePartnersShown } from "@/components/site/PartnersLink";
 
 export default function SiteHeader() {
   const { t, lang, setLang } = useI18n();
@@ -21,6 +22,7 @@ export default function SiteHeader() {
   const [mega, setMega] = useState(false);
   const megaRef = useRef<HTMLDivElement | null>(null);
   const taps = useRef<number[]>([]);
+  const partners = usePartnersShown();
 
   const LINKS = [
     { href: "/prompts", label: t("site.prompts") },
@@ -28,6 +30,8 @@ export default function SiteHeader() {
     { href: "/pricing", label: t("site.pricing") },
     { href: "/help", label: t("site.guides") },
     { href: "/blog", label: t("site.blog") },
+    // Affiliate, reseller and white label — shown while Admin → Programs shows at least one (REQUESTS 131, 132).
+    ...(partners ? [{ href: "/partners", label: t("site.partners") }] : []),
   ];
 
   // Close the menus whenever the route changes, on Escape, or on a click outside.
@@ -99,7 +103,7 @@ export default function SiteHeader() {
             ) : null}
           </div>
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 no-underline hover:bg-white/5 hover:text-white">{l.label}</Link>
+            <Link key={l.href} href={l.href} className="rounded-md px-3 py-2 text-sm font-medium text-slate-300 no-underline hover:bg-white/5 hover:text-white" data-testid={`nav-${l.href.slice(1)}`}>{l.label}</Link>
           ))}
           <Link href="/acquire" className="ml-1 rounded-full border border-gold-400/40 bg-gold-400/10 px-3 py-1.5 text-sm font-semibold text-gold-100 no-underline hover:bg-gold-400/20 hover:text-gold-50" data-testid="nav-acquire">🏛️ {t("site.acquire")}</Link>
         </nav>
@@ -126,7 +130,7 @@ export default function SiteHeader() {
               <div className="mt-1 grid grid-cols-2 gap-0.5">{[...ECOSYSTEM_CLOUD, ...ECOSYSTEM_SELF].map((a) => <MegaItem key={`${a.kind}-${a.slug}`} a={a} />)}</div>
               <div className="gilded-rule my-2" />
               {LINKS.map((l) => (
-                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-200 no-underline hover:bg-white/5">{l.label}</Link>
+                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block rounded-md px-3 py-2.5 text-sm font-medium text-slate-200 no-underline hover:bg-white/5" data-testid={`mnav-${l.href.slice(1)}`}>{l.label}</Link>
               ))}
               <Link href="/acquire" onClick={() => setOpen(false)} className="mt-1 block rounded-md border border-gold-400/30 bg-gold-400/10 px-3 py-2.5 text-sm font-semibold text-gold-100 no-underline">🏛️ {t("site.acquire")}</Link>
               <div className="mt-2 grid gap-2 border-t border-white/10 pt-2">

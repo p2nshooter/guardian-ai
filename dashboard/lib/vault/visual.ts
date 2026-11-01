@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PRIVACY VAULT — visual redaction ON THE DEVICE:
  *   PDF    every page is rendered (pdf.js), its text layer (or OCR for scanned

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PARTNER PROGRAMMES — the switches and the numbers (docs/BUSINESS-MASTER-BLUEPRINT.md
  * §3–§4, REQUESTS 131). Admin → Programs edits them; every page, API and the AI chat

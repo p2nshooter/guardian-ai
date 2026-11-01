@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * /api/admin/managed — the MANAGED AI product line (admin only). Separate
  * from BYOX: AXTO's own provider keys (ai_provider_keys), Workers AI model,

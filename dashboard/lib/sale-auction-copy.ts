@@ -1,12 +1,14 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * The words of the site-sale AUCTION on /acquire and the homepage band (English;
  * the other nine languages are in lib/i18n-pages/sale-auction.ts, loaded on
  * demand). Owner, 28 Oct 2026 (REQUESTS 120): make it feel like the chance to get
  * the best price — and act now. Every line is true of lib/sale-auction.ts: real
- * bids, a real deadline, no hidden reserve, and (REQUESTS 125) an opening bid that
- * started at US$10M on 28 Oct 2026 and rises every week, the same for everyone.
+ * bids, a real deadline, no hidden reserve, and (REQUESTS 132) offers from
+ * US$500,000, the same for everyone. The "rises every week" lines (openingNoteRising,
+ * ruleRising) are shown only when the admin sets a weekly rise. {open} appears once
+ * in openingNote (the panel shows the price in bold there).
  * ============================================================================ */
 
 export const SALE_AUC_EN = {
@@ -20,7 +22,8 @@ export const SALE_AUC_EN = {
   noBids: "No bids yet — a bid at the opening price can win.",
   placeBid: "Place a bid",
   noReserve: "No hidden reserve: the highest bid when the clock stops buys the whole of AXTO.",
-  openingNote: "The opening bid started at US$10 million on 28 October 2026 and rises by {weekly} every week, the same for every bidder — a bid placed now can win at a price no later bid is allowed.",
+  openingNote: "Offers start at {open}, the opening price, the same for every bidder: no bid below it is accepted, and there is no hidden reserve above it.",
+  openingNoteRising: "The opening bid rises by {weekly} every week, the same for every bidder — a bid placed now can win at a price no later bid is allowed.",
   rises: "Rises to {next} on {date}",
   urgency: "An opportunity measured in days: when this round closes, the price is whatever the best bid says.",
 
@@ -28,11 +31,13 @@ export const SALE_AUC_EN = {
   boardLead: "Real bids, a real deadline and one winner. Every bid appears here the moment it is placed.",
   rulesTitle: "How it works",
   rules: [
-    "Every bid is at least the opening bid of the day, which rises by {weekly} every week; after the first bid, also at least the current bid plus {step}. You may bid higher at once.",
+    "Every bid is at least the opening price of {open}; after the first bid, also at least the current bid plus {step}. You may bid higher at once.",
     "A bid in the last {min} minutes extends the round by {min} minutes, so every bidder gets a fair last word.",
     "Every bid is binding: the winner completes the purchase within {days} days — bank wire (escrow can be arranged), crypto or PayPal.",
     "Administrator access is granted the moment the payment is verified; the domain, code and accounts follow the handover checklist.",
   ] as string[],
+  /** Replaces rules[0] while a weekly rise is set. */
+  ruleRising: "Every bid is at least the opening bid of the day, which rises by {weekly} every week; after the first bid, also at least the current bid plus {step}. You may bid higher at once.",
   ruleApproval: "The owner verifies every bidder before they can bid. Names are shown masked.",
   ruleOpen: "Any signed-in member can register and bid. Names are shown masked.",
   latestBids: "Latest bids",

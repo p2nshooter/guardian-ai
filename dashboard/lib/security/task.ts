@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SECURITY ANALYST — registers the app in the AI task registry. Builds a layered,
  * DEFENSIVE-ONLY system prompt (SOC/DFIR analyst) per mode, and prepends any

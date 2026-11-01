@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Lifetime licence operations — ONE implementation used by the member portal,
  * the admin portal and payment activation (zero-touch: a paid lifetime order

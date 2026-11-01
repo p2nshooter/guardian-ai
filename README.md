@@ -1,12 +1,13 @@
 [//]: # (==============================================================================)
-[//]: # (Copyright (c) 2024-2026 Axto AI. All rights reserved.)
-[//]: # (Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure)
-[//]: # (Maintained by: Axto AI <hello@axto.io>)
+[//]: # (Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.)
+[//]: # (Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams)
+[//]: # (Maintained by: AXTO Digital Global <hello@axto.io>)
 [//]: # (Proprietary and Confidential. Unauthorized copying is strictly prohibited.)
 [//]: # (==============================================================================)
 # AXTO Platform — axto.io
 
 AI workspace for legal, security and business teams. **Your keys, your data** — in the browser, or on your own servers.
+AXTO is a name, not an acronym; the platform is built and run by **AXTO Digital Global**.
 
 The full product and engineering plan is [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md) (latest audit: §19).
 

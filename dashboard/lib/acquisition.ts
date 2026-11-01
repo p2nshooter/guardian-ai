@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SITE ACQUISITION — the whole of AXTO (domain, code, apps, accounts, brand)
  * offered for sale on /acquire, paid through the same gateways as every other
@@ -10,9 +10,10 @@
  * payment providers) is then completed together (checklist on /acquire).
  *
  * Since 28 Oct 2026 (owner, REQUESTS 120; docs/BLUEPRINT-V4.md §34) the sale runs
- * as an AUCTION by default: rounds with a random opening bid between US$10M and
- * US$100M, real bids and a real deadline (lib/sale-auction.ts); the winner pays
- * the winning bid through this same checkout. "fixed" keeps the asking price.
+ * as an AUCTION by default: rounds with real bids and a real deadline
+ * (lib/sale-auction.ts); the winner pays the winning bid through this same
+ * checkout. "fixed" keeps the asking price. Since 1 Nov 2026 (REQUESTS 132)
+ * offers start at US$500,000.
  *
  * Settings live in the setting "site_sale" (Admin → Site sale). The bank
  * accounts below are the owner's public BNI receiving accounts (the same ones
@@ -20,10 +21,11 @@
  * ============================================================================ */
 import { now } from "./db";
 import type { Data } from "./data";
-import { SALE_AUCTION_DEFAULTS, sanitizeSaleAuction, type SaleAuctionSettings } from "./sale-auction-terms";
+import { SALE_AUCTION_DEFAULTS, SALE_PRICE_FIELDS, SALE_PRICE_REV, sanitizeSaleAuction, type SaleAuctionSettings } from "./sale-auction-terms";
 
 export const SALE_KEY = "site_sale";
-export const DEFAULT_PRICE_USD = 10_000_000;
+/** The asking price in "fixed" mode, and the opening bid of the auction (owner, 1 Nov 2026, REQUESTS 132). */
+export const DEFAULT_PRICE_USD = 500_000;
 /** Gateways that may carry the sale, in the order buyers see them (PayPal first). */
 export const SALE_GATEWAYS = ["paypal", "nowpayments", "crypto", "manual", "stripe"] as const;
 export type SaleGateway = (typeof SALE_GATEWAYS)[number];
@@ -111,17 +113,29 @@ export function sanitizeSale(v: any, base: SaleSettings = SALE_DEFAULTS): SaleSe
   };
 }
 
+/**
+ * Settings stored before the owner's current price (REQUESTS 132) take that price: the opening bid, weekly rise,
+ * day one and step of the auction, and the fixed price. Everything else (status, mode, gateways, bank, buyer) is kept.
+ */
+export function repriceStoredSale(v: any): any {
+  if (!v || typeof v !== "object" || Number(v.priceRev) >= SALE_PRICE_REV) return v;
+  const auction = { ...(v.auction && typeof v.auction === "object" ? v.auction : {}) };
+  for (const k of SALE_PRICE_FIELDS) auction[k] = SALE_AUCTION_DEFAULTS[k];
+  return { ...v, auction, priceUsd: DEFAULT_PRICE_USD };
+}
+
 export async function getSale(db: Data): Promise<SaleSettings> {
   try {
     const raw = await db.config.get(SALE_KEY);
-    return raw ? sanitizeSale(JSON.parse(raw)) : { ...SALE_DEFAULTS };
+    return raw ? sanitizeSale(repriceStoredSale(JSON.parse(raw))) : { ...SALE_DEFAULTS, auction: { ...SALE_DEFAULTS.auction } };
   } catch {
-    return { ...SALE_DEFAULTS };
+    return { ...SALE_DEFAULTS, auction: { ...SALE_DEFAULTS.auction } };
   }
 }
 
+/** Saved settings carry the price revision they were set under, so the admin's own price is never replaced. */
 export async function saveSale(db: Data, s: SaleSettings): Promise<void> {
-  await db.config.set(SALE_KEY, JSON.stringify({ ...s, updatedAt: now() }));
+  await db.config.set(SALE_KEY, JSON.stringify({ ...s, priceRev: SALE_PRICE_REV, updatedAt: now() }));
 }
 
 /** Can this gateway carry this amount at all? (PayPal is offered; its own limits may still apply.) */

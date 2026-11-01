@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SECURITY ANALYST v4 — phishing analysis of a raw e-mail (.eml) ON THE DEVICE:
  * MIME parsing (multipart, base64, quoted-printable, charsets, encoded-word

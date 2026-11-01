@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Small, safe Markdown parser → AST. Used by the on-screen renderer
  * (components/Markdown.tsx — React elements, never raw HTML) and the Word

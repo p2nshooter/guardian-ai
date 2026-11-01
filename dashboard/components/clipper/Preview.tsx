@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * CLIPPER — live preview. Plays the clip exactly as it will be rendered: only
  * the kept pieces (cuts are skipped), reframed, with animated captions, hook,

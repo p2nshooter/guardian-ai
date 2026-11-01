@@ -1,5 +1,5 @@
 // ==============================================================================
-// Copyright (c) 2024-2026 Axto AI. All rights reserved.
+// Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
 // ==============================================================================
 // The LinkedIn card, logo and cover designs, shared by build-kit.mjs (the page kit,
 // REQUESTS 122) and build-library.ts (the daily auto-post images, REQUESTS 123).

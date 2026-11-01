@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * Markdown → Word (.docx) in the browser, no dependencies: WordprocessingML
  * generated from the same AST the screen renders (lib/markdown.ts), packed

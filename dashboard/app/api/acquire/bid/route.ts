@@ -10,7 +10,7 @@ import { readJson, fail } from "@/lib/http";
 import { rateLimit } from "@/lib/rate-limit";
 import { formatUsd } from "@/lib/plans";
 import { getSale } from "@/lib/acquisition";
-import { ladderPrice, latestRound, nextMinBid, placeSaleBid, publicRound, roundBids } from "@/lib/sale-auction";
+import { ladderPrice, latestRound, nextMinBid, placeSaleBid, publicRound, roundBids, withLiveStep } from "@/lib/sale-auction";
 
 const WHY: Record<string, string> = {
   admin: "Administrator accounts run the sale and cannot bid — sign in with the bidder's account.",
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (r.error === "too_low") {
       const [cur, sale] = await Promise.all([latestRound(db), getSale(db)]);
       const floor = ladderPrice(sale.auction);
-      return fail(`The lowest bid accepted now is ${formatUsd(cur ? nextMinBid(cur, floor) : floor)}.`, 409);
+      return fail(`The lowest bid accepted now is ${formatUsd(cur ? nextMinBid(withLiveStep(cur, sale.auction), floor) : floor)}.`, 409);
     }
     return fail(WHY[r.error] || "The bid was not accepted.", r.error === "not_registered" || r.error === "bad_amount" ? 400 : 409);
   }

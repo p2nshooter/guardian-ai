@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * LICENCE AUCTION — the rules (docs/BLUEPRINT-V4.md §26.5, owner 26 Oct 2026,
  * and §27.4, owner 27 Oct 2026): EVERY package is auctioned every 2 weeks, the

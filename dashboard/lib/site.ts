@@ -1,7 +1,7 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
- * Platform Architecture: AXTO (axto.io) - Sovereign AI Infrastructure
- * Maintained by: Axto AI <hello@axto.io>
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
+ * Platform Architecture: AXTO (axto.io) - AI workspace for legal, security & business teams
+ * Maintained by: AXTO Digital Global <hello@axto.io>
  * Proprietary and Confidential. Unauthorized copying is strictly prohibited.
  * ==============================================================================
  * Site-wide constants — the ONE place for brand, URLs and contact details.
@@ -12,7 +12,8 @@ export const VERSION = "3.2.1";
 
 export const SITE = {
   name: "AXTO",
-  legalName: "AXTO (Axto AI)",
+  /** The company that builds and runs AXTO (the same name as its LinkedIn page, REQUESTS 122 and 132). */
+  legalName: "AXTO Digital Global",
   url: (process.env.NEXT_PUBLIC_APP_URL || "https://axto.io").replace(/\/$/, ""),
   tagline: "AI workspace for legal, security & business teams",
   description:

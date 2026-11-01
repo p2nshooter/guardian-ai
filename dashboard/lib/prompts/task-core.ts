@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * PROMPT LIBRARY — the task builder without the catalogue, so it can run in the
  * browser (Local Mode) as well as on the server. The server passes getPrompt;

@@ -1,5 +1,5 @@
 /* ==============================================================================
- * Copyright (c) 2024-2026 Axto AI. All rights reserved.
+ * Copyright (c) 2024-2026 AXTO Digital Global. All rights reserved.
  * ==============================================================================
  * SEO helpers: per-page metadata (canonical, Open Graph, Twitter) and
  * schema.org JSON-LD builders. Every public page uses these so titles,
