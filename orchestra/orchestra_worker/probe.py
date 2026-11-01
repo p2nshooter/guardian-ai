@@ -13,13 +13,14 @@ Intel: /dev/dri), on Windows and Linux alike:
 
     docker run --rm --gpus all --entrypoint python axto/orchestra-worker-gpu -m orchestra_worker.probe
 
-It prints one JSON line {"ok", "gpus", "torch", "detail"} and exits 0 when the
+It prints one JSON line {"ok", "gpus", "torch", "detail", "variant"} and exits 0 when the
 container can really compute on a GPU, 3 when it cannot. Nothing is started,
 registered or written.
 """
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from orchestra_worker import gpu_inventory
@@ -40,14 +41,20 @@ def probe() -> dict:
         torch_dev = ""
     ok = bool(usable)
     detail = ""
+    variant = os.environ.get("GPU_VARIANT", "")
+    want = {"nvidia": "cuda", "amd": "rocm"}.get(usable[0]["vendor"], "") if usable else ""
+    if ok and variant and want and variant != want:
+        # e.g. an AMD card handed to the NVIDIA (CUDA) build: chat via Ollama works, PyTorch does not.
+        detail = (f"this is the {variant.upper()} build of the GPU worker; the {usable[0]['name']} needs "
+                  f"axto/orchestra-worker-gpu{'-amd' if want == 'rocm' else ''}")
     if not ok:
         detail = "; ".join(f"{g['name']}: {g['access_note']}" for g in blocked if g.get("access_note")) or \
                  ("WSL 2 GPU (/dev/dxg) present but no NVIDIA GPU passed through" if inv["access"].get("wsl")
                   else "no GPU visible inside the container")
-    elif usable[0]["vendor"] in ("nvidia", "amd", "intel") and not torch_dev:
+    elif not detail and usable[0]["vendor"] in ("nvidia", "amd", "intel") and not torch_dev:
         detail = "the GPU is visible, but PyTorch in this image cannot use it — chat via Ollama still works"
     return {"ok": ok, "gpus": [f"{g['name']} ({g['vram_gb']:g} GB)" if g.get("vram_gb") else g["name"] for g in usable],
-            "torch": torch_dev, "detail": detail}
+            "torch": torch_dev, "detail": detail, "variant": variant}
 
 
 if __name__ == "__main__":

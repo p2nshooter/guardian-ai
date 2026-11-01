@@ -44,5 +44,13 @@ def test_command_line_prints_one_json_line_and_exits_3_without_a_gpu():
     out = subprocess.run([sys.executable, "-m", "orchestra_worker.probe"], cwd=ROOT, capture_output=True, text=True, timeout=120)
     line = [l for l in out.stdout.splitlines() if l.startswith("{")][-1]
     data = json.loads(line)
-    assert set(data) == {"ok", "gpus", "torch", "detail"}
+    assert set(data) == {"ok", "gpus", "torch", "detail", "variant"}
     assert out.returncode == (0 if data["ok"] else 3)
+
+
+def test_a_card_of_the_other_brand_names_the_right_image(monkeypatch):
+    monkeypatch.setenv("GPU_VARIANT", "cuda")
+    monkeypatch.setattr(pr.gpu_inventory, "inventory", _inv([{"name": "AMD Radeon RX 7900 XTX", "vendor": "amd", "vram_gb": 24.0,
+                                                                  "usable": True, "access_note": ""}]))
+    r = pr.probe()
+    assert r["ok"] is True and r["variant"] == "cuda" and "axto/orchestra-worker-gpu-amd" in r["detail"]

@@ -2,9 +2,11 @@
 # Copyright (c) 2024-2026 AXTO (axto.io). All rights reserved.
 # Platform: AXTO (axto.io) — Sovereign AI Infrastructure.
 # ==============================================================================
-# Builds the Orchestra GPU Worker image (orchestra/Dockerfile.worker-gpu) and
-# uploads it to Cloudflare R2. Kept SEPARATE from auto-build-all because the
-# CUDA-based image is large (~4–5 GB) and needs extra runner disk space.
+# Builds the Orchestra GPU Worker images (orchestra/Dockerfile.worker-gpu, one per GPU
+# brand: cuda → orchestra-worker-gpu, rocm → orchestra-worker-gpu-amd; REQUESTS 136 G3)
+# and uploads them to Cloudflare R2. Pull requests build and test them without uploading.
+# Kept SEPARATE from auto-build-all because the GPU images are large and need extra
+# runner disk space.
 #
 # Trigger: manual (workflow_dispatch) or when the GPU Dockerfile, the worker or the core code changes.
 # Secrets: CF_R2_ACCESS_KEY_ID, CF_R2_SECRET_ACCESS_KEY  (R2 S3 keys)
@@ -21,6 +23,13 @@ on:
       - "orchestra/orchestra_worker/**"
       - "orchestra/orchestra_core/**"
       - ".github/workflows/auto-build-gpu.yml"
+  # A change to the Dockerfile or this workflow is proven on the PR (build + GPU test),
+  # before it can reach main and the images customers download.
+  pull_request:
+    paths:
+      - "orchestra/Dockerfile.worker-gpu"
+      - "orchestra/orchestra_worker/requirements*.txt"
+      - ".github/workflows/auto-build-gpu.yml"
 
 concurrency:
   group: build-gpu-${{ github.ref }}
@@ -28,14 +37,20 @@ concurrency:
 
 jobs:
   build-gpu-worker:
-    name: "🎮 Orchestra Worker GPU"
+    name: "🎮 Orchestra Worker GPU (${{ matrix.variant }})"
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { variant: cuda, image: orchestra-worker-gpu,     torch_check: "torch.version.cuda" }
+          - { variant: rocm, image: orchestra-worker-gpu-amd, torch_check: "torch.version.hip" }
     steps:
       - uses: actions/checkout@v4
 
-      # CUDA images are large — reclaim ~25 GB of runner disk before building.
+      # GPU images are large — reclaim ~25 GB of runner disk before building.
       - name: Free disk space
         run: |
           echo "Before:"; df -h / | tail -1
@@ -46,34 +61,52 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build GPU worker image
+      - name: Build ${{ matrix.image }}
         uses: docker/build-push-action@v5
         with:
           context: ./orchestra
           file: ./orchestra/Dockerfile.worker-gpu
+          build-args: GPU_VARIANT=${{ matrix.variant }}
           push: false
           load: true
-          tags: axto/orchestra-worker-gpu:latest
+          tags: axto/${{ matrix.image }}:latest
           # No GHA layer cache here — the image is too large to cache cheaply.
 
+      # The runner has no GPU: the image must start Python, carry the right PyTorch build
+      # and answer the GPU test with "no GPU" (exit 3) — exactly what AXTO Setup runs.
+      - name: Test the image (PyTorch build + GPU test)
+        env:
+          IMAGE: axto/${{ matrix.image }}:latest
+        run: |
+          set -u
+          docker run --rm --entrypoint python "$IMAGE" -c "import torch, sys; v=${{ matrix.torch_check }}; print('torch', torch.__version__, '${{ matrix.variant }}', v); sys.exit(0 if v else 1)"
+          set +e
+          out=$(docker run --rm --entrypoint python "$IMAGE" -m orchestra_worker.probe); code=$?
+          set -e
+          echo "probe: $out (exit $code)"
+          echo "$out" | python3 -c "import json,sys; d=json.loads(sys.stdin.read().strip().splitlines()[-1]); assert set(d)>={'ok','gpus','torch','detail'}, d"
+          [ "$code" = "3" ] || { echo "❌ expected exit 3 (no GPU on the runner)"; exit 1; }
+          echo "✅ ${{ matrix.image }}: PyTorch build and GPU test OK"
+
       - name: Save & upload to R2
+        if: github.event_name != 'pull_request'
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.CF_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
           # Account ID & bucket are not secret — hardcoded for reliability.
           CF_ACCOUNT_ID:         ec77c7422c83e094aa03df0b3f94e488
           R2_BUCKET:             axto-builds
+          IMAGE:                 ${{ matrix.image }}
         run: |
-          echo "💾 Saving orchestra-worker-gpu..."
+          echo "💾 Saving $IMAGE..."
           # pigz = parallel gzip (all cores) — far faster than single-thread gzip
-          # for a multi-GB CUDA image. Pre-installed on GitHub runners; install as
-          # a safety net, fall back to gzip if unavailable.
+          # for a multi-GB GPU image. Fall back to gzip if unavailable.
           sudo apt-get install -y pigz >/dev/null 2>&1 || true
           if command -v pigz >/dev/null 2>&1; then
-            docker save axto/orchestra-worker-gpu:latest | pigz -6 -p "$(nproc)" > orchestra-worker-gpu.tar.gz
+            docker save "axto/$IMAGE:latest" | pigz -6 -p "$(nproc)" > "$IMAGE.tar.gz"
           else
-            docker save axto/orchestra-worker-gpu:latest | gzip -6 > orchestra-worker-gpu.tar.gz
+            docker save "axto/$IMAGE:latest" | gzip -6 > "$IMAGE.tar.gz"
           fi
-          echo "✅ size: $(du -sh orchestra-worker-gpu.tar.gz | cut -f1)"
-          bash scripts/ci/r2-put.sh orchestra-worker-gpu.tar.gz \
-            "${R2_BUCKET}/builds/latest/raw/orchestra-worker-gpu.tar.gz" application/gzip
+          echo "✅ size: $(du -sh "$IMAGE.tar.gz" | cut -f1)"
+          bash scripts/ci/r2-put.sh "$IMAGE.tar.gz" \
+            "${R2_BUCKET}/builds/latest/raw/$IMAGE.tar.gz" application/gzip
