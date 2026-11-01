@@ -27,9 +27,9 @@ test("prices: tiers are ordered, suite costs more, admin override ignores junk",
 });
 
 test("prices: device counts round UP to the next tier; >100 has no list price", () => {
-  assert.equal(lifetimePrice(1, "app"), 24_900);
-  assert.equal(lifetimePrice(3, "app"), 99_000);
-  assert.equal(lifetimePrice(100, "suite"), 5_900_000);
+  assert.equal(lifetimePrice(1, "app"), 2_490);
+  assert.equal(lifetimePrice(3, "app"), 9_900);
+  assert.equal(lifetimePrice(100, "suite"), 590_000);
   assert.equal(lifetimePrice(101, "suite"), null);
   assert.equal(lifetimePrice(0, "app"), null);
   assert.equal(lifetimePrice(2.5, "app"), null);

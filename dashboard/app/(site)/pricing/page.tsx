@@ -13,7 +13,7 @@ import PlanMatrix from "@/components/plans/PlanMatrix";
 import { PM } from "@/lib/i18n-pages/planmatrix";
 
 export const metadata: Metadata = pageMeta({
-  title: "Pricing — plans from $19/month",
+  title: `Pricing — plans from $${PLANS.starter.monthly}/month`,
   description: "AXTO plans: Starter, Pro, Business and Enterprise. Unlimited AI on your own keys, Legal AI, Prompt Library, Clipper, Compliance Center, Security Analyst, Privacy Vault and self-hosted Docker editions.",
   path: "/pricing",
 });

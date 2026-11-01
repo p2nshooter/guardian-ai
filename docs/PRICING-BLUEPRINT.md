@@ -3,10 +3,10 @@
 > Pemilik, 1 Nov 2026: "Menurut sy aplikasi2 yg d buat skrg ini sangat sederhana sekali, harga nya g layak klo semahal
 > itu... Coba perbaiki harga2 nya mengikuti harga pasaran ASIA."
 
-Status: 📝 **usulan, menunggu keputusan pemilik.** Belum ada harga yang diubah di kode atau di situs. Setelah disetujui,
-angka dipasang sebagai bawaan di kode dalam satu PR. Admin tetap bisa mengubahnya kapan saja di Admin → Plans, Editions,
+Status: ✅ **disetujui pemilik 1 Nov 2026** ("Pasang usulan ini"). Angka dipasang sebagai bawaan di kode dalam satu PR
+(revisi harga 2, `lib/price-rev.ts`; program mitra `TERMS_REV` 3). Admin tetap bisa mengubahnya kapan saja di Admin → Plans, Editions,
 dan Lifetime. Harga lama yang sudah disimpan Admin di R2 dipindah sekali ke harga baru, dengan pola `priceRev` yang sama
-seperti REQUESTS 132.
+seperti REQUESTS 132. Saklar on/off edisi tetap dipertahankan.
 
 ## 1. Acuan pasar (riset 1 Nov 2026)
 
@@ -72,8 +72,11 @@ sendiri, jadi wajar lebih murah dari layanan yang menanggung biaya AI.
   lama.
 - Dengan eceran 4–5× lebih murah, angka itu dihitung ulang agar mitra tetap untung dan AXTO tetap dibayar lebih dulu.
   Usulan:
-  - reseller US$1.500 masuk (kredit US$750);
-  - white label US$20.000 masuk (kredit US$7.500) + minimal US$18.000/tahun.
+  - reseller US$1.500 masuk (kredit US$750); ambang tingkat US$7.500 / US$30.000; biaya tahunan US$360, dihapus mulai
+    US$7.500;
+  - white label US$20.000 masuk (kredit US$7.500) + minimal US$18.000/tahun; biaya platform US$8.000 (US$4.000 mulai
+    US$85.000); ambang tingkat US$50.000 / US$170.000.
+  - Hitungan untung mitra dan AXTO: `BUSINESS-MASTER-BLUEPRINT.md` §4.1 C–D.
 - Persentase diskon grosir dan komisi afiliasi (20%) tidak berubah.
 
 ### 2.4 AI Studio (studio film)

@@ -5,6 +5,7 @@ import { getData } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import { getPlanPrices, defaultPrices, PLANS, PLAN_ORDER, mergePrices } from "@/lib/plans";
 import { readJson, fail, audit } from "@/lib/http";
+import { PRICE_REV } from "@/lib/price-rev";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
@@ -24,7 +25,7 @@ export async function PUT(req: NextRequest) {
   }
   const clean = mergePrices(JSON.stringify(b.prices));
   const db = getData(req);
-  await db.config.set("plan_prices", JSON.stringify(clean));
+  await db.config.set("plan_prices", JSON.stringify({ ...clean, priceRev: PRICE_REV }));
   await audit(db, ctx.session, "admin.plans.prices", "platform_config", "plan_prices", clean, req);
   return respond({ ok: true, prices: clean }, ctx);
 }

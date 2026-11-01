@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getData } from "@/lib/db";
 import { requireAdmin, respond } from "@/lib/auth";
 import { readJson, fail, audit } from "@/lib/http";
-import { EDITIONS, getEditionPrices, mergeEditionPrices } from "@/lib/editions";
+import { EDITIONS, editionPricesToStore, getEditionPrices, mergeEditionPrices } from "@/lib/editions";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireAdmin(req);
@@ -37,7 +37,7 @@ export async function PUT(req: NextRequest) {
   }
   const clean = mergeEditionPrices(JSON.stringify(b.prices));
   const db = getData(req);
-  await db.config.set("edition_prices", JSON.stringify(clean));
+  await db.config.set("edition_prices", editionPricesToStore(clean));
   await audit(db, ctx.session, "admin.editions.prices", "platform_config", "edition_prices", { changed: b.prices.length }, req);
   return respond({ ok: true, prices: clean }, ctx);
 }

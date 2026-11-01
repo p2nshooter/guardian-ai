@@ -85,7 +85,7 @@ test("direct crypto: unique amounts per order, hash verification, order status",
   const b = await m.post("/api/billing/checkout", { plan: "starter", cycle: "monthly", gateway: "crypto" });
   assert.equal(a.status, 200, a.text);
   const amtA = a.json.wallets[0].amount, amtB = b.json.wallets[0].amount;
-  assert.match(amtA, /^19\.\d{2}$/);
+  assert.match(amtA, /^5\.\d{2}$/);
   assert.notEqual(amtA, amtB, "each open order has its own amount");
   assert.equal(a.json.wallets[0].auto, true);
   assert.equal(a.json.wallets[0].address, "TQautoE2EwalletAddress00000000001");

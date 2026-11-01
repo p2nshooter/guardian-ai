@@ -112,13 +112,13 @@ test("packages: editions and lifetime licences at today's shop price", () => {
   assert.equal(e.kind, "edition");
   assert.equal(e.app, "guardian");
   assert.match(e.title, /Sentinel Lite edition, 1 year/);
-  assert.equal(normalPrice(e, mergeEditionPrices(null), LIFETIME_TIERS), 990);
+  assert.equal(normalPrice(e, mergeEditionPrices(null), LIFETIME_TIERS), 99);
   assert.equal(normalPrice(e, mergeEditionPrices(JSON.stringify([{ code: "lite", yearly: 1200 }])), LIFETIME_TIERS), 1200, "admin price override");
   assert.equal(normalPrice(e, mergeEditionPrices(JSON.stringify([{ code: "lite", enabled: false }])), LIFETIME_TIERS), null, "not on sale");
   const l = parsePackage("lifetime:app:vault:5")!;
   assert.deepEqual([l.kind, l.scope, l.product, l.devices], ["lifetime", "app", "vault", 5]);
-  assert.equal(normalPrice(l, mergeEditionPrices(null), LIFETIME_TIERS), 99_000);
-  assert.equal(normalPrice(parsePackage("lifetime:suite:1")!, mergeEditionPrices(null), LIFETIME_TIERS), 149_000);
+  assert.equal(normalPrice(l, mergeEditionPrices(null), LIFETIME_TIERS), 9_900);
+  assert.equal(normalPrice(parsePackage("lifetime:suite:1")!, mergeEditionPrices(null), LIFETIME_TIERS), 14_900);
   assert.equal(parsePackage("lifetime:app:nope:1"), null);
   assert.equal(parsePackage("lifetime:app:vault:7"), null, "only the device tiers that are sold");
   assert.equal(parsePackage("edition:unknown:yearly"), null);
