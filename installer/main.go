@@ -44,11 +44,13 @@ func usage() {
 
 Usage:
   axto-setup                               open the guided installer (Windows default)
-  axto-setup install --key KEY [--port N] [--lan] [--dir PATH] [--gpu] [--with IMG,…] [--images DIR]
+  axto-setup install --key KEY [--port N] [--lan] [--dir PATH] [--gpu|--no-gpu] [--with IMG,…] [--images DIR]
   axto-setup install <app> --key LIFE-…    lifetime licence: install + activate this device
   axto-setup update  <app>                 download the latest images and restart
 
-  --gpu         Orchestra: also install the NVIDIA GPU worker (≈ 6 GB image)
+  --gpu         Orchestra: require the GPU worker (≈ 6 GB image); it is included by itself
+                when the GPU is ready, the same as the Windows wizard, and tested before it starts
+  --no-gpu      Orchestra: never install the GPU worker
   --with        optional images by name (orchestra-worker-gpu), or "none" to remove them
   --images DIR  offline package: load images from DIR (default: images/ next to axto-setup)
   axto-setup status | start | stop | restart | logs  <app>
@@ -93,7 +95,8 @@ func main() {
 	portal := fs.String("portal", envOr("AXTO_PORTAL", defaultPortal), "AXTO portal URL")
 	base := fs.String("base", "", "base directory for all apps")
 	keepData := fs.Bool("keep-data", false, "uninstall: keep the app's data volumes")
-	gpu := fs.Bool("gpu", false, "Orchestra: also install the NVIDIA GPU worker")
+	gpu := fs.Bool("gpu", false, "Orchestra: require the GPU worker (it is included by itself when a GPU is ready)")
+	noGPU := fs.Bool("no-gpu", false, "Orchestra: do not install the GPU worker, even when a GPU is ready")
 	with := fs.String("with", "", "optional images to install (comma-separated), or none")
 	images := fs.String("images", "", "offline package: folder with the <image>.tar.gz files")
 	fs.Usage = usage
@@ -172,6 +175,7 @@ func main() {
 			o.LAN = st.LAN || *lan
 		}
 		o.ImagesDir = *images
+		o.NoGPU = *noGPU
 		if *with != "" || *gpu {
 			o.With = []string{}
 			for _, n := range strings.Split(*with, ",") {
@@ -198,6 +202,9 @@ func main() {
 			fail(err)
 		}
 		fmt.Printf("\n✔ %s is running — http://localhost:%d  (config: %s)\n", res.Name, res.Port, res.Dir)
+		for _, w := range res.Warnings {
+			fmt.Printf("⚠ %s\n", w)
+		}
 	case "status", "start", "stop", "restart", "logs":
 		out, err := Control(ctx, app(), cmd)
 		fmt.Print(out)
@@ -233,14 +240,20 @@ func main() {
 		}
 		if d.GPU != "" {
 			fmt.Printf("GPU: %s\n", d.GPU)
+			pl := d.GPUPlan
+			fmt.Printf("  GPU worker: mode %s, ready %v, included by itself %v", pl.Mode, pl.Ready, pl.Auto)
+			if pl.Driver != "" {
+				fmt.Printf(", driver %s", pl.Driver)
+			}
+			fmt.Printf("\n  %s\n", pl.Note)
+			if pl.Fix != "" {
+				fmt.Printf("  Fix: %s %s\n", pl.Fix, pl.FixURL)
+			}
 			if d.OllamaGPU {
 				fmt.Println("  the model server here already runs its models on the GPU")
 			}
-			if d.GPUNote != "" {
-				fmt.Printf("  %s\n", d.GPUNote)
-			}
 		} else {
-			fmt.Println("GPU: none found (Orchestra's GPU worker needs an NVIDIA card)")
+			fmt.Println("GPU: none found — Orchestra runs on the CPU worker and your cloud AI keys")
 		}
 		if !d.Ready {
 			fmt.Printf("\n✖ %s\n  %s %s\n", d.Problem, d.Fix, d.FixURL)

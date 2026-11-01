@@ -27,14 +27,15 @@ import (
 var webFS embed.FS
 
 type job struct {
-	mu      sync.Mutex
-	ID      string   `json:"id"`
-	Status  string   `json:"status"` // running | done | failed
-	Percent int      `json:"percent"`
-	Current string   `json:"step"`
-	Lines   []string `json:"lines"`
-	Error   string   `json:"error"`
-	URL     string   `json:"url"`
+	mu       sync.Mutex
+	ID       string   `json:"id"`
+	Status   string   `json:"status"` // running | done | failed
+	Percent  int      `json:"percent"`
+	Current  string   `json:"step"`
+	Lines    []string `json:"lines"`
+	Error    string   `json:"error"`
+	URL      string   `json:"url"`
+	Warnings []string `json:"warnings"`
 }
 
 func (j *job) Step(pct int, msg string) {
@@ -54,7 +55,7 @@ func (j *job) Step(pct int, msg string) {
 func (j *job) snapshot() map[string]any {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-	return map[string]any{"id": j.ID, "status": j.Status, "percent": j.Percent, "step": j.Current, "lines": append([]string(nil), j.Lines...), "error": j.Error, "url": j.URL}
+	return map[string]any{"id": j.ID, "status": j.Status, "percent": j.Percent, "step": j.Current, "lines": append([]string(nil), j.Lines...), "error": j.Error, "url": j.URL, "warnings": j.Warnings}
 }
 
 type wizard struct {
@@ -237,7 +238,7 @@ func (w *wizard) licence(r *http.Request) (any, error) {
 		}
 	}
 	return map[string]any{"product": p, "expires_at": info.ExpiresAt, "lifetime": info.Lifetime, "download_bytes": total, "download": fmtBytes(total),
-		"optional": optional, "gpu": d.GPU, "gpus": d.GPUs, "gpu_ready": d.GPUReady, "ollama_gpu": d.OllamaGPU, "gpu_note": d.GPUNote, "local_images": local, "installed": LoadState()[p.Slug]}, nil
+		"optional": optional, "gpu": d.GPU, "gpus": d.GPUs, "gpu_ready": d.GPUReady, "gpu_plan": d.GPUPlan, "ollama_gpu": d.OllamaGPU, "gpu_note": d.GPUNote, "local_images": local, "installed": LoadState()[p.Slug]}, nil
 }
 
 func (w *wizard) install(r *http.Request) (any, error) {
@@ -294,7 +295,7 @@ func (w *wizard) install(r *http.Request) (any, error) {
 			j.Status, j.Error = "failed", err.Error()
 			return
 		}
-		j.Status, j.URL = "done", fmt.Sprintf("http://localhost:%d/", st.Port)
+		j.Status, j.URL, j.Warnings = "done", fmt.Sprintf("http://localhost:%d/", st.Port), st.Warnings
 	}()
 	return map[string]any{"job": j.ID}, nil
 }

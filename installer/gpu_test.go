@@ -201,31 +201,3 @@ func TestOllamaUnreachableAndOnCPU(t *testing.T) {
 	}
 }
 
-func TestReadinessNamesTheRealCause(t *testing.T) {
-	old := ollamaPSURL
-	ollamaPSURL = "http://127.0.0.1:9/api/ps"
-	defer func() { ollamaPSURL = old }()
-	amd := []GPU{{Vendor: "amd", Label: "AMD", Name: "AMD Radeon RX 7900 XTX", VRAMGB: 24}}
-	ready, note, onGPU := gpuReadiness(context.Background(), amd, "linux", func() string { return "" })
-	if ready || onGPU || !strings.Contains(note, "Install Ollama") || !strings.Contains(note, "AMD Radeon RX 7900 XTX") {
-		t.Errorf("amd without ollama: ready=%v onGPU=%v note=%q", ready, onGPU, note)
-	}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"models":[{"name":"llama3.2","size_vram":1}]}`))
-	}))
-	defer srv.Close()
-	ollamaPSURL = srv.URL + "/api/ps"
-	ready, note, onGPU = gpuReadiness(context.Background(), amd, "linux", func() string { return "" })
-	if ready || !onGPU || !strings.Contains(note, "Add an Ollama worker") {
-		t.Errorf("amd with ollama on GPU: ready=%v onGPU=%v note=%q", ready, onGPU, note)
-	}
-	nv := []GPU{{Vendor: "nvidia", Label: "NVIDIA", Name: "NVIDIA GeForce RTX 4090"}}
-	ready, note, _ = gpuReadiness(context.Background(), nv, "linux", func() string { return "" })
-	if ready || !strings.Contains(note, "nvidia-container-toolkit") {
-		t.Errorf("nvidia without the runtime: ready=%v note=%q", ready, note)
-	}
-	ready, _, _ = gpuReadiness(context.Background(), nv, "linux", func() string { return `{"nvidia":{}}` })
-	if !ready {
-		t.Error("nvidia with the nvidia runtime must be ready")
-	}
-}

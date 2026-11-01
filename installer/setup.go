@@ -45,6 +45,8 @@ type Options struct {
 	// ImagesDir is an offline package's image folder ("" = images/ next to AXTO Setup).
 	ImagesDir string
 	Profiles  []string // compose profiles to enable (from the optional images)
+	// NoGPU skips the GPU worker even when the GPU plan would include it (CLI --no-gpu).
+	NoGPU bool
 }
 
 type Installed struct {
@@ -58,6 +60,8 @@ type Installed struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 	Images      []string  `json:"images"`
 	Profiles    []string  `json:"profiles,omitempty"`
+	GPU         *GPUPlan  `json:"gpu,omitempty"`      // the GPU decision at the last install / update
+	Warnings    []string  `json:"warnings,omitempty"` // what did not start, and why (e.g. a failed GPU test)
 }
 
 var (
@@ -465,6 +469,21 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 
 	prev := LoadState()[p.Slug]
 	wanted := optionalWanted(p, o.With, prev)
+	// The same GPU decision as the wizard's tick (gpuplan.go): a fresh install from the
+	// command line includes the GPU worker by itself when the GPU is ready; --no-gpu skips it.
+	for n, prof := range p.Optional {
+		if prof != "gpu" {
+			continue
+		}
+		switch {
+		case o.NoGPU:
+			delete(wanted, n)
+		case o.With == nil && prev == nil && d.GPUPlan.Auto && d.GPUPlan.Profile == prof:
+			wanted[n] = true
+			pr.Step(10, "GPU worker included: "+d.GPUPlan.Note+" (skip it with --no-gpu)")
+		}
+	}
+	var warnings []string
 	dirs := offlineDirs(o)
 	type plan struct {
 		imageLink
@@ -491,11 +510,11 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	// The GPU worker reserves an NVIDIA device: without a usable GPU its container
 	// cannot start, so say so now instead of after a 6 GB download.
 	for _, im := range need {
-		if p.Optional[im.Name] == "gpu" && !d.GPUReady {
+		if p.Optional[im.Name] == "gpu" && !d.GPUPlan.Ready {
 			if d.GPUNote != "" {
 				return nil, errors.New(d.GPUNote)
 			}
-			return nil, fmt.Errorf("no NVIDIA GPU found on this computer — %s needs an NVIDIA card with its driver (CUDA); install without it, or install the NVIDIA driver first", im.Label)
+			return nil, fmt.Errorf("no GPU the worker container can use was found — %s needs an NVIDIA card with its driver (CUDA); install without it, or install the NVIDIA driver first", im.Label)
 		}
 	}
 	o.Profiles = nil
@@ -542,6 +561,35 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 		loaded = append(loaded, im.Name)
 	}
 
+	// Real GPU test inside the worker image, exactly as compose will hand the GPU over, on
+	// every OS. A failed test never breaks the install: the GPU worker stays off and the
+	// reason is shown; everything else starts.
+	if contains(o.Profiles, "gpu") {
+		for img, prof := range p.Optional {
+			if prof != "gpu" || !contains(loaded, img) {
+				continue
+			}
+			pr.Step(73, "Testing the GPU inside the GPU worker image…")
+			r := probeGPU(ctx, "axto/"+img+":latest", d.GPUPlan.Vendor)
+			if r.OK {
+				msg := "GPU test passed"
+				if len(r.GPUs) > 0 {
+					msg += ": " + strings.Join(r.GPUs, ", ")
+				}
+				if r.Detail != "" && r.Detail != "nvidia-smi" {
+					msg += " — " + r.Detail
+				}
+				pr.Step(74, msg)
+			} else {
+				w := "The GPU worker was not started: the GPU test inside its container failed (" + r.Detail + "). " +
+					"Fix it, then run AXTO Setup again (Update) — everything else is running."
+				warnings = append(warnings, w)
+				pr.Step(74, w)
+				o.Profiles = without(o.Profiles, "gpu")
+			}
+		}
+	}
+
 	// An optional part that was installed before and is not wanted now is stopped and removed.
 	if prev != nil {
 		for _, prof := range prev.Profiles {
@@ -572,7 +620,11 @@ func Install(ctx context.Context, o Options, pr Progress) (*Installed, error) {
 	}
 
 	now := time.Now().UTC()
-	st := &Installed{Slug: p.Slug, Name: p.Name, Dir: o.Dir, Port: o.Port, LAN: o.LAN, KeyTail: keyTail(o.Key), InstalledAt: now, UpdatedAt: now, Images: loaded, Profiles: o.Profiles}
+	st := &Installed{Slug: p.Slug, Name: p.Name, Dir: o.Dir, Port: o.Port, LAN: o.LAN, KeyTail: keyTail(o.Key), InstalledAt: now, UpdatedAt: now, Images: loaded, Profiles: o.Profiles, Warnings: warnings}
+	if len(p.Optional) > 0 && len(d.GPUs) > 0 {
+		plan := d.GPUPlan
+		st.GPU = &plan
+	}
 	if prev != nil {
 		st.InstalledAt = prev.InstalledAt
 	}
@@ -625,6 +677,16 @@ func keyTail(k string) string {
 		return k
 	}
 	return k[:strings.Index(k, "-")+1] + "…" + k[len(k)-4:]
+}
+
+func without(list []string, s string) []string {
+	out := list[:0:0]
+	for _, x := range list {
+		if x != s {
+			out = append(out, x)
+		}
+	}
+	return out
 }
 
 func contains(list []string, s string) bool {
