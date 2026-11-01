@@ -23,7 +23,7 @@ sini pada urutan yang benar.
 
 | # | Pekerjaan | Rencana | Status |
 |---|---|---|---|
-| 1 | **Worker GPU sama di Windows & Linux, semua merek, scaling dan indikator pintar** (REQUESTS 136) | `BLUEPRINT-V4.md` §31.F | G1 ✅ (PR #103) · G2 ✅ (#105) · G3 ✅ (#106: image NVIDIA + AMD dari satu Dockerfile, profil `gpu-amd`) · G4 ✅ (scaler: scaling nyata otomatis/manual, satu GPU per worker, dari nol) · **G5 berikutnya** (teks situs 10 bahasa + panduan) |
+| 2 | **Clipper kelas dunia** (REQUESTS 137) — mulai C1: format proyek bersama + sinkron proyek ke R2 + kuota dan log pemakaian | `apps/CLIPPER-BLUEPRINT.md` §11 | worker GPU (REQUESTS 136) selesai 1 Nov |
 
 ## Saat menunggu CI (butir kecil, dikerjakan di sela-sela)
 
@@ -36,7 +36,6 @@ sini pada urutan yang benar.
 
 | # | Pekerjaan | Rencana | Catatan urutan |
 |---|---|---|---|
-| 2 | **Clipper kelas dunia**: web + Windows + Linux, semua layanan cloud GPU & AI, AXTO Central GPU & AI, BYOK, simpan video di axto.io dengan biaya dan harga yang menguntungkan (REQUESTS 137) | `apps/CLIPPER-BLUEPRINT.md` | pemilik: "jadikan pekerjaan selanjutnya" setelah GPU |
 | 3 | P3 dompet kredit + Otoritas Lisensi v4 + API mitra · P4 portal reseller · P5 portal white label (perintah 1 Nov, REQUESTS 132–134) | `BUSINESS-MASTER-BLUEPRINT.md` §4–§7 | syarat agar promosi reseller/white label menunjuk ke portal yang benar-benar jalan |
 | 4 | **Mesin promosi otomatis** ke setiap member: perjalanan mingguan bahasa Inggris dari tahap awal, uji coba Smart License, lelang lisensi, tangga afiliasi → reseller → white label, portal member + email saat pendaftaran, 100–200 promosi A–Z, riwayat pengiriman di Admin, promosi usang dipisah dan dimatikan (REQUESTS 138) | `PROMOTION-BLUEPRINT.md` | fase PR1–PR4; posting reseller/white label menyala otomatis saat P4/P5 tayang |
 | 5 | **Setiap aplikasi lain sampai puncaknya, satu per satu**, dengan metode yang sama seperti Clipper | `apps/PEAK-METHOD.md` (urutan aplikasi §4) | blueprint aplikasi ditulis dulu, baru dibangun |
@@ -48,5 +47,6 @@ sini pada urutan yang benar.
 
 ## Selesai baru-baru ini
 
+- 1 Nov: **Worker GPU G1–G5 (REQUESTS 136)** — #103, #105, #106, #107 · kontak penawaran → hello@axto.io (ulyah #397, xaa #38) · blueprint dirapikan (#104).
 - 1 Nov: robots.txt tidak menutup Google di semua situs (ulyah #395, guardian-ai #101, axto.us #34) · Orchestra tidak
   berhenti setelah update (guardian-ai #102, REQUESTS 135) · Worker GPU G1 (guardian-ai #103, REQUESTS 136).

@@ -488,10 +488,10 @@ bukan dari perkiraan.
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
 | 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt–1 Nov 2026, `REQUESTS.md` 120, 124, 125, 132, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan ✅ · lelang xaa.es tayang (xaa #33) ✅ · **penawaran mulai US$500.000, datar, tanpa "US$10 juta"** di axto.io · sama di xaa.es | 4/6 | **67 %** |
 | 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | ✅ P0 blueprint induk · ✅ P1 program & saklar · ✅ P2 afiliasi · ✅ tinjauan ulang white label (REQUESTS 134, master §4.3: biaya masuk US$60 ribu + komitmen tahunan ≥ US$72 ribu, kredit 24 bulan, demo, klausul kelanjutan, tanpa staf; peta sinkronisasi §13) · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 3/11 | **27 %** |
-| 23 | Worker GPU sama di Windows & Linux, semua merek GPU, scaling dan indikator pintar (1 Nov 2026, `REQUESTS.md` 136, §31.F) | G1 deteksi = bisa dipakai + telemetri per GPU + indikator pintar ✅ · G2 Windows = Linux (satu keputusan kesiapan, uji GPU nyata, profil per merek) ✅ · G3 image per merek (CUDA, ROCm; Intel lewat Ollama host) dari satu Dockerfile ✅ · G4 scaling nyata (container dinyalakan/dimatikan, satu worker per GPU, dari nol) ✅ · G5 teks situs 10 bahasa + panduan sesuai kode | 4/5 | **80 %** |
+| 23 | Worker GPU sama di Windows & Linux, semua merek GPU, scaling dan indikator pintar (1 Nov 2026, `REQUESTS.md` 136, §31.F) | G1 deteksi = bisa dipakai + telemetri per GPU + indikator pintar ✅ · G2 Windows = Linux (satu keputusan kesiapan, uji GPU nyata, profil per merek) ✅ · G3 image per merek (CUDA, ROCm; Intel lewat Ollama host) dari satu Dockerfile ✅ · G4 scaling nyata (container dinyalakan/dimatikan, satu worker per GPU, dari nol) ✅ · G5 teks situs 10 bahasa + panduan sesuai kode ✅ | 5/5 | **100 %** |
 | 24 | Clipper kelas dunia: web + Windows + Linux, BYOK, Central GPU & AI, simpan di axto.io (1 Nov 2026, `REQUESTS.md` 137, `docs/apps/CLIPPER-BLUEPRINT.md`) | C1 proyek + sinkron + kuota · C2 media di R2 + paket penyimpanan · C3 Central Hub + konektor · C4 desktop Tauri · C5 server self-hosted · C6 publikasi + analitik · C7 tim · C8 Central Compute · C9 promosi nyata | 0/9 | **0 %** |
 | 25 | Mesin promosi otomatis ke member (1 Nov 2026, `REQUESTS.md` 138–139, `docs/PROMOTION-BLUEPRINT.md`) | PR1 data + perpustakaan + Admin · PR2 mesin + portal + email · PR3 media nyata + 100–200 pesan · PR4 tautan uji coba + metrik + A/B | 0/4 | **0 %** |
-| | **Total** (bobot = jumlah fase) | | **85/165** | **≈ 52 %** |
+| | **Total** (bobot = jumlah fase) | | **86/165** | **≈ 52 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1283,6 +1283,22 @@ scalling auto dan manual, smart indikator gpu dan smart2 lainya tambahkan yg men
       yang belum terpasang dan container lain, menghentikan dan menghapusnya;
     - konsol → Core → scaler → Docker diuji di Chromium (tombol "+ CPU worker" dan "Stop") tanpa error.
 - **G5 — teks situs dan panduan** (10 bahasa) hanya menjanjikan yang sudah dilakukan kode; tanda ✅ di blueprint mengikuti.
+
+  **G5 selesai (1 Nov 2026):**
+  - Beranda (10 bahasa): semua merek terdeteksi; NVIDIA (Windows + Linux) dan AMD (Linux) berjalan di worker GPU,
+    kartu lain lewat Ollama.
+  - Auto-Scale menyalakan/menghentikan worker sungguhan, satu per kartu, di GPU paling longgar, bahkan dari nol.
+  - Panduan (Inggris + Indonesia) menjelaskan:
+    - uji GPU sebelum menyala;
+    - utilisasi, memori terpakai, suhu dan daya per kartu;
+    - "+ GPU worker" di kartu paling longgar;
+    - minimum/maksimum.
+  - Petunjuk unduhan GPU (10 bahasa) dari G3.
+
+  **Perintah 136 selesai: G1–G5.** Sisa yang jujur:
+  - container untuk GPU Intel menunggu runtime Level Zero yang terbukti di CI; sampai itu, Intel memakai Ollama di
+    host, dengan alasan yang jelas di installer dan konsol;
+  - Docker Desktop di Windows hanya meneruskan GPU NVIDIA; AMD/Intel di Windows memakai Ollama di host.
 
 ## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
 
