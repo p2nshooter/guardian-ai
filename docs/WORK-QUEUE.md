@@ -25,17 +25,25 @@ sini pada urutan yang benar.
 |---|---|---|---|
 | 2 | **Clipper kelas dunia** (REQUESTS 137) — C1: format proyek v5 + aman antar perangkat (revisi, bentrok, versi) + kuota dan log pemakaian; lalu C2 media di R2 + paket penyimpanan | `apps/CLIPPER-BLUEPRINT.md` §11, §11.1 | C1 dibangun 1 Nov (tes unit + e2e), menunggu CI → merge → tayang |
 
+**Perintah 1 Nov (REQUESTS 141):** "bikinin dulu blueprint nya yg AI studio … baru implementasi". Blueprint ditulis
+(`apps/AI-STUDIO-BLUEPRINT.md`). Setelah Clipper C1 tayang, AI Studio S0 menjadi pekerjaan berjalan; Clipper C2–C9
+dilanjutkan sesudahnya (baris 3a).
+
 ## Saat menunggu CI (butir kecil, dikerjakan di sela-sela)
 
 | # | Pekerjaan | Rencana |
 |---|---|---|
 | W1 | ✅ Semua penawaran di semua situs ke hello@axto.io + WhatsApp +62 856-9123-4561 (REQUESTS 139): ulyah.com + 4 situs saudara (ulyah #397), xaa.es (xaa #38), axto.io sudah. **Sisa:** email notifikasi penawaran xaa.es ke hello@axto.io (butuh pengirim email; ikut baris 6). | `PROMOTION-BLUEPRINT.md` §9 |
 | W2 | ✅ Cabang xaa dimulai ulang dari main (1 Nov). | — |
+| W3 | Harga mengikuti pasar Asia (REQUESTS 140): riset + usulan ✅; **menunggu keputusan pemilik**, lalu satu PR (paket, edisi, lifetime, program mitra, teks 10 bahasa) | `PRICING-BLUEPRINT.md` |
 
 ## Berikutnya (urut, satu per satu)
 
 | # | Pekerjaan | Rencana | Catatan urutan |
 |---|---|---|---|
+| 2a | **AI Studio = studio film kelas dunia dengan AI** (REQUESTS 141): S0 rumah baru (chat → AI Chat, format `axto.film`, pustaka media R2) → S1 timeline 10 detik–24 jam → S2 generasi foto/teks→video + perpanjangan → S3 naskah/storyboard → S4 suara → S5 efek/VFX/kartun → S6 warna → S7 desktop → S8 Studio Server → S9 tim → S10 serah film → S11 Sewa Produksi → S12 promosi | `apps/AI-STUDIO-BLUEPRINT.md` §11 | perintah pemilik: blueprint dulu, lalu dibangun sampai kelas Hollywood |
+| 3a | Clipper C2–C9 (lanjutan baris 2) | `apps/CLIPPER-BLUEPRINT.md` §11 | setelah AI Studio, atau ditukar bila pemilik meminta |
+| 3b | AI Chat sampai puncaknya (chat multi-model yang sekarang; REQUESTS 140) | blueprint `apps/AI-CHAT-BLUEPRINT.md` ditulis saat gilirannya | tolok ukur ChatGPT, Claude, Gemini |
 | 3 | P3 dompet kredit + Otoritas Lisensi v4 + API mitra · P4 portal reseller · P5 portal white label (perintah 1 Nov, REQUESTS 132–134) | `BUSINESS-MASTER-BLUEPRINT.md` §4–§7 | syarat agar promosi reseller/white label menunjuk ke portal yang benar-benar jalan |
 | 4 | **Mesin promosi otomatis** ke setiap member: perjalanan mingguan bahasa Inggris dari tahap awal, uji coba Smart License, lelang lisensi, tangga afiliasi → reseller → white label, portal member + email saat pendaftaran, 100–200 promosi A–Z, riwayat pengiriman di Admin, promosi usang dipisah dan dimatikan (REQUESTS 138) | `PROMOTION-BLUEPRINT.md` | fase PR1–PR4; posting reseller/white label menyala otomatis saat P4/P5 tayang |
 | 5 | **Setiap aplikasi lain sampai puncaknya, satu per satu**, dengan metode yang sama seperti Clipper | `apps/PEAK-METHOD.md` (urutan aplikasi §4) | blueprint aplikasi ditulis dulu, baru dibangun |
