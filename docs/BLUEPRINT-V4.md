@@ -480,12 +480,13 @@ bukan dari perkiraan.
 | 15 | axto.io 100 % siap: investor tampil/sembunyi, lelang, semua aplikasi bisa dibeli (27 Okt 2026, `REQUESTS.md` 93, §27) | 27.1 investor tampil/sembunyi + tombol admin ✅ (tayang #86; default tampil §27.4a) · 27.2 lelang lisensi tiap 2 minggu ✅ (aturan §27.4–27.5, E2E 6/6) · 27.3 setiap paket bisa dibeli + lisensi jalan ✅ (E2E katalog) | 3/3 | **100 %** (tayang setelah merge) |
 | 16 | Rekening ulyah.com/donasi + konversi + panduan bayar manual (27 Okt 2026, `REQUESTS.md` 104, §28) | 13 rekening BNI + 5 dompet (impor terenkripsi) · QR per dompet · konversi kurs harian ke mata uang rekening · panduan langkah + pelacak status, 10 bahasa · uji unit + E2E + browser | 0/5 | **0 %** |
 | 17 | Orchestra AI 6 GB bisa diunduh + paket offline Windows (28 Okt 2026, `REQUESTS.md` 110, §30) | GPU di AXTO Setup ✅ · mode offline ✅ · unduhan bisa dilanjutkan ✅ · portal member ✅ · admin releases ✅ · paket offline CI ✅ (tayang setelah merge) · uji ✅ | 7/7 | **100 %** |
-| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, 135, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator ✅ · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · update tidak lagi mematikan Orchestra pelanggan (manifest integritas rilis) ✅ (§31.E) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 9/12 | **75 %** |
+| 18 | Orchestra, worker GPU, beranda (28 Okt 2026, `REQUESTS.md` 112–116, 118, 135, §31) | lisensi & batas edisi Orchestra ✅ · paket GPU = tar.gz ✅ · deteksi GPU semua merek ✅ · skala otomatis/manual + indikator 🔄 (dicek ulang 1 Nov: tambah/kurang worker belum menyalakan container, indikator belum per GPU — dikerjakan di baris 23) · harga jual & lelang di atas beranda ✅ · promo + panduan Orchestra (screenshot, video) ✅ · client API OpenAI-compatible ✅ (§31.C) · gerbang lisensi 9 engine lain diuji ✅ (§33) · update tidak lagi mematikan Orchestra pelanggan (manifest integritas rilis) ✅ (§31.E) · container worker AMD/Intel ⏳ · panduan 9 aplikasi lain ⏳ · template xaa.es (REQUESTS xaa 65) ⏳ | 8/12 | **67 %** |
 | 19 | Legal AI seluruh dunia (28 Okt 2026, `REQUESTS.md` 117, §32) | L1 korpus + verifikator ✅ · L2 konektor sumber resmi · L3 korpus di prompt + verifikator di layar · L4 set evaluasi · L5 peta cakupan · L6+ perluasan | 1/6 | **17 %** |
 | 20 | Posting LinkedIn otomatis axto.io + xaa.es (28 Okt 2026, `REQUESTS.md` 123, §35) | pustaka 56 posting bergambar + hashtag ✅ · Admin → LinkedIn (kredensial terenkripsi, OAuth, halaman & jam per merek, log) ✅ · tes unit + E2E ✅ · persetujuan Community Management API oleh LinkedIn (pemilik) · posting pertama tayang | 3/5 | **60 %** |
 | 21 | Penjualan axto.io & xaa.es lewat lelang (28 Okt–1 Nov 2026, `REQUESTS.md` 120, 124, 125, 132, §34) | lelang axto.io tayang (PR #95) ✅ · tampilan "rumah lelang" emas ✅ · tangga mingguan ✅ · lelang xaa.es tayang (xaa #33) ✅ · **penawaran mulai US$500.000, datar, tanpa "US$10 juta"** di axto.io · sama di xaa.es | 4/6 | **67 %** |
 | 22 | Bisnis kanal: afiliasi, reseller, white label + MANAGE, Otoritas Lisensi, admin anggota, chat AI aman-rahasia, paket (29 Okt 2026, `REQUESTS.md` 131, `BUSINESS-MASTER-BLUEPRINT.md`) | ✅ P0 blueprint induk · ✅ P1 program & saklar · ✅ P2 afiliasi · ✅ tinjauan ulang white label (REQUESTS 134, master §4.3: biaya masuk US$60 ribu + komitmen tahunan ≥ US$72 ribu, kredit 24 bulan, demo, klausul kelanjutan, tanpa staf; peta sinkronisasi §13) · P3 dompet + OL v4 · P4 reseller · P5 white label · P6 Manage · P7 konsol anggota · P8 paket · P9 xaa.es · P10 uji keamanan | 3/11 | **27 %** |
-| | **Total** (bobot = jumlah fase) | | **82/147** | **≈ 56 %** |
+| 23 | Worker GPU sama di Windows & Linux, semua merek GPU, scaling dan indikator pintar (1 Nov 2026, `REQUESTS.md` 136, §31.F) | G1 deteksi = bisa dipakai + telemetri per GPU + indikator pintar · G2 Windows = Linux (satu keputusan kesiapan, uji GPU nyata, profil per merek) · G3 image per merek (CUDA, ROCm, Intel) dari satu Dockerfile · G4 scaling nyata (container dinyalakan/dimatikan, satu worker per GPU, dari nol) · G5 teks situs 10 bahasa + panduan sesuai kode | 0/5 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **81/152** | **≈ 53 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.
@@ -1134,6 +1135,54 @@ gagal menyala setelah update, tanpa ada yang bisa memperbaikinya dari jauh (zero
   rusak, skenario update dengan `module_hashes.json` lama di volume, dan `run_all()` tanpa kegagalan kritis setelah
   update. Diuji juga dengan container nyata: image lama berhenti dengan file hash lama, image baru menyala dengan
   volume yang sama, modul yang diubah di dalam container baru tetap menghentikannya.
+
+### 31.F Worker GPU: sama di Windows & Linux, semua merek, scaling dan indikator pintar (REQUESTS 136)
+
+Pemilik, 1 Nov 2026: "Pastikan build image untuk windows & Linux worker gpu betul2 sama, auto detect All driver gpu, smart
+scalling auto dan manual, smart indikator gpu dan smart2 lainya tambahkan yg menurut anda masih bisa d tambahkan".
+
+**Hasil audit kode (1 Nov 2026), jujur:**
+- Image dan compose untuk Windows dan Linux memang sama (`orchestra/Dockerfile.worker-gpu`, `orchestra-compose.yml` profil
+  `gpu`), tetapi image itu hanya NVIDIA (PyTorch cu121). AMD dan Intel terdeteksi, tetapi tidak bisa menghitung di dalam
+  container; installer menolak worker GPU tanpa kartu NVIDIA (`installer/setup.go`).
+- Kesiapan berbeda per OS: di Windows tidak ada pemeriksaan sama sekali (`installer/docker.go` `gpuUsable`), di Linux hanya
+  runtime `nvidia` di `docker info`. Wizard Windows mencentang GPU otomatis, CLI Linux butuh `--gpu`. Ollama di host Linux
+  (bind 127.0.0.1) tidak terjangkau dari container lewat `host-gateway`, tanpa peringatan.
+- Deteksi berarti "ada di bus PCI", bukan "bisa dipakai container": tidak ada pemeriksaan `/dev/nvidia*`, `/dev/kfd`,
+  `/dev/dri/renderD*`, `/dev/dxg` (WSL). "Microsoft Basic Render Driver" (WSL) bisa tampil sebagai GPU palsu.
+- Registrasi tidak mengirim merek, nama kartu, backend, jumlah, driver; heartbeat hanya `load_pct` (slot tugas, bukan
+  utilisasi GPU), `tasks_active`, `temp_c`. Pembacaan `nvidia-smi` rusak bila ada 2 GPU atau lebih; suhu `rocm-smi`
+  berbentuk desimal gagal dibaca. Worker yang barisnya hilang tidak mendaftar ulang; setiap restart menambah baris baru.
+- Konsol: merek bawaan selalu NVIDIA, VRAM terpakai selalu 0, suhu kosong tampil "✅ OK", GPU Pool tidak memperbarui
+  sendiri, "Min GPU Workers" tidak bisa 0.
+- Scaling: backend bawaan `noop` (mencatat "scale up" tanpa menyalakan apa pun); backend docker tidak bisa jalan (tidak
+  ada docker CLI/socket, tanpa token, jaringan salah); tambah/kurang manual hanya menyalin/menghapus baris database;
+  `/run` dan `/shutdown` worker tanpa autentikasi.
+
+**Rencana, dikerjakan berurutan (satu PR per fase, CI hijau, lalu merge):**
+- **G1 — deteksi yang berarti "bisa dipakai", telemetri per GPU, indikator pintar.** Worker memeriksa node perangkat
+  (`/dev/nvidia*`, `/dev/kfd` + `/dev/dri/renderD*`, `/dev/dxg` untuk WSL) dan mencocokkan render node dengan mereknya;
+  WSL "Basic Render Driver" disaring; VRAM dari vendor tool, sysfs (`mem_info_vram_total`) atau PyTorch. Telemetri per GPU
+  (utilisasi, suhu, VRAM terpakai/total, daya, kipas, throttle) dari `nvidia-smi` (multi-GPU benar), `rocm-smi`, sysfs
+  amdgpu, hwmon. Registrasi membawa merek, nama, backend, jumlah, driver, kemampuan; heartbeat membawa telemetri; worker
+  yang sama (alamat sama) memakai baris yang sama setelah restart; heartbeat ke baris yang hilang membuat worker mendaftar
+  ulang. Konsol: merek dan nama kartu asli, utilisasi GPU nyata di samping slot tugas, VRAM terpakai/total, daya, rincian
+  per GPU, status "tanpa telemetri" (abu-abu, bukan OK), GPU Pool diperbarui sendiri. `/run` dan `/shutdown` memakai
+  token worker yang sama dengan heartbeat.
+- **G2 — Windows = Linux.** Satu fungsi keputusan di installer untuk kedua OS: uji GPU nyata (`docker run --gpus all`
+  image worker dengan perintah uji) setelah image ada, cek driver; pilihan otomatis yang sama di wizard Windows dan CLI
+  Linux (`--no-gpu` untuk menolak); pemeriksaan Ollama host dan petunjuk `OLLAMA_HOST` di Linux; profil per merek dipilih
+  otomatis dan disimpan, tombol "Deteksi ulang".
+- **G3 — image per merek dari satu Dockerfile.** `ARG GPU_VARIANT` (cuda, rocm, xpu): lapisan selain PyTorch dan vendor
+  tool identik; tag per varian dan versi; dibangun ulang bila kode worker/core berubah; uji start di CI; dependensi ML
+  dipatok. Profil compose `gpu` (NVIDIA), `gpu-amd` (`/dev/kfd`, `/dev/dri`), `gpu-intel` (`/dev/dri`). Docker Desktop di
+  Windows hanya meneruskan GPU NVIDIA ke container; untuk AMD/Intel di Windows, worker memakai Ollama di host (yang
+  memakai GPU itu langsung) dan konsol menyebutnya dengan jelas.
+- **G4 — scaling nyata, otomatis dan manual.** Penskala dengan akses Docker yang dibatasi (hanya container worker
+  berlabel AXTO), satu worker per GPU (`--gpus device=N` / `/dev/dri/renderDN`), tambah/kurang manual benar-benar
+  menyalakan/mematikan container, scale dari nol saat ada pekerjaan GPU antre, drain yang aman, satu sumber aturan
+  (min/maks GPU di konsol, min boleh 0).
+- **G5 — teks situs dan panduan** (10 bahasa) hanya menjanjikan yang sudah dilakukan kode; tanda ✅ di blueprint mengikuti.
 
 ## 32. Legal AI untuk seluruh dunia: dari peraturan daerah sampai hukum internasional (REQUESTS 117)
 
