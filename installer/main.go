@@ -174,9 +174,13 @@ func main() {
 		if st != nil {
 			o.LAN = st.LAN || *lan
 		}
+		if *gpu && len(p.Optional) == 0 {
+			fail(fmt.Errorf("%s has no GPU worker — --gpu is for Orchestra AI", p.Name))
+		}
 		o.ImagesDir = *images
 		o.NoGPU = *noGPU
-		if *with != "" || *gpu {
+		o.RequireGPU = *gpu
+		if *with != "" {
 			o.With = []string{}
 			for _, n := range strings.Split(*with, ",") {
 				if n = strings.TrimSpace(n); n != "" && n != "none" {
@@ -184,16 +188,6 @@ func main() {
 						fail(fmt.Errorf("%s has no optional image %q (optional: %s)", p.Name, n, strings.Join(optionalNames(p), ", ")))
 					}
 					o.With = append(o.With, n)
-				}
-			}
-			if *gpu {
-				for n, prof := range p.Optional {
-					if prof == "gpu" && !contains(o.With, n) {
-						o.With = append(o.With, n)
-					}
-				}
-				if len(o.With) == 0 {
-					fail(fmt.Errorf("%s has no GPU worker — --gpu is for Orchestra AI", p.Name))
 				}
 			}
 		}

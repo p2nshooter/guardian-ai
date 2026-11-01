@@ -1217,6 +1217,33 @@ scalling auto dan manual, smart indikator gpu dan smart2 lainya tambahkan yg men
   dipatok. Profil compose `gpu` (NVIDIA), `gpu-amd` (`/dev/kfd`, `/dev/dri`), `gpu-intel` (`/dev/dri`). Docker Desktop di
   Windows hanya meneruskan GPU NVIDIA ke container; untuk AMD/Intel di Windows, worker memakai Ollama di host (yang
   memakai GPU itu langsung) dan konsol menyebutnya dengan jelas.
+  **G3 dibangun (1 Nov 2026):**
+  - **Satu Dockerfile** `orchestra/Dockerfile.worker-gpu` dengan `GPU_VARIANT`:
+    - `cuda` menghasilkan `axto/orchestra-worker-gpu` (NVIDIA); isinya tidak berubah;
+    - `rocm` menghasilkan `axto/orchestra-worker-gpu-amd` (AMD, PyTorch ROCm 6.2 yang membawa runtime ROCm).
+    - Semua lapisan lain identik.
+  - **CI `auto-build-gpu.yml`:** membangun keduanya sebagai matriks, menguji build PyTorch (`torch.version.cuda` /
+    `torch.version.hip`) dan uji GPU di dalam image (keluar 3 tanpa GPU). PR yang menyentuh Dockerfile/requirements/
+    workflow membangun dan menguji tanpa unggah; `main` mengunggah keduanya ke R2.
+  - **Compose:** profil `gpu-amd` dengan `/dev/kfd` + `/dev/dri` (tiga salinan compose tetap identik).
+  - **Installer:**
+    - AMD di Linux siap bila host punya `/dev/kfd`, render node AMD dan driver `amdgpu`, lalu otomatis ikut dan diuji
+      (probe dengan `/dev/kfd` + `/dev/dri`); bila tidak, perbaikannya `amdgpu-install --usecase=rocm`.
+    - `--gpu` mengikuti merek pilihan rencana.
+    - Image merek lain tidak pernah ditambahkan.
+    - Image yang belum terbit di portal dilewati dengan peringatan (instalasi tetap jalan).
+    - Image lama yang tidak cocok lagi dilepas saat update dengan peringatan.
+  - **Portal:** image AMD terdaftar (unduh online; tidak masuk paket offline agar paket tidak membengkak).
+    Petunjuk GPU di 10 bahasa menyebut nama image dan perilaku baru (otomatis di Windows dan Linux, diuji dulu,
+    `--no-gpu`).
+  - **Intel (jujur):** container Intel butuh runtime Level Zero + compute runtime Intel di dalam image. Itu belum bisa
+    dibuktikan di CI, jadi GPU Intel tetap lewat Ollama di host dengan alasan yang jelas di installer dan konsol. Ini
+    dicatat sebagai lanjutan setelah runtime-nya terbukti.
+  - **Tes:**
+    - Go: 15 tes rencana, termasuk 4 AMD;
+    - Python: 5 tes probe;
+    - portal: tes kontrak image ↔ compose ↔ installer ↔ workflow, 290 tes lulus;
+    - compose valid untuk profil `gpu-amd`.
 - **G4 — scaling nyata, otomatis dan manual.** Penskala dengan akses Docker yang dibatasi (hanya container worker
   berlabel AXTO), satu worker per GPU (`--gpus device=N` / `/dev/dri/renderDN`), tambah/kurang manual benar-benar
   menyalakan/mematikan container, scale dari nol saat ada pekerjaan GPU antre, drain yang aman, satu sumber aturan

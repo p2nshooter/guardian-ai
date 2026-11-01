@@ -280,4 +280,3 @@ func TestLocalImageFromOfflinePackage(t *testing.T) {
 		t.Fatal("later folders are searched too")
 	}
 }
-

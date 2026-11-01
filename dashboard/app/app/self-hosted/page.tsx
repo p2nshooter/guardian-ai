@@ -179,7 +179,7 @@ function SelfHostedInner() {
                           <a href={`/api/selfhosted/download?product=${p.slug}&file=offline`} className="btn-primary btn-sm mt-2 inline-flex" data-testid={`sh-offline-dl-${p.slug}`}>⬇ {t.offlineDl} · {buildSize(p.offline)}</a>
                         </>
                       ) : <p className="mt-1 text-slate-500">{t.offlinePreparing}</p>}
-                      {p.images.filter((i) => i.gpu && i.available).map((i) => <p key={i.name} className="mt-2 text-xs text-slate-600">🎮 {t.gpuHint.replace("{size}", buildSize(i.size))}</p>)}
+                      {p.images.filter((i) => i.gpu && i.available).map((i) => <p key={i.name} className="mt-2 text-xs text-slate-600">🎮 {t.gpuHint.replace("{label}", i.label).replace("{size}", buildSize(i.size))}</p>)}
                     </div>
                   ) : null}
 

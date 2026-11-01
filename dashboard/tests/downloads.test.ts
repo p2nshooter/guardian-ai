@@ -45,24 +45,30 @@ test("offline packages: every app is packaged with the images AXTO Setup loads (
   for (const p of SELF_HOSTED) {
     const row = rows.find((r) => r.app === p.slug);
     assert.ok(row, `${p.slug} has no offline package`);
-    assert.deepEqual(row!.images, p.images.filter((i) => !i.optional || i.gpu).map((i) => i.name), `${p.slug} offline images`);
+    assert.deepEqual(row!.images, p.images.filter((i) => !i.optional || (i.gpu && i.offline !== false)).map((i) => i.name), `${p.slug} offline images`);
     assert.equal(offlineKey(p.slug), `builds/latest/offline/axto-${p.slug}-offline-amd64.zip`);
   }
   assert.match(wf, /builds\/latest\/offline\/\$PKG\.zip/);
   assert.match(wf, /PKG="axto-\$\{APP\}-offline-amd64"/);
 });
 
-test("Orchestra's GPU worker is the one optional image AXTO Setup installs on request", () => {
+test("Orchestra's GPU worker images: one per GPU brand, each with its own compose profile (REQUESTS 136 G3)", () => {
   const orch = SELF_HOSTED.find((p) => p.slug === "orchestra")!;
-  assert.deepEqual(orch.images.filter((i) => i.gpu).map((i) => i.name), ["orchestra-worker-gpu"]);
+  assert.deepEqual(orch.images.filter((i) => i.gpu).map((i) => i.name), ["orchestra-worker-gpu", "orchestra-worker-gpu-amd"]);
   const go = fs.readFileSync(path.join(REPO, "installer/products.go"), "utf8");
-  assert.match(go, /Optional: map\[string\]string\{"orchestra-worker-gpu": "gpu"\}/);
+  assert.match(go, /Optional: map\[string\]string\{"orchestra-worker-gpu": "gpu", "orchestra-worker-gpu-amd": "gpu-amd"\}/);
   const compose = fs.readFileSync(path.join(REPO, "orchestra-compose.yml"), "utf8").replace(/\r\n/g, "\n");
   assert.match(compose, /\n  orchestra-worker-gpu:\n    image: axto\/orchestra-worker-gpu:latest\n    container_name: orchestra-worker-gpu-1\n    profiles: \["gpu"\]/);
+  assert.match(compose, /\n  orchestra-worker-gpu-amd:\n    image: axto\/orchestra-worker-gpu-amd:latest\n    container_name: orchestra-worker-gpu-amd-1\n    profiles: \["gpu-amd"\]/);
+  assert.match(compose, /devices:\n      - \/dev\/kfd\n      - \/dev\/dri/);
+  const wf = fs.readFileSync(path.join(REPO, ".github/workflows/auto-build-gpu.yml"), "utf8");
+  assert.match(wf, /variant: cuda, image: orchestra-worker-gpu,/);
+  assert.match(wf, /variant: rocm, image: orchestra-worker-gpu-amd,/);
 });
 
 test("download texts: every language keeps the {size} placeholder", () => {
   for (const [lang, d] of Object.entries(L)) {
     for (const k of ["offlineBody", "gpuHint"] as const) assert.match(d[k], /\{size\}/, `${lang}.${k}`);
+    assert.match(d.gpuHint, /\{label\}/, `${lang}.gpuHint names the image`);
   }
 });

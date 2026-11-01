@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -45,7 +46,8 @@ type gpuHost struct {
 	Kernel       func() string // docker info {{.KernelVersion}} (Docker Desktop: …microsoft-standard-WSL2)
 	CDI          func() bool   // an NVIDIA CDI spec exists (Linux, nvidia-ctk cdi generate)
 	Ollama       func() (reachable, onGPU bool)
-	OllamaBridge func() (loopback, bridge bool) // Linux: Ollama on 127.0.0.1 and on Docker's bridge address
+	OllamaBridge func() (loopback, bridge bool)           // Linux: Ollama on 127.0.0.1 and on Docker's bridge address
+	AMDDevices   func() (kfd, render bool, driver string) // Linux: /dev/kfd, an AMD render node and its kernel driver
 }
 
 // The GPU worker image is built on CUDA 12.1: the NVIDIA driver must be at least this.
@@ -54,7 +56,30 @@ const (
 	minNvidiaWindows = 528.33
 	nvidiaDriverURL  = "https://www.nvidia.com/Download/index.aspx"
 	wslGPUURL        = "https://docs.docker.com/desktop/features/gpu/"
+	rocmInstallURL   = "https://rocm.docs.amd.com/projects/install-on-linux/en/latest/"
 )
+
+func firstVendor(gpus []GPU, vendor string) *GPU {
+	for i := range gpus {
+		if gpus[i].Vendor == vendor {
+			return &gpus[i]
+		}
+	}
+	return nil
+}
+
+// gpuProfileVendor is the GPU brand a compose profile hands to its container.
+func gpuProfileVendor(profile string) string {
+	switch profile {
+	case "gpu-amd":
+		return "amd"
+	case "gpu-intel":
+		return "intel"
+	}
+	return "nvidia"
+}
+
+func isGPUProfile(profile string) bool { return profile == "gpu" || strings.HasPrefix(profile, "gpu-") }
 
 var winDriverRe = regexp.MustCompile(`^\d+\.\d+\.(\d+)\.(\d+)$`)
 
@@ -146,7 +171,30 @@ func planGPU(gpus []GPU, goos string, h gpuHost) GPUPlan {
 		return plan
 	}
 
-	// AMD, Intel, Apple and every other brand: Ollama on this computer drives them directly.
+	// AMD on Linux: the ROCm build of the same worker image, with /dev/kfd and /dev/dri.
+	if amd := firstVendor(gpus, "amd"); amd != nil && goos == "linux" && h.AMDDevices != nil {
+		plan.Vendor, plan.Profile, plan.Driver = "amd", "gpu-amd", amd.Driver
+		kfd, render, drv := h.AMDDevices()
+		if kfd && render && (drv == "" || drv == "amdgpu") {
+			plan.Mode, plan.Ready, plan.Auto = "container", true, true
+			plan.Note = plan.GPU + " is ready for the AMD GPU worker (ROCm) — it is tested inside the worker image before it starts." + ollamaHint
+			return plan
+		}
+		plan.Mode = "host"
+		switch {
+		case drv != "" && drv != "amdgpu":
+			plan.Note = fmt.Sprintf("%s uses the %s kernel driver; the AMD GPU worker needs amdgpu (ROCm).", plan.GPU, drv)
+		case !kfd:
+			plan.Note = plan.GPU + " found, but /dev/kfd is missing, so containers cannot compute on it."
+		default:
+			plan.Note = plan.GPU + " found, but no AMD render node (/dev/dri/renderD*) is present."
+		}
+		plan.Fix, plan.FixURL = "Install the amdgpu driver with ROCm (amdgpu-install --usecase=rocm), reboot, then run AXTO Setup again. Until then Ollama on this computer can use the card.", rocmInstallURL
+		plan.Note += ollamaHint
+		return plan
+	}
+
+	// Intel, Apple, AMD on Windows/macOS and every other brand: Ollama on this computer drives them directly.
 	plan.Mode, plan.Vendor = "host", gpus[0].Vendor
 	reachable, onGPU := false, false
 	if h.Ollama != nil {
@@ -179,6 +227,24 @@ func hostGPUQuestions(ctx context.Context) gpuHost {
 			return false
 		},
 		Ollama: func() (bool, bool) { r, g, _ := OllamaOnGPU(ctx); return r, g },
+		AMDDevices: func() (bool, bool, string) {
+			_, err := os.Stat("/dev/kfd")
+			render, drv := false, ""
+			nodes, _ := filepath.Glob("/sys/class/drm/renderD*")
+			for _, n := range nodes {
+				v, _ := os.ReadFile(filepath.Join(n, "device", "vendor"))
+				if strings.TrimSpace(string(v)) != "0x1002" {
+					continue
+				}
+				if _, e := os.Stat(filepath.Join("/dev/dri", filepath.Base(n))); e == nil {
+					render = true
+				}
+				if link, e := os.Readlink(filepath.Join(n, "device", "driver")); e == nil {
+					drv = filepath.Base(link)
+				}
+			}
+			return err == nil, render, drv
+		},
 		OllamaBridge: func() (bool, bool) {
 			loop := httpOK(ctx, "http://127.0.0.1:11434/api/version")
 			if !loop {
