@@ -668,6 +668,40 @@ foto→video, teks→video, edit, perpanjangan, dan generasi gratis di GPU sendi
 
 Pustaka media (S0a-2) dan image Docker (S0b) menyusul.
 
+**Rancangan S0b (`ai-studio-node`, Windows = Linux):**
+- **Satu image untuk semua merek GPU:**
+  - `python:3.11-slim-bookworm` + FFmpeg Debian (NVENC/NVDEC via runtime NVIDIA, VAAPI via `/dev/dri` untuk AMD/Intel)
+    + `vainfo`;
+  - CPU sebagai cadangan;
+  - port 8099;
+  - pengguna non-root;
+  - healthcheck.
+  - Image torch per merek (cuda/rocm) baru ditambahkan di S2G untuk generasi model.
+- **Kemampuan** (`/api/capabilities`): GPU (nvidia-smi, rocm-smi, render node), encoder perangkat keras yang benar-benar
+  ada di FFmpeg (`h264_nvenc`, `hevc_nvenc`, `av1_nvenc`, `h264_vaapi`, `hevc_vaapi`, `h264_qsv`), versi FFmpeg, ruang
+  disk.
+- **Izin node bertanda tangan:**
+  - Halaman AI Studio meminta `POST /api/film/node-grant`: Ed25519 dengan kunci platform yang sama seperti jawaban
+    lisensi, berlaku 24 jam, terikat ke akun dan cakupan `film`.
+  - Node memverifikasi secara luring dengan kunci publik yang tertanam (pola `license.py`), lalu menolak permintaan tanpa
+    izin yang sah.
+- **Peramban bicara langsung ke node:**
+  - `http://127.0.0.1:8099` dianggap tepercaya oleh peramban;
+  - CORS hanya untuk axto.io;
+  - media dan render tetap di mesin pengguna (non-custodial), dan axto.io tidak menyimpan videonya.
+- **Render:**
+  - pekerjaan dari timeline `axto.film` (trek video pertama: potong + sambung + encode, dengan encoder perangkat keras
+    terbaik yang ada);
+  - id pekerjaan = hash(timeline + media + pengaturan);
+  - status dan progres;
+  - hasil di folder `/data/renders`.
+- **Distribusi:**
+  - masuk produk AXTO Setup sebagai aplikasi pendamping AI Studio. Rencana GPU memakai `planGPU` yang sama dengan worker
+    GPU: NVIDIA lewat WSL2 di Windows; AMD/Intel lewat `/dev/dri` hanya di Linux; lainnya CPU;
+  - unduhan untuk semua member yang punya akses AI Studio (bukan kuota self-hosted Business);
+  - `docker-smoke` membangun dan menjalankan image (amd64 + arm64), menguji izin node dan render contoh berbasis CPU;
+  - tes Go installer memastikan rencana Windows dan Linux sama.
+
 **S0 dipecah dua PR:**
 1. **S0a:**
    - nama AI Chat;
