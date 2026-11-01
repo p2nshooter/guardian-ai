@@ -88,7 +88,7 @@ test("a member pays with PayPal and the plan activates when they come back", asy
   assert.ok(c.json.url.startsWith(`${mock.url}/checkoutnow`), c.json.url);
   orderId = c.json.orderId;
   paypalOrder = new URL(c.json.url).searchParams.get("token") || "";
-  assert.equal(mock.orders.get(paypalOrder).purchase_units[0].amount.value, "49.00", "the price comes from the server");
+  assert.equal(mock.orders.get(paypalOrder).purchase_units[0].amount.value, "12.00", "the price comes from the server");
 
   const approve = await member.call("GET", `${c.json.url}&action=approve`);
   assert.equal(approve.status, 302);
@@ -101,7 +101,7 @@ test("a member pays with PayPal and the plan activates when they come back", asy
 });
 
 test("PayPal's notification: a signed one is accepted once, an unsigned one is refused", async () => {
-  const event = { event_type: "PAYMENT.CAPTURE.COMPLETED", resource: { id: `CAP-${paypalOrder}`, custom_id: orderId, amount: { value: "49.00", currency_code: "USD" } } };
+  const event = { event_type: "PAYMENT.CAPTURE.COMPLETED", resource: { id: `CAP-${paypalOrder}`, custom_id: orderId, amount: { value: "12.00", currency_code: "USD" } } };
   const signed = await new Client().call("POST", "/api/webhooks/paypal", event, { "paypal-transmission-sig": "mock-signature", "paypal-transmission-id": "t1", "paypal-transmission-time": new Date().toISOString(), "paypal-auth-algo": "SHA256withRSA", "paypal-cert-url": `${mock.url}/cert` });
   assert.equal(signed.status, 200, signed.text);
   const unsigned = await new Client().call("POST", "/api/webhooks/paypal", event);

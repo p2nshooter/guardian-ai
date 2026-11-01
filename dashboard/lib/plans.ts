@@ -11,6 +11,7 @@
  * Prices are defaults; the admin can override them (setting
  * "plan_prices") without a deploy — see getPlanPrices().
  * ============================================================================ */
+import { currentRev } from "./price-rev";
 
 export type PlanId = "starter" | "pro" | "business" | "enterprise";
 export type Tier = "none" | PlanId;
@@ -58,7 +59,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "starter", name: "Starter", rank: 1,
     headline: "Everything you need to start working with AI.",
     bestFor: "Freelancers & solo professionals",
-    monthly: 19, yearly: 190,
+    monthly: 5, yearly: 50,
     limits: {
       clipperVideosPerMonth: 10, storageGB: 1, promptLevels: ["basic", "pro"], legalWorkspaces: "core",
       apps: CORE_APPS, selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 2, apiRpm: 60, webhooks: 1, localMode: true,
@@ -79,7 +80,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "pro", name: "Pro", rank: 2, highlight: true,
     headline: "The full cloud workspace for serious professionals.",
     bestFor: "Lawyers, consultants, analysts",
-    monthly: 49, yearly: 490,
+    monthly: 12, yearly: 120,
     limits: {
       clipperVideosPerMonth: 50, storageGB: 10, promptLevels: ["basic", "pro", "premium"], legalWorkspaces: "all",
       apps: ALL_APPS, selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 5, apiRpm: 300, webhooks: 5, localMode: true,
@@ -100,7 +101,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "business", name: "Business", rank: 3,
     headline: "Cloud workspace plus self-hosted apps on your own servers.",
     bestFor: "Firms & growing teams",
-    monthly: 199, yearly: 1990,
+    monthly: 39, yearly: 390,
     limits: {
       clipperVideosPerMonth: 200, storageGB: 50, promptLevels: ["basic", "pro", "premium", "elite"], legalWorkspaces: "all",
       apps: ALL_APPS, selfHostedApps: 3, selfHostedNodes: 5, apiKeys: 20, apiRpm: 1200, webhooks: 20, localMode: true,
@@ -119,7 +120,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "enterprise", name: "Enterprise", rank: 4,
     headline: "Every app, every tier, on unlimited servers.",
     bestFor: "Enterprises & regulated organisations",
-    monthly: 999, yearly: 9990,
+    monthly: 149, yearly: 1490,
     limits: {
       clipperVideosPerMonth: -1, storageGB: 500, promptLevels: ["basic", "pro", "premium", "elite"], legalWorkspaces: "all",
       apps: ALL_APPS, selfHostedApps: -1, selfHostedNodes: -1, apiKeys: 100, apiRpm: 6000, webhooks: 50, localMode: true,
@@ -194,9 +195,14 @@ export function mergePrices(overrideJson: string | null | undefined): PriceTable
   return t;
 }
 
+/** The stored admin override, or the defaults when it was saved before the current price revision (lib/price-rev.ts). */
+export function storedPlanPrices(json: string | null | undefined): PriceTable {
+  try { return json && currentRev(JSON.parse(json)) ? mergePrices(json) : defaultPrices(); } catch { return defaultPrices(); }
+}
+
 export async function getPlanPrices(db: { config: { get(key: string): Promise<string | null> } }): Promise<PriceTable> {
   try {
-    return mergePrices(await db.config.get("plan_prices"));
+    return storedPlanPrices(await db.config.get("plan_prices"));
   } catch {
     return defaultPrices();
   }
@@ -223,7 +229,7 @@ export function monthKey(d = new Date()): string {
 }
 
 export function formatUsd(n: number): string {
-  return `$${n.toLocaleString("en-US", { maximumFractionDigits: n % 1 ? 2 : 0 })}`;
+  return `$${n.toLocaleString("en-US", n % 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 0 })}`;
 }
 
 // ── MANAGED (AXTO-provided AI) — a separate product line, LOCKED ───────────

@@ -22,7 +22,7 @@ export default function PricingTable({ compact = false }: { compact?: boolean })
       setPrices(t);
     }).catch(() => {});
   }, []);
-  const fmt = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: n % 1 ? 2 : 0 })}`;
+  const fmt = (n: number) => `$${n.toLocaleString("en-US", n % 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 0 })}`;
   return (
     <div>
       <div className="mb-8 flex justify-center">

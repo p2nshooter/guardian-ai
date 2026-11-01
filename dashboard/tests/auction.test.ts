@@ -112,7 +112,7 @@ test("packages: editions and lifetime licences at today's shop price", () => {
   assert.equal(e.kind, "edition");
   assert.equal(e.app, "guardian");
   assert.match(e.title, /Sentinel Lite edition, 1 year/);
-  assert.equal(normalPrice(e, mergeEditionPrices(null), LIFETIME_TIERS), 990);
+  assert.equal(normalPrice(e, mergeEditionPrices(null), LIFETIME_TIERS), 99);
   assert.equal(normalPrice(e, mergeEditionPrices(JSON.stringify([{ code: "lite", yearly: 1200 }])), LIFETIME_TIERS), 1200, "admin price override");
   assert.equal(normalPrice(e, mergeEditionPrices(JSON.stringify([{ code: "lite", enabled: false }])), LIFETIME_TIERS), null, "not on sale");
   const l = parsePackage("lifetime:app:vault:5")!;

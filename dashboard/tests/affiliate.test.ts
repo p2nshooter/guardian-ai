@@ -31,7 +31,7 @@ const dec = async <T,>(_n: string, b: string) => JSON.parse(b) as T;
 test("programmes: defaults, sanitising, all shown by default, hidden ones vanish", () => {
   const p = sanitizePrograms({});
   assert.deepEqual(p.affiliate.commissionPct, 20);
-  assert.equal(p.whitelabel.entryUsd, 60_000, "REQUESTS 134");
+  assert.equal(p.whitelabel.entryUsd, 20_000, "REQUESTS 140 (Asia prices)");
   assert.equal(p.reseller.tiers[1]!.pct, 30);
   const bad = sanitizePrograms({ affiliate: { commissionPct: 90, holdDays: 2 }, reseller: { tiers: [{ fromUsd: 10, pct: 5 }], includedCreditUsd: 9_999_999, entryUsd: 1000 } });
   assert.equal(bad.affiliate.commissionPct, 20, "above the 50 % ceiling");
@@ -55,7 +55,7 @@ test("programmes: defaults, sanitising, all shown by default, hidden ones vanish
   const onlyAff = publicPrograms(sanitizePrograms({ reseller: { visible: false }, whitelabel: { visible: false } }));
   assert.ok(onlyAff.affiliate && onlyAff.reseller === null && onlyAff.whitelabel === null);
   assert.equal(tierFor(p.whitelabel.tiers, 0).pct, 50);
-  assert.equal(tierFor(p.whitelabel.tiers, 300_000).pct, 55);
+  assert.equal(tierFor(p.whitelabel.tiers, 100_000).pct, 55);
   assert.equal(tierFor(p.whitelabel.tiers, 5_000_000).pct, 60);
 });
 
@@ -217,13 +217,13 @@ test("chat facts: only shown programmes, only public terms, no company secrets",
   assert.match(all, /Affiliate programme/);
   assert.match(all, /Reseller programme/);
   assert.match(all, /White-label programme/);
-  assert.match(all, /US\$60,000/);
+  assert.match(all, /US\$20,000/);
   assert.match(all, /bank wire, escrow or crypto/, "the entry fee is never paid by a reversible method (§4.3 no. 4)");
   assert.match(all, /valid 24 months/);
   assert.match(all, /continue directly with AXTO/, "the continuity promise");
   assert.ok(!/academy|tier 2|tier-2/i.test(all), "no promise of human staff (zero-touch)");
   const none = programFacts(sanitizePrograms({ whitelabel: { visible: false } }), "https://axto.io");
-  assert.ok(!/White-label programme|60,000|white-label/i.test(none.replace(/reseller's or white-label partner's/g, "")), "a hidden programme is not in the chat's facts");
+  assert.ok(!/White-label programme|20,000|white-label/i.test(none.replace(/reseller's or white-label partner's/g, "")), "a hidden programme is not in the chat's facts");
   assert.equal(programFacts(sanitizePrograms({ affiliate: { visible: false }, reseller: { visible: false }, whitelabel: { visible: false } }), "https://axto.io"), "");
   const { db } = testData();
   const k = await publicKnowledge(db);
@@ -260,20 +260,20 @@ test("white label, revised: lower entry, a guaranteed yearly commitment, credit 
   const w = PROGRAM_DEFAULTS.whitelabel;
   assert.deepEqual(
     { entry: w.entryUsd, credit: w.includedCreditUsd, annual: w.annualUsd, reduced: w.annualReducedUsd, reducedFrom: w.annualReducedFromUsd, min: w.minAnnualUsd },
-    { entry: 60_000, credit: 20_000, annual: 24_000, reduced: 12_000, reducedFrom: 250_000, min: 48_000 });
-  assert.deepEqual(w.tiers, [{ fromUsd: 0, pct: 50 }, { fromUsd: 150_000, pct: 55 }, { fromUsd: 500_000, pct: 60 }]);
+    { entry: 20_000, credit: 7_500, annual: 8_000, reduced: 4_000, reducedFrom: 85_000, min: 18_000 });
+  assert.deepEqual(w.tiers, [{ fromUsd: 0, pct: 50 }, { fromUsd: 50_000, pct: 55 }, { fromUsd: 170_000, pct: 60 }]);
   assert.equal(w.maxCombinedDiscountPct, 65);
   assert.equal(w.aiMarkup, 2.5, "Manage AI keeps a 60 % margin");
   assert.deepEqual([w.creditMonths, w.demoLicences, w.demoDays, w.continuityDays], [24, 10, 30, 30]);
   assert.equal(PROGRAM_DEFAULTS.reseller.creditMonths, 24);
   // AXTO's guaranteed money per partner: the fee up front, then platform fee + minimum purchases every year.
-  assert.equal(w.annualUsd + w.minAnnualUsd, 72_000);
-  // The partner breaks even on the first year's net brand cost with 50 Business clients at the first tier.
-  assert.equal(whitelabelClients(w, 1990), 50);
-  const v = whitelabelVars(publicPrograms(sanitizePrograms({})).whitelabel!, usdFmt, 1990);
-  assert.equal(v.gain, "$49,750");
+  assert.equal(w.annualUsd + w.minAnnualUsd, 26_000);
+  // The partner breaks even on the first year's net brand cost with 70 Business clients ($390 a year) at the first tier.
+  assert.equal(whitelabelClients(w, 390), 70);
+  const v = whitelabelVars(publicPrograms(sanitizePrograms({})).whitelabel!, usdFmt, 390);
+  assert.equal(v.gain, "$13,650");
   assert.ok(Number(v.gain.replace(/[$,]/g, "")) > w.entryUsd - w.includedCreditUsd, "the example really covers the net cost");
-  assert.equal(v.clients, "50");
+  assert.equal(v.clients, "70");
   // Values out of range fall back.
   const bad = sanitizePrograms({ whitelabel: { creditMonths: 2, demoLicences: 500, demoDays: 1, continuityDays: 999 } }).whitelabel;
   assert.deepEqual([bad.creditMonths, bad.demoLicences, bad.demoDays, bad.continuityDays], [24, 10, 30, 30]);
@@ -281,11 +281,14 @@ test("white label, revised: lower entry, a guaranteed yearly commitment, credit 
 
 test("white label, revised: stored settings move once to the new numbers; the admin's later numbers stay", async () => {
   const old = { whitelabel: { visible: false, accepting: true, entryUsd: 150_000, includedCreditUsd: 50_000, annualUsd: 48_000, minAnnualUsd: 60_000,
-    tiers: [{ fromUsd: 0, pct: 50 }, { fromUsd: 250_000, pct: 55 }, { fromUsd: 1_000_000, pct: 60 }], maxCombinedDiscountPct: 60 }, affiliate: { commissionPct: 25 } };
+    tiers: [{ fromUsd: 0, pct: 50 }, { fromUsd: 250_000, pct: 55 }, { fromUsd: 1_000_000, pct: 60 }], maxCombinedDiscountPct: 60 },
+    reseller: { visible: true, accepting: false, entryUsd: 5_000, includedCreditUsd: 2_500, annualUsd: 1_200 }, affiliate: { commissionPct: 25 } };
   const moved = sanitizePrograms(reviseStoredPrograms(old));
-  assert.equal(moved.whitelabel.entryUsd, 60_000);
-  assert.equal(moved.whitelabel.minAnnualUsd, 48_000);
-  assert.equal(moved.whitelabel.tiers[1]!.fromUsd, 150_000);
+  assert.equal(moved.whitelabel.entryUsd, 20_000);
+  assert.equal(moved.whitelabel.minAnnualUsd, 18_000);
+  assert.equal(moved.whitelabel.tiers[1]!.fromUsd, 50_000);
+  assert.deepEqual([moved.reseller.entryUsd, moved.reseller.includedCreditUsd, moved.reseller.annualUsd], [1_500, 750, 360], "REQUESTS 140: reseller money terms move too");
+  assert.equal(moved.reseller.accepting, false, "the reseller switches are kept");
   assert.equal(moved.whitelabel.visible, false, "the switches are kept");
   assert.equal(moved.whitelabel.maxCombinedDiscountPct, 60, "numbers outside the revision are kept");
   assert.equal(moved.affiliate.commissionPct, 25, "other programmes are untouched");
@@ -293,7 +296,7 @@ test("white label, revised: stored settings move once to the new numbers; the ad
   assert.equal(reviseStoredPrograms(own), own);
   const { db } = testData();
   await db.config.set("programs", JSON.stringify(old));
-  assert.equal((await getPrograms(db)).whitelabel.entryUsd, 60_000);
+  assert.equal((await getPrograms(db)).whitelabel.entryUsd, 20_000);
   await savePrograms(db, { ...(await getPrograms(db)), whitelabel: { ...(await getPrograms(db)).whitelabel, entryUsd: 75_000 } });
   assert.equal(JSON.parse((await db.config.get("programs"))!).termsRev, TERMS_REV);
   assert.equal((await getPrograms(db)).whitelabel.entryUsd, 75_000, "the admin's own number stays");
