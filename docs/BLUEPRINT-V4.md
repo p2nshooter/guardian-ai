@@ -492,8 +492,8 @@ bukan dari perkiraan.
 | 24 | Clipper kelas dunia: web + Windows + Linux, BYOK, Central GPU & AI, simpan di axto.io (1 Nov 2026, `REQUESTS.md` 137, `docs/apps/CLIPPER-BLUEPRINT.md`) | C1 proyek v5 + revisi/bentrok antar perangkat + versi + kuota + log pemakaian ✅ (#108) · C2 media di R2 + paket penyimpanan · C3 Central Hub + konektor · C4 desktop Tauri · C5 server self-hosted · C6 publikasi + analitik · C7 tim · C8 Central Compute · C9 promosi nyata | 1/9 | **11 %** |
 | 25 | Mesin promosi otomatis ke member (1 Nov 2026, `REQUESTS.md` 138–139, `docs/PROMOTION-BLUEPRINT.md`) | PR1 data + perpustakaan + Admin · PR2 mesin + portal + email · PR3 media nyata + 100–200 pesan · PR4 tautan uji coba + metrik + A/B | 0/4 | **0 %** |
 | 26 | AI Studio = studio film kelas dunia dengan AI, bisa disewa rumah produksi termasuk Hollywood (1 Nov 2026, `REQUESTS.md` 141, `docs/apps/AI-STUDIO-BLUEPRINT.md`) | S0 rumah baru + AI Chat · S1 timeline 10 detik–24 jam · S2 generasi foto/teks→video · S2G GPU Node mandiri · S3 naskah/storyboard · S4 suara · S5 efek/VFX/kartun · S6 warna · S7 desktop · S8 Studio Server · S9 tim · S10 serah film · S11 Sewa Produksi · S12 promosi | 0/13 | **0 %** |
-| 27 | Harga mengikuti pasar Asia (1 Nov 2026, `REQUESTS.md` 140, `docs/PRICING-BLUEPRINT.md`) | riset + usulan ✅ · disetujui pemilik ✅ · PR harga #109 ✅ | 1/1 | **100 %** |
-| | **Total** (bobot = jumlah fase) | | **88/180** | **≈ 49 %** |
+| 27 | Harga: pasar Asia (1 Nov 2026, `REQUESTS.md` 140, #109) dibatalkan, **kembali ke harga pasar Eropa** (2 Nov 2026, `REQUESTS.md` 145, `docs/PRICING-BLUEPRINT.md`); harga murah lewat lelang | harga Eropa kembali di kode, tes dan dokumen (PR ini) · tayang ⏳ | 0/1 | **0 %** |
+| | **Total** (bobot = jumlah fase) | | **87/180** | **≈ 48 %** |
 
 **Urutan berikutnya** (yang paling terlihat oleh pemilik & pembeli dahulu):
 1. Tayangkan §17 B (US$10 juta) + terjemahan Legal workspace yang sudah selesai.

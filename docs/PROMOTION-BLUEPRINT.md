@@ -221,7 +221,7 @@ Rinciannya per situs:
 
 ## 11. Mengapa ini sangat menguntungkan
 
-- Biaya kirim email ≈ US$0,001 per email; portal gratis. Satu konversi Pro (US$12/bulan) menutup sekitar 12.000 email.
+- Biaya kirim email ≈ US$0,001 per email; portal gratis. Satu konversi Pro (US$49/bulan) menutup sekitar 49.000 email.
 - **Tangga pendapatan:** uji coba → paket → tahunan/lifetime (uang di depan) → afiliasi (pelanggan membawa pelanggan) →
   reseller (membeli kredit prabayar) → white label (biaya tahunan + kredit grosir). Semuanya dibayar dulu.
 - **Promosi diatur metrik:** pesan dengan CTR dan konversi rendah turun prioritasnya otomatis; pemenang A/B dipakai

@@ -3,7 +3,27 @@
 > Pemilik, 1 Nov 2026: "Menurut sy aplikasi2 yg d buat skrg ini sangat sederhana sekali, harga nya g layak klo semahal
 > itu... Coba perbaiki harga2 nya mengikuti harga pasaran ASIA."
 
-Status: ✅ **disetujui pemilik 1 Nov 2026** ("Pasang usulan ini"). Angka dipasang sebagai bawaan di kode dalam satu PR
+> **Pembaruan 2 Nov 2026 (REQUESTS 145): harga Asia dibatalkan, harga pasar Eropa kembali.** Pemilik: "Harga nya
+> kembalikan aja ke harga pasaran Eropa, masih ada harga lelang harga yg bisa d ambil member agar member bisa dapet harga
+> murah". Yang berlaku sekarang:
+> - **Paket cloud:** US$19 / 49 / 199 / 999 per bulan (tahunan = 10 bulan).
+> - **Edisi self-hosted:** harga daftar sebelum REQUESTS 140 (contoh: Guardian Lite US$990/tahun, Orchestra Starter
+>   US$34.900/tahun, Studio Starter US$490/tahun).
+> - **Program mitra:** syarat uang REQUESTS 134. Reseller masuk US$5.000 dengan kredit US$2.500, ambang US$25.000 /
+>   US$100.000, US$1.200 setahun (dihapus mulai US$25.000). White label masuk US$60.000 dengan kredit US$20.000, ambang
+>   US$150.000 / US$500.000, biaya platform US$24.000 (US$12.000 mulai US$250.000), minimal US$48.000 setahun
+>   (`BUSINESS-MASTER-BLUEPRINT.md` §4.1, §4.3).
+> - **Harga murah untuk member:** lewat lelang (`lib/auction.ts`): paket dan edisi dilelang setiap siklus dengan harga
+>   awal di bawah harga daftar.
+> - **Tetap:**
+>   - lifetime sangat mahal dan hanya lewat admin sampai deal (REQUESTS 142, 144);
+>   - harga pecahan tampil dengan sen ($32.50).
+> - **Pemindahan sekali:** revisi harga 3 (`lib/price-rev.ts`) dan `TERMS_REV` 4. Setelan yang disimpan Admin pada harga
+>   Asia kembali ke harga Eropa sekali; saklar on/off edisi tetap.
+>
+> Bagian di bawah adalah catatan usulan harga Asia (1 Nov), disimpan sebagai riwayat.
+
+Status (1 Nov 2026, dibatalkan 2 Nov): ✅ **disetujui pemilik 1 Nov 2026** ("Pasang usulan ini"). Angka dipasang sebagai bawaan di kode dalam satu PR
 (revisi harga 2, `lib/price-rev.ts`; program mitra `TERMS_REV` 3). Lifetime tidak diturunkan (REQUESTS 142, §2.2). Admin tetap bisa mengubahnya kapan saja di Admin → Plans, Editions,
 dan Lifetime. Harga lama yang sudah disimpan Admin di R2 dipindah sekali ke harga baru, dengan pola `priceRev` yang sama
 seperti REQUESTS 132. Saklar on/off edisi tetap dipertahankan.

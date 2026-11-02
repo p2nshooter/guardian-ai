@@ -85,9 +85,9 @@ test("auction: every package by default; the tick opens one lot per package at 2
   const b = lots.find((l) => l.pkg === LOT_B && l.status === "open");
   assert.ok(a && b, "both packages have a lot");
   lotA = a.id; lotB = b.id;
-  assert.equal(a.normal_usd, 99);
-  assert.equal(a.open_usd, 25, "25 % of $99, rounded up");
-  assert.equal(a.step_usd, 3, "10 % of the $25 opening bid, rounded up");
+  assert.equal(a.normal_usd, 990);
+  assert.equal(a.open_usd, 248, "25 % of $990, rounded up");
+  assert.equal(a.step_usd, 25, "10 % of the $248 opening bid, rounded up");
   const end = new Date(a.ends_at);
   assert.deepEqual([end.getUTCDay(), end.getUTCHours(), end.getUTCMinutes()], [5, 0, 0], "Friday 00:00 UTC");
   assert.equal(end.toLocaleString("en-GB", { timeZone: "Asia/Jakarta", weekday: "long", hour: "2-digit", minute: "2-digit" }), "Friday 07:00", "= Friday 07:00 WIB");
@@ -131,38 +131,38 @@ test("auction: a signed-in member bids once they have chosen a clean display nam
 });
 
 test("auction: every bid is exactly +10 % of the opening bid; outbid bidders are told; a late bid extends the lot", async () => {
-  // $99 normal (Asia prices, REQUESTS 140) → opening $25 (25 %) → every bid +$3 (10 % of $25, rounded up).
-  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 24 })).json.code, "too_low");
-  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 27 })).json.code, "not_next", "the first bid is the opening bid");
-  const first = await me(ada, { action: "bid", lot: lotA, amount: 25 });
+  // $990 normal → opening $248 (25 %) → every bid +$25 (10 % of $248).
+  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 247 })).json.code, "too_low");
+  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 260 })).json.code, "not_next", "the first bid is the opening bid");
+  const first = await me(ada, { action: "bid", lot: lotA, amount: 248 });
   assert.equal(first.status, 200, first.text);
   assert.equal(first.json.seq, 1);
-  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 28 })).json.code, "already_highest");
-  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 26 })).json.code, "not_next", "not a step of 10 % of the opening bid");
-  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 31 })).json.code, "not_next", "one step at a time");
-  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 100 })).json.code, "too_high", "never above the normal price");
-  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 28 })).status, 200);
+  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 273 })).json.code, "already_highest");
+  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 258 })).json.code, "not_next", "not a step of 10 % of the opening bid");
+  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 298 })).json.code, "not_next", "one step at a time");
+  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 991 })).json.code, "too_high", "never above the normal price");
+  assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 273 })).status, 200);
   assert.ok((await mails(ADA)).some((m) => /outbid/i.test(m.subject)), "Ada is told she was outbid");
 
   // Two bids at the same moment: the compare-and-swap lets exactly one take each step.
-  const [x, y] = await Promise.all([me(ada, { action: "bid", lot: lotA, amount: 31 }), me(ada, { action: "bid", lot: lotA, amount: 31 })]);
+  const [x, y] = await Promise.all([me(ada, { action: "bid", lot: lotA, amount: 298 }), me(ada, { action: "bid", lot: lotA, amount: 298 })]);
   assert.deepEqual([x.status, y.status].sort(), [200, 409]);
   const bids = await list("auctionBids", "lot", lotA);
-  assert.deepEqual(bids.map((b: any) => b.amount_usd), [31, 28, 25], "highest first, each bid stored once");
+  assert.deepEqual(bids.map((b: any) => b.amount_usd), [298, 273, 248], "highest first, each bid stored once");
   assert.equal(bids[0].id, `${lotA}.000003`);
 
   // Anti-snipe: with two minutes left, a bid moves the end to five minutes after it.
   await live(lotA, 2 * 60_000);
-  const late = await me(ben, { action: "bid", lot: lotA, amount: 34 });
+  const late = await me(ben, { action: "bid", lot: lotA, amount: 323 });
   assert.equal(late.status, 200, late.text);
   assert.equal(late.json.extended, true);
   assert.ok(Date.parse(late.json.endsAt) - Date.now() > 4 * 60_000, "extended to ~5 minutes");
-  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 37 })).status, 200);
+  assert.equal((await me(ada, { action: "bid", lot: lotA, amount: 348 })).status, 200);
 
   const pub = await anon.get("/api/auction");
   assert.equal(pub.status, 200);
   const l = pub.json.lots.find((z: any) => z.id === lotA);
-  assert.deepEqual([l.highUsd, l.bidsCount, l.nextMinUsd, l.stepUsd], [37, 5, 40, 3]);
+  assert.deepEqual([l.highUsd, l.bidsCount, l.nextMinUsd, l.stepUsd], [348, 5, 373, 25]);
   assert.equal(l.leader, "A•••••", "the leader is masked");
   assert.ok(!pub.text.includes("@"), "no e-mail address in public");
   assert.ok(!pub.text.includes("Ada Labs"), "no bidder name before the win");
@@ -174,7 +174,7 @@ test("auction: an unpaid winner gets no licence and is listed as not paid yet; a
   assert.equal((await admin.post("/api/admin/auctions", { action: "tick" })).status, 200);
   const closed = await doc("auctionLots", lotA);
   assert.equal(closed.status, "awaiting_payment");
-  assert.deepEqual([closed.winner_name, closed.winner_usd, closed.winner_email], ["Ada Labs", 37, ADA]);
+  assert.deepEqual([closed.winner_name, closed.winner_usd, closed.winner_email], ["Ada Labs", 348, ADA]);
   assert.ok((await mails(ADA)).some((m) => /You won/.test(m.subject)));
   assert.equal((await me(ben, { action: "bid", lot: lotA, amount: 373 })).json.code, "closed");
 
@@ -195,9 +195,9 @@ test("auction: an unpaid winner gets no licence and is listed as not paid yet; a
   assert.equal((await ben.post("/api/billing/checkout", { kind: "auction", lot: lotA, gateway: "manual" })).status, 409, "not Ben's to pay");
   const c = await ada.post("/api/billing/checkout", { kind: "auction", lot: lotA, gateway: "manual", amount: 1 });
   assert.equal(c.status, 200, c.text);
-  assert.equal(c.json.amountUsd, 37, "the winning bid, never the browser's amount");
+  assert.equal(c.json.amountUsd, 348, "the winning bid, never the browser's amount");
   const order = await doc("orders", c.json.orderId);
-  assert.deepEqual([order.plan, order.cycle, order.amount_usd], ["edition", "yearly", 37]);
+  assert.deepEqual([order.plan, order.cycle, order.amount_usd], ["edition", "yearly", 348]);
   assert.equal(JSON.parse(order.meta).auction.lot, lotA);
   assert.equal(JSON.parse(order.meta).edition.code, "lite");
   assert.equal((await doc("auctionLots", lotA)).order_id, c.json.orderId);
@@ -233,7 +233,7 @@ test("auction: an unpaid winner gets no licence and is listed as not paid yet; a
 
   // Paid now — and the chosen name follows the winner.
   pub = await anon.get("/api/auction");
-  assert.ok(pub.json.winners.some((w: any) => w.name === "Ada Labs" && w.paid === true && w.amountUsd === 37 && /Sentinel Lite/.test(w.title)));
+  assert.ok(pub.json.winners.some((w: any) => w.name === "Ada Labs" && w.paid === true && w.amountUsd === 348 && /Sentinel Lite/.test(w.title)));
   assert.equal((await me(ada, { action: "name", displayName: "Ada Labs Pte Ltd" })).status, 200);
   pub = await anon.get("/api/auction");
   assert.ok(pub.json.winners.some((w: any) => w.name === "Ada Labs Pte Ltd" && w.paid));
@@ -244,9 +244,9 @@ test("auction: an unpaid winner gets no licence and is listed as not paid yet; a
 });
 
 test("auction: the admin can hand an unpaid win to the next bidder — by hand, or automatically when switched on", async () => {
-  // $499 → opening $125, every bid +$13.
-  assert.equal((await me(ada, { action: "bid", lot: lotB, amount: 125 })).status, 200);
-  assert.equal((await me(ben, { action: "bid", lot: lotB, amount: 138 })).status, 200);
+  // $4,990 → opening $1,248, every bid +$125.
+  assert.equal((await me(ada, { action: "bid", lot: lotB, amount: 1248 })).status, 200);
+  assert.equal((await me(ben, { action: "bid", lot: lotB, amount: 1373 })).status, 200);
   await update("auctionLots", lotB, { ends_at: iso(Date.now() - 1000) });
   await admin.post("/api/admin/auctions", { action: "tick" });
   assert.equal((await doc("auctionLots", lotB)).winner_name, "Ben & Partners");
@@ -263,7 +263,7 @@ test("auction: the admin can hand an unpaid win to the next bidder — by hand, 
   await admin.post("/api/admin/auctions", { action: "tick" });
   const passed = await doc("auctionLots", lotB);
   assert.equal(passed.status, "awaiting_payment");
-  assert.deepEqual([passed.winner_name, passed.winner_usd], ["Ada Labs Pte Ltd", 125], "the next bidder, at her own bid");
+  assert.deepEqual([passed.winner_name, passed.winner_usd], ["Ada Labs Pte Ltd", 1248], "the next bidder, at her own bid");
   assert.equal(passed.passed.length, 1);
   assert.equal((await doc("orders", bo.json.orderId)).status, "canceled", "Ben's unpaid order is cancelled");
   assert.equal((await ben.post("/api/billing/checkout", { kind: "auction", lot: lotB, gateway: "manual" })).status, 409);

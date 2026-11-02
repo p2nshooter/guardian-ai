@@ -23,7 +23,8 @@ sini pada urutan yang benar.
 
 | # | Pekerjaan | Rencana | Status |
 |---|---|---|---|
-| 2 | **AI Studio = studio film kelas dunia dengan AI** (REQUESTS 141, 143): mulai **S0** (chat → AI Chat, format `axto.film`, pustaka media R2, image Docker Windows = Linux), lalu S1 → S12 | `apps/AI-STUDIO-BLUEPRINT.md` §11 | perintah pemilik 1 Nov: blueprint dulu ✅, lalu dibangun; Clipper C1 ✅ tayang (#108) |
+| 1 | **AdSense „Konten tanpa manfaat"** (REQUESTS 146): zevok.de dan semua situs artikel — tanggal jujur, sumber resmi, alat interaktif, klaim penulis yang benar, jadwal terbit bertahap; lalu alat + sumber per situs, satu gelombang per PR | repo ulyah.com `docs/ADSENSE-BLUEPRINT.md` §22 | perintah pemilik 2 Nov: semua pekerjaan lain berhenti; engine + zevok.de: ulyah #399 |
+| 2 | ⏸ **AI Studio = studio film kelas dunia dengan AI** (REQUESTS 141, 143): S0a ✅ #111 (AI Chat, format `axto.film`, `/app/ai-studio`); berikutnya S0b image Docker `ai-studio-node` Windows = Linux, S0a-2 pustaka media R2, lalu S1 → S12 | `apps/AI-STUDIO-BLUEPRINT.md` §11 | ditahan selama baris 1 berjalan |
 
 **Perintah 1 Nov (REQUESTS 141):** "bikinin dulu blueprint nya yg AI studio … baru implementasi". Blueprint ditulis
 (`apps/AI-STUDIO-BLUEPRINT.md`). Clipper C1 tayang 1 Nov (#108), jadi AI Studio S0 kini pekerjaan berjalan; Clipper
@@ -35,7 +36,7 @@ C2–C9 dilanjutkan sesudahnya (baris 3a).
 |---|---|---|
 | W1 | ✅ Semua penawaran di semua situs ke hello@axto.io + WhatsApp +62 856-9123-4561 (REQUESTS 139): ulyah.com + 4 situs saudara (ulyah #397), xaa.es (xaa #38), axto.io sudah. **Sisa:** email notifikasi penawaran xaa.es ke hello@axto.io (butuh pengirim email; ikut baris 6). | `PROMOTION-BLUEPRINT.md` §9 |
 | W2 | ✅ Cabang xaa dimulai ulang dari main (1 Nov). | — |
-| W3 | ✅ Harga mengikuti pasar Asia (REQUESTS 140, #109); lifetime tetap sangat mahal (REQUESTS 142) · lifetime hanya lewat admin sampai deal (REQUESTS 144) 🔄 | `PRICING-BLUEPRINT.md` |
+| W3 | Harga kembali ke pasar Eropa (REQUESTS 145; harga Asia REQUESTS 140/#109 dibatalkan), harga murah lewat lelang; lifetime tetap sangat mahal (REQUESTS 142) dan hanya lewat admin sampai deal (REQUESTS 144, ✅ #110) 🔄 | `PRICING-BLUEPRINT.md` |
 | W4 | Lifetime hanya untuk aplikasi yang terbukti berfungsi 100% (REQUESTS 142): saklar per aplikasi di Admin → Lifetime + syarat bukti (engine test, docker-smoke Windows + Linux, e2e, uji AXTO Setup) | `PRICING-BLUEPRINT.md` §2.2 |
 
 ## Berikutnya (urut, satu per satu)

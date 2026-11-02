@@ -88,7 +88,7 @@ test("programmes: all shown — hub, pages, sitemap, llms.txt, public API and th
   assert.equal(api.json.any, true);
   assert.ok(api.json.programs.affiliate && api.json.programs.reseller && api.json.programs.whitelabel);
   assert.equal(api.json.programs.affiliate.commissionPct, 20);
-  assert.equal(api.json.programs.whitelabel.entryUsd, 20_000, "REQUESTS 140 (Asia prices)");
+  assert.equal(api.json.programs.whitelabel.entryUsd, 60_000, "REQUESTS 134");
   assert.equal(api.json.programs.whitelabel.creditMonths, 24);
   assert.equal(api.json.programs.whitelabel.demoLicences, 10);
   assert.ok(!("aiMarkup" in api.json.programs.whitelabel) && !("reviewAboveUsd" in api.json.programs.affiliate), "internal numbers never reach the public");
@@ -103,12 +103,12 @@ test("programmes: all shown — hub, pages, sitemap, llms.txt, public API and th
     assert.match(p.text, new RegExp(`<link rel="canonical" href="[^"]*${path}"`), `${path} canonical`);
   }
   const wl = await anon.get("/white-label");
-  assert.ok(wl.text.includes("$20,000"), "the white-label entry fee from Admin");
+  assert.ok(wl.text.includes("$60,000"), "the white-label entry fee from Admin");
   // The worked example: enough Business clients (yearly, list price, 50 %) to cover the net cost of the brand licence.
   const per = (api.json.businessYearlyUsd * 50) / 100;
-  const clients = Math.max(10, Math.ceil((20_000 - 7_500 + 1) / per / 10) * 10);
+  const clients = Math.max(10, Math.ceil((60_000 - 20_000 + 1) / per / 10) * 10);
   assert.ok(wl.text.includes(`$${(clients * per).toLocaleString("en-US")}`), "the worked example's gross profit");
-  assert.ok(clients * per > 12_500, "and it really covers the net cost");
+  assert.ok(clients * per > 40_000, "and it really covers the net cost");
   assert.ok(!/PayPal/.test(wl.text.match(/Sign and pay[\s\S]{0,400}/)?.[0] || ""), "the entry fee is wire, escrow or crypto");
   assert.ok(wl.text.includes("continue directly with AXTO"), "the continuity promise is on the page");
   const sm = await anon.get("/sitemap.xml");

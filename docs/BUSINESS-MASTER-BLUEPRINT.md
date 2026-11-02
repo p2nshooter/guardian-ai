@@ -105,20 +105,19 @@ bahasa memperkecil beban dukungan. Pemilik bisa mengubahnya.
 - Komisi **10%** sekali dari biaya masuk reseller atau white label yang dibawanya.
 - AXTO menyimpan 80–90%. Afiliasi tidak menanggung dukungan apa pun.
 
-**C. Reseller** (merek AXTO) — **angka disesuaikan harga pasar Asia 1 Nov 2026 (REQUESTS 140, `PRICING-BLUEPRINT.md`)**:
-- **Biaya masuk US$1.500**, sudah termasuk **kredit US$750**, jadi biaya bersihnya US$750.
+**C. Reseller** (merek AXTO):
+- **Biaya masuk US$5.000**, sudah termasuk **kredit US$2.500**, jadi biaya bersihnya US$2.500.
 - **Diskon grosir** dari harga daftar, naik otomatis menurut pembelian 12 bulan terakhir:
-  - Silver 25% (di bawah US$7.500);
-  - Gold 30% (US$7.500 ke atas);
-  - Platinum 35% (US$30.000 ke atas).
-- **Biaya tahunan US$360** mulai tahun kedua, dihapus bila pembelian 12 bulan terakhir mencapai US$7.500.
+  - Silver 25% (di bawah US$25.000);
+  - Gold 30% (US$25.000 ke atas);
+  - Platinum 35% (US$100.000 ke atas).
+- **Biaya tahunan US$1.200** mulai tahun kedua, dihapus bila pembelian 12 bulan terakhir mencapai US$25.000.
 - Harga jual bebas, tetapi harga yang diiklankan minimal harga daftar − 10% (MAP), supaya kanal langsung tidak rusak.
 
-**D. White Label** (merek sendiri 100%). Angka direvisi 1 Nov 2026 (REQUESTS 134, alasan di §4.3), lalu disesuaikan
-harga pasar Asia pada hari yang sama (REQUESTS 140):
-- **Biaya masuk US$20.000** (tahun pertama), dibayar lewat wire, escrow atau kripto (tidak bisa ditarik kembali),
+**D. White Label** (merek sendiri 100%) — **angka direvisi 1 Nov 2026 (REQUESTS 134, alasan di §4.3)**:
+- **Biaya masuk US$60.000** (tahun pertama), dibayar lewat wire, escrow atau kripto (tidak bisa ditarik kembali),
   sudah termasuk:
-  - **kredit grosir US$7.500** yang langsung bisa dijual (senilai US$15.000 harga daftar pada diskon 50%);
+  - **kredit grosir US$20.000** yang langsung bisa dijual (senilai US$40.000 harga daftar pada diskon 50%);
   - lisensi merek setahun: nama, logo, warna, domain, e-mail, dua bahasa;
   - instans khusus terisolasi yang dijalankan AXTO (mitra tidak pernah menerima kode sumber);
   - hak **MANAGE** (AI disediakan AXTO, §5);
@@ -126,32 +125,25 @@ harga pasar Asia pada hari yang sama (REQUESTS 140):
   - 10 lisensi demo (30 hari, bertanda "demo", tidak memotong kredit);
   - panduan onboarding dan sertifikasi otomatis (kuis) untuk tim mitra.
 - **Diskon grosir** naik otomatis menurut pembelian 12 bulan terakhir:
-  - 50% (di bawah US$50.000);
-  - 55% (US$50.000 ke atas);
-  - 60% (US$170.000 ke atas).
-- **Biaya platform tahunan US$8.000** mulai tahun kedua, ditagih di muka (hosting instans, pembaruan, infrastruktur
-  Manage). Turun ke US$4.000 bila pembelian 12 bulan terakhir mencapai US$85.000.
-- **Pembelian minimum tahunan US$18.000** mulai tahun kedua. Kekurangannya ditagihkan **sebagai kredit**: mitra tetap
-  menerima nilainya (US$36.000 harga daftar), AXTO tetap menerima uangnya.
+  - 50% (di bawah US$150.000);
+  - 55% (US$150.000 ke atas);
+  - 60% (US$500.000 ke atas).
+- **Biaya platform tahunan US$24.000** mulai tahun kedua, ditagih di muka (hosting instans, pembaruan, infrastruktur
+  Manage). Turun ke US$12.000 bila pembelian 12 bulan terakhir mencapai US$250.000.
+- **Pembelian minimum tahunan US$48.000** mulai tahun kedua. Kekurangannya ditagihkan **sebagai kredit**: mitra tetap
+  menerima nilainya (US$96.000 harga daftar), AXTO tetap menerima uangnya.
 - Kredit grosir berlaku 24 bulan sejak dibeli (dipakai yang tertua lebih dulu), kredit AI 12 bulan; pengingat H-30.
 - Diskon gabungan (paket + tingkat mitra) dibatasi maksimal 65% dari harga daftar.
 
-**Mengapa ini tepat** (hitungan dengan harga daftar Asia: Business US$390/tahun, Pro US$120/tahun):
-- **Bagi AXTO:**
-  - US$20.000 di muka pada tahun pertama;
-  - lalu **minimal US$26.000 per tahun yang dijamin kontrak** (US$8.000 + US$18.000);
-  - ditambah pembelian di atas minimum dan margin AI Manage ≥ 60%.
-  - Biaya langsung per mitra hampir nol: instans di Cloudflare, tanpa staf.
-  - Lima mitra = US$100.000 tahun pertama dan ≥ US$130.000 setiap tahun berikutnya.
-  - Harga eceran yang terjangkau di Asia membuat mitra lebih mudah menjual dalam jumlah besar.
-- **Bagi mitra:**
-  - Dengan diskon 50%, menjual di harga daftar berarti markup 100%.
-  - Biaya merek bersih tahun pertama US$12.500 tertutup oleh ±65 klien Business setahun (margin US$195 per klien;
-    contoh di situs dibulatkan ke 70).
-  - Contoh 200 klien Business:
-    - tahun 1: membayar US$20.000 + kredit tambahan US$31.500 = US$51.500, menagih klien US$78.000 → **+US$26.500**;
-    - tahun 2: biaya platform US$8.000 + grosir US$39.000 = US$47.000, menagih US$78.000 → **+US$31.000**;
-    - ditambah jasa setup, dukungan dan AI Manage yang harganya ditentukan mitra sendiri.
+**Mengapa ini tepat (hitungan dengan harga daftar sekarang: Business US$1.990/tahun, Pro US$490/tahun).**
+- **Bagi AXTO:** US$60.000 di muka pada tahun pertama, lalu **minimal US$72.000 per tahun yang dijamin kontrak**
+  (US$24.000 + US$48.000), ditambah pembelian di atas minimum dan margin AI Manage ≥ 60%. Biaya langsung per mitra hampir
+  nol: instans di Cloudflare, tanpa staf. Lima mitra = US$300.000 tahun pertama dan ≥ US$360.000 setiap tahun berikutnya.
+- **Bagi mitra:** dengan diskon 50%, menjual di harga daftar berarti markup 100%. Biaya merek bersih tahun pertama
+  US$40.000 tertutup oleh ±40 klien Business setahun (margin US$995 per klien). Contoh 60 klien Business:
+  - tahun 1: membayar US$60.000 + kredit tambahan US$39.700 = US$99.700, menagih klien US$119.400 → **+US$19.700**;
+  - tahun 2: biaya platform US$24.000 + grosir US$59.700 = US$83.700, menagih US$119.400 → **+US$35.700**;
+  - ditambah jasa setup, dukungan dan AI Manage yang harganya ditentukan mitra sendiri.
 - Pembelian minimum bukan biaya hangus: setiap dolarnya kembali sebagai lisensi senilai dua kali lipat di harga daftar.
 
 ### 4.2 xaa.es (EUR) — sistem yang sama, disesuaikan dengan katalog studio
@@ -182,7 +174,7 @@ menguntungkan axto.io… axto.io tanpa pengendali". Skema 29 Okt diperiksa terha
 
 1. **Harga tidak sinkron dengan harga perusahaan.** Biaya masuk US$150.000 sama dengan 30% penawaran pembuka seluruh AXTO
    (US$500.000, REQUESTS 132): tiga kontrak white label ≈ harga perusahaannya. Calon mitra yang rasional akan menawar
-   perusahaannya. → Biaya masuk turun ke US$60.000 (lalu US$20.000 dengan harga Asia, REQUESTS 140); uang AXTO dipindah ke komitmen tahunan yang dijamin (§4.1 D).
+   perusahaannya. → Biaya masuk turun ke US$60.000; uang AXTO dipindah ke komitmen tahunan yang dijamin (§4.1 D).
 2. **Titik impas mitra terlalu jauh.** Biaya bersih US$100.000 butuh ±101 klien Business setahun penuh (atau ±408 klien
    Pro tahunan) sebelum mitra untung. → Biaya bersih US$40.000, impas di ±40 klien Business.
 3. **Dukungan tingkat 2 dan akademi mengandaikan staf.** Bertentangan dengan hukum 1. → Dukungan mitra otomatis (asisten
