@@ -243,12 +243,12 @@ const RATE = {
   IDR: {
     key: "usd_idr_rate", read: "usdIdrRate", opt: "usdIdr", title: "Rupiah conversion (USD → IDR)",
     lead: "Prices are set in USD. Xendit, Midtrans and the BNI rupiah account charge the rupiah amount at this rate, rounded up to Rp1,000.",
-    placeholder: "e.g. 16400", fmt: (n: number) => `Rp${n.toLocaleString("id-ID")}`, example: (r: number) => `Rp${(Math.ceil((12 * r) / 1000) * 1000).toLocaleString("id-ID")}`,
+    placeholder: "e.g. 16400", fmt: (n: number) => `Rp${n.toLocaleString("id-ID")}`, example: (r: number) => `Rp${(Math.ceil((49 * r) / 1000) * 1000).toLocaleString("id-ID")}`,
   },
   EUR: {
     key: "usd_eur_rate", read: "usdEurRate", opt: "usdEur", title: "Euro conversion (USD → EUR)",
     lead: "The BNI euro account is quoted at this rate, rounded up to the cent, so the dollar price always arrives in full.",
-    placeholder: "e.g. 0.92", fmt: (n: number) => `€${n}`, example: (r: number) => `€${(Math.ceil(Math.round(12 * r * 1e6) / 1e4) / 100).toFixed(2)}`,
+    placeholder: "e.g. 0.92", fmt: (n: number) => `€${n}`, example: (r: number) => `€${(Math.ceil(Math.round(49 * r * 1e6) / 1e4) / 100).toFixed(2)}`,
   },
 } as const;
 
@@ -282,7 +282,7 @@ function RateCard({ ccy }: { ccy: keyof typeof RATE }) {
         </div>
         <span className={fixed ? "badge-brand" : "badge-gray"}>{fixed ? "Fixed rate" : "Automatic (daily market rate)"}</span>
       </div>
-      <p className="mt-3 text-sm text-slate-700">In use now: <b>{c.fmt(effective)}</b> per USD · e.g. US$12 → <b>{c.example(effective)}</b></p>
+      <p className="mt-3 text-sm text-slate-700">In use now: <b>{c.fmt(effective)}</b> per USD · e.g. US$49 → <b>{c.example(effective)}</b></p>
       <div className="mt-3 flex flex-wrap gap-2">
         <input className="input w-48" inputMode="decimal" placeholder={c.placeholder} value={rate} onChange={(e) => setRate(e.target.value.replace(/[^0-9.]/g, ""))} aria-label={`Fixed USD to ${ccy} rate`} />
         <button className="btn-primary btn-sm" disabled={busy || !rate.trim()} onClick={() => save(rate.trim())}>Fix this rate</button>

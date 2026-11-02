@@ -68,11 +68,11 @@ test("editions: public catalogue with live prices; checkout charges OUR price", 
   assert.equal((await buyer.post("/api/billing/checkout", { kind: "edition", edition: "vault_starter", cycle: "weekly", gateway: "manual" })).status, 400);
   const c = await buyer.post("/api/billing/checkout", { kind: "edition", edition: "vault_starter", cycle: "yearly", gateway: "manual", amountUsd: 1 });
   assert.equal(c.status, 200, c.text);
-  assert.equal(c.json.amountUsd, 499, "the browser never sets the price");
+  assert.equal(c.json.amountUsd, 4990, "the browser never sets the price");
   orderId = c.json.orderId;
   const o = await doc("orders", orderId);
   const row = { plan: o.plan, cycle: o.cycle, amount_usd: o.amount_usd, code: meta(o).edition?.code };
-  assert.deepEqual(row, { plan: "edition", cycle: "yearly", amount_usd: 499, code: "vault_starter" });
+  assert.deepEqual(row, { plan: "edition", cycle: "yearly", amount_usd: 4990, code: "vault_starter" });
 });
 
 test("editions: payment issues the edition licence with no admin step; the validator signs the narrowed edition", async () => {
@@ -109,7 +109,7 @@ test("editions: admin prices and on/off reach checkout and the public catalogue"
   assert.equal(c.json.amountUsd, 880);
   // Large amounts: PayPal is not offered.
   assert.equal((await buyer.post("/api/billing/checkout", { kind: "edition", edition: "soc_enterprise", cycle: "yearly", gateway: "paypal" })).status, 400);
-  await admin.put("/api/admin/editions", { prices: [{ code: "edge_starter", yearly: 799, monthly: 79.9, enabled: true }, { code: "edge_business", yearly: 4090, monthly: 409, enabled: true }] });
+  await admin.put("/api/admin/editions", { prices: [{ code: "edge_starter", yearly: 7990, monthly: 799, enabled: true }, { code: "edge_business", yearly: 40900, monthly: 4090, enabled: true }] });
 });
 
 test("trials: admin creates the pool; members claim zero-touch; abuse limits hold", async () => {

@@ -64,7 +64,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "starter", name: "Starter", rank: 1,
     headline: "Everything you need to start working with AI.",
     bestFor: "Freelancers & solo professionals",
-    monthly: 5, yearly: 50,
+    monthly: 19, yearly: 190,
     limits: {
       clipperVideosPerMonth: 10, storageGB: 1, promptLevels: ["basic", "pro"], legalWorkspaces: "core",
       apps: CORE_APPS, selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 2, apiRpm: 60, webhooks: 1, localMode: true,
@@ -85,7 +85,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "pro", name: "Pro", rank: 2, highlight: true,
     headline: "The full cloud workspace for serious professionals.",
     bestFor: "Lawyers, consultants, analysts",
-    monthly: 12, yearly: 120,
+    monthly: 49, yearly: 490,
     limits: {
       clipperVideosPerMonth: 50, storageGB: 10, promptLevels: ["basic", "pro", "premium"], legalWorkspaces: "all",
       apps: ALL_APPS, selfHostedApps: 0, selfHostedNodes: 0, apiKeys: 5, apiRpm: 300, webhooks: 5, localMode: true,
@@ -106,7 +106,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "business", name: "Business", rank: 3,
     headline: "Cloud workspace plus self-hosted apps on your own servers.",
     bestFor: "Firms & growing teams",
-    monthly: 39, yearly: 390,
+    monthly: 199, yearly: 1990,
     limits: {
       clipperVideosPerMonth: 200, storageGB: 50, promptLevels: ["basic", "pro", "premium", "elite"], legalWorkspaces: "all",
       apps: ALL_APPS, selfHostedApps: 3, selfHostedNodes: 5, apiKeys: 20, apiRpm: 1200, webhooks: 20, localMode: true,
@@ -125,7 +125,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "enterprise", name: "Enterprise", rank: 4,
     headline: "Every app, every tier, on unlimited servers.",
     bestFor: "Enterprises & regulated organisations",
-    monthly: 149, yearly: 1490,
+    monthly: 999, yearly: 9990,
     limits: {
       clipperVideosPerMonth: -1, storageGB: 500, promptLevels: ["basic", "pro", "premium", "elite"], legalWorkspaces: "all",
       apps: ALL_APPS, selfHostedApps: -1, selfHostedNodes: -1, apiKeys: 100, apiRpm: 6000, webhooks: 50, localMode: true,

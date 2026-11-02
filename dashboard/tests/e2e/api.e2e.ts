@@ -156,7 +156,7 @@ test("payments: configure manual gateway; options + checkout validation", async 
 
   const opts = await member.get("/api/billing/options");
   assert.deepEqual(opts.json.gateways.map((x: any) => x.id), ["manual"]);
-  assert.equal(opts.json.plans.find((p: any) => p.id === "pro").monthly, 12);
+  assert.equal(opts.json.plans.find((p: any) => p.id === "pro").monthly, 49);
 
   assert.equal((await member.post("/api/billing/checkout", { plan: "gold", cycle: "monthly", gateway: "manual" })).status, 400);
   assert.equal((await member.post("/api/billing/checkout", { plan: "pro", cycle: "monthly", gateway: "stripe" })).status, 503);
@@ -168,7 +168,7 @@ test("checkout → admin marks paid → plan active, invoice, idempotent", async
   const c = await member.post("/api/billing/checkout", { plan: "pro", cycle: "monthly", gateway: "manual", amount: 0.01 });
   assert.equal(c.status, 200, c.text);
   assert.equal(c.json.manual, true);
-  assert.equal(c.json.amountUsd, 12, "price comes from the server, never the browser");
+  assert.equal(c.json.amountUsd, 49, "price comes from the server, never the browser");
   assert.match(c.json.instructions, /Bank Test 123$/, "the admin's own instructions are kept");
   assert.match(c.json.instructions, /unique order code/, "…after the unique-code line");
   firstOrderId = c.json.orderId;
@@ -192,7 +192,7 @@ test("checkout → admin marks paid → plan active, invoice, idempotent", async
   assert.match(o.invoice_no, /^AXTO-\d{4}-\d{6}$/);
   const inv = await member.get(`/api/billing/invoice/${firstOrderId}`);
   assert.equal(inv.status, 200);
-  assert.ok(inv.text.includes(o.invoice_no) && inv.text.includes("$12"));
+  assert.ok(inv.text.includes(o.invoice_no) && inv.text.includes("$49"));
 
   // Another member cannot read it.
   const reg = await other.post("/api/auth/register", { email: `other-${RUN}@example.com`, name: "Other", password: "abcdefgh1", acceptTerms: true });
@@ -207,13 +207,13 @@ test("self-hosted: Pro has no licences; Business upgrade prorates and allows 3",
   assert.equal((await member.post("/api/selfhosted", { action: "issue", product: "guardian" })).status, 402);
 
   const c = await member.post("/api/billing/checkout", { plan: "business", cycle: "yearly", gateway: "manual" });
-  assert.equal(c.json.amountUsd, 390);
+  assert.equal(c.json.amountUsd, 1990);
   assert.equal((await admin.post("/api/admin/orders", { action: "mark_paid", id: c.json.orderId })).status, 200);
   const me = await member.get("/api/auth/me");
   assert.equal(me.json.tier, "business");
-  // ~30 unused Pro days ($12/mo) convert to ~11.1 Business-yearly days ($390/yr).
+  // ~30 unused Pro days ($49/mo) convert to ~8.9 Business-yearly days ($1,990/yr).
   const days = (Date.parse(me.json.subscription.current_period_end) - Date.now()) / 86_400_000;
-  const credit = 30 * ((12 / 30.4375) / (390 / 365.25));
+  const credit = 30 * ((49 / 30.4375) / (1990 / 365.25));
   assert.ok(Math.abs(days - (365 + credit)) < 1.5, `1 year + prorated credit (${(365 + credit).toFixed(1)}), got ${days.toFixed(2)}`);
 
   for (const p of ["guardian", "vault", "legal"]) {
@@ -320,11 +320,11 @@ test("Managed AI is locked and fully separate", async () => {
 });
 
 test("admin price override flows into checkout", async () => {
-  const put = await admin.put("/api/admin/plans", { prices: { starter: { monthly: 7, yearly: 70 }, pro: { monthly: 12, yearly: 120 }, business: { monthly: 39, yearly: 390 }, enterprise: { monthly: 149, yearly: 1490 } } });
+  const put = await admin.put("/api/admin/plans", { prices: { starter: { monthly: 21, yearly: 210 }, pro: { monthly: 49, yearly: 490 }, business: { monthly: 199, yearly: 1990 }, enterprise: { monthly: 999, yearly: 9990 } } });
   assert.equal(put.status, 200, put.text);
   const c = await other.post("/api/billing/checkout", { plan: "starter", cycle: "monthly", gateway: "manual" });
-  assert.equal(c.json.amountUsd, 7);
-  await admin.put("/api/admin/plans", { prices: { starter: { monthly: 5, yearly: 50 }, pro: { monthly: 12, yearly: 120 }, business: { monthly: 39, yearly: 390 }, enterprise: { monthly: 149, yearly: 1490 } } });
+  assert.equal(c.json.amountUsd, 21);
+  await admin.put("/api/admin/plans", { prices: { starter: { monthly: 19, yearly: 190 }, pro: { monthly: 49, yearly: 490 }, business: { monthly: 199, yearly: 1990 }, enterprise: { monthly: 999, yearly: 9990 } } });
 });
 
 test("password reset end to end", async () => {

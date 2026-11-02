@@ -18,8 +18,8 @@ Status: **dicatat, belum dibangun.** Urutan kerja: setelah worker GPU G2–G5 (`
   - edit lewat transkrip;
   - render MP4 di perangkat;
   - SRT/VTT, thumbnail, dan bahan repurpose.
-- Batas paket: `clipperVideosPerMonth` 10 / 50 / 200 / tak terbatas dan `storageGB` 1 / 10 / 50 / 500 (Starter US$5,
-  Pro US$12, Business US$39, Enterprise US$149 per bulan sejak harga Asia, REQUESTS 140; `lib/plans.ts`).
+- Batas paket: `clipperVideosPerMonth` 10 / 50 / 200 / tak terbatas dan `storageGB` 1 / 10 / 50 / 500 (Starter US$19,
+  Pro US$49, Business US$199, Enterprise US$999 per bulan; `lib/plans.ts`).
 - **Belum ada:**
   - aplikasi desktop dan server;
   - render di GPU;
@@ -276,7 +276,7 @@ Prabayar, tidak pernah berutang.
 
 | Fase | Isi | Selesai bila |
 |---|---|---|
-| C1 | Format proyek bersama + sinkron proyek ke R2 + kuota dan log pemakaian — ✅ **tayang 1 Nov 2026** (#108, §11.1) | e2e: proyek dibuat di web, dibuka lagi; kuota menolak unggahan berlebih; tes konkurensi R2 |
+| C1 | Format proyek bersama + sinkron proyek ke R2 + kuota dan log pemakaian — **dibangun 1 Nov 2026** (§11.1) | e2e: proyek dibuat di web, dibuka lagi; kuota menolak unggahan berlebih; tes konkurensi R2 |
 | C2 | Simpan media di axto.io: unggah multipart lanjut, retensi, paket penyimpanan prabayar, tautan berbagi, pemindahan ke IA | e2e unggah 1 GB terputus lalu lanjut; beli paket menambah kuota; habis paket → hanya-baca |
 | C3 | Central Hub: konektor BYOK (transkripsi, LLM, cloud GPU), kebijakan, rantai cadangan, perkiraan biaya, anggaran | tes kontrak tiap konektor (server palsu); satu penyedia gagal → cadangan dipakai |
 | C4 | Desktop Tauri Windows + Linux: render GPU (NVENC/AMF/QSV/VAAPI), whisper.cpp, aktivasi Smart License, updater bertanda tangan | build CI Windows + Linux; render klip contoh di runner; aktivasi uji |

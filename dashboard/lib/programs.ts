@@ -17,8 +17,8 @@
  * White-label terms re-checked 1 Nov 2026 (REQUESTS 134, BUSINESS-MASTER-BLUEPRINT §4.3):
  * a lower entry fee with a guaranteed yearly commitment, credit that expires after
  * 24 months, demo licences, and a continuity promise to partners' clients.
- * Asia market prices (REQUESTS 140, docs/PRICING-BLUEPRINT.md §2.3): retail is about a
- * quarter of before, so the reseller and white-label money terms are rescaled with it.
+ * Asia market prices (REQUESTS 140) rescaled these money terms for a day; with the European
+ * prices back (REQUESTS 145, docs/PRICING-BLUEPRINT.md) the REQUESTS 134 terms are back too.
  * Settings stored before a revision take its money terms once (TERMS_REV).
  * ============================================================================ */
 import type { Data } from "./data";
@@ -82,26 +82,27 @@ export const PROGRAM_DEFAULTS: Programs = {
     ...SHOWN, commissionPct: 20, months: 12, partnerFeePct: 10, holdDays: 30, cookieDays: 60, minPayoutUsd: 50,
     reviewAboveUsd: 2_000, paypalPayouts: false,
   },
-  // REQUESTS 140 (Asia market prices, retail about a quarter of before): the money terms scale with retail.
+  // REQUESTS 145: European list prices again, so the REQUESTS 134 money terms are back.
   reseller: {
-    ...SHOWN, entryUsd: 1_500, includedCreditUsd: 750,
-    tiers: [{ fromUsd: 0, pct: 25 }, { fromUsd: 7_500, pct: 30 }, { fromUsd: 30_000, pct: 35 }],
-    annualUsd: 360, annualWaivedFromUsd: 7_500, mapPct: 10, creditMonths: 24,
+    ...SHOWN, entryUsd: 5_000, includedCreditUsd: 2_500,
+    tiers: [{ fromUsd: 0, pct: 25 }, { fromUsd: 25_000, pct: 30 }, { fromUsd: 100_000, pct: 35 }],
+    annualUsd: 1_200, annualWaivedFromUsd: 25_000, mapPct: 10, creditMonths: 24,
   },
-  // REQUESTS 134 → 140: US$20k up front, then at least US$26k a year guaranteed (platform fee + minimum purchases).
+  // REQUESTS 134 (and again 145): US$60k up front, then at least US$72k a year guaranteed (platform fee + minimum purchases).
   whitelabel: {
-    ...SHOWN, entryUsd: 20_000, includedCreditUsd: 7_500,
-    tiers: [{ fromUsd: 0, pct: 50 }, { fromUsd: 50_000, pct: 55 }, { fromUsd: 170_000, pct: 60 }],
-    annualUsd: 8_000, annualReducedUsd: 4_000, annualReducedFromUsd: 85_000, minAnnualUsd: 18_000,
+    ...SHOWN, entryUsd: 60_000, includedCreditUsd: 20_000,
+    tiers: [{ fromUsd: 0, pct: 50 }, { fromUsd: 150_000, pct: 55 }, { fromUsd: 500_000, pct: 60 }],
+    annualUsd: 24_000, annualReducedUsd: 12_000, annualReducedFromUsd: 250_000, minAnnualUsd: 48_000,
     maxCombinedDiscountPct: 65, aiMarkup: 2.5, creditMonths: 24, demoLicences: 10, demoDays: 30, continuityDays: 30,
   },
 };
 
 /**
  * The revision of the programme terms. Settings stored before it take the money terms of this revision:
- *   2 — REQUESTS 134 (white label revised);  3 — REQUESTS 140 (Asia prices: reseller and white label rescaled).
+ *   2 — REQUESTS 134 (white label revised);  3 — REQUESTS 140 (Asia prices: reseller and white label rescaled);
+ *   4 — REQUESTS 145 (European prices again: the REQUESTS 134 money terms are back).
  */
-export const TERMS_REV = 3;
+export const TERMS_REV = 4;
 const WL_TERMS: (keyof WhiteLabelTerms)[] = ["entryUsd", "includedCreditUsd", "tiers", "annualUsd", "annualReducedUsd", "annualReducedFromUsd", "minAnnualUsd"];
 const RESELLER_TERMS: (keyof ResellerTerms)[] = ["entryUsd", "includedCreditUsd", "tiers", "annualUsd", "annualWaivedFromUsd"];
 

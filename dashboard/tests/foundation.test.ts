@@ -58,7 +58,7 @@ test("mergePrices: ignores junk, accepts valid overrides", () => {
   const t = mergePrices(JSON.stringify({ pro: { monthly: 59, yearly: -3 }, starter: { monthly: "abc" } }));
   assert.equal(t.pro.monthly, 59);
   assert.equal(t.pro.yearly, defaultPrices().pro.yearly);
-  assert.equal(t.starter.monthly, 5);
+  assert.equal(t.starter.monthly, 19);
   assert.deepEqual(mergePrices("{not json"), defaultPrices());
 });
 
@@ -68,9 +68,9 @@ test("proration: renewal stacks, upgrade converts remaining value into time", ()
   assert.equal(none.end.toISOString(), "2026-10-01T00:00:00.000Z");
   const renew = computeNewPeriod({ plan: "pro", cycle: "monthly", status: "active", current_period_end: "2026-09-20T00:00:00Z" }, "pro", "monthly", at);
   assert.equal(renew.end.toISOString(), "2026-10-20T00:00:00.000Z");
-  // 19 days left on Starter ($5/mo) → upgrade to Pro ($12/mo) credits 19*5/12 ≈ 7.92 days
+  // 19 days left on Starter ($19/mo) → upgrade to Pro ($49/mo) credits 19*19/49 ≈ 7.37 days
   const up = computeNewPeriod({ plan: "starter", cycle: "monthly", status: "active", current_period_end: "2026-09-20T00:00:00Z" }, "pro", "monthly", at);
-  assert.ok(Math.abs(up.creditDays - 7.92) < 0.11, `credit ${up.creditDays}`);
+  assert.ok(Math.abs(up.creditDays - 7.4) < 0.11, `credit ${up.creditDays}`);
   // Downgrade gives more days, never fewer than a plain new period.
   const down = computeNewPeriod({ plan: "pro", cycle: "monthly", status: "active", current_period_end: "2026-09-20T00:00:00Z" }, "starter", "monthly", at);
   assert.ok(down.creditDays > 19);
