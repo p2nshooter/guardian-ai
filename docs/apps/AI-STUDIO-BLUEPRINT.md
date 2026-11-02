@@ -595,7 +595,7 @@ Angka pastinya dipasang bersama penyesuaian harga seluruh situs (REQUESTS 140, `
 
 | Fase | Isi | Selesai bila |
 |---|---|---|
-| **S0** | Rumah baru: chat pindah ke **AI Chat** (`/app/chat`, `/app/studio` lama diarahkan; riwayat tetap); kerangka AI Studio film; format `axto.film` v1 (OTIO) + revisi/versi; pustaka media R2 (unggah multipart lanjut, proxy) | e2e: riwayat chat lama terbuka di AI Chat; proyek film dibuat, dibuka di perangkat lain, bentrok terdeteksi; unggahan terputus lanjut |
+| **S0** | Rumah baru (§11.1): chat menjadi **AI Chat** (id `studio` dan rute tetap, riwayat tetap); kerangka AI Studio film di `/app/ai-studio` (id `film`); format `axto.film` v1 (OTIO) + revisi/versi; pustaka media R2 (unggah multipart lanjut); image Docker `ai-studio-node` Windows = Linux (cpu/cuda/rocm) | e2e: riwayat chat lama terbuka di AI Chat; proyek film dibuat, dibuka di perangkat lain, bentrok terdeteksi; unggahan terputus lanjut |
 | **S1** | Timeline profesional di web: multi-track, trim ripple/roll/slip/slide, marker, timecode, frame rate industri, durasi 10 detik–24 jam, potong di mana saja, putar presisi frame (WebCodecs), ekspor pendek di peramban | tes unit model timeline (presisi frame, timecode drop-frame); peramban nyata: proyek 24 jam bisa digulir dan dipotong tanpa macet |
 | **S2** | Generasi: teks→gambar, **foto→video**, teks→video, keyframe, gerak kamera, **perpanjangan shot (pendek → panjang)**, take; konektor BYOK + tes kontrak; perkiraan biaya + anggaran; antrean deterministik; Pemeran + Look untuk konsistensi | tes kontrak tiap konektor; generasi sama tidak dibayar dua kali; penyedia gagal → cadangan |
 | **S2G** | **AXTO GPU Node** (aplikasi mandiri, §6.2): desktop Windows/Linux + image Docker, pengelola model dengan cek lisensi dan VRAM, template alur kerja teruji, pairing aman ke akun, antrean, telemetri; menjadi worker Orchestra bila ada banyak GPU | uji pairing + pekerjaan contoh di runner (CPU untuk CI, GPU nyata diuji di mesin pemilik); model non-komersial terblokir untuk ekspor komersial |
@@ -614,6 +614,104 @@ Angka pastinya dipasang bersama penyesuaian harga seluruh situs (REQUESTS 140, `
 foto→video, teks→video, edit, perpanjangan, dan generasi gratis di GPU sendiri. S3–S6 menjadikannya studio. S7–S11 membuatnya layak disewa rumah produksi besar.
 
 ---
+
+### 11.1 S0 — rancangan teknis (1 Nov 2026, REQUESTS 141 + 143)
+
+**Nama tanpa memutus apa pun:**
+- **Chat multi-model** tetap memakai id internal `studio`, karena id itu dipakai di:
+  - API v1 publik dan Connect (`/api/v1/ai/run`, MCP);
+  - tugas AI (`lib/ai/tasks.ts`);
+  - gerbang paket (`limits.apps`);
+  - riwayat R2 (`app/studio/<akun>/…`).
+- Nama tampilannya menjadi **AI Chat**. Rutenya tetap `/app/studio`, jadi bookmark member dan integrasi pelanggan tetap
+  jalan.
+- **Studio film** mendapat id baru **`film`** dan nama tampilan **AI Studio**.
+  - Rute member: `/app/ai-studio`.
+  - Riwayat proyek: `app/film/<akun>/…` (R2, terenkripsi, revisi + versi dari Clipper C1).
+  - Gerbang paket: `film` masuk `limits.apps` dari Starter, dengan batas per paket di `lib/plans.ts`.
+- Halaman publik `/apps/ai-studio` baru ditambahkan di S12, setelah fiturnya benar-benar berfungsi. Ini sesuai aturan:
+  hanya yang berfungsi 100% yang dipromosikan.
+
+**Format proyek `axto.film` v1** (`lib/film/project.ts`):
+- timeline gaya OpenTimelineIO:
+  - `timeline` → `tracks` (video/audio/teks) → `items` (klip, celah, transisi);
+  - waktu rasional `{value, rate}` agar presisi frame (23,976 = 24000/1001);
+- `media` dengan sidik jari (cara Clipper);
+- `cast`, `looks`, `script`, `shots` (resep generasi);
+- `settings` (frame rate, resolusi, ruang warna).
+- Pembaca yang membatasi setiap bidang dan menolak versi yang lebih baru (pola `readProject`).
+
+**Docker Windows = Linux sejak S0 (REQUESTS 143):**
+- Image **`ai-studio-node`** dari satu Dockerfile dengan `ARG GPU_VARIANT` cpu/cuda/rocm, mengikuti pola worker GPU
+  (REQUESTS 136). Image ini penerus engine `gpu-studio`.
+- Isi awal:
+  - API kesehatan dan kemampuan (GPU, VRAM, FFmpeg, encoder perangkat keras);
+  - pairing ke akun axto.io (kode sekali pakai, token per perangkat);
+  - antrean pekerjaan dengan id deterministik;
+  - render FFmpeg (potong, sambung, encode) untuk timeline `axto.film`;
+  - folder media lokal.
+- Generasi model (ComfyUI) masuk di S2G.
+- Windows memakai image Linux yang sama lewat Docker Desktop/WSL2. AXTO Setup memilih profil GPU yang sama seperti worker
+  GPU (`planGPU`): NVIDIA lewat WSL2; AMD hanya Linux; lainnya CPU.
+- CI:
+  - `docker-smoke` menjalankan image CPU dan menguji pairing + render contoh;
+  - image cuda/rocm dibangun dan diuji impornya seperti `auto-build-gpu`;
+  - tes Go installer memastikan rencana Windows dan Linux sama.
+
+**Status 1 Nov 2026:** S0a-1 dibangun dan diuji:
+- AI Chat;
+- `/app/ai-studio`;
+- `axto.film` v1;
+- penyimpanan R2 dengan revisi/bentrok/versi;
+- 10 bahasa;
+- "File saya".
+
+Pustaka media (S0a-2) dan image Docker (S0b) menyusul.
+
+**Rancangan S0b (`ai-studio-node`, Windows = Linux):**
+- **Satu image untuk semua merek GPU:**
+  - `python:3.11-slim-bookworm` + FFmpeg Debian (NVENC/NVDEC via runtime NVIDIA, VAAPI via `/dev/dri` untuk AMD/Intel)
+    + `vainfo`;
+  - CPU sebagai cadangan;
+  - port 8099;
+  - pengguna non-root;
+  - healthcheck.
+  - Image torch per merek (cuda/rocm) baru ditambahkan di S2G untuk generasi model.
+- **Kemampuan** (`/api/capabilities`): GPU (nvidia-smi, rocm-smi, render node), encoder perangkat keras yang benar-benar
+  ada di FFmpeg (`h264_nvenc`, `hevc_nvenc`, `av1_nvenc`, `h264_vaapi`, `hevc_vaapi`, `h264_qsv`), versi FFmpeg, ruang
+  disk.
+- **Izin node bertanda tangan:**
+  - Halaman AI Studio meminta `POST /api/film/node-grant`: Ed25519 dengan kunci platform yang sama seperti jawaban
+    lisensi, berlaku 24 jam, terikat ke akun dan cakupan `film`.
+  - Node memverifikasi secara luring dengan kunci publik yang tertanam (pola `license.py`), lalu menolak permintaan tanpa
+    izin yang sah.
+- **Peramban bicara langsung ke node:**
+  - `http://127.0.0.1:8099` dianggap tepercaya oleh peramban;
+  - CORS hanya untuk axto.io;
+  - media dan render tetap di mesin pengguna (non-custodial), dan axto.io tidak menyimpan videonya.
+- **Render:**
+  - pekerjaan dari timeline `axto.film` (trek video pertama: potong + sambung + encode, dengan encoder perangkat keras
+    terbaik yang ada);
+  - id pekerjaan = hash(timeline + media + pengaturan);
+  - status dan progres;
+  - hasil di folder `/data/renders`.
+- **Distribusi:**
+  - masuk produk AXTO Setup sebagai aplikasi pendamping AI Studio. Rencana GPU memakai `planGPU` yang sama dengan worker
+    GPU: NVIDIA lewat WSL2 di Windows; AMD/Intel lewat `/dev/dri` hanya di Linux; lainnya CPU;
+  - unduhan untuk semua member yang punya akses AI Studio (bukan kuota self-hosted Business);
+  - `docker-smoke` membangun dan menjalankan image (amd64 + arm64), menguji izin node dan render contoh berbasis CPU;
+  - tes Go installer memastikan rencana Windows dan Linux sama.
+
+**S0 dipecah dua PR:**
+1. **S0a:**
+   - nama AI Chat;
+   - kerangka AI Studio di `/app/ai-studio` dengan daftar proyek, buat, buka, ganti nama, hapus, dan versi;
+   - format `axto.film` v1;
+   - pustaka media R2 (unggah multipart yang bisa dilanjut, kuota penyimpanan, log);
+   - 10 bahasa.
+2. **S0b:**
+   - image `ai-studio-node` (cpu/cuda/rocm) + produk AXTO Setup + `docker-smoke`;
+   - pairing node ke akun dari `/app/ai-studio`.
 
 ## 12. Risiko dan jawabannya
 

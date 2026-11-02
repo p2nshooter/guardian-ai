@@ -1,7 +1,7 @@
 /* PROMPT LIBRARY v4 — the prompt runner: fill {{variables}} (with the active
  * profile), preview, run on the member's own model with streaming, follow up,
  * compare up to three models side by side, save the result, add to a
- * collection or workflow, or open in AI Studio. */
+ * collection or workflow, or open in AI Chat. */
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";

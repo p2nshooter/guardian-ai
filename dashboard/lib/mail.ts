@@ -68,7 +68,7 @@ export const mails = {
   welcome: (name: string) => ({
     subject: `Welcome to ${SITE.name}`,
     html: mailLayout(`Welcome${name ? `, ${esc(name)}` : ""}!`,
-      `<p>Your ${SITE.name} account is ready. Choose a plan to unlock Legal AI, the Prompt Library, AI Studio and the rest of the workspace — everything runs in your browser.</p>`,
+      `<p>Your ${SITE.name} account is ready. Choose a plan to unlock Legal AI, the Prompt Library, AI Chat and the rest of the workspace — everything runs in your browser.</p>`,
       { label: "Choose a plan", href: absoluteUrl("/app/billing") }),
   }),
   passwordReset: (link: string) => ({

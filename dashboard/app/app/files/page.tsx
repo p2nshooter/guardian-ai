@@ -1,5 +1,5 @@
 /* Member: My files — every piece of saved work across the apps (Legal matters,
- * AI Studio chats, Clipper projects, Compliance & Security reports, Vault
+ * AI Chat chats, Clipper projects, Compliance & Security reports, Vault
  * redactions, Prompt runs) in one searchable list, with the storage meter.
  * Open jumps into the app (?open=<id>); rename, delete and JSON export act on
  * the item in its app's own encrypted store. */
@@ -14,8 +14,11 @@ import { Alert, EmptyState, LoadingBlock, PageHeader, Progress, Section } from "
 interface FileEntry { app: string; id: string; title: string; updatedAt: string; detail: string }
 interface Data { files: FileEntry[]; apps: string[]; storage: { used: number; limit: number } }
 
-const OPENABLE = new Set(["legal", "studio", "clipper", "compliance", "security", "vault"]);
-const appOf = (slug: string) => CLOUD_APPS.find((a) => a.slug === slug);
+const OPENABLE = new Set(["legal", "studio", "clipper", "compliance", "security", "vault", "film"]);
+/** AI Studio (`film`) is not a listed cloud app until S12 (docs/apps/AI-STUDIO-BLUEPRINT.md §11.1). */
+const UNLISTED: Record<string, { name: string; icon: string; color: string; path: string }> = { film: { name: "AI Studio", icon: "🎞️", color: "#7c3aed", path: "ai-studio" } };
+const appOf = (slug: string) => CLOUD_APPS.find((a) => a.slug === slug) || UNLISTED[slug];
+const pathOf = (slug: string) => UNLISTED[slug]?.path || slug;
 const itemUrl = (f: FileEntry) => (f.app === "legal" ? `/api/legal/matters/${f.id}` : `/api/history/${f.app}/${f.id}`);
 
 export default function FilesPage() {
@@ -91,7 +94,7 @@ export default function FilesPage() {
                         <div className="truncate text-xs text-slate-500">{a?.name} · {t("files.updated", { date: formatDate(f.updatedAt, lang) })}{f.detail ? ` · ${f.detail}` : ""}</div>
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {OPENABLE.has(f.app) ? <Link href={`/app/${f.app}?open=${encodeURIComponent(f.id)}`} className="btn-secondary btn-sm">{t("files.open")}</Link> : null}
+                        {OPENABLE.has(f.app) ? <Link href={`/app/${pathOf(f.app)}?open=${encodeURIComponent(f.id)}`} className="btn-secondary btn-sm">{t("files.open")}</Link> : null}
                         <button className="btn-ghost btn-sm" onClick={() => exportJson(f)}>⬇ {t("files.export")}</button>
                         <button className="btn-ghost btn-sm" onClick={() => rename(f)}>{t("files.rename")}</button>
                         <button className="btn-ghost btn-sm text-rose-600" onClick={() => remove(f)}>{t("files.delete")}</button>

@@ -23,7 +23,7 @@ import OrchestraSpotlight from "@/components/site/OrchestraSpotlight";
 export const metadata: Metadata = {
   ...pageMeta({
     title: `${SITE.name} — AI workspace for legal, security & business teams`,
-    description: "One AI ecosystem: Legal AI for 200+ jurisdictions, Prompt Library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst in your browser on your own AI keys — plus 10 self-hosted apps for Docker on Windows and Linux, from Guardian AI to AXTO Legal.",
+    description: "One AI ecosystem: Legal AI for 200+ jurisdictions, Prompt Library, AI Chat, Clipper, Privacy Vault, Compliance Center and Security Analyst in your browser on your own AI keys — plus 10 self-hosted apps for Docker on Windows and Linux, from Guardian AI to AXTO Legal.",
     path: "/",
     keywords: ["AI workspace", "legal AI", "BYOK AI", "AI prompt library", "AI video clipper", "PII redaction", "compliance gap analysis", "AI security analyst", "self-hosted AI"],
   }),

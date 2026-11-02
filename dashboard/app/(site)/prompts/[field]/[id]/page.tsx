@@ -80,7 +80,7 @@ export default async function PromptPage({ params }: { params: Promise<{ field: 
             <Link href={`/register?next=/app/prompts`} className="btn-primary btn-lg">{free ? "Use it free →" : `Unlock with ${planName} →`}</Link>
             <Link href="/pricing" className="btn-secondary btn-lg">See pricing</Link>
           </div>
-          <p className="mt-3 text-sm text-slate-500">Runs on your own AI key · fill {p.variables.length} field{p.variables.length === 1 ? "" : "s"} · copy, run in AI Studio, or save to your workspace</p>
+          <p className="mt-3 text-sm text-slate-500">Runs on your own AI key · fill {p.variables.length} field{p.variables.length === 1 ? "" : "s"} · copy, run in AI Chat, or save to your workspace</p>
         </div>
       </section>
 
@@ -107,7 +107,7 @@ export default async function PromptPage({ params }: { params: Promise<{ field: 
             <div>
               <h2 className="text-2xl font-bold">How it works</h2>
               <ol className="mt-4 space-y-4">
-                {["Open the prompt in AXTO and fill in the fields above.", "Run it on your own AI key — Claude, GPT, Gemini, Llama, DeepSeek and more, or your own endpoint.", "Copy the result, refine it in AI Studio, or save it to your encrypted workspace history."].map((s, i) => (
+                {["Open the prompt in AXTO and fill in the fields above.", "Run it on your own AI key — Claude, GPT, Gemini, Llama, DeepSeek and more, or your own endpoint.", "Copy the result, refine it in AI Chat, or save it to your encrypted workspace history."].map((s, i) => (
                   <Reveal key={i} as="li" delay={i * 80} className="flex gap-4">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">{i + 1}</span>
                     <p className="pt-1 text-[15px] leading-relaxed text-slate-700">{s}</p>
@@ -120,7 +120,7 @@ export default async function PromptPage({ params }: { params: Promise<{ field: 
           <aside className="space-y-6">
             <div className="card-pad">
               <h3 className="font-bold text-slate-900">{free ? "Free on every account" : `Unlock with the ${planName} plan`}</h3>
-              <p className="mt-2 text-sm text-slate-600">{level?.blurb} {free ? "Basic prompts are free — sign in and start using them." : `Get this and every ${p.level} prompt, plus AI Studio, Legal AI and the full library.`}</p>
+              <p className="mt-2 text-sm text-slate-600">{level?.blurb} {free ? "Basic prompts are free — sign in and start using them." : `Get this and every ${p.level} prompt, plus AI Chat, Legal AI and the full library.`}</p>
               <Link href={`/register?next=/app/prompts`} className="btn-primary mt-4 w-full justify-center">{free ? "Create free account" : `Start with ${planName}`}</Link>
               <Link href="/prompts" className="btn-ghost mt-2 w-full justify-center">Browse all prompts</Link>
             </div>

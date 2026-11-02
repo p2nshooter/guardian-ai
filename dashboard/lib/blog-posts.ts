@@ -200,7 +200,7 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: "ai-studio-onprem-workflows",
-    title: "Running an AI Studio On-Prem: Workflows Without the Data Leak",
+    title: "Running an AI Chat On-Prem: Workflows Without the Data Leak",
     description:
       "Teams want ChatGPT-style productivity; counsel wants nothing sensitive leaving the network. You can have both.",
     date: "2026-07-18",
@@ -211,7 +211,7 @@ export const BLOG_POSTS: BlogPost[] = [
       "## The third option",
       "An on-prem AI studio — a chat and workflow interface running on your infrastructure, connected via BYOK to the providers you approve, or to local models for the truly sensitive paths. Employees get the assistant; the organization gets the controls: which models are reachable, which data classes may be sent where, and a complete audit log of every exchange.",
       "## What makes it stick",
-      "Adoption dies if the internal tool is worse than the public one. The bar is: fast responses (routing and caching matter — this is Orchestra's job under the hood), file understanding, reusable prompt templates for the tasks your teams repeat, and shared workspaces so a good workflow spreads. The AXTO Studio family (AI Studio, GPU Studio for heavy local inference, Hybrid Studio for mixed routing) is built around exactly that bar.",
+      "Adoption dies if the internal tool is worse than the public one. The bar is: fast responses (routing and caching matter — this is Orchestra's job under the hood), file understanding, reusable prompt templates for the tasks your teams repeat, and shared workspaces so a good workflow spreads. The AXTO Studio family (AI Chat, GPU Studio for heavy local inference, Hybrid Studio for mixed routing) is built around exactly that bar.",
       "## The governance dividend",
       "Once AI use flows through one gateway, governance stops being a policy document and becomes configuration: retention you choose, regions you pin, prompts you can actually review in an incident. The employees who used to paste into public tabs become your best evidence that the controls work — because they stopped needing to.",
     ],

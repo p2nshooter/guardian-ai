@@ -32,7 +32,7 @@ export default function PromptsLanding() {
           { q: "What is the AXTO prompt library?", a: `A curated library of ${PROMPTS.length} expert, ready-to-run AI prompts across ${FIELDS.length} professional fields. Each prompt sets the right role, works step by step and specifies a structured output, so you get a professional result on the first try.` },
           { q: "Which AI models does it work with?", a: "Any. AXTO runs on your own key (BYOK/BYOM/BYOE) — Claude, GPT, Gemini, Llama, DeepSeek, Mistral and more, or your own custom endpoint. No per-token fees from AXTO." },
           { q: "Are the prompts free?", a: "Basic prompts are free on every account. Pro, Premium and Elite levels unlock with a paid plan and cover deeper, multi-step and enterprise-grade workflows." },
-          { q: "Can I save and reuse my prompts?", a: "Yes. Fill a prompt in, run it in AI Studio, and save the result to your encrypted workspace history — browse, rename, duplicate and export it anytime." },
+          { q: "Can I save and reuse my prompts?", a: "Yes. Fill a prompt in, run it in AI Chat, and save the result to your encrypted workspace history — browse, rename, duplicate and export it anytime." },
         ]),
       ]} />
 
@@ -93,7 +93,7 @@ export default function PromptsLanding() {
           {[
             { t: "Engineered, not generic", d: "Every prompt sets the right expert role, reasons step by step, and specifies a clear output format — the difference between a vague answer and a deliverable." },
             { t: "Runs on your own AI", d: "Connect your own key (BYOK/BYOM/BYOE). Use Claude, GPT, Gemini, Llama, DeepSeek and more. No per-token fees from AXTO, ever." },
-            { t: "Save your work", d: "Fill a prompt, run it in AI Studio, and keep the result in your encrypted workspace — browse, rename, duplicate and export anytime." },
+            { t: "Save your work", d: "Fill a prompt, run it in AI Chat, and keep the result in your encrypted workspace — browse, rename, duplicate and export anytime." },
           ].map((c, i) => (
             <Reveal key={i} delay={i * 80} className="card-pad">
               <h3 className="font-bold text-slate-900">{c.t}</h3>
@@ -106,7 +106,7 @@ export default function PromptsLanding() {
       <section className="border-t border-slate-200 bg-brand-600 py-16 text-white">
         <div className="container-page text-center">
           <h2 className="text-2xl font-bold sm:text-3xl">Get the full prompt library</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-white/85">Start free with Basic prompts. Unlock Pro, Premium and Elite — plus AI Studio, Legal AI and the whole AXTO workspace.</p>
+          <p className="mx-auto mt-3 max-w-2xl text-white/85">Start free with Basic prompts. Unlock Pro, Premium and Elite — plus AI Chat, Legal AI and the whole AXTO workspace.</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link href="/register?next=/app/prompts" className="btn-lg rounded-xl bg-white px-6 font-semibold text-brand-700 hover:bg-brand-50">Create free account</Link>
             <Link href="/pricing" className="btn-lg rounded-xl border border-white/40 px-6 font-semibold text-white hover:bg-white/10">Compare plans</Link>

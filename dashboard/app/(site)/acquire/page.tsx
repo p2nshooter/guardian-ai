@@ -15,7 +15,7 @@ import { OPEN_MIN_USD } from "@/lib/sale-auction-terms";
 import { ACQ_EN } from "@/lib/acquire-copy";
 import { DEVCOPY } from "@/lib/developers-copy";
 
-const DESCRIPTION = "Acquire AXTO outright: the axto.io domain, full source code, seven live cloud AI apps (Legal AI, AI Studio, Clipper, Privacy Vault, Compliance Center, Security Analyst, Prompt Library), ten self-hosted products, the AXTO Connect real-time developer platform, Local Mode, worldwide payments and licensing, ten languages and the brand — with a buyer's guide, escrow option and an automatic administrator handover.";
+const DESCRIPTION = "Acquire AXTO outright: the axto.io domain, full source code, seven live cloud AI apps (Legal AI, AI Chat, Clipper, Privacy Vault, Compliance Center, Security Analyst, Prompt Library), ten self-hosted products, the AXTO Connect real-time developer platform, Local Mode, worldwide payments and licensing, ten languages and the brand — with a buyer's guide, escrow option and an automatic administrator handover.";
 
 export const metadata: Metadata = pageMeta({
   title: "Acquire AXTO — enterprise AI platform for sale by auction (offers from US$500,000)",

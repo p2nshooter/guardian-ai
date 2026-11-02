@@ -10,8 +10,8 @@ import { ECOSYSTEM_CLOUD, ECOSYSTEM_SELF } from "@/lib/ecosystem";
 import { pageMeta, breadcrumbJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = pageMeta({
-  title: "Apps — Legal AI, Prompt Library, AI Studio, Clipper and more",
-  description: "Seven professional AI apps in your browser: Legal AI, Prompt Library, AI Studio, Clipper, Privacy Vault, Compliance Center and Security Analyst — on your own AI keys. Plus ten self-hosted apps for Docker on Windows and Linux.",
+  title: "Apps — Legal AI, Prompt Library, AI Chat, Clipper and more",
+  description: "Seven professional AI apps in your browser: Legal AI, Prompt Library, AI Chat, Clipper, Privacy Vault, Compliance Center and Security Analyst — on your own AI keys. Plus ten self-hosted apps for Docker on Windows and Linux.",
   path: "/apps",
 });
 

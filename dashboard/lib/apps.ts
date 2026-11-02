@@ -67,7 +67,7 @@ export const CLOUD_APPS: CloudApp[] = [
     keywords: ["AI prompt library", "premium ChatGPT prompts", "Claude prompts", "business prompts", "prompt templates"],
   },
   {
-    slug: "studio", live: true, name: "AI Studio", icon: "🧠", color: "#0f766e",
+    slug: "studio", live: true, name: "AI Chat", icon: "🧠", color: "#0f766e",
     short: "Every leading AI model in one private workspace — files, images, voice, artifacts and side-by-side comparison.",
     hero: "One private workspace for every leading model, on your own keys. Attach documents and images, dictate by voice, preview the pages and diagrams the AI writes, compare up to three models side by side, and keep your own assistants — with every conversation saved, searchable and encrypted.",
     steps: [

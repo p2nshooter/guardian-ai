@@ -4,7 +4,7 @@
  * WORKSPACE HISTORY — one reusable, encrypted per-member store every cloud app
  * uses to save the client's work so they never lose it and can browse, reopen,
  * rename, duplicate, export and delete it (full CRUD). Legal AI keeps its own
- * richer "matters" store; simpler apps (AI Studio conversations, Clipper
+ * richer "matters" store; simpler apps (AI Chat conversations, Clipper
  * projects, Prompt runs, Compliance/Security reports) use this.
  *
  *   R2 (USER_FILES):  app/<slug>/<uid>/index.enc                 list (sidebar)
@@ -62,7 +62,7 @@ const REASONS: VersionReason[] = ["auto", "overwrite", "restore"];
 const CT = { contentType: "application/octet-stream" };
 
 /** Apps whose items keep earlier versions. */
-export const VERSIONED: Partial<Record<string, VersionPolicy>> = { clipper: { keep: 10, everyMs: 10 * 60_000 } };
+export const VERSIONED: Partial<Record<string, VersionPolicy>> = { clipper: { keep: 10, everyMs: 10 * 60_000 }, film: { keep: 20, everyMs: 10 * 60_000 } };
 
 export interface SaveInput<T> {
   id?: string;
@@ -296,6 +296,7 @@ export class History {
 }
 
 /** Which cloud apps use the generic history store (Legal uses its own matters). */
-export const HISTORY_APPS = ["studio", "clipper", "prompts", "compliance", "security", "vault"] as const;
+/** `studio` is AI Chat (its id and storage stay); `film` is AI Studio, the film studio (REQUESTS 141). */
+export const HISTORY_APPS = ["studio", "clipper", "prompts", "compliance", "security", "vault", "film"] as const;
 export type HistoryApp = (typeof HISTORY_APPS)[number];
 export const isHistoryApp = (x: string): x is HistoryApp => (HISTORY_APPS as readonly string[]).includes(x);

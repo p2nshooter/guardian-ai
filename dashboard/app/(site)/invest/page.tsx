@@ -16,7 +16,7 @@ import { pageMeta, faqJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { absoluteUrl, SITE } from "@/lib/site";
 import { INV_EN } from "@/lib/invest-copy";
 
-const DESCRIPTION = "Invest in AXTO, the AI platform behind Legal AI, AI Studio, Clipper and a self-hosted product line for Linux and Windows: a proportional monthly share of every paid AXTO order, from the day your capital is verified until a full acquisition, when the capital is returned. Terms, risk notice and a private investor statement.";
+const DESCRIPTION = "Invest in AXTO, the AI platform behind Legal AI, AI Chat, Clipper and a self-hosted product line for Linux and Windows: a proportional monthly share of every paid AXTO order, from the day your capital is verified until a full acquisition, when the capital is returned. Terms, risk notice and a private investor statement.";
 
 const META: Metadata = pageMeta({
   title: "Invest in AXTO — revenue-sharing investor round",

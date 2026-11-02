@@ -73,7 +73,7 @@ export function sanitizeMessages(raw: unknown, maxTurns = 40): ChatMessage[] {
   return msgs.slice(-maxTurns);
 }
 
-// ── Generic assistant (AI Studio) — registered here so the pipeline is testable end to end.
+// ── Generic assistant (AI Chat) — registered here so the pipeline is testable end to end.
 registerTask({
   app: "studio",
   build(input) {
@@ -81,7 +81,7 @@ registerTask({
     // "role" = the member's own instructions for this chat or assistant (their system prompt).
     const role = (o.role || "").trim().slice(0, 8000);
     const system = [
-      "You are AXTO AI Studio, a precise, honest and helpful assistant for professionals.",
+      "You are AXTO AI Chat, a precise, honest and helpful assistant for professionals.",
       "Answer in the language the user writes in. Use Markdown for structure (headings, lists, tables) when it helps readability.",
       "Put code in fenced blocks with the language name. When the user asks for a web page, component, chart or diagram, return one self-contained ```html (or ```svg) block that renders on its own.",
       "Attached files arrive as text between «file» markers; images arrive as images. Quote the file when you rely on it.",
