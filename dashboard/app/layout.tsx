@@ -10,6 +10,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { SITE, absoluteUrl } from "@/lib/site";
+import { AD_ACCOUNTS } from "@/lib/adsense";
 import { PwaRegister } from "@/components/pwa/Pwa";
 import { PWA_EARLY } from "@/components/pwa/early";
 
@@ -37,8 +38,9 @@ export const metadata: Metadata = {
   verification: {
     ...(SITE.gscVerification ? { google: SITE.gscVerification } : {}),
     other: {
-      // Google AdSense site ownership (keep on every page, including the homepage).
-      "google-adsense-account": SITE.adsenseClient,
+      // Google AdSense site ownership (keep on every page, including the homepage): one meta tag per authorised
+      // account, the primary first (lib/adsense.ts, owner 7 Nov 2026).
+      "google-adsense-account": [...AD_ACCOUNTS],
       ...(SITE.bingVerification ? { "msvalidate.01": SITE.bingVerification } : {}),
     },
   },
