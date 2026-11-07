@@ -26,7 +26,7 @@ const SITE = (process.env.SITE || BASE).replace(/\/$/, "");
 const HOST = new URL(BASE).host;
 const SITE_HOST = new URL(SITE).host;
 const local = (u) => (u.startsWith(SITE) ? BASE + u.slice(SITE.length) : u);
-const ADSENSE = "ca-pub-8991272269211824";
+const ADSENSE = "ca-pub-9915280882234592"; // primary account (owner, 7 Nov 2026); the sixteen stacked ones are in lib/adsense.ts
 const UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36 axto-live-audit";
 const problems = [];
 const report = { base: BASE, at: new Date().toISOString() };
