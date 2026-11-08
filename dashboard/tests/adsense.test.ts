@@ -11,9 +11,9 @@ import { SITE } from "../lib/site";
 const root = join(import.meta.dirname, "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
 
-test("sixteen distinct stacked accounts, the primary first", () => {
-  assert.equal(ADSENSE_STACK.length, 16);
-  assert.equal(new Set(ADSENSE_STACK).size, 16);
+test("seventeen distinct stacked accounts (8 Nov 2026), the primary first", () => {
+  assert.equal(ADSENSE_STACK.length, 17);
+  assert.equal(new Set(ADSENSE_STACK).size, 17);
   for (const a of AD_ACCOUNTS) assert.match(a, /^ca-pub-\d{16}$/);
   assert.equal(AD_ACCOUNTS[0], SITE.adsenseClient);
   assert.equal(new Set(AD_ACCOUNTS).size, AD_ACCOUNTS.length);
