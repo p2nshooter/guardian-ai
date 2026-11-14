@@ -33,6 +33,7 @@ export const ADSENSE_STACK = [
   "ca-pub-6284085719914185", // 8 Nov 2026 (pemilik): akun ke-19
   "ca-pub-7345352440829958", // 8 Nov 2026 (pemilik): akun ke-20
   "ca-pub-5254913739159445", // 8 Nov 2026 (pemilik): akun ke-21
+  "ca-pub-6701063918838796", // 14 Nov 2026 (pemilik): akun ke-22
 ] as const;
 
 export const AD_ACCOUNTS: readonly string[] = [...new Set<string>([SITE.adsenseClient, ...ADSENSE_STACK])];
