@@ -25,9 +25,9 @@ export const SITE = {
   ogImage: "/og-image.png",
   locale: "en_US",
   // Google — AdSense publisher (verification meta + loader) and Search Console.
-  // AdSense PRIMARY account (owner, 7 Nov 2026, REQUESTS 147; before: 8991272269211824, removed): the only loader.
-  // The sixteen stacked accounts (lib/adsense.ts) each get a meta tag and an ads.txt line beside it.
-  adsenseClient: "ca-pub-9915280882234592",
+  // AdSense PRIMARY account (owner, 22 Nov 2026: „sisakan 3 adsense saja“; adsense-stack.json in ulyah.com): the only
+  // loader. The three accounts (lib/adsense.ts) each get a meta tag and an ads.txt line.
+  adsenseClient: "ca-pub-5928074389292014",
   gscVerification: process.env.NEXT_PUBLIC_GSC_VERIFICATION || "",
   bingVerification: process.env.NEXT_PUBLIC_BING_VERIFICATION || "",
   // Preview deployments (axto-preview.pages.dev): noindex, no ads, visible banner.
