@@ -5,7 +5,7 @@
  *
  * - SITE.adsenseClient is the PRIMARY account: the only loader script (app/(site)/layout.tsx). Google ignores a second
  *   AdSense head tag on the same page ("Only one AdSense head tag supported per page").
- * - AD_ACCOUNTS is every account the site authorises — the primary first, then the stacked accounts (three since 22 Nov 2026). Each gets
+ * - AD_ACCOUNTS is every account the site authorises — the primary first, then the stacked accounts (four since 22 Nov 2026: + pub-6701063918838796). Each gets
  *   its own google-adsense-account meta tag (app/layout.tsx, metadata verification.other) and its own line in
  *   public/ads.txt, so each account can verify the site. tests/adsense.test.ts keeps public/ads.txt equal to this list.
  * - Auto ads only: no manual ad unit anywhere. */
@@ -16,6 +16,7 @@ export const ADSENSE_STACK = [
   "ca-pub-6560360898389273",
   "ca-pub-4906992051458194",
   "ca-pub-5928074389292014",
+  "ca-pub-6701063918838796",
 ] as const;
 
 export const AD_ACCOUNTS: readonly string[] = [...new Set<string>([SITE.adsenseClient, ...ADSENSE_STACK])];
